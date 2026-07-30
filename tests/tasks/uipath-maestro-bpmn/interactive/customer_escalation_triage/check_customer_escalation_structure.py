@@ -200,8 +200,10 @@ def normalization_field_roles(field_names: set[str]) -> set[str]:
     return roles
 
 
-def structured_normalization_roles(declaration: ET.Element) -> set[str]:
-    """Return normalization roles declared by one typed structured variable."""
+def required_string_schema_properties(
+    declaration: ET.Element,
+) -> set[str]:
+    """Return fields that a declared object schema requires as strings."""
     if declaration.attrib.get("type") not in {"object", "json", "jsonSchema"}:
         return set()
     body = (declaration.text or "").strip()
@@ -212,9 +214,27 @@ def structured_normalization_roles(declaration: ET.Element) -> set[str]:
     except json.JSONDecodeError:
         return set()
     properties = schema.get("properties") if isinstance(schema, dict) else None
-    if not isinstance(properties, dict):
+    required = schema.get("required") if isinstance(schema, dict) else None
+    if (
+        not isinstance(schema, dict)
+        or get_ci(schema, "type") != "object"
+        or not isinstance(properties, dict)
+        or not isinstance(required, list)
+    ):
         return set()
-    return normalization_field_roles(set(properties))
+    return {
+        property_name
+        for property_name, property_schema in properties.items()
+        if property_name in required
+        and get_ci(property_schema, "type") == "string"
+    }
+
+
+def structured_normalization_roles(declaration: ET.Element) -> set[str]:
+    """Return fully required string normalization roles in one object."""
+    return normalization_field_roles(
+        required_string_schema_properties(declaration)
+    )
 
 
 def structured_normalization_roles_in_conditions(
@@ -344,6 +364,285 @@ def connector_input_value(item: ET.Element) -> str:
     return item.text or ""
 
 
+def normalized_exact_reference(value: Any) -> str | None:
+    """Canonicalize a bare UiPath variable expression without changing meaning."""
+    if not isinstance(value, str):
+        return None
+    expression = value.strip()
+    if expression.startswith("=js:"):
+        expression = expression[4:].strip()
+    elif expression.startswith("="):
+        expression = expression[1:].strip()
+    else:
+        return None
+
+    while expression.startswith("(") and expression.endswith(")"):
+        depth = 0
+        closes_at_end = False
+        for index, character in enumerate(expression):
+            if character == "(":
+                depth += 1
+            elif character == ")":
+                depth -= 1
+                if depth < 0:
+                    return None
+                if depth == 0:
+                    closes_at_end = index == len(expression) - 1
+                    break
+        if not closes_at_end:
+            break
+        expression = expression[1:-1].strip()
+
+    if re.fullmatch(
+        r"vars\.[A-Za-z0-9_-]+(?:\.[A-Za-z_$][\w$]*)*",
+        expression,
+    ) is None:
+        return None
+    return f"={expression}"
+
+
+def javascript_code_mask(source: str) -> str:
+    """Mask JS literals/comments while retaining executable template code.
+
+    The checker performs deliberately small structural checks over JavaScript,
+    so the mask must preserve source offsets.  Static template text and regex
+    literals are data, while an unescaped ``${...}`` interpolation is
+    executable JavaScript and must remain visible to mutation/lineage checks.
+    """
+    masked = list(source)
+    regex_prefix_keywords = {
+        "await",
+        "case",
+        "delete",
+        "do",
+        "else",
+        "in",
+        "instanceof",
+        "new",
+        "of",
+        "return",
+        "throw",
+        "typeof",
+        "void",
+        "yield",
+    }
+
+    def blank(index: int) -> None:
+        if source[index] not in "\r\n":
+            masked[index] = " "
+
+    def mask_quoted(index: int, quote: str) -> int:
+        cursor = index
+        escaped = False
+        while cursor < len(source):
+            character = source[cursor]
+            blank(cursor)
+            if cursor == index:
+                cursor += 1
+                continue
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == quote:
+                return cursor + 1
+            cursor += 1
+        return cursor
+
+    def mask_line_comment(index: int) -> int:
+        cursor = index
+        while cursor < len(source) and source[cursor] not in "\r\n":
+            blank(cursor)
+            cursor += 1
+        return cursor
+
+    def mask_block_comment(index: int) -> int:
+        cursor = index
+        while cursor < len(source):
+            if source.startswith("*/", cursor):
+                blank(cursor)
+                if cursor + 1 < len(source):
+                    blank(cursor + 1)
+                return cursor + 2
+            blank(cursor)
+            cursor += 1
+        return cursor
+
+    def mask_regex_literal(index: int) -> int | None:
+        cursor = index + 1
+        escaped = False
+        in_character_class = False
+        while cursor < len(source):
+            character = source[cursor]
+            if character in "\r\n":
+                return None
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == "[":
+                in_character_class = True
+            elif character == "]" and in_character_class:
+                in_character_class = False
+            elif character == "/" and not in_character_class:
+                end = cursor + 1
+                while end < len(source) and (
+                    source[end].isalpha() or source[end] in "$_"
+                ):
+                    end += 1
+                for position in range(index, end):
+                    blank(position)
+                return end
+            cursor += 1
+        return None
+
+    def scan_template(index: int) -> int:
+        blank(index)
+        cursor = index + 1
+        while cursor < len(source):
+            character = source[cursor]
+            if character == "\\":
+                blank(cursor)
+                if cursor + 1 < len(source):
+                    blank(cursor + 1)
+                cursor += 2
+                continue
+            if character == "`":
+                blank(cursor)
+                return cursor + 1
+            if source.startswith("${", cursor):
+                # `${` and its closing `}` delimit executable code.  Mask only
+                # the dollar so offsets and brace balance remain intact.
+                blank(cursor)
+                cursor = scan_code(cursor + 2, stop_at_template_brace=True)
+                continue
+            blank(cursor)
+            cursor += 1
+        return cursor
+
+    def scan_code(
+        index: int,
+        *,
+        stop_at_template_brace: bool = False,
+    ) -> int:
+        cursor = index
+        brace_depth = 0
+        can_start_regex = True
+        while cursor < len(source):
+            character = source[cursor]
+            following = source[cursor + 1] if cursor + 1 < len(source) else ""
+
+            if (
+                stop_at_template_brace
+                and character == "}"
+                and brace_depth == 0
+            ):
+                return cursor + 1
+            if character.isspace():
+                cursor += 1
+                continue
+            if character in {'"', "'"}:
+                cursor = mask_quoted(cursor, character)
+                can_start_regex = False
+                continue
+            if character == "`":
+                cursor = scan_template(cursor)
+                can_start_regex = False
+                continue
+            if character == "/" and following == "/":
+                cursor = mask_line_comment(cursor)
+                continue
+            if character == "/" and following == "*":
+                cursor = mask_block_comment(cursor)
+                continue
+            if character == "/" and can_start_regex:
+                regex_end = mask_regex_literal(cursor)
+                if regex_end is not None:
+                    cursor = regex_end
+                    can_start_regex = False
+                    continue
+            if character.isalpha() or character in "_$":
+                end = cursor + 1
+                while end < len(source) and (
+                    source[end].isalnum() or source[end] in "_$"
+                ):
+                    end += 1
+                can_start_regex = (
+                    source[cursor:end] in regex_prefix_keywords
+                )
+                cursor = end
+                continue
+            if character.isdigit():
+                end = cursor + 1
+                while end < len(source) and (
+                    source[end].isalnum() or source[end] in "._"
+                ):
+                    end += 1
+                cursor = end
+                can_start_regex = False
+                continue
+            if character == "{":
+                brace_depth += 1
+                can_start_regex = True
+            elif character == "}":
+                brace_depth = max(0, brace_depth - 1)
+                can_start_regex = False
+            elif character in ")]":
+                can_start_regex = False
+            elif character == ".":
+                can_start_regex = False
+            elif character in "([,:;=!?&|+-*%^~<>":
+                can_start_regex = True
+            elif character == "/":
+                # A non-regex slash is a division operator; an expression may
+                # begin on its right.
+                can_start_regex = True
+            cursor += 1
+        return cursor
+
+    scan_code(0)
+    return "".join(masked)
+
+
+def single_return_object_body(script_body: str, label: str) -> str:
+    """Accept one terminal object return, excluding comma-operator swaps."""
+    executable = javascript_code_mask(script_body)
+    returns = list(re.finditer(r"\breturn\b", executable))
+    if len(returns) != 1:
+        fail(f"{label} must contain exactly one return statement")
+    cursor = returns[0].end()
+    while (
+        cursor < len(executable)
+        and executable[cursor] in " \t\f\v"
+    ):
+        cursor += 1
+    if cursor >= len(executable) or executable[cursor] != "{":
+        fail(f"{label} must return one object")
+
+    start = cursor
+    depth = 0
+    end: int | None = None
+    for cursor in range(start, len(executable)):
+        character = executable[cursor]
+        if character == "{":
+            depth += 1
+        elif character == "}":
+            depth -= 1
+            if depth == 0:
+                end = cursor
+                break
+            if depth < 0:
+                break
+    if end is None:
+        fail(f"{label} returned an unbalanced object")
+    if re.fullmatch(r"\s*;?\s*", executable[end + 1 :]) is None:
+        fail(
+            f"{label} must return one terminal object without a trailing "
+            "comma expression"
+        )
+    return script_body[start + 1 : end]
+
+
 def require_variable_reference(
     value: Any,
     declaration: ET.Element,
@@ -355,6 +654,20 @@ def require_variable_reference(
         or variable_id not in referenced_variable_ids(value)
     ):
         fail(f"{label} must reference vars.{variable_id}")
+
+
+def require_exact_variable_property_reference(
+    value: Any,
+    declaration: ET.Element,
+    property_name: str,
+    label: str,
+) -> None:
+    variable_id = declaration.attrib["id"]
+    expected = f"vars.{variable_id}.{property_name}"
+    if normalized_exact_reference(value) != f"={expected}":
+        fail(
+            f"{label} must use exact ScriptTask response field ={expected}"
+        )
 
 
 def require_semantic_reference(
@@ -1353,6 +1666,11 @@ def require_normalization_script(
         )
 
     script_outputs = mapping_outputs(script)
+    declarations_by_id = {
+        declaration.attrib["id"]: declaration
+        for declaration in variables.values()
+        if declaration.attrib.get("id")
+    }
     response_ids = {
         output.attrib["var"]
         for output in script_outputs
@@ -1385,6 +1703,30 @@ def require_normalization_script(
                 and output.attrib.get("source", "").strip()
                 == f"=vars.{correlation_id}"
             )
+
+    for output in normalization_outputs:
+        source = output.attrib.get("source", "")
+        for response_id in response_ids:
+            properties = re.findall(
+                rf"\bvars\.{re.escape(response_id)}\."
+                r"([A-Za-z_$][\w$]*)\b",
+                source,
+            )
+            if not properties:
+                continue
+            declaration = declarations_by_id.get(response_id)
+            typed_properties = (
+                required_string_schema_properties(declaration)
+                if declaration is not None
+                else set()
+            )
+            missing = sorted(set(properties) - typed_properties)
+            if missing:
+                fail(
+                    "normalization ScriptTask response dereferences fields "
+                    "that are not required strings in an object schema: "
+                    f"{missing}"
+                )
 
     targets = {
         output.attrib["var"]
@@ -1481,11 +1823,6 @@ def require_normalization_script(
             "caseKey, either in the ScriptTask result or its associated "
             "Variables extraction task"
         )
-    declarations_by_id = {
-        declaration.attrib["id"]: declaration
-        for declaration in variables.values()
-        if declaration.attrib.get("id")
-    }
     string_targets = {
         variable_id
         for variable_id in targets
@@ -1507,6 +1844,266 @@ def require_normalization_script(
             "duplicate key"
         )
     return targets
+
+
+def require_jira_update_uses_normalized_duplicate(
+    process: ET.Element,
+    script: ET.Element,
+    variables: dict[str, ET.Element],
+    ids_to_names: dict[str, str],
+    variable_tasks: list[ET.Element],
+) -> None:
+    mapping = script.find(
+        f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'mapping')}"
+    )
+    if mapping is None:
+        fail("normalization ScriptTask is missing its Variables mapping")
+    declarations_by_id = {
+        declaration.attrib["id"]: declaration
+        for declaration in variables.values()
+        if declaration.attrib.get("id")
+    }
+
+    def has_duplicate_key_semantics(value: str) -> bool:
+        token = identifier_token(value)
+        return "duplicate" in token and "key" in token
+
+    script_body = (
+        script.findtext(f"./{q(BPMN_NS, 'script')}", default="") or ""
+    )
+    script_executable = javascript_code_mask(script_body)
+    script_declarations: dict[str, list[str]] = defaultdict(list)
+    for match in re.finditer(
+        r"\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*"
+        r"([^;\n]+)",
+        script_executable,
+    ):
+        script_declarations[match.group(1)].append(
+            script_body[match.start(2) : match.end(2)].strip()
+        )
+    returned_body = single_return_object_body(
+        script_body,
+        "normalization ScriptTask",
+    )
+    returned_executable = javascript_code_mask(returned_body)
+
+    def returned_property_expression(property_name: str) -> str:
+        if "..." in returned_executable:
+            fail(
+                "normalization ScriptTask result must not use object spread"
+            )
+        property_occurrences = re.findall(
+            rf"(?:^|,)\s*{re.escape(property_name)}\s*"
+            rf"(?::|(?=,|$))",
+            returned_executable,
+        )
+        if len(property_occurrences) > 1:
+            fail(
+                "normalization ScriptTask result must return duplicate key "
+                f"{property_name!r} exactly once"
+            )
+        if len(property_occurrences) != 1:
+            return ""
+        explicit = re.search(
+            rf"(?:^|,)\s*{re.escape(property_name)}\s*:"
+            rf"(.*?)(?=,\s*[A-Za-z_$][\w$]*\s*:|$)",
+            returned_executable,
+            flags=re.DOTALL,
+        )
+        if explicit is not None:
+            return returned_body[
+                explicit.start(1) : explicit.end(1)
+            ].strip()
+        if re.search(
+            rf"(?:^|,)\s*{re.escape(property_name)}\s*(?=,|$)",
+            returned_executable,
+        ):
+            return property_name
+        return ""
+
+    def stable_local_assignment(identifier: str) -> str | None:
+        declarations = script_declarations.get(identifier, [])
+        if len(declarations) != 1:
+            return None
+        direct_writes = re.findall(
+            rf"(?<![\w$.]){re.escape(identifier)}\s*=(?!=)",
+            script_executable,
+        )
+        mutation = re.search(
+            rf"(?<![\w$.]){re.escape(identifier)}\s*"
+            r"(?:\+\+|--|\+=|-=|\*=|/=|%=)"
+            rf"|(?:\+\+|--)\s*{re.escape(identifier)}\b"
+            rf"|\b{re.escape(identifier)}\s*(?:\.|\[)[^=;\n]*"
+            r"=(?!=)",
+            script_executable,
+        )
+        if len(direct_writes) != 1 or mutation is not None:
+            return None
+        return declarations[0]
+
+    def resolve_script_assignment(
+        expression: str,
+        seen: set[str] | None = None,
+    ) -> str:
+        stripped = expression.strip()
+        if not re.fullmatch(r"[A-Za-z_$][\w$]*", stripped):
+            return stripped
+        visited = set() if seen is None else set(seen)
+        assignment = stable_local_assignment(stripped)
+        if stripped in visited or assignment is None:
+            return stripped
+        visited.add(stripped)
+        return resolve_script_assignment(
+            assignment,
+            visited,
+        )
+
+    raw_duplicate_id = variables["duplicateIssueKey"].attrib["id"]
+    if re.search(
+        rf"\bvars\.{re.escape(raw_duplicate_id)}\s*"
+        r"(?:=(?!=)|\+\+|--|\+=|-=|\*=|/=|%=)",
+        script_executable,
+    ):
+        fail(
+            "normalization ScriptTask must not mutate duplicateIssueKey "
+            "before trimming it"
+        )
+
+    def is_exact_trimmed_duplicate(property_name: str) -> bool:
+        expression = resolve_script_assignment(
+            returned_property_expression(property_name)
+        )
+        normalized = re.sub(r"\s", "", expression)
+        raw = rf"vars\.{re.escape(raw_duplicate_id)}"
+        return any(
+            re.fullmatch(pattern, normalized) is not None
+            for pattern in (
+                rf"\(?{raw}(?:\|\|(?:\"\"|''))?\)?\.trim\(\)",
+                rf"String\(\(?{raw}(?:\|\|(?:\"\"|''))?\)?\)"
+                r"\.trim\(\)",
+            )
+        )
+
+    allowed: set[str] = set()
+    mapping_output_items = mapping.findall(f"./{q(UIPATH_NS, 'output')}")
+    for output in mapping_output_items:
+        variable_id = output.attrib.get("var")
+        if (
+            not variable_id
+            or output.attrib.get("name") != "scriptResponse"
+            or output.attrib.get("type") != "jsonSchema"
+            or output.attrib.get("source", "").strip()
+            != "=result.response"
+        ):
+            continue
+        declaration = declarations_by_id.get(variable_id)
+        if declaration is None:
+            continue
+        try:
+            schema = json.loads((declaration.text or "").strip())
+        except json.JSONDecodeError:
+            continue
+        properties = (
+            schema.get("properties")
+            if isinstance(schema, dict)
+            else None
+        )
+        if (
+            not isinstance(schema, dict)
+            or get_ci(schema, "type") != "object"
+            or not isinstance(properties, dict)
+        ):
+            continue
+        for property_name in properties:
+            property_schema = properties.get(property_name)
+            required = schema.get("required")
+            if (
+                has_duplicate_key_semantics(property_name)
+                and get_ci(property_schema, "type") == "string"
+                and isinstance(required, list)
+                and property_name in required
+                and is_exact_trimmed_duplicate(property_name)
+            ):
+                allowed.add(f"=vars.{variable_id}.{property_name}")
+
+    for output in mapping_output_items:
+        variable_id = output.attrib.get("var")
+        declaration = declarations_by_id.get(variable_id or "")
+        normalized_source = normalized_exact_reference(
+            output.attrib.get("source", "")
+        )
+        if (
+            not variable_id
+            or output.attrib.get("name") == "scriptResponse"
+            or declaration is None
+            or declaration.attrib.get("type") != "string"
+            or normalized_source not in allowed
+            or not has_duplicate_key_semantics(
+                " ".join(
+                    (
+                        output.attrib.get("name", ""),
+                        ids_to_names.get(variable_id, ""),
+                    )
+                )
+            )
+        ):
+            continue
+        allowed.add(f"=vars.{variable_id}")
+
+    # Permit a visible Variables extraction from the typed ScriptTask result,
+    # but only when its exact source is already trusted and its target remains
+    # semantically explicit. Iterate to support a short visible copy chain.
+    changed = True
+    while changed:
+        changed = False
+        for task in variable_tasks:
+            for output in mapping_outputs(task):
+                source = output.attrib.get("source", "").strip()
+                normalized_source = normalized_exact_reference(source)
+                target = output.attrib.get("var", "")
+                declaration = declarations_by_id.get(target)
+                if (
+                    normalized_source not in allowed
+                    or declaration is None
+                    or declaration.attrib.get("type") != "string"
+                    or not has_duplicate_key_semantics(
+                        " ".join(
+                            (
+                                output.attrib.get("name", ""),
+                                ids_to_names.get(target, ""),
+                            )
+                        )
+                    )
+                ):
+                    continue
+                candidate = f"=vars.{target}"
+                if candidate not in allowed:
+                    allowed.add(candidate)
+                    changed = True
+
+    update_activities = [
+        node
+        for node in process.findall(f".//{q(BPMN_NS, 'sendTask')}")
+        if connector_context(node).get("connectorKey")
+        == "uipath-atlassian-jira"
+        and connector_context(node).get("path")
+        == "/curated_edit_issue/{issueIdOrKey}"
+    ]
+    if len(update_activities) != 1:
+        fail("expected exactly one Jira update connector activity")
+    update_inputs = connector_inputs(update_activities[0])
+    path_input = update_inputs.get(("path", "issueIdOrKey"))
+    actual = (
+        connector_input_value(path_input)
+        if path_input is not None
+        else ""
+    )
+    normalized_actual = normalized_exact_reference(actual)
+    if not allowed or normalized_actual not in allowed:
+        fail(
+            "Jira update issueIdOrKey must exactly consume the normalized "
+            f"duplicate-key result; allowed {sorted(allowed)}, got {actual!r}"
+        )
 
 
 def output_names_in_elements(
@@ -2050,15 +2647,282 @@ def require_sequential_attachment_loop(
     script_body = (
         loop_script.findtext(f"./{q(BPMN_NS, 'script')}", default="") or ""
     )
-    if not re.search(rf"\b{re.escape(current_item_arg)}\b", script_body):
+    script_executable = javascript_code_mask(script_body)
+    if not re.search(
+        rf"\b{re.escape(current_item_arg)}\b",
+        script_executable,
+    ):
         fail(
             "per-item attachment ScriptTask must read its mapped current "
             "item argument"
         )
+
+    declarations: dict[str, list[str]] = defaultdict(list)
+    for match in re.finditer(
+        r"\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*"
+        r"([^;\n]+)",
+        script_executable,
+    ):
+        declarations[match.group(1)].append(
+            script_body[match.start(2) : match.end(2)].strip()
+        )
+
+    def stable_local_assignment(identifier: str) -> str | None:
+        values = declarations.get(identifier, [])
+        if len(values) != 1:
+            return None
+        direct_writes = re.findall(
+            rf"(?<![\w$.]){re.escape(identifier)}\s*=(?!=)",
+            script_executable,
+        )
+        mutation = re.search(
+            rf"(?<![\w$.]){re.escape(identifier)}\s*"
+            r"(?:\+\+|--|\+=|-=|\*=|/=|%=)"
+            rf"|(?:\+\+|--)\s*{re.escape(identifier)}\b"
+            rf"|\b{re.escape(identifier)}"
+            r"(?:\.[A-Za-z_$][\w$]*|\[[^\]\n]+\])\s*"
+            r"(?:=(?!=)|\+\+|--|\+=|-=|\*=|/=|%=)"
+            rf"|\bdelete\s+{re.escape(identifier)}(?:\.|\[)"
+            rf"|\bObject\.assign\s*\(\s*{re.escape(identifier)}\b",
+            script_executable,
+        )
+        if len(direct_writes) != 1 or mutation is not None:
+            return None
+        return values[0]
+
+    current_item_mutation = re.search(
+        rf"(?<![\w$.]){re.escape(current_item_arg)}\s*"
+        r"(?:=(?!=)|\+\+|--|\+=|-=|\*=|/=|%=)"
+        rf"|(?:\+\+|--)\s*{re.escape(current_item_arg)}\b"
+        rf"|\b{re.escape(current_item_arg)}"
+        r"(?:\.[A-Za-z_$][\w$]*|\[[^\]\n]+\])\s*"
+        r"(?:=(?!=)|\+\+|--|\+=|-=|\*=|/=|%=)"
+        rf"|\bdelete\s+{re.escape(current_item_arg)}(?:\.|\[)"
+        rf"|\bObject\.assign\s*\(\s*{re.escape(current_item_arg)}\b",
+        script_executable,
+    )
+    if current_item_mutation is not None:
+        fail(
+            "per-item attachment ScriptTask must not reassign or mutate its "
+            "mapped current item"
+        )
+
+    item_aliases = {current_item_arg}
+    changed = True
+    while changed:
+        changed = False
+        for alias in declarations:
+            expression = stable_local_assignment(alias)
+            if expression is None:
+                continue
+            normalized = re.sub(r"[\s()]", "", expression)
+            if any(
+                normalized in {item, f"{item}||{{}}"}
+                for item in item_aliases
+            ) and alias not in item_aliases:
+                item_aliases.add(alias)
+                changed = True
+
+    returned_body = single_return_object_body(
+        script_body,
+        "per-item attachment ScriptTask",
+    )
+    returned_executable = javascript_code_mask(returned_body)
+    if "..." in returned_executable:
+        fail(
+            "per-item attachment ScriptTask result must not use object spread"
+        )
+
+    def returned_expression(property_name: str) -> str:
+        property_occurrences = re.findall(
+            rf"(?:^|,)\s*{re.escape(property_name)}\s*"
+            rf"(?::|(?=,|$))",
+            returned_executable,
+        )
+        if len(property_occurrences) > 1:
+            fail(
+                "per-item attachment ScriptTask result must return "
+                f"{property_name!r} exactly once"
+            )
+        if len(property_occurrences) != 1:
+            return ""
+        explicit = re.search(
+            rf"(?:^|,)\s*{re.escape(property_name)}\s*:"
+            rf"(.*?)(?=,\s*(?:itemName|copyName|driveFileId)\s*:|$)",
+            returned_executable,
+            flags=re.DOTALL,
+        )
+        if explicit is not None:
+            return returned_body[
+                explicit.start(1) : explicit.end(1)
+            ].strip()
+        if re.search(
+            rf"(?:^|,)\s*{re.escape(property_name)}\s*(?=,|$)",
+            returned_executable,
+        ):
+            return property_name
+        return ""
+
+    def resolve_assignment(
+        expression: str,
+        seen: set[str] | None = None,
+    ) -> str:
+        stripped = expression.strip()
+        identifier_match = re.fullmatch(
+            r"[A-Za-z_$][\w$]*",
+            stripped,
+        )
+        if identifier_match is None:
+            return stripped
+        identifier = identifier_match.group(0)
+        visited = set() if seen is None else set(seen)
+        assignment = stable_local_assignment(identifier)
+        if identifier in visited or assignment is None:
+            return stripped
+        visited.add(identifier)
+        return resolve_assignment(assignment, visited)
+
+    def exact_current_field(
+        expression: str,
+        field_name: str,
+    ) -> bool:
+        resolved = resolve_assignment(expression)
+        normalized = re.sub(r"[\s()]", "", resolved)
+        return any(
+            re.fullmatch(
+                rf"{re.escape(alias)}\.{re.escape(field_name)}"
+                r"(?:\|\|(?:\"\"|''))?",
+                normalized,
+            )
+            is not None
+            for alias in item_aliases
+        )
+
+    item_name_expression = returned_expression("itemName")
+    if not exact_current_field(item_name_expression, "name"):
+        fail(
+            f"per-item attachment result itemName must derive exactly "
+            f"from {current_item_arg}.name"
+        )
+    drive_id_expression = returned_expression("driveFileId")
+    if not exact_current_field(drive_id_expression, "driveFileId"):
+        fail(
+            f"per-item attachment result driveFileId must derive exactly "
+            f"from {current_item_arg}.driveFileId"
+        )
+
+    copy_name_expression = resolve_assignment(
+        returned_expression("copyName")
+    )
+    correlation_id = variables["correlationId"].attrib["id"]
+
+    def strip_outer_parentheses(expression: str) -> str:
+        stripped = expression.strip()
+        while stripped.startswith("(") and stripped.endswith(")"):
+            depth = 0
+            closes_at_end = False
+            masked = javascript_code_mask(stripped)
+            for index, character in enumerate(masked):
+                if character == "(":
+                    depth += 1
+                elif character == ")":
+                    depth -= 1
+                    if depth == 0:
+                        closes_at_end = index == len(masked) - 1
+                        break
+            if not closes_at_end:
+                break
+            stripped = stripped[1:-1].strip()
+        return stripped
+
+    def copy_name_term_kind(expression: str) -> str | None:
+        normalized = re.sub(
+            r"\s",
+            "",
+            strip_outer_parentheses(expression),
+        )
+        if normalized == f"vars.{correlation_id}":
+            return "correlation"
+        if any(
+            normalized == f"{alias}.name"
+            for alias in item_aliases
+        ):
+            return "item"
+        if re.fullmatch(
+            r'"(?:\\.|[^"\\])*"|'
+            r"'(?:\\.|[^'\\])*'|"
+            r"`(?:\\.|[^`\\$]|\$(?!\{))*`",
+            strip_outer_parentheses(expression),
+            flags=re.DOTALL,
+        ):
+            return "literal"
+        return None
+
+    def top_level_plus_terms(expression: str) -> list[str]:
+        masked = javascript_code_mask(expression)
+        depth = 0
+        start = 0
+        terms: list[str] = []
+        for index, character in enumerate(masked):
+            if character in "([{":
+                depth += 1
+            elif character in ")]}":
+                depth -= 1
+                if depth < 0:
+                    return []
+            elif character == "+" and depth == 0:
+                terms.append(expression[start:index].strip())
+                start = index + 1
+        if depth != 0:
+            return []
+        terms.append(expression[start:].strip())
+        return terms
+
+    def valid_copy_name_expression(expression: str) -> bool:
+        stripped = strip_outer_parentheses(expression)
+        if stripped.startswith("`") and stripped.endswith("`"):
+            body = stripped[1:-1]
+            interpolations: list[str] = []
+            cursor = 0
+            while cursor < len(body):
+                if body[cursor] == "\\":
+                    cursor += 2
+                    continue
+                if body.startswith("${", cursor):
+                    close = body.find("}", cursor + 2)
+                    if close < 0 or "{" in body[cursor + 2 : close]:
+                        return False
+                    interpolations.append(body[cursor + 2 : close])
+                    cursor = close + 1
+                    continue
+                cursor += 1
+            kinds = {
+                copy_name_term_kind(interpolation)
+                for interpolation in interpolations
+            }
+            return {"correlation", "item"} <= kinds
+
+        terms = top_level_plus_terms(stripped)
+        kinds = [copy_name_term_kind(term) for term in terms]
+        return (
+            len(terms) >= 2
+            and all(kind is not None for kind in kinds)
+            and "correlation" in kinds
+            and "item" in kinds
+        )
+
+    if not valid_copy_name_expression(copy_name_expression):
+        fail(
+            f"per-item attachment result copyName must derive only from "
+            f"{current_item_arg}.name plus vars.{correlation_id}"
+        )
+
     script_response_ids = {
         output.attrib["var"]
         for output in mapping.findall(f"./{q(UIPATH_NS, 'output')}")
         if output.attrib.get("name") == "scriptResponse"
+        and output.attrib.get("type") == "jsonSchema"
+        and output.attrib.get("source", "").strip() == "=result.response"
         and output.attrib.get("var")
     }
     response_declarations = [
@@ -2089,6 +2953,7 @@ def require_sequential_attachment_loop(
     required_response_fields = {"itemName", "copyName", "driveFileId"}
     if (
         response_declarations[0].attrib.get("type") != "jsonSchema"
+        or get_ci(response_schema, "type") != "object"
         or not isinstance(response_properties, dict)
         or {
             name: get_ci(response_properties.get(name), "type")
@@ -2164,6 +3029,26 @@ def require_sequential_attachment_loop(
         loop_script.attrib["id"], loop_outgoing
     ):
         fail("Google Drive copy must execute after per-item preparation")
+    drive_inputs = connector_inputs(drive_activities[0])
+    file_id_input = drive_inputs.get(("query", "fileId"))
+    drive_body = connector_json_body(drive_activities[0], drive_inputs)
+    if file_id_input is None or "name" not in drive_body:
+        fail(
+            "Google Drive copy must bind its fileId query and name body fields"
+        )
+    response_declaration = response_declarations[0]
+    require_exact_variable_property_reference(
+        connector_input_value(file_id_input),
+        response_declaration,
+        "driveFileId",
+        "Drive copy fileId",
+    )
+    require_exact_variable_property_reference(
+        drive_body["name"],
+        response_declaration,
+        "copyName",
+        "Drive copy name",
+    )
 
     reducer_collection_ids = {iteration_collection_id}
     reducers = [
@@ -2193,8 +3078,164 @@ def require_sequential_attachment_loop(
     reducer_body = (
         reducer.findtext(f"./{q(BPMN_NS, 'script')}", default="") or ""
     )
-    if "length" not in reducer_body and "at(" not in reducer_body:
-        fail("post-loop reducer does not select the final attachment")
+    reducer_executable = javascript_code_mask(reducer_body)
+    reducer_returns = list(
+        re.finditer(r"\breturn\b", reducer_executable)
+    )
+    if len(reducer_returns) != 1:
+        fail(
+            "post-loop reducer must contain exactly one return of the final "
+            "attachment"
+        )
+    return_start = reducer_returns[0].end()
+    return_end = reducer_executable.find(";", return_start)
+    if return_end < 0:
+        return_end = len(reducer_body)
+    if re.fullmatch(
+        r"\s*;?\s*",
+        reducer_executable[return_end:],
+    ) is None:
+        fail("post-loop reducer return must be terminal")
+    returned_value = reducer_body[return_start:return_end].strip()
+
+    def strip_outer_parentheses(value: str) -> str:
+        stripped = value.strip()
+        while stripped.startswith("(") and stripped.endswith(")"):
+            masked = javascript_code_mask(stripped)
+            depth = 0
+            closes_at_end = False
+            for position, character in enumerate(masked):
+                if character == "(":
+                    depth += 1
+                elif character == ")":
+                    depth -= 1
+                    if depth == 0:
+                        closes_at_end = position == len(masked) - 1
+                        break
+            if not closes_at_end:
+                break
+            stripped = stripped[1:-1].strip()
+        return stripped
+
+    trusted_collections = {f"vars.{iteration_collection_id}"}
+    declarations: dict[str, list[str]] = defaultdict(list)
+    for match in re.finditer(
+        r"\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*"
+        r"([^;\n]+)",
+        reducer_executable[: reducer_returns[0].start()],
+    ):
+        declarations[match.group(1)].append(
+            reducer_body[match.start(2) : match.end(2)].strip()
+        )
+    changed = True
+    while changed:
+        changed = False
+        for alias, assignments in declarations.items():
+            if len(assignments) != 1:
+                continue
+            if len(
+                re.findall(
+                    rf"(?<![\w$.]){re.escape(alias)}\s*=(?!=)",
+                    reducer_executable,
+                )
+            ) != 1:
+                continue
+            candidate = re.sub(
+                r"\s",
+                "",
+                strip_outer_parentheses(assignments[0]),
+            )
+            if any(
+                candidate in {trusted, f"{trusted}||[]"}
+                for trusted in trusted_collections
+            ) and alias not in trusted_collections:
+                trusted_collections.add(alias)
+                changed = True
+
+    def is_final_selector(value: str) -> bool:
+        normalized = re.sub(
+            r"\s",
+            "",
+            strip_outer_parentheses(value),
+        )
+        for trusted in trusted_collections:
+            escaped = re.escape(trusted)
+            if re.fullmatch(
+                rf"(?:{escaped}\[{escaped}\.length-1\]|"
+                rf"{escaped}\.at\(-1\))"
+                r"(?:\|\|(?:\"\"|''))?",
+                normalized,
+            ):
+                return True
+        return False
+
+    def split_top_level_ternary(
+        value: str,
+    ) -> tuple[str, str, str] | None:
+        masked = javascript_code_mask(value)
+        depth = 0
+        question: int | None = None
+        colon: int | None = None
+        for position, character in enumerate(masked):
+            if character in "([{":
+                depth += 1
+            elif character in ")]}":
+                depth -= 1
+            elif character == "?" and depth == 0:
+                if question is not None:
+                    return None
+                question = position
+            elif character == ":" and depth == 0 and question is not None:
+                colon = position
+                break
+        if question is None or colon is None:
+            return None
+        return (
+            value[:question].strip(),
+            value[question + 1 : colon].strip(),
+            value[colon + 1 :].strip(),
+        )
+
+    returns_final = is_final_selector(returned_value)
+    conditional = split_top_level_ternary(
+        strip_outer_parentheses(returned_value)
+    )
+    if not returns_final and conditional is not None:
+        condition, when_true, when_false = conditional
+        normalized_condition = re.sub(
+            r"\s",
+            "",
+            strip_outer_parentheses(condition),
+        )
+        empty_literals = {'""', "''"}
+        for trusted in trusted_collections:
+            positive = {
+                f"{trusted}.length",
+                f"{trusted}.length>0",
+                f"{trusted}.length!=0",
+                f"{trusted}.length!==0",
+            }
+            negative = {
+                f"!{trusted}.length",
+                f"{trusted}.length==0",
+                f"{trusted}.length===0",
+            }
+            if (
+                normalized_condition in positive
+                and is_final_selector(when_true)
+                and when_false.strip() in empty_literals
+            ) or (
+                normalized_condition in negative
+                and when_true.strip() in empty_literals
+                and is_final_selector(when_false)
+            ):
+                returns_final = True
+                break
+    if not returns_final:
+        fail(
+            "post-loop reducer must actually return the final attachment "
+            "from the completed marker collection"
+        )
     reducer_outputs = mapping_outputs(reducer)
     response_ids = {
         output.attrib["var"]
@@ -2222,6 +3263,31 @@ def require_sequential_attachment_loop(
             "post-loop reducer must map result.response to "
             "lastAttachmentName"
         )
+
+
+def parallel_output_ownership_order(
+    branch_outputs: list[set[str]],
+) -> tuple[int, int, int]:
+    """Return Jira/attachment/communication branches with exclusive outputs."""
+    required = (
+        {"jiraAction"},
+        {"attachmentAction", "lastAttachmentName"},
+        {"slackAction", "responseMode"},
+    )
+    owned_outputs = set().union(*required)
+    for order in itertools.permutations(range(len(branch_outputs))):
+        if len(order) != len(required):
+            continue
+        if all(
+            branch_outputs[index] & owned_outputs == wanted
+            for wanted, index in zip(required, order)
+        ):
+            return order
+    fail(
+        "three parallel workstreams must exclusively own Jira, attachment "
+        "(including lastAttachmentName), and combined communication outputs; "
+        f"observed {branch_outputs}"
+    )
 
 
 def require_parallel_workstreams(
@@ -2255,44 +3321,17 @@ def require_parallel_workstreams(
     branch_outputs = [
         output_names_in_elements(elements, ids_to_names) for elements in region_elements
     ]
-    required = (
-        {"jiraAction"},
-        {"attachmentAction", "lastAttachmentName"},
-        {"slackAction", "responseMode"},
-    )
-    matching_order: tuple[set[str], ...] | None = None
-    for order in itertools.permutations(branch_outputs):
-        if all(wanted <= observed for wanted, observed in zip(required, order)):
-            matching_order = order
-            break
-    if matching_order is None:
-        fail(
-            "three parallel workstreams must independently own Jira, attachment "
-            "(including lastAttachmentName), and combined communication outputs; "
-            f"observed {branch_outputs}"
-        )
-
-    jira_index = next(
-        index
-        for index, outputs in enumerate(branch_outputs)
-        if {"jiraAction"} <= outputs
-    )
+    (
+        jira_index,
+        attachment_index,
+        communication_index,
+    ) = parallel_output_ownership_order(branch_outputs)
     require_material_jira_intent(
         region_elements[jira_index],
         ids_to_names,
     )
-    attachment_index = next(
-        index
-        for index, outputs in enumerate(branch_outputs)
-        if {"attachmentAction", "lastAttachmentName"} <= outputs
-    )
     require_sequential_attachment_loop(
         region_elements[attachment_index], variables, ids_to_names
-    )
-    communication_index = next(
-        index
-        for index, outputs in enumerate(branch_outputs)
-        if {"slackAction", "responseMode"} <= outputs
     )
 
     def connector_keys(elements: list[ET.Element]) -> set[tuple[str, str]]:
@@ -2452,6 +3491,13 @@ def main() -> None:
     )
     normalization_targets = require_normalization_script(
         script, variables, ids_to_names, variable_tasks
+    )
+    require_jira_update_uses_normalized_duplicate(
+        process,
+        script,
+        variables,
+        ids_to_names,
+        variable_tasks,
     )
     subprocess, boundary = require_assessment_subprocess(
         root, process, variables, ids_to_names, normalization_targets

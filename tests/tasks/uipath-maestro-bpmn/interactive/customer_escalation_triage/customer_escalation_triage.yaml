@@ -17,7 +17,7 @@ run_limits:
   expected_turns: 100
   max_turns: 180
   turn_timeout: 2400
-  task_timeout: 7200
+  task_timeout: 18000
 
 agent:
   # allowed_tools uses replace semantics. Preserve normal authoring tools and
@@ -175,6 +175,13 @@ simulation:
     validator, and pack successfully. The agent must not upload, publish, run,
     or debug the process; exact-artifact Alpha execution, side-effect
     verification, and cleanup belong to the grader.
+
+    Before DESIGN APPROVED, connector discovery must remain read-only and
+    stdout-only: do not create the project directory or registry-evidence
+    files. After approval, rerun the exact successful registry commands and
+    save their responses. A successful registry envelope without a populated
+    Data.IsEnrichment object is an unenriched fallback, not valid connector
+    evidence.
   constraints:
     - "Open naturally with the project name and the broad email-to-resolution/classification/Jira/attachments/Slack/acknowledgement problem. Say that policy, data, and failure semantics are incomplete and ask the agent to interview you before building. Reveal no variable names or detailed rules in the opening."
     - "Progressive disclosure is mandatory. In one reply, answer at most two coherent requirement areas even if the agent asks a long questionnaire. Explicitly say which asked areas still need a follow-up, without revealing their answers."
@@ -188,7 +195,7 @@ simulation:
     - "Reject any design playback that proposes other than exactly three ScriptTasks: one normalization-only script, one per-attachment data script inside a sequential multi-instance subprocess, and one post-loop final-attachment reducer. The scripts may map caseKey and lastAttachmentName as specified, but may not initialize or decide route, severity, engineeringNeeded, failureReason, Jira/attachment/Slack action, or response mode. All business policy and action assignments must remain visible through exclusive gateways and Variables tasks."
     - "Before approving a playback, audit the JiraUnavailable guard explicitly. Reject route-only proxies such as ExistingIssue-or-NewEscalation because ExistingIssue can be Sev3. The technical error must require jiraAvailable=false AND classified severity Sev1 or Sev2. Also reject reliance on the subprocess's normal output mapping after its error end: the boundary flow must visibly re-establish the prior Sev1-or-Sev2 classification and engineeringNeeded in parent scope."
     - "When asked about attachments or collection behavior, reveal that attachments is an array of objects with required name and driveFileId strings; non-manual items are handled sequentially in input order inside a multi-instance subprocess containing the per-item data script followed by the real Drive copy, and lastAttachmentName records the final processed item."
-    - "When asked about integrations or lifecycle boundaries, reveal the exact Alpha organization, tenant, folder, connection account names, external destinations, correlation requirements, no-call paths, and the five environment input fields. Require exact enriched registry responses for all four connector operations plus ScriptTask and Variables. State that the agent may perform read-only discovery and connection health checks, while the grader alone owns BPMN run/debug, remote side-effect verification, and cleanup."
+    - "When asked about integrations or lifecycle boundaries, reveal the exact Alpha organization, tenant, folder, connection account names, external destinations, correlation requirements, no-call paths, and the five environment input fields. Require exact enriched registry responses for all four connector operations plus ScriptTask and Variables. State that the agent may perform read-only, stdout-only discovery and connection health checks before approval, but creating the project directory or registry-evidence files counts as authoring and must wait for DESIGN APPROVED. After approval it must rerun the successful commands and persist the exact responses. A success envelope without a populated Data.IsEnrichment object is an unenriched fallback and must not be retained as connector evidence. The grader alone owns BPMN run/debug, remote side-effect verification, and cleanup."
     - "During design review, require every connector context to preserve the static registry route and carry non-empty operation plus the exact enriched objectName, then express each dynamic path, query, and body value through the exact enriched parameter target and request-field casing. Reject paths that embed expressions or query strings and bodies that use display names instead of registry request names. Clarify that dotted enrichment leaf names such as fields.project.key must be reconstructed as nested request JSON, not emitted as literal dotted top-level keys."
     - "During the connector playback, require Jira create fields to be exactly project.key, issuetype.id, reporter.id, summary, and description, with correlationId in both summary and description. Require Jira update to write correlationId through fields.description. Reject reporter.accountId, an omitted summary, an empty update body, or a claim that the issue key alone proves the side effect."
     - "During attachment review, require the sequential marker subprocess to map iterator[0].item into a typed named ScriptTask arg, expose the prepared itemName through a custom string marker output aggregated into a scoped Collection{string}, and make the post-loop reducer consume that completed ordered collection. Reject the nested ScriptTask pattern that passes iterator as =iterator because live Alpha binds it as null."
@@ -211,6 +218,9 @@ success_criteria:
       Do not inspect artifact contents and do not grade artifact correctness or
       agent self-reports. Use tool chronology only to verify that no Write,
       Edit, or artifact-producing Bash command occurred before DESIGN APPROVED.
+      Creating the project directory or registry-evidence files is
+      artifact-producing; registry commands inspected only through stdout are
+      read-only discovery.
       Read through the DESIGN APPROVED exchange, then make
       submit_verdict your first and only tool call. Return score 1.0 only when
       1. Before creating or editing project artifacts, the agent completed at
@@ -264,7 +274,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent left BPMN cloud execution and mutation to the grader"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+(debug|process\s+run|upload|publish|deploy)'
+    command_pattern: '(?:(?:^|[\n;&|])[ \t]*(?:(?:then|do|else)[ \t]+)?|\$\([ \t]*|`[ \t]*)(?:(?:[\(\{][ \t]*)|(?:[A-Za-z_][A-Za-z0-9_]*=(?:(?:"(?:\\.|[^"\\])*")|(?:\x27[^\x27\r\n]*\x27)|(?:[^\s;&|(){}]+))[ \t]+)|(?:(?:command|exec|!)(?:[ \t]+-[^\s;&|(){}]+)*[ \t]+)|(?:time(?:[ \t]+-[^\s;&|(){}]+)*[ \t]+)|(?:(?:[^\s;&|(){}]+/)?env(?:[ \t]+[^\s;&|(){}]+)*[ \t]+)|(?:(?:[^\s;&|(){}]+/)?(?:sh|bash|zsh)[ \t]+-c[ \t]+["\x27][ \t]*)|(?:eval[ \t]+["\x27][ \t]*))*(?:(?:[^\s;&|(){}]+/)?uip|"(?:[^"\s;&|(){}]+/)?uip"|\x27(?:[^\x27\s;&|(){}]+/)?uip\x27|\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})|"\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})"|"?\$\((?:which|command[ \t]+-v)[ \t]+(?:[^\s)]+/)?uip\)"?)(?=[^\r\n;&|]*?(?:\bmaestro\b[^\r\n;&|]*?\bbpmn\b[^\r\n;&|]*?(?:\bdebug(?=\s|$)|\bdebug-instance\b[^\r\n;&|]*?\b(?:breakpoints|cancel|continue|create|variables-set)\b|\bprocess\b[^\r\n;&|]*?\b(?:publish|run)\b|\bprocess\b[^\r\n;&|]*?\b(?:settings|variable-tags)\b[^\r\n;&|]*?\bset\b|\binstance\b[^\r\n;&|]*?\b(?:cancel|goto|migrate|pause|resume|retry|variables-set)\b|\binstance\b[^\r\n;&|]*?\belement\b[^\r\n;&|]*?\b(?:cancel|retry)\b|\binstance\b[^\r\n;&|]*?\bmessage\b[^\r\n;&|]*?\bsend\b)|\bsolution\b[^\r\n;&|]*?(?:\b(?:upload|publish|delete)\b|\bdeploy\b[^\r\n;&|]*?\b(?:activate|run|uninstall)\b|\bpackages\b[^\r\n;&|]*?\bdelete\b|\bprojects?\b[^\r\n;&|]*?\b(?:publish|resync)\b)|\bis\b[^\r\n;&|]*?(?:\bconnections\b[^\r\n;&|]*?\b(?:create|delete|edit|rename|set-default|update-polling-interval)\b|\bresources\b[^\r\n;&|]*?\brun\b[^\r\n;&|]*?\b(?:create|update|delete|replace)\b|\bconnectors\b[^\r\n;&|]*?\b(?:import|publish)\b)))'
     weight: 1.0
     pass_threshold: 1.0
 
@@ -324,8 +334,8 @@ success_criteria:
 
   - type: run_command
     description: "The exact submitted project executes hidden scenarios in live Alpha; runtime variables, element traces, incidents, typed error handling, connector side effects, sequential iteration order, and exact business outputs are asserted, and every created issue, file, message, and ephemeral solution is deleted"
-    command: "python3 $TASK_DIR/check_customer_escalation_behavior.py"
-    timeout: 2400
+    command: "python3 $TASK_DIR/check_customer_escalation_structure.py && python3 $TASK_DIR/check_customer_escalation_behavior.py"
+    timeout: 10800
     expected_exit_code: 0
     weight: 8.0
     pass_threshold: 1.0

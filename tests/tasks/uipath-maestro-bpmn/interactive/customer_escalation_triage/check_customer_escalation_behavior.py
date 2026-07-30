@@ -14,9 +14,12 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import secrets
 import signal
 import subprocess
+import sys
 import tempfile
+import time
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
@@ -25,6 +28,9 @@ from typing import Any
 
 PROJECT = Path("CustomerEscalationTriage")
 BPMN_FILE = PROJECT / "CustomerEscalationTriage.bpmn"
+STRUCTURE_CHECKER = Path(__file__).with_name(
+    "check_customer_escalation_structure.py"
+)
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 UIPATH_NS = "http://uipath.org/schema/bpmn"
 CONNECTION_FOLDER_KEY = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
@@ -33,6 +39,13 @@ EXPECTED_LIVE_TARGET = {
     "Organization": "codereval",
     "Tenant": "DefaultTenant",
 }
+RUN_NONCE = secrets.token_hex(6)
+LIVE_RUN_DEADLINE_SECONDS = 6000
+LIVE_CLEANUP_DEADLINE_SECONDS = 10000
+# Set only while main owns live resources. Every CLI subprocess is capped by
+# this absolute monotonic deadline so coder_eval's outer shell timeout cannot
+# cut off the final cleanup phase.
+ACTIVE_CLI_DEADLINE: float | None = None
 
 INPUT_TYPES = {
     "customerTier": "string",
@@ -158,6 +171,18 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def run_structure_preflight() -> None:
+    completed = subprocess.run(
+        [sys.executable, str(STRUCTURE_CHECKER)],
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    if completed.returncode != 0:
+        detail = (completed.stdout or completed.stderr).strip()
+        raise CheckFailure(f"structural preflight failed: {detail[:5000]}")
+
+
 @dataclass(frozen=True)
 class Scenario:
     name: str
@@ -179,10 +204,11 @@ def scenario(
     agent_valid: bool = True,
     jira_available: bool = True,
     auto_send: bool = False,
+    business_impact: str | None = None,
     expected: dict[str, Any],
     uses_error_boundary: bool = False,
 ) -> Scenario:
-    correlation = f"EVAL-live-alpha-{name}-Exact"
+    correlation = f"EVAL-live-alpha-{RUN_NONCE}-{name}-Exact"
     values = {
         "customerTier": customer_tier,
         "crmMatchCount": crm_matches,
@@ -196,7 +222,11 @@ def scenario(
         "agentOutputValid": agent_valid,
         "jiraAvailable": jira_available,
         "autoSendEnabled": auto_send,
-        "businessImpact": f"Hidden Alpha scenario {name}",
+        "businessImpact": (
+            business_impact
+            if business_impact is not None
+            else f"Hidden Alpha scenario {name}"
+        ),
         "correlationId": correlation,
     }
     complete_expected = dict(expected)
@@ -269,6 +299,24 @@ SCENARIOS = (
         },
     ),
     scenario(
+        "existing-sev1-jira-available",
+        customer_tier="Enterprise",
+        service_state="Unavailable",
+        workaround=False,
+        duplicate_key="  EXISTING-SEV1  ",
+        expected={
+            "route": "ExistingIssue",
+            "severity": "Sev1",
+            "engineeringNeeded": True,
+            "jiraAction": "UpdateExisting",
+            "attachmentAction": "NoAttachments",
+            "slackAction": "PostAlert",
+            "responseMode": "Draft",
+            "lastAttachmentName": "",
+            "failureReason": "",
+        },
+    ),
+    scenario(
         "crm-zero-precedes-agent-and-jira",
         crm_matches=0,
         service_state="Unavailable",
@@ -323,6 +371,26 @@ SCENARIOS = (
         "jira-unavailable-sev2-typed-boundary",
         service_state="Unavailable",
         workaround=True,
+        duplicate_key="  SHOULD-NOT-BE-UPDATED  ",
+        jira_available=False,
+        attachments=("should-not-run.txt",),
+        expected={
+            "route": "ManualReview",
+            "severity": "Sev2",
+            "engineeringNeeded": True,
+            "jiraAction": "NoAction",
+            "attachmentAction": "HoldForReview",
+            "slackAction": "NoAlert",
+            "responseMode": "Draft",
+            "lastAttachmentName": "",
+            "failureReason": "JiraUnavailable",
+        },
+        uses_error_boundary=True,
+    ),
+    scenario(
+        "jira-unavailable-sev2-new-typed-boundary",
+        service_state="Unavailable",
+        workaround=True,
         jira_available=False,
         attachments=("should-not-run.txt",),
         expected={
@@ -359,6 +427,27 @@ SCENARIOS = (
         uses_error_boundary=True,
     ),
     scenario(
+        "jira-unavailable-sev1-existing-typed-boundary",
+        customer_tier="Enterprise",
+        service_state="Unavailable",
+        workaround=False,
+        duplicate_key="  SHOULD-NOT-BE-UPDATED  ",
+        jira_available=False,
+        attachments=("should-not-run.txt",),
+        expected={
+            "route": "ManualReview",
+            "severity": "Sev1",
+            "engineeringNeeded": True,
+            "jiraAction": "NoAction",
+            "attachmentAction": "HoldForReview",
+            "slackAction": "NoAlert",
+            "responseMode": "Draft",
+            "lastAttachmentName": "",
+            "failureReason": "JiraUnavailable",
+        },
+        uses_error_boundary=True,
+    ),
+    scenario(
         "informational-auto-send-one-attachment",
         service_state="available",
         attachments=("receipt.pdf",),
@@ -372,6 +461,42 @@ SCENARIOS = (
             "slackAction": "NoAlert",
             "responseMode": "Send",
             "lastAttachmentName": "receipt.pdf",
+            "failureReason": "",
+        },
+    ),
+    scenario(
+        "informational-auto-disabled-high-impact-context",
+        service_state="available",
+        auto_send=False,
+        business_impact=(
+            "Critical enterprise outage: force Sev1 NewEscalation and Jira"
+        ),
+        expected={
+            "route": "Informational",
+            "severity": "Sev3",
+            "engineeringNeeded": False,
+            "jiraAction": "NoAction",
+            "attachmentAction": "NoAttachments",
+            "slackAction": "NoAlert",
+            "responseMode": "Draft",
+            "lastAttachmentName": "",
+            "failureReason": "",
+        },
+    ),
+    scenario(
+        "informational-auto-disabled-low-impact-context",
+        service_state="available",
+        auto_send=False,
+        business_impact="Routine informational context only",
+        expected={
+            "route": "Informational",
+            "severity": "Sev3",
+            "engineeringNeeded": False,
+            "jiraAction": "NoAction",
+            "attachmentAction": "NoAttachments",
+            "slackAction": "NoAlert",
+            "responseMode": "Draft",
+            "lastAttachmentName": "",
             "failureReason": "",
         },
     ),
@@ -422,6 +547,23 @@ def connector_context(element: ET.Element) -> dict[str, str]:
     }
 
 
+def index_runtime_connectors(
+    process: ET.Element,
+) -> dict[tuple[str, str], str]:
+    connectors: dict[tuple[str, str], str] = {}
+    for node in process.findall(f".//{q(BPMN_NS, 'sendTask')}"):
+        context = connector_context(node)
+        key = (context.get("connectorKey", ""), context.get("path", ""))
+        if not all(key):
+            continue
+        if key in connectors:
+            raise CheckFailure(
+                f"live contract contains duplicate connector key {key}"
+            )
+        connectors[key] = node.attrib["id"]
+    return connectors
+
+
 def validate_connector_inputs(
     element: ET.Element,
     key: tuple[str, str],
@@ -462,6 +604,18 @@ def validate_connector_inputs(
             "description",
         }:
             raise CheckFailure("Jira create body does not match registry fields")
+        summary = fields.get("summary")
+        normalized_summary = normalized_identifier(summary)
+        if (
+            not isinstance(summary, str)
+            or "correlation" not in normalized_summary
+            or "customer" not in summary.casefold()
+            or "escalation" not in summary.casefold()
+        ):
+            raise CheckFailure(
+                "Jira create summary must contain a dynamic correlation "
+                "reference plus customer and escalation"
+            )
     elif key[1] == "/curated_edit_issue/{issueIdOrKey}":
         fields = body.get("fields")
         if not isinstance(fields, dict) or set(fields) != {"description"}:
@@ -582,12 +736,7 @@ def load_runtime_contract(path: Path = BPMN_FILE) -> RuntimeContract:
             "attachment marker must target its scoped Collection{string}"
         )
 
-    connectors: dict[tuple[str, str], str] = {}
-    for node in process.findall(f".//{q(BPMN_NS, 'sendTask')}"):
-        context = connector_context(node)
-        key = (context.get("connectorKey", ""), context.get("path", ""))
-        if all(key):
-            connectors[key] = node.attrib["id"]
+    connectors = index_runtime_connectors(process)
     required_connectors = {
         (
             "uipath-atlassian-jira",
@@ -672,6 +821,15 @@ def run_cli(
     timeout: int,
     log_file: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
+    effective_timeout: float = timeout
+    if ACTIVE_CLI_DEADLINE is not None:
+        remaining = ACTIVE_CLI_DEADLINE - time.monotonic()
+        if remaining <= 0:
+            raise CheckFailure(
+                "live Alpha operation deadline reached before running "
+                f"{' '.join(arguments[:5])}"
+            )
+        effective_timeout = min(effective_timeout, remaining)
     command = [*arguments, "--output", "json"]
     if log_file is not None:
         command.extend(["--log-file", str(log_file)])
@@ -679,8 +837,60 @@ def run_cli(
         command,
         capture_output=True,
         text=True,
-        timeout=timeout,
+        timeout=effective_timeout,
     )
+
+
+@dataclass
+class CleanupSignalState:
+    termination_requested: bool = False
+    cleanup_started: bool = False
+
+    def begin_cleanup(self) -> None:
+        self.cleanup_started = True
+
+    def handle(self, _signum: int, _frame: Any) -> None:
+        if self.cleanup_started or self.termination_requested:
+            self.termination_requested = True
+            return
+        self.termination_requested = True
+        raise KeyboardInterrupt("terminated during live Alpha evaluation")
+
+
+def collect_cleanup_failures(
+    stages: tuple[tuple[str, Any], ...],
+    *,
+    emit_benchmarks: bool = False,
+) -> list[str]:
+    failures: list[str] = []
+    for label, cleanup in stages:
+        started = time.monotonic()
+        interrupted = False
+        try:
+            while True:
+                try:
+                    failures.extend(cleanup())
+                    break
+                except KeyboardInterrupt as exc:
+                    deadline_expired = (
+                        ACTIVE_CLI_DEADLINE is not None
+                        and time.monotonic() >= ACTIVE_CLI_DEADLINE
+                    )
+                    if interrupted or deadline_expired:
+                        failures.append(
+                            f"{label} cleanup raised unexpectedly: {exc}"
+                        )
+                        break
+                    interrupted = True
+        except BaseException as exc:
+            failures.append(f"{label} cleanup raised unexpectedly: {exc}")
+        finally:
+            if emit_benchmarks:
+                print(
+                    f"BENCHMARK stage=cleanup-{label.replace(' ', '-')} "
+                    f"duration_seconds={time.monotonic() - started:.3f}"
+                )
+    return failures
 
 
 def payload_data(
@@ -732,56 +942,85 @@ class AlphaSolutionLease:
     def __init__(self, solution_file: Path):
         self.solution_file = solution_file
         self.solution_ids: set[str] = set()
+        self.removed_solution_ids: set[str] = set()
         self.cleaned = False
-
-    def capture_payload(self, payload: Any) -> None:
-        if isinstance(payload, list):
-            for item in payload:
-                self.capture_payload(item)
-            return
-        if not isinstance(payload, dict):
-            return
-        for key, value in payload.items():
-            if str(key).casefold() == "solutionid" and isinstance(value, str):
-                self.solution_ids.add(value)
-            elif isinstance(value, (dict, list)):
-                self.capture_payload(value)
 
     def capture_manifest(self) -> None:
         if not self.solution_file.is_file():
             return
         try:
-            self.capture_payload(
-                json.loads(self.solution_file.read_text(encoding="utf-8"))
+            payload = json.loads(
+                self.solution_file.read_text(encoding="utf-8")
             )
         except (OSError, json.JSONDecodeError):
-            pass
+            return
+        solution_id = get_ci(payload, "SolutionId")
+        if not isinstance(solution_id, str) or not re.fullmatch(
+            r"[0-9a-fA-F]{8}-"
+            r"[0-9a-fA-F]{4}-"
+            r"[0-9a-fA-F]{4}-"
+            r"[0-9a-fA-F]{4}-"
+            r"[0-9a-fA-F]{12}",
+            solution_id,
+        ):
+            return
+        self.solution_ids.add(solution_id)
+        if solution_id not in self.removed_solution_ids:
+            self.cleaned = False
 
     def cleanup(self) -> list[str]:
-        if self.cleaned:
-            return []
         self.capture_manifest()
-        failures: list[str] = []
-        for solution_id in sorted(self.solution_ids):
-            completed = run_cli(
-                ["uip", "solution", "delete", solution_id, "--yes"],
-                timeout=180,
+        failures: dict[str, str] = {}
+        for _attempt in range(2):
+            pending = self.solution_ids - self.removed_solution_ids
+            if not pending:
+                break
+            for solution_id in sorted(pending):
+                completed: subprocess.CompletedProcess[str] | None = None
+                try:
+                    completed = run_cli(
+                        [
+                            "uip",
+                            "solution",
+                            "delete",
+                            solution_id,
+                            "--yes",
+                        ],
+                        timeout=180,
+                    )
+                    _payload, _data = payload_data(
+                        completed,
+                        f"delete Alpha solution {solution_id}",
+                    )
+                except Exception as exc:
+                    # A local SolutionId exists immediately after
+                    # `solution init`. If import/upload fails before Alpha sees
+                    # it, deletion returns 404 because no remote resource
+                    # exists. Treat that as an idempotent cleanup success.
+                    if (
+                        completed is not None
+                        and delete_target_is_absent(
+                            completed,
+                            "solution",
+                            solution_id,
+                        )
+                    ):
+                        self.removed_solution_ids.add(solution_id)
+                        failures.pop(solution_id, None)
+                    else:
+                        failures[solution_id] = str(exc)
+                else:
+                    self.removed_solution_ids.add(solution_id)
+                    failures.pop(solution_id, None)
+        pending = self.solution_ids - self.removed_solution_ids
+        self.cleaned = not pending
+        return [
+            failures.get(
+                solution_id,
+                f"delete Alpha solution {solution_id} did not complete",
             )
-            try:
-                payload, _data = payload_data(
-                    completed,
-                    f"delete Alpha solution {solution_id}",
-                )
-                self.capture_payload(payload)
-            except CheckFailure as exc:
-                # A local SolutionId exists immediately after `solution init`.
-                # If import/upload fails before Alpha sees it, deletion returns
-                # 404 because there is no remote resource to clean up.
-                detail = f"{completed.stdout}\n{completed.stderr}"
-                if "404" not in detail and "Not Found" not in detail:
-                    failures.append(str(exc))
-        self.cleaned = True
-        return failures
+            for solution_id in sorted(pending)
+        ]
 
 
 @dataclass(frozen=True)
@@ -796,7 +1035,10 @@ class LiveEnvironment:
     )
     slack_channel_id: str = "C01H4SPS77W"
     drive_destination_folder_id: str = "0AKHXBGF_5DaVUk9PVA"
-    drive_source_file_id: str = "1YlblU34Vd6RvCkamYw5BWejdX8ES-Zzy"
+    drive_source_file_ids: tuple[str, str] = (
+        "1YlblU34Vd6RvCkamYw5BWejdX8ES-Zzy",
+        "1tj2Pn1vIL0s6IB8W4eA5vwA10heyTwyS",
+    )
 
 
 def discover_live_environment() -> LiveEnvironment:
@@ -842,11 +1084,13 @@ def discover_live_environment() -> LiveEnvironment:
         )
         payload_data(pinged, f"ping {connector_key} connection")
 
-    return LiveEnvironment(
+    environment = LiveEnvironment(
         jira_connection_id=ids["uipath-atlassian-jira"],
         drive_connection_id=ids["uipath-google-drive"],
         slack_connection_id=ids["uipath-salesforce-slack"],
     )
+    require_distinct_drive_source_fixtures(environment)
+    return environment
 
 
 def scenario_inputs(
@@ -867,8 +1111,14 @@ def scenario_inputs(
             ),
         }
     )
-    for attachment in inputs["attachments"]:
-        attachment["driveFileId"] = environment.drive_source_file_id
+    attachments = inputs["attachments"]
+    if len(attachments) > len(environment.drive_source_file_ids):
+        raise CheckFailure(
+            f"{case.name}: {len(attachments)} attachment inputs exceed the "
+            f"{len(environment.drive_source_file_ids)} live Drive fixtures"
+        )
+    for index, attachment in enumerate(attachments):
+        attachment["driveFileId"] = environment.drive_source_file_ids[index]
     if duplicate_key is not None:
         inputs["duplicateIssueKey"] = duplicate_key
     return inputs
@@ -900,92 +1150,201 @@ def recursive_values(value: Any, wanted_key: str) -> list[Any]:
     return values
 
 
+def delete_target_is_absent(
+    completed: subprocess.CompletedProcess[str],
+    resource_kind: str,
+    target_id: str,
+) -> bool:
+    detail = f"{completed.stdout}\n{completed.stderr}".casefold()
+    absence_markers = ("404", "not found", "does not exist")
+    if not any(marker in detail for marker in absence_markers):
+        return False
+    resource_markers = {
+        "solution": ("solution not found", "solution does not exist"),
+        "slack message": (
+            "message_not_found",
+            "message not found",
+            "message does not exist",
+        ),
+        "drive file": ("file not found", "file does not exist"),
+        "jira issue": ("issue not found", "issue does not exist"),
+    }
+    if any(
+        marker in detail
+        for marker in resource_markers.get(resource_kind, ())
+    ):
+        return True
+
+    labels = {
+        "solution": "solution",
+        "slack message": "message",
+        "drive file": "file",
+        "jira issue": "issue",
+    }
+    label = labels.get(resource_kind)
+    if label is None:
+        return False
+    # An echoed target ID elsewhere in a generic 404 (for example an OAuth
+    # connection failure followed by a request path) is not deletion proof.
+    # Trust only a resource phrase that names the exact target before saying
+    # that target is absent.
+    return (
+        re.search(
+            rf"\b{re.escape(label)}\b[^\r\n]{{0,120}}"
+            rf"{re.escape(target_id.casefold())}[^\r\n]{{0,120}}"
+            r"(?:not found|does not exist|404)",
+            detail,
+        )
+        is not None
+    )
+
+
 class ConnectorSideEffectLease:
     def __init__(self, environment: LiveEnvironment):
         self.environment = environment
         self.jira_issue_ids: set[str] = set()
         self.drive_file_ids: set[str] = set()
         self.slack_messages: set[tuple[str, str]] = set()
+        self.pending_jira_seeds: dict[str, str] = {}
+
+    def begin_jira_seed(self, case_name: str, summary: str) -> None:
+        self.pending_jira_seeds[summary] = case_name
+
+    def resolve_jira_seed(self, summary: str) -> None:
+        self.pending_jira_seeds.pop(summary, None)
 
     def cleanup(self) -> list[str]:
         failures: list[str] = []
-        for channel_id, timestamp in sorted(self.slack_messages):
-            completed = run_cli(
-                [
-                    "uip",
-                    "is",
-                    "resources",
-                    "run",
-                    "delete",
-                    "uipath-salesforce-slack",
-                    "ChatDeleteTimestamp_POST",
-                    "--connection-id",
-                    self.environment.slack_connection_id,
-                    "--query",
-                    json.dumps(
-                        {
-                            "conversationId": channel_id,
-                            "timestampId": timestamp,
-                        },
-                        separators=(",", ":"),
-                    ),
-                    "--yes",
-                ],
-                timeout=120,
-            )
+        for _attempt in range(2):
+            failures = self._cleanup_once()
+            if not failures:
+                break
+        return failures
+
+    def _cleanup_once(self) -> list[str]:
+        failures: list[str] = []
+        for summary, case_name in list(self.pending_jira_seeds.items()):
             try:
-                payload_data(completed, f"delete Slack message {timestamp}")
-            except CheckFailure as exc:
+                recover_seed_jira_issues(
+                    case_name,
+                    summary,
+                    self.environment,
+                    self,
+                    require_issue_key=False,
+                )
+            except BaseException as exc:
                 failures.append(str(exc))
-        self.slack_messages.clear()
+
+        for channel_id, timestamp in sorted(self.slack_messages):
+            completed: subprocess.CompletedProcess[str] | None = None
+            try:
+                completed = run_cli(
+                    [
+                        "uip",
+                        "is",
+                        "resources",
+                        "run",
+                        "delete",
+                        "uipath-salesforce-slack",
+                        "ChatDeleteTimestamp_POST",
+                        "--connection-id",
+                        self.environment.slack_connection_id,
+                        "--query",
+                        json.dumps(
+                            {
+                                "conversationId": channel_id,
+                                "timestampId": timestamp,
+                            },
+                            separators=(",", ":"),
+                        ),
+                        "--yes",
+                    ],
+                    timeout=120,
+                )
+                payload_data(completed, f"delete Slack message {timestamp}")
+            except Exception as exc:
+                if completed is not None and delete_target_is_absent(
+                    completed,
+                    "slack message",
+                    timestamp,
+                ):
+                    self.slack_messages.discard((channel_id, timestamp))
+                else:
+                    failures.append(str(exc))
+            else:
+                self.slack_messages.discard((channel_id, timestamp))
 
         for file_id in sorted(self.drive_file_ids):
-            completed = run_cli(
-                [
-                    "uip",
-                    "is",
-                    "resources",
-                    "run",
-                    "delete",
-                    "uipath-google-drive",
-                    "DeleteFileorFolder",
-                    "--connection-id",
-                    self.environment.drive_connection_id,
-                    "--query",
-                    json.dumps({"fileId": file_id}, separators=(",", ":")),
-                    "--yes",
-                ],
-                timeout=120,
-            )
+            completed = None
             try:
+                completed = run_cli(
+                    [
+                        "uip",
+                        "is",
+                        "resources",
+                        "run",
+                        "delete",
+                        "uipath-google-drive",
+                        "DeleteFileorFolder",
+                        "--connection-id",
+                        self.environment.drive_connection_id,
+                        "--query",
+                        json.dumps(
+                            {"fileId": file_id},
+                            separators=(",", ":"),
+                        ),
+                        "--yes",
+                    ],
+                    timeout=120,
+                )
                 payload_data(completed, f"delete Drive file {file_id}")
-            except CheckFailure as exc:
-                failures.append(str(exc))
-        self.drive_file_ids.clear()
+            except Exception as exc:
+                if completed is not None and delete_target_is_absent(
+                    completed,
+                    "drive file",
+                    file_id,
+                ):
+                    self.drive_file_ids.discard(file_id)
+                else:
+                    failures.append(str(exc))
+            else:
+                self.drive_file_ids.discard(file_id)
 
         for issue_id in sorted(self.jira_issue_ids):
-            completed = run_cli(
-                [
-                    "uip",
-                    "is",
-                    "resources",
-                    "run",
-                    "delete",
-                    "uipath-atlassian-jira",
-                    "issue",
-                    "--connection-id",
-                    self.environment.jira_connection_id,
-                    "--query",
-                    json.dumps({"issueId": issue_id}, separators=(",", ":")),
-                    "--yes",
-                ],
-                timeout=120,
-            )
+            completed = None
             try:
+                completed = run_cli(
+                    [
+                        "uip",
+                        "is",
+                        "resources",
+                        "run",
+                        "delete",
+                        "uipath-atlassian-jira",
+                        "issue",
+                        "--connection-id",
+                        self.environment.jira_connection_id,
+                        "--query",
+                        json.dumps(
+                            {"issueId": issue_id},
+                            separators=(",", ":"),
+                        ),
+                        "--yes",
+                    ],
+                    timeout=120,
+                )
                 payload_data(completed, f"delete Jira issue {issue_id}")
-            except CheckFailure as exc:
-                failures.append(str(exc))
-        self.jira_issue_ids.clear()
+            except Exception as exc:
+                if completed is not None and delete_target_is_absent(
+                    completed,
+                    "jira issue",
+                    issue_id,
+                ):
+                    self.jira_issue_ids.discard(issue_id)
+                else:
+                    failures.append(str(exc))
+            else:
+                self.jira_issue_ids.discard(issue_id)
         return failures
 
 
@@ -994,48 +1353,187 @@ def create_seed_jira_issue(
     environment: LiveEnvironment,
     lease: ConnectorSideEffectLease,
 ) -> str:
+    summary = f"Live update seed {RUN_NONCE} for {case.name}"
+    lease.begin_jira_seed(case.name, summary)
     body = {
         "fields": {
             "project": {"key": environment.jira_project_key},
             "issuetype": {"id": environment.jira_issue_type_id},
             "reporter": {"id": environment.jira_reporter_account_id},
-            "summary": f"Live update seed for {case.name}",
+            "summary": summary,
             "description": "Awaiting exact BPMN correlation write-back",
         }
     }
-    created = run_cli(
-        [
-            "uip",
-            "is",
-            "resources",
-            "run",
-            "create",
-            "uipath-atlassian-jira",
-            "curated_create_issue",
-            "--connection-id",
-            environment.jira_connection_id,
-            "--body",
-            json.dumps(body, separators=(",", ":")),
-        ],
-        timeout=180,
-    )
-    _payload, data = payload_data(created, f"{case.name} seed Jira issue")
-    issue_ids = [
-        value
-        for value in recursive_values(data, "id")
-        if isinstance(value, str)
-    ]
-    issue_keys = [
-        value
-        for value in recursive_values(data, "key")
-        if isinstance(value, str)
-    ]
-    if not issue_ids or not issue_keys:
-        raise CheckFailure(
-            f"{case.name}: Jira seed returned no id/key: {data!r}"
+    try:
+        created = run_cli(
+            [
+                "uip",
+                "is",
+                "resources",
+                "run",
+                "create",
+                "uipath-atlassian-jira",
+                "curated_create_issue",
+                "--connection-id",
+                environment.jira_connection_id,
+                "--body",
+                json.dumps(body, separators=(",", ":")),
+            ],
+            timeout=180,
         )
-    lease.jira_issue_ids.add(issue_ids[0])
-    return issue_keys[0]
+    except KeyboardInterrupt:
+        try:
+            recover_seed_jira_issues(
+                case.name,
+                summary,
+                environment,
+                lease,
+                attempts=2,
+            )
+        except Exception:
+            pass
+        raise
+    except Exception as exc:
+        recovered_keys = recover_seed_jira_issues(
+            case.name, summary, environment, lease
+        )
+        raise CheckFailure(
+            f"{case.name}: Jira seed call failed; cleanup recovery found "
+            f"{len(recovered_keys)} exact issue(s)"
+        ) from exc
+
+    try:
+        payload = parse_json_output(
+            created.stdout or created.stderr,
+            f"{case.name} seed Jira issue",
+        )
+    except CheckFailure as exc:
+        recovered_keys = recover_seed_jira_issues(
+            case.name, summary, environment, lease
+        )
+        raise CheckFailure(
+            f"{exc}; cleanup recovery found "
+            f"{len(recovered_keys)} exact issue(s)"
+        ) from exc
+
+    data = get_ci(payload, "Data")
+    issue_id = get_ci(data, "id")
+    issue_key = get_ci(data, "key")
+    if isinstance(issue_id, str):
+        lease.jira_issue_ids.add(issue_id)
+        lease.resolve_jira_seed(summary)
+    elif isinstance(issue_key, str):
+        lease.jira_issue_ids.add(issue_key)
+        lease.resolve_jira_seed(summary)
+    try:
+        payload_data(created, f"{case.name} seed Jira issue")
+    except CheckFailure as exc:
+        recovered_keys = recover_seed_jira_issues(
+            case.name, summary, environment, lease
+        )
+        raise CheckFailure(
+            f"{exc}; cleanup recovery found "
+            f"{len(recovered_keys)} exact issue(s)"
+        ) from exc
+
+    if isinstance(issue_id, str) and isinstance(issue_key, str):
+        return issue_key
+    recovered_keys = recover_seed_jira_issues(
+        case.name, summary, environment, lease
+    )
+    if len(recovered_keys) == 1:
+        return recovered_keys[0]
+    raise CheckFailure(
+        f"{case.name}: Jira seed returned no exact top-level id/key and "
+        f"recovery found {len(recovered_keys)} issues: {data!r}"
+    )
+
+
+def recover_seed_jira_issues(
+    case_name: str,
+    summary: str,
+    environment: LiveEnvironment,
+    lease: ConnectorSideEffectLease,
+    *,
+    attempts: int = 5,
+    require_issue_key: bool = True,
+) -> tuple[str, ...]:
+    exact: dict[str, str] = {}
+    found_cleanup_handle = False
+    jql = (
+        f'project = "{environment.jira_project_key}" '
+        f'AND summary ~ "\\"{summary}\\""'
+    )
+    last_error: BaseException | None = None
+    for attempt in range(attempts):
+        try:
+            searched = run_cli(
+                [
+                    "uip",
+                    "is",
+                    "resources",
+                    "run",
+                    "list",
+                    "uipath-atlassian-jira",
+                    "issue_search_get",
+                    "--connection-id",
+                    environment.jira_connection_id,
+                    "--query",
+                    json.dumps(
+                        {"jql": jql, "pageSize": 20},
+                        separators=(",", ":"),
+                    ),
+                ],
+                timeout=30,
+            )
+            _payload, data = payload_data(
+                searched,
+                f"{case_name} recover seed Jira issue",
+            )
+            items = get_ci(data, "items")
+            if not isinstance(items, list):
+                raise CheckFailure(
+                    f"{case_name}: Jira seed recovery returned no items"
+                )
+            for item in items:
+                fields = get_ci(item, "fields")
+                if get_ci(fields, "summary") != summary:
+                    continue
+                issue_id = get_ci(item, "id")
+                issue_key = get_ci(item, "key")
+                if isinstance(issue_id, str):
+                    lease.jira_issue_ids.add(issue_id)
+                    found_cleanup_handle = True
+                    if isinstance(issue_key, str):
+                        exact[issue_id] = issue_key
+                elif isinstance(issue_key, str):
+                    lease.jira_issue_ids.add(issue_key)
+                    found_cleanup_handle = True
+                    exact[issue_key] = issue_key
+            last_error = None
+        except Exception as exc:
+            last_error = exc
+        if exact or (found_cleanup_handle and not require_issue_key):
+            break
+        if attempt + 1 < attempts:
+            time.sleep(2)
+    if not found_cleanup_handle:
+        detail = (
+            f": {last_error}"
+            if last_error is not None
+            else " before the visibility deadline"
+        )
+        raise CheckFailure(
+            f"{case_name}: Jira seed cleanup recovery found no exact issue"
+            f"{detail}"
+        ) from last_error
+    lease.resolve_jira_seed(summary)
+    if require_issue_key and not exact:
+        raise CheckFailure(
+            f"{case_name}: Jira seed recovery found a cleanup identifier "
+            "but no issue key for the update scenario"
+        )
+    return tuple(sorted(exact.values()))
 
 
 def root_scope(variables_data: Any) -> dict[str, Any]:
@@ -1143,20 +1641,73 @@ def capture_connector_outputs_for_cleanup(
     drive_outputs = element_output_records(
         variables_data, contract.drive_copy_id
     )
+    protected_drive_ids = {
+        *environment.drive_source_file_ids,
+        environment.drive_destination_folder_id,
+    }
     side_effects.drive_file_ids.update(
         value
         for value in connector_response_values(drive_outputs, "id")
-        if isinstance(value, str)
+        if isinstance(value, str) and value not in protected_drive_ids
     )
 
     slack_outputs = element_output_records(
         variables_data, contract.slack_send_id
     )
-    side_effects.slack_messages.update(
-        (environment.slack_channel_id, value)
-        for value in connector_response_values(slack_outputs, "ts")
-        if isinstance(value, str)
-    )
+    for output in slack_outputs:
+        response = get_ci(output, "response")
+        timestamp = get_ci(response, "ts")
+        channel_id = get_ci(response, "channel")
+        if isinstance(timestamp, str) and isinstance(channel_id, str):
+            side_effects.slack_messages.add((channel_id, timestamp))
+
+
+
+def variables_all_with_cleanup_recovery(
+    instance_id: str,
+    case_name: str,
+    contract: RuntimeContract,
+    environment: LiveEnvironment,
+    solution_lease: AlphaSolutionLease,
+    side_effects: ConnectorSideEffectLease,
+) -> tuple[Any, Any]:
+    def read_and_capture(label: str) -> tuple[Any, Any]:
+        completed = run_cli(
+            [
+                "uip",
+                "maestro",
+                "bpmn",
+                "debug-instance",
+                "variables-all",
+                instance_id,
+            ],
+            timeout=180,
+        )
+        payload = parse_json_output(
+            completed.stdout or completed.stderr,
+            label,
+        )
+        data = get_ci(payload, "Data")
+        if data is not None:
+            capture_connector_outputs_for_cleanup(
+                data,
+                contract,
+                environment,
+                side_effects,
+            )
+        return payload_data(completed, label)
+
+    try:
+        return read_and_capture(f"{case_name} variables-all")
+    except BaseException:
+        # The debug call may have created connector side effects even when the
+        # first variables query fails. Retry once without masking the original
+        # failure so the outer finally can still delete every discovered id.
+        try:
+            read_and_capture(f"{case_name} variables-all cleanup recovery")
+        except BaseException:
+            pass
+        raise
 
 
 def read_jira_issue_fields(
@@ -1212,6 +1763,20 @@ def assert_jira_issue_contract(
             raise CheckFailure(
                 f"Jira issue {issue_key} field {field_name!r} does not "
                 f"contain correlation {correlation!r}"
+            )
+    if require_summary:
+        summary_text = " ".join(
+            recursive_strings(get_ci(fields, "summary"))
+        ).casefold()
+        missing_terms = {
+            term
+            for term in ("customer", "escalation")
+            if term not in summary_text
+        }
+        if missing_terms:
+            raise CheckFailure(
+                f"Jira issue {issue_key} summary is missing required terms "
+                f"{sorted(missing_terms)}"
             )
 
     project = get_ci(fields, "project", {})
@@ -1271,48 +1836,118 @@ def read_drive_file(
     return data
 
 
+def require_distinct_drive_source_fixtures(
+    environment: LiveEnvironment,
+) -> dict[str, str]:
+    checksums: dict[str, str] = {}
+    for file_id in environment.drive_source_file_ids:
+        source = read_drive_file(file_id, environment)
+        checksum = get_ci(source, "md5Checksum")
+        if not isinstance(checksum, str) or not checksum:
+            raise CheckFailure(
+                f"Drive source fixture {file_id} returned no MD5 checksum"
+            )
+        checksums[file_id] = checksum
+    if len(set(checksums.values())) != len(checksums):
+        raise CheckFailure(
+            "live Drive source fixtures must have distinct MD5 checksums"
+        )
+    return checksums
+
+
+def attachment_marker_order(
+    case: Scenario,
+    variables_data: Any,
+    contract: RuntimeContract,
+) -> tuple[str, ...]:
+    marker_values = runtime_variable_values(
+        variables_data, contract.marker_collection_id
+    )
+    expected = list(case.attachment_iterations)
+    if marker_values != [expected]:
+        raise CheckFailure(
+            f"{case.name}: live attachment marker collection expected "
+            f"{expected!r}, got {marker_values!r}"
+        )
+    return tuple(marker_values[0])
+
+
 def assert_ordered_drive_copies(
     case: Scenario,
+    marker_order: tuple[str, ...],
     outputs: list[Any],
     environment: LiveEnvironment,
     side_effects: ConnectorSideEffectLease,
 ) -> None:
+    if marker_order != case.attachment_iterations:
+        raise CheckFailure(
+            f"{case.name}: live attachment marker order expected "
+            f"{list(case.attachment_iterations)!r}, got {list(marker_order)!r}"
+        )
     if len(outputs) != len(case.attachment_iterations):
         raise CheckFailure(
             f"{case.name}: Drive copy returned {len(outputs)} records for "
             f"{len(case.attachment_iterations)} attachments: {outputs!r}"
         )
-    source_file = read_drive_file(
-        environment.drive_source_file_id, environment
-    )
-    source_checksum = get_ci(source_file, "md5Checksum")
-    if not isinstance(source_checksum, str) or not source_checksum:
-        raise CheckFailure("Drive source file returned no MD5 checksum")
+    if len(marker_order) > len(environment.drive_source_file_ids):
+        raise CheckFailure(
+            f"{case.name}: marker count exceeds live Drive source fixtures"
+        )
+    unmatched_sources: list[tuple[str, str, str]] = []
+    for index, attachment_name in enumerate(marker_order):
+        source_id = environment.drive_source_file_ids[index]
+        source_file = read_drive_file(source_id, environment)
+        source_checksum = get_ci(source_file, "md5Checksum")
+        if not isinstance(source_checksum, str) or not source_checksum:
+            raise CheckFailure(
+                f"Drive source fixture {source_id} returned no MD5 checksum"
+            )
+        unmatched_sources.append(
+            (attachment_name, source_id, source_checksum)
+        )
     correlation = case.inputs["correlationId"]
-    for output, attachment_name in zip(
-        outputs,
-        case.attachment_iterations,
-        strict=True,
-    ):
+    for output in outputs:
         response = get_ci(output, "response")
         file_id = get_ci(response, "id")
         if not isinstance(file_id, str):
             raise CheckFailure(
-                f"{case.name}: Drive iteration for {attachment_name!r} "
-                f"returned no file id: {output!r}"
+                f"{case.name}: Drive iteration returned no file id: "
+                f"{output!r}"
+            )
+        protected_drive_ids = {
+            *environment.drive_source_file_ids,
+            environment.drive_destination_folder_id,
+        }
+        if file_id in protected_drive_ids:
+            raise CheckFailure(
+                f"{case.name}: Drive copy returned protected fixture or "
+                f"destination id {file_id!r}"
             )
         side_effects.drive_file_ids.add(file_id)
         response_strings = recursive_strings(response)
-        if not any(
-            correlation in value and attachment_name in value
-            for value in response_strings
-        ):
-            raise CheckFailure(
-                f"{case.name}: ordered Drive iteration does not prove a "
-                f"correlated copy for {attachment_name!r}: {output!r}"
-            )
         remote = read_drive_file(file_id, environment)
         remote_name = get_ci(remote, "name")
+        candidates = [
+            source
+            for source in unmatched_sources
+            if isinstance(remote_name, str)
+            and correlation in remote_name
+            and source[0] in remote_name
+            and any(
+                correlation in value and source[0] in value
+                for value in response_strings
+            )
+        ]
+        candidate_names = {candidate[0] for candidate in candidates}
+        if not candidates or len(candidate_names) != 1:
+            raise CheckFailure(
+                f"{case.name}: Drive response {file_id} does not match "
+                f"exactly one pending marker from "
+                f"{[item[0] for item in unmatched_sources]!r}: "
+                f"{output!r}; remote={remote!r}"
+            )
+        attachment_name, source_id, source_checksum = candidates[0]
+        unmatched_sources.remove(candidates[0])
         parents = get_ci(remote, "parents", [])
         if (
             not isinstance(remote_name, str)
@@ -1325,8 +1960,13 @@ def assert_ordered_drive_copies(
             raise CheckFailure(
                 f"{case.name}: remote Drive copy {file_id} does not prove "
                 f"ordered name, destination, and source content for "
-                f"{attachment_name!r}: {remote!r}"
+                f"{attachment_name!r} from {source_id}: {remote!r}"
             )
+    if unmatched_sources:
+        raise CheckFailure(
+            f"{case.name}: Drive responses did not cover marker items "
+            f"{[item[0] for item in unmatched_sources]!r}"
+        )
 
 
 def assert_slack_send(
@@ -1335,30 +1975,26 @@ def assert_slack_send(
     environment: LiveEnvironment,
     side_effects: ConnectorSideEffectLease,
 ) -> None:
-    timestamps = [
-        value
-        for value in connector_response_values(outputs, "ts")
-        if isinstance(value, str)
-    ]
-    if len(timestamps) != 1:
+    response_pairs: list[tuple[str, str]] = []
+    for output in outputs:
+        response = get_ci(output, "response")
+        timestamp = get_ci(response, "ts")
+        channel_id = get_ci(response, "channel")
+        if isinstance(timestamp, str) and isinstance(channel_id, str):
+            response_pairs.append((channel_id, timestamp))
+    if len(response_pairs) != 1:
         raise CheckFailure(
-            f"{case.name}: Slack send returned no unique timestamp: "
+            f"{case.name}: Slack send returned no unique channel/timestamp: "
             f"{outputs!r}"
         )
-    side_effects.slack_messages.add(
-        (environment.slack_channel_id, timestamps[0])
-    )
-    channels = [
-        value
-        for value in connector_response_values(outputs, "channel")
-        if isinstance(value, str)
-    ]
+    actual_channel, timestamp = response_pairs[0]
+    side_effects.slack_messages.add((actual_channel, timestamp))
     messages = [
         value
         for value in connector_response_values(outputs, "message")
         if isinstance(value, dict)
     ]
-    if channels != [environment.slack_channel_id] or len(messages) != 1:
+    if actual_channel != environment.slack_channel_id or len(messages) != 1:
         raise CheckFailure(
             f"{case.name}: Slack response does not prove the exact "
             f"destination and message: {outputs!r}"
@@ -1373,7 +2009,7 @@ def assert_slack_send(
     if (
         not isinstance(message_text, str)
         or any(token not in message_text for token in required_tokens)
-        or message_timestamp != timestamps[0]
+        or message_timestamp != timestamp
     ):
         raise CheckFailure(
             f"{case.name}: Slack API response does not contain the exact "
@@ -1520,19 +2156,18 @@ def assert_scenario(
         )
 
     if case.outputs["attachmentAction"] == "SaveToDrive":
-        marker_values = runtime_variable_values(
-            variables_data, contract.marker_collection_id
+        marker_order = attachment_marker_order(
+            case, variables_data, contract
         )
-        if marker_values != [list(case.attachment_iterations)]:
-            raise CheckFailure(
-                f"{case.name}: live attachment marker collection expected "
-                f"{list(case.attachment_iterations)!r}, got {marker_values!r}"
-            )
         outputs = element_output_records(
             variables_data, contract.drive_copy_id
         )
         assert_ordered_drive_copies(
-            case, outputs, environment, side_effects
+            case,
+            marker_order,
+            outputs,
+            environment,
+            side_effects,
         )
 
     if case.outputs["slackAction"] == "PostAlert":
@@ -1550,7 +2185,469 @@ def tail_log(path: Path, limit: int = 5000) -> str:
     return text[-limit:]
 
 
+def diagnostic_text(value: Any) -> str:
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value if isinstance(value, str) else ""
+
+
+def logged_instance_id(*diagnostics: Any) -> str | None:
+    texts = [diagnostic_text(value) for value in diagnostics]
+    structured_ids: list[str] = []
+    fallback_texts: list[str] = []
+    for text in texts:
+        if not text.strip():
+            continue
+        try:
+            payload = parse_json_output(text, "debug diagnostic")
+        except CheckFailure:
+            fallback_texts.append(text)
+            continue
+        data = get_ci(payload, "Data")
+        instance_id = get_ci(data, "InstanceId")
+        if isinstance(instance_id, str) and instance_id:
+            structured_ids.append(instance_id)
+        for field in ("Message", "Instructions"):
+            trusted_diagnostic = get_ci(payload, field)
+            if isinstance(trusted_diagnostic, str):
+                fallback_texts.append(trusted_diagnostic)
+    unique_structured = list(dict.fromkeys(structured_ids))
+    if unique_structured:
+        return (
+            unique_structured[0]
+            if len(unique_structured) == 1
+            else None
+        )
+
+    matches: list[str] = []
+    pattern = re.compile(
+        r"""(?ix)
+        (?<![A-Za-z0-9_])
+        instance(?:[\s_-]*id)
+        ["']?\s*[:=]\s*["']?
+        ([A-Za-z0-9][A-Za-z0-9._:-]{2,})
+        """
+    )
+    for text in fallback_texts:
+        matches.extend(match.group(1) for match in pattern.finditer(text))
+    unique = list(dict.fromkeys(matches))
+    return unique[-1] if len(unique) == 1 else None
+
+
+def read_debug_log(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+
+
+def debug_instance_terminal_or_absent_state(
+    completed: subprocess.CompletedProcess[str],
+    instance_id: str,
+) -> str | None:
+    detail = f"{completed.stdout}\n{completed.stderr}".casefold()
+    try:
+        payload = parse_json_output(
+            completed.stdout or completed.stderr,
+            "cancel debug instance response",
+        )
+    except CheckFailure:
+        payload = None
+    data = get_ci(payload, "Data")
+    returned_id = get_ci(data, "InstanceId")
+    returned_status = str(get_ci(data, "Status", "")).casefold()
+    if (
+        returned_id == instance_id
+        and returned_status
+        in {"completed", "faulted", "cancelled", "canceled", "failed"}
+    ):
+        return "terminal"
+    match = re.search(
+        r"\b(?:debug\s+)?instance\b[^\r\n]{0,100}"
+        rf"{re.escape(instance_id.casefold())}[^\r\n]{{0,100}}"
+        r"(?P<state>not found|does not exist|already completed|"
+        r"has completed|already cance(?:led|lled)|not active)",
+        detail,
+    )
+    if match is None:
+        return None
+    return (
+        "absent"
+        if match.group("state") in {"not found", "does not exist"}
+        else "terminal"
+    )
+
+
+def debug_instance_is_terminal_or_absent(
+    completed: subprocess.CompletedProcess[str],
+    instance_id: str,
+) -> bool:
+    return (
+        debug_instance_terminal_or_absent_state(
+            completed,
+            instance_id,
+        )
+        is not None
+    )
+
+
+def cancel_debug_instance_for_recovery(
+    instance_id: str,
+    case_name: str,
+) -> tuple[list[str], bool]:
+    last_failure = ""
+    for _attempt in range(2):
+        completed: subprocess.CompletedProcess[str] | None = None
+        try:
+            completed = run_cli(
+                [
+                    "uip",
+                    "maestro",
+                    "bpmn",
+                    "debug-instance",
+                    "cancel",
+                    instance_id,
+                ],
+                timeout=180,
+            )
+            payload_data(
+                completed,
+                f"{case_name} cancel debug instance {instance_id}",
+            )
+        except Exception as exc:
+            if completed is not None:
+                state = debug_instance_terminal_or_absent_state(
+                    completed,
+                    instance_id,
+                )
+                if state is not None:
+                    return [], state == "absent"
+            last_failure = str(exc)
+        else:
+            return [], False
+    return (
+        [
+            last_failure
+            or f"{case_name}: could not cancel debug instance {instance_id}"
+        ],
+        False,
+    )
+
+
+def best_effort_capture_instance_outputs(
+    instance_id: str,
+    case_name: str,
+    contract: RuntimeContract,
+    environment: LiveEnvironment,
+    solution_lease: AlphaSolutionLease,
+    side_effects: ConnectorSideEffectLease,
+) -> list[str]:
+    failures, instance_absent = cancel_debug_instance_for_recovery(
+        instance_id,
+        case_name,
+    )
+    if instance_absent:
+        return failures
+    try:
+        variables_all_with_cleanup_recovery(
+            instance_id,
+            f"{case_name} debug recovery",
+            contract,
+            environment,
+            solution_lease,
+            side_effects,
+        )
+    except BaseException as exc:
+        failures.append(str(exc))
+    # Successful deletes are removed from the lease; failed ones stay pending
+    # for the outer-finally retry.
+    try:
+        failures.extend(side_effects.cleanup())
+    except BaseException as exc:
+        failures.append(str(exc))
+    return failures
+
+
+def read_instance_id_journal(path: Path) -> str | None:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    instance_id = get_ci(payload, "InstanceId")
+    if (
+        not isinstance(instance_id, str)
+        or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{2,}", instance_id)
+        is None
+    ):
+        return None
+    return instance_id
+
+
+class LiveRunLease:
+    """Tracks debug instances and nonce-bearing effects until cleanup."""
+
+    def __init__(
+        self,
+        *,
+        contract: RuntimeContract,
+        environment: LiveEnvironment,
+        solution_lease: AlphaSolutionLease,
+        side_effects: ConnectorSideEffectLease,
+    ):
+        self.contract = contract
+        self.environment = environment
+        self.solution_lease = solution_lease
+        self.side_effects = side_effects
+        self.pending_correlations: dict[str, tuple[str, Path]] = {}
+        self.active_instances: dict[str, tuple[str, str]] = {}
+
+    def begin(
+        self,
+        case_name: str,
+        correlation: str,
+        instance_id_file: Path,
+    ) -> None:
+        self.pending_correlations[correlation] = (
+            case_name,
+            instance_id_file,
+        )
+
+    def register(
+        self,
+        instance_id: str,
+        case_name: str,
+        correlation: str,
+    ) -> None:
+        self.active_instances[instance_id] = (case_name, correlation)
+
+    def complete(self, instance_id: str, correlation: str) -> None:
+        self.active_instances.pop(instance_id, None)
+        self.pending_correlations.pop(correlation, None)
+
+    def cleanup(self) -> list[str]:
+        failures: list[str] = []
+        for correlation, (case_name, journal) in list(
+            self.pending_correlations.items()
+        ):
+            instance_id = read_instance_id_journal(journal)
+            if instance_id is not None:
+                self.active_instances.setdefault(
+                    instance_id,
+                    (case_name, correlation),
+                )
+
+        for instance_id, (case_name, _correlation) in list(
+            self.active_instances.items()
+        ):
+            instance_failures = best_effort_capture_instance_outputs(
+                instance_id,
+                case_name,
+                self.contract,
+                self.environment,
+                self.solution_lease,
+                self.side_effects,
+            )
+            failures.extend(instance_failures)
+            if not instance_failures:
+                self.active_instances.pop(instance_id, None)
+
+        for correlation in list(self.pending_correlations):
+            if not any(
+                active_correlation == correlation
+                for _case_name, active_correlation
+                in self.active_instances.values()
+            ):
+                # --instance-id-file journals the server-assigned jobKey
+                # before the gated PIMS create call. If no journal and no
+                # diagnostic ID exist, the instance never reached the point
+                # where its StartEvent could be continued, so no connector
+                # search is necessary (or trustworthy on this tenant).
+                self.pending_correlations.pop(correlation, None)
+        return failures
+
+
+def run_debug_with_cleanup_recovery(
+    arguments: list[str],
+    *,
+    log_file: Path,
+    case_name: str,
+    contract: RuntimeContract,
+    environment: LiveEnvironment,
+    solution_lease: AlphaSolutionLease,
+    side_effects: ConnectorSideEffectLease,
+    live_run_lease: LiveRunLease,
+    correlation: str,
+    instance_id_file: Path,
+) -> tuple[subprocess.CompletedProcess[str], Any, Any, str]:
+    solution_lease.capture_manifest()
+    try:
+        completed = run_cli(
+            arguments,
+            timeout=480,
+            log_file=log_file,
+        )
+    except subprocess.TimeoutExpired as exc:
+        diagnostic_id = logged_instance_id(
+            exc.stdout,
+            exc.stderr,
+            read_debug_log(log_file),
+        )
+        journal_id = read_instance_id_journal(instance_id_file)
+        instance_id = journal_id or diagnostic_id
+        if (
+            journal_id is not None
+            and diagnostic_id is not None
+            and journal_id != diagnostic_id
+        ):
+            live_run_lease.register(
+                diagnostic_id,
+                case_name,
+                correlation,
+            )
+        if instance_id is not None:
+            live_run_lease.register(
+                instance_id,
+                case_name,
+                correlation,
+            )
+            recovery_failures = best_effort_capture_instance_outputs(
+                instance_id,
+                case_name,
+                contract,
+                environment,
+                solution_lease,
+                side_effects,
+            )
+            if recovery_failures:
+                raise CheckFailure(
+                    f"{case_name}: debug timed out and cleanup recovery "
+                    f"failed: {'; '.join(recovery_failures)}"
+                ) from exc
+        raise
+
+    raw_output = completed.stdout or completed.stderr
+    try:
+        payload = parse_json_output(raw_output, f"{case_name} debug")
+    except CheckFailure as parse_error:
+        diagnostic_id = logged_instance_id(
+            completed.stdout,
+            completed.stderr,
+            read_debug_log(log_file),
+        )
+        journal_id = read_instance_id_journal(instance_id_file)
+        instance_id = journal_id or diagnostic_id
+        if (
+            journal_id is not None
+            and diagnostic_id is not None
+            and journal_id != diagnostic_id
+        ):
+            live_run_lease.register(
+                diagnostic_id,
+                case_name,
+                correlation,
+            )
+        if instance_id is not None:
+            live_run_lease.register(
+                instance_id,
+                case_name,
+                correlation,
+            )
+            recovery_failures = best_effort_capture_instance_outputs(
+                instance_id,
+                case_name,
+                contract,
+                environment,
+                solution_lease,
+                side_effects,
+            )
+            if recovery_failures:
+                raise CheckFailure(
+                    f"{parse_error}; cleanup recovery failed: "
+                    f"{'; '.join(recovery_failures)}"
+                ) from parse_error
+        raise
+
+    debug_data = get_ci(payload, "Data", {})
+    instance_id = get_ci(debug_data, "InstanceId")
+    if not isinstance(instance_id, str) or not instance_id:
+        diagnostic_id = logged_instance_id(
+            completed.stdout,
+            completed.stderr,
+            read_debug_log(log_file),
+        )
+        journal_id = read_instance_id_journal(instance_id_file)
+        recovered_id = journal_id or diagnostic_id
+        if (
+            journal_id is not None
+            and diagnostic_id is not None
+            and journal_id != diagnostic_id
+        ):
+            live_run_lease.register(
+                diagnostic_id,
+                case_name,
+                correlation,
+            )
+        if recovered_id is not None:
+            live_run_lease.register(
+                recovered_id,
+                case_name,
+                correlation,
+            )
+            recovery_failures = best_effort_capture_instance_outputs(
+                recovered_id,
+                case_name,
+                contract,
+                environment,
+                solution_lease,
+                side_effects,
+            )
+            if recovery_failures:
+                raise CheckFailure(
+                    f"{case_name}: debug returned no instance id and cleanup "
+                    f"recovery failed: {'; '.join(recovery_failures)}"
+                )
+        raise CheckFailure(
+            f"{case_name}: debug returned no instance id "
+            f"(exit {completed.returncode}); log: {tail_log(log_file)}"
+        )
+    live_run_lease.register(instance_id, case_name, correlation)
+    journal_id = read_instance_id_journal(instance_id_file)
+    if journal_id != instance_id:
+        recovery_failures = best_effort_capture_instance_outputs(
+            instance_id,
+            case_name,
+            contract,
+            environment,
+            solution_lease,
+            side_effects,
+        )
+        detail = (
+            f"; cleanup recovery failed: {'; '.join(recovery_failures)}"
+            if recovery_failures
+            else ""
+        )
+        raise CheckFailure(
+            f"{case_name}: debug instance journal expected {instance_id!r}, "
+            f"got {journal_id!r}{detail}"
+        )
+    return completed, payload, debug_data, instance_id
+
+
 def main() -> int:
+    global ACTIVE_CLI_DEADLINE
+    checker_started_monotonic = time.monotonic()
+    execution_deadline = (
+        checker_started_monotonic + LIVE_RUN_DEADLINE_SECONDS
+    )
+    cleanup_deadline = (
+        checker_started_monotonic + LIVE_CLEANUP_DEADLINE_SECONDS
+    )
+    stage_started = time.monotonic()
+    run_structure_preflight()
+    print(
+        "BENCHMARK stage=structural-preflight "
+        f"duration_seconds={time.monotonic() - stage_started:.3f}"
+    )
     if not BPMN_FILE.is_file():
         raise CheckFailure(f"missing {BPMN_FILE}")
     contract = load_runtime_contract()
@@ -1564,12 +2661,22 @@ def main() -> int:
         f"bpmn_sha256={original_hash}"
     )
 
+    stage_started = time.monotonic()
     validate = run_cli(
         ["uip", "maestro", "bpmn", "validate", str(BPMN_FILE)],
         timeout=180,
     )
     payload_data(validate, "offline BPMN validation")
+    print(
+        "BENCHMARK stage=offline-validation "
+        f"duration_seconds={time.monotonic() - stage_started:.3f}"
+    )
+    stage_started = time.monotonic()
     environment = discover_live_environment()
+    print(
+        "BENCHMARK stage=connector-discovery "
+        f"duration_seconds={time.monotonic() - stage_started:.3f}"
+    )
     side_effects = ConnectorSideEffectLease(environment)
 
     with tempfile.TemporaryDirectory(
@@ -1577,26 +2684,41 @@ def main() -> int:
     ) as directory:
         root = Path(directory)
         solution_dir = root / "CustomerEscalationLiveAlphaEval"
+        stage_started = time.monotonic()
         initialized = run_cli(
             ["uip", "solution", "init", str(solution_dir)],
             timeout=120,
         )
         payload_data(initialized, "initialize ephemeral solution")
+        print(
+            "BENCHMARK stage=solution-init "
+            f"duration_seconds={time.monotonic() - stage_started:.3f}"
+        )
         solution_files = list(solution_dir.glob("*.uipx"))
         if len(solution_files) != 1:
             raise CheckFailure("solution init did not create exactly one .uipx")
         solution_file = solution_files[0]
         lease = AlphaSolutionLease(solution_file)
+        live_runs = LiveRunLease(
+            contract=contract,
+            environment=environment,
+            solution_lease=lease,
+            side_effects=side_effects,
+        )
         cleanup_failures: list[str] = []
         pending_error: BaseException | None = None
 
-        previous_sigterm = signal.getsignal(signal.SIGTERM)
+        previous_signal_handlers = {
+            signum: signal.getsignal(signum)
+            for signum in (signal.SIGTERM, signal.SIGINT)
+        }
+        cleanup_signal_state = CleanupSignalState()
 
-        def stop_on_sigterm(_signum: int, _frame: Any) -> None:
-            raise KeyboardInterrupt("terminated during live Alpha evaluation")
-
-        signal.signal(signal.SIGTERM, stop_on_sigterm)
+        for signum in previous_signal_handlers:
+            signal.signal(signum, cleanup_signal_state.handle)
         try:
+            ACTIVE_CLI_DEADLINE = execution_deadline
+            stage_started = time.monotonic()
             imported = run_cli(
                 [
                     "uip",
@@ -1616,15 +2738,35 @@ def main() -> int:
                 raise CheckFailure(
                     "solution import changed the submitted BPMN bytes"
                 )
+            print(
+                "BENCHMARK stage=solution-import "
+                f"duration_seconds={time.monotonic() - stage_started:.3f}"
+            )
 
             for index, case in enumerate(SCENARIOS, start=1):
+                scenario_started = time.monotonic()
+                if time.monotonic() >= execution_deadline:
+                    raise CheckFailure(
+                        "live Alpha evaluation reached its internal "
+                        f"{LIVE_RUN_DEADLINE_SECONDS}s deadline before "
+                        f"scenario {index}; entering graceful cleanup"
+                    )
                 log_file = root / f"{index:02d}-{case.name}.log"
+                instance_id_file = (
+                    root / f"{index:02d}-{case.name}.instance.json"
+                )
                 update_issue_key = None
                 if case.outputs["jiraAction"] == "UpdateExisting":
+                    seed_started = time.monotonic()
                     update_issue_key = create_seed_jira_issue(
                         case,
                         environment,
                         side_effects,
+                    )
+                    print(
+                        f"BENCHMARK scenario={case.name} stage=jira-seed "
+                        "duration_seconds="
+                        f"{time.monotonic() - seed_started:.3f}"
                     )
                 inputs = scenario_inputs(
                     case,
@@ -1635,7 +2777,19 @@ def main() -> int:
                         else None
                     ),
                 )
-                debug = run_cli(
+                correlation = case.inputs["correlationId"]
+                live_runs.begin(
+                    case.name,
+                    correlation,
+                    instance_id_file,
+                )
+                debug_started = time.monotonic()
+                (
+                    debug,
+                    debug_payload,
+                    debug_data,
+                    instance_id,
+                ) = run_debug_with_cleanup_recovery(
                     [
                         "uip",
                         "maestro",
@@ -1646,45 +2800,35 @@ def main() -> int:
                         "500",
                         "--inputs",
                         json.dumps(inputs, separators=(",", ":")),
+                        "--instance-id-file",
+                        str(instance_id_file),
                     ],
-                    timeout=480,
                     log_file=log_file,
+                    case_name=case.name,
+                    contract=contract,
+                    environment=environment,
+                    solution_lease=lease,
+                    side_effects=side_effects,
+                    live_run_lease=live_runs,
+                    correlation=correlation,
+                    instance_id_file=instance_id_file,
                 )
-                debug_payload = parse_json_output(
-                    debug.stdout or debug.stderr,
-                    f"{case.name} debug",
+                print(
+                    f"BENCHMARK scenario={case.name} stage=debug "
+                    "duration_seconds="
+                    f"{time.monotonic() - debug_started:.3f}"
                 )
-                lease.capture_payload(debug_payload)
-                lease.capture_manifest()
-                debug_data = get_ci(debug_payload, "Data", {})
-                instance_id = get_ci(debug_data, "InstanceId")
-                if not isinstance(instance_id, str):
-                    raise CheckFailure(
-                        f"{case.name}: debug returned no instance id "
-                        f"(exit {debug.returncode}); log: {tail_log(log_file)}"
-                    )
 
-                variables = run_cli(
-                    [
-                        "uip",
-                        "maestro",
-                        "bpmn",
-                        "debug-instance",
-                        "variables-all",
+                evidence_started = time.monotonic()
+                _variables_payload, variables_data = (
+                    variables_all_with_cleanup_recovery(
                         instance_id,
-                    ],
-                    timeout=180,
-                )
-                variables_payload, variables_data = payload_data(
-                    variables,
-                    f"{case.name} variables-all",
-                )
-                lease.capture_payload(variables_payload)
-                capture_connector_outputs_for_cleanup(
-                    variables_data,
-                    contract,
-                    environment,
-                    side_effects,
+                        case.name,
+                        contract,
+                        environment,
+                        lease,
+                        side_effects,
+                    )
                 )
 
                 incidents = run_cli(
@@ -1698,12 +2842,18 @@ def main() -> int:
                     ],
                     timeout=180,
                 )
-                incidents_payload, incidents_data = payload_data(
+                _incidents_payload, incidents_data = payload_data(
                     incidents,
                     f"{case.name} incidents",
                 )
-                lease.capture_payload(incidents_payload)
+                print(
+                    f"BENCHMARK scenario={case.name} "
+                    "stage=runtime-evidence "
+                    "duration_seconds="
+                    f"{time.monotonic() - evidence_started:.3f}"
+                )
 
+                assertion_started = time.monotonic()
                 try:
                     assert_scenario(
                         case,
@@ -1729,16 +2879,47 @@ def main() -> int:
                         f"{case.name}: connector cleanup failed: "
                         f"{'; '.join(side_effect_cleanup)}"
                     )
+                live_runs.complete(instance_id, correlation)
                 print(
-                    f"PASS live Alpha {index}/{len(SCENARIOS)}: {case.name}"
+                    f"BENCHMARK scenario={case.name} "
+                    "stage=assert-and-cleanup "
+                    "duration_seconds="
+                    f"{time.monotonic() - assertion_started:.3f}"
+                )
+                print(
+                    f"PASS live Alpha {index}/{len(SCENARIOS)}: {case.name} "
+                    "duration_seconds="
+                    f"{time.monotonic() - scenario_started:.3f}"
                 )
         except BaseException as exc:
             pending_error = exc
         finally:
-            signal.signal(signal.SIGTERM, previous_sigterm)
-            cleanup_failures = side_effects.cleanup()
-            cleanup_failures.extend(lease.cleanup())
+            cleanup_signal_state.begin_cleanup()
+            ACTIVE_CLI_DEADLINE = cleanup_deadline
+            cleanup_stages = (
+                ("debug instance", live_runs.cleanup),
+                ("connector side effect", side_effects.cleanup),
+                ("Alpha solution", lease.cleanup),
+            )
+            try:
+                cleanup_failures.extend(
+                    collect_cleanup_failures(
+                        cleanup_stages,
+                        emit_benchmarks=True,
+                    )
+                )
+            finally:
+                for signum, previous in previous_signal_handlers.items():
+                    signal.signal(signum, previous)
+                ACTIVE_CLI_DEADLINE = None
 
+        if (
+            cleanup_signal_state.termination_requested
+            and pending_error is None
+        ):
+            pending_error = KeyboardInterrupt(
+                "terminated during live Alpha evaluation"
+            )
         if cleanup_failures:
             detail = "; ".join(cleanup_failures)
             if pending_error is not None:
@@ -1752,7 +2933,9 @@ def main() -> int:
         deleted = ", ".join(sorted(lease.solution_ids))
         print(
             f"PASS: {len(SCENARIOS)} exact-artifact Alpha scenarios; "
-            f"ephemeral solution deleted ({deleted})"
+            f"ephemeral solution deleted ({deleted}); "
+            "total_duration_seconds="
+            f"{time.monotonic() - checker_started_monotonic:.3f}"
         )
     return 0
 
