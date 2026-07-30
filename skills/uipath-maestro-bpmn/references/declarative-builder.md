@@ -1,0 +1,478 @@
+# Declarative structural renderer
+
+Use `scripts/build-bpmn.py` for a **large new** BPMN project. Do not use it to
+rewrite an existing or imported BPMN; brownfield edits must remain surgical.
+
+The renderer removes XML bookkeeping only. The JSON spec must still state every
+process variable, node, gateway condition, Variables assignment, scope, error
+boundary, loop, and sequence flow. Mapping fields must come from live registry
+templates.
+
+This guide and `build-bpmn.py --example` are the renderer's authoring contract.
+Do not inspect the renderer implementation or its tests to infer extra fields or
+copy task-specific graphs. If a required construct is absent here, author that
+small structural fragment from `structural-bpmn.md` or report the renderer gap.
+
+## Start and render
+
+```bash
+python3 scripts/build-bpmn.py --example > <project>.spec.json
+python3 scripts/build-bpmn.py <project>.spec.json <project-directory>
+```
+
+Rendering writes:
+
+- the requested `.bpmn`;
+- `project.uiproj`;
+- `operate.json`;
+- `entry-points.json`;
+- `bindings_v2.json`;
+- `package-descriptor.json`.
+
+Keep registry evidence separately when the user requests it. Re-rendering is
+safe for a new project whose spec is the authored source; do not hand-edit the
+rendered XML and then overwrite it from a stale spec.
+
+## Top-level shape
+
+```json
+{
+  "project": {
+    "name": "OrderTriage",
+    "bpmnFile": "OrderTriage.bpmn",
+    "startId": "Start_Main",
+    "entryPointId": "Entry_Main"
+  },
+  "definitionsId": "Definitions_OrderTriage",
+  "targetNamespace": "http://uipath.com/order-triage",
+  "errors": [
+    {
+      "id": "Error_BackendUnavailable",
+      "name": "BackendUnavailable",
+      "errorCode": "BackendUnavailable"
+    }
+  ],
+  "process": {
+    "id": "Process_OrderTriage",
+    "name": "OrderTriage",
+    "variables": [],
+    "nodes": [],
+    "flows": []
+  },
+  "constraints": {
+    "publicInputs": ["orderId"],
+    "publicOutputs": ["route"],
+    "internalVariables": ["normalizedOrderId"],
+    "scriptTasks": {
+      "exact": 1,
+      "allowedIds": ["Task_Normalize"],
+      "allowedOutputsById": {
+        "Task_Normalize": ["normalizedOrderId"]
+      },
+      "requiredInputReferencesById": {
+        "Task_Normalize": ["orderId"]
+      }
+    },
+    "errorEnds": {
+      "singleGuardedIncoming": true,
+      "allowedIds": ["End_AssessError"],
+      "matchingBoundaryById": {
+        "End_AssessError": "Boundary_AssessError"
+      },
+      "forbidUntypedBoundaries": true
+    },
+    "decisionPhases": {
+      "SubProcess_Assess": {
+        "minDivergingExclusiveGateways": 2
+      }
+    },
+    "rootTopology": {
+      "exactStartEvents": 1,
+      "exactEndEvents": 1
+    },
+    "requiredReachability": [
+      {
+        "sources": ["SubProcess_Assess", "Boundary_AssessError"],
+        "target": "Gateway_FanOut"
+      }
+    ]
+  },
+  "diagram": {
+    "shapes": {},
+    "edges": {}
+  }
+}
+```
+
+`constraints` is mandatory. Copy the exact public contract, internal working
+variables, approved ScriptTask count/ids, each script's exact mapped outputs,
+its required input-variable references, and the approved minimum number of
+diverging exclusive gateways in each bounded decision subprocess into it before
+authoring nodes. A required ScriptTask input may appear in its args mapping or
+as a stable `vars.<id>` read in the script body; passing the full `vars` object
+does not require redundant per-variable args. Rendering fails if internal
+variables leak into the public contract, a script's inputs/outputs drift from
+its approved responsibility, an error end lacks one visibly conditional
+incoming flow, or a declared decision phase is underdeveloped. Error-end ids
+and their matching, typed, interrupting boundaries must be exact; ordinary
+business outcomes must not be smuggled into extra error ends. Root start/end
+counts and required convergence points are also checked. Use an empty
+`decisionPhases` object only when the approved design has no bounded decision
+subprocess, and an empty `requiredReachability` list only when no cross-path
+convergence was approved. These checks complement—not replace—the post-render
+semantic review.
+
+`diagram` is optional. When coordinates are omitted, the renderer emits
+complete DI, expands subprocesses around their child nodes, places boundary
+events on their attached activity, and keeps child shapes inside their
+subprocess. Supply shape/edge overrides only when intentional layout matters.
+
+## Variables
+
+```json
+{
+  "direction": "input",
+  "id": "Var_OrderId",
+  "name": "orderId",
+  "type": "string"
+}
+```
+
+Directions are `input`, `output`, `inputOutput`, or `internal`. The renderer
+serializes `internal` as a mutable process variable but excludes it from the
+generated entry-point input/output schemas. Use `internal` for unbound working
+values such as normalized strings; do not expose implementation variables by
+marking them `inputOutput`. The renderer binds public input variables to the
+configured root start event and public outputs to the configured root end event.
+For a public variable with id `Var_OrderId`, it creates the external
+`input_Var_OrderId` or `output_Var_OrderId` declaration, keeps `Var_OrderId` as
+the mutable process variable, and adds the Start/End bridge mapping
+automatically. Declare the plain stable id once: do not pre-prefix it with
+`input_`/`output_`, and do not manually repeat that public field in the root
+Start/End mapping. The renderer rejects duplicate bridge names because a
+double-prefixed bridge such as `input_input_Var_OrderId` can validate locally
+while discarding the caller's value at runtime. Preserve contract types exactly:
+`integer`, `number`, `array`, `object`, and `json` are distinct.
+
+Use `schema` when generated entry-point metadata needs more detail:
+
+```json
+{
+  "direction": "input",
+  "id": "Var_Attachments",
+  "name": "attachments",
+  "type": "array",
+  "schema": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    }
+  }
+}
+```
+
+## Nodes and flows
+
+Supported `kind` values:
+
+- `startEvent`, `endEvent`, `boundaryEvent`;
+- `task`, `scriptTask`, `serviceTask`, `userTask`, `callActivity`;
+- `exclusiveGateway`, `parallelGateway`;
+- `subProcess`;
+- `intermediateThrowEvent`, `intermediateCatchEvent`.
+
+Basic node and flow:
+
+```json
+{
+  "nodes": [
+    { "kind": "startEvent", "id": "Start_Main", "name": "Start" },
+    {
+      "kind": "exclusiveGateway",
+      "id": "Gateway_Route",
+      "name": "Route",
+      "default": "Flow_Route_Default"
+    },
+    { "kind": "endEvent", "id": "End_Main", "name": "End" }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Route",
+      "source": "Start_Main",
+      "target": "Gateway_Route"
+    },
+    {
+      "id": "Flow_Route_Default",
+      "source": "Gateway_Route",
+      "target": "End_Main"
+    }
+  ]
+}
+```
+
+A conditional flow adds:
+
+```json
+{
+  "condition": "=js:vars.Var_Route === \"NewEscalation\""
+}
+```
+
+Every non-default guard leaving one exclusive gateway must be mutually
+exclusive with its siblings. An exclusive gateway is not an ordered `if /
+else-if` list: do not rely on which true flow the engine happens to inspect
+first. Encode precedence in the predicates (for example, the lower-priority
+guard also excludes the higher-priority case), or split the decision into
+cascaded exclusive gateways. Every diverging exclusive gateway must name
+exactly one outgoing `default` flow. Leave that default flow unconditional and
+give every other outgoing flow an explicit condition; the renderer rejects an
+incomplete split before it can become a runtime stall.
+
+For a parallel fork/join region, each forked workstream must contribute one
+token to the matching parallel join. When a workstream has exclusive internal
+alternatives, add an exclusive merge inside that workstream and connect the
+merge to the parallel join. Do not wire all mutually exclusive alternative
+tasks directly into the parallel join; the join waits for every incoming path
+and will deadlock. For example, a three-way fork whose branches each contain
+their own decisions still needs exactly three incoming flows at the parallel
+join, not one incoming flow per alternative task.
+
+A workstream owns behavior, not merely an output name. If an approved branch
+owns an intent or result, assign its real outcome values inside that branch.
+Do not precompute the value upstream and add a no-op mapping such as
+`action <- vars.action` to satisfy a shape review; that hides policy in the
+wrong phase and makes the branch semantically empty.
+
+The renderer derives every node's `<bpmn:incoming>` and `<bpmn:outgoing>` from
+the owning scope's `flows`.
+
+## Registry-derived mappings
+
+Copy the service type, version, and field names/types/targets from
+`registry get`. The renderer converts a mapping into the registry-owned
+`uipath:mapping` shape.
+
+Variables assignment:
+
+```json
+{
+  "kind": "task",
+  "id": "Task_SetRoute",
+  "name": "Set route",
+  "mapping": {
+    "serviceType": "BPMN.Variables",
+    "version": "v1",
+    "outputs": [
+      {
+        "name": "route",
+        "type": "string",
+        "var": "route",
+        "source": "NewEscalation"
+      }
+    ]
+  }
+}
+```
+
+The renderer resolves an output `var` given as a declared variable name to that
+variable's stable id.
+
+Mapping `source` is always a string because it becomes an XML attribute. A bare
+value is therefore a string literal. For non-string constants, use a typed
+expression: `"source": "=true"` / `"source": "=false"` for booleans and
+`"source": "=42"` for a number. Do not use JSON `true`, `false`, or a numeric
+value as `source`; the renderer rejects those before their type can collapse
+into XML text. Array and object constants likewise need an expression such as
+`=js:[]` or `=js:{}`.
+
+ScriptTask:
+
+```json
+{
+  "kind": "scriptTask",
+  "id": "Task_Normalize",
+  "name": "Normalize",
+  "scriptFormat": "JavaScript",
+  "scriptVersion": "v3",
+  "mapping": {
+    "serviceType": "BPMN.Variables",
+    "version": "v1",
+    "context": [
+      {
+        "name": "inputSchema",
+        "type": "jsonSchema",
+        "body": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "vars": { "type": "object" },
+            "metadata": { "type": "object" }
+          },
+          "required": []
+        }
+      }
+    ],
+    "inputs": [
+      {
+        "name": "args",
+        "type": "json",
+        "target": "bodyField",
+        "body": {
+          "vars": "=vars",
+          "metadata": "=metadata"
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "name": "scriptResponse",
+        "type": "string",
+        "var": "normalizedValue",
+        "source": "=result.response"
+      },
+      {
+        "name": "Error",
+        "type": "jsonSchema",
+        "var": "normalizeError",
+        "source": "=Error"
+      }
+    ]
+  },
+  "script": "return (vars.Var_Value || \"\").trim();"
+}
+```
+
+For new v3 ScriptTasks, use the Studio serializer's `BPMN.Variables`
+mapping shape, pass the `vars` and `metadata` objects through `args`, and read
+stable ids as `vars.<id>` in the script. The renderer serializes an input
+`body` as the engine-readable `value` attribute; ordinary XML text is ignored
+by the runtime mapping parser. A multi-instance script also passes
+`"iterator": "=iterator"` and declares it in the input schema.
+
+Declare both the response variable and the typed Error variable in the process
+variable block. Return the response value directly; the runtime exposes it as
+`result.response` to output mappings. Do not add another `{ response: ... }`
+wrapper in the script.
+
+The Error target is activity-scoped, not a generic working variable. Declare it
+with `name: "Error"`, `type: "jsonSchema"`, and
+`elementId: "<script-task-id>"`. A process with several ScriptTasks therefore
+has several same-named Error declarations with distinct ids. In each script
+mapping, set the Error output's `var` to that declaration's explicit stable id;
+using the ambiguous name `Error` would resolve to only one of them.
+
+Do not put business routing/classification policy in a normalization script.
+
+## Embedded subprocess and error boundary
+
+`subProcess` owns nested `nodes` and `flows`:
+
+```json
+{
+  "kind": "subProcess",
+  "id": "SubProcess_Assess",
+  "name": "Assess",
+  "nodes": [
+    { "kind": "startEvent", "id": "Start_Assess", "name": "Start" },
+    {
+      "kind": "endEvent",
+      "id": "End_AssessError",
+      "name": "Backend unavailable",
+      "errorRef": "Error_BackendUnavailable"
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Assess_Error",
+      "source": "Start_Assess",
+      "target": "End_AssessError",
+      "condition": "=js:vars.Var_Severity === \"Sev1\" && !vars.Var_BackendAvailable"
+    }
+  ]
+}
+```
+
+Every execution scope must be connected. Give each root or subprocess
+`startEvent` exactly one outgoing flow, keep every flow's source and target in
+that same scope, and make every node reachable from a start, boundary, or event
+subprocess entry. The renderer rejects disconnected scopes because Alpha can
+otherwise enter a subprocess, find no schedulable work, complete it without an
+incident, and return unset outputs.
+
+Values assigned inside an embedded subprocess are scoped to that subprocess.
+When later root workstreams or public outputs need them, add a
+`BPMN.Variables` mapping on the subprocess itself and map each value explicitly
+from `=vars.<stable-id>` back to the root variable. A structurally valid file
+without this scope bridge can complete while its root outputs remain unset.
+
+That subprocess mapping is a **normal-completion bridge**, not an error payload.
+When an error end terminates the subprocess, Alpha does not apply its normal
+output mapping, and the matching parent boundary cannot read the terminated
+child scope. If the boundary path must retain a child-computed business result,
+model that explicitly in parent scope. Prefer a visible exclusive gateway plus
+`BPMN.Variables` assignment tasks that re-establish each allowed result from
+parent-visible inputs/state. Alternatively, compute and retain the required
+state in the parent before entering the subprocess. Do not rely on a
+child-scope "checkpoint" mapping or on an undocumented error payload.
+
+The interrupting boundary is a root sibling:
+
+```json
+{
+  "kind": "boundaryEvent",
+  "id": "Boundary_AssessError",
+  "name": "Backend unavailable",
+  "attachedTo": "SubProcess_Assess",
+  "cancelActivity": true,
+  "errorRef": "Error_BackendUnavailable"
+}
+```
+
+An error end should have one visibly guarded incoming flow. Merge multiple
+eligible routes before the complete error guard. Declare the exact error-end id
+under `constraints.errorEnds.allowedIds`, map it to this boundary under
+`matchingBoundaryById`, and give both elements the same `errorRef`. Never use an
+untyped catch-all boundary to stand in for a requested matching error.
+
+## Sequential multi-instance
+
+Add `loop` to a task or subprocess:
+
+```json
+{
+  "loop": {
+    "sequential": true,
+    "collection": "=vars.Var_Attachments"
+  }
+}
+```
+
+For a multi-instance task, read the current item with the documented
+`iterator.item` expression and omit `item`; emitting an `inputElement` alias on
+a task-level marker leaves the runtime `iterator` null. For a multi-instance
+subprocess, bind
+`item: "iterator[0]"` and read `iterator[0].item` inside its body.
+Per-iteration task outputs are marker records, not an implicit process-level
+array. A separate reducer after a sequential task marker should read the
+original input collection when it needs the final processed item.
+
+## Required review
+
+After rendering:
+
+1. Parse the XML.
+2. Audit the rendered source against the approved design: exact ScriptTask
+   count/responsibilities, visible policy predicates and tokens, decision-gateway
+   counts, error guards, mappings, and loops. Confirm that sibling exclusive
+   guards cannot both be true. Do not use a default branch to conceal a named
+   business value or predicate that the user expects to audit.
+3. Trace every path to each root end and confirm that every declared public
+   output is explicitly assigned on every completing path. Do not rely on an
+   implicit type default. Use visible Variables tasks for neutral initial values
+   or assign the neutral value on each applicable branch.
+4. Run `uip maestro bpmn validate <file.bpmn> --output json`.
+5. Pack when requested.

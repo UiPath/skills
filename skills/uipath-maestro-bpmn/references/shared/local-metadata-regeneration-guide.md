@@ -13,7 +13,8 @@ Use this guide when BPMN source changed and local package metadata must be refre
 When no CLI generator is available and you must author a local-only synthetic
 BPMN project, make the project executable and package-shaped before packing:
 
-- The root process must be `<bpmn:process ... isExecutable="true">`.
+- The root process must match the current Studio Web serializer:
+  `<bpmn:process ... isExecutable="false">`.
 - `project.uiproj` must use lowercase `"main"` pointing at the BPMN file.
 - `operate.json` must use `"main"` with the bare BPMN filename, not a
   `/content/<file>.bpmn#<start-event-id>` entry-point path, plus

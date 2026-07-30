@@ -61,7 +61,8 @@ For the regeneration and drift-check contract, see [local-metadata-regeneration-
 
 A synthetic local project authored without a CLI generator must still match the
 executable and metadata contract before packing: the BPMN root process includes
-`isExecutable="true"`, `project.uiproj` has lowercase `"main"`,
+`isExecutable="false"` (the current Studio Web serializer default),
+`project.uiproj` has lowercase `"main"`,
 `operate.json` has `"main"` plus `"contentType": "ProcessOrchestration"`, and
 `package-descriptor.json` has top-level `"content"` entries under `content/`.
 For the exact minimal JSON, see

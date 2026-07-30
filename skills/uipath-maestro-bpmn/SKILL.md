@@ -115,8 +115,11 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
    shows variables, the entry point, a branch, and the diagram. **Do not
-   reverse-engineer authoring patterns from task fixtures or generated package
-   files** — fixture spelunking is the top reason authoring runs out of time.
+   reverse-engineer authoring patterns from task fixtures, generated package
+   files, or the declarative renderer's implementation/tests.** The
+   declarative-builder guide and `--example` output are its public contract;
+   fixture and implementation spelunking is the top reason authoring runs out
+   of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
    expression/error mappings, retry attributes), then generate one
@@ -155,6 +158,21 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    metadata shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
    Do not copy CLI scaffold metadata shapes into a synthetic local project.
+
+   For a large new graph, use the generic structural renderer described in
+   [references/declarative-builder.md](references/declarative-builder.md).
+   Author its JSON spec instead of precomposing repetitive XML. The spec must
+   state every variable, node, condition, scope, loop, error, and flow; the
+   renderer derives references, DI, and local metadata, but does not generate
+   business policy. Start from:
+
+   ```bash
+   python3 scripts/build-bpmn.py --example
+   ```
+
+   Direct XML editing remains appropriate for a small graph. Do not use the
+   renderer to regenerate an existing/imported BPMN whose unknown content must
+   be preserved.
 4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas
    rule set (structural rules plus variable, method-call, input-type, and
    event-object checks) offline, plus deploy-readiness checks:
@@ -252,6 +270,7 @@ and honestly surfaced to the user as gaps when asked.
 | Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
 | Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
 | Runtime expressions, `vars.`/`bindings.`/`iterator.`, `=js:` (Jint) syntax | [references/expression-authoring.md](references/expression-authoring.md) |
+| Declarative renderer for large new BPMN graphs | [references/declarative-builder.md](references/declarative-builder.md) |
 | CLI conventions and the side-effect boundary | [references/cli-conventions.md](references/cli-conventions.md) |
 | Keeping content public-safe | [references/public-safety.md](references/public-safety.md) |
 | Package, upload, publish, run, or manage instances | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
