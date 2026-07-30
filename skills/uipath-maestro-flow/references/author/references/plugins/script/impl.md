@@ -92,3 +92,4 @@ Property access is **case-sensitive** — these casings resolve: `.FullName`, `.
 | Timeout after 30s | Script too expensive | Simplify logic or split into multiple scripts |
 | `console is not defined` | Used `console.log()` | Remove — use `return { debug: val }` instead |
 | `fetch is not defined` | Tried to make HTTP call | Use an HTTP node or connector node instead |
+| `[300501] Error invoking script task` with `Unexpected token` | Malformed JavaScript — `flow validate` does not parse script bodies, so syntax errors surface only at runtime. Common slip: one missing `)` in chained `(((a \|\| {}).b \|\| {}).c \|\| [])` guards | Balance parentheses; check with `node -e "new Function(<script>)"` before validate |

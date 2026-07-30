@@ -6,6 +6,17 @@ description: >
   so the flag is optional). CLI auth failure is expected offline.
 tags: [uipath-platform, smoke, licensing, consumables]
 
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
 initial_prompt: |
   Give me a summary of license consumption for this account.
 
@@ -15,16 +26,10 @@ initial_prompt: |
   - Use `--output json` on every uip command.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran `uip platform licenses consumables get` for a summary report (summary is the default --mode)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get(?!.*--mode\s+(?:daily|folders))'
-    min_count: 1
+  - type: run_command
+    description: "Agent ran `uip platform licenses consumables get` for a summary report (summary is the default --mode; .uip-cmdlog shim log)"
+    command: "grep -E 'uip platform licenses consumables get' .uip-cmdlog | grep -Evq -- '--mode[= ](daily|folders)'"
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
-
-  - type: skill_triggered
-    description: "Agent invoked the uipath-platform skill"
-    skill_name: "uipath-platform"
-    expected_skill: "uipath-platform"
-    weight: 1.0

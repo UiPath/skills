@@ -35,8 +35,7 @@ Confirm:
 - `model.bindings.resourceSubType` — `Process`
 - `model.bindings.resourceKey` — the `<FolderPath>.<ResourceName>` string used to scope binding resolution
 - `inputDefinition` — may contain typed input fields (check `properties`)
-- `outputDefinition.output` — process return value
-- `outputDefinition.error` — error schema
+- `outputDefinition` — always `error` (`source: "=Error"`); processes with output arguments also declare `output` (`source: "=this"`). Either way do not author `output` on the instance — the converter injects `=this`, and `$vars.{nodeId}.output` carries the process return value
 
 ## Adding / Editing
 
@@ -59,21 +58,17 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
     "batchSize": 50
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the RPA process",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the RPA process fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
 }
 ```
+
+**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
 
 ### Top-level `bindings[]` entries (sibling of `nodes`/`edges`/`definitions`)
 

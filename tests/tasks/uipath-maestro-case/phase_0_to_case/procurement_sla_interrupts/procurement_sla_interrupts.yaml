@@ -60,7 +60,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Global-event, sequential-activation, and rationale contract is present"
+    description: "Global-event, SLA-reference-closure, sequential-activation, and rationale contract is present"
     command: "python3 \"$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/phase_0_to_case/procurement_sla_interrupts/check_procurement_sla_interrupts.py\""
     timeout: 10
     expected_exit_code: 0
