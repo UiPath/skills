@@ -1,6 +1,8 @@
 # Prerequisites (see PR description):
 #   - a CLI carrying the external-package commands (npm `latest` on 1.200+)
 #   - the eval tenant's Test Manager has Playwright support enabled
+#   - the released CLI registers `testsets playwright-context` on stable
+#     (UiPath/cli#3336) — this task's assertion reads that command's output
 # Does NOT need serverless execution — it stops before running the test set.
 task_id: skill-test-playwright-ingest-and-select
 description: >
@@ -67,7 +69,7 @@ success_criteria:
 
   - type: run_command
     description: "Test set resolves to a single Playwright package, with its projects listed"
-    command: "grep -qi 'true' context.json && grep -qi 'chromium' context.json"
+    command: "grep -qiE '\"IsPlaywright\"[^,}]*true' context.json && grep -qi 'chromium' context.json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
