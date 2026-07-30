@@ -19,7 +19,7 @@ What can cause it:
 - Property casing — objects wrapped in `ExpressionDictionary` expose lowercase property accessors (e.g., `vars.error.detail` works, `vars.error.Detail` does not)
 - Iterator references inside parallel multi-instance subprocesses were not supported historically — known workaround was to use embedded subprocess
 - C# ternary type-erasure bug in Dynamic Expresso — known workaround is to switch to JS expressions (`=js:` prefix)
-- Script Task iterator references unresolved by the engine (fix shipped in alpha and rolled forward)
+- Script Task iterator references unresolved by the engine
 - Upstream activity failed silently and left the consumed variable unset
 
 Not this playbook - route on these observable data instead:
