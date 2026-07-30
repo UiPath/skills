@@ -59,17 +59,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran `uip codedapp pack` with --output json"
+    description: "Agent ran `uip codedapp pack` (grade the verb, not flag position — `--output json` is a global flag that may precede the subcommand, e.g. `uip --output json codedapp pack`)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+codedapp\s+pack\b.*--output\s+json'
+    command_pattern: 'uip\s+codedapp\s+pack\b'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran `uip codedapp publish` with --output json"
+    description: "Agent ran `uip codedapp publish` (grade the verb, not flag position — `--output json` is a global flag that may precede the subcommand, e.g. `uip --output json codedapp publish`)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+codedapp\s+publish\b.*--output\s+json'
+    command_pattern: 'uip\s+codedapp\s+publish\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
