@@ -98,7 +98,7 @@ Fill the complete SDD shape against [`sdd-template.md`](../assets/templates/sdd-
 | "Manual" in-case work | Starts a new case → Manual trigger; optional worker-launched task → `adhoc` + `Required: No`; worker-chosen exception/rework lane → secondary stage with `user-selected-stage`. Pick by context; disclose. |
 | Case exit | Last primary stage completes (`required-stages-completed`, `Marks Case Complete: Yes`) unless the user described another close-out; alternate outcomes → non-completing case-exit rules. |
 | Stage exit ↔ Marks Complete pairing | Derive mechanically per sdd-template Key Rule 4 — never author an illegal pair. |
-| SLA | Only when the user mentioned timing; take their words literally ("about a day" → 1 day). No timing mentioned → `—`. |
+| SLA | Only when the user mentioned timing; take their words literally ("about a day" → 1 day). No timing mentioned → `—`. For every SLA, decide scope, status, and response separately (§ SLA response model). No stated response → `notify-only` for both statuses; never invent a stage or task for a notification. |
 | Case name / prefix | PascalCase from the domain noun; prefix = 2–4 letter mechanical derivation. |
 | Personas | Named roles verbatim; none mentioned → single `Process Owner`. |
 | Optional fields untouched by the user | `—`. Never a question. |

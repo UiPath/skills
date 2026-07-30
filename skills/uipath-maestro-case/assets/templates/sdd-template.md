@@ -24,7 +24,7 @@ build the case in the Case Designer without guessing.
 
 ### Key Rules
 
-1. **SLA placement:** SLA is supported on the **case**, on **stages**, and on **`action` tasks only**. Do NOT put SLA on `process`, `agent`, `rpa`, `api-workflow`, `wait-for-timer`, `wait-for-connector`, `execute-connector-activity`, or `case-management` tasks.
+1. **SLA placement and response:** SLA is supported on the **case**, on **stages**, and on **`action` tasks only**. Do NOT put SLA on `process`, `agent`, `rpa`, `api-workflow`, `wait-for-timer`, `wait-for-connector`, `execute-connector-activity`, or `case-management` tasks. Separate the SLA clock from its response: notify-only stays in escalation actions; every other response (`start-task`, `enter-stage`, `exit-stage`, `exit-case`) is explicit in the SLA Response Map, with its own interrupting decision.
 
 2. **No skip conditions:** Stage skip conditions are NOT supported in the schema. Do not generate them. Use task-level `shouldRunOnlyOnce` for re-entry behavior.
 
@@ -176,7 +176,7 @@ The generated SDD must start with:
 
 ### Case-Level SLA Escalation Rules
 
-**Design Rationale:** {Why this target, at-risk threshold, recipients, and breach behavior fit the case requirement; name any interrupting secondary stage entered through `sla-status-change`.}
+**Design Rationale:** {Why this target, at-risk threshold, recipients, and breach behavior fit the case requirement; name any stage entered through `sla-status-change` and whether that response interrupts active work.}
 
 | SLA Status | Threshold | Action | Display Name |
 |------------|-----------|--------|--------------|
@@ -333,7 +333,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 #### Stage Entry Conditions
 
-> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (external/global event interrupt), `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")` (case/stage SLA at-risk or breach interrupt — all three args required, see the reference contract below). Other rule types from Key Rule 3 are NOT valid here.
+> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (external/global event interrupt), `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")` (case/stage SLA at-risk or breach response that enters a stage — all three args required, see the reference contract below). Other rule types from Key Rule 3 are NOT valid here.
 >
 > **Interrupting column:** `Yes` lets the condition fire while another stage is active and interrupt it. Use `Yes` on every secondary-stage entry row. Use `No` only for normal entry on regular stages; if the work should not interrupt, it is not a secondary stage.
 >
@@ -345,7 +345,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 >
-> A global `wait-for-connector` / `sla-status-change` entry on an interrupting secondary stage applies regardless of which primary stage is active. Do not repeat the event as a task or exit rule on every primary stage.
+> A global `wait-for-connector` / graph-changing `sla-status-change` entry on an interrupting secondary stage applies regardless of which primary stage is active. Do not repeat the event as a task or exit rule on every primary stage. A stage-SLA response may target the breached stage itself (`start-task`) or another stage; a non-interrupting response uses `Interrupting: No`.
 >
 > **`sla-status-change` reference contract.** All three args required, all three declared in this SDD — the rule has no duration of its own. `<SLA target>` is `root` (case-level SLA; reserved token) or the SLA-owning stage name, and scopes both lookups to that target's tables: `<SLA Title>` is its `SLA Title` cell (or a Variable SLA Rules `Display Name`), `<Escalation Display Name>` one of its escalation `Display Name`s — whose At-Risk/Breached status picks the interrupt status, so use one row per status. Phase 1 resolves the pair to `slaId` + `escalationId`; a reference that does not resolve is a blocking error. Example: `sla-status-change("root","Application SLA","Case SLA breached")`.
 
@@ -366,7 +366,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > Stage SLA supports the same conditional + default `slaRules[]` model as the case root. For `condition-based`, keep the default row below and add one or more Stage Variable SLA Rules before it.
 
-**Design Rationale:** {Why this target, duration, at-risk threshold, recipients, and breach behavior fit the stage requirement; name any interrupting escalation stage entered through `sla-status-change`.}
+**Design Rationale:** {Why this target, duration, at-risk threshold, recipients, and breach behavior fit the stage requirement; name any escalation stage entered through `sla-status-change`. If the response is local to this stage (`start-task`), say so and state why it interrupts or does not.}
 **SLA Type:** {time-based | condition-based}
 **SLA Title:** {non-empty stage-unique title, no `:`}
 

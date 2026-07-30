@@ -16,13 +16,33 @@ Reason the case shape from the process the user describes — **do not reach for
 - **Entered by its own condition**, never by an edge — but the entry shape depends on the lane's trigger:
   - **(a) Mid-stage interrupt** — user-launched (`user-selected-stage`, paired with a `wait-for-user` exit) or external (`wait-for-connector`). Fires *while the origin is still active* and genuinely interrupts it.
   - **(b) Decision/signal divert** — the **origin** stage carries a **gated diverting exit** (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → this lane), and this lane's `selected-stage-exited(origin) + IF` entry **matches** it. Fires when the origin *exits* — a divert-and-return, NOT a true mid-stage interrupt. The secondary lane still carries `Interrupting: Yes`; a variable-driven mid-stage interrupt is not expressible without a connector, so a decision- or signal-gated lane MUST use shape (b). See [§ Logical integrity step 5](#logical-integrity--stage-graph).
-  - **(c) SLA status interrupt** — `sla-status-change` references the target SLA rule and one of its at-risk/breached escalation rules. It can fire while any stage in that SLA's scope is active.
+  - **(c) SLA status response** — `sla-status-change` references the target SLA rule and one of its at-risk/breached escalation rules. It can fire while any stage in that SLA's scope is active. Interrupting or not depends on the response — see § SLA response model.
 - **Every secondary-stage entry is interrupting** — set the stage-level `Interrupting` field to `Yes` and set every Stage Entry Conditions row for that secondary stage to `Interrupting: Yes`. A secondary stage with `Interrupting: No` is misclassified; make it a regular parallel stage or an `adhoc` task instead.
 - **Exits by intent** — returning/rework lanes use `return-to-origin` to route back to the origin stage; terminal lanes use `exit-only` plus a root case-exit row. Neither shape uses a new edge. Since secondary stages are interrupting lanes, both shapes still require `Interrupting: Yes` on the stage and every entry row.
 
 Ask: *does this work belong at one fixed point (regular stage), or could it happen at several points / only on a condition (secondary stage)?* "Handle rejected application", "escalate on SLA breach", "rework loop" → secondary. Returning work uses `return-to-origin`; terminal rejection/withdrawal/cancel work uses `exit-only` plus a case-exit row. Pull these out of the main flow; do not string them inline as ordinary stages.
 
-**Global-event normalization.** When an external status event (for example, a withdrawal received from a portal) or an SLA status change may happen at any point **and requires case work/routing**, define it once as an interrupting entry rule on the destination secondary stage. Use `wait-for-connector` for the external event and `sla-status-change` for the SLA event. A warning-only SLA escalation remains a notification. Do **not** add the same task or exit rule to every primary stage: the interrupting entry automatically exits whichever stage is active. A recoverable lane returns with `return-to-origin`; a terminal lane uses `exit-only` plus a root case-exit rule.
+**Global-event normalization.** When an external status event (for example, a withdrawal received from a portal) or an SLA status change may happen at any point **and requires case work/routing**, define it once on the destination response, not once per primary stage. Use `wait-for-connector` for the external event and `sla-status-change` for a case/stage SLA response that enters a stage. Do **not** add the same task or exit rule to every primary stage: a true interrupting secondary-stage entry exits whichever stage is active. A recoverable lane returns with `return-to-origin`; a terminal lane uses `exit-only` plus a root case-exit rule.
+
+**SLA response model.** Two SLA scopes exist: **case** and **stage**. Separate the clock from the response, and pick the response from the source — not from the scope.
+
+| Response | Choose when the source says | Shape | Interrupting |
+|---|---|---|---|
+| `notify-only` | notify / alert / email / page a person or group | SLA escalation notification only — no stage, no task | n/a |
+| `start-task` | local work inside the **same** breached stage: reminder, reassignment, manager check, extra approval, follow-up | the breached stage carries an `sla-status-change` entry that references **its own** SLA; the follow-up task lives in that stage | `No` unless the source says current work must stop |
+| `enter-stage` | ownership change, escalation lane, recovery, or a visible lifecycle step | a separate stage carries the `sla-status-change` entry | `Yes` when the response takes over, pauses, exits, or reroutes active work; `No` for parallel oversight while work continues |
+| `exit-stage` | the current stage should end, fail, or route away | stage-exit row | per exit semantics |
+| `exit-case` | the whole case should close, cancel, fail, or reach an alternate terminal outcome | §1.4a case-exit row | per exit semantics |
+
+A **case**-level SLA response that changes the graph enters a separate stage. A **stage**-level SLA response may either start a task in the breached stage (`start-task`) or route to a separate stage (`enter-stage`); either may interrupt or not.
+
+**Status rides on the escalation reference.** A breach response references the SLA alone — an absent escalation reference *is* how a breach rule is stored. An at-risk response also names one concrete at-risk escalation on that SLA, which must exist: an SLA with no at-risk escalation cannot carry an at-risk response. Never author the Case Designer's `any`-escalation shorthand — released `validate` rejects it as a missing escalation.
+
+**Action-task SLA** is not a case/stage `slaRules[]` entry: configure the action task's own timer/SLA fields, and add `sla-status-change` case behavior only when the missed task must change the case graph.
+
+**No stated response → default:** at-risk `notify-only` to the owning persona/group; breached `notify-only` to the next escalation tier. Do not invent a stage, task, or routing change unless the source says the breach creates work or changes routing.
+
+Expose every choice in the **SLA Response Map** (`Scope | SLA | Status | Response | Target | Interrupting | Rationale`). Never hide breach behavior inside SLA duration text.
 
 **Other-path sweep.** Before Phase 0 confirmation, actively look beyond the primary flow. Consider rework / needs-info loops; rejection, withdrawal, and cancellation; SLA escalation; external-system failure; manual override or worker-selected side work; optional side work; and terminal outcomes that differ from successful completion. Do not force every item into a secondary stage: choose the smallest faithful model, such as a secondary stage, terminal case exit, non-completing case exit, task-level branch, `adhoc` task, or SLA notification-only row. Clear source signals are modeled by best assumption and disclosed in the confirmation's **Other Paths Considered** table. When the source has no signal at all, Phase 0 asks one bounded question before confirmation; if the user chooses primary-flow-only, record that as an intentional decision and do not invent a path.
 
@@ -379,7 +399,7 @@ The trailing `` `{stage_id}` `` (e.g., `` `stage-intake` ``) MUST appear so read
 |---|---|---|
 | Type | yes | `Stage` |
 | Stage Kind | optional | `primary` (default — omit the line) / `secondary` (emits `data.stageType: "secondary"`; replaces the old `ExceptionStage` type) |
-| Design Rationale | yes | One concrete sentence explaining why this is primary/secondary and why its entry/exit behavior fits the requirement. For global-event lanes, name the event and state that one interrupting entry replaces per-stage duplication. |
+| Design Rationale | yes | One concrete sentence explaining why this is primary/secondary and why its entry/exit behavior fits the requirement. For global-event lanes, name the event and state that one interrupting entry replaces per-stage duplication. For an SLA-entered lane, name the SLA, the chosen response, and why it interrupts or does not. |
 | Description | yes (primary) / optional (secondary) | One prose sentence |
 | Required for case completion | yes | `Yes` (primary, default) / `No` (secondary stages always `No`) |
 | Interrupting | secondary stages only | `Yes` — secondary stages are interrupting lanes. If the work should not interrupt, model it as a regular stage/parallel path or an `adhoc` task. |
@@ -894,7 +914,7 @@ Phase 0 runs these checks **once, against the in-memory case model, before prese
 8. **Alt-disposition coverage.** If ≥ 1 secondary stage exists, Section 1.4a is non-empty OR a `high`-severity review item is open.
 9. **Review-items high-severity acknowledgment.** Approve adds the explicit follow-up when `high` items exist.
 10. **Source-ledger check.** Every non-`user-stated` and non-`verbatim` field has provenance.
-10a. **Design-rationale check.** Every stage explains its kind and routing choice; every task explains its type and activation/sequencing choice; every configured case/stage SLA explains its thresholds, recipients, and any interrupting escalation lane. Missing rationale is a blocking render-contract error because Phase 1 must preserve it.
+10a. **Design-rationale check.** Every stage explains its kind and routing choice; every task explains its type and activation/sequencing choice; every configured case/stage SLA explains its thresholds, recipients, and any notify-only or graph-changing response. Missing rationale is a blocking render-contract error because Phase 1 must preserve it.
 11. **File-In-arg caller-obligation surfacing.** When ≥ 1 §1.5 row has `Category: In` AND `Type: file`, the Approve summary MUST include a `Caller obligation` block:
 
     ```
@@ -927,7 +947,8 @@ On fail: fix the model and re-run the failed checks (plus any whose inputs chang
 - **Do NOT create `sdd.md` before the confirmation's Build (or save) answer.** Finalization validates the in-memory model before the confirmation; the file renders only after consent — batched with the first build actions, or alone for design-only/draft requests. Never render with a failing fixable check or an undisclosed decision, and never build past a `high` item without the `Build despite N flagged items` pick.
 - **Do NOT leave design rationale only in chat.** The confirmation's `Decisions I made` block is transient; stage kind/routing, task type/activation/sequencing, and SLA/escalation reasons must also live in the SDD's `Design Rationale` fields so Phase 1 can preserve them.
 - **Do NOT treat a validating case as proof the SDD followed the template.** `caseplan.json` validation checks executable JSON, not whether `sdd.md` preserved the template. A summary-style `sdd.md` with top-level `Source`, `Case Objective`, `Task Plan`, or `Acceptance Scenarios` sections is a render defect even when the built case validates.
-- **Do NOT repeat a global event on every primary stage.** External withdrawn/cancel events and SLA status changes belong on one interrupting secondary-stage entry rule. Per-stage task/exit duplication is a modeling defect.
+- **Do NOT repeat a global event on every primary stage.** External withdrawn/cancel events belong on one interrupting secondary-stage entry rule. An SLA response that enters a stage belongs on one scoped `sla-status-change` entry, with interrupting set by whether it diverts active work. Per-stage task/exit duplication is a modeling defect.
+- **Do NOT invent a stage, task, or routing change for an SLA the source only asks to notify about.** Absent a stated response, at-risk and breached are `notify-only` (§ SLA response model).
 - **Do NOT ship `sdd.md` with a banned `—` or `<UNRESOLVED>` on a render-required field.** Emit a placeholder + review item, or Ask.
 - **Do NOT pair `Marks Stage Complete: Yes` with `selected-tasks-completed` or `Marks Case Complete: Yes` with `selected-stage-*`.** Both are schema-pairing errors (Key Rule 4).
 - **Do NOT emit an `action` task without typed recipient prefix.** Bare strings (`"the underwriter"`) force Phase 1 to guess.
