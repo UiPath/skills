@@ -14,7 +14,7 @@ run_limits:
   turn_timeout: 900
 
 initial_prompt: |
-  Build two linked UiPath Data Fabric entities — customers and their orders.
+  Build two linked lists — customers and their orders.
 
   `CE_IntegrationCustomer`:
     - name — required, up to 200 chars
@@ -237,7 +237,7 @@ success_criteria:
            (not email/name), and — IF a status choice was set — status
            stored as a number.
         3. If status was set, filtering all orders by that status
-           should return 3.
+           should return 2.
         4. Schema constraint values echoed back by entities get:
            customer name lengthLimit=200, notes lengthLimit=2000,
            order amount decimalPrecision=2 + min=0 + max=1000000,
@@ -248,7 +248,7 @@ success_criteria:
       as valid for #3 if the tenant had no dropdown). Score 0.5 if
       2-3 are correct. Score 0.0 if 2+ are wrong or skipped.
     weight: 2.5
-    pass_threshold: 0.0
+    pass_threshold: 0.5
 
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
