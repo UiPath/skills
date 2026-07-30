@@ -21,6 +21,9 @@ All commands below are discovery/read-only. None mutate cloud state.
 | `uip maestro bpmn registry get <extensionType> [--profile <name>] [--connection-id <id>] [--object-name <name>] --output json` | Get the full spec for one extension type: `XmlTemplate`, `ContextFields`, `BindingPattern`, `BindingInfo`, and input/output patterns. `--connection-id`/`--object-name` add live Integration Service field metadata for connector types. |
 | `uip or queues list [--profile <name>] [--folder-key <key>\|--folder-path <path>\|--all-folders] --output json` | Resolve queue bindings in an exact supplied folder, or exhaustively when scope is unknown. |
 | `uip is connections list <connector-key> [--profile <name>] --all-folders [--refresh] --output json` | Resolve enabled connections for one exact, registry-discovered connector key across every accessible folder. `--refresh` bypasses the connection cache. |
+| `uip is activities list <connector-key> [--profile <name>] --output json` | List the connector's curated and generic activity catalog rows. Curated rows carry a concrete `ObjectName`; generic CRUD rows carry an `Operation` and report `ObjectName: N/A`. |
+| `uip is resources list <connector-key> [--profile <name>] --connection-id <id> --operation <operation> --output json` | Resolve a concrete object for a generic CRUD activity. Do not use it for a curated row that already supplies `ObjectName`. |
+| `uip is resources describe <connector-key> <object-name> [--profile <name>] [--connection-id <id>] [--operation <operation>] [-f <name=value>] --output json` | Resolve the selected object's exact method, path, parameters, request fields, and response fields. Repeat `-f` only for known parent values when the schema is parent-dependent. |
 
 Square brackets mark syntax that is optional only when no named profile was
 selected. Once the user selects a profile for live discovery, include
