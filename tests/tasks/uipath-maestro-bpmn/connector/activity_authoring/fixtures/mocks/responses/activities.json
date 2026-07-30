@@ -1,0 +1,42 @@
+{
+  "Result": "Success",
+  "Code": "ActivityList",
+  "Data": [
+    {
+      "Name": "SubmitArtifact",
+      "DisplayName": "Submit artifact",
+      "Description": "Submit an artifact through a curated operation.",
+      "ObjectName": "curated_submit_artifact",
+      "MethodName": "POST",
+      "Operation": "N/A",
+      "IsCurated": "Yes"
+    },
+    {
+      "Name": "SubmitArtifactPreview",
+      "DisplayName": "Submit artifact preview",
+      "Description": "Preview an artifact submission.",
+      "ObjectName": "curated_preview_artifact",
+      "MethodName": "POST",
+      "Operation": "N/A",
+      "IsCurated": "Yes"
+    },
+    {
+      "Name": "ListAllRecords",
+      "DisplayName": "List records",
+      "Description": "List records for one selected object.",
+      "ObjectName": "N/A",
+      "MethodName": "N/A",
+      "Operation": "List",
+      "IsCurated": "No"
+    },
+    {
+      "Name": "CreateRecord",
+      "DisplayName": "Create record",
+      "Description": "Create a record for one selected object.",
+      "ObjectName": "N/A",
+      "MethodName": "N/A",
+      "Operation": "Create",
+      "IsCurated": "No"
+    }
+  ]
+}
