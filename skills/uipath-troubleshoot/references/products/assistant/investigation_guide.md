@@ -10,6 +10,7 @@ Read `overview.md` for the two-log architecture and evidence model before this g
 4. **Mind the timezones.** `Robot.log` is machine-local with an offset (e.g. `+03:00`); `combined.log` is usually UTC. Convert before correlating timestamps across the two files.
 5. **Never speculate past the evidence.** A timeout means "timeout — likely network"; do not guess DNS vs proxy vs firewall without data. Ask for `curl`/network output instead.
 6. **Never assume the archive is complete.** Users often paste only the first N lines. If the symptom should have left a trace and you can't find it, ask for the full file.
+7. **The shared archive's logs are the evidence — CLI backing files are not.** Files that back or intercept the `uip` CLI (dispatchers, fixture stores, shims, caches, call logs) are internal storage: never read, decode, decompile, or bypass them.
 
 ## Step 1 — Ask for high-value artifacts if the archive is thin
 

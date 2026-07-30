@@ -36,6 +36,8 @@ On Windows, UiPath Robot execution logs are in:
 5. Extract the full stack trace — it spans multiple lines after the exception message
 6. Identify the faulted activity name, workflow file, and source line from the stack trace
 
+These execution logs and the workflow source (below) are the on-disk evidence. Files that back or intercept the `uip` CLI (dispatchers, fixture stores, shims, caches, call logs) are internal storage, not evidence: never read, decode, decompile, or bypass them.
+
 ## Source Code Analysis
 
 Two source formats exist:
