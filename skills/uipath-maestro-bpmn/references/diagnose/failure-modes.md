@@ -36,6 +36,18 @@ instance variables. Add the missing `input` â†’ `inputOutput` or `inputOutput` â
 `output` mapping. Converge routes that return the same result before the
 returning EndEvent.
 
+## ScriptTask arguments or outputs are missing
+
+A v3 ScriptTask can validate structurally yet fault because `vars` is
+undefined, or complete while its business output remains empty. Inspect the
+task mapping, its task-scoped variables, and runtime variables.
+
+Use the current v3 shape: a `BPMN.Variables` mapping, an input schema declaring
+`vars` and `metadata`, a parser-readable `args` body that passes both objects,
+and task-scoped `scriptResponse` / typed `Error` outputs. Return the intended
+value directly, map `scriptResponse` from `=result.response`, then map any
+separate process variable from the declared response variable.
+
 ## Binding reference missing
 
 A node context value refers to `=bindings.<id>` but no matching root binding or generated binding resource exists.

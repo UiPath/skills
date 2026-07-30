@@ -186,63 +186,80 @@ See [expression-authoring.md](expression-authoring.md) for expression rules.
 Sub-process-scoped variables go in that sub-process's own
 `<uipath:variables>`.
 
-## Script tasks (`BPMN.ScriptTask`) — Jint runtime contract
+## Script tasks — current v3 Jint contract
 
 `bpmn:scriptTask scriptFormat="JavaScript"` runs under **Jint**, not Node.js or
-a browser. The mapping payload comes from the `BPMN.ScriptTask` registry
-template, but the runtime contract is fixed:
+a browser. Discover it with registry key `BPMN.ScriptTask`, but current Studio
+v3 serialization uses a `BPMN.Variables` mapping on the task. Preserve the
+retrieved registry result as evidence. If its built-in template contains the
+legacy `<uipath:type value="BPMN.ScriptTask">` mapping, author this node from
+the versioned `extensionTypes["BPMN.ScriptTask"].xmlTemplate` in
+`validator/bpmn-spec.json`; do not wait for an unavailable CLI upgrade or use
+the legacy shell. This override is only for the built-in ScriptTask and is not
+evidence for live resources.
 
-- Only these helpers exist: `uipath.aggregate`, `uipath._aggregate`,
-  `uipath._pipe`, and a no-op `console`. No npm packages, filesystem, network,
-  browser globals, or long-running async behavior. Execution envelope is ~64 MB
-  / 30 s.
-- Set `uipath:scriptVersion value="v3"` for new scripts; preserve an imported
-  `value="v2"`. For v2+ the script returns JSON under `response`.
-- Mapped `args` fields are read as **top-level identifiers** in the script body
-  (`amount`, not `args.amount`); the input mapping itself stays `name="args"`
-  with `type="json"` and `target="bodyField"`, and maps each field by variable
-  id (`=vars.Var_Amount`). Include `<uipath:input name="args" type="json"
-  target="bodyField"><![CDATA[{}]]></uipath:input>` even when there are no
-  inputs; this is part of the `BPMN.ScriptTask` registry template. This rule
-  applies to nodes you author and to mappings an edit explicitly targets;
-  never retrofit these attributes onto an untouched node's mapping — a
-  pre-existing `<uipath:input name="args">` outside the edit's target stays
-  byte-identical.
-- Map the returned object's property back through `source="=result.response"`
-  (the conventional scalar property) or `source="=result.response.<field>"`
-  (another object field); `var` points at a declared variable id (do not put the
-  target id in `name`).
-- When the output mapping uses `source="=result.response"`, return an object
-  with a `response` property, such as `return { response: 6 * 7 };`. Do not
-  return the bare primitive `42` for that mapping shape; there is no
-  `response` property to bind, so the runtime variable stays empty.
-- Do not use `source="=result"` with a bare scalar return in live debug/runtime
-  BPMN. Studio Web can report `FinalStatus: Completed` while the target root
-  variable still reads back as `{}` or `null` from
-  `debug-instance variables-all`.
-- For live debug/runtime runs, never use `source="=this.result"` or
-  `<uipath:type value="BPMN.Variables" ...>` on a script task output mapping.
-  That older structural-test shape can pass local validation but leaves root
-  variables `null` or faults in Studio Web. Use the `BPMN.ScriptTask` mapping
-  with `source="=result.response"`.
-- Do not mutate `Globals.*`, `vars.*`, or process variables inside the script
-  body. The supported path is: return a value from the script, then use a
-  `uipath:output` mapping to write it to the declared variable. Direct mutation
-  is not applied to the runtime, so the variable reads empty afterward.
+**The lookup key and serialized discriminator are intentionally different.**
+Use `BPMN.ScriptTask` only to retrieve the node; every new ScriptTask's
+`uipath:mapping` must contain
+`<uipath:type value="BPMN.Variables" version="v1" />`. A serialized
+`value="BPMN.ScriptTask"` is the legacy shell and is invalid for this v3
+contract even when local validation returns success.
+
+- Set `<uipath:scriptVersion value="v3" />` for new ScriptTasks. Preserve
+  imported legacy versions unless the user asks to migrate them.
+- Declare a task-scoped mutable `scriptResponse` variable and a task-scoped
+  mutable `Error` variable. `Error` uses `type="jsonSchema"`, the standard
+  error schema, and `elementId="<script-task-id>"`.
+- Add a `uipath:context/uipath:inputSchema` of type `jsonSchema` that declares
+  `vars` and `metadata` as objects.
+- Add `uipath:input name="args" type="json" target="bodyField"` with
+  `{"vars":"=vars","metadata":"=metadata"}` in CDATA, matching Studio's
+  canonical serializer.
+- Read process data in JavaScript through `vars.<stable-variable-id>`.
+- Return the intended scalar or object directly. Map the standard
+  `scriptResponse` output from `=result.response` and `Error` from `=Error`.
+  Downstream nodes and the completion EndEvent can read the declared
+  `scriptResponse` variable directly. Only when a distinct business variable
+  is needed, add a custom output that reads `=vars.<script-response-id>` and
+  writes that variable.
+- Studio maps JavaScript/JSON Schema `number` to BPMN primitive
+  `type="double"` and JSON Schema `integer` to BPMN primitive
+  `type="integer"`. Keep the JSON Schema names inside schema bodies; on
+  `uipath:variables` and mapping attributes use `double` or `integer`
+  respectively, not `number` or `long`.
+- Do not add an extra `{ response: ... }` wrapper around the script return; the
+  runtime already exposes the direct return beneath `result.response`.
+- Do not mutate `Globals.*`, `vars.*`, or process variables in the script.
+  Return a value and let output mappings write declared variables.
+- Only the documented Jint helpers are available (`uipath.aggregate`,
+  `uipath._aggregate`, `uipath._pipe`, and a no-op `console`). Do not use npm
+  packages, filesystem, network, browser globals, timers, or long-running async
+  work. The execution envelope is approximately 64 MB / 30 seconds.
 
 ```xml
+<uipath:inputOutput id="Var_ScriptResponse" name="scriptResponse"
+  type="double" elementId="Task_RiskScore" />
+<uipath:inputOutput id="Var_ScriptError" name="Error"
+  type="jsonSchema" elementId="Task_RiskScore"><![CDATA[
+{"type":"object","properties":{"code":{"type":"string"},"message":{"type":"string"},"detail":{"type":"string"},"category":{"type":"string"},"status":{"type":"number"},"element":{"type":"string"}}}
+]]></uipath:inputOutput>
+
 <bpmn:scriptTask id="Task_RiskScore" name="Risk Score" scriptFormat="JavaScript">
   <bpmn:extensionElements>
-    <uipath:scriptVersion value="v3" />
     <uipath:mapping version="v1">
-      <uipath:type value="BPMN.ScriptTask" version="v1" />
-      <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount","daysOverdue":"=vars.Var_DaysOverdue"}]]></uipath:input>
-      <uipath:output name="riskScore" type="number" var="Var_RiskScore" source="=result.response" />
+      <uipath:type value="BPMN.Variables" version="v1" />
+      <uipath:context>
+        <uipath:inputSchema type="jsonSchema"><![CDATA[{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"vars":{"type":"object"},"metadata":{"type":"object"}},"required":[]}]]></uipath:inputSchema>
+      </uipath:context>
+      <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"vars":"=vars","metadata":"=metadata"}]]></uipath:input>
+      <uipath:output name="scriptResponse" type="double" var="Var_ScriptResponse" source="=result.response" />
+      <uipath:output name="Error" type="jsonSchema" var="Var_ScriptError" source="=Error" />
     </uipath:mapping>
+    <uipath:scriptVersion value="v3" />
   </bpmn:extensionElements>
   <bpmn:script><![CDATA[
-var score = amount * 0.01 + daysOverdue * 2;
-return { response: score };
+var score = vars.Var_Amount * 0.01 + vars.Var_DaysOverdue * 2;
+return score;
 ]]></bpmn:script>
 </bpmn:scriptTask>
 ```
