@@ -21,13 +21,13 @@ Every merge absorbs into the surviving file's existing name. No new filenames ex
 | `references/xaml/xaml-basics-and-rules.md` | `xaml/workflow-guide.md` (ConnectorActivity internals move out to IS guide) | ≤ ~11k |
 | `references/xaml/canvas-layout-guide.md` | `xaml/flowchart-guide.md`, x:Reference-naming § of `common-pitfalls.md` | ≤ ~10k |
 | `references/xaml/csharp-activity-binding-guide.md` | `xaml/csharp-expression-pitfalls.md` | ~2.7k |
-| `references/ui-automation-guide.md` | `uia-prerequisites.md`; sheds OR-as-UI-Library § → library guide; stub-§ compressed | ≤ ~11.5k |
-| `references/uia-configure-target-workflows.md` | `uia-elements-interaction-guide.md`, UIA gotchas §§ of `common-pitfalls.md` | ≤ ~8.5k |
+| ~~`references/ui-automation-guide.md`~~ | ~~`uia-prerequisites.md`~~ — **superseded by #2124** (main moved UIA authoring guides to the UIA package docs; the four UIA reference files no longer exist in this skill — skill-side UIA policy lives in `uia-starter-guide.md`) | — |
+| ~~`references/uia-configure-target-workflows.md`~~ | ~~`uia-elements-interaction-guide.md`~~ — **superseded by #2124** (same); UIA gotchas §§ stay in `xaml/common-pitfalls.md` | — |
 | `references/coded/operations-guide.md` | `coded/coding-guidelines.md` | ≤ ~11k |
 | `references/coded/codedworkflow-reference.md` | `coded/inspect-package-guide.md`, `coded/third-party-packages-guide.md` | ≤ ~5.5k |
 | `references/environment-setup.md` | `project-structure.md`, `project-structure-guide.md` | ≤ ~7.5k |
 | `references/is-connector-xaml-guide.md` | `connector-capabilities.md`, IS gotchas § of `common-pitfalls.md`, ConnectorActivity internals from `xaml-basics-and-rules.md` | ≤ ~10.5k |
-| `references/library-authoring-guide.md` | OR-as-UI-Library § from `ui-automation-guide.md` | ~4.3k |
+| `references/library-authoring-guide.md` | — (planned absorb of OR-as-UI-Library § dropped: #2124 placed it in `uia-starter-guide.md`) | ~4.3k |
 | `assets/codedworkflow-template.md` | `testcase-template.md`, `helper-utility-template.md`, `before-after-hooks-template.md` (`json-template.md` stays — config snippets, linked by Rule 10 + LRW guide) | ~2.6k |
 
 `xaml/common-pitfalls.md` lands ≤ ~12k after the section moves + duplicate removal. `tenant-library-search-guide.md` stays standalone (Rule 9 reads it alone).
@@ -66,13 +66,13 @@ Keep every rule statement; delegate procedure bodies to the merged references. T
 
 ## Sequencing & risks
 
-- Based on latest `main`, NOT `feat/uipath-rpa-execution-maps` (PR #1827). Known conflict surface with #1827: `SKILL.md`, `xaml/workflow-guide.md` (deleted here, edited there), `environment-setup.md`, `ui-automation-guide.md`, `uia-configure-target-workflows.md`. Whichever lands second rebases; the workflow-guide edits from #1827 port into `xaml-basics-and-rules.md`.
+- Based on latest `main`, NOT `feat/uipath-rpa-execution-maps` (PR #1827). Known conflict surface with #1827: `SKILL.md`, `xaml/workflow-guide.md` (deleted here, edited there), `environment-setup.md`. Whichever lands second rebases; the workflow-guide edits from #1827 port into `xaml-basics-and-rules.md`. (The UIA files #1827 also touches were removed from the skill by #2124.)
 - Merged files raise tokens-read for flows that previously read only the smaller member; pairs were chosen for high co-read probability. The A/B tokens metric is the check.
 - Frontmatter `description` untouched → no `activation-gate.yml` recall eval.
 
 ## Stage 1 result (measured)
 
-Merged-file sizes after implementation (tokens = chars/4): ui-automation-guide 12.7k · xaml-basics-and-rules 12.4k · common-pitfalls 12.3k · coded/operations-guide 11.0k · legacy/cli-reference 10.1k · cli-reference 9.7k · canvas-layout 8.7k · legacy/xaml-basics 8.5k · is-connector 8.1k · uia-configure 7.3k · environment-setup 7.3k · legacy/testing 5.8k · codedworkflow-reference 5.4k · legacy/selector 4.9k · library-authoring 4.2k · assets/codedworkflow-template 2.5k · csharp-activity-binding 2.6k. Three files exceed the soft ~12k cap by 3–6% (each absorbed always-co-read content; the alternative was an extra Read per flow). Link integrity: 0 broken links/anchors across 700 files. Also fixed along the way: pre-existing unclosed code fences (trailing ``` on command lines) in three files.
+Merged-file sizes after implementation (tokens = chars/4): xaml-basics-and-rules 12.4k · common-pitfalls 12.3k · coded/operations-guide 11.0k · legacy/cli-reference 10.1k · cli-reference 9.7k · canvas-layout 8.7k · legacy/xaml-basics 8.5k · is-connector 8.1k · environment-setup 7.3k · legacy/testing 5.8k · codedworkflow-reference 5.4k · legacy/selector 4.9k · library-authoring 4.2k · assets/codedworkflow-template 2.5k · csharp-activity-binding 2.6k. Two files exceed the soft ~12k cap by 3% (each absorbed always-co-read content; the alternative was an extra Read per flow). The planned UIA merges (ui-automation-guide, uia-configure) were superseded mid-flight by #2124, which moved those files to the UIA package docs. Link integrity: 0 broken links/anchors across 700 files. Also fixed along the way: pre-existing unclosed code fences (trailing ``` on command lines) in three files.
 
 ## Verification
 
