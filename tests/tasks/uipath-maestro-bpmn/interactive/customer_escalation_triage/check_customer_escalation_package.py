@@ -87,10 +87,28 @@ def main() -> None:
             bpmn_payload = archive.read(by_basename["CustomerEscalationTriage.bpmn"])
             if len(bpmn_payload) < 200:
                 fail("packed BPMN content is implausibly small")
+            bindings = json.loads(
+                archive.read(by_basename["bindings_v2.json"])
+            )
+            resources = bindings.get("resources")
+            if (
+                not isinstance(resources, list)
+                or len(resources) != 3
+                or any(
+                    not isinstance(resource, dict)
+                    or resource.get("resource") != "Connection"
+                    or not resource.get("key")
+                    for resource in resources
+                )
+            ):
+                fail(
+                    "packed bindings_v2.json must contain exactly three "
+                    "Connection resources"
+                )
 
         print(
             f"OK: independently packed {package.name} ({package.stat().st_size} bytes) "
-            "with BPMN and package metadata content"
+            "with BPMN, connector resources, and package metadata content"
         )
 
 

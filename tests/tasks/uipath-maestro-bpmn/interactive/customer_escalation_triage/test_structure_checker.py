@@ -182,7 +182,7 @@ def gateway_scope(condition: str) -> tuple[ET.Element, dict[str, ET.Element]]:
 
 
 def attachment_fixture(
-    marker_script: str = "return { name: iterator.item.name };",
+    marker_script: str = "return { itemName: currentItem.name };",
 ) -> tuple[
     list[ET.Element], dict[str, ET.Element], dict[str, str]
 ]:
@@ -191,34 +191,96 @@ def attachment_fixture(
         "lastAttachmentName": variable(
             "lastAttachmentName", "output-last-y28"
         ),
+        "attachmentIterationNames": ET.Element(
+            checker.q(checker.UIPATH_NS, "inputOutput"),
+            {
+                "name": "attachmentIterationNames",
+                "id": "iteration-names-q37",
+                "type": "Collection{string}",
+                "elementId": "iterate-arbitrary",
+                "custom": "true",
+            },
+        ),
     }
     ids_to_names = {
         item.attrib["id"]: name for name, item in variables.items()
     }
     marker = ET.fromstring(
         f"""
-        <bpmn:scriptTask xmlns:bpmn="{checker.BPMN_NS}"
+        <bpmn:subProcess xmlns:bpmn="{checker.BPMN_NS}"
                          xmlns:uipath="{checker.UIPATH_NS}"
-                         id="iterate-arbitrary" scriptFormat="JavaScript">
+                         id="iterate-arbitrary">
           <bpmn:extensionElements>
             <uipath:mapping version="v1">
               <uipath:type value="BPMN.Variables" version="v1" />
-              <uipath:output name="scriptResponse" type="jsonSchema"
-                 var="iteration-response" source="=result.response" />
-              <uipath:output name="Error" type="jsonSchema"
-                 var="iteration-error" source="=Error" />
+              <uipath:output name="attachmentIterationName" type="string"
+                 source="=vars.iteration-response.itemName"
+                 var="iteration-names-q37" custom="true" />
             </uipath:mapping>
-            <uipath:scriptVersion value="v3" />
           </bpmn:extensionElements>
           <bpmn:multiInstanceLoopCharacteristics isSequential="true">
             <bpmn:extensionElements>
               <uipath:loopCharacteristics
                  inputCollection="=vars.input-attachments-z19"
+                 inputElement="iterator[0]"
                  version="v1" />
             </bpmn:extensionElements>
           </bpmn:multiInstanceLoopCharacteristics>
-          <bpmn:script>{marker_script}</bpmn:script>
-        </bpmn:scriptTask>
+          <bpmn:startEvent id="attachment-start">
+            <bpmn:outgoing>attachment-start-script</bpmn:outgoing>
+          </bpmn:startEvent>
+          <bpmn:scriptTask id="attachment-script"
+                           scriptFormat="JavaScript">
+            <bpmn:extensionElements>
+              <uipath:mapping version="v1">
+                <uipath:type value="BPMN.Variables" version="v1" />
+                <uipath:context>
+                  <uipath:inputSchema type="jsonSchema">{{
+                    "type":"object",
+                    "properties":{{
+                      "vars":{{"type":"object"}},
+                      "metadata":{{"type":"object"}},
+                      "currentItem":{{"type":"object"}}
+                    }}
+                  }}</uipath:inputSchema>
+                </uipath:context>
+                <uipath:input name="args" type="json" target="bodyField"
+                  value="{{&quot;vars&quot;:&quot;=vars&quot;,&quot;metadata&quot;:&quot;=metadata&quot;,&quot;currentItem&quot;:&quot;=iterator[0].item&quot;}}" />
+                <uipath:output name="scriptResponse" type="jsonSchema"
+                   var="iteration-response" source="=result.response" />
+                <uipath:output name="Error" type="jsonSchema"
+                   var="iteration-error" source="=Error" />
+              </uipath:mapping>
+              <uipath:scriptVersion value="v3" />
+            </bpmn:extensionElements>
+            <bpmn:incoming>attachment-start-script</bpmn:incoming>
+            <bpmn:outgoing>attachment-script-drive</bpmn:outgoing>
+            <bpmn:script>{marker_script}</bpmn:script>
+          </bpmn:scriptTask>
+          <bpmn:sendTask id="attachment-drive">
+            <bpmn:extensionElements>
+              <uipath:activity version="v1">
+                <uipath:type value="Intsvc.ActivityExecution" version="v1" />
+                <uipath:context>
+                  <uipath:input name="connectorKey"
+                     value="uipath-google-drive" />
+                  <uipath:input name="path" value="/copyFile" />
+                </uipath:context>
+              </uipath:activity>
+            </bpmn:extensionElements>
+            <bpmn:incoming>attachment-script-drive</bpmn:incoming>
+            <bpmn:outgoing>attachment-drive-end</bpmn:outgoing>
+          </bpmn:sendTask>
+          <bpmn:endEvent id="attachment-end">
+            <bpmn:incoming>attachment-drive-end</bpmn:incoming>
+          </bpmn:endEvent>
+          <bpmn:sequenceFlow id="attachment-start-script"
+             sourceRef="attachment-start" targetRef="attachment-script" />
+          <bpmn:sequenceFlow id="attachment-script-drive"
+             sourceRef="attachment-script" targetRef="attachment-drive" />
+          <bpmn:sequenceFlow id="attachment-drive-end"
+             sourceRef="attachment-drive" targetRef="attachment-end" />
+        </bpmn:subProcess>
         """
     )
     reducer = ET.fromstring(
@@ -237,9 +299,9 @@ def attachment_fixture(
             <uipath:scriptVersion value="v3" />
           </bpmn:extensionElements>
           <bpmn:script>
-            return vars.input-attachments-z19[
-              vars.input-attachments-z19.length - 1
-            ].name;
+            return vars.iteration-names-q37[
+              vars.iteration-names-q37.length - 1
+            ];
           </bpmn:script>
         </bpmn:scriptTask>
         """
@@ -717,11 +779,11 @@ def test_attachment_loop_accepts_arbitrary_variable_ids() -> None:
     checker.require_sequential_attachment_loop(elements, variables, ids_to_names)
 
 
-def test_attachment_loop_rejects_non_iterator_script() -> None:
+def test_attachment_loop_rejects_unmapped_iterator_global() -> None:
     elements, variables, ids_to_names = attachment_fixture(
-        "return { name: vars.someOtherValue };"
+        "return { name: iterator[0].item.name };"
     )
-    with raises(SystemExit, match="must read iterator.item"):
+    with raises(SystemExit, match="must read its mapped current item"):
         checker.require_sequential_attachment_loop(elements, variables, ids_to_names)
 
 
@@ -736,7 +798,7 @@ def test_attachment_loop_rejects_parallel_iteration() -> None:
         checker.require_sequential_attachment_loop(elements, variables, ids_to_names)
 
 
-def test_attachment_loop_rejects_task_input_element_alias() -> None:
+def test_attachment_loop_rejects_wrong_subprocess_input_element() -> None:
     elements, variables, ids_to_names = attachment_fixture()
     loop = elements[0].find(
         f"./{checker.q(checker.BPMN_NS, 'multiInstanceLoopCharacteristics')}/"
@@ -745,7 +807,7 @@ def test_attachment_loop_rejects_task_input_element_alias() -> None:
     )
     assert loop is not None
     loop.attrib["inputElement"] = "item"
-    with raises(SystemExit, match="must omit inputElement"):
+    with raises(SystemExit, match=r"must bind.*iterator\[0\]"):
         checker.require_sequential_attachment_loop(
             elements,
             variables,
@@ -824,13 +886,13 @@ class StructureCheckerTests(unittest.TestCase):
         test_attachment_loop_accepts_arbitrary_variable_ids()
 
     def test_non_iterator_script_rejected(self) -> None:
-        test_attachment_loop_rejects_non_iterator_script()
+        test_attachment_loop_rejects_unmapped_iterator_global()
 
     def test_parallel_attachment_loop_rejected(self) -> None:
         test_attachment_loop_rejects_parallel_iteration()
 
     def test_task_input_element_alias_rejected(self) -> None:
-        test_attachment_loop_rejects_task_input_element_alias()
+        test_attachment_loop_rejects_wrong_subprocess_input_element()
 
 
 if __name__ == "__main__":

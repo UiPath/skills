@@ -72,6 +72,10 @@ class BehaviorCheckerTests(unittest.TestCase):
             marker_id="Marker",
             error_end_id="ErrorEnd",
             error_boundary_id="Boundary",
+            jira_create_id="JiraCreate",
+            jira_update_id="JiraUpdate",
+            drive_copy_id="DriveCopy",
+            slack_send_id="SlackSend",
         )
         scope = {
             "Globals": {
@@ -88,50 +92,75 @@ class BehaviorCheckerTests(unittest.TestCase):
             },
         )
 
-    def test_marker_outputs_preserve_live_iteration_order(self) -> None:
-        scope = {
-            "Elements": [
+    def test_connector_outputs_preserve_live_iteration_order(self) -> None:
+        variables_data = {
+            "Variables": [
                 {
-                    "ElementId": "Marker",
-                    "IsMarker": True,
-                    "Outputs": {"Response": {"Name": "first.txt"}},
-                },
-                {
-                    "ElementId": "Other",
-                    "IsMarker": True,
-                    "Outputs": {"Response": {"Name": "ignored.txt"}},
-                },
-                {
-                    "ElementId": "Marker",
-                    "IsMarker": True,
-                    "Outputs": {"Response": {"Name": "second.txt"}},
-                },
+                    "Elements": [
+                        {
+                            "ElementId": "DriveCopy",
+                            "Outputs": {"result": {"name": "first.txt"}},
+                        },
+                        {
+                            "ElementId": "Other",
+                            "Outputs": {"result": {"name": "ignored.txt"}},
+                        },
+                        {
+                            "ElementId": "DriveCopy",
+                            "Outputs": {"result": {"name": "second.txt"}},
+                        },
+                    ]
+                }
             ]
         }
         self.assertEqual(
-            checker.marker_outputs(scope, "Marker"),
-            ("first.txt", "second.txt"),
+            checker.element_output_records(variables_data, "DriveCopy"),
+            [
+                {"result": {"name": "first.txt"}},
+                {"result": {"name": "second.txt"}},
+            ],
         )
 
-    def test_marker_outputs_accept_scalar_script_responses(self) -> None:
-        scope = {
-            "Elements": [
+    def test_connector_outputs_search_all_runtime_scopes(self) -> None:
+        variables_data = {
+            "Variables": [
                 {
-                    "ElementId": "Marker",
-                    "IsMarker": True,
-                    "Outputs": {"Response": "first.txt"},
+                    "Elements": [
+                        {
+                            "ElementId": "DriveCopy",
+                            "Outputs": {"id": "first"},
+                        }
+                    ]
                 },
                 {
-                    "ElementId": "Marker",
-                    "IsMarker": True,
-                    "Outputs": {"Response": "second.txt"},
+                    "Elements": [
+                        {
+                            "ElementId": "DriveCopy",
+                            "Outputs": {"id": "second"},
+                        }
+                    ]
                 },
             ]
         }
 
         self.assertEqual(
-            checker.marker_outputs(scope, "Marker"),
-            ("first.txt", "second.txt"),
+            checker.element_output_records(variables_data, "DriveCopy"),
+            [{"id": "first"}, {"id": "second"}],
+        )
+
+    def test_connector_response_ids_ignore_nested_resource_metadata(self) -> None:
+        outputs = [
+            {
+                "Response": {
+                    "Owners": [{"PermissionId": "not-the-file-id"}],
+                    "Id": "copied-file-id",
+                }
+            }
+        ]
+
+        self.assertEqual(
+            checker.connector_response_values(outputs, "id"),
+            ["copied-file-id"],
         )
 
     def test_solution_lease_deletes_every_captured_id(self) -> None:
