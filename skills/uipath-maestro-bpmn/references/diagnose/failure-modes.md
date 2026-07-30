@@ -38,15 +38,19 @@ returning EndEvent.
 
 ## ScriptTask arguments or outputs are missing
 
-A v3 ScriptTask can validate structurally yet fault because `vars` is
-undefined, or complete while its business output remains empty. Inspect the
-task mapping, its task-scoped variables, and runtime variables.
+A ScriptTask can validate structurally yet fault because `vars` is undefined,
+or complete while its business output remains empty. Inspect the task mapping,
+its task-scoped variables, runtime variables, and the registry template that
+applies to that node.
 
-Use the current v3 shape: a `BPMN.Variables` mapping, an input schema declaring
-`vars` and `metadata`, a parser-readable `args` body that passes both objects,
-and task-scoped `scriptResponse` / typed `Error` outputs. Return the intended
-value directly, map `scriptResponse` from `=result.response`, then map any
-separate process variable from the declared response variable.
+For a newly authored task whose registry result is the recognized older shell,
+compare it with the bundled compatibility template: a `BPMN.Variables`
+mapping, an input schema declaring `vars` and `metadata`, a parser-readable
+`args` body that passes both objects, and task-scoped `scriptResponse` / typed
+`Error` outputs. Return the intended value directly and map `scriptResponse`
+from `=result.response`. Do not migrate a brownfield ScriptTask solely because
+its shape differs. If runtime evidence identifies that node as the fault,
+present the evidence and obtain confirmation before migrating it.
 
 ## Binding reference missing
 
