@@ -10,11 +10,11 @@ Use this guide when BPMN source changed and local package metadata must be refre
 
 ## Current Local Project Contract
 
-For a new bare local project, start with the supported generator:
+For a new local project, reuse the current solution when one is already in
+scope; otherwise let the supported generator create and register one:
 
 ```bash
 uip maestro bpmn init <ProjectName> \
-  --skip-solution-registration \
   --output json
 ```
 
@@ -29,8 +29,9 @@ scaffold has these ownership boundaries:
 - `entry-points.json` links that start-event fragment to the same UUID carried
   by the start event's serializer-owned `uipath:entryPointId`.
 - `package-descriptor.json` contains the CLI-owned `files` map.
-- The CLI scaffold omits `bpmn:process@isExecutable`; Studio may serialize the
-  equivalent default as `isExecutable="false"`. Preserve either form.
+- The CLI scaffold omits `bpmn:process@isExecutable`. Preserve that form; if
+  existing source includes the equivalent default `isExecutable="false"`,
+  preserve it. Do not force `isExecutable="true"`.
 
 Do not translate `project.uiproj`, `operate.json`, entry-point, or package
 descriptor fields from another UiPath project type or from a hand-written
@@ -83,23 +84,6 @@ Do not derive metadata from stale package files first. Use existing generated fi
 7. If the installed CLI cannot regenerate a needed file in place, keep the generated file stale only as a known blocker and report the exact unsupported step. A source-only project is not package-ready.
 
 Packaging is local and authoring-safe. Upload, publish, deploy, debug, and run are cloud or runtime actions and still require explicit user consent.
-
-## Source-only fallback
-
-If the initializer is unavailable and the task only requires local BPMN source,
-create the BPMN beside this minimal descriptor:
-
-`project.uiproj`:
-
-```json
-{
-  "Name": "SyntheticProject",
-  "ProjectType": "ProcessOrchestration"
-}
-```
-
-Do not invent the other four metadata files. Report packaging, upload, debug,
-publish, deploy, and run as blocked until a supported generator supplies them.
 
 ## Entry Point Rules
 

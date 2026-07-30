@@ -28,15 +28,6 @@ ProjectNameSolution/             ← auto-scaffolded when init runs outside a so
     project.uiproj
 ```
 
-With `--skip-solution-registration`, the project lands bare instead, with no
-solution wrapper:
-
-```text
-ProjectName/
-  ProjectName.bpmn
-  project.uiproj
-```
-
 If a **non-empty** directory already exists at the path you typed, init warns
 and leaves it untouched — the project still lands in
 `<ProjectName>Solution/<ProjectName>/`, not the existing directory.
@@ -59,20 +50,10 @@ For the regeneration and drift-check contract, see [local-metadata-regeneration-
 
 ## Package content
 
-Prefer the files produced by `uip maestro bpmn init`; do not translate a
-descriptor shape from another UiPath project type. The current BPMN scaffold
-stores only exact-cased `Name` and `ProjectType: "ProcessOrchestration"` in
-`project.uiproj`. Its runnable file/start-event path is
-`operate.json.main` (`/content/<project>.bpmn#<start-event-id>`), and
-`package-descriptor.json` owns the generated file map. The CLI scaffold omits
-`bpmn:process@isExecutable`; Studio may round-trip the equivalent default as
-`isExecutable="false"`.
-
-If initialization or metadata regeneration is unavailable, a source-only local
-project may contain the BPMN plus that minimal `project.uiproj`, but it is not
-package-ready. Report packaging or operation as blocked instead of inventing
-`operate.json`, `entry-points.json`, or `package-descriptor.json`. See
+Create the project with `uip maestro bpmn init` and preserve its generated
+files. For solution registration and metadata ownership, see
 [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
+Do not hand-author generated metadata.
 
 A Process Orchestration package content folder contains:
 
