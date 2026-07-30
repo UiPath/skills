@@ -1,0 +1,24 @@
+{
+  "Result": "Success",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Orchestrator.CreateQueueItem",
+      "RequiresDiscovery": true,
+      "BindingPattern": "queue",
+      "BindingInfo": {
+        "Resource": "queue",
+        "ContextField": "queueName",
+        "PropertyAttribute": "Key"
+      },
+      "ContextFields": [
+        {
+          "Name": "queueName",
+          "BindingInfo": {
+            "Resource": "queue",
+            "PropertyAttribute": "Key"
+          }
+        }
+      ]
+    }
+  }
+}

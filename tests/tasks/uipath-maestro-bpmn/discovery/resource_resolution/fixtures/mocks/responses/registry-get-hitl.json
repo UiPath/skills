@@ -1,0 +1,28 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Actions.HITL",
+      "Label": "Create action app task",
+      "BpmnElement": "bpmn:UserTask",
+      "ExtensionTag": "uipath:activity",
+      "ContextFields": [
+        {
+          "Name": "appId",
+          "Type": "string",
+          "Required": false,
+          "Hidden": true,
+          "IsPrimaryKey": true,
+          "Binding": false,
+          "DefaultValue": null
+        }
+      ],
+      "BindingPattern": "none",
+      "BindingInfo": null,
+      "RequiresDiscovery": true,
+      "IsDynamic": true,
+      "XmlTemplate": "<bpmn:UserTask id=\"{id}\" name=\"{name}\"><bpmn:extensionElements><uipath:activity version=\"v1\"><uipath:type value=\"Actions.HITL\" version=\"v1\" /><uipath:context><uipath:input name=\"appId\" value=\"{appId}\" /></uipath:context></uipath:activity></bpmn:extensionElements><bpmn:incoming>{incomingEdge}</bpmn:incoming><bpmn:outgoing>{outgoingEdge}</bpmn:outgoing></bpmn:UserTask>"
+    }
+  }
+}

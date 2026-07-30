@@ -1,0 +1,59 @@
+{
+  "version": 2,
+  "_doc": "Provider-neutral resource discovery fixtures. The initial connection list is stale; only one explicit refresh returns current candidates.",
+  "rules": [
+    {
+      "match": "login status",
+      "file": "login-status.json"
+    },
+    {
+      "match": "maestro bpmn registry get Orchestrator.StartJob",
+      "file": "registry-get-start-job.json"
+    },
+    {
+      "match": "maestro bpmn registry get Orchestrator.CreateQueueItem",
+      "file": "registry-get-queue.json"
+    },
+    {
+      "match": "maestro bpmn registry get Intsvc.ActivityExecution",
+      "file": "registry-get-connection.json"
+    },
+    {
+      "match": "maestro bpmn registry get Actions.HITL",
+      "file": "registry-get-hitl.json"
+    },
+    {
+      "match": "maestro bpmn registry list",
+      "file": "registry-list.json"
+    },
+    {
+      "match": "maestro bpmn registry search",
+      "file": "registry-list.json"
+    },
+    {
+      "match": "maestro bpmn registry pull",
+      "file": "registry-pull.json"
+    },
+    {
+      "match": "--folder-path Shared/Operations",
+      "file": "queues-folder-list.json"
+    },
+    {
+      "match": "or queues list",
+      "file": "queues-all-folders-list.json"
+    },
+    {
+      "match": "--refresh",
+      "file": "connections-current.json"
+    },
+    {
+      "match": "is connections list uipath-neutral-records",
+      "file": "connections-stale.json",
+      "exit_code": 1
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"Unsupported read in this discovery fixture\"}\n",
+    "exit_code": 1
+  }
+}
