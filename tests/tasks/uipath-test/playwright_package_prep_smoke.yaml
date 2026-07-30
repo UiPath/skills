@@ -18,9 +18,11 @@ initial_prompt: |
   packaging, and tell me whether this CLI can package it.
 
 success_criteria:
-  - type: file_exists
-    description: "Playwright config present in the prepared project"
-    path: "pw-suite/playwright.config.ts"
+  - type: run_command
+    description: "Playwright config present in the prepared project (any supported extension)"
+    command: "find pw-suite -maxdepth 1 -name 'playwright.config.*' | grep -q ."
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
