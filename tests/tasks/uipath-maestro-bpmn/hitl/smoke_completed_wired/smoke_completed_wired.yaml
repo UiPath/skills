@@ -16,8 +16,8 @@ initial_prompt: |
 
   Requirements:
   - This is a UiPath Maestro BPMN project authored with the uipath-maestro-bpmn
-    skill: `.bpmn` XML, main file
-    `PurchaseApprovalBpmn/PurchaseApprovalBpmn.bpmn`. Do NOT build a `.flow`.
+    skill: `.bpmn` XML with a main file named `PurchaseApprovalBpmn.bpmn`
+    inside the generated project. Do NOT build a `.flow`.
   - Model the approval as a `bpmn:userTask` using the documented `Actions.HITL`
     `uipath:activity` shell from the registry template. Show the reviewer the
     purchase amount and vendor; outcomes are Approve and Reject.
@@ -31,22 +31,8 @@ initial_prompt: |
     approval, confirmation, or feedback.
 
 success_criteria:
-  - type: file_exists
-    description: "BPMN source was created"
-    path: "PurchaseApprovalBpmn/PurchaseApprovalBpmn.bpmn"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_contains
-    description: "HITL modeled with the documented Actions.HITL activity type"
-    path: "PurchaseApprovalBpmn/PurchaseApprovalBpmn.bpmn"
-    includes:
-      - "Actions.HITL"
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "HITL completion is wired to a downstream step that reaches an end event"
+    description: "An Actions.HITL BPMN exists and its completion is wired to a downstream step that reaches an end event"
     command: "python3 $TASK_DIR/check_smoke_completed_wired.py"
     timeout: 30
     expected_exit_code: 0
