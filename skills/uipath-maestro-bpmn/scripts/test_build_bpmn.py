@@ -17,7 +17,202 @@ build_bpmn = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(build_bpmn)
 
 
+def guard_variables() -> list[dict[str, object]]:
+    return [
+        {"id": "Var_JiraAvailable", "name": "jiraAvailable"},
+        {"id": "Var_Severity", "name": "severity"},
+    ]
+
+
 class BuildBpmnTests(unittest.TestCase):
+    def test_error_guard_reference_constraint_is_backward_compatible(
+        self,
+    ) -> None:
+        build_bpmn.validate_error_guard_reference_constraints(
+            {},
+            {"End_JiraUnavailable": "=js:true"},
+            guard_variables(),
+        )
+
+    def test_error_guard_accepts_required_semantic_variable_names(
+        self,
+    ) -> None:
+        build_bpmn.validate_error_guard_reference_constraints(
+            {
+                "End_JiraUnavailable": [
+                    "jiraAvailable",
+                    "severity",
+                ]
+            },
+            {
+                "End_JiraUnavailable": (
+                    "=js:vars.Var_JiraAvailable === false && "
+                    "(vars.Var_Severity === 'Sev1' || "
+                    "vars.Var_Severity === 'Sev2')"
+                )
+            },
+            guard_variables(),
+        )
+
+    def test_error_guard_rejects_missing_availability_reference(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "does not reference required variable 'jiraAvailable'",
+        ):
+            build_bpmn.validate_error_guard_reference_constraints(
+                {
+                    "End_JiraUnavailable": [
+                        "jiraAvailable",
+                        "severity",
+                    ]
+                },
+                {
+                    "End_JiraUnavailable": (
+                        "=js:vars.Var_Severity === 'Sev1' || "
+                        "vars.Var_Severity === 'Sev2'"
+                    )
+                },
+                guard_variables(),
+            )
+
+    def test_error_guard_rejects_route_proxy_for_severity(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "does not reference required variable 'severity'",
+        ):
+            build_bpmn.validate_error_guard_reference_constraints(
+                {
+                    "End_JiraUnavailable": [
+                        "jiraAvailable",
+                        "severity",
+                    ]
+                },
+                {
+                    "End_JiraUnavailable": (
+                        "=js:vars.Var_JiraAvailable === false && "
+                        "(vars.Var_Route === 'ExistingIssue' || "
+                        "vars.Var_Route === 'NewEscalation')"
+                    )
+                },
+                guard_variables()
+                + [{"id": "Var_Route", "name": "route"}],
+            )
+
+    def test_error_guard_rejects_unknown_error_end(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"names unknown error ends: \['End_Other'\]",
+        ):
+            build_bpmn.validate_error_guard_reference_constraints(
+                {"End_Other": ["severity"]},
+                {"End_JiraUnavailable": "=js:true"},
+                guard_variables(),
+            )
+
+    def test_error_guard_rejects_unknown_variable(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "references unknown variable 'missing'",
+        ):
+            build_bpmn.validate_error_guard_reference_constraints(
+                {"End_JiraUnavailable": ["missing"]},
+                {"End_JiraUnavailable": "=js:true"},
+                guard_variables(),
+            )
+
+    def test_error_guard_rejects_ambiguous_variable_name(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "references ambiguous variable name 'severity'",
+        ):
+            build_bpmn.validate_error_guard_reference_constraints(
+                {"End_JiraUnavailable": ["severity"]},
+                {"End_JiraUnavailable": "=js:vars.Var_Severity"},
+                guard_variables()
+                + [{"id": "Var_SeverityScoped", "name": "severity"}],
+            )
+
+    def test_error_guard_rejects_longer_identifier_prefix(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "does not reference required variable 'severity'",
+        ):
+            build_bpmn.validate_error_guard_reference_constraints(
+                {"End_JiraUnavailable": ["severity"]},
+                {
+                    "End_JiraUnavailable": (
+                        "=js:vars.Var_SeverityBackup === 'Sev1'"
+                    )
+                },
+                guard_variables()
+                + [
+                    {
+                        "id": "Var_SeverityBackup",
+                        "name": "severityBackup",
+                    }
+                ],
+            )
+
+    def test_error_guard_rejects_reference_inside_string(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "does not reference required variable 'severity'",
+        ):
+            build_bpmn.validate_error_guard_reference_constraints(
+                {"End_JiraUnavailable": ["severity"]},
+                {
+                    "End_JiraUnavailable": (
+                        '=js:"vars.Var_Severity" && '
+                        "!vars.Var_JiraAvailable"
+                    )
+                },
+                guard_variables(),
+            )
+
+    def test_error_guard_rejects_reference_inside_comment(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "does not reference required variable 'severity'",
+        ):
+            build_bpmn.validate_error_guard_reference_constraints(
+                {"End_JiraUnavailable": ["severity"]},
+                {
+                    "End_JiraUnavailable": (
+                        "=js:!vars.Var_JiraAvailable "
+                        "/* vars.Var_Severity */"
+                    )
+                },
+                guard_variables(),
+            )
+
+    def test_error_guard_rejects_reference_inside_regex(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "does not reference required variable 'severity'",
+        ):
+            build_bpmn.validate_error_guard_reference_constraints(
+                {"End_JiraUnavailable": ["severity"]},
+                {
+                    "End_JiraUnavailable": (
+                        r"=js:/vars\.Var_Severity/.test('x') && "
+                        "!vars.Var_JiraAvailable"
+                    )
+                },
+                guard_variables(),
+            )
+
+    def test_error_end_rejects_null_matching_boundary(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "matching boundary for error end End_Error is required",
+        ):
+            build_bpmn.validate_matching_error_boundary(
+                {"id": "End_Error", "errorRef": "Error_Backend"},
+                None,
+                {},
+                {"End_Error": "Sub_Assess"},
+            )
+
     def test_accepts_connected_nested_execution_scopes(self) -> None:
         build_bpmn.validate_scope_execution_paths(
             {
@@ -776,7 +971,7 @@ class BuildBpmnTests(unittest.TestCase):
                                 "id": "Flow_Check_Error",
                                 "source": "Gateway_Check",
                                 "target": "End_Error",
-                                "condition": "=js:!vars.available",
+                                "condition": "=js:!vars.Var_Working",
                             },
                             {
                                 "id": "Flow_Check_End",
@@ -852,6 +1047,9 @@ class BuildBpmnTests(unittest.TestCase):
                         "End_Error": "Boundary_Backend",
                     },
                     "forbidUntypedBoundaries": True,
+                    "requiredGuardReferencesById": {
+                        "End_Error": ["working"],
+                    },
                 },
                 "decisionPhases": {
                     "Sub_Assess": {
@@ -1024,6 +1222,13 @@ class BuildBpmnTests(unittest.TestCase):
             self.assertIn("result", entry["outputSchema"]["properties"])
             self.assertNotIn("working", entry["inputSchema"]["properties"])
             self.assertNotIn("working", entry["outputSchema"]["properties"])
+
+        spec["process"]["nodes"][1]["flows"][1]["condition"] = "=js:true"
+        with self.assertRaisesRegex(
+            ValueError,
+            "does not reference required variable 'working'",
+        ):
+            build_bpmn.validate_constraints(spec)
 
     def test_rejects_underdeveloped_visible_decision_phase(self) -> None:
         spec = {

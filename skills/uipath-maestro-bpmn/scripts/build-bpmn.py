@@ -612,6 +612,247 @@ def script_references_stable_variable(
     return reference in serialized_inputs or reference in script_body
 
 
+def resolve_constraint_variable_id(
+    reference: object,
+    variables: list[dict[str, object]],
+    constraint_path: str,
+) -> str:
+    """Resolve a constraint reference without guessing between variables."""
+    if not isinstance(reference, str) or not reference:
+        raise ValueError(
+            f"{constraint_path} must contain non-empty variable names or ids"
+        )
+    id_matches = [
+        stringify(variable["id"])
+        for variable in variables
+        if stringify(variable["id"]) == reference
+    ]
+    if len(id_matches) == 1:
+        return id_matches[0]
+    name_matches = [
+        stringify(variable["id"])
+        for variable in variables
+        if stringify(variable["name"]) == reference
+    ]
+    if not name_matches:
+        raise ValueError(
+            f"{constraint_path} references unknown variable {reference!r}"
+        )
+    if len(name_matches) != 1:
+        raise ValueError(
+            f"{constraint_path} references ambiguous variable name "
+            f"{reference!r}; use a stable variable id"
+        )
+    return name_matches[0]
+
+
+def mask_javascript_non_code(expression: object) -> str:
+    """Blank literals and comments before inspecting executable JS tokens."""
+    source = stringify(expression)
+    masked = list(source)
+    index = 0
+    can_start_regex = True
+    regex_prefix_words = {
+        "await",
+        "case",
+        "delete",
+        "in",
+        "instanceof",
+        "new",
+        "of",
+        "return",
+        "throw",
+        "typeof",
+        "void",
+        "yield",
+    }
+
+    def blank(position: int) -> None:
+        if masked[position] not in "\r\n":
+            masked[position] = " "
+
+    while index < len(source):
+        char = source[index]
+        if char.isspace():
+            index += 1
+            continue
+        if char in {"'", '"', "`"}:
+            delimiter = char
+            blank(index)
+            index += 1
+            while index < len(source):
+                char = source[index]
+                blank(index)
+                if char == "\\" and index + 1 < len(source):
+                    index += 1
+                    blank(index)
+                elif char == delimiter:
+                    index += 1
+                    break
+                index += 1
+            can_start_regex = False
+            continue
+        if char == "/" and index + 1 < len(source):
+            next_char = source[index + 1]
+            if next_char == "/":
+                blank(index)
+                blank(index + 1)
+                index += 2
+                while index < len(source) and source[index] not in "\r\n":
+                    blank(index)
+                    index += 1
+                continue
+            if next_char == "*":
+                blank(index)
+                blank(index + 1)
+                index += 2
+                while index < len(source):
+                    char = source[index]
+                    blank(index)
+                    if (
+                        char == "*"
+                        and index + 1 < len(source)
+                        and source[index + 1] == "/"
+                    ):
+                        index += 1
+                        blank(index)
+                        index += 1
+                        break
+                    index += 1
+                continue
+            if can_start_regex:
+                blank(index)
+                index += 1
+                in_character_class = False
+                while index < len(source):
+                    char = source[index]
+                    blank(index)
+                    if char == "\\" and index + 1 < len(source):
+                        index += 1
+                        blank(index)
+                    elif char == "[":
+                        in_character_class = True
+                    elif char == "]":
+                        in_character_class = False
+                    elif char == "/" and not in_character_class:
+                        index += 1
+                        while (
+                            index < len(source)
+                            and source[index].isalpha()
+                        ):
+                            blank(index)
+                            index += 1
+                        break
+                    index += 1
+                can_start_regex = False
+                continue
+            can_start_regex = True
+            index += 1
+            continue
+        if char.isalpha() or char in {"_", "$"}:
+            end = index + 1
+            while end < len(source) and (
+                source[end].isalnum() or source[end] in {"_", "$"}
+            ):
+                end += 1
+            can_start_regex = source[index:end] in regex_prefix_words
+            index = end
+            continue
+        if char.isdigit():
+            index += 1
+            while index < len(source) and (
+                source[index].isalnum() or source[index] in {"_", "."}
+            ):
+                index += 1
+            can_start_regex = False
+            continue
+        can_start_regex = char in "([{=,:;!?&|+-*%^~<>"
+        index += 1
+    return "".join(masked)
+
+
+def expression_references_stable_variable(
+    expression: object,
+    variable_id: str,
+) -> bool:
+    """Match standalone vars.<id>, not a longer identifier or property path."""
+    pattern = (
+        rf"(?<![A-Za-z0-9_.])vars\.{re.escape(variable_id)}"
+        rf"(?![A-Za-z0-9_])"
+    )
+    return re.search(pattern, mask_javascript_non_code(expression)) is not None
+
+
+def validate_error_guard_reference_constraints(
+    references_by_id: object,
+    conditions_by_id: dict[str, object],
+    variables: list[dict[str, object]],
+) -> None:
+    """Require approved qualification variables in selected error guards."""
+    path = "constraints.errorEnds.requiredGuardReferencesById"
+    if not isinstance(references_by_id, dict):
+        raise ValueError(f"{path} must be an object")
+    unknown_error_end_ids = set(references_by_id) - set(conditions_by_id)
+    if unknown_error_end_ids:
+        raise ValueError(
+            f"{path} names unknown error ends: "
+            f"{sorted(unknown_error_end_ids)}"
+        )
+    for error_end_id, references in references_by_id.items():
+        item_path = f"{path}[{error_end_id!r}]"
+        if not isinstance(references, list):
+            raise ValueError(f"{item_path} must be an array")
+        for reference in references:
+            variable_id = resolve_constraint_variable_id(
+                reference,
+                variables,
+                item_path,
+            )
+            if not expression_references_stable_variable(
+                conditions_by_id[error_end_id],
+                variable_id,
+            ):
+                raise ValueError(
+                    f"error end {error_end_id} guard does not reference "
+                    f"required variable {reference!r} by stable id "
+                    f"'vars.{variable_id}'"
+                )
+
+
+def validate_matching_error_boundary(
+    error_end: dict[str, object],
+    boundary_id: object,
+    nodes_by_id: dict[str, dict[str, object]],
+    owners_by_id: dict[str, str | None],
+) -> None:
+    """Require the typed, interrupting boundary promised by the contract."""
+    error_end_id = stringify(error_end["id"])
+    if boundary_id is None:
+        raise ValueError(
+            f"matching boundary for error end {error_end_id} is required"
+        )
+    boundary = nodes_by_id.get(stringify(boundary_id))
+    if boundary is None or boundary.get("kind") != "boundaryEvent":
+        raise ValueError(
+            f"matching boundary {boundary_id} for error end {error_end_id} "
+            "does not identify a boundary event"
+        )
+    if boundary.get("errorRef") != error_end.get("errorRef"):
+        raise ValueError(
+            f"error end {error_end_id} and boundary {boundary_id} must use "
+            "the same errorRef"
+        )
+    if boundary.get("attachedTo") != owners_by_id[error_end_id]:
+        raise ValueError(
+            f"boundary {boundary_id} must attach to the subprocess "
+            f"containing error end {error_end_id}"
+        )
+    if boundary.get("cancelActivity", True) is not True:
+        raise ValueError(
+            f"matching error boundary {boundary_id} must be interrupting"
+        )
+
+
 def validate_diverging_exclusive_gateways(
     nodes: list[dict[str, object]],
     flows: list[dict[str, object]],
@@ -896,6 +1137,7 @@ def validate_constraints(spec: dict[str, object]) -> None:
             "constraints.errorEnds.matchingBoundaryById must declare every "
             "error end exactly once"
         )
+    error_conditions_by_id: dict[str, object] = {}
     for node in error_ends:
         node_id = stringify(node["id"])
         error_incoming = incoming.get(stringify(node["id"]), [])
@@ -904,29 +1146,19 @@ def validate_constraints(spec: dict[str, object]) -> None:
                 f"error end {node['id']} must have exactly one conditional "
                 "incoming flow"
             )
+        error_conditions_by_id[node_id] = error_incoming[0]["condition"]
         boundary_id = matching_boundaries[node_id]
-        if boundary_id is None:
-            continue
-        boundary = nodes_by_id.get(stringify(boundary_id))
-        if boundary is None or boundary.get("kind") != "boundaryEvent":
-            raise ValueError(
-                f"matching boundary {boundary_id} for error end {node_id} "
-                "does not identify a boundary event"
-            )
-        if boundary.get("errorRef") != node.get("errorRef"):
-            raise ValueError(
-                f"error end {node_id} and boundary {boundary_id} must use "
-                "the same errorRef"
-            )
-        if boundary.get("attachedTo") != owners_by_id[node_id]:
-            raise ValueError(
-                f"boundary {boundary_id} must attach to the subprocess "
-                f"containing error end {node_id}"
-            )
-        if boundary.get("cancelActivity", True) is not True:
-            raise ValueError(
-                f"matching error boundary {boundary_id} must be interrupting"
-            )
+        validate_matching_error_boundary(
+            node,
+            boundary_id,
+            nodes_by_id,
+            owners_by_id,
+        )
+    validate_error_guard_reference_constraints(
+        error_constraint.get("requiredGuardReferencesById", {}),
+        error_conditions_by_id,
+        variables,
+    )
 
     decision_phases = constraints.get("decisionPhases")
     if not isinstance(decision_phases, dict):
@@ -1582,6 +1814,7 @@ def example() -> dict[str, object]:
                 "allowedIds": [],
                 "matchingBoundaryById": {},
                 "forbidUntypedBoundaries": True,
+                "requiredGuardReferencesById": {},
             },
             "decisionPhases": {},
             "rootTopology": {

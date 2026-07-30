@@ -1,12 +1,16 @@
 # Declarative structural renderer
 
-Use `scripts/build-bpmn.py` for a **large new** BPMN project. Do not use it to
-rewrite an existing or imported BPMN; brownfield edits must remain surgical.
+Use `scripts/build-bpmn.py` for a **large new** BPMN project whose executable
+work uses only the Variables and ScriptTask mapping forms documented below.
+Do not use it for connectors, HITL, RPA, agents, send/receive tasks, another
+registry payload absent from this contract, or an existing/imported BPMN.
+Assemble unsupported registry nodes from their exact XML templates, and keep
+brownfield edits surgical.
 
 The renderer removes XML bookkeeping only. The JSON spec must still state every
 process variable, node, gateway condition, Variables assignment, scope, error
-boundary, loop, and sequence flow. Mapping fields must come from live registry
-templates.
+boundary, loop, and sequence flow. Its documented mapping fields must come from
+live registry templates.
 
 This guide and `build-bpmn.py --example` are the renderer's authoring contract.
 Do not inspect the renderer implementation or its tests to infer extra fields or
@@ -79,7 +83,10 @@ rendered XML and then overwrite it from a stale spec.
       "matchingBoundaryById": {
         "End_AssessError": "Boundary_AssessError"
       },
-      "forbidUntypedBoundaries": true
+      "forbidUntypedBoundaries": true,
+      "requiredGuardReferencesById": {
+        "End_AssessError": ["backendAvailable", "severity"]
+      }
     },
     "decisionPhases": {
       "SubProcess_Assess": {
@@ -113,7 +120,8 @@ as a stable `vars.<id>` read in the script body; passing the full `vars` object
 does not require redundant per-variable args. Rendering fails if internal
 variables leak into the public contract, a script's inputs/outputs drift from
 its approved responsibility, an error end lacks one visibly conditional
-incoming flow, or a declared decision phase is underdeveloped. Error-end ids
+incoming flow, an error guard omits an approved qualification variable, or a
+declared decision phase is underdeveloped. Error-end ids
 and their matching, typed, interrupting boundaries must be exact; ordinary
 business outcomes must not be smuggled into extra error ends. Root start/end
 counts and required convergence points are also checked. Use an empty
@@ -437,6 +445,15 @@ eligible routes before the complete error guard. Declare the exact error-end id
 under `constraints.errorEnds.allowedIds`, map it to this boundary under
 `matchingBoundaryById`, and give both elements the same `errorRef`. Never use an
 untyped catch-all boundary to stand in for a requested matching error.
+
+Before authoring, list every variable that the approved design says qualifies
+each error route under `requiredGuardReferencesById`. Use the semantic variable
+name or its stable id; the rendered guard must visibly reference the stable
+`vars.<id>` form for every listed variable. Do not leave this map empty when an
+error route is qualified by availability, severity, eligibility, or another
+approved condition. This constraint proves reference presence, not boolean
+polarity or the complete business expression, so review those semantics
+separately.
 
 ## Sequential multi-instance
 

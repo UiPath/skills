@@ -202,9 +202,14 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
    Do not copy CLI scaffold metadata shapes into a synthetic local project.
 
-   For a large new graph, use the generic structural renderer described in
+   For a large new graph whose executable work uses only the renderer's
+   documented Variables and ScriptTask mapping forms, use the generic
+   structural renderer described in
    [references/declarative-builder.md](references/declarative-builder.md).
-   Author its JSON spec instead of precomposing repetitive XML. The spec must
+   Do not use this path for connectors, HITL, RPA, agents, send/receive tasks,
+   or another registry template the renderer contract does not explicitly
+   cover; assemble those payloads from their registry XML templates. Author the
+   renderer's JSON spec instead of precomposing repetitive XML. The spec must
    state every variable, node, condition, scope, loop, error, and flow; the
    renderer derives references, DI, and local metadata, but does not generate
    business policy. Start from:

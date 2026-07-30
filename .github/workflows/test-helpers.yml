@@ -7,12 +7,26 @@ on:
       - 'tests/tasks/uipath-maestro-case/**'
       - 'tests/tasks/uipath-agents/**'
       - 'tests/scripts/**'
+      - 'skills/uipath-maestro-bpmn/scripts/**'
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
       - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
       - '.github/workflows/test-helpers.yml'
   workflow_dispatch:
 
 jobs:
+  maestro-bpmn-builder-tests:
+    runs-on: ubuntu-latest
+    name: maestro-bpmn declarative builder tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run builder tests
+        run: python3 skills/uipath-maestro-bpmn/scripts/test_build_bpmn.py
+
   pytest-flow-check:
     runs-on: ubuntu-latest
     name: maestro-flow checker unit tests
