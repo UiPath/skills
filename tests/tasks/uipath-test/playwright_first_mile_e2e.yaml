@@ -4,8 +4,8 @@
 #     machine assigned (the task lets the agent discover/provision this)
 #   - @uipath/cli new enough to carry tm pack --type playwright (UiPath/cli#3226)
 # Must-pass once the CLI is published and the e2e tenant has the serverless
-# Playwright runtime; until then this documents the target bar. (path-to-ga
-# tag deliberately omitted pending an allowlisted approver — see PR notes.)
+# Playwright runtime; until then this documents the target bar. (The GA-track
+# tag is deliberately omitted pending an allowlisted approver — see PR notes.)
 task_id: skill-test-playwright-first-mile-e2e
 description: >
   Full Playwright first-mile e2e: agent uses the uipath-test skill to take a
