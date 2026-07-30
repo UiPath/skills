@@ -233,8 +233,6 @@
     "agenthub mcp update",
     "agenthub mcp-tools",
     "agenthub mcp-tools candidates",
-    "agenthub mcp-tools create-is-activity",
-    "agenthub mcp-tools create-raw",
     "agenthub mcp-tools create-resource",
     "agenthub mcp-tools delete",
     "agenthub mcp-tools disable",
