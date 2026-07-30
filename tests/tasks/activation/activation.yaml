@@ -27,6 +27,7 @@ dataset:
     - uipath-mcp-servers.jsonl
     - uipath-planner.jsonl
     - uipath-platform.jsonl
+    - uipath-process-mining.jsonl
     - uipath-review.jsonl
     - uipath-rpa.jsonl
     - uipath-solution.jsonl
@@ -36,7 +37,7 @@ dataset:
 
 initial_prompt: "${row.prompt}"
 
-# 23 skill_triggered criteria — one per skill. Each derives expected internally
+# 24 skill_triggered criteria — one per skill. Each derives expected internally
 # from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~1100 no
 # per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
 success_criteria:
@@ -145,6 +146,12 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-platform activation"
     skill_name: uipath-platform
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_when: auto
+  - type: skill_triggered
+    description: "uipath-process-mining activation"
+    skill_name: uipath-process-mining
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_when: auto
