@@ -8,7 +8,7 @@ Use this guide when BPMN source changed and local package metadata must be refre
 - `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` are derived package metadata unless a CLI contract explicitly marks a field as user-authored.
 - Connector-backed or dynamically schematized `Intsvc.*` activity and event payloads are executable only after registry-backed enrichment supplies connector metadata, connection binding references, dynamic schemas, and generated package resources. Confirmed plain connectionless HTTP follows the documented pass-2 authoring recipe instead.
 
-## Local Synthetic Project Contract
+## Current Local Project Contract
 
 > **Use `uip maestro bpmn refresh <project-path>` for any project with an
 > Integration Service connector node.** `refresh` regenerates all four package
@@ -40,6 +40,19 @@ consumes it as written:
 `content/<file>` paths, so pre-existing synthetic metadata in that shape stays
 valid. Prefer the CLI shape for anything new.
 
+For a new bare local project, start with the supported generator instead of
+hand-authoring the scaffold:
+
+```bash
+uip maestro bpmn init <ProjectName> \
+  --skip-solution-registration \
+  --output json
+```
+
+Edit the project at the returned `Data.Path` and preserve its generated
+metadata. Do not translate `project.uiproj`, `operate.json`, entry-point, or
+package-descriptor fields from another UiPath project type.
+
 The placeholder-safe JSON shape for a CLI-unavailable fallback is shown below;
 keep it exact apart from project, file, and start event names.
 
@@ -51,7 +64,8 @@ Local regeneration reads:
 - Root `uipath:variables` for entry point input/output schemas.
 - Root `uipath:bindings` for package resources.
 - Enriched `uipath:activity` and `uipath:event` payloads for `Intsvc.*` context fields, request payloads, output mappings, and schemas.
-- The project main file from `project.uiproj` or the selected BPMN file.
+- The project/start-event path from `operate.json.main` or the selected BPMN
+  file and root start event.
 
 Do not derive metadata from stale package files first. Use existing generated files only as a drift comparison or as CLI-owned enrichment input when the CLI explicitly supports that workflow.
 
@@ -77,7 +91,8 @@ Do not derive metadata from stale package files first. Use existing generated fi
 4. Verify the project directory now contains the full metadata set:
    `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`,
    and `package-descriptor.json`. The pack command consumes these files; it does
-   not synthesize a missing package descriptor.
+   not synthesize a missing package descriptor. Do not substitute hand-written
+   package metadata.
 
 5. For package-shape verification, use the local pack command:
 
@@ -90,11 +105,11 @@ Do not derive metadata from stale package files first. Use existing generated fi
    - `bindings_v2.json` resources matching root bindings and enriched connector metadata.
    - `operate.json` pointing at the intended BPMN file with `ProcessOrchestration` content type.
    - `package-descriptor.json` entries for the BPMN file and generated JSON under `content/`.
-7. If the installed CLI cannot regenerate a needed file in place, keep the generated file stale only as a known blocker and report the exact unsupported step.
+7. If the installed CLI cannot regenerate a needed file in place, keep the generated file stale only as a known blocker and report the exact unsupported step. A source-only project is not package-ready.
 
 Packaging is local and authoring-safe. Upload, publish, deploy, debug, and run are cloud or runtime actions and still require explicit user consent.
 
-## Minimal Local Metadata Shape
+## Source-only fallback
 
 When a local-only synthetic project needs package files and the CLI cannot
 regenerate them in place, mirror what `update-metadata` would have written.
