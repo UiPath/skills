@@ -1,11 +1,12 @@
 # Declarative structural renderer
 
 Use `scripts/build-bpmn.py` for a **large new** BPMN project whose executable
-work uses only the Variables and ScriptTask mapping forms documented below.
-Do not use it for connectors, HITL, RPA, agents, send/receive tasks, another
-registry payload absent from this contract, or an existing/imported BPMN.
-Assemble unsupported registry nodes from their exact XML templates, and keep
-brownfield edits surgical.
+work uses only the Variables, ScriptTask, and Integration Service activity
+mapping forms documented below. Use the connector form only after authenticated
+discovery supplies the exact activity and binding contract. Do not use the
+renderer for HITL, RPA, agents, receive tasks, another registry payload absent
+from this contract, or an existing/imported BPMN. Assemble unsupported registry
+nodes from their exact XML templates, and keep brownfield edits surgical.
 
 The renderer removes XML bookkeeping only. The JSON spec must still state every
 process variable, node, gateway condition, Variables assignment, scope, error
@@ -418,9 +419,19 @@ when the XML shape is `<uipath:input name="...">`:
   request field names. Do not replace a leaf with a provider synonym—for
   example, if enrichment exposes `fields.reporter.id`, author `id`, not
   `accountId`.
+- Select the operation's method key under
+  `Data.IsEnrichment.Metadata.Method`. Include a field only when its
+  `Method.<same-key>.Request` flag is true. `RequestCurated` controls curated
+  presentation and never admits a field whose `Request` flag is false. Use the
+  field's exact `Name`, not the `Fields` dictionary key or display name. Exclude
+  response-only and other non-request fields.
 - Treat required method parameters and required request fields as mandatory.
-  The renderer checks the structural path/query split, but only the saved
-  enrichment tells you which operation-specific inputs are required.
+  Include optional request fields only when the business contract needs them.
+  Before rendering, compare the body leaf paths with the request-eligible field
+  names and confirm every request field whose same method entry marks
+  `Required` is present. The renderer checks the structural path/query split,
+  but only the saved enrichment tells you which operation-specific inputs are
+  legal and required.
 
 ```json
 {

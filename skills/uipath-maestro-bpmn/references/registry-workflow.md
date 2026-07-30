@@ -4,6 +4,12 @@ Every `uipath:*` payload in a Maestro `.bpmn` comes from the registry — never
 from prose, never hand-written. This file is the loop for turning user intent
 into registry-backed XML.
 
+Keep discovery evidence with its deliverable. An exact user-requested path wins;
+otherwise, if the task names or creates a project directory, use
+`<project>/registry-evidence/`. Use workspace-root `registry-evidence/` only
+when the task is evidence-only and has no project deliverable. Do not produce
+both locations for one task.
+
 ## 1. Sync and discover
 
 ```bash
@@ -40,9 +46,9 @@ login-free, non-live built-in template evidence. It must never stand in for an
 `Intsvc.*` activity, connector or connection discovery, activity/object
 selection, or enrichment, and it must never support a claim that a node is
 runnable. For the allowed built-in-only case, keep the failed output in the
-transcript or `registry-evidence/cli-error.txt`, then replace the final evidence
-JSON with the matching spec entry. For any live-resource failure, stop and
-report the node as blocked.
+transcript or `<evidence-directory>/cli-error.txt`, then replace the final
+evidence JSON with the matching spec entry. For any live-resource failure, stop
+and report the node as blocked.
 
 ## 2. Get the template for each chosen type
 
@@ -101,6 +107,23 @@ Write the activity's `body` input (`target="body"`) and `context`
 (`connectorKey`, `objectName`) from the accepted enrichment — do not hand-author
 connector schemas. The connection is referenced through a connection binding,
 `=bindings.<bindingId>` (see §4).
+
+Derive the request body from the accepted operation's method metadata:
+
+1. Select the operation's method key under
+   `Data.IsEnrichment.Metadata.Method` (for example `Post`).
+2. For each entry in `Data.IsEnrichment.Fields`, inspect
+   `Method.<same-key>`. A field is request-eligible only when `Request` is true.
+   `RequestCurated` controls curated presentation and never admits a field whose
+   `Request` flag is false.
+3. Serialize the field's exact `Name`; never use the `Fields` dictionary key or
+   `DisplayName`. Reconstruct dotted names as nested JSON objects.
+4. Include every request field whose same method entry marks `Required`.
+   Include optional request fields only when the business contract needs them.
+   Exclude response-only and other non-request fields.
+
+Before rendering, compare the body leaf paths with that request allowlist and
+confirm all required paths are present.
 
 ## 4. Bindings — from `bindingInfo`, never invented
 

@@ -71,15 +71,27 @@ JSON discovery command except `registry pull` into its evidence file. Preserve
 the first pull result from stdout rather than invoking it again: the session
 gets one pull, and all later discovery uses that cache.
 
+Choose one evidence location from the requested deliverable before writing:
+
+- If the user names an exact evidence path, use that path.
+- When the task names or creates a project directory, write evidence under
+  `<project>/registry-evidence/`.
+- Use workspace-root `registry-evidence/` only for an evidence-only task that
+  has no project deliverable.
+
+Do not create a second evidence directory at workspace root while authoring a
+named project.
+
 Treat requests to discover before authoring, save raw registry JSON/evidence,
 or "do not author yet" as discovery-only even if they describe an eventual
-BPMN. In that mode, immediately create `registry-evidence/`, run and save
-`registry pull --output json`, `registry list --output json` or `registry search
-... --output json`, and `registry get <type> --output json` for each requested
-type; do not read deep authoring references or scaffold a project. For authoring
-asks, author early: do not pre-read every reference before writing. Read a
-reference only when you reach the structure it covers, get the needed templates,
-then write the first complete draft before further spelunking. If
+BPMN. In that mode, immediately create the evidence directory selected above,
+run and save `registry pull --output json`, `registry list --output json` or
+`registry search ... --output json`, and `registry get <type> --output json` for
+each requested type; do not read deep authoring references or scaffold a
+project. For authoring asks, author early: do not pre-read every reference
+before writing. Read a reference only when you reach the structure it covers,
+get the needed templates, then write the first complete draft before further
+spelunking. If
 [references/structural-bpmn.md](references/structural-bpmn.md) or
 [references/expression-authoring.md](references/expression-authoring.md)
 directly covers the requested construct, write a first complete draft before
@@ -94,7 +106,7 @@ resource kinds the approved design actually uses.
 
 For registry-evidence-only tasks, be command-first and time-boxed:
 
-- Create `registry-evidence/` before anything else.
+- Create the evidence directory selected above before anything else.
 - Run the registry command forms the user asked for. For RPA job + internal
   message discovery, use `uip maestro bpmn registry list --limit -1 --output
   json`, `uip maestro bpmn registry get Orchestrator.StartJob --output json`,
@@ -107,14 +119,15 @@ For registry-evidence-only tasks, be command-first and time-boxed:
   failure with `|| true`), so the transcript shows the discovery loop:
   `uip maestro bpmn registry list --limit -1 --output json` and
   `uip maestro bpmn registry get <type> --output json`. Record the failed CLI
-  attempts in `registry-evidence/cli-error.txt`, then overwrite any failure JSON
-  in the expected `registry-evidence/*.json` files with valid JSON evidence from
-  `skills/uipath-maestro-bpmn/validator/bpmn-spec.json` containing the same
-  extension types and stop. The final evidence files must literally contain the
-  discovered type names, for example `Orchestrator.StartJob` and
-  `Maestro.ReceiveMessageEvent`. Never use this fallback for `Intsvc.*`,
-  connector or connection discovery, activity/object selection, enrichment, or
-  any node claimed to be live/runnable; stop those tasks as blocked.
+  attempts in `<evidence-directory>/cli-error.txt`, then overwrite any failure
+  JSON in the expected `<evidence-directory>/*.json` files with valid JSON
+  evidence from `skills/uipath-maestro-bpmn/validator/bpmn-spec.json`
+  containing the same extension types and stop. The final evidence files must
+  literally contain the discovered type names, for example
+  `Orchestrator.StartJob` and `Maestro.ReceiveMessageEvent`. Never use this
+  fallback for `Intsvc.*`, connector or connection discovery, activity/object
+  selection, enrichment, or any node claimed to be live/runnable; stop those
+  tasks as blocked.
 
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
@@ -136,6 +149,14 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    (for example `<bpmn:SendTask>` or `<bpmn:ReceiveTask>`), normalize the host
    tag to the serializer's lower-camel BPMN element (`<bpmn:sendTask>`,
    `<bpmn:receiveTask>`) while preserving the `uipath:*` payload exactly.
+   For the accepted connector operation, identify its selected method key under
+   `Data.IsEnrichment.Metadata.Method`. Serialize only enrichment `Fields`
+   whose `Method.<same-key>.Request` is true. `RequestCurated` is presentation
+   metadata and never makes a non-request field legal by itself. Use each
+   field's exact `Name`, not the `Fields` dictionary key or display name;
+   include every request field whose same method entry marks `Required`, omit
+   optional request fields the business contract does not need, exclude
+   response-only fields, and reconstruct dotted names as nested JSON.
 
    **Small local fast path (overrides the generic Discover and Assemble
    guidance).** Use this path only for a new intent-only graph with at most
