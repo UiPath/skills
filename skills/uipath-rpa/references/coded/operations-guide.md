@@ -33,13 +33,15 @@ Read: <PROJECT_DIR>/Main.xaml          # or TestCase.xaml for test projects
 - Generate `.cs` files (workflows, test cases, source files) — respect the four Error-severity coded analyzer rules while authoring: [§ Coded Workflow Analyzer Rules](#coded-workflow-analyzer-rules)
 - For each `.cs` **workflow** file, add an entry to `entryPoints` in `project.json` (**Process projects only** — Tests and Library projects do NOT use `entryPoints`). The existing scaffolded XAML entry can stay alongside.
 - For each `.cs` **test case** file, add an entry to `designOptions.fileInfoCollection` in `project.json` with `editingStatus: "InProgress"`, `testCaseType: "TestCase"`, `publishAsTestCase: true`. Test cases do NOT go in `entryPoints` regardless of project type.
-- If test project and shared setup is needed, create a `partial class CodedWorkflow` source file that implements `IBeforeAfterRun` (see before-after-hooks-template.md)
+- If test project and shared setup is needed, create a `partial class CodedWorkflow` source file that implements `IBeforeAfterRun` (see [codedworkflow-template.md § Before/After Hooks Templates](../../assets/codedworkflow-template.md))
 
 **6. Validate each file** (Critical Rule #14) — run the validation loop on every `.cs` file until it compiles cleanly
 
 > **Why `init` instead of manual files?** It generates correct schema versions, metadata directories, and default dependencies — manual creation risks subtle errors. See [json-template.md](../../assets/json-template.md) for reference-only templates.
 
 ## Add a Workflow File to Existing Project
+
+> Before writing code, read [§ Coding Guidelines](#coding-guidelines) below — using-statement mapping, analyzer rules, anti-patterns.
 
 **Steps:**
 1. Read existing `project.json` to get project name (for namespace), `outputType`, and current entry points
@@ -68,6 +70,8 @@ Read: <PROJECT_DIR>/Main.xaml          # or TestCase.xaml for test projects
 5. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
 
 ## Add a Test Case File
+
+> Before writing code, read [§ Coding Guidelines](#coding-guidelines) below — using-statement mapping, analyzer rules, anti-patterns.
 
 Coded test cases automate and validate application behavior using a structured **Given-When-Then** (Arrange/Act/Assert) pattern. They inherit from `CodedWorkflow` just like workflows, but use the `[TestCase]` attribute.
 
@@ -177,7 +181,7 @@ public void Execute()
 ```
 
 **Shared Before/After hooks for all test cases:**
-Create a Coded Source File (e.g. `CodedWorkflowHooks.cs`) with `public partial class CodedWorkflow : IBeforeAfterRun` — the compiler merges it with the auto-generated CodedWorkflow partial, so all workflows and test cases get the hooks automatically. See `assets/before-after-hooks-template.md` for the full template.
+Create a Coded Source File (e.g. `CodedWorkflowHooks.cs`) with `public partial class CodedWorkflow : IBeforeAfterRun` — the compiler merges it with the auto-generated CodedWorkflow partial, so all workflows and test cases get the hooks automatically. See [codedworkflow-template.md § Before/After Hooks Templates](../../assets/codedworkflow-template.md) for the full template.
 
 ## Add a Coded Source File (Helper Class / Model / Utility)
 
@@ -584,10 +588,11 @@ if (system.PathExists(@"C:\Reports\report.pdf", PathType.File, out ILocalResourc
 - **Only include using statements for packages in project.json** — Adding unused usings causes compile errors
 - **Match input parameter names exactly** — Execute method signature must match `--input` arguments (case-sensitive)
 - **Escape backslashes in paths** — Use `C:\\path\\file.txt` not `C:\path\file.txt` in input arguments
+- **Resolve paths portably** — accept file/dir paths as arguments and resolve relative to the run-time working directory (`Directory.GetCurrentDirectory()`, `Path.Combine`); a machine-specific absolute path baked into code or a default value breaks on every other machine
 
 ### Validation Loop (Critical Rule #14)
 uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
-@../validation-guide.md
+Full loop (phases, exit criteria, error recovery): [../cli-reference.md § Validation Iteration Loop](../cli-reference.md#validation-iteration-loop)
 
 ### Error Handling
 - **Fix compilation errors methodically** — Categorize: Syntax → Type → Logic. Use the validation loop above to iterate until clean.
@@ -626,6 +631,7 @@ C) <user-driven approach>
 - Never forget to inherit from `CodedWorkflow` (except Coded Source Files) (Critical Rule #3)
 - Never add `using` statements for packages not in `project.json` — causes CS errors
 - Never guess service method names — verify with existing code or `uip rpa packages inspect`
+- Never hardcode machine-specific absolute paths as argument defaults or literals — resolve relative to the run-time working directory (see § Code Quality)
 
 ### UI Automation
 
@@ -675,3 +681,6 @@ C) <user-driven approach>
 | **"Cannot select item. It was not found among existing items"** | The `Item` value doesn't match any option (wrong text/casing) — not a control-type limitation | Read the control's `items` attribute via the interact CLI (SelectItem usage guide, routed from the UIA package guide § Documentation) and pass one of those values verbatim. `SelectItem` drives any control whose `items` lists options (any UI stack); use `TypeInto` only for type-ahead combos or controls with no `items`. |
 | **`packages inspect` cannot find UILibrary package** | Package is on a private/local NuGet feed | Use `--nupkg-path` to inspect the local `.nupkg` directly, or read `.metadata` files manually from `~/.nuget/packages/<name>/<version>/contentFiles/any/any/.objects/` |
 | **Studio rejects manually created project** | Missing metadata dirs, wrong schema/version | Always use `uip rpa init` instead of writing `project.json` manually |
+| **`CS0103` on an Execute default parameter value** | Default values are copied verbatim into the generated `*+Activity.cs` wrapper, where class consts/fields are out of scope | Use self-contained compile-time literals as defaults (`"output"`, `2`, `null`) — never a reference to a const, static, or member |
+| **Argument default ignored — empty string arrives instead** | `--input-arguments key=` (empty value) passes `""`, which OVERRIDES the declared default | Omit the flag entirely to use the method's default value |
+| **Runs invoke stale code after a signature change** | Generated wrapper (`*+Activity.cs` / WorkflowRunnerService) not regenerated | Re-run `uip rpa build` after changing an Execute signature; never hand-patch generated files under `.local/` |

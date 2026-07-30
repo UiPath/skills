@@ -11,7 +11,7 @@ All workflow and test case files inherit from `CodedWorkflow`, which provides bu
 | `DelayAsync(TimeSpan time)` / `DelayAsync(int delayMs)` | Pause execution asynchronously |
 | `BuildClient(string scope = "Orchestrator", bool force = true)` | Build an authenticated `HttpClient` for Orchestrator or custom scopes |
 | `GetRunningJobInformation()` | Returns `IRunningJobInformation` with current job context: job ID, process name/version, tenant, folder, organization, robot name, and more (see [IRunningJobInformation](#irunningjobinformation-properties) below) |
-| `RunWorkflow(string workflowFilePath, IDictionary<string, object> inputArguments = null, TimeSpan? timeout = null, bool isolated = false, InvokeTargetSession targetSession = InvokeTargetSession.Current)` | **Fallback method:** Invoke workflow by string path. Use `workflows.MyWorkflow()` instead when possible |
+| `RunWorkflow(string workflowFilePath, IDictionary<string, object> inputArguments = null, TimeSpan? timeout = null, bool isolated = false, InvokeTargetSession targetSession = InvokeTargetSession.Current)` | **Fallback method:** Invoke workflow by string path. Use `workflows.MyWorkflow()` instead when possible — fall back here when the generated typed accessors are stale or misbehaving after a signature change (rebuild first) |
 | `RunWorkflowAsync(...)` | Async version of `RunWorkflow` (same limitations apply) |
 
 ## Invoking Other Workflows

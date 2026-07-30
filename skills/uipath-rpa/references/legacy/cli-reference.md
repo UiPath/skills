@@ -2,6 +2,8 @@
 
 Complete reference for all `uip rpa-legacy` CLI commands and error recovery patterns.
 
+Sections: [Path and Output Rules](#path-and-output-rules) · [File Operations](#file-operations-built-in-tools) · [Activity Discovery Tools](#activity-discovery-tools) · [Validation Tools](#validation-tools) · [Package & Debug Tools](#package--debug-tools) · [Documentation Search](#documentation-search) · [CLI Error Recovery](#cli-error-recovery) · [Phase 0: Environment Readiness](#phase-0-environment-readiness) · [Legacy Project Structure](#legacy-project-structure) · [Discovery Workflow](#discovery-workflow--detailed-steps) · [Phase 3: Validate & Fix Loop](#phase-3-validate--fix-loop)
+
 **The CLI is fully self-documenting.** Append `--help` at any level to discover commands, subcommands, and parameters:
 ```bash
 uip rpa-legacy --help                      # all rpa-legacy subcommands
@@ -744,7 +746,7 @@ When to run: any enum property, any complex type argument, any type without list
 
 ### Step 5.5: Search NuGet for Packages (When Needed)
 
-When the known packages in [project-structure.md](#legacy-project-structure) and `find-activities` don't cover a capability:
+When the known packages in [§ Legacy Project Structure](#legacy-project-structure) and `find-activities` don't cover a capability:
 
 ```bash
 uip rpa-legacy find-package --query "barcode" --limit 10 --output json

@@ -12,7 +12,7 @@ Ready-to-use templates for UiPath coded files — workflows, test cases, helper/
 using System;
 using System.Collections.Generic;
 using UiPath.CodedWorkflows;
-// Add service-specific usings as needed — see references/coding-guidelines.md
+// Add service-specific usings as needed — see operations-guide.md § Using Statements Rules
 
 namespace {{PROJECT_NAME}}
 {
@@ -33,7 +33,7 @@ namespace {{PROJECT_NAME}}
 using System;
 using System.Collections.Generic;
 using UiPath.CodedWorkflows;
-// Add service-specific usings as needed — see references/coding-guidelines.md
+// Add service-specific usings as needed — see operations-guide.md § Using Statements Rules
 
 namespace {{PROJECT_NAME}}
 {
@@ -55,7 +55,7 @@ namespace {{PROJECT_NAME}}
 using System;
 using System.Collections.Generic;
 using UiPath.CodedWorkflows;
-// Add service-specific usings as needed — see references/coding-guidelines.md
+// Add service-specific usings as needed — see operations-guide.md § Using Statements Rules
 
 namespace {{PROJECT_NAME}}
 {
@@ -79,7 +79,7 @@ A single input argument named `Output` with the same type as the return value be
 using System;
 using System.Collections.Generic;
 using UiPath.CodedWorkflows;
-// Add service-specific usings as needed — see references/coding-guidelines.md
+// Add service-specific usings as needed — see operations-guide.md § Using Statements Rules
 
 namespace {{PROJECT_NAME}}
 {
@@ -103,7 +103,7 @@ When multiple arguments are both input and output, the return type must be a tup
 using System;
 using System.Collections.Generic;
 using UiPath.CodedWorkflows;
-// Add service-specific usings as needed — see references/coding-guidelines.md
+// Add service-specific usings as needed — see operations-guide.md § Using Statements Rules
 
 namespace {{PROJECT_NAME}}
 {
@@ -126,7 +126,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UiPath.CodedWorkflows;
-// Add service-specific usings as needed — see references/coding-guidelines.md
+// Add service-specific usings as needed — see operations-guide.md § Using Statements Rules
 
 namespace {{PROJECT_NAME}}
 {
@@ -145,11 +145,16 @@ namespace {{PROJECT_NAME}}
 
 Parameters with default values become **optional** when the workflow is invoked via `workflows.MyWorkflow()` — callers can omit them to use the defaults, or pass explicit values to override.
 
+Three rules for default values:
+1. **Self-contained compile-time literals only** — a default referencing a class const/field fails codegen with `CS0103` in the generated activity wrapper.
+2. **`--input-arguments key=` (empty value) overrides the default with `""`** — omit the flag entirely to use the declared default.
+3. **No machine-specific absolute paths as defaults** — accept paths as arguments and resolve them relative to the run-time working directory.
+
 ```csharp
 using System;
 using System.Collections.Generic;
 using UiPath.CodedWorkflows;
-// Add service-specific usings as needed — see references/coding-guidelines.md
+// Add service-specific usings as needed — see operations-guide.md § Using Statements Rules
 
 namespace {{PROJECT_NAME}}
 {
@@ -196,7 +201,7 @@ workflows.LaunchApp(browser: "msedge.exe", retryCount: 5);
 using System;
 using System.Collections.Generic;
 using UiPath.CodedWorkflows;
-// Add service-specific usings as needed — see references/coding-guidelines.md
+// Add service-specific usings as needed — see operations-guide.md § Using Statements Rules
 
 namespace {{PROJECT_NAME}}
 {
@@ -224,7 +229,7 @@ namespace {{PROJECT_NAME}}
 using System;
 using System.Collections.Generic;
 using UiPath.CodedWorkflows;
-// Add service-specific usings as needed — see references/coding-guidelines.md
+// Add service-specific usings as needed — see operations-guide.md § Using Statements Rules
 
 namespace {{PROJECT_NAME}}
 {
@@ -252,7 +257,7 @@ namespace {{PROJECT_NAME}}
 using System;
 using System.Collections.Generic;
 using UiPath.CodedWorkflows;
-// Add service-specific usings as needed — see references/coding-guidelines.md
+// Add service-specific usings as needed — see operations-guide.md § Using Statements Rules
 
 namespace {{PROJECT_NAME}}
 {

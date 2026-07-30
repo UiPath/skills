@@ -55,6 +55,7 @@ See [csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 | Expression filter, no new columns | `dt.Select("[Amount] > 1000")` | returns `DataRow()`; string match is **case-INSENSITIVE** by default; SQL-ish syntax |
 | Filter/sort/group/join/project | **LINQ** in one `Assign` | most flexible; ~2× faster than Join Data Tables on large sets |
 | Heavy multi-step transforms, unit-tested logic, safe accessors | **coded** (`.cs`) | C# LINQ inline; see § When to move to coded |
+| Multi-step transform inside a **C#-expression XAML** workflow | **Invoke Code** (or coded workflow via Invoke Workflow File) | C# XAML expression trees forbid statements/`out var`/optional-arg overloads (`CS0854`); helper `.cs` types unreachable — see § Exception below |
 | Key-value config / counters | `Dictionary(Of K,V)` | |
 | Tabular data | `DataTable` | typed columns; LINQ via `.AsEnumerable()` |
 
@@ -64,14 +65,17 @@ See [csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 
 When a transform genuinely outgrows expressions — >2 statement steps, a reusable safe accessor/helper, mutating rows in a loop, real try/catch around a parse, or an unreadable one-liner — move to a **coded (`.cs`) workflow** ([coded/operations-guide.md](coded/operations-guide.md)), still not `Invoke Code`. Coded gives `?.`, `out var`, multi-statement logic, and unit tests.
 
-### Exception: inside C#-expression XAML workflows, escalate to Invoke Code — NOT coded
+### Exception: C#-expression XAML workflows — Invoke Code or a coded workflow via Invoke Workflow File; NEVER a helper `.cs` source file
 
-When the transform must live inside a C#-expression XAML workflow, two hard limits invert the advice above:
+When the transform must live inside a C#-expression XAML workflow, two hard limits change the advice above:
 
-1. XAML expressions cannot reference the project's coded source file (`.cs`) types — `CS0103` at validate/build ([xaml/common-pitfalls.md § XAML Expressions Cannot Reference Coded Source File Types](xaml/common-pitfalls.md)).
+1. XAML expressions cannot reference the project's coded source file (`.cs`) types — `CS0103` at validate/build ([xaml/common-pitfalls.md § XAML Expressions Cannot Reference Coded Source File Types](xaml/common-pitfalls.md)). A helper class in a Coded Source File is unreachable from XAML expressions, period.
 2. C# XAML expressions compile as expression trees — no statements, no `out var` (`TryParse`), no optional-argument overloads (`CS0854`) ([xaml/common-pitfalls.md § C# XAML Expressions Compile as Expression Trees](xaml/common-pitfalls.md)).
 
-In that case escalate to **`Invoke Code`** (data in/out via its Arguments collection; author `Code` as an XML attribute — [xaml/common-pitfalls.md § InvokeCode Code Property](xaml/common-pitfalls.md)). Reserve the coded `.cs` workflow for units that stand alone as their own workflow (invoked via Invoke Workflow File or run directly) — it cannot serve as a helper for XAML expressions.
+Two valid escalations:
+
+- **`Invoke Code`** — logic stays inline in the XAML; data in/out via its Arguments collection; author `Code` as an XML attribute ([xaml/common-pitfalls.md § InvokeCode Code Property](xaml/common-pitfalls.md)).
+- **Coded Workflow invoked via `Invoke Workflow File`** — logic moves to a `.cs` file carrying `[Workflow]` + `Execute` (a Coded *Workflow*, not a bare source file); the XAML calls it like any child workflow (see § Source file vs workflow below).
 
 **Source file vs workflow — and how to call it:** a bare **Coded Source File** (helper class, no entry point) is callable only from other code. To invoke the logic from a XAML process, make it a **Coded Workflow** (`[Workflow]` + `Execute`) and call it via **Invoke Workflow File** (from XAML) or `RunWorkflow` / the typed `workflows` property (from coded) — see [coded/operations-guide.md](coded/operations-guide.md).
 

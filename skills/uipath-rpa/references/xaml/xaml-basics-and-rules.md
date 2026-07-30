@@ -180,6 +180,9 @@ Report: file path of created/edited workflow · brief description · key activit
 - **NEVER** use connector activities without checking connection existence
 - **NEVER** ignore activity doc conditional property groups (OverloadGroup conflicts cause validation errors)
 - **NEVER** generate full XAML from scratch without using `activities get-default-xaml` as a starting point
+- **NEVER** assume a create/edit succeeded — validate with `uip rpa validate` AND `uip rpa build` after every mutation
+- **NEVER** treat "no diagnostics found" from `validate` as final — `build` catches a further class of errors; run it next
+- **NEVER** skip environment readiness — check the project opens and restores cleanly first ([environment-setup.md](../environment-setup.md))
 
 ## XAML File Anatomy
 
@@ -529,6 +532,8 @@ Expressions use explicit `<CSharpValue>` (for read/evaluate) or `<CSharpReferenc
 ```
 
 **Important**: Do NOT use `[bracket]` shorthand for expressions. Brackets create `VisualBasicValue` nodes at deserialization time, causing validation failures for C#-only syntax (`null`, `?.`, `??`, `typeof()`, etc.).
+
+**Expression-tree limits**: each C# expression compiles as a lambda expression tree — no statements, no `out var` (`TryParse`), no optional-argument overloads (`CS0854`), and no calls into the project's coded source file types ([common-pitfalls.md § C# XAML Expressions Compile as Expression Trees](common-pitfalls.md)). When a transform outgrows single expressions, escalate per [data-manipulation-guide.md § Exception](../data-manipulation-guide.md) — Invoke Code, or a coded workflow via Invoke Workflow File.
 
 **Stronger rule for attribute-form bindings on `InArgument<T>` / `OutArgument<T>`:** in XAML projects with `expressionLanguage: CSharp`, any **non-literal** attribute value (`Message="variableName"`, `Text="&quot;Hello &quot; + name"`) is also deserialized as a `VisualBasicValue<T>` and fails at runtime with `JIT compilation is disabled for non-Legacy projects`. The attribute parser defaults to VB regardless of the project's expression language. Use `<CSharpValue>` / `<CSharpReference>` child elements for anything that isn't a plain literal. See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md) (includes § C# Expression Pitfalls).
 

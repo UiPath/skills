@@ -124,6 +124,7 @@ Rules:
 - **`=` vs `:=`**: `count=42` sends the string `"42"`; `count:=42` sends the number `42`. For `debug test-activity` / `debug start-from-here`, values are VB/C# expression **strings** — always `=`.
 - **Quoting**: single-quote any token containing spaces, commas, or a leading `@`; bare identifiers and numbers need no quotes. Values containing double quotes cannot be passed inline on Windows PowerShell 5.1 (it strips them) — write them to a UTF-8 file (`Set-Content -Encoding UTF8`) and use `key=@file`, `'@file'`, or `--<flag>-file`.
 - **Inline JSON**: a single JSON blob (`--input-arguments '{"k":"v"}'`) remains accepted for backward compatibility, but is unreliable on PowerShell 5.1 — prefer pairs or files.
+- **Empty value ≠ default**: `--input-arguments key=` passes an empty string, which OVERRIDES a coded workflow's declared default parameter value. Omit the flag entirely to use the default.
 
 ---
 
@@ -286,6 +287,7 @@ PHASE 2 — build-clean (per-project, once per edit session):
 3. DO NOT skip validation steps.
 4. DO NOT assume edits worked without checking.
 5. DO NOT bundle multiple fixes in one iteration. Fix the root cause, re-run, verify. Never add a speculative change alongside the actual fix -- changing two things at once makes it impossible to tell which one resolved the issue or whether the extra change introduced a new problem.
+6. Warnings are non-blocking. Once `validate`/`build` (and, where the task requires, `pack`/`run`) are clean of errors, deliver — do not investigate warnings unless the user asked or one blocks an acceptance criterion.
 
 Full `validate` and `run` command documentation: [§ validate](#validate) and [§ Reading run / debug results](#reading-run--debug-results).
 
