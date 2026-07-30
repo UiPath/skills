@@ -128,7 +128,7 @@ constrains. A single pattern needs only its own guide.
 
 ## Workflow
 
-Work the four steps quickly, but keep the path matched to the user's ask. Treat
+Work the five steps quickly, but keep the path matched to the user's ask. Treat
 requests to discover before authoring, save raw registry JSON/evidence, or "do
 not author yet" as discovery-only even if they describe an eventual BPMN. In
 that mode, immediately create `registry-evidence/`, run and save `registry pull
@@ -269,6 +269,19 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)). See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
+5. **Refresh derived metadata when package-ready output is required.** After
+   source validation passes, regenerate the four CLI-owned package files:
+
+   ```bash
+   uip maestro bpmn refresh <project-path> --output json
+   ```
+
+   Treat a nonzero result as a source/precondition failure: fix the BPMN or
+   `project.uiproj`, revalidate, and refresh again — never repair the generated
+   JSON by hand. Refresh is needed only for a package-ready, upload, debug,
+   publish, or deploy deliverable, not for a source-only draft. For the full
+   contract (scope, idempotency, binding rules) see
+   [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
 ## Operate and diagnose
 
