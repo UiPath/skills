@@ -161,7 +161,7 @@ tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
 
 ## Mock dispatch precedence
 
-The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wins). Matching is token-aware (order-independent, quotes stripped, `--flag=value` split, `--output <v>` ignored) with a substring fallback — see the module docstring in `_shared/mock_src/uip.py` (the dispatcher's source; the template ships it as bytecode). Authoring consequences: list specific rules before generic ones (a rule with fewer tokens matches a superset of invocations), and prefer dropping volatile flags (e.g. `-f` vs `--folder-key`) from match strings when the remaining tokens are unique. Shadow audit: for rules i < j in one manifest, if tokens(match_i) ⊆ tokens(match_j) and they serve different files/exit codes, rule j is unreachable for its canonical invocation.
+The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wins). Matching is token-aware (order-independent, quotes stripped, `--flag=value` split, `--output <v>` ignored) with a substring fallback — see the module docstring in `_shared/mock_src/uip.py` (the dispatcher's source; the template ships it as a compressed docstring-stripped blob). Authoring consequences: list specific rules before generic ones (a rule with fewer tokens matches a superset of invocations), and prefer dropping volatile flags (e.g. `-f` vs `--folder-key`) from match strings when the remaining tokens are unique. Shadow audit: for rules i < j in one manifest, if tokens(match_i) ⊆ tokens(match_j) and they serve different files/exit codes, rule j is unreachable for its canonical invocation.
 
 Each rule has one of:
 
