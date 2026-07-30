@@ -186,6 +186,7 @@ Compact `tasks/tasks.md` contract for this no-build path:
 - Use machine-scannable task headings in the plan: `## T{N}: task "{Task Name}"`. Do not hide task T-entries under dotted subheadings such as `### T12.1`; nested prose is allowed under the H2, but the task entry itself uses a plain integer T-number and quotes the task name.
 - Stage entries include `stage-kind`, `entry-rule`, `exit-rule`, `interrupting`, `required`, `sla`, and `rationale`.
 - Task entries include `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, and `rationale`.
+- Trigger/condition/SLA entries include `rule-type`, `source/status`, `target stage/task`, `return-or-close behavior`, and `rationale`.
 - Sequential runs use consecutive single-task lane numbers; every task in the run has `activation-mode: sequential` and `entry-rule: runs-sequentially`.
 - Global event/exception entries name exactly one interrupting secondary stage and the rule type (`wait-for-connector` or `sla-status-change`); do not duplicate those events across every primary stage. A `sla-status-change` entry names target + SLA title + escalation title, all declared in the SDD.
 - Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json`.
