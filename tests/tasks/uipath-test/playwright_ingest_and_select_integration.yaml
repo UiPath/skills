@@ -37,11 +37,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Waited for ingestion with an unfiltered test case list"
+    description: "Waited for ingestion by listing the project's test cases"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+list(?![^\n]*--filter)[^\n]*--project-key\s+PWINT'
+    command_pattern: 'uip\s+tm\s+testcases?\s+list\s+.*--project-key\s+PWINT'
     min_count: 1
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Did not filter that list by package name — the filter never matches ingested test cases"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+list\s+.*--filter'
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed

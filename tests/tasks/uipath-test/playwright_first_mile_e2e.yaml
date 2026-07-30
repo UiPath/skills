@@ -42,11 +42,18 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Scoped the run to chromium only"
+    description: "Ran the test set scoped to the chromium project"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testsets?\s+run\s+.*--playwright-projects\s+chromium(?!\s+[A-Za-z])'
+    command_pattern: 'uip\s+tm\s+testsets?\s+run\s+.*--playwright-projects\s+chromium'
     min_count: 1
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Did not widen the run to a second Playwright project"
+    tool_name: "Bash"
+    command_pattern: '--playwright-projects\s+\S+\s+\S'
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
