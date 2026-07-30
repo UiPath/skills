@@ -1,11 +1,11 @@
 task_id: skill-bpmn-script-jint-guidance
 description: >
-  Script task eval: agent authors a BPMN script task that follows the Jint
-  runtime boundary instead of Node.js, browser, filesystem, or network APIs.
+  Script task eval: agent authors the current Studio/Alpha v3 ScriptTask
+  contract while respecting the Jint runtime boundary.
 tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, shape:single-node, node:script]
 
 run_limits:
-  expected_turns: 15
+  expected_turns: 40
   max_turns: 60
 initial_prompt: |
   Create a local BPMN project named "RiskScoreScriptBpmn".
@@ -17,19 +17,25 @@ initial_prompt: |
   - Use the documented UiPath BPMN extension namespace
     `http://uipath.org/schema/bpmn`; do not use workflow-activities
     namespaces for BPMN extension XML.
-  - Declare root `uipath:variables version="v1"` entries for `amount`,
-    `daysOverdue`, and `riskScore` inside `bpmn:process` /
-    `bpmn:extensionElements`.
+  - Use the current Studio serializer contract
+    `bpmn:process isExecutable="false"`.
+  - Declare public `amount` and `daysOverdue` inputs bound to the root start,
+    a public `riskScore` output bound to the root end, and distinct mutable
+    internal variables for all three values. Use `number` for amount/riskScore
+    and `integer` for daysOverdue. Bridge them explicitly on the start/end
+    events with `BPMN.Variables` mappings.
   - Use `bpmn:scriptTask` with `scriptFormat="JavaScript"`.
-  - Include the UiPath script version metadata and prefer version `v3`.
-  - Map script inputs through `uipath:input name="args"`, but write the script
-    body using top-level identifiers such as `amount` and `daysOverdue`, not
-    `args.amount` or `args.daysOverdue`.
-  - Use UiPath variable-id expressions in input mappings, for example
-    `=vars.<amount variable id>`, not bare expressions such as `=amount`.
-  - Map the script result back to the declared `riskScore` output variable with
-    a `uipath:output` mapping whose `var` attribute is the declared `riskScore`
-    variable id. Do not put the target variable id in the output `name`.
+  - Use the current v3 Studio serializer shape: a `BPMN.Variables` mapping,
+    `uipath:scriptVersion value="v3"`, an input schema for `vars` and
+    `metadata`, and `uipath:input name="args"` that passes `=vars` and
+    `=metadata`.
+  - Read `amount` and `daysOverdue` in the script through
+    `vars.<mutable variable id>`, not top-level identifiers or `args.*`.
+  - Return the numeric score directly. Map `=result.response` to a scoped
+    `scriptResponse` variable of type `number`, map the standard scoped typed
+    `Error`, then map `=vars.<scriptResponse id>` to the mutable `riskScore`
+    variable with a custom output. Bridge that mutable value to the public
+    output on the root end.
   - Write script content that is compatible with the Jint runtime. Do not use
     Node.js modules, filesystem APIs, network APIs, browser globals, packages,
     timers, or long-running async behavior.

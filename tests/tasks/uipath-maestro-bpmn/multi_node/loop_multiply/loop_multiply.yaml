@@ -30,9 +30,11 @@ initial_prompt: |
   Requirements:
   - Apply `bpmn:multiInstanceLoopCharacteristics` with `isSequential="true"` to
     the script task, and bind the collection through the
-    `uipath:loopCharacteristics` extension (`inputCollection` and `inputElement`)
-    per the skill's structural reference — the registry serves no template for
-    this, author it from the canvas contract.
+    `uipath:loopCharacteristics` extension's `inputCollection`. Because the
+    marker is on a task, omit `inputElement`, pass `iterator` through the v3
+    ScriptTask args, and read the current value as `iterator.item` per the
+    skill's structural reference. The registry serves no template for this, so
+    author it from the canvas contract.
   - Declare variables and author the script-task payload per the skill's
     structural reference; do not hand-author uipath:* XML from prose.
   - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
@@ -58,7 +60,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "BPMN has a sequential multi-instance marker with a bound collection and valid DI"
+    description: "BPMN has a runtime-safe sequential task marker, iterator.item access, and valid DI"
     command: "python3 $TASK_DIR/check_loop_multiply.py"
     timeout: 30
     expected_exit_code: 0

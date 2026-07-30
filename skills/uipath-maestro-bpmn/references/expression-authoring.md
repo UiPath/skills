@@ -8,27 +8,35 @@ them with expressions only after the variables and scopes exist.
 
 - Use a leading `=` where Maestro expects expression content.
 - Treat values without `=` as literals.
+- XML mapping attributes are lexical, so bare `true`, `false`, and `42` are
+  string literals. Assign typed constants with expressions (`=true`, `=false`,
+  `=42`); never pass a JSON boolean or number as a declarative mapping
+  `source`.
 - Read BPMN variables through `vars.<variableId>`, for example
   `=vars.Var_RequestId`.
 - Do not use bare variable names such as `=requestId` in generated runtime XML.
 - Context bindings use `=bindings.<bindingId>`.
 - Current element outputs use `result` only in output mappings for that
-  element. For new BPMN script tasks, return an object and expose its value
-  through `result.response`: use `return { response: value };` with
-  `source="=result.response"` for a scalar variable, or return a nested object
-  and use `source="=result.response.<field>"` for a field. Do not use
-  `source="=result"` with a bare scalar return in live debug/runtime BPMN; the
-  run can complete while the mapped variable reads back empty.
+  element. For new v3 ScriptTasks, return the intended scalar or object
+  directly and map the standard response variable from
+  `source="=result.response"`. Do not wrap the return in another
+  `{ response: ... }` object.
 - Multi-instance task bodies read the current item from `iterator.item`.
-- Multi-instance subprocess bodies read the current item from
-  `iterator[0].item`. Use `iterator[1].item` (and so on) inside nested
+- Direct mappings in multi-instance subprocess bodies read the current item
+  from `iterator[0].item`. Use `iterator[1].item` (and so on) inside nested
   multi-instance subprocesses: the index counts nesting depth from outermost
-  (`[0]`) to innermost.
-- The current 0-based loop index inside any multi-instance body is exposed as
-  `iterator.loopCounter` for tasks and `iterator[N].loopCounter` for
-  subprocesses at depth N.
+  (`[0]`) to innermost. A ScriptTask in such a body must map that expression
+  to a typed named arg and read the named arg in its JavaScript; passing the
+  whole `=iterator` object can yield null.
+- The current loop index is exposed as the **1-based** `iterator.loopCounter`
+  inside a task marker and `iterator[N].loopCounter` inside a subprocess
+  marker at depth N. The engine stores a zero-based internal instance index
+  but publishes `index + 1` in the iterator namespace.
 - Error mapping conditions may inspect the built-in error object through
   `vars.error`, for example `=vars.error.code == "SERVICE_UNAVAILABLE"`.
+- Treat sibling conditions from one exclusive gateway as an unordered set.
+  They must be mutually exclusive; encode business precedence in each guard or
+  use cascaded gateways instead of relying on first-match evaluation order.
 
 ## Inline JavaScript with `=js:`
 
@@ -72,28 +80,34 @@ These fields must be read-only expressions:
 - `uipath:errorMapping` condition values.
 - Mapping values that read variables or element outputs.
 
-Do not use assignment operators in these fields. Comparisons such as `==`,
-`===`, `!=`, `!==`, `>=`, and `<=` are allowed.
+Do not use assignment operators in these fields. A plain Maestro expression
+(`=vars...`) uses the BPMN expression grammar: use `==`, `!=`, `>=`, and `<=`.
+JavaScript-only operators such as `===` and `!==` require an `=js:` prefix;
+without it they can pass the local structural validator but fail at runtime
+with `Expression expected`. Use `=js:` for compound JavaScript conditions as
+well, including `&&`, `||`, and `!`.
 
 ## Scope and availability
 
 - Root variables are visible across the root process after they are declared and
   reachable by control flow.
-- An output variable you intend to expose in runtime inspection (via
-  `debug-instance variables-all` or `instance variables`) must be root-scoped —
-  declare its `uipath:output` or `uipath:inputOutput` WITHOUT an `elementId`. A
-  variable scoped with `elementId` is bound to that element and is not surfaced
-  as a root/global runtime variable. Preserve exact variable ids: if the
-  requested variable id is `product`, declare `id="product"` and map to
-  `var="product"`, not `Product` or `Var_Product`. Current BPMN live debug may
-  expose the root output definition while still returning the value as `null`;
-  treat that as a runtime/debug API limitation, not proof that the authored
-  mapping is absent.
-- Subprocess variables stay scoped to that subprocess.
+- Keep a mutable root `uipath:inputOutput` for each value used by decisions,
+  tasks, or diagnostics. Public caller inputs and outputs are separate
+  declarations bound with `elementId` to the entry StartEvent and completion
+  EndEvent, respectively. Bridge them explicitly with `BPMN.Variables`
+  mappings on those events.
+- Subprocess variables stay scoped to that subprocess. Map values needed by
+  the parent explicitly on the `bpmn:subProcess`; do not infer propagation from
+  a successful inner assignment.
 - Output mappings should target `uipath:inputOutput` or `uipath:output`
   variables, not read-only `uipath:input` variables.
-- Entry point inputs that must later be updated need a separate mutable
-  `uipath:inputOutput` variable and an explicit mapping from the entry input.
+- A declared public output has no portable implicit default. Ensure a visible
+  Variables task assigns it on every path that can reach a root end, including
+  the neutral value (`""`, `=false`, `=0`, `=js:[]`, and so on) where required.
+- Root variables supplied through an entry point need a public `uipath:input`
+  carrying `elementId="<start-event-id>"`; that start event must declare a
+  stable `uipath:entryPointId` and map the public value to a separate mutable
+  `uipath:inputOutput`.
 - Trigger-bound values are commonly represented as `uipath:inputOutput`
   variables scoped with `elementId` so the trigger can write them during
   execution.
@@ -101,8 +115,13 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
 ## Common mistakes
 
 - `=requestId` instead of `=vars.Var_RequestId`.
+- `=vars.Var_Count === 0` instead of either `=vars.Var_Count == 0` or
+  `=js:vars.Var_Count === 0`.
 - `var="requestId"` instead of `var="Var_RequestId"`.
 - Using `result` outside the output mapping of the element that produced it.
 - Reading `iterator[0].item` outside the multi-instance subprocess body.
+- Passing `{"iterator":"=iterator"}` to a ScriptTask nested inside a
+  multi-instance subprocess instead of mapping `=iterator[0].item` to a typed
+  named argument.
 - Moving a variable into a subprocess without updating mappings that read it
   from the root scope.

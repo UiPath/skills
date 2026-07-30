@@ -20,6 +20,37 @@ Entry point inputs reference a start event through `elementId`, but the start ev
 `uipath:entryPointId` or the ID is duplicated.
 Fix root start event extensions and variable scoping.
 
+## Public variables are not bridged
+
+The runtime binds caller inputs to public declarations and returns caller
+outputs from public output declarations; process logic reads and writes mutable
+internal variables. If the StartEvent and completion EndEvent do not bridge
+those layers, debug can report `Completed` while gateways take fallback paths
+or returned outputs are null.
+
+Inspect `variables-all`, not only final status. Add a public-input-to-internal
+mapping on the root StartEvent and an internal-to-public-output mapping on the
+single completion EndEvent.
+
+## ScriptTask arguments are missing
+
+The engine mapping parser consumes an input body from CDATA or the `value`
+attribute. Ordinary XML text under `uipath:input` is ignored. A v3 ScriptTask
+then faults with messages such as `vars is not defined`, even when offline
+validation is clean.
+
+Use the current ScriptTask serializer contract: `BPMN.Variables`, input schema
+context, `args` containing `vars` and `metadata` (plus `iterator` for a
+multi-instance script), standard response/Error outputs, and a parser-readable
+body representation.
+
+## Subprocess output is missing at root
+
+An assignment inside an embedded subprocess can be present in subprocess
+variables while the root/global value is null. Add explicit
+`BPMN.Variables` outputs on the subprocess for every result consumed by parent
+workstreams or public output mappings.
+
 ## Binding reference missing
 
 A node context value refers to `=bindings.<id>` but no matching root binding or generated binding resource exists.
@@ -69,6 +100,15 @@ Diagnose with variables at the gateway, element executions, and cursors before c
 
 A boundary error event references a missing or duplicate error definition, or is attached to an invalid activity.
 Reconcile the error definition within the correct scope.
+
+If the boundary fires but downstream values produced inside an embedded
+subprocess are null, inspect the subprocess status and scopes. An error end
+terminates that scope, so normal subprocess output mappings are not applied and
+the parent boundary cannot read the child-local values. This is an authoring
+defect, not proof that the boundary failed. Re-establish required values on the
+parent boundary path from parent-visible inputs/state, or retain them in parent
+scope before entering the subprocess. Keep any business recovery decision
+visible in gateways and Variables tasks.
 
 ## Multi-instance variable mismatch
 

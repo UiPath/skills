@@ -1,11 +1,12 @@
 # Declarative structural renderer
 
 Use `scripts/build-bpmn.py` for a **large new** BPMN project whose executable
-work uses only the Variables and ScriptTask mapping forms documented below.
-Do not use it for connectors, HITL, RPA, agents, send/receive tasks, another
-registry payload absent from this contract, or an existing/imported BPMN.
-Assemble unsupported registry nodes from their exact XML templates, and keep
-brownfield edits surgical.
+work uses only the Variables, ScriptTask, and Integration Service activity
+mapping forms documented below. Use the connector form only after authenticated
+discovery supplies the exact activity and binding contract. Do not use the
+renderer for HITL, RPA, agents, receive tasks, another registry payload absent
+from this contract, or an existing/imported BPMN. Assemble unsupported registry
+nodes from their exact XML templates, and keep brownfield edits surgical.
 
 The renderer removes XML bookkeeping only. The JSON spec must still state every
 process variable, node, gateway condition, Variables assignment, scope, error
@@ -33,9 +34,12 @@ Rendering writes:
 - `bindings_v2.json`;
 - `package-descriptor.json`.
 
-Keep registry evidence separately when the user requests it. Re-rendering is
-safe for a new project whose spec is the authored source; do not hand-edit the
-rendered XML and then overwrite it from a stale spec.
+When registry evidence is requested for a named project, keep it under
+`<project>/registry-evidence/`; use workspace-root `registry-evidence/` only for
+standalone evidence work with no project deliverable. An exact user-requested
+path wins. Re-rendering is safe for a new project whose spec is the authored
+source; do not hand-edit the rendered XML and then overwrite it from a stale
+spec.
 
 ## Top-level shape
 
@@ -60,6 +64,7 @@ rendered XML and then overwrite it from a stale spec.
     "id": "Process_OrderTriage",
     "name": "OrderTriage",
     "variables": [],
+    "bindings": [],
     "nodes": [],
     "flows": []
   },
@@ -188,7 +193,8 @@ Use `schema` when generated entry-point metadata needs more detail:
 Supported `kind` values:
 
 - `startEvent`, `endEvent`, `boundaryEvent`;
-- `task`, `scriptTask`, `serviceTask`, `userTask`, `callActivity`;
+- `task`, `scriptTask`, `serviceTask`, `sendTask`, `userTask`,
+  `callActivity`;
 - `exclusiveGateway`, `parallelGateway`;
 - `subProcess`;
 - `intermediateThrowEvent`, `intermediateCatchEvent`.
@@ -359,12 +365,27 @@ mapping shape, pass the `vars` and `metadata` objects through `args`, and read
 stable ids as `vars.<id>` in the script. The renderer serializes an input
 `body` as the engine-readable `value` attribute; ordinary XML text is ignored
 by the runtime mapping parser. A multi-instance script also passes
-`"iterator": "=iterator"` and declares it in the input schema.
+`"iterator": "=iterator"` and declares it in the input schema when the
+ScriptTask itself owns the marker. For a ScriptTask inside a multi-instance
+subprocess, map `=iterator[0].item` to a typed named argument such as
+`currentItem` and read that argument. Passing the whole `=iterator` object into
+the nested ScriptTask can produce a null global at runtime.
 
 Declare both the response variable and the typed Error variable in the process
 variable block. Return the response value directly; the runtime exposes it as
 `result.response` to output mappings. Do not add another `{ response: ... }`
 wrapper in the script.
+
+When downstream expressions dereference properties of a ScriptTask's object
+response, declare those properties in the response variable's JSON schema.
+An unshaped `type: "object"` variable does not give Studio or the validator the
+property contract needed for expressions such as `vars.<id>.fileId`.
+List every property the script guarantees in that schema's `required` array.
+Apply the same rule to typed object arguments: declare and require each field
+the script reads, rather than leaving a permissive object shell.
+Use semantically specific property names in both the returned object and its
+schema (for example, `duplicateIssueKey` rather than an ambiguous `key`) so the
+data contract remains auditable.
 
 The Error target is activity-scoped, not a generic working variable. Declare it
 with `name: "Error"`, `type: "jsonSchema"`, and
@@ -374,6 +395,183 @@ mapping, set the Error output's `var` to that declaration's explicit stable id;
 using the ambiguous name `Error` would resolve to only one of them.
 
 Do not put business routing/classification policy in a normalization script.
+
+### Connector activities and connection resources
+
+Discover the connector, connection, object, and activity through the session's
+single authenticated registry pull. Save the exact enriched
+`registry get Intsvc.ActivityExecution --connection-id ... --object-name ...`
+response when evidence is requested. Do not invent operation names, fields, or
+targets.
+
+Connector execution uses the registry-owned `uipath:activity` extension rather
+than a generic `uipath:mapping`. In a context field, set `element` to `input`
+when the XML shape is `<uipath:input name="...">`:
+
+- Keep the context `path` static. Start with the enrichment `Path` and append a
+  `{parameterName}` segment for every method parameter whose `Type` is `path`.
+  Never put an expression or query string in this field.
+- Represent every path or query parameter as its own mapping input using the
+  exact registry `Name` and `Type` as `name` and `target`. A path input must
+  have the matching `{name}` placeholder in the static context path.
+- Put request fields inside the single `body` input. Enrichment field names
+  such as `fields.project.key` are dotted leaf paths: reconstruct them as
+  nested JSON (`{"fields":{"project":{"key":...}}}`), rather than sending the
+  dotted path as a literal top-level key. Preserve every path segment's exact
+  casing. Display names and the enrichment dictionary's lookup keys are not
+  request field names. Do not replace a leaf with a provider synonym—for
+  example, if enrichment exposes `fields.reporter.id`, author `id`, not
+  `accountId`.
+- Select the operation's method key under
+  `Data.IsEnrichment.Metadata.Method`. Include a field only when its
+  `Method.<same-key>.Request` flag is true. `RequestCurated` controls curated
+  presentation and never admits a field whose `Request` flag is false. Use the
+  field's exact `Name`, not the `Fields` dictionary key or display name. Exclude
+  response-only and other non-request fields.
+- Treat required method parameters and required request fields as mandatory.
+  Include optional request fields only when the business contract needs them.
+  Before rendering, compare the body leaf paths with the request-eligible field
+  names and confirm every request field whose same method entry marks
+  `Required` is present. The renderer checks the structural path/query split,
+  but only the saved enrichment tells you which operation-specific inputs are
+  legal and required.
+
+```json
+{
+  "kind": "sendTask",
+  "id": "Task_SendMessage",
+  "name": "Send message",
+  "mapping": {
+    "extensionTag": "activity",
+    "serviceType": "Intsvc.ActivityExecution",
+    "version": "v1",
+    "context": [
+      {
+        "element": "input",
+        "name": "activity",
+        "type": "string",
+        "value": "<registry activity>"
+      },
+      {
+        "element": "input",
+        "name": "connectorKey",
+        "type": "string",
+        "value": "<registry connector key>"
+      },
+      {
+        "element": "input",
+        "name": "connection",
+        "type": "string",
+        "value": "=bindings.Binding_Connection"
+      },
+      {
+        "element": "input",
+        "name": "folderKey",
+        "type": "string",
+        "value": "=bindings.Binding_Folder"
+      },
+      {
+        "element": "input",
+        "name": "operation",
+        "type": "string",
+        "value": "<registry operation>"
+      },
+      {
+        "element": "input",
+        "name": "objectName",
+        "type": "string",
+        "value": "<registry object name>"
+      },
+      {
+        "element": "input",
+        "name": "method",
+        "type": "string",
+        "value": "<registry HTTP method>"
+      },
+      {
+        "element": "input",
+        "name": "path",
+        "type": "string",
+        "value": "<registry path>"
+      },
+      {
+        "element": "input",
+        "name": "metadata",
+        "type": "json",
+        "body": {}
+      }
+    ],
+    "inputs": [
+      {
+        "name": "<path parameter name>",
+        "type": "string",
+        "target": "path",
+        "value": "=vars.<stable variable id>"
+      },
+      {
+        "name": "<query parameter name>",
+        "type": "string",
+        "target": "query",
+        "value": "=vars.<stable variable id>"
+      },
+      {
+        "name": "body",
+        "type": "json",
+        "target": "body",
+        "body": {
+          "<exact request field name>": "=vars.<stable variable id>"
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "name": "result",
+        "type": "custom",
+        "var": "connectorResult",
+        "source": "."
+      }
+    ]
+  }
+}
+```
+
+Every connection reference also needs two process-level bindings: one for the
+connection id and one for its folder. Use the exact connection and folder ids
+returned by authenticated discovery; placeholders below describe the shape,
+not values to copy:
+
+```json
+{
+  "bindings": [
+    {
+      "id": "Binding_Connection",
+      "name": "<connector> connection",
+      "displayName": "<discovered account name>",
+      "type": "string",
+      "elementId": "Task_SendMessage",
+      "default": "<connection id>",
+      "resource": "Connection",
+      "resourceKey": "<connection id>",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "Binding_Folder",
+      "name": "FolderKey",
+      "type": "string",
+      "elementId": "Task_SendMessage",
+      "default": "<folder key>",
+      "resource": "Connection",
+      "resourceKey": "<connection id>",
+      "propertyAttribute": "folderKey"
+    }
+  ]
+}
+```
+
+The renderer deduplicates Connection resources by `resourceKey` and writes
+their complete records to `bindings_v2.json`. Reusing one connection across
+several activities still requires only one resource record, while each
+activity may have its own element-scoped binding pair.
 
 ## Embedded subprocess and error boundary
 
@@ -472,10 +670,60 @@ For a multi-instance task, read the current item with the documented
 `iterator.item` expression and omit `item`; emitting an `inputElement` alias on
 a task-level marker leaves the runtime `iterator` null. For a multi-instance
 subprocess, bind
-`item: "iterator[0]"` and read `iterator[0].item` inside its body.
-Per-iteration task outputs are marker records, not an implicit process-level
-array. A separate reducer after a sequential task marker should read the
-original input collection when it needs the final processed item.
+`item: "iterator[0]"`. Direct body activity mappings may use
+`=iterator[0].item`. A nested ScriptTask must instead receive that expression
+through a typed named `args` property (for example,
+`"currentItem":"=iterator[0].item"`) and read `currentItem`; do not pass
+`"iterator":"=iterator"` and expect a populated global inside the nested
+script.
+Per-iteration task outputs are marker records, not an implicit scalar
+process-level result. For a subprocess marker, declare a custom output on the
+subprocess and target a scoped `Collection{T}` variable; the engine aggregates
+one value per completed iteration in marker order. A separate reducer after
+the marker can then read that completed collection. If no marker output is
+needed, a reducer after a sequential task marker may instead read the original
+input collection for a deterministic property of the final input item.
+
+Use all three parts of the subprocess-output contract together:
+
+```json
+{
+  "direction": "internal",
+  "id": "Var_ProcessedNames",
+  "name": "processedNames",
+  "type": "Collection{string}",
+  "elementId": "SubProcess_CopyItems",
+  "custom": true
+}
+```
+
+```json
+{
+  "kind": "subProcess",
+  "id": "SubProcess_CopyItems",
+  "loop": {
+    "sequential": true,
+    "collection": "=vars.Var_Items",
+    "item": "iterator[0]"
+  },
+  "mapping": {
+    "serviceType": "BPMN.Variables",
+    "outputs": [
+      {
+        "name": "itemName",
+        "type": "string",
+        "var": "Var_ProcessedNames",
+        "source": "=vars.Var_ItemResult.itemName",
+        "custom": true
+      }
+    ]
+  }
+}
+```
+
+Do not substitute a JSON-schema `array` variable or omit either `custom: true`
+or the marker's `elementId`; those shapes do not declare an Alpha
+multi-instance marker aggregate. The renderer rejects such partial contracts.
 
 ## Required review
 

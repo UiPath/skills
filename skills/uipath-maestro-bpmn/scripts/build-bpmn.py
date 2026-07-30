@@ -86,6 +86,74 @@ def body_text(body: object) -> str:
     return stringify(body)
 
 
+def validate_connector_activity_mapping(mapping: dict[str, object]) -> None:
+    """Reject connector shapes that cannot represent the registry contract."""
+    if (
+        stringify(mapping.get("extensionTag", "mapping")) != "activity"
+        or stringify(mapping.get("serviceType")) != "Intsvc.ActivityExecution"
+    ):
+        return
+
+    context: dict[str, object] = {}
+    for raw_field in mapping.get("context", []):
+        field = dict(raw_field)
+        if stringify(field.get("element", "input")) != "input":
+            continue
+        name = stringify(field.get("name"))
+        if name:
+            context[name] = field.get("value")
+
+    required_context = {
+        "activity",
+        "connectorKey",
+        "connection",
+        "folderKey",
+        "operation",
+        "objectName",
+        "method",
+        "path",
+    }
+    missing = sorted(
+        name
+        for name in required_context
+        if not isinstance(context.get(name), str) or not context[name]
+    )
+    if missing:
+        raise ValueError(
+            "Intsvc.ActivityExecution context is missing required fields: "
+            f"{missing}"
+        )
+
+    path = stringify(context["path"])
+    if path.startswith("=") or "${" in path or "?" in path:
+        raise ValueError(
+            "connector context path must be a static registry route; put "
+            "dynamic path and query values in separate mapping inputs"
+        )
+
+    seen: set[tuple[str, str]] = set()
+    for raw_field in mapping.get("inputs", []):
+        field = dict(raw_field)
+        name = stringify(field.get("name"))
+        target = stringify(field.get("target"))
+        if target not in {"body", "path", "query"}:
+            raise ValueError(
+                f"connector input {name!r} must target 'body', 'path', or "
+                "'query'"
+            )
+        key = (target, name)
+        if key in seen:
+            raise ValueError(
+                f"duplicate connector input {name!r} for target {target!r}"
+            )
+        seen.add(key)
+        if target == "path" and f"{{{name}}}" not in path:
+            raise ValueError(
+                f"connector path input {name!r} needs a matching "
+                f"'{{{name}}}' placeholder in the static context path"
+            )
+
+
 def add_mapping(
     node: ET.Element,
     mapping: dict[str, object] | None,
@@ -96,9 +164,15 @@ def add_mapping(
         return
     extension = extension_elements(node)
     if mapping:
+        validate_connector_activity_mapping(mapping)
+        extension_tag = stringify(mapping.get("extensionTag", "mapping"))
+        if extension_tag not in {"mapping", "activity"}:
+            raise ValueError(
+                "mapping extensionTag must be 'mapping' or 'activity'"
+            )
         mapping_el = ET.SubElement(
             extension,
-            q("uipath", "mapping"),
+            q("uipath", extension_tag),
             {"version": stringify(mapping.get("mappingVersion", "v1"))},
         )
         ET.SubElement(
@@ -114,11 +188,14 @@ def add_mapping(
             context_el = ET.SubElement(mapping_el, q("uipath", "context"))
             for field in context_fields:
                 field = dict(field)
-                name = stringify(field.pop("name"))
+                element = field.pop("element", None)
+                if element is None:
+                    element = field.pop("name")
+                element = stringify(element)
                 body = field.pop("body", None)
                 child = ET.SubElement(
                     context_el,
-                    q("uipath", name),
+                    q("uipath", element),
                     attrs(field),
                 )
                 if body is not None:
@@ -207,6 +284,77 @@ def add_variables(
             variable_el.text = json.dumps(schema, separators=(",", ":"))
 
 
+def add_bindings(
+    process: ET.Element,
+    bindings: list[dict[str, object]],
+) -> None:
+    if not bindings:
+        return
+    extension = extension_elements(process)
+    bindings_el = ET.SubElement(
+        extension, q("uipath", "bindings"), {"version": "v1"}
+    )
+    seen_ids: set[str] = set()
+    for binding in bindings:
+        data = dict(binding)
+        binding_id = stringify(data.get("id", ""))
+        if not binding_id:
+            raise ValueError("every binding requires a non-empty id")
+        if binding_id in seen_ids:
+            raise ValueError(f"duplicate binding id: {binding_id}")
+        seen_ids.add(binding_id)
+        data.pop("displayName", None)
+        ET.SubElement(bindings_el, q("uipath", "binding"), attrs(data))
+
+
+def connection_resources(
+    bindings: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    resources: list[dict[str, object]] = []
+    seen_keys: set[str] = set()
+    for binding in bindings:
+        if (
+            binding.get("resource") != "Connection"
+            or binding.get("propertyAttribute") != "ConnectionId"
+        ):
+            continue
+        resource_key = stringify(binding.get("resourceKey", ""))
+        default = stringify(binding.get("default", ""))
+        if not resource_key or not default:
+            raise ValueError(
+                "ConnectionId bindings require resourceKey and default"
+            )
+        if resource_key != default:
+            raise ValueError(
+                "ConnectionId binding default must equal resourceKey"
+            )
+        if resource_key in seen_keys:
+            continue
+        seen_keys.add(resource_key)
+        display_name = stringify(
+            binding.get("displayName", binding.get("name", "Connection"))
+        )
+        resources.append(
+            {
+                "resource": "Connection",
+                "key": resource_key,
+                "id": f"Connection{resource_key}",
+                "value": {
+                    "ConnectionId": {
+                        "defaultValue": default,
+                        "isExpression": False,
+                        "displayName": display_name,
+                    }
+                },
+                "metadata": {
+                    "BindingsVersion": "2.2",
+                    "DisplayLabel": display_name,
+                },
+            }
+        )
+    return resources
+
+
 def index_scope(
     scope: dict[str, object],
 ) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
@@ -235,6 +383,7 @@ def node_tag(kind: str) -> str:
         "intermediateCatchEvent",
         "callActivity",
         "serviceTask",
+        "sendTask",
         "userTask",
     }
     if kind not in supported:
@@ -598,6 +747,58 @@ def validate_script_runtime_contracts(
                 f"ScriptTask {script_id} scriptResponse output must map an "
                 "unambiguous declared variable id"
             )
+
+
+def validate_multi_instance_subprocess_outputs(
+    nodes: list[dict[str, object]],
+    variables: list[dict[str, object]],
+) -> None:
+    """Require the Alpha marker contract for subprocess iteration outputs."""
+    variables_by_id = {
+        stringify(variable["id"]): variable for variable in variables
+    }
+    variables_by_name: dict[str, list[dict[str, object]]] = {}
+    for variable in variables:
+        variables_by_name.setdefault(
+            stringify(variable["name"]), []
+        ).append(variable)
+
+    for marker in nodes:
+        if marker.get("kind") != "subProcess" or not marker.get("loop"):
+            continue
+        marker_id = stringify(marker["id"])
+        outputs = marker.get("mapping", {}).get("outputs", [])
+        for output in outputs:
+            output_name = stringify(output.get("name", ""))
+            output_type = stringify(output.get("type", ""))
+            if output.get("custom") is not True:
+                raise ValueError(
+                    f"multi-instance subprocess {marker_id} output "
+                    f"{output_name!r} must declare custom=true"
+                )
+            variable_ref = stringify(output.get("var", ""))
+            variable = variables_by_id.get(variable_ref)
+            if variable is None:
+                candidates = variables_by_name.get(variable_ref, [])
+                if len(candidates) != 1:
+                    raise ValueError(
+                        f"multi-instance subprocess {marker_id} output "
+                        f"{output_name!r} must map an unambiguous declared "
+                        "variable id"
+                    )
+                variable = candidates[0]
+            expected_type = f"Collection{{{output_type}}}"
+            if (
+                not output_type
+                or variable.get("type") != expected_type
+                or variable.get("elementId") != marker_id
+                or variable.get("custom") is not True
+            ):
+                raise ValueError(
+                    f"multi-instance subprocess {marker_id} output "
+                    f"{output_name!r} must target a custom, marker-scoped "
+                    f"{expected_type} variable"
+                )
 
 
 def script_references_stable_variable(
@@ -1024,6 +1225,7 @@ def validate_constraints(spec: dict[str, object]) -> None:
     nodes = collect_nodes(scope)
     flows = collect_flows(scope)
     validate_diverging_exclusive_gateways(nodes, flows)
+    validate_multi_instance_subprocess_outputs(nodes, variables)
     nodes_by_id = {stringify(node["id"]): node for node in nodes}
     owners_by_id = collect_node_owners(scope)
     script_ids = {
@@ -1582,6 +1784,7 @@ def write_metadata(
     start_id: str,
     entry_point_id: str,
     variables: list[dict[str, object]],
+    bindings: list[dict[str, object]],
 ) -> None:
     inputs = {
         stringify(variable["name"]): schema_for_variable(variable)
@@ -1614,7 +1817,10 @@ def write_metadata(
                 }
             ]
         },
-        "bindings_v2.json": {"version": "2.0", "resources": []},
+        "bindings_v2.json": {
+            "version": "2.0",
+            "resources": connection_resources(bindings),
+        },
         "package-descriptor.json": {
             "content": [
                 f"content/{bpmn_name}",
@@ -1668,6 +1874,7 @@ def build(spec: dict[str, object], project_dir: Path) -> Path:
         },
     )
     variables = process_spec.get("variables", [])
+    bindings = process_spec.get("bindings", [])
     scope = {
         "nodes": copy.deepcopy(process_spec.get("nodes", [])),
         "flows": copy.deepcopy(process_spec.get("flows", [])),
@@ -1719,6 +1926,7 @@ def build(spec: dict[str, object], project_dir: Path) -> Path:
         rendered_variables,
         migration_version=stringify(process_spec.get("migrationVersion", 15)),
     )
+    add_bindings(process, bindings)
     variable_ids = {
         stringify(variable["name"]): stringify(variable["id"])
         for variable in variables
@@ -1738,6 +1946,7 @@ def build(spec: dict[str, object], project_dir: Path) -> Path:
         start_id,
         entry_point_id,
         variables,
+        bindings,
     )
     return bpmn_path
 

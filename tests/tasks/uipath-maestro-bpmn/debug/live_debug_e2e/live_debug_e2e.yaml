@@ -8,8 +8,9 @@ description: >
   saves the raw variables-all output to `debug-evidence/`, and the check asserts
   the debug run reached finalStatus Completed, the variables API exposed the
   `product` output definition, and the authored BPMN computes 42 through a
-  script task mapped to that output. Live: no mocks; auth comes from the
-  experiment environment. Deliberately computes from in-script
+  script task mapped to that output. A task-level post-run hook deletes every
+  Studio Web solution created by the debug session. Live: no mocks; auth comes
+  from the experiment environment. Deliberately computes from in-script
   constants rather than `--inputs`: CI iteration 2 showed `bpmn debug --inputs`
   values are not transmitted to the runtime (Start event Inputs arrive empty),
   so external-input grading would test that CLI gap, not the debug workflow.
@@ -123,3 +124,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/_shared/cleanup_solutions.py"
+    timeout: 240
