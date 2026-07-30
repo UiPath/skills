@@ -1,0 +1,24 @@
+{
+  "Result": "Success",
+  "Code": "RegistryListSuccess",
+  "Data": {
+    "ExtensionTypes": [
+      {
+        "ExtensionType": "Intsvc.ActivityExecution",
+        "Label": "Execute connector activity",
+        "BindingPattern": "connection",
+        "RequiresDiscovery": "Yes"
+      }
+    ],
+    "Connectors": [
+      {
+        "Key": "uipath-synthetic-records",
+        "Name": "Synthetic Records",
+        "Connections": 3,
+        "Activities": 4,
+        "Triggers": 0
+      }
+    ],
+    "Processes": []
+  }
+}

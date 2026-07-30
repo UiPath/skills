@@ -1,0 +1,103 @@
+{
+  "version": 2,
+  "_doc": "Provider-neutral, read-only Integration Service activity authoring fixtures. Specific enrichment rules precede base registry and schema rules.",
+  "rules": [
+    {
+      "match": "-f tenant.scope=finance",
+      "file": "resource-curated-enriched.json"
+    },
+    {
+      "match": "-f=tenant.scope=finance",
+      "file": "resource-curated-enriched.json"
+    },
+    {
+      "match": "--operation Create",
+      "file": "resource-curated-operation.json"
+    },
+    {
+      "match": "--operation=Create",
+      "file": "resource-curated-operation.json"
+    },
+    {
+      "match": "resources describe uipath-synthetic-records curated_submit_artifact",
+      "file": "resource-curated-available.json"
+    },
+    {
+      "match": "is resources list uipath-synthetic-records",
+      "file": "resources-list.json"
+    },
+    {
+      "match": "--operation List",
+      "file": "resource-generic-operation.json"
+    },
+    {
+      "match": "--operation=List",
+      "file": "resource-generic-operation.json"
+    },
+    {
+      "match": "resources describe uipath-synthetic-records ledger_entries",
+      "file": "resource-generic.json"
+    },
+    {
+      "match": "maestro bpmn registry get Intsvc.ActivityExecution --connection-id 11111111-2222-4333-8444-555555555555 --object-name curated_submit_artifact",
+      "file": "registry-get-curated.json"
+    },
+    {
+      "match": "maestro bpmn registry get Intsvc.ActivityExecution --connection-id 11111111-2222-4333-8444-555555555555 --object-name ledger_entries",
+      "file": "registry-get-generic.json"
+    },
+    {
+      "match": "--object-name curated_submit_artifact",
+      "file": "registry-get-curated.json"
+    },
+    {
+      "match": "--object-name=curated_submit_artifact",
+      "file": "registry-get-curated.json"
+    },
+    {
+      "match": "--object-name ledger_entries",
+      "file": "registry-get-generic.json"
+    },
+    {
+      "match": "--object-name=ledger_entries",
+      "file": "registry-get-generic.json"
+    },
+    {
+      "match": "maestro bpmn registry get BPMN.Variables",
+      "file": "registry-get-variables.json"
+    },
+    {
+      "match": "maestro bpmn registry get Intsvc.ActivityExecution",
+      "file": "registry-get-base.json"
+    },
+    {
+      "match": "maestro bpmn registry list",
+      "file": "registry-list.json"
+    },
+    {
+      "match": "maestro bpmn registry pull",
+      "file": "registry-pull.json"
+    },
+    {
+      "match": "is connections list uipath-synthetic-records",
+      "file": "connections.json"
+    },
+    {
+      "match": "is activities list uipath-synthetic-records",
+      "file": "activities.json"
+    },
+    {
+      "match": "login status",
+      "file": "login-status.json"
+    },
+    {
+      "match": "maestro bpmn validate",
+      "file": "validate-unavailable.json",
+      "exit_code": 1
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"Unsupported command in this read-only authoring fixture\"}\n",
+    "exit_code": 1
+  }
+}

@@ -121,6 +121,10 @@ is per command: `login status --profile <name>` verifies that context but does
 not make later commands inherit it, so repeat the same `--profile <name>` on
 every tenant-dependent registry, queue, and connection command. Portable
 built-in lookups deliberately omit it.
+After an exact Integration Service connection is resolved, author a runnable
+`Intsvc.ActivityExecution` with the catalog, object, schema, and V1 binding
+workflow in
+[references/integration-service-activity-authoring-guide.md](references/integration-service-activity-authoring-guide.md).
 
 For registry-evidence-only tasks, be command-first and time-boxed:
 
@@ -168,8 +172,11 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    context, adding the same `--profile <name>` when that context is named; in
    portable mode, use it without a profile. When live authoritative binding
    metadata requires a resource, resolve it with the adapter selected in step 1
-   before claiming the node is runnable. In draft mode, preserve the unresolved
-   fields. Do not call
+   before claiming the node is runnable. For `Intsvc.ActivityExecution`,
+   resolving a connection is only the first boundary; follow the
+   activity-authoring guide to resolve the catalog operation, concrete object,
+   method, path, request fields, and response schema. In draft mode, preserve
+   the unresolved fields. Do not call
    `registry get` for structural
    gaps the registry never owns: sequence flows, gateways, events, boundary
    events, multi-instance/loop markers, `errorMapping`/retry structure, or
@@ -360,6 +367,7 @@ and honestly surfaced to the user as gaps when asked.
 | Topic | Read |
 | --- | --- |
 | Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
+| Runnable Integration Service activity authoring | [references/integration-service-activity-authoring-guide.md](references/integration-service-activity-authoring-guide.md) |
 | Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
 | Runtime expressions, `vars.`/`bindings.`/`iterator.`, `=js:` (Jint) syntax | [references/expression-authoring.md](references/expression-authoring.md) |
 | CLI conventions and the side-effect boundary | [references/cli-conventions.md](references/cli-conventions.md) |

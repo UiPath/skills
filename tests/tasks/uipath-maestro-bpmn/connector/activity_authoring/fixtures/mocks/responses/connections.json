@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "11111111-2222-4333-8444-555555555555",
+      "Name": "Synthetic Records Primary",
+      "ConnectorKey": "uipath-synthetic-records",
+      "State": "Enabled",
+      "FolderPath": "Shared/ContractLab",
+      "FolderKey": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+    },
+    {
+      "Id": "66666666-7777-4888-8999-000000000000",
+      "Name": "Synthetic Records Secondary",
+      "ConnectorKey": "uipath-synthetic-records",
+      "State": "Enabled",
+      "FolderPath": "Shared/Other",
+      "FolderKey": "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff"
+    },
+    {
+      "Id": "99999999-aaaa-4bbb-8ccc-dddddddddddd",
+      "Name": "Synthetic Records Primary",
+      "ConnectorKey": "uipath-synthetic-records",
+      "State": "Disabled",
+      "FolderPath": "Shared/ContractLab",
+      "FolderKey": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+    }
+  ]
+}
