@@ -86,7 +86,7 @@ For every job under investigation, gather these in order. Follow the generic gui
      --output-filter '{Key:Key,State:State,StartTime:StartTime,EndTime:EndTime,Info:Info,JobError:JobError,InputArguments:InputArguments,OutputArguments:OutputArguments}' \
      | tee .local/investigations/raw/triage-job-get.json
    ```
-2. **Job logs** — robot execution logs, newest-first. Folder is inferred from the job key. Use `--level Error` to find errors quickly. `--limit` controls entry count (default 50). Logs come ONLY from this documented command — files that back or intercept the `uip` CLI (dispatchers, fixture stores, shims, caches, call logs) are internal storage, never evidence: do not read, decode, or bypass them. Data a documented `uip` command cannot return is a data gap — say so.
+2. **Job logs** — robot execution logs, newest-first. Folder is inferred from the job key. Use `--level Error` to find errors quickly. `--limit` controls entry count (default 50).
    ```
    uip or jobs logs <key> --level Error --output json \
      --output-filter '[].{Level:Level,TimeStamp:TimeStamp,Message:Message}' \
