@@ -28,15 +28,6 @@ ProjectNameSolution/             ← auto-scaffolded when init runs outside a so
     project.uiproj
 ```
 
-With `--skip-solution-registration`, the project lands bare instead, with no
-solution wrapper:
-
-```text
-ProjectName/
-  ProjectName.bpmn
-  project.uiproj
-```
-
 If a **non-empty** directory already exists at the path you typed, init warns
 and leaves it untouched — the project still lands in
 `<ProjectName>Solution/<ProjectName>/`, not the existing directory.
