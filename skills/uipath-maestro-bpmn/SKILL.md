@@ -125,16 +125,14 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
    expression/error mappings, retry attributes), then generate one
-   `BPMNShape`/`BPMNEdge` per node and flow. For a new bare local project,
-   initialize the supported scaffold with
-   `uip maestro bpmn init <ProjectName> --skip-solution-registration --output json`
-   and edit the project at the returned `Data.Path`. Preserve its generated
-   metadata. `project.uiproj` owns the exact-cased `"Name"` and
+   `BPMNShape`/`BPMNEdge` per node and flow. For a new local project, reuse the
+   current solution when one is already in scope; otherwise let the initializer
+   create and register one. Initialize the supported scaffold with
+   `uip maestro bpmn init <ProjectName> --output json` and edit the project at
+   the returned `Data.Path`. Preserve its generated metadata. `project.uiproj`
+   owns the exact-cased `"Name"` and
    `"ProjectType": "ProcessOrchestration"` fields; the runnable BPMN/start-event
    path belongs in lowercase `operate.json.main`, not `project.uiproj.main`.
-   If the initializer is unavailable, create only the source pair
-   `<ProjectName>/<ProjectName>.bpmn` and `<ProjectName>/project.uiproj`, then
-   report packaging/operation metadata as blocked rather than inventing it.
    When adding draft or preserve-only case-management variants, include a real
    lowercase `<uipath:caseManagement version="v1">...</uipath:caseManagement>`
    payload with synthetic content as a separate preserve-only extension. Do not
