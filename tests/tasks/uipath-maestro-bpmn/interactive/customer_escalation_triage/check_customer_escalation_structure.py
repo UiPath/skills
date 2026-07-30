@@ -2836,10 +2836,11 @@ def require_sequential_attachment_loop(
         return stripped
 
     def copy_name_term_kind(expression: str) -> str | None:
+        resolved = resolve_assignment(expression)
         normalized = re.sub(
             r"\s",
             "",
-            strip_outer_parentheses(expression),
+            strip_outer_parentheses(resolved),
         )
         if normalized == f"vars.{correlation_id}":
             return "correlation"
@@ -2852,7 +2853,7 @@ def require_sequential_attachment_loop(
             r'"(?:\\.|[^"\\])*"|'
             r"'(?:\\.|[^'\\])*'|"
             r"`(?:\\.|[^`\\$]|\$(?!\{))*`",
-            strip_outer_parentheses(expression),
+            strip_outer_parentheses(resolved),
             flags=re.DOTALL,
         ):
             return "literal"
