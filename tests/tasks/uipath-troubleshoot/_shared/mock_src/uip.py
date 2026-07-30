@@ -76,8 +76,8 @@ import time
 import zlib
 from pathlib import Path
 
-# Sandboxes execute this file as bytecode (`m/.uip.bin`, loaded by the `m/uip`
-# stub) whose __file__ sits directly in the mock dir, so every data path
+# Sandboxes execute this file as bytecode (`m/.uip.<ver>.bin`, loaded by the
+# `m/uip` stub) whose __file__ sits directly in the mock dir, so every data path
 # (store, log, cache) anchors correctly both there and when running this
 # source directly.
 SCRIPT_DIR = Path(__file__).resolve().parent

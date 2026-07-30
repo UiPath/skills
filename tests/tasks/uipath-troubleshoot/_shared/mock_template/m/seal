@@ -4,13 +4,15 @@ import importlib.util
 import sys
 from pathlib import Path
 
-_bin = Path(__file__).resolve().parent / ".seal.bin"
+_bin = Path(__file__).resolve().parent / (
+    f".seal.{sys.version_info[0]}{sys.version_info[1]}.bin"
+)
 if not _bin.is_file():
-    sys.exit("seal: runtime data missing")
+    sys.exit(f"seal: unsupported Python {sys.version.split()[0]} (supported: 3.10-3.14)")
 try:
     _loader = importlib.machinery.SourcelessFileLoader("__main__", str(_bin))
     _spec = importlib.util.spec_from_loader("__main__", _loader)
     _mod = importlib.util.module_from_spec(_spec)
     _loader.exec_module(_mod)
 except (ImportError, EOFError, ValueError):
-    sys.exit(f"seal: requires Python 3.13 (running {sys.version.split()[0]})")
+    sys.exit(f"seal: unsupported Python {sys.version.split()[0]} (supported: 3.10-3.14)")

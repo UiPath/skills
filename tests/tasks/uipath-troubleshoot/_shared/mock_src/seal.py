@@ -15,7 +15,7 @@ failure mode). After sealing there is no readable fixture in the sandbox: the
 (`m/uip`) transparently reads `.store` instead of `r/`.
 
 This script ships to the sandbox only as bytecode (`m/seal` is a thin loader
-for `m/.seal.bin`, compiled by `_shared/scripts/compile_mocks.py`), so
+for `m/.seal.<ver>.bin`, compiled by `_shared/scripts/compile_mocks.py`), so
 nothing readable in the sandbox documents the manifest schema or the
 `.store` format.
 
@@ -46,7 +46,7 @@ import sys
 import zlib
 from pathlib import Path
 
-# Sandboxes execute this file as bytecode (`m/.seal.bin`, loaded by the
+# Sandboxes execute this file as bytecode (`m/.seal.<ver>.bin`, loaded by the
 # `m/seal` stub) whose __file__ sits directly in the mock dir, so every data
 # path anchors correctly there and when running this source directly.
 SCRIPT_DIR = Path(__file__).resolve().parent
