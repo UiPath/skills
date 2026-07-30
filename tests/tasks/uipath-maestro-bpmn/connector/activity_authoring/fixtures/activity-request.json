@@ -1,0 +1,27 @@
+{
+  "profile": "connector-contract",
+  "project": "ConnectorContract",
+  "connector": {
+    "key": "uipath-synthetic-records",
+    "connectionName": "Synthetic Records Primary"
+  },
+  "activities": [
+    {
+      "catalogName": "SubmitArtifact",
+      "resourceKey": "solution-resource-synthetic-primary",
+      "values": {
+        "tenant.scope": "finance",
+        "artifact.title": "Quarterly packet",
+        "artifact.details.code": "Q4-017"
+      }
+    },
+    {
+      "catalogName": "ListAllRecords",
+      "objectName": "ledger_entries",
+      "values": {
+        "tenantId": "tenant-west",
+        "limit": 50
+      }
+    }
+  ]
+}

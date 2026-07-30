@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Data": {
+    "BaseUrl": "https://example.invalid",
+    "Organization": "contract-lab",
+    "Tenant": "design"
+  }
+}
