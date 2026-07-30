@@ -197,7 +197,6 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 | Case Name | yes | PascalCase identifier (e.g., `MortgageLoanOrigination`) | Block Approve. Ask. |
 | Description | optional | One prose sentence | `—` |
 | Identifier prefix | yes | UPPER, 2-4 chars (e.g., `MLO`) | Default mechanically from PascalCase first letters; record in source ledger. |
-| Priority | optional | `Low` / `Medium` / `High` / `Critical` | Default `Medium`; record in source ledger. |
 | Case SLA | conditional | Duration (e.g., `5 business days`) | `—` when case has no SLA; otherwise block Approve. |
 | SLA Type | conditional | `time-based` (single unconditional duration) / `condition-based` (one or more conditionExpression-keyed overrides + a default time-based row) | Default `time-based` when Case SLA set with no per-condition overrides. The FE persists `condition-based` whenever ≥ 1 `slaRules[]` entry carries a non-empty `conditionExpression` (see PO.Frontend `CaseManagementSlaProperties.tsx:27-30`). `condition-based` requires populating the §Variable SLA Rules table; `time-based` omits it. |
 | Case App | optional | `Enabled` / `Disabled` — whether the in-product Case App UI is on (`metadata.caseAppEnabled`). | Default `Disabled`; record in source ledger. |
@@ -216,6 +215,8 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 | Escalation payload | Every escalation has at least one recipient; an `at-risk` escalation has an `atRiskPercentage` value. |
 
 These are blocking authoring errors, not optional style warnings. Preserve the user's wording when repairing a name, but ask for a replacement when uniqueness or a reserved delimiter is violated; never silently suffix or truncate it.
+
+The same rule governs **numeric** violations: never silently clamp, round, or substitute an out-of-range value to satisfy validation. A minute-based SLA authored below 15 or above 1000 is not repaired to the nearest legal bound — surface the violation and Ask for a replacement duration (or a different `unit`), naming the original value. This applies whether the value came from the interview or from an SDD supplied on disk: rewriting a user-authored duration to pass validation is a silent requirements change, not a fix.
 
 ### 1.2 Case-level SLA escalation
 

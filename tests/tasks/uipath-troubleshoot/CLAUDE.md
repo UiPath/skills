@@ -81,7 +81,10 @@ After write:
    .venv/bin/coder-eval run tasks/uipath-troubleshoot/<group>/<scenario>/task.yaml -e experiments/default.yaml -v
    ```
 2. The first run should score 1.0 — the test was generated from a known-good resolution.
-3. Open `m/.calls.jsonl` from the run artifact to confirm every expected call was hit.
+3. Confirm every expected call was hit from the run artifact's call log (sealed runs encode each record):
+   ```bash
+   python tests/tasks/uipath-troubleshoot/_shared/scripts/coverage_report.py --dump <artifact>/m/.log
+   ```
 
 ## Mandatory scrub list
 
@@ -246,7 +249,9 @@ pre_run:
 
 `data/m/r/` is staged into the agent's working directory so the `m/uip` shim can resolve it — which also lets the agent `cat ./m/r/*.json` and read the recorded `uip` outputs, reaching the root cause without invoking `uip` or the skill at all. `m/seal` packs the manifest + every fixture into an opaque `m/.store` (zlib+base64) and deletes `r/`; the shim reads `.store` transparently. After sealing there is no readable fixture in the sandbox.
 
-`fail_on_error: true` is deliberate — a silent seal failure restores the leak. `m/seal` is idempotent and no-ops when there is no `r/manifest.json` or a `.store` already exists.
+Sealing also hides the mock machinery itself — the scripts' source would otherwise tell the agent how the test evidence is kept (`m/uip`'s docstring documents the manifest schema, the `.store` format, and the annotation-stripping pass; `m/seal`'s says what it hides and why). After packing the store, `seal` compiles `m/uip` to docstring-free bytecode (`m/__pycache__/uip.cpython-<ver>.pyc`, `optimize=2` — the idiomatic bytecode location, so it reads as a routine interpreter artifact), rewrites `m/uip` and `m/uip.cmd` as thin exec stubs pointing at the bytecode, and blanks itself. The dispatcher's call log (`m/.log`) is likewise written zlib+base64-encoded on sealed runs — plain records name the matched rule and fixture file, proof the CLI is mocked. Decode it with `coverage_report.py --dump`.
+
+`fail_on_error: true` is deliberate — a silent seal failure restores the leak. `m/seal` is idempotent and no-ops when there is no `r/manifest.json` or a `.store` already exists; after sealing it is a blank file, so a re-run in a reused sandbox still exits 0.
 
 The passthrough cache moves to `m/_cache` (beside the shim) so `docsai` proxying keeps working after `r/` is gone.
 

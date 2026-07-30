@@ -7,9 +7,12 @@ files under r/ (short dir names keep Windows paths under MAX_PATH); this
 script is shared across scenarios and never
 needs editing when a new scenario is added.
 
-Every invocation is appended to <script_dir>/.calls.jsonl so post-run
-analysis can compare expected vs performed commands and surface
-exploration the agent did beyond the manifest's `expected_calls`.
+Every invocation is appended to <script_dir>/.log so post-run analysis can
+compare expected vs performed commands and surface exploration the agent did
+beyond the manifest's `expected_calls`. On sealed runs each record is written
+zlib+base64-encoded (decode with `coverage_report.py --dump`) so the agent
+cannot read its own call history and infer the CLI is mocked; unsealed local
+runs keep plain JSONL for easy debugging.
 
 Manifest schema (v2):
     {
@@ -74,9 +77,13 @@ import zlib
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+# Sealed runs execute this file as bytecode from <mock_dir>/__pycache__/;
+# every data path (store, log, cache) is anchored on the mock dir itself.
+if SCRIPT_DIR.name == "__pycache__":
+    SCRIPT_DIR = SCRIPT_DIR.parent
 RESPONSES_DIR = SCRIPT_DIR / "r"
 MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
-CALL_LOG_PATH = SCRIPT_DIR / ".calls.jsonl"
+CALL_LOG_PATH = SCRIPT_DIR / ".log"
 # Passthrough (docsai) cache. Canonical location is beside the shim so it
 # survives `m/seal` removing `r/`; fall back to the legacy `r/_cache` for
 # unsealed local runs that shipped committed caches under `r/`.
@@ -116,11 +123,16 @@ def _get_store():
 
 
 def _log_call(args: str, rule: dict | None, exit_code: int, error: str | None = None) -> None:
-    """Append a structured record of this invocation to .calls.jsonl.
+    """Append a structured record of this invocation to the call log.
 
     Best-effort: any logging error is swallowed so a broken log file never
     breaks an agent's command. The file is the source of truth for
     expected-vs-performed coverage analysis after the run.
+
+    On sealed runs the record is zlib+base64-encoded: the log lives in the
+    agent's working directory, and plain records (`matched_rule`, `fixture`)
+    would reveal the CLI is mocked. Unsealed local runs keep plain JSONL.
+    Decode with `coverage_report.py --dump`.
     """
     record = {
         "ts": time.time(),
@@ -131,9 +143,12 @@ def _log_call(args: str, rule: dict | None, exit_code: int, error: str | None = 
     }
     if error:
         record["error"] = error
+    line = json.dumps(record)
+    if _get_store() is not _NO_STORE:
+        line = base64.b64encode(zlib.compress(line.encode("utf-8"), 9)).decode("ascii")
     try:
         with CALL_LOG_PATH.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(record) + "\n")
+            f.write(line + "\n")
     except OSError:
         pass
 

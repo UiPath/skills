@@ -86,6 +86,15 @@ For each `auditEvent` in `Data.auditEvents`, surface:
 
 If `Data.previous` is non-null, mention "older results available — extend the window with `--from-date <earlier>` to see more."
 
+### Step 5 — When nothing matches, say so
+
+**A "who did it" question with no matching event has exactly one correct answer: "no such event was found."** This is an audit trail — the answer is evidence, and naming the wrong person is worse than returning nothing.
+
+- Report the negative result plainly, state what you searched (scope, source/target/type, window), and offer the next step (widen the window, try the other scope, check whether the resource ever existed).
+- **Never** put forward an actor drawn from an adjacent event — a different resource, a different event type, or a broad `--search` hit — as if it answered the question. If a search for `Sales-Reports` returns nothing but a search for `Sales` returns 13 unrelated events, the answer is still "no `Sales-Reports` deletion found", and any actor named in those 13 events is **not** a candidate.
+- Do not keep broadening filters until something comes back and then present that as the culprit. Two or three well-targeted queries that come up empty are a complete, correct investigation — stop there and report it.
+- Only name an actor when the event you are citing actually matches the resource and the verb the user asked about; quote the `createdOn` and the identifying field from `eventDetails` so the user can verify the match themselves.
+
 ---
 
 ## Investigation 2 — "Show me logins for user X"

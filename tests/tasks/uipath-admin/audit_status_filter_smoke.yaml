@@ -1,45 +1,38 @@
 task_id: skill-admin-audit-status-filter-smoke
 description: >
-  Skill-guided evaluation: agent uses the uipath-admin skill to filter
-  events by status (Failure-only). Validates that the agent uses
-  `--status Failure` (the canonical label) rather than inventing
-  alternate spellings or omitting the filter and post-filtering in jq.
+  Smoke test (outcome-graded): agent filters the tenant audit trail to failures
+  only over a bounded window. Graded on the events read back from the live tenant
+  — EVERY returned event must carry failure status, and all must fall inside the
+  window — not on the command string.
 
-  Platform note: runs without an authenticated tenant — commands will
-  fail with auth errors. That is acceptable; what matters is correct
-  command invocation with correct flags.
-tags: [uipath-admin, smoke, mode:diagnose, audit, status]
+  This is a stronger gate than the old `--status Failure` regex: post-filtering
+  in jq, an invented spelling, or dropping the filter all produce a result set
+  that fails the purity assertion, while any spelling the server accepts passes.
+
+  A tenant with no failures in the window is a real outcome, so an empty result
+  is allowed — but only after the harness confirms the SAME filtered query
+  returns nothing for it too. `AUDIT_LIVE_ARGS` makes the corroborating query
+  ask the same question; without it an empty-but-correct result would be compared
+  against an unfiltered read and fail.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, status]
 
 run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  Show me all the failed events in this tenant's Admin audit trail from the last
-  7 days.
+  Show me the failed events in this tenant's audit trail from the last 7 days,
+  across all event sources (don't narrow to any one source). Save the complete JSON result to ./events.json so I can review it.
+
+  Save the raw JSON exactly as the command returns it — do not filter, reshape, or
+  summarize it.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent passed --status Failure on the events call"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--status\s+(?i:Failure|1)'
-    min_count: 1
-    weight: 2.5
+  - type: run_command
+    description: "Every event in events.json is a failure inside the 7d window (an empty result passes only if the same filtered query is empty for the harness too)"
+    command: 'AUDIT_FILE=events.json AUDIT_SCOPE=tenant AUDIT_WINDOW_DAYS=7 AUDIT_STATUS=Failure AUDIT_LIVE_ARGS=--status=Failure python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_events.py''))"'
+    timeout: 320
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent kept a bounded time window via --from-date/--to-date"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--from-date\s+\S+.*--to-date\s+\S+'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent ran `uip admin audit tenant events` (advisory, non-gating)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events'
-    min_count: 1
-    weight: 1.0
-    # Non-gating: `--output json` is the CLI default, so omitting it is harmless. Reports
-    # Rule-3 adherence (score 1/0) but pass_threshold 0 keeps a benign miss from failing the task.
-    pass_threshold: 0
