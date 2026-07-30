@@ -24,13 +24,14 @@ The key difference from the RPA pipeline: there is **no link step**. Uploading t
 
 > **Do NOT run `uip tm testcases link-automation` on Playwright test cases.** They are linked by ingestion; manual linking is the RPA pipeline and will corrupt the association.
 
-> **Availability gate — check this first.** The external-package commands are newer than most installed CLIs. Run `uip tm pack --help --output json`: if it exposes no `--type` option, this pipeline is not available on this CLI — tell the user and stop rather than improvising. Project-scoped runs (Steps 5–6) additionally need `testsets playwright-context` / `run --playwright-projects`; if either answers `unknown command` / `unknown option`, the capability is not in this build — run the test set without project scoping instead of retrying.
+> **Availability gate — check this first.** The external-package commands are newer than most installed CLIs. Run `uip tm pack --help --output json`: if it exposes no `--type` option, this pipeline is not available on this CLI — tell the user and stop rather than improvising. Step 5's probe is optional: if `testsets playwright-context` answers `unknown command`, skip it and carry on — its absence says nothing about project scoping. Only if `run --playwright-projects` itself is rejected (`unknown option`) is scoping unavailable in this build; then run the test set without it rather than retrying.
 
 ## Prerequisites
 
 - A recent `@uipath/cli` — this flow's commands (`tm pack --type playwright`, `testcases add --labels`, `testsets playwright-context`, `run --playwright-projects`) do not exist on older CLIs and have no pre-rename fallback. If `uip tm pack --help` does not show `--type`, upgrade the CLI before anything else.
 - Logged in: `uip login status --output json`. If not, `uip login`.
-- A Test Manager project to land the test cases in: `uip tm project list --filter <name> --output json`, or create one with `uip tm project create`. Capture the project key.
+- A Test Manager project to land the test cases in: `uip tm project list --filter <name> --output json`, or `uip tm project create --name <NAME> --project-key <PROJECT_KEY> --output json`. Capture the project key.
+- Trust `Status: "Logged in"` from `uip login status` — its `ExpirationDate` can read stale while calls succeed; if calls do 401, `uip login refresh`.
 - The tenant's Test Manager must have Playwright support enabled (a server-side feature flag). If ingestion never produces test cases (Step 3), this is the first thing to suspect — stop and ask the user.
 - The Playwright project directory must contain:
   - `package.json` with `@playwright/test` installed (discovery shells out to the project's own `playwright test --list`; no browsers needed),
@@ -132,7 +133,7 @@ uip tm testsets run --test-set-key <TEST_SET_KEY> \
 
 Omit `--playwright-projects` entirely for a plain run (all config-default projects).
 
-With `--wait`, the execution id is printed **early, in a progress log line** — take it from the `Execution started: <id> (Pending)` line, NOT from `Starting execution for test set …` (that line's UUID is the *test set* id). The JSON envelope only arrives at terminal state. If you abort the wait, recover the id from that log line or with `uip tm executions list --project-key <PROJECT_KEY> --output json`. `--wait` polls every 60 s with a default timeout of 30 minutes.
+**Getting the execution id.** Start the run **without** `--wait`: it returns a complete JSON envelope immediately, carrying `ExecutionId` and `Status: Pending` — the cleanest handle for automation. With `--wait` the envelope only arrives at terminal state, so take the id from the `Execution started: <id> (Pending)` progress line — not from `Starting execution for test set …`, whose UUID is the *test set*.
 
 **Agent-friendly waiting:** a single `--wait` call can sit silent for many minutes, which trips agent-harness watchdogs and shell timeouts. When running as an agent, prefer starting the run **without** `--wait`, then poll in bounded chunks: `uip tm wait --execution-id <EXECUTION_ID> --timeout 120 --output json` in a loop (or `uip tm executions get-stats` every 30–60 s), so every call returns quickly and progress stays visible. A `wait` that hits its `--timeout` returns a Failure envelope with `Retry: "RetryWillNotFix"` — for a non-terminal execution that just means "still running"; keep polling, don't treat it as fatal.
 
@@ -158,8 +159,20 @@ uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key 
 uip or jobs list --folder-key <FOLDER_KEY> --output json
 ```
 
-`JobKey` values on the logs prove Test Manager dispatched; jobs `Faulted` with no host machine mean the tenant can't run them. Either way it needs the platform team — report it rather than re-running (there is no CLI verb to cancel a Test Manager execution).
+A `Duration` of `00:00:00` and an empty `StartTime` on an already-finished execution are normal — not evidence of a broken run. `JobKey` values on the logs prove Test Manager dispatched; jobs `Faulted` with no host machine mean the tenant can't run them. Either way it needs the platform team — report it rather than re-running (there is no CLI verb to cancel a Test Manager execution).
 
-## Iterating on the suite
+## Iterating on the suite (and getting a fix back in)
 
-Re-running after test changes is the same pipeline with a bumped version: pack with a new `--package-version`, upload, wait for ingestion to sync. Ingestion **updates** existing test cases (matched per test), creates new ones, and unlinks removed ones — test sets keep their membership for surviving test cases; re-run `uip tm testcases add --labels` if new tests should join a set.
+Changing a test — including fixing one the run just failed — uses the same pipeline with a bumped version:
+
+```bash
+uip tm pack --project-path <dir> --type playwright --project-key <PROJECT_KEY> --name <PackageName> --package-version 1.0.1 -o <out-dir> --output json
+uip or packages upload "<out-dir>/<PackageName>.1.0.1.nupkg" --output json
+```
+
+The version **must** be new — the Orchestrator feed rejects one it already has (Step 2). Ingestion then **updates** the existing test cases in place (matched per test), creates any new ones, and unlinks removed ones, so:
+
+- **A test set keeps its membership** when the test list is unchanged — nothing to re-add, no new test set, re-run the same `--test-set-key`. Only re-run `uip tm testcases add --labels` if new tests should join.
+- **A stored Playwright project selection survives** too, so the re-run stays scoped.
+
+**Verifying the update landed is the weak spot.** On a first upload you count new test cases; on an update nothing observably moves — the count and names are identical, and `uip tm testcases list-automations` reports a two-component `PackageVersion` (`1.0`), which cannot distinguish 1.0.1 from 1.0.0. There is no CLI confirmation today, so: wait ~60–90 s after the upload, then re-run and read the results. If the re-run reproduces the *previous* failure verbatim, suspect a stale package rather than a bad fix — re-check that the upload succeeded and that you bumped the version.
