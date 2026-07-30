@@ -67,6 +67,7 @@ uip tm testcases list --project-key <PROJECT_KEY> --output json
 ```
 
 - Poll **unfiltered** and count. Do NOT pass `--filter <PackageName>` — the auto-created test case *names* are `"<suite> > <test title>"`; the package name appears only in the description, which `--filter` does not search, so a package-name filter stays empty forever and reads as a false "ingestion never happened".
+- In a project that already holds test cases, take a **baseline count before Step 2** and wait for it to grow by `TestCount` — an absolute count can look satisfied by pre-existing rows (or time out on a large paginated list). New rows are also recognizable by their `"<suite> > <title>"` names and package description.
 - Expect exactly `TestCount` new test cases (from Step 1), typically within 1–2 minutes. `TestCount` is one per Playwright **test**, NOT multiplied by the number of Playwright projects (2 tests × 2 projects → 2 test cases).
 - Ingested test cases show `IsAutomated: false` in list output — that is normal and does not mean ingestion failed; the package linkage is real (their execution logs carry `HasLinkedAutomation: true` and Orchestrator job keys).
 - Poll every ~10 seconds, up to ~3 minutes. If nothing appears by then, STOP and report — the likely causes are the Playwright feature flag being off for the tenant or a wrong `--project-key`; both need the user, not retries.
@@ -85,8 +86,8 @@ uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLD
 - **The folder must have a Cloud Robots – Serverless machine assigned** or the run's job creation 500s and the execution is instantly `Cancelled`. Check with `uip or machines list --folder-key <FOLDER_KEY> --output json`; if none, create and assign one (one serverless machine per folder):
 
 ```bash
-uip or machines create -n <name> --serverless --testing-slots 2 --output json
-uip or machines assign <name> --folder-key <FOLDER_KEY> --output json
+uip or machines create -n <name> --serverless --testing-slots 2 --output json   # capture Data.Key
+uip or machines assign <MACHINE_KEY> --folder-key <FOLDER_KEY> --output json    # takes machine KEYS (GUIDs), not names
 ```
 
 ```bash
@@ -100,7 +101,7 @@ uip tm testcases add --test-set-key <TEST_SET_KEY> --labels "PW_Suite_<name>" --
 - Mutually exclusive with `--test-case-keys`; pass exactly one of the two.
 - To run the whole suite on one browser: fill by a suite/file label (`PW_Suite_*` or `PW_File_*`) and pass the browser to `--playwright-projects` in Step 6. Filling by `PW_Project_<name>` is for selecting the subset of tests that participate in that project — it does not restrict which browsers run.
 - **Labels select *tests*; `--playwright-projects` selects *browsers*.** Filling by `PW_Project_firefox` picks every test that runs in the firefox project (often all of them); it does not make the run firefox-only — that is what the run flag in Step 6 does. To "run only <project>", label-fill by whatever identifies the tests you want (tag, suite, file) and pass the project name to `--playwright-projects`.
-- **Keep one test set = one Playwright package.** Per-project selection (Step 6) requires every test case in the set to come from a single Playwright package; label-filling across packages produces a set that cannot be project-scoped.
+- **Keep one test set = one Playwright package.** Per-project selection (Step 6) requires every test case in the set to come from a single Playwright package; label-filling across packages produces a set that cannot be project-scoped. Labels are NOT package-qualified — in a project holding several Playwright packages, a generic label like `PW_Tag_smoke` matches tests from all of them. There, fill by a package-unique label (`PW_File_<path>`, or a suite name unique to the package) or by explicit `--test-case-keys` from the current ingestion.
 
 ## Step 5 — Probe the Playwright context (recommended)
 

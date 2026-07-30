@@ -56,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Agent polled for automatic ingestion with an unfiltered test case list (guide Step 3)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+list\s+--project-key\s+PWE2E(?!.*--filter)'
+    command_pattern: 'uip\s+tm\s+testcases?\s+list(?![^\n]*--filter)[^\n]*--project-key\s+PWE2E'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -80,7 +80,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran the test set scoped to the chromium project (hidden flag)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testsets?\s+run\s+.*--playwright-projects\s+chromium'
+    command_pattern: 'uip\s+tm\s+testsets?\s+run\s+.*--playwright-projects\s+chromium(?!\s+[A-Za-z])'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -95,7 +95,7 @@ success_criteria:
 
   - type: run_command
     description: "E2E outcome: latest PWE2E execution reached a terminal state with results (Passed on a capable tenant)"
-    command: "uip tm executions list --project-key PWE2E --output json 2>/dev/null | grep -qE '\"Status\": \"(Finished|Passed)\"'"
+    command: "uip tm executions list --project-key PWE2E --limit 1 --output json 2>/dev/null | grep -qE '\"Status\": \"(Finished|Passed)\"'"
     timeout: 120
     expected_exit_code: 0
     weight: 5.0
