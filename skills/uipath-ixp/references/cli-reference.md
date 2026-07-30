@@ -120,7 +120,7 @@ Every IXP project ships with the built-in data types below (the project's `entit
 
 | Type | `FormattedValue` | Page → prediction |
 |------|------------------|-------------------|
-| `Date` | `YYYY-MM-DDTHH:MM:SSZ`, always midnight UTC | `21-JUN-22` → `2022-06-21T00:00:00Z` |
+| `Date` | `YYYY-MM-DDTHH:MM:SSZ` — a date-only page value comes back at `T00:00:00Z` | `21-JUN-22` → `2022-06-21T00:00:00Z` |
 | `Monetary Quantity` | `<amount> <ISO-4217 code>` — no thousands separator, decimals as written on the page (not fixed to 2), currency appended even when the page shows none | `114.91` → `114.91 AUD`; `8.0700` → `8.0700 USD` |
 | `Number` | bare numeric string, no unit or separator | `29311577` → `29311577` |
 | `Boolean` | `True` / `False` | — |
