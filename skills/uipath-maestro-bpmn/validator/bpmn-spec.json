@@ -1,11 +1,13 @@
 {
-  "version": "1.0.0",
-  "source": "PO.Frontend registry generator (2026-04-14) + CLI notes",
+  "version": "1.0.1",
+  "source": "PO.Frontend registry generator (2026-04-14) + Studio serializer corrections verified 2026-07-30 + CLI notes",
   "extractedFrom": {
     "designSchemaUtils": "src/services/serialization/design-schema/design-schema-utils.ts",
     "bpmnModdle": "src/services/serialization/bpmn-moddle.ts",
     "fpsFormPropertiesUtils": "src/components/canvases/shared/panels/properties/fps/FPSFormPropertiesUtils.ts",
     "constants": "src/constants.ts",
+    "scriptTaskSerializationTests": "src/services/serialization/xml-serialization.test.ts",
+    "scriptTaskV3Migration": "src/services/serialization/migrations/s183-migrations.ts",
     "designSchemaJsonDir": "src/services/serialization/design-schema/*.design-schema.json"
   },
   "extensionTypes": {
@@ -1858,9 +1860,9 @@
       "bindingPattern": "none",
       "requiresDiscovery": false,
       "isDynamic": false,
-      "xmlTemplate": "<bpmn:ScriptTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:mapping version=\"v1\">\n      <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n      <uipath:input name=\"args\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n    </uipath:mapping>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ScriptTask>",
-      "inputNotes": "Inputs are merged into a single json input named 'args' with target 'bodyField'. An inputSchema is created from the input variables.",
-      "extensionTagNotes": "bpmn:ScriptTask is routed through createModdleExtensionVariableMapping (same as BPMN.Variables). Inputs are merged into a single 'args' JSON body with inputSchema."
+      "xmlTemplate": "<bpmn:scriptTask id=\"{id}\" name=\"{name}\" scriptFormat=\"JavaScript\">\n  <bpmn:extensionElements>\n    <uipath:mapping version=\"v1\">\n      <uipath:type value=\"BPMN.Variables\" version=\"v1\" />\n      <uipath:context>\n        <uipath:inputSchema type=\"jsonSchema\"><![CDATA[{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"vars\":{\"type\":\"object\"},\"metadata\":{\"type\":\"object\"}},\"required\":[]}]]></uipath:inputSchema>\n      </uipath:context>\n      <uipath:input name=\"args\" type=\"json\" target=\"bodyField\"><![CDATA[{\"vars\":\"=vars\",\"metadata\":\"=metadata\"}]]></uipath:input>\n      <uipath:output name=\"scriptResponse\" type=\"jsonSchema\" source=\"=result.response\" var=\"{scriptResponseVarId}\" />\n      <uipath:output name=\"Error\" type=\"jsonSchema\" source=\"=Error\" var=\"{errorVarId}\" />\n    </uipath:mapping>\n    <uipath:scriptVersion value=\"v3\" />\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n  <bpmn:script><![CDATA[return null;]]></bpmn:script>\n</bpmn:scriptTask>",
+      "inputNotes": "Current v3 scripts use a BPMN.Variables mapping, pass vars and metadata in the args bodyField, declare both in inputSchema, and read values as vars.<variableId>.",
+      "extensionTagNotes": "The registry key remains BPMN.ScriptTask, but Studio serializes the script task's uipath:mapping type as BPMN.Variables. The standard scriptResponse and Error outputs plus uipath:scriptVersion v3 are required."
     },
     "Intsvc.TimerTrigger": {
       "extensionType": "Intsvc.TimerTrigger",
