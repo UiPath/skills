@@ -40,12 +40,11 @@ consumes it as written:
 `content/<file>` paths, so pre-existing synthetic metadata in that shape stays
 valid. Prefer the CLI shape for anything new.
 
-For a new bare local project, start with the supported generator instead of
-hand-authoring the scaffold:
+For a new local project, reuse the current solution when one is already in
+scope; otherwise let the supported generator create and register one:
 
 ```bash
 uip maestro bpmn init <ProjectName> \
-  --skip-solution-registration \
   --output json
 ```
 
