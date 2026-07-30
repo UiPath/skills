@@ -173,3 +173,4 @@
 # Process Mining skill (process apps, data ingestion, dbt transformations)
 /skills/uipath-process-mining/ @UiPath/team-backendhoven
 /tests/tasks/uipath-process-mining/ @UiPath/team-backendhoven
+/tests/tasks/activation/uipath-process-mining.jsonl @UiPath/team-backendhoven
