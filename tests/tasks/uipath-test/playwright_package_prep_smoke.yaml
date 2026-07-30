@@ -44,7 +44,7 @@ success_criteria:
 
   - type: run_command
     description: "Two Playwright tests were written"
-    command: "grep -rc 'test(' pw-suite/tests | grep -qE ':[2-9]|:[1-9][0-9]'"
+    command: "[ \"$(grep -rho 'test(' pw-suite/tests | wc -l | tr -d ' ')\" -ge 2 ]"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
