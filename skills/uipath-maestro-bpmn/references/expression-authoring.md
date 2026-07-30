@@ -79,21 +79,19 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
 
 - Root variables are visible across the root process after they are declared and
   reachable by control flow.
-- An output variable you intend to expose in runtime inspection (via
-  `debug-instance variables-all` or `instance variables`) must be root-scoped —
-  declare its `uipath:output` or `uipath:inputOutput` WITHOUT an `elementId`. A
-  variable scoped with `elementId` is bound to that element and is not surfaced
-  as a root/global runtime variable. Preserve exact variable ids: if the
-  requested variable id is `product`, declare `id="product"` and map to
-  `var="product"`, not `Product` or `Var_Product`. Current BPMN live debug may
-  expose the root output definition while still returning the value as `null`;
-  treat that as a runtime/debug API limitation, not proof that the authored
-  mapping is absent.
+- Keep a mutable root `uipath:inputOutput` for each value used by decisions,
+  tasks, or diagnostics. Process expressions reference that mutable variable
+  as `vars.<id>`, not the caller-facing declaration.
+- Public caller inputs and outputs use the event bridge contract documented in
+  [Structural BPMN: Variables](structural-bpmn.md#variables-bpmnvariables).
+  Do not route on a public input before its StartEvent bridge or treat a mutable
+  internal value as an implicit public output.
 - Subprocess variables stay scoped to that subprocess.
 - Output mappings should target `uipath:inputOutput` or `uipath:output`
   variables, not read-only `uipath:input` variables.
-- Entry point inputs that must later be updated need a separate mutable
-  `uipath:inputOutput` variable and an explicit mapping from the entry input.
+- Preserve exact variable ids. If the requested variable id is `product`,
+  declare `id="product"` and map to `var="product"`; do not silently change it
+  to `Product` or `Var_Product`.
 - Trigger-bound values are commonly represented as `uipath:inputOutput`
   variables scoped with `elementId` so the trigger can write them during
   execution.
