@@ -168,7 +168,9 @@ under different solution resource keys.
 
 These root bindings are source model state. `bindings_v2.json`,
 `entry-points.json`, `operate.json`, and `package-descriptor.json` are generated
-package state: never hand-create or edit them.
+package state: never hand-create or edit them. After source validation, run
+the BPMN `refresh` command to derive the V1 Connection resources and the rest
+of the package metadata from the BPMN.
 
 ## 5. Serialize request inputs from the described schema
 
