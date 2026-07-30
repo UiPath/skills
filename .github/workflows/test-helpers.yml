@@ -13,6 +13,7 @@ on:
       - 'skills/uipath-maestro-bpmn/references/structural-bpmn.md'
       - 'skills/uipath-maestro-bpmn/references/shared/project-layout.md'
       - 'skills/uipath-maestro-bpmn/references/shared/local-metadata-regeneration-guide.md'
+      - 'skills/uipath-maestro-bpmn/validator/bpmn-spec.json'
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
       - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
       - '.github/workflows/test-helpers.yml'
@@ -156,6 +157,22 @@ jobs:
 
       - name: Run public I/O contract guard
         run: pytest tests/scripts/test_bpmn_public_io_contract.py -v
+
+  bpmn-script-task-contract-guard:
+    runs-on: ubuntu-latest
+    name: maestro-bpmn ScriptTask contract guard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run ScriptTask contract guard
+        run: pytest tests/scripts/test_bpmn_script_task_contract.py -v
 
   catalog-build-guards:
     runs-on: uipath-ubuntu-latest
