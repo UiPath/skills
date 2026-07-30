@@ -42,7 +42,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 8. **Base URL must use the API subdomain.** `https://api.uipath.com` not `https://cloud.uipath.com`. See the table below.
 9. **`vite.config.ts` must always set `base: './'`.** The platform handles URL routing — apps must use relative asset paths. Do not use a routing name or a sub-path here.
 10. **Use `getAppBase()` from `@uipath/uipath-typescript` for any absolute URL constructed at runtime** — router basename, image `src`, `fetch` paths. Deployed apps mount at a non-root prefix; `/`-rooted paths work locally but 404 after deploy. Vite's `base: './'` only fixes import-time references.
-11. **`uip codedapp deploy` must run non-interactively.** Pass the folder key as `--folder-key <GUID>` (or as `UIPATH_FOLDER_KEY=<GUID>` env-var prefix — either works). The interactive folder picker fails in non-TTY contexts (CI, agent shells). If the user provides a folder **name**, resolve it to a key with `uip or folders list --output json` and match on the `Name` field (output rows are `{ Key, Name, Path, Description, Type, ParentKey }`). A **personal workspace** is the row with `Type == "Personal"` — resolve its `Key` the same way. To deploy into a **new** folder, create it first with `uip or folders create "<NAME>" --output json` and read `Data.Key`. The `uip or ...` commands require the Orchestrator tool — install once via `uip tools install @uipath/orchestrator-tool` (check first with `uip tools list`).
+11. **`uip codedapp deploy` must run non-interactively.** Pass the folder key as `--folder-key <GUID>` (or as `UIPATH_FOLDER_KEY=<GUID>` env-var prefix — either works). The interactive folder picker fails in non-TTY contexts (CI, agent shells). If the user provides a folder **name**, resolve it to a key with `uip or folders list --output json` and match on the `Name` field — or on `Path` for a nested folder such as `Shared/Demos` (output rows are `{ Key, Name, Path, Description, Type, ParentKey }`). If that list comes back **empty** under client-credentials auth, the login scope is missing `OR.Default` — fix the scope rather than assuming the folder is inaccessible. A **personal workspace** is the row with `Type == "Personal"` — resolve its `Key` the same way. To deploy into a **new** folder, create it first with `uip or folders create "<NAME>" --output json` and read `Data.Key`. The `uip or ...` commands require the Orchestrator tool — install once via `uip tools install @uipath/orchestrator-tool` (check first with `uip tools list`).
 12. **Guard against text overflow in every UI.** See [patterns.md](references/patterns.md) "Preventing Text Overflow".
 13. **Inspect the DF schema before writing analytics, filters, or seeds.** Run `uip df entities get <ENTITY_ID> --output json` to inspect fields and types. At runtime, use `entities.getById(<id>)` from the app's authenticated session. DF doesn't behave like a typical RDBMS; see [sdk/data-fabric.md](references/sdk/data-fabric.md) "Anti-shapes & gotchas".
 14. **Every list call returns ONE page — even with no options. There is no "give me everything" path.** Applies to `getAll`, `getAllRecords`, `queryRecordsById`, `getFileMetaData`, etc. `getAll()` with no options does NOT return all rows; the SDK sends no `pageSize` and the **server** applies its own cap, wrapped in a misleadingly-named `NonPaginatedResponse`. To list every row from a source that may exceed the cap, you MUST loop the cursor: `while (page.hasNextPage) { page = await getAll({ cursor: page.nextCursor }) }` and accumulate `items`. Reading `result.items.length` after a single call is almost always a bug. See [sdk/pagination.md](references/sdk/pagination.md).
@@ -123,15 +123,18 @@ uip login status --output json         # check if logged in
 uip login                              # interactive OAuth (opens browser)
 uip login --authority https://alpha.uipath.com   # non-production environments
 
-# Client-credentials (headless/CI) — MUST include Apps.Read Apps.Write or publish's
-# "Registering coded app" step fails with 401 even though package upload succeeds.
-# OR.Default alone is NOT sufficient — it covers Orchestrator but not the Apps service.
+# Client-credentials (headless/CI) — the scope MUST include BOTH:
+#   OR.Default              → Orchestrator, incl. the folder lookup deploy validates against.
+#                             OR.Default is auto-grantable — it is NOT selectable in the
+#                             portal's scope list, so it must be named here explicitly.
+#   Apps.Read Apps.Write    → the Apps service registration inside `uip codedapp publish`.
+#                             Without them the package upload succeeds and registration 401s.
 uip login \
   --client-id <id> \
   --client-secret <secret> \
   --organization <org> \
   --tenant <tenant> \
-  --scope "OR.Folders OR.Execution OR.Administration Apps.Read Apps.Write" \
+  --scope "OR.Default Apps.Read Apps.Write" \
   --authority https://alpha.uipath.com   # omit --authority for production
 ```
 
@@ -161,7 +164,7 @@ To change any of these values, edit `uipath.json`.
 
 **Do NOT pause between steps to ask "should I continue?" — execute the full pipeline. Only stop if you need auth credentials or an app name.**
 
-1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`. If using **client credentials** (headless/CI), always include `Apps.Read Apps.Write` in `--scope` — required by the Apps service registration inside `uip codedapp publish`. `OR.Default` alone covers Orchestrator (package upload) but not Apps registration; omitting them causes a silent 401 on the second half of publish.
+1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`. If using **client credentials** (headless/CI), use `--scope "OR.Default Apps.Read Apps.Write"`. Both halves are required: `Apps.Read Apps.Write` for the Apps service registration inside `uip codedapp publish` (omit them and the package upload succeeds while registration silently 401s), and `OR.Default` for Orchestrator including the folder lookup that `deploy` validates `--folder-key` against (omit it and `uip or folders list` returns 0 folders and deploy fails with a misleading "folder not found among folders accessible to your account"). `OR.Default` is auto-grantable and does **not** appear in the portal's selectable scope list, so it must be named in `--scope` explicitly. `OR.Administration`, `OR.Execution` and `OR.Folders` are not needed.
 2. **Build** — `npm run build`. Verify `ls dist/`.
 3. **Pack** — `uip codedapp pack dist -n <name> --version <version>`. Produces `.uipath/<name>.<version>.nupkg`. Bump version if previously published.
 4. **Publish** — `uip codedapp publish` (add `-t Action` for action apps). Verify `cat .uipath/app.config.json`.

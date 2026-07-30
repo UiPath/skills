@@ -30,6 +30,8 @@ The CLI takes **flat, comma-separated scope names** (e.g. `OR.Assets,OR.Tasks.Re
 
 Pick scope names from [oauth-scopes.md](oauth-scopes.md). Discover valid names: `uip admin scopes list --output json`.
 
+**Confidential (deploy) app — registered application scopes:** `Apps.Read`, `Apps.Write`. That is all that must be registered in the portal; `OR.Administration`, `OR.Execution` and `OR.Folders` are not required. Do **not** try to register `OR.Default` — it is auto-grantable and does not appear in the portal's selectable scope list, but it must still be named in the `uip login --scope` string (see [pack-publish-deploy.md](pack-publish-deploy.md)), or `deploy --folder-key` fails with a misleading "folder not found" error. Also assign the confidential app to the target Orchestrator folder (Manage Access → External apps, e.g. Folder Administrator) — the tenant-level "Allow to be …" role alone does not grant folder access.
+
 ## Create an External Application
 
 For a coded **web** app (dev on `http://localhost:5173`):
