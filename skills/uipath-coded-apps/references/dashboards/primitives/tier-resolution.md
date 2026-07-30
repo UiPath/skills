@@ -429,11 +429,11 @@ EmptyState when the window has no governance data — un-instrumented agents mus
 
 ## T0 — Hard Refuse
 
-**Refuse ONLY the specific metric — not the whole dashboard.** Always offer an alternative.
+**Refuse ONLY the specific metric — not the whole dashboard.** Always offer an alternative. **"No direct endpoint" ≠ "impossible": if the alternative is a metric you can derive from a read method (e.g. a Jobs trend), BUILD that widget — do not drop it.** Only rows whose alternative is a genuinely *different* metric (cost, RAM, …) are true refusals.
 
 | User asks for | Why impossible | Suggest instead |
 |--------------|----------------|-----------------|
-| Agent **invocation-count** timeline (runs/calls per period) | SDK 1.5.0 has error/latency/consumption timelines but no invocation-count endpoint | `agent-consumption-timeline` (AGU over time), `agent-error-timeline`, or T3 Jobs trend with `ProcessType eq 'Agent'` |
+| Agent **invocation volume / count over time** (runs/calls per period) | SDK 1.5.0 has error/latency/consumption timelines but no invocation-count endpoint | **Not a refusal — BUILD it** as a T3 Jobs trend: `new Jobs(sdk).getAll({ filter: "ProcessType eq 'Agent'" })` bucketed by period. Agent job runs ARE agent invocations, so this answers the ask; do NOT omit the widget. (Use `agent-consumption-timeline`/`agent-error-timeline` only if the user specifically wants AGU/errors.) |
 | Agent cost in dollars | Platform tracks AGU/PLTU units, not currency | `agent-consumption` for per-agent unit totals |
 | CPU/RAM per agent | Not exposed by any API ("Agent Memory" = memory entries, not RAM) | `agent-health`; or `agent-memory-timeline` if they meant the Memory feature |
 | Who triggered a job | Job records have no end-user identity | `job-completion-trend` grouped by process; `policy-denials` includes `actorIdentityId` for governance events |
