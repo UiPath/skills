@@ -1,8 +1,7 @@
-"""Guard the supported CLI/Studio project scaffold in the BPMN skill."""
+"""Guard the supported CLI project scaffold in the BPMN skill."""
 
 from __future__ import annotations
 
-import json
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -16,14 +15,6 @@ REFERENCE = (
     / "uipath-maestro-bpmn"
     / "references"
     / "structural-bpmn.md"
-)
-METADATA_REFERENCE = (
-    ROOT
-    / "skills"
-    / "uipath-maestro-bpmn"
-    / "references"
-    / "shared"
-    / "local-metadata-regeneration-guide.md"
 )
 NS = {
     "bpmn": "http://www.omg.org/spec/BPMN/20100524/MODEL",
@@ -126,19 +117,6 @@ def test_minimal_example_has_integral_flow_and_di() -> None:
     assert {shape.attrib["bpmnElement"] for shape in shapes} == node_ids
     assert {edge.attrib["bpmnElement"] for edge in edges} == flow_ids
     assert all(len(edge.findall("di:waypoint", NS)) >= 2 for edge in edges)
-
-
-def test_source_only_descriptor_uses_current_maestro_keys() -> None:
-    section = METADATA_REFERENCE.read_text(encoding="utf-8").split(
-        "## Source-only fallback",
-        maxsplit=1,
-    )[1]
-    match = re.search(r"```json\n(?P<json>.*?)\n```", section, re.DOTALL)
-    assert match, "metadata guide is missing its source-only project.uiproj example"
-    assert json.loads(match.group("json")) == {
-        "Name": "SyntheticProject",
-        "ProjectType": "ProcessOrchestration",
-    }
 
 
 def test_variable_and_migration_examples_use_serializer_attributes() -> None:
