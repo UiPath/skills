@@ -142,7 +142,8 @@ jobs:
       # smoke-skills.yml and tests/docker/Dockerfile).
       #
       # The `@uipath` scope is mapped to npm.pkg.github.com via a temp npmrc
-      # (token from GH_PAT, read:packages). EVERY package is pinned to the
+      # (token from GH_PACKAGES_TOKEN, read:packages only — never the
+      # repo-write PAT; this workflow is `pull_request`-triggered). EVERY package is pinned to the
       # explicit `@dev` dist-tag: the same feed also carries a FROZEN `alpha`
       # tag (1.197.0-alpha.*) and the public `latest` line — never rely on
       # `latest`/unspecified here, which could resolve to a stale line. The
@@ -163,11 +164,11 @@ jobs:
       - name: Install uip CLI + RPA tools (GitHub Packages @dev)
         shell: bash
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
         run: |
           set -euo pipefail
-          if [ -z "${GH_PAT:-}" ]; then
-            echo "::error::GH_PAT is empty — cannot authenticate to the GitHub Packages @dev feed"
+          if [ -z "${GH_PACKAGES_TOKEN:-}" ]; then
+            echo "::error::GH_PACKAGES_TOKEN is empty — cannot authenticate to the GitHub Packages @dev feed"
             exit 1
           fi
           install_dir="$(mktemp -d)"
@@ -176,7 +177,7 @@ jobs:
           npmrc="$install_dir/.npmrc"
           {
             echo "@uipath:registry=https://npm.pkg.github.com/"
-            echo "//npm.pkg.github.com/:_authToken=${GH_PAT}"
+            echo "//npm.pkg.github.com/:_authToken=${GH_PACKAGES_TOKEN}"
           } > "$npmrc"
           export NPM_CONFIG_USERCONFIG="$npmrc"
           npm install -g @uipath/cli@dev
