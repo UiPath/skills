@@ -23,18 +23,18 @@ Entry point inputs reference a start event through `elementId`, but the start ev
 `uipath:entryPointId` or the ID is duplicated.
 Fix root start event extensions and variable scoping.
 
-## Public variables are not bridged
+## Start or end variable mapping is missing
 
-The runtime binds caller inputs to public declarations and returns caller
-outputs from public output declarations; process logic reads and writes mutable
-internal variables. If the StartEvent and completion EndEvent do not bridge
-those layers, a run can report `Completed` while gateways take fallback paths
-or returned outputs are null.
+An `input` variable scoped to a root StartEvent must map to the root
+`inputOutput` variable used by gateways and activities. Before completion, the
+result `inputOutput` variable must map on each returning root EndEvent to its
+scoped `output` variable. Without these mappings, conditions can evaluate
+against null values and a completed process can return null outputs.
 
-Inspect runtime variables, not only final status. Add public-input-to-internal
-mappings on each intended root StartEvent and internal-to-public-output
-mappings on the root EndEvents that return those results. Converge routes when
-they must return the same public result.
+Inspect the StartEvent and EndEvent `BPMN.Variables` mappings and the process
+instance variables. Add the missing `input` → `inputOutput` or `inputOutput` →
+`output` mapping. Converge routes that return the same result before the
+returning EndEvent.
 
 ## Binding reference missing
 
