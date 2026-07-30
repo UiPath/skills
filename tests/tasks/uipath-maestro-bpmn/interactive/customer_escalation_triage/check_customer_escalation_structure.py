@@ -48,6 +48,11 @@ EXPECTED_INPUTS = {
     "autoSendEnabled": "boolean",
     "businessImpact": "string",
     "correlationId": "string",
+    "jiraProjectKey": "string",
+    "jiraIssueTypeId": "string",
+    "jiraReporterAccountId": "string",
+    "slackChannelId": "string",
+    "driveDestinationFolderId": "string",
 }
 EXPECTED_OUTPUTS = {
     "route": "string",
@@ -90,6 +95,78 @@ ACTIVITY_KINDS = {
     "businessRuleTask",
     "scriptTask",
     "callActivity",
+}
+
+CONNECTOR_ACCOUNTS = {
+    "uipath-atlassian-jira": (
+        "is-sandboxes-test@uipath.com-uipath-sandbox-380"
+    ),
+    "uipath-google-drive": "is.sandboxes.test@gmail.com",
+    "uipath-salesforce-slack": "is-sandboxes",
+}
+CONNECTION_FOLDER_KEY = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
+CONNECTOR_OPERATIONS = {
+    ("uipath-atlassian-jira", "curated_create_issue"),
+    ("uipath-atlassian-jira", "curated_edit_issue"),
+    ("uipath-google-drive", "copyFile"),
+    ("uipath-salesforce-slack", "send_message_to_channel_v2"),
+}
+EXPECTED_CONNECTOR_ACTIVITIES = {
+    ("uipath-atlassian-jira", "/curated_create_issue"): "POST",
+    (
+        "uipath-atlassian-jira",
+        "/curated_edit_issue/{issueIdOrKey}",
+    ): "PUT",
+    ("uipath-google-drive", "/copyFile"): "POST",
+    (
+        "uipath-salesforce-slack",
+        "/send_message_to_channel_v2",
+    ): "POST",
+}
+EXPECTED_CONNECTOR_OBJECTS = {
+    (
+        "uipath-atlassian-jira",
+        "/curated_create_issue",
+    ): "curated_create_issue",
+    (
+        "uipath-atlassian-jira",
+        "/curated_edit_issue/{issueIdOrKey}",
+    ): "curated_edit_issue",
+    ("uipath-google-drive", "/copyFile"): "copyFile",
+    (
+        "uipath-salesforce-slack",
+        "/send_message_to_channel_v2",
+    ): "send_message_to_channel_v2",
+}
+EXPECTED_CONNECTOR_INPUTS = {
+    ("uipath-atlassian-jira", "/curated_create_issue"): {
+        ("body", "body"),
+    },
+    (
+        "uipath-atlassian-jira",
+        "/curated_edit_issue/{issueIdOrKey}",
+    ): {
+        ("path", "issueIdOrKey"),
+        ("query", "project"),
+        ("query", "issuetype"),
+        ("body", "body"),
+    },
+    ("uipath-google-drive", "/copyFile"): {
+        ("query", "fileId"),
+        ("body", "body"),
+    },
+    (
+        "uipath-salesforce-slack",
+        "/send_message_to_channel_v2",
+    ): {
+        ("query", "send_as"),
+        ("body", "body"),
+    },
+}
+OPTIONAL_CONNECTOR_INPUTS = {
+    ("uipath-google-drive", "/copyFile"): {
+        ("query", "alreadyExists"),
+    },
 }
 
 
@@ -191,6 +268,262 @@ def mapping_outputs(element: ET.Element) -> list[ET.Element]:
     return element.findall(
         f".//{q(UIPATH_NS, 'output')}"
     )
+
+
+def connector_context(element: ET.Element) -> dict[str, str]:
+    activity = element.find(
+        f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'activity')}"
+    )
+    if activity is None:
+        return {}
+    return {
+        item.attrib["name"]: item.attrib.get("value", "")
+        for item in activity.findall(
+            f"./{q(UIPATH_NS, 'context')}/{q(UIPATH_NS, 'input')}"
+        )
+        if item.attrib.get("name")
+    }
+
+
+def connector_inputs(
+    element: ET.Element,
+) -> dict[tuple[str, str], ET.Element]:
+    activity = element.find(
+        f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'activity')}"
+    )
+    if activity is None:
+        return {}
+    result: dict[tuple[str, str], ET.Element] = {}
+    for item in activity.findall(f"./{q(UIPATH_NS, 'input')}"):
+        name = item.attrib.get("name", "")
+        target = item.attrib.get("target", "")
+        if not name or not target:
+            fail(
+                f"connector activity {element.attrib.get('id')!r} has an "
+                "input without both name and target"
+            )
+        key = (target, name)
+        if key in result:
+            fail(
+                f"connector activity {element.attrib.get('id')!r} repeats "
+                f"input {key}"
+            )
+        result[key] = item
+    return result
+
+
+def connector_json_body(
+    element: ET.Element,
+    inputs: dict[tuple[str, str], ET.Element],
+) -> dict[str, Any]:
+    body = inputs.get(("body", "body"))
+    if body is None:
+        fail(f"connector activity {element.attrib.get('id')!r} has no body")
+    raw = body.attrib.get("value")
+    if raw is None:
+        raw = body.text or ""
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        fail(
+            f"connector activity {element.attrib.get('id')!r} body is not "
+            f"JSON: {exc}"
+        )
+    if not isinstance(payload, dict):
+        fail(
+            f"connector activity {element.attrib.get('id')!r} body must be "
+            "a JSON object"
+        )
+    return payload
+
+
+def require_connector_request_contract(
+    element: ET.Element,
+    key: tuple[str, str],
+) -> None:
+    inputs = connector_inputs(element)
+    required = EXPECTED_CONNECTOR_INPUTS[key]
+    allowed = required | OPTIONAL_CONNECTOR_INPUTS.get(key, set())
+    if not required <= set(inputs) or not set(inputs) <= allowed:
+        fail(
+            f"connector activity {key} must use exact registry input "
+            f"targets/names; required {sorted(required)}, allowed "
+            f"{sorted(allowed)}, got {sorted(inputs)}"
+        )
+    body = connector_json_body(element, inputs)
+
+    if key == ("uipath-atlassian-jira", "/curated_create_issue"):
+        fields = body.get("fields")
+        if not isinstance(fields, dict) or set(fields) != {
+            "project",
+            "issuetype",
+            "reporter",
+            "summary",
+            "description",
+        }:
+            fail(
+                "Jira create body must contain the exact fields project, "
+                "issuetype, reporter, summary, and description"
+            )
+        if (
+            not isinstance(fields["project"], dict)
+            or set(fields["project"]) != {"key"}
+        ):
+            fail("Jira create project must use the registry field key")
+        if (
+            not isinstance(fields["issuetype"], dict)
+            or set(fields["issuetype"]) != {"id"}
+        ):
+            fail("Jira create issuetype must use the registry field id")
+        if (
+            not isinstance(fields["reporter"], dict)
+            or set(fields["reporter"]) != {"id"}
+        ):
+            fail("Jira create reporter must use the registry field id")
+    elif key[1] == "/curated_edit_issue/{issueIdOrKey}":
+        fields = body.get("fields")
+        if not isinstance(fields, dict) or set(fields) != {"description"}:
+            fail(
+                "Jira update body must write correlation evidence through "
+                "fields.description"
+            )
+    elif key == ("uipath-google-drive", "/copyFile"):
+        if set(body) != {"destinationFolder", "name"}:
+            fail(
+                "Drive copy body must use exact registry fields "
+                "destinationFolder and name"
+            )
+    elif key[0] == "uipath-salesforce-slack":
+        if set(body) != {"channel", "messageToSend"}:
+            fail(
+                "Slack body must use exact registry fields channel and "
+                "messageToSend"
+            )
+        if inputs[("query", "send_as")].attrib.get("value") != "bot":
+            fail("Slack send_as query input must be the literal bot")
+
+
+def require_connector_activities(
+    process: ET.Element,
+    activities: list[ET.Element],
+) -> dict[tuple[str, str], ET.Element]:
+    observed: dict[tuple[str, str], ET.Element] = {}
+    for element in activities:
+        if local(element.tag) != "sendTask":
+            fail(
+                f"connector activity {element.attrib.get('id')!r} must use "
+                "the registry bpmn:SendTask placement"
+            )
+        context = connector_context(element)
+        connector_key = context.get("connectorKey", "")
+        path = context.get("path", "")
+        key = (connector_key, path)
+        if key not in EXPECTED_CONNECTOR_ACTIVITIES:
+            fail(
+                f"unexpected connector activity {element.attrib.get('id')!r}: "
+                f"{key}"
+            )
+        if key in observed:
+            fail(f"duplicate connector activity for {key}")
+        expected_method = EXPECTED_CONNECTOR_ACTIVITIES[key]
+        if not context.get("activity"):
+            fail(
+                f"connector activity {key} is missing the registry primary "
+                "activity value"
+            )
+        if not context.get("operation"):
+            fail(
+                f"connector activity {key} is missing runtime operation"
+            )
+        if context.get("objectName") != EXPECTED_CONNECTOR_OBJECTS[key]:
+            fail(
+                f"connector activity {key} must use registry objectName "
+                f"{EXPECTED_CONNECTOR_OBJECTS[key]!r}"
+            )
+        if context.get("method") != expected_method:
+            fail(
+                f"connector activity {key} must use method "
+                f"{expected_method!r}"
+            )
+        connection_ref = context.get("connection", "")
+        folder_ref = context.get("folderKey", "")
+        if not re.fullmatch(r"=bindings\.[A-Za-z_][\w.-]*", connection_ref):
+            fail(f"connector activity {key} has no connection binding")
+        if not re.fullmatch(r"=bindings\.[A-Za-z_][\w.-]*", folder_ref):
+            fail(f"connector activity {key} has no folder binding")
+        require_connector_request_contract(element, key)
+        observed[key] = element
+    if set(observed) != set(EXPECTED_CONNECTOR_ACTIVITIES):
+        missing = set(EXPECTED_CONNECTOR_ACTIVITIES) - set(observed)
+        fail(f"missing required connector activities: {sorted(missing)}")
+
+    bindings_parent = process.find(
+        f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'bindings')}"
+    )
+    if bindings_parent is None:
+        fail("connector process is missing uipath:bindings")
+    bindings = {
+        item.attrib.get("id"): item
+        for item in bindings_parent.findall(f"./{q(UIPATH_NS, 'binding')}")
+        if item.attrib.get("id")
+    }
+    for key, element in observed.items():
+        context = connector_context(element)
+        for field, property_attribute in (
+            ("connection", "ConnectionId"),
+            ("folderKey", "folderKey"),
+        ):
+            binding_id = context[field].split(".", 1)[1]
+            binding = bindings.get(binding_id)
+            if binding is None:
+                fail(f"connector activity {key} references missing {binding_id}")
+            if binding.attrib.get("elementId") != element.attrib.get("id"):
+                fail(
+                    f"binding {binding_id} must be scoped to connector "
+                    f"activity {element.attrib.get('id')!r}"
+                )
+            if binding.attrib.get("resource") != "Connection":
+                fail(f"binding {binding_id} must be a Connection resource")
+            if binding.attrib.get("propertyAttribute") != property_attribute:
+                fail(
+                    f"binding {binding_id} must use propertyAttribute "
+                    f"{property_attribute!r}"
+                )
+            if not binding.attrib.get("resourceKey"):
+                fail(f"binding {binding_id} is missing resourceKey")
+
+    bindings_file = PROJECT / "bindings_v2.json"
+    try:
+        resources_payload = json.loads(
+            bindings_file.read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError) as exc:
+        fail(f"could not read {bindings_file}: {exc}")
+    resources = resources_payload.get("resources")
+    if not isinstance(resources, list):
+        fail("bindings_v2.json has no resources list")
+    connection_resources = [
+        resource
+        for resource in resources
+        if isinstance(resource, dict)
+        and resource.get("resource") == "Connection"
+    ]
+    resource_keys = {
+        resource.get("key")
+        for resource in connection_resources
+        if resource.get("key")
+    }
+    binding_resource_keys = {
+        item.attrib.get("resourceKey")
+        for item in bindings.values()
+        if item.attrib.get("propertyAttribute") == "ConnectionId"
+    }
+    if len(resource_keys) != 3 or resource_keys != binding_resource_keys:
+        fail(
+            "bindings_v2.json must contain exactly the three Connection "
+            "resources referenced by the BPMN"
+        )
+    return observed
 
 
 def find_registry_evidence(
@@ -295,6 +628,121 @@ def load_registry_evidence(extension_type: str) -> dict[str, Any]:
         fail(f"{path} does not identify the registry-owned uipath:mapping wrapper")
     require_usable_registry_template(extension_type, entry, path)
     return entry
+
+
+def run_json_command(arguments: list[str], label: str) -> Any:
+    completed = subprocess.run(
+        [*arguments, "--output", "json"],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    payload = parse_json_output(
+        completed.stdout or completed.stderr,
+        label,
+    )
+    if (
+        completed.returncode != 0
+        or str(get_ci(payload, "Result") or "").casefold() != "success"
+    ):
+        fail(f"{label} failed: {get_ci(payload, 'Message') or payload}")
+    return payload
+
+
+def discover_connector_connections() -> dict[str, dict[str, Any]]:
+    payload = run_json_command(
+        ["uip", "is", "connections", "list", "--all-folders"],
+        "tenant-wide connection discovery",
+    )
+    rows = get_ci(payload, "Data")
+    if not isinstance(rows, list):
+        fail("tenant-wide connection discovery returned no connection list")
+    discovered: dict[str, dict[str, Any]] = {}
+    for connector_key, account_name in CONNECTOR_ACCOUNTS.items():
+        matches = [
+            row
+            for row in rows
+            if isinstance(row, dict)
+            and get_ci(row, "ConnectorKey") == connector_key
+            and get_ci(row, "Name") == account_name
+            and get_ci(row, "FolderKey") == CONNECTION_FOLDER_KEY
+            and str(get_ci(row, "State") or "").casefold() == "enabled"
+        ]
+        if len(matches) != 1:
+            fail(
+                f"expected one enabled {connector_key} connection named "
+                f"{account_name!r}, found {len(matches)}"
+            )
+        discovered[connector_key] = matches[0]
+    return discovered
+
+
+def require_connector_registry_evidence() -> None:
+    connections = discover_connector_connections()
+    saved: dict[tuple[str, str], list[tuple[Path, dict[str, Any]]]] = {}
+    for path in sorted(EVIDENCE.glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        data = get_ci(payload, "Data")
+        entry = get_ci(data, "ExtensionType")
+        enrichment = get_ci(data, "IsEnrichment")
+        if (
+            not isinstance(entry, dict)
+            or get_ci(entry, "ExtensionType") != "Intsvc.ActivityExecution"
+            or not isinstance(enrichment, dict)
+        ):
+            continue
+        connector_key = get_ci(enrichment, "ElementKey")
+        object_name = get_ci(enrichment, "Name")
+        key = (connector_key, object_name)
+        if key in CONNECTOR_OPERATIONS:
+            saved.setdefault(key, []).append((path, payload))
+
+    missing = CONNECTOR_OPERATIONS - set(saved)
+    if missing:
+        fail(f"missing enriched connector registry evidence: {sorted(missing)}")
+
+    for connector_key, object_name in sorted(CONNECTOR_OPERATIONS):
+        connection_id = str(get_ci(connections[connector_key], "Id"))
+        live = run_json_command(
+            [
+                "uip",
+                "maestro",
+                "bpmn",
+                "registry",
+                "get",
+                "Intsvc.ActivityExecution",
+                "--connection-id",
+                connection_id,
+                "--object-name",
+                object_name,
+            ],
+            f"live registry get for {connector_key}/{object_name}",
+        )
+        exact = [
+            path
+            for path, payload in saved[(connector_key, object_name)]
+            if payload == live
+        ]
+        if not exact:
+            fail(
+                f"saved evidence for {connector_key}/{object_name} is not "
+                "the exact current enriched registry response"
+            )
+        entry = get_ci(get_ci(live, "Data"), "ExtensionType")
+        if str(get_ci(entry, "BpmnElement") or "").casefold() != (
+            "bpmn:SendTask".casefold()
+        ):
+            fail(f"{exact[0]} has an unexpected connector BPMN element")
+        if str(get_ci(entry, "ExtensionTag") or "").casefold() != (
+            "uipath:activity".casefold()
+        ):
+            fail(f"{exact[0]} does not use uipath:activity")
+        template = get_ci(entry, "XmlTemplate")
+        if not isinstance(template, str) or "<uipath:activity" not in template:
+            fail(f"{exact[0]} has no usable connector activity template")
 
 
 def require_unique_ids(root: ET.Element) -> None:
@@ -639,6 +1087,7 @@ def require_registry_activities(
 
     scripts: list[ET.Element] = []
     variable_tasks: list[ET.Element] = []
+    connector_activities: list[ET.Element] = []
     unexpected: list[tuple[str, str | None]] = []
     for element in root.iter():
         if local(element.tag) not in ACTIVITY_KINDS:
@@ -656,11 +1105,20 @@ def require_registry_activities(
             scripts.append(element)
         elif values[0] == "BPMN.Variables" and local(element.tag) == "task":
             variable_tasks.append(element)
+        elif (
+            values[0] == "Intsvc.ActivityExecution"
+            and local(element.tag) == "sendTask"
+        ):
+            connector_activities.append(element)
         else:
             unexpected.append((local(element.tag), values[0]))
 
     if unexpected:
-        fail(f"portable process contains unsupported/unrequested activities: {unexpected}")
+        fail(f"process contains unsupported/unrequested activities: {unexpected}")
+    process = root.find(f"./{q(BPMN_NS, 'process')}")
+    if process is None:
+        fail("BPMN is missing its root process")
+    require_connector_activities(process, connector_activities)
     if len(scripts) != 3:
         fail(
             "expected exactly three data-only ScriptTasks "
@@ -794,6 +1252,8 @@ def require_normalization_script(
         and output.attrib.get("var")
     }
     normalization_outputs = list(script_outputs)
+    correlation_id = variables["correlationId"].attrib["id"]
+    case_key_id = variables["caseKey"].attrib["id"]
     for task in variable_tasks:
         task_outputs = mapping_outputs(task)
         if any(
@@ -806,6 +1266,17 @@ def require_normalization_script(
             # so a direct correlationId -> caseKey copy remains visible without
             # forcing an unnecessary round trip through JavaScript.
             normalization_outputs.extend(task_outputs)
+        else:
+            # A visible Variables assignment immediately after normalization
+            # may preserve correlationId directly instead of needlessly
+            # round-tripping it through the ScriptTask response.
+            normalization_outputs.extend(
+                output
+                for output in task_outputs
+                if output.attrib.get("var") == case_key_id
+                and output.attrib.get("source", "").strip()
+                == f"=vars.{correlation_id}"
+            )
 
     targets = {
         output.attrib["var"]
@@ -848,7 +1319,6 @@ def require_normalization_script(
     }
     if not case_key_targets:
         fail("normalization ScriptTask must preserve correlationId into caseKey")
-    correlation_id = variables["correlationId"].attrib["id"]
     case_result_properties = {"caseKey"}
     for output in normalization_outputs:
         if output.attrib.get("var") not in case_key_targets:
@@ -1346,48 +1816,195 @@ def require_sequential_attachment_loop(
             not in referenced_variable_ids(collection)
         ):
             continue
-        if loop.attrib.get("inputElement"):
-            fail(
-                "task-level attachment marker must omit inputElement so "
-                "the runtime exposes iterator.item"
-            )
         candidates.append(element)
     if len(candidates) != 1:
         fail(
             "attachment branch needs exactly one sequential multi-instance "
-            "ScriptTask bound to the attachments input"
+            "subprocess bound to the attachments input"
         )
 
     loop_activity = candidates[0]
-    if local(loop_activity.tag) != "scriptTask":
-        fail("sequential attachment marker must be a ScriptTask")
-    script_body = (
-        loop_activity.findtext(
-            f"./{q(BPMN_NS, 'script')}",
-            default="",
+    if local(loop_activity.tag) != "subProcess":
+        fail("sequential attachment marker must be a subprocess")
+    marker = loop_activity.find(
+        f"./{q(BPMN_NS, 'multiInstanceLoopCharacteristics')}/"
+        f"{q(BPMN_NS, 'extensionElements')}/"
+        f"{q(UIPATH_NS, 'loopCharacteristics')}"
+    )
+    if marker is None or marker.attrib.get("inputElement") != "iterator[0]":
+        fail(
+            "multi-instance attachment subprocess must bind the current "
+            "item as iterator[0]"
         )
+    loop_nodes, _loop_flows, loop_outgoing, loop_incoming = build_scope_graph(
+        loop_activity
+    )
+    loop_starts = [
+        node_id
+        for node_id, node in loop_nodes.items()
+        if local(node.tag) == "startEvent"
+    ]
+    loop_ends = {
+        node_id
+        for node_id, node in loop_nodes.items()
+        if local(node.tag) == "endEvent"
+    }
+    if len(loop_starts) != 1 or len(loop_ends) != 1:
+        fail("attachment subprocess needs exactly one start and one end")
+    require_scope_reachability(
+        loop_nodes,
+        loop_outgoing,
+        loop_incoming,
+        loop_starts[0],
+        loop_ends,
+    )
+    per_item_scripts = [
+        node for node in loop_nodes.values() if local(node.tag) == "scriptTask"
+    ]
+    if len(per_item_scripts) != 1:
+        fail(
+            "attachment subprocess needs exactly one per-item data ScriptTask"
+        )
+    loop_script = per_item_scripts[0]
+    mapping = loop_script.find(
+        f"./{q(BPMN_NS, 'extensionElements')}/"
+        f"{q(UIPATH_NS, 'mapping')}"
+    )
+    if mapping is None:
+        fail("per-item attachment ScriptTask has no Variables mapping")
+    args_input = next(
+        (
+            item
+            for item in mapping.findall(f"./{q(UIPATH_NS, 'input')}")
+            if item.attrib.get("name") == "args"
+        ),
+        None,
+    )
+    args_raw = (
+        (args_input.attrib.get("value") if args_input is not None else None)
+        or (args_input.text if args_input is not None else None)
         or ""
     )
-    if "iterator.item" not in script_body:
+    try:
+        args = json.loads(args_raw)
+    except json.JSONDecodeError:
+        fail("per-item attachment ScriptTask args must be valid JSON")
+    current_item_args = [
+        name
+        for name, value in args.items()
+        if value == "=iterator[0].item"
+    ] if isinstance(args, dict) else []
+    if len(current_item_args) != 1:
         fail(
-            "sequential attachment ScriptTask must read iterator.item"
+            "per-item attachment ScriptTask must receive "
+            "iterator[0].item through one named argument"
         )
-    marker_collection_ids = {
+    current_item_arg = current_item_args[0]
+    schema_node = mapping.find(
+        f"./{q(UIPATH_NS, 'context')}/{q(UIPATH_NS, 'inputSchema')}"
+    )
+    schema_raw = (
+        (schema_node.attrib.get("value") if schema_node is not None else None)
+        or (schema_node.text if schema_node is not None else None)
+        or ""
+    )
+    try:
+        schema = json.loads(schema_raw)
+    except json.JSONDecodeError:
+        fail("per-item attachment ScriptTask inputSchema must be valid JSON")
+    definition = (
+        schema.get("properties", {}).get(current_item_arg)
+        if isinstance(schema, dict)
+        and isinstance(schema.get("properties"), dict)
+        else None
+    )
+    if not isinstance(definition, dict) or definition.get("type") != "object":
+        fail(
+            "per-item attachment ScriptTask must type its current item "
+            "argument as an object"
+        )
+    script_body = (
+        loop_script.findtext(f"./{q(BPMN_NS, 'script')}", default="") or ""
+    )
+    if not re.search(rf"\b{re.escape(current_item_arg)}\b", script_body):
+        fail(
+            "per-item attachment ScriptTask must read its mapped current "
+            "item argument"
+        )
+    script_response_ids = {
         output.attrib["var"]
-        for output in mapping_outputs(loop_activity)
-        if output.attrib.get("name") not in {"scriptResponse", "Error"}
-        and output.attrib.get("type") == "array"
+        for output in mapping.findall(f"./{q(UIPATH_NS, 'output')}")
+        if output.attrib.get("name") == "scriptResponse"
         and output.attrib.get("var")
     }
-    reducer_collection_ids = {
-        variables["attachments"].attrib["id"],
-        *marker_collection_ids,
-    }
+    marker_mapping = loop_activity.find(
+        f"./{q(BPMN_NS, 'extensionElements')}/"
+        f"{q(UIPATH_NS, 'mapping')}"
+    )
+    marker_outputs = (
+        marker_mapping.findall(f"./{q(UIPATH_NS, 'output')}")
+        if marker_mapping is not None
+        else []
+    )
+    iteration_outputs = [
+        output
+        for output in marker_outputs
+        if output.attrib.get("custom") == "true"
+        and output.attrib.get("type") == "string"
+        and output.attrib.get("var")
+        and bool(
+            script_response_ids
+            & referenced_variable_ids(output.attrib.get("source", ""))
+        )
+        and ".itemName" in output.attrib.get("source", "")
+    ]
+    if len(iteration_outputs) != 1:
+        fail(
+            "multi-instance attachment subprocess must aggregate each "
+            "typed itemName through one custom marker output"
+        )
+    iteration_collection_id = iteration_outputs[0].attrib["var"]
+    iteration_collection = next(
+        (
+            declaration
+            for declaration in variables.values()
+            if declaration.attrib.get("id") == iteration_collection_id
+        ),
+        None,
+    )
+    if (
+        iteration_collection is None
+        or iteration_collection.attrib.get("type") != "Collection{string}"
+        or iteration_collection.attrib.get("elementId")
+        != loop_activity.attrib.get("id")
+    ):
+        fail(
+            "attachment marker output must target its scoped "
+            "Collection{string} variable"
+        )
+    drive_activities = [
+        node
+        for node in loop_nodes.values()
+        if local(node.tag) == "sendTask"
+        and connector_context(node).get("connectorKey")
+        == "uipath-google-drive"
+        and connector_context(node).get("path") == "/copyFile"
+    ]
+    if len(drive_activities) != 1:
+        fail(
+            "attachment subprocess needs exactly one Google Drive copy "
+            "activity after its per-item script"
+        )
+    if drive_activities[0].attrib["id"] not in walk(
+        loop_script.attrib["id"], loop_outgoing
+    ):
+        fail("Google Drive copy must execute after per-item preparation")
+
+    reducer_collection_ids = {iteration_collection_id}
     reducers = [
         element
         for element in elements
         if local(element.tag) == "scriptTask"
-        and element is not loop_activity
         and element.find(
             f"./{q(BPMN_NS, 'multiInstanceLoopCharacteristics')}"
         )
@@ -1507,6 +2124,57 @@ def require_parallel_workstreams(
     require_sequential_attachment_loop(
         region_elements[attachment_index], variables, ids_to_names
     )
+    communication_index = next(
+        index
+        for index, outputs in enumerate(branch_outputs)
+        if {"slackAction", "responseMode"} <= outputs
+    )
+
+    def connector_keys(elements: list[ET.Element]) -> set[tuple[str, str]]:
+        found: set[tuple[str, str]] = set()
+        for element in elements:
+            candidates = (
+                [element]
+                if local(element.tag) == "sendTask"
+                else []
+            )
+            candidates.extend(
+                element.findall(f".//{q(BPMN_NS, 'sendTask')}")
+            )
+            for candidate in candidates:
+                context = connector_context(candidate)
+                if context.get("connectorKey") and context.get("path"):
+                    found.add(
+                        (context["connectorKey"], context["path"])
+                    )
+        return found
+
+    expected_by_branch = {
+        jira_index: {
+            ("uipath-atlassian-jira", "/curated_create_issue"),
+            (
+                "uipath-atlassian-jira",
+                "/curated_edit_issue/{issueIdOrKey}",
+            ),
+        },
+        attachment_index: {
+            ("uipath-google-drive", "/copyFile"),
+        },
+        communication_index: {
+            (
+                "uipath-salesforce-slack",
+                "/send_message_to_channel_v2",
+            ),
+        },
+    }
+    for index, expected_connectors in expected_by_branch.items():
+        actual_connectors = connector_keys(region_elements[index])
+        if actual_connectors != expected_connectors:
+            fail(
+                "parallel workstream connector ownership mismatch: "
+                f"expected {sorted(expected_connectors)}, "
+                f"found {sorted(actual_connectors)}"
+            )
     return split, join
 
 
@@ -1552,6 +2220,10 @@ def require_di(
 
 
 def main() -> None:
+    if len(sys.argv) == 2 and sys.argv[1] == "--connector-evidence":
+        require_connector_registry_evidence()
+        print("OK: exact current enriched connector registry evidence retained")
+        return
     if len(sys.argv) == 3 and sys.argv[1] == "--registry-evidence":
         extension_type = sys.argv[2]
         if extension_type not in {"BPMN.ScriptTask", "BPMN.Variables"}:
@@ -1562,7 +2234,8 @@ def main() -> None:
     if len(sys.argv) != 1:
         fail(
             "usage: check_customer_escalation_structure.py "
-            "[--registry-evidence BPMN.ScriptTask|BPMN.Variables]"
+            "[--registry-evidence BPMN.ScriptTask|BPMN.Variables] "
+            "[--connector-evidence]"
         )
     if not BPMN.is_file():
         fail(f"missing BPMN file: {BPMN}")

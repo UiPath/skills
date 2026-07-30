@@ -27,6 +27,7 @@ PROJECT = Path("CustomerEscalationTriage")
 BPMN_FILE = PROJECT / "CustomerEscalationTriage.bpmn"
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 UIPATH_NS = "http://uipath.org/schema/bpmn"
+CONNECTION_FOLDER_KEY = "5da18ec0-7de1-4e57-aaf1-ddc8a369c199"
 
 INPUT_TYPES = {
     "customerTier": "string",
@@ -40,6 +41,11 @@ INPUT_TYPES = {
     "autoSendEnabled": "boolean",
     "businessImpact": "string",
     "correlationId": "string",
+    "jiraProjectKey": "string",
+    "jiraIssueTypeId": "string",
+    "jiraReporterAccountId": "string",
+    "slackChannelId": "string",
+    "driveDestinationFolderId": "string",
 }
 OUTPUT_TYPES = {
     "route": "string",
@@ -52,6 +58,36 @@ OUTPUT_TYPES = {
     "caseKey": "string",
     "lastAttachmentName": "string",
     "failureReason": "string",
+}
+CONNECTOR_INPUTS = {
+    ("uipath-atlassian-jira", "/curated_create_issue"): {
+        ("body", "body"),
+    },
+    (
+        "uipath-atlassian-jira",
+        "/curated_edit_issue/{issueIdOrKey}",
+    ): {
+        ("path", "issueIdOrKey"),
+        ("query", "project"),
+        ("query", "issuetype"),
+        ("body", "body"),
+    },
+    ("uipath-google-drive", "/copyFile"): {
+        ("query", "fileId"),
+        ("body", "body"),
+    },
+    (
+        "uipath-salesforce-slack",
+        "/send_message_to_channel_v2",
+    ): {
+        ("query", "send_as"),
+        ("body", "body"),
+    },
+}
+OPTIONAL_CONNECTOR_INPUTS = {
+    ("uipath-google-drive", "/copyFile"): {
+        ("query", "alreadyExists"),
+    },
 }
 
 
@@ -141,14 +177,17 @@ def scenario(
     expected: dict[str, Any],
     uses_error_boundary: bool = False,
 ) -> Scenario:
-    correlation = f"EVAL/live-alpha/{name}#Exact"
+    correlation = f"EVAL-live-alpha-{name}-Exact"
     values = {
         "customerTier": customer_tier,
         "crmMatchCount": crm_matches,
         "serviceState": service_state,
         "workaroundAvailable": workaround,
         "duplicateIssueKey": duplicate_key,
-        "attachments": [{"name": item} for item in attachments],
+        "attachments": [
+            {"name": item, "driveFileId": "__DRIVE_SOURCE_FILE_ID__"}
+            for item in attachments
+        ],
         "agentOutputValid": agent_valid,
         "jiraAvailable": jira_available,
         "autoSendEnabled": auto_send,
@@ -343,6 +382,10 @@ class RuntimeContract:
     marker_id: str
     error_end_id: str
     error_boundary_id: str
+    jira_create_id: str
+    jira_update_id: str
+    drive_copy_id: str
+    slack_send_id: str
 
 
 def direct_flow_counts(
@@ -356,6 +399,82 @@ def direct_flow_counts(
         outgoing[source] = outgoing.get(source, 0) + 1
         incoming[target] = incoming.get(target, 0) + 1
     return incoming, outgoing
+
+
+def connector_context(element: ET.Element) -> dict[str, str]:
+    activity = element.find(
+        f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'activity')}"
+    )
+    if activity is None:
+        return {}
+    return {
+        item.attrib["name"]: item.attrib.get("value", "")
+        for item in activity.findall(
+            f"./{q(UIPATH_NS, 'context')}/{q(UIPATH_NS, 'input')}"
+        )
+        if item.attrib.get("name")
+    }
+
+
+def validate_connector_inputs(
+    element: ET.Element,
+    key: tuple[str, str],
+) -> None:
+    activity = element.find(
+        f"./{q(BPMN_NS, 'extensionElements')}/{q(UIPATH_NS, 'activity')}"
+    )
+    if activity is None:
+        raise CheckFailure(f"connector {key} has no activity extension")
+    inputs = {
+        (item.attrib.get("target", ""), item.attrib.get("name", "")): item
+        for item in activity.findall(f"./{q(UIPATH_NS, 'input')}")
+    }
+    required = CONNECTOR_INPUTS[key]
+    allowed = required | OPTIONAL_CONNECTOR_INPUTS.get(key, set())
+    if not required <= set(inputs) or not set(inputs) <= allowed:
+        raise CheckFailure(
+            f"connector {key} does not use exact registry input targets and "
+            f"names: {sorted(inputs)}"
+        )
+    body_element = inputs[("body", "body")]
+    raw_body = body_element.attrib.get("value")
+    if raw_body is None:
+        raw_body = body_element.text or ""
+    try:
+        body = json.loads(raw_body)
+    except json.JSONDecodeError as exc:
+        raise CheckFailure(f"connector {key} body is not JSON: {exc}") from exc
+    if not isinstance(body, dict):
+        raise CheckFailure(f"connector {key} body is not a JSON object")
+    if key == ("uipath-atlassian-jira", "/curated_create_issue"):
+        fields = body.get("fields")
+        if not isinstance(fields, dict) or set(fields) != {
+            "project",
+            "issuetype",
+            "reporter",
+            "summary",
+            "description",
+        }:
+            raise CheckFailure("Jira create body does not match registry fields")
+    elif key[1] == "/curated_edit_issue/{issueIdOrKey}":
+        fields = body.get("fields")
+        if not isinstance(fields, dict) or set(fields) != {"description"}:
+            raise CheckFailure("Jira update body does not match registry fields")
+    elif key == ("uipath-google-drive", "/copyFile") and set(body) != {
+        "destinationFolder",
+        "name",
+    }:
+        raise CheckFailure("Drive copy body does not match registry fields")
+    elif key[0] == "uipath-salesforce-slack" and set(body) != {
+        "channel",
+        "messageToSend",
+    }:
+        raise CheckFailure("Slack send body does not match registry fields")
+    if (
+        key[0] == "uipath-salesforce-slack"
+        and inputs[("query", "send_as")].attrib.get("value") != "bot"
+    ):
+        raise CheckFailure("Slack send_as query input must be bot")
 
 
 def load_runtime_contract(path: Path = BPMN_FILE) -> RuntimeContract:
@@ -421,14 +540,55 @@ def load_runtime_contract(path: Path = BPMN_FILE) -> RuntimeContract:
 
     markers = [
         node
-        for node in process.findall(f".//{q(BPMN_NS, 'scriptTask')}")
+        for node in process.findall(f".//{q(BPMN_NS, 'subProcess')}")
         if node.find(f"./{q(BPMN_NS, 'multiInstanceLoopCharacteristics')}")
         is not None
     ]
     if len(markers) != 1:
         raise CheckFailure(
-            "expected one sequential multi-instance ScriptTask marker"
+            "expected one sequential multi-instance attachment subprocess"
         )
+
+    connectors: dict[tuple[str, str], str] = {}
+    for node in process.findall(f".//{q(BPMN_NS, 'sendTask')}"):
+        context = connector_context(node)
+        key = (context.get("connectorKey", ""), context.get("path", ""))
+        if all(key):
+            connectors[key] = node.attrib["id"]
+    required_connectors = {
+        (
+            "uipath-atlassian-jira",
+            "/curated_create_issue",
+        ): "curated_create_issue",
+        (
+            "uipath-atlassian-jira",
+            "/curated_edit_issue/{issueIdOrKey}",
+        ): "curated_edit_issue",
+        ("uipath-google-drive", "/copyFile"): "copyFile",
+        (
+            "uipath-salesforce-slack",
+            "/send_message_to_channel_v2",
+        ): "send_message_to_channel_v2",
+    }
+    if set(connectors) != set(required_connectors):
+        raise CheckFailure(
+            "live contract does not contain the exact Jira create/update, "
+            "Drive copy, and Slack send activities"
+        )
+    for node in process.findall(f".//{q(BPMN_NS, 'sendTask')}"):
+        context = connector_context(node)
+        key = (context.get("connectorKey", ""), context.get("path", ""))
+        if key in required_connectors:
+            if not context.get("operation"):
+                raise CheckFailure(
+                    f"connector {key} is missing runtime operation"
+                )
+            if context.get("objectName") != required_connectors[key]:
+                raise CheckFailure(
+                    f"connector {key} must use objectName "
+                    f"{required_connectors[key]!r}"
+                )
+            validate_connector_inputs(node, key)
 
     error_ends = [
         node
@@ -451,6 +611,24 @@ def load_runtime_contract(path: Path = BPMN_FILE) -> RuntimeContract:
         marker_id=markers[0].attrib["id"],
         error_end_id=error_ends[0].attrib["id"],
         error_boundary_id=boundaries[0].attrib["id"],
+        jira_create_id=connectors[
+            ("uipath-atlassian-jira", "/curated_create_issue")
+        ],
+        jira_update_id=connectors[
+            (
+                "uipath-atlassian-jira",
+                "/curated_edit_issue/{issueIdOrKey}",
+            )
+        ],
+        drive_copy_id=connectors[
+            ("uipath-google-drive", "/copyFile")
+        ],
+        slack_send_id=connectors[
+            (
+                "uipath-salesforce-slack",
+                "/send_message_to_channel_v2",
+            )
+        ],
     )
 
 
@@ -550,6 +728,260 @@ class AlphaSolutionLease:
         return failures
 
 
+@dataclass(frozen=True)
+class LiveEnvironment:
+    jira_connection_id: str
+    drive_connection_id: str
+    slack_connection_id: str
+    jira_project_key: str = "CE"
+    jira_issue_type_id: str = "11457"
+    jira_reporter_account_id: str = (
+        "712020:b53bf3dc-8817-419e-99e1-5670aeb7ffe6"
+    )
+    slack_channel_id: str = "C01H4SPS77W"
+    drive_destination_folder_id: str = "0AKHXBGF_5DaVUk9PVA"
+    drive_source_file_id: str = "1YlblU34Vd6RvCkamYw5BWejdX8ES-Zzy"
+
+
+def discover_live_environment() -> LiveEnvironment:
+    listed = run_cli(
+        ["uip", "is", "connections", "list", "--all-folders"],
+        timeout=180,
+    )
+    _payload, rows = payload_data(listed, "discover connector connections")
+    if not isinstance(rows, list):
+        raise CheckFailure("connector discovery returned no list")
+    wanted = {
+        "uipath-atlassian-jira": (
+            "is-sandboxes-test@uipath.com-uipath-sandbox-380"
+        ),
+        "uipath-google-drive": "is.sandboxes.test@gmail.com",
+        "uipath-salesforce-slack": "is-sandboxes",
+    }
+    ids: dict[str, str] = {}
+    for connector_key, name in wanted.items():
+        matches = [
+            row
+            for row in rows
+            if isinstance(row, dict)
+            and get_ci(row, "ConnectorKey") == connector_key
+            and get_ci(row, "Name") == name
+            and get_ci(row, "FolderKey") == CONNECTION_FOLDER_KEY
+            and str(get_ci(row, "State") or "").casefold() == "enabled"
+        ]
+        if len(matches) != 1:
+            raise CheckFailure(
+                f"expected one enabled {connector_key} connection named "
+                f"{name!r}, found {len(matches)}"
+            )
+        identifier = get_ci(matches[0], "Id")
+        if not isinstance(identifier, str):
+            raise CheckFailure(f"{connector_key} connection has no id")
+        ids[connector_key] = identifier
+
+    for connector_key, connection_id in ids.items():
+        pinged = run_cli(
+            ["uip", "is", "connections", "ping", connection_id],
+            timeout=120,
+        )
+        payload_data(pinged, f"ping {connector_key} connection")
+
+    return LiveEnvironment(
+        jira_connection_id=ids["uipath-atlassian-jira"],
+        drive_connection_id=ids["uipath-google-drive"],
+        slack_connection_id=ids["uipath-salesforce-slack"],
+    )
+
+
+def scenario_inputs(
+    case: Scenario,
+    environment: LiveEnvironment,
+    *,
+    duplicate_key: str | None = None,
+) -> dict[str, Any]:
+    inputs = json.loads(json.dumps(case.inputs))
+    inputs.update(
+        {
+            "jiraProjectKey": environment.jira_project_key,
+            "jiraIssueTypeId": environment.jira_issue_type_id,
+            "jiraReporterAccountId": environment.jira_reporter_account_id,
+            "slackChannelId": environment.slack_channel_id,
+            "driveDestinationFolderId": (
+                environment.drive_destination_folder_id
+            ),
+        }
+    )
+    for attachment in inputs["attachments"]:
+        attachment["driveFileId"] = environment.drive_source_file_id
+    if duplicate_key is not None:
+        inputs["duplicateIssueKey"] = duplicate_key
+    return inputs
+
+
+def recursive_strings(value: Any) -> list[str]:
+    values: list[str] = []
+    if isinstance(value, str):
+        values.append(value)
+    elif isinstance(value, dict):
+        for item in value.values():
+            values.extend(recursive_strings(item))
+    elif isinstance(value, list):
+        for item in value:
+            values.extend(recursive_strings(item))
+    return values
+
+
+def recursive_values(value: Any, wanted_key: str) -> list[Any]:
+    values: list[Any] = []
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if str(key).casefold() == wanted_key.casefold():
+                values.append(item)
+            values.extend(recursive_values(item, wanted_key))
+    elif isinstance(value, list):
+        for item in value:
+            values.extend(recursive_values(item, wanted_key))
+    return values
+
+
+class ConnectorSideEffectLease:
+    def __init__(self, environment: LiveEnvironment):
+        self.environment = environment
+        self.jira_issue_ids: set[str] = set()
+        self.drive_file_ids: set[str] = set()
+        self.slack_messages: set[tuple[str, str]] = set()
+
+    def cleanup(self) -> list[str]:
+        failures: list[str] = []
+        for channel_id, timestamp in sorted(self.slack_messages):
+            completed = run_cli(
+                [
+                    "uip",
+                    "is",
+                    "resources",
+                    "run",
+                    "delete",
+                    "uipath-salesforce-slack",
+                    "ChatDeleteTimestamp_POST",
+                    "--connection-id",
+                    self.environment.slack_connection_id,
+                    "--query",
+                    json.dumps(
+                        {
+                            "conversationId": channel_id,
+                            "timestampId": timestamp,
+                        },
+                        separators=(",", ":"),
+                    ),
+                    "--yes",
+                ],
+                timeout=120,
+            )
+            try:
+                payload_data(completed, f"delete Slack message {timestamp}")
+            except CheckFailure as exc:
+                failures.append(str(exc))
+        self.slack_messages.clear()
+
+        for file_id in sorted(self.drive_file_ids):
+            completed = run_cli(
+                [
+                    "uip",
+                    "is",
+                    "resources",
+                    "run",
+                    "delete",
+                    "uipath-google-drive",
+                    "DeleteFileorFolder",
+                    "--connection-id",
+                    self.environment.drive_connection_id,
+                    "--query",
+                    json.dumps({"fileId": file_id}, separators=(",", ":")),
+                    "--yes",
+                ],
+                timeout=120,
+            )
+            try:
+                payload_data(completed, f"delete Drive file {file_id}")
+            except CheckFailure as exc:
+                failures.append(str(exc))
+        self.drive_file_ids.clear()
+
+        for issue_id in sorted(self.jira_issue_ids):
+            completed = run_cli(
+                [
+                    "uip",
+                    "is",
+                    "resources",
+                    "run",
+                    "delete",
+                    "uipath-atlassian-jira",
+                    "issue",
+                    "--connection-id",
+                    self.environment.jira_connection_id,
+                    "--query",
+                    json.dumps({"issueId": issue_id}, separators=(",", ":")),
+                    "--yes",
+                ],
+                timeout=120,
+            )
+            try:
+                payload_data(completed, f"delete Jira issue {issue_id}")
+            except CheckFailure as exc:
+                failures.append(str(exc))
+        self.jira_issue_ids.clear()
+        return failures
+
+
+def create_seed_jira_issue(
+    case: Scenario,
+    environment: LiveEnvironment,
+    lease: ConnectorSideEffectLease,
+) -> str:
+    body = {
+        "fields": {
+            "project": {"key": environment.jira_project_key},
+            "issuetype": {"id": environment.jira_issue_type_id},
+            "reporter": {"id": environment.jira_reporter_account_id},
+            "summary": f"Seed for {case.inputs['correlationId']}",
+            "description": "Awaiting live BPMN update",
+        }
+    }
+    created = run_cli(
+        [
+            "uip",
+            "is",
+            "resources",
+            "run",
+            "create",
+            "uipath-atlassian-jira",
+            "curated_create_issue",
+            "--connection-id",
+            environment.jira_connection_id,
+            "--body",
+            json.dumps(body, separators=(",", ":")),
+        ],
+        timeout=180,
+    )
+    _payload, data = payload_data(created, f"{case.name} seed Jira issue")
+    issue_ids = [
+        value
+        for value in recursive_values(data, "id")
+        if isinstance(value, str)
+    ]
+    issue_keys = [
+        value
+        for value in recursive_values(data, "key")
+        if isinstance(value, str)
+    ]
+    if not issue_ids or not issue_keys:
+        raise CheckFailure(
+            f"{case.name}: Jira seed returned no id/key: {data!r}"
+        )
+    lease.jira_issue_ids.add(issue_ids[0])
+    return issue_keys[0]
+
+
 def root_scope(variables_data: Any) -> dict[str, Any]:
     scopes = get_ci(variables_data, "Variables", [])
     roots = [
@@ -585,25 +1017,100 @@ def root_public_outputs(
     return results
 
 
-def marker_outputs(
-    scope: dict[str, Any],
-    marker_id: str,
-) -> tuple[str, ...]:
-    values: list[str] = []
-    for element in get_ci(scope, "Elements", []):
-        if (
-            get_ci(element, "ElementId") != marker_id
-            or get_ci(element, "IsMarker") is not True
-        ):
-            continue
-        response = get_ci(get_ci(element, "Outputs", {}), "Response")
-        name = response if type(response) is str else get_ci(response, "Name")
-        if type(name) is not str:
-            raise CheckFailure(
-                f"marker {marker_id} returned a non-string attachment name"
-            )
-        values.append(name)
-    return tuple(values)
+def element_output_records(
+    variables_data: Any,
+    element_id: str,
+) -> list[Any]:
+    records: list[Any] = []
+    scopes = get_ci(variables_data, "Variables", [])
+    if not isinstance(scopes, list):
+        return records
+    for scope in scopes:
+        for element in get_ci(scope, "Elements", []):
+            if get_ci(element, "ElementId") == element_id:
+                records.append(get_ci(element, "Outputs", {}))
+    return records
+
+
+def connector_response_values(outputs: list[Any], name: str) -> list[Any]:
+    """Read only top-level response fields, never same-named nested metadata."""
+    values: list[Any] = []
+    for output in outputs:
+        response = get_ci(output, "response")
+        if isinstance(response, dict):
+            value = get_ci(response, name)
+            if value is not None:
+                values.append(value)
+    return values
+
+
+def capture_connector_outputs_for_cleanup(
+    variables_data: Any,
+    contract: RuntimeContract,
+    environment: LiveEnvironment,
+    side_effects: ConnectorSideEffectLease,
+) -> None:
+    jira_outputs = element_output_records(
+        variables_data, contract.jira_create_id
+    )
+    jira_ids = [
+        value
+        for value in connector_response_values(jira_outputs, "id")
+        if isinstance(value, str)
+    ]
+    jira_keys = [
+        value
+        for value in connector_response_values(jira_outputs, "key")
+        if isinstance(value, str)
+    ]
+    side_effects.jira_issue_ids.update(jira_ids or jira_keys)
+
+    drive_outputs = element_output_records(
+        variables_data, contract.drive_copy_id
+    )
+    side_effects.drive_file_ids.update(
+        value
+        for value in connector_response_values(drive_outputs, "id")
+        if isinstance(value, str)
+    )
+
+    slack_outputs = element_output_records(
+        variables_data, contract.slack_send_id
+    )
+    side_effects.slack_messages.update(
+        (environment.slack_channel_id, value)
+        for value in connector_response_values(slack_outputs, "ts")
+        if isinstance(value, str)
+    )
+
+
+def assert_jira_contains_correlation(
+    issue_key: str,
+    correlation: str,
+    environment: LiveEnvironment,
+) -> None:
+    fetched = run_cli(
+        [
+            "uip",
+            "is",
+            "resources",
+            "run",
+            "get",
+            "uipath-atlassian-jira",
+            "issue",
+            "--connection-id",
+            environment.jira_connection_id,
+            "--query",
+            json.dumps({"issueId": issue_key}, separators=(",", ":")),
+        ],
+        timeout=120,
+    )
+    _payload, data = payload_data(fetched, f"read Jira issue {issue_key}")
+    if not any(correlation in value for value in recursive_strings(data)):
+        raise CheckFailure(
+            f"Jira issue {issue_key} does not contain correlation "
+            f"{correlation!r}"
+        )
 
 
 def assert_scenario(
@@ -612,6 +1119,10 @@ def assert_scenario(
     debug_data: Any,
     variables_data: Any,
     incidents_data: Any,
+    environment: LiveEnvironment,
+    side_effects: ConnectorSideEffectLease,
+    *,
+    update_issue_key: str | None,
 ) -> None:
     final_status = get_ci(debug_data, "FinalStatus")
     if final_status not in {"Completed", "Successful"}:
@@ -643,25 +1154,19 @@ def assert_scenario(
                 f"got {actual!r}"
             )
 
-    iterations = marker_outputs(scope, contract.marker_id)
-    if iterations != case.attachment_iterations:
-        raise CheckFailure(
-            f"{case.name}: attachment iterations expected "
-            f"{case.attachment_iterations!r}, got {iterations!r}"
-        )
-
     executions = get_ci(debug_data, "ElementExecutions", [])
-    executed_ids = {
+    executed_ids = [
         get_ci(item, "ElementId")
         for item in executions
         if isinstance(item, dict)
-    }
+    ]
+    executed_set = set(executed_ids)
     required = {
         contract.parallel_split_id,
         contract.parallel_join_id,
         contract.root_end_id,
     }
-    missing = required - executed_ids
+    missing = required - executed_set
     if missing:
         raise CheckFailure(
             f"{case.name}: live execution missed required root nodes "
@@ -669,14 +1174,117 @@ def assert_scenario(
         )
     error_nodes = {contract.error_end_id, contract.error_boundary_id}
     if case.uses_error_boundary:
-        if not error_nodes <= executed_ids:
+        if not error_nodes <= executed_set:
             raise CheckFailure(
                 f"{case.name}: typed JiraUnavailable path did not execute "
-                f"{sorted(error_nodes - executed_ids)}"
+                f"{sorted(error_nodes - executed_set)}"
             )
-    elif error_nodes & executed_ids:
+    elif error_nodes & executed_set:
         raise CheckFailure(
             f"{case.name}: unexpectedly executed JiraUnavailable error path"
+        )
+
+    expected_counts = {
+        contract.jira_create_id: (
+            1 if case.outputs["jiraAction"] == "CreateIssue" else 0
+        ),
+        contract.jira_update_id: (
+            1 if case.outputs["jiraAction"] == "UpdateExisting" else 0
+        ),
+        contract.slack_send_id: (
+            1 if case.outputs["slackAction"] == "PostAlert" else 0
+        ),
+    }
+    for element_id, expected_count in expected_counts.items():
+        actual_count = executed_ids.count(element_id)
+        if actual_count != expected_count:
+            raise CheckFailure(
+                f"{case.name}: connector {element_id} expected "
+                f"{expected_count} executions, got {actual_count}"
+            )
+    # PIMS summarizes a marker body's static element in the root trace; prove
+    # the iteration cardinality below from per-run outputs and remote files.
+    drive_trace_count = executed_ids.count(contract.drive_copy_id)
+    if case.outputs["attachmentAction"] == "SaveToDrive":
+        if drive_trace_count < 1:
+            raise CheckFailure(
+                f"{case.name}: live trace never reached Drive copy"
+            )
+    elif drive_trace_count:
+        raise CheckFailure(
+            f"{case.name}: no-copy path unexpectedly reached Drive copy"
+        )
+
+    correlation = case.inputs["correlationId"]
+    if case.outputs["jiraAction"] == "CreateIssue":
+        outputs = element_output_records(
+            variables_data, contract.jira_create_id
+        )
+        keys = [
+            value
+            for value in connector_response_values(outputs, "key")
+            if isinstance(value, str)
+        ]
+        ids = [
+            value
+            for value in connector_response_values(outputs, "id")
+            if isinstance(value, str)
+        ]
+        if not keys:
+            raise CheckFailure(
+                f"{case.name}: Jira create returned no issue key: {outputs!r}"
+            )
+        side_effects.jira_issue_ids.add(ids[0] if ids else keys[0])
+        assert_jira_contains_correlation(keys[0], correlation, environment)
+    elif case.outputs["jiraAction"] == "UpdateExisting":
+        if not update_issue_key:
+            raise CheckFailure(f"{case.name}: update scenario has no seed issue")
+        assert_jira_contains_correlation(
+            update_issue_key, correlation, environment
+        )
+
+    if case.outputs["attachmentAction"] == "SaveToDrive":
+        outputs = element_output_records(
+            variables_data, contract.drive_copy_id
+        )
+        ids = [
+            value
+            for value in connector_response_values(outputs, "id")
+            if isinstance(value, str)
+        ]
+        if len(ids) != len(case.attachment_iterations):
+            raise CheckFailure(
+                f"{case.name}: Drive copy returned {len(ids)} ids for "
+                f"{len(case.attachment_iterations)} attachments: {outputs!r}"
+            )
+        side_effects.drive_file_ids.update(ids)
+        flattened = recursive_strings(outputs)
+        for attachment_name in case.attachment_iterations:
+            if not any(
+                correlation in value and attachment_name in value
+                for value in flattened
+            ):
+                raise CheckFailure(
+                    f"{case.name}: Drive output does not prove a correlated "
+                    f"copy for {attachment_name!r}: {outputs!r}"
+                )
+
+    if case.outputs["slackAction"] == "PostAlert":
+        outputs = element_output_records(
+            variables_data, contract.slack_send_id
+        )
+        timestamps = [
+            value
+            for value in connector_response_values(outputs, "ts")
+            if isinstance(value, str)
+        ]
+        if len(timestamps) != 1:
+            raise CheckFailure(
+                f"{case.name}: Slack send returned no unique timestamp: "
+                f"{outputs!r}"
+            )
+        side_effects.slack_messages.add(
+            (environment.slack_channel_id, timestamps[0])
         )
 
 
@@ -699,6 +1307,8 @@ def main() -> int:
         timeout=180,
     )
     payload_data(validate, "offline BPMN validation")
+    environment = discover_live_environment()
+    side_effects = ConnectorSideEffectLease(environment)
 
     with tempfile.TemporaryDirectory(
         prefix="customer-escalation-live-alpha-"
@@ -747,6 +1357,18 @@ def main() -> int:
 
             for index, case in enumerate(SCENARIOS, start=1):
                 log_file = root / f"{index:02d}-{case.name}.log"
+                update_issue_key = None
+                if case.outputs["jiraAction"] == "UpdateExisting":
+                    update_issue_key = create_seed_jira_issue(
+                        case,
+                        environment,
+                        side_effects,
+                    )
+                inputs = scenario_inputs(
+                    case,
+                    environment,
+                    duplicate_key=update_issue_key,
+                )
                 debug = run_cli(
                     [
                         "uip",
@@ -757,7 +1379,7 @@ def main() -> int:
                         "--poll-interval",
                         "500",
                         "--inputs",
-                        json.dumps(case.inputs, separators=(",", ":")),
+                        json.dumps(inputs, separators=(",", ":")),
                     ],
                     timeout=480,
                     log_file=log_file,
@@ -792,6 +1414,12 @@ def main() -> int:
                     f"{case.name} variables-all",
                 )
                 lease.capture_payload(variables_payload)
+                capture_connector_outputs_for_cleanup(
+                    variables_data,
+                    contract,
+                    environment,
+                    side_effects,
+                )
 
                 incidents = run_cli(
                     [
@@ -817,6 +1445,9 @@ def main() -> int:
                         debug_data,
                         variables_data,
                         incidents_data,
+                        environment,
+                        side_effects,
+                        update_issue_key=update_issue_key,
                     )
                 except CheckFailure as exc:
                     raise CheckFailure(
@@ -826,6 +1457,12 @@ def main() -> int:
                         f"incidents={json.dumps(incidents_data)[:3000]}; "
                         f"log={tail_log(log_file)}"
                     ) from exc
+                side_effect_cleanup = side_effects.cleanup()
+                if side_effect_cleanup:
+                    raise CheckFailure(
+                        f"{case.name}: connector cleanup failed: "
+                        f"{'; '.join(side_effect_cleanup)}"
+                    )
                 print(
                     f"PASS live Alpha {index}/{len(SCENARIOS)}: {case.name}"
                 )
@@ -833,7 +1470,8 @@ def main() -> int:
             pending_error = exc
         finally:
             signal.signal(signal.SIGTERM, previous_sigterm)
-            cleanup_failures = lease.cleanup()
+            cleanup_failures = side_effects.cleanup()
+            cleanup_failures.extend(lease.cleanup())
 
         if cleanup_failures:
             detail = "; ".join(cleanup_failures)
