@@ -337,9 +337,44 @@ def connector_json_body(
     return payload
 
 
+def connector_input_value(item: ET.Element) -> str:
+    value = item.attrib.get("value")
+    if value is not None:
+        return value
+    return item.text or ""
+
+
+def require_variable_reference(
+    value: Any,
+    declaration: ET.Element,
+    label: str,
+) -> None:
+    variable_id = declaration.attrib["id"]
+    if (
+        not isinstance(value, str)
+        or variable_id not in referenced_variable_ids(value)
+    ):
+        fail(f"{label} must reference vars.{variable_id}")
+
+
+def require_semantic_reference(
+    value: Any,
+    tokens: set[str],
+    label: str,
+) -> None:
+    lexical = identifier_token(value)
+    missing = {token for token in tokens if token not in lexical}
+    if not isinstance(value, str) or not value.startswith("=") or missing:
+        fail(
+            f"{label} must be a dynamic expression referencing "
+            f"{sorted(tokens)}"
+        )
+
+
 def require_connector_request_contract(
     element: ET.Element,
     key: tuple[str, str],
+    variables: dict[str, ET.Element],
 ) -> None:
     inputs = connector_inputs(element)
     required = EXPECTED_CONNECTOR_INPUTS[key]
@@ -380,6 +415,31 @@ def require_connector_request_contract(
             or set(fields["reporter"]) != {"id"}
         ):
             fail("Jira create reporter must use the registry field id")
+        require_variable_reference(
+            fields["project"]["key"],
+            variables["jiraProjectKey"],
+            "Jira create fields.project.key",
+        )
+        require_variable_reference(
+            fields["issuetype"]["id"],
+            variables["jiraIssueTypeId"],
+            "Jira create fields.issuetype.id",
+        )
+        require_variable_reference(
+            fields["reporter"]["id"],
+            variables["jiraReporterAccountId"],
+            "Jira create fields.reporter.id",
+        )
+        require_variable_reference(
+            fields["summary"],
+            variables["correlationId"],
+            "Jira create fields.summary",
+        )
+        require_variable_reference(
+            fields["description"],
+            variables["correlationId"],
+            "Jira create fields.description",
+        )
     elif key[1] == "/curated_edit_issue/{issueIdOrKey}":
         fields = body.get("fields")
         if not isinstance(fields, dict) or set(fields) != {"description"}:
@@ -387,12 +447,47 @@ def require_connector_request_contract(
                 "Jira update body must write correlation evidence through "
                 "fields.description"
             )
+        require_semantic_reference(
+            connector_input_value(inputs[("path", "issueIdOrKey")]),
+            {"duplicate", "issue", "key"},
+            "Jira update issueIdOrKey",
+        )
+        require_variable_reference(
+            connector_input_value(inputs[("query", "project")]),
+            variables["jiraProjectKey"],
+            "Jira update project query",
+        )
+        require_variable_reference(
+            connector_input_value(inputs[("query", "issuetype")]),
+            variables["jiraIssueTypeId"],
+            "Jira update issuetype query",
+        )
+        require_variable_reference(
+            fields["description"],
+            variables["correlationId"],
+            "Jira update fields.description",
+        )
     elif key == ("uipath-google-drive", "/copyFile"):
         if set(body) != {"destinationFolder", "name"}:
             fail(
                 "Drive copy body must use exact registry fields "
                 "destinationFolder and name"
             )
+        require_semantic_reference(
+            connector_input_value(inputs[("query", "fileId")]),
+            {"drive", "file", "id"},
+            "Drive copy fileId",
+        )
+        require_variable_reference(
+            body["destinationFolder"],
+            variables["driveDestinationFolderId"],
+            "Drive copy destinationFolder",
+        )
+        require_semantic_reference(
+            body["name"],
+            {"copy", "name"},
+            "Drive copy name",
+        )
     elif key[0] == "uipath-salesforce-slack":
         if set(body) != {"channel", "messageToSend"}:
             fail(
@@ -401,11 +496,23 @@ def require_connector_request_contract(
             )
         if inputs[("query", "send_as")].attrib.get("value") != "bot":
             fail("Slack send_as query input must be the literal bot")
+        require_variable_reference(
+            body["channel"],
+            variables["slackChannelId"],
+            "Slack channel",
+        )
+        for name in ("correlationId", "route", "severity"):
+            require_variable_reference(
+                body["messageToSend"],
+                variables[name],
+                f"Slack messageToSend {name}",
+            )
 
 
 def require_connector_activities(
     process: ET.Element,
     activities: list[ET.Element],
+    variables: dict[str, ET.Element],
 ) -> dict[tuple[str, str], ET.Element]:
     observed: dict[tuple[str, str], ET.Element] = {}
     for element in activities:
@@ -451,7 +558,7 @@ def require_connector_activities(
             fail(f"connector activity {key} has no connection binding")
         if not re.fullmatch(r"=bindings\.[A-Za-z_][\w.-]*", folder_ref):
             fail(f"connector activity {key} has no folder binding")
-        require_connector_request_contract(element, key)
+        require_connector_request_contract(element, key, variables)
         observed[key] = element
     if set(observed) != set(EXPECTED_CONNECTOR_ACTIVITIES):
         missing = set(EXPECTED_CONNECTOR_ACTIVITIES) - set(observed)
@@ -1081,6 +1188,7 @@ def require_script_runtime_contract(script: ET.Element) -> None:
 
 def require_registry_activities(
     root: ET.Element,
+    variables: dict[str, ET.Element],
 ) -> tuple[ET.Element, list[ET.Element], list[ET.Element]]:
     load_registry_evidence("BPMN.ScriptTask")
     load_registry_evidence("BPMN.Variables")
@@ -1118,7 +1226,7 @@ def require_registry_activities(
     process = root.find(f"./{q(BPMN_NS, 'process')}")
     if process is None:
         fail("BPMN is missing its root process")
-    require_connector_activities(process, connector_activities)
+    require_connector_activities(process, connector_activities, variables)
     if len(scripts) != 3:
         fail(
             "expected exactly three data-only ScriptTasks "
@@ -1923,6 +2031,22 @@ def require_sequential_attachment_loop(
             "per-item attachment ScriptTask must type its current item "
             "argument as an object"
         )
+    item_properties = definition.get("properties")
+    item_required = definition.get("required")
+    if (
+        not isinstance(item_properties, dict)
+        or {
+            name: get_ci(item_properties.get(name), "type")
+            for name in ("name", "driveFileId")
+        }
+        != {"name": "string", "driveFileId": "string"}
+        or not isinstance(item_required, list)
+        or not {"name", "driveFileId"} <= set(item_required)
+    ):
+        fail(
+            "per-item attachment argument schema must require string "
+            "name and driveFileId properties"
+        )
     script_body = (
         loop_script.findtext(f"./{q(BPMN_NS, 'script')}", default="") or ""
     )
@@ -1937,6 +2061,47 @@ def require_sequential_attachment_loop(
         if output.attrib.get("name") == "scriptResponse"
         and output.attrib.get("var")
     }
+    response_declarations = [
+        declaration
+        for declaration in variables.values()
+        if declaration.attrib.get("id") in script_response_ids
+    ]
+    if len(response_declarations) != 1:
+        fail(
+            "per-item attachment ScriptTask must map one declared response "
+            "variable"
+        )
+    response_raw = (response_declarations[0].text or "").strip()
+    try:
+        response_schema = json.loads(response_raw)
+    except json.JSONDecodeError:
+        fail("per-item attachment response variable must contain JSON schema")
+    response_properties = (
+        response_schema.get("properties")
+        if isinstance(response_schema, dict)
+        else None
+    )
+    response_required = (
+        response_schema.get("required")
+        if isinstance(response_schema, dict)
+        else None
+    )
+    required_response_fields = {"itemName", "copyName", "driveFileId"}
+    if (
+        response_declarations[0].attrib.get("type") != "jsonSchema"
+        or not isinstance(response_properties, dict)
+        or {
+            name: get_ci(response_properties.get(name), "type")
+            for name in required_response_fields
+        }
+        != {name: "string" for name in required_response_fields}
+        or not isinstance(response_required, list)
+        or not required_response_fields <= set(response_required)
+    ):
+        fail(
+            "per-item attachment response schema must require string "
+            "itemName, copyName, and driveFileId properties"
+        )
     marker_mapping = loop_activity.find(
         f"./{q(BPMN_NS, 'extensionElements')}/"
         f"{q(UIPATH_NS, 'mapping')}"
@@ -2282,7 +2447,9 @@ def main() -> None:
 
     require_unique_ids(root)
     variables, ids_to_names = require_variables(process, start_id, end_id)
-    script, scripts, variable_tasks = require_registry_activities(root)
+    script, scripts, variable_tasks = require_registry_activities(
+        root, variables
+    )
     normalization_targets = require_normalization_script(
         script, variables, ids_to_names, variable_tasks
     )
