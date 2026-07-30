@@ -1,7 +1,7 @@
 task_id: skill-bpmn-script-jint-guidance
 description: >
-  Script task eval: agent authors the current v3 Studio serialization contract
-  and stays within the Jint runtime boundary.
+  Script task eval: agent authors the supported ScriptTask runtime contract and
+  stays within the Jint runtime boundary.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "shape:single-node", "node:script"]
 
 run_limits:
@@ -10,12 +10,11 @@ run_limits:
 initial_prompt: |
   Create a local BPMN project named "RiskScoreScriptBpmn".
   It must manually start with public `amount` (number) and `daysOverdue`
-  (integer) inputs, calculate a numeric risk score in one current-v3
-  JavaScript ScriptTask, and return it as the public `riskScore` output.
+  (integer) inputs, calculate a numeric risk score in one JavaScript
+  ScriptTask, and return it as the public `riskScore` output.
 
   Requirements:
-  - Use the current Studio serializer and public input/output contracts.
-  - Use the current v3 ScriptTask registry/runtime shape, including its
+  - Use the supported ScriptTask and public input/output contracts, including
     standard response and typed error handling.
   - Keep the JavaScript deterministic and Jint-compatible; do not use Node.js,
     filesystem, network, browser, package, timer, or async APIs.
@@ -25,7 +24,7 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "BPMN uses current public I/O and v3 ScriptTask runtime contracts"
+    description: "BPMN uses supported public I/O and ScriptTask runtime contracts"
     command: "python3 $TASK_DIR/check_script_jint_guidance.py"
     timeout: 30
     expected_exit_code: 0
