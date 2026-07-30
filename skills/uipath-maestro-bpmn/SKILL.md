@@ -112,20 +112,48 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    serializer's lower-camel BPMN element (`<bpmn:sendTask>`,
    `<bpmn:receiveTask>`) while preserving the `uipath:*` payload exactly.
 
-   **Small local fast path.** For a new intent-only graph with at most twelve
-   visible nodes and no connector, subprocess, loop, or boundary event, stop
-   discovery after the single pull and one `registry get` per registry-owned
-   node. Write the project and direct XML immediately from the minimal
-   structural file plus those templates, then validate once. Do not use the
-   declarative renderer, inspect generated scaffold/package files, search
-   fixtures, or read docs for other artifact formats. Manual start/end events,
-   exclusive or parallel gateways, sequence flows, conditions, defaults, and DI
-   are structural: do not search the registry or validator spec for them. A
-   graph using only those elements plus `BPMN.Variables` tasks needs only
+   **Small local fast path (overrides the generic Discover and Assemble
+   guidance).** Use this path only for a new intent-only graph with at most
+   twelve visible nodes and no connector, subprocess, loop, or boundary event.
+   Pull the registry once. If the request names the exact registry-owned types,
+   do not run `registry list` or `registry search`; otherwise stop listing or
+   searching as soon as those types are resolved. Run `registry get` exactly
+   once per **distinct** registry-owned type and reuse its template for every
+   node of that type.
+
+   Read only the
+   [complete minimal file](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
+   and the directly relevant subsection for each requested node. Then write
+   exactly `<Project>/<Project>.bpmn` and `<Project>/project.uiproj`; the latter
+   is exactly:
+
+   ```json
+   {"projectVersion":"1.0.0","ProjectType":"ProcessOrchestration","Name":"<Project>","main":"<Project>.bpmn"}
+   ```
+
+   Author the XML directly from that minimal structure plus the retrieved
+   templates and validate exactly once. Do not run `uip maestro bpmn init`, the
+   declarative renderer, `pack`, or any solution scaffold/package command. Do
+   not create a solution, `.uipx`, metadata, renderer spec, evidence directory,
+   fixture, implementation source, or test. Manual start/end events, exclusive
+   or parallel gateways, sequence flows, conditions, defaults, and DI are
+   structural: do not search the registry or validator spec for them. A graph
+   using only those elements plus `BPMN.Variables` tasks needs only one
    `registry get BPMN.Variables`. Copy the minimal file's namespace declarations
    verbatim; every `di:waypoint` requires the `xmlns:di` declaration. The first
-   post-template action for this path should create or edit the requested
-   project, not perform more discovery.
+   post-template action must write the requested project.
+
+   **Intent-only `Actions.HITL`.** Use its retrieved registry template; `.flow`
+   QuickForm JSON does not apply. Without a confirmed live app, use visibly
+   synthetic literals for `appId`, `key`, and `taskTitle`; keep `appVersion`
+   numeric; serialize the requested outcome labels in the template's string
+   `actions` field (for example `Approve,Reject`); and put the fields the
+   reviewer must see in the `HitlTaskArguments` JSON body. Declare the
+   template's output variable with type `Actions.HITL`. If the process only
+   records completion, wire the user task directly to a registry-derived
+   `BPMN.Variables` task and then to the end event—do not introduce a gateway or
+   ScriptTask. Report the result as a portable, non-runnable draft until a real
+   app identity replaces the synthetic values.
 3. **Assemble.** Author directly from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
@@ -246,8 +274,11 @@ and honestly surfaced to the user as gaps when asked.
 
 1. **Registry owns every `uipath:*` payload.** Author from
    `registry get` templates; never hand-write `uipath:` XML from prose.
-2. **Never fabricate an identifier.** Connection IDs, process/queue/connector
-   keys, app IDs, folder ids/paths come from discovery or the user.
+2. **Never fabricate a live identifier.** Connection IDs,
+   process/queue/connector keys, app IDs, and folder ids/paths selected for live
+   use come from discovery or the user. Use visibly synthetic intent-only
+   placeholders only where this skill explicitly allows them, and report the
+   resulting draft as non-runnable.
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
    contract in [references/structural-bpmn.md](references/structural-bpmn.md);
    flag honestly what the registry does not expose.
