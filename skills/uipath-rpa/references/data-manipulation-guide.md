@@ -64,7 +64,9 @@ See [csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 
 When a transform genuinely outgrows expressions — >2 statement steps, a reusable safe accessor/helper, mutating rows in a loop, real try/catch around a parse, or an unreadable one-liner — move to a **coded (`.cs`) workflow** ([coded/operations-guide.md](coded/operations-guide.md)), still not `Invoke Code`. Coded gives `?.`, `out var`, multi-statement logic, and unit tests.
 
-**Exception — the transform must live inside a C#-expression XAML workflow.** Two hard limits invert the advice above:
+### Exception: inside C#-expression XAML workflows, escalate to Invoke Code — NOT coded
+
+When the transform must live inside a C#-expression XAML workflow, two hard limits invert the advice above:
 
 1. XAML expressions cannot reference the project's coded source file (`.cs`) types — `CS0103` at validate/build ([xaml/common-pitfalls.md § XAML Expressions Cannot Reference Coded Source File Types](xaml/common-pitfalls.md)).
 2. C# XAML expressions compile as expression trees — no statements, no `out var` (`TryParse`), no optional-argument overloads (`CS0854`) ([xaml/common-pitfalls.md § C# XAML Expressions Compile as Expression Trees](xaml/common-pitfalls.md)).
