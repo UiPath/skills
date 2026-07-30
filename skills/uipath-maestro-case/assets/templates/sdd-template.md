@@ -107,6 +107,8 @@ build the case in the Case Designer without guessing.
 - **Workflows/Processes:** PascalCase (e.g., `ValidateEligibility`)
 - **Entity names:** PascalCase (e.g., `LoanApplication`)
 - **Entity fields:** camelCase (e.g., `applicantName`)
+- **Case Designer display names:** stages, tasks, condition rule names, SLA rule titles, and escalation titles use only letters, numbers, spaces, hyphen (`-`), and underscore (`_`). Do not generate colons, periods, slashes, backslashes, quotes, parentheses, ampersands, commas, semicolons, emoji, or other symbols. Normalize unsafe display punctuation to spaces, collapse spaces, and disclose any changed display names in the Case Review.
+- **External lookup names:** do not normalize deployed resource names, connector names, Action App titles, API/process/agent names, queue names, or bucket names used for tenant lookup. Keep a separate safe Case Designer display name when an external lookup name contains punctuation.
 
 ### Output Structure
 
@@ -170,7 +172,7 @@ The generated SDD must start with:
 | Task-output passing | {Direct \| Shared} — `caseDirectlyPassTaskOutputs` (Direct = a task's outputs flow straight to downstream tasks; default Direct) |
 | Case Identifier source | {`=metadata.ExternalId` (platform-generated — the default) \| custom} — what every `caseId` task input binds to |
 
-> **Case App validation contract:** Stage names must be non-empty, unique, and contain no `:`. Task names must contain no `:`. Every SLA rule and escalation needs a non-empty, target-unique title/display name with no `:`. SLA durations must be positive; minute-based SLAs must be 15–1000 minutes. Non-default SLA rows need an expression; escalations need a recipient, and at-risk escalations need a percentage.
+> **Case App validation contract:** Stage names must be non-empty, unique, and safe for Case Designer display. Task names and condition display names must be safe. Every SLA rule and escalation needs a non-empty, target-unique safe title/display name. Safe display characters are letters, numbers, spaces, hyphen, and underscore. SLA durations must be positive; minute-based SLAs must be 15–1000 minutes. Non-default SLA rows need an expression; escalations need a recipient, and at-risk escalations need a percentage.
 
 ### Case-Level SLA Escalation Rules
 

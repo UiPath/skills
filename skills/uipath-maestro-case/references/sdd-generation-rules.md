@@ -203,19 +203,22 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 | Case App | optional | `Enabled` / `Disabled` — whether the in-product Case App UI is on (`metadata.caseAppEnabled`). | Default `Disabled`; record in source ledger. |
 | Task-output passing | optional | `Direct` / `Shared` — `metadata.caseDirectlyPassTaskOutputs`. `Direct` passes a task's outputs straight to downstream tasks (default). | Default `Direct`. |
 
-**PO.Frontend validation parity.** Before Approve, apply the same name and SLA checks that the Case App applies:
+**PO.Frontend validation parity plus safe generated names.** Before Approve, apply the same name and SLA checks that the Case App applies, then apply the skill's stricter safe-display-name contract to anything the skill generates or carries into Case Designer display/title fields.
 
 | Surface | Required checks |
 |---|---|
-| Stage label | Non-empty; unique across stages; no `:`. A non-Case-Manager stage also cannot reuse the reserved default Case Manager stage label when a Case Manager stage exists. |
-| Task display name | No `:` for materialized tasks. |
-| SLA rule title (`displayName`) | Non-empty; unique within the root or stage target; no `:`. |
-| Escalation title (`displayName`) | Non-empty; unique across escalations on the target; no `:`. |
+| Stage label | Non-empty; unique across stages; safe display characters only. A non-Case-Manager stage also cannot reuse the reserved default Case Manager stage label when a Case Manager stage exists. |
+| Task display name | Safe display characters only for materialized tasks. |
+| Rule display name | Safe display characters only for entry, exit, task-entry, and case-exit condition display names. |
+| SLA rule title (`displayName`) | Non-empty; unique within the root or stage target; safe display characters only. |
+| Escalation title (`displayName`) | Non-empty; unique across escalations on the target; safe display characters only. |
 | SLA duration | `count > 0`; when `unit: min`, `15 ≤ count ≤ 1000`. Supported units are `min`, `h`, `d`, `w`, and `m`. |
 | Conditional SLA | Every non-default SLA rule has a non-empty expression/condition. |
 | Escalation payload | Every escalation has at least one recipient; an `at-risk` escalation has an `atRiskPercentage` value. |
 
-These are blocking authoring errors, not optional style warnings. Preserve the user's wording when repairing a name, but ask for a replacement when uniqueness or a reserved delimiter is violated; never silently suffix or truncate it.
+Safe display characters are letters, numbers, spaces, hyphen (`-`), and underscore (`_`) only. Do not generate colons (`:`), periods (`.`), slashes, backslashes, quotes, parentheses, ampersands, commas, semicolons, emoji, or other symbols in stage/task/rule/SLA/escalation display names. Repair unsafe generated or user-carried display names mechanically by replacing runs of disallowed characters with one space, collapsing spaces, and trimming. Preserve words and casing. If the result is empty or collides, pick a safe qualifier or numeric suffix and disclose it in the Case Review.
+
+These are blocking authoring errors, not optional style warnings. Do not normalize external registry or tenant lookup names (Action App titles, process names, connector names, API names, queue/bucket names); those are matching keys. Keep separate safe Case Designer display names when a lookup name contains punctuation.
 
 The same rule governs **numeric** violations: never silently clamp, round, or substitute an out-of-range value to satisfy validation. A minute-based SLA authored below 15 or above 1000 is not repaired to the nearest legal bound — surface the violation and Ask for a replacement duration (or a different `unit`), naming the original value. This applies whether the value came from the interview or from an SDD supplied on disk: rewriting a user-authored duration to pass validation is a silent requirements change, not a fix.
 
@@ -882,6 +885,7 @@ Phase 0 runs these checks **once, against the in-memory case model, before prese
    - Stage-exit `Yes` + `selected-tasks-completed` → error
 2. **Render-contract check.** Every required cell in §Case content rules, §Stage content rules, §Task content rules has a concrete value (no banned `—` / `<UNRESOLVED>`).
 2a. **Template-shape check.** The exact rendered `sdd.md` text must pass [phase-0-interview.md § Template conformance gate](phase-0-interview.md#template-conformance-gate--before-sddmd-is-written): `# SDD — {Case Name}`, `## Table of Contents`, `## Section 1: Case Definition`, `## Section 2: Stages & Tasks`, `## Section 3: Personas & App Views`, `## Section 4: Integrations`, required Section 1 subsections, one complete stage block per stage, one complete task block per task, personas/app views, and integrations. Each task block must contain the exact marker `**Task envelope**` before the Required / Run Only Once / Skip Condition table; `**Task envelope:**` with a colon is a render failure. Secondary-stage task headings must use numeric `Task S{K}.{M}` form, never lettered prefixes such as `Task R.1`, `Task W.1`, `Task CC.1`, or `Task ESC.1`. Missing headings, missing full detail blocks, or top-level summary replacements (`## Source`, `## Case Objective`, `## Stages`, `## Task Plan`, etc.) are blocking render failures. This check runs before Write; if it fails after Write is observed, stop and repair before Phase 1.
+2b. **Safe display-name check.** Every generated or carried Case Designer display/title field for stages, tasks, rule names, SLA rules, and escalation rules uses only letters, numbers, spaces, hyphen, and underscore. Repair unsafe punctuation mechanically and disclose changed names in the Case Review. Do not normalize external resource lookup names.
 3. **Decision-task button check.** Every `action` task with `is_decision: Yes` has ≥ 2 buttons; every button's `Maps To` LHS references a declared §1.5 variable (by `Name`) or `taskOutcome`.
 4. **Recipient encoding check.** Every `action` task recipient uses one of the five typed prefixes (`Email:` / `User:` / `UserGroup:` / `Role:` / `Expression:`) — no bare strings.
 5. **Connector-id check.** Every `wait-for-connector` / `execute-connector-activity` **task** has concrete `Connection ID` AND `Activity Type ID`. Every `wait-for-connector` **condition rule** (in any scope — stage-entry / stage-exit / case-exit / task-entry) has a `Connector Rule Detail` block resolving to a concrete `Connector Key` AND `Event Operation` (and `Connection ID` when not a tenant-default). Missing identity → paired `high`-severity review item.
