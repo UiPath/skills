@@ -34,9 +34,12 @@ Rendering writes:
 - `bindings_v2.json`;
 - `package-descriptor.json`.
 
-Keep registry evidence separately when the user requests it. Re-rendering is
-safe for a new project whose spec is the authored source; do not hand-edit the
-rendered XML and then overwrite it from a stale spec.
+When registry evidence is requested for a named project, keep it under
+`<project>/registry-evidence/`; use workspace-root `registry-evidence/` only for
+standalone evidence work with no project deliverable. An exact user-requested
+path wins. Re-rendering is safe for a new project whose spec is the authored
+source; do not hand-edit the rendered XML and then overwrite it from a stale
+spec.
 
 ## Top-level shape
 
