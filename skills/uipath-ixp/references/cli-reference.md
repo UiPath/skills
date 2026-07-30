@@ -112,7 +112,20 @@ Every IXP project ships with the built-in data types below (the project's `entit
 | `Monetary Quantity` | `money` | — | Any currency / monetary amount — total, subtotal, tax, unit price, freight |
 | `Boolean` | `boolean` | — | True / false values |
 
-`Date`, `Number`, and `Monetary Quantity` carry pre-trained models with a fixed output format (e.g. `Monetary Quantity` normalises `"1M USD"`, `"USD 1000000"`, and `"1,000,000 usd"` all to `1,000,000.00 USD`) — instructions cannot change their formatting, so a hand-rolled equivalent is strictly worse. `Choice` is the only `--kind` with no default: choice types are always project-specific (`data-types add --kind choice --choices …`).
+`Date`, `Number`, `Monetary Quantity`, and `Boolean` carry pre-trained models with a fixed output format (below) — instructions cannot change their formatting, so a hand-rolled equivalent is strictly worse. `Choice` is the only `--kind` with no default: choice types are always project-specific (`data-types add --kind choice --choices …`).
+
+### Normalized output formats
+
+`get-predictions` reports these types in the type's normalized form, never the page's literal text. A plain `confirm` stores that same normalized string as the label.
+
+| Type | `FormattedValue` | Page → prediction |
+|------|------------------|-------------------|
+| `Date` | `YYYY-MM-DDTHH:MM:SSZ`, always midnight UTC | `21-JUN-22` → `2022-06-21T00:00:00Z` |
+| `Monetary Quantity` | `<amount> <ISO-4217 code>` — no thousands separator, decimals as written on the page (not fixed to 2), currency appended even when the page shows none | `114.91` → `114.91 AUD`; `8.0700` → `8.0700 USD` |
+| `Number` | bare numeric string, no unit or separator | `29311577` → `29311577` |
+| `Boolean` | `True` / `False` | — |
+
+`--corrections` neither normalizes nor validates — the string you send is stored verbatim (`21-JUN-22`, even `not-a-date`, all return Success). Sending the page's format replaces a correct label with one the model will never predict and drops the field's F1. Reformatting is never a reason to use `--corrections` (Critical Rule 8).
 
 ## Groups
 
