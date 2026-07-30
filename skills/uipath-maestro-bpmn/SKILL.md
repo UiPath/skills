@@ -132,6 +132,22 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    `<bpmn:SendTask>` or `<bpmn:ReceiveTask>`), normalize the host tag to the
    serializer's lower-camel BPMN element (`<bpmn:sendTask>`,
    `<bpmn:receiveTask>`) while preserving the `uipath:*` payload exactly.
+   `BPMN.ScriptTask` is the registry key, but current Studio v3 serialization
+   intentionally uses a `BPMN.Variables` mapping with `vars` / `metadata`
+   arguments and standard `scriptResponse` / `Error` outputs. Retain the live
+   `registry get` result as evidence. When that template contains the legacy
+   `<uipath:type value="BPMN.ScriptTask">` mapping, use the versioned
+   `extensionTypes["BPMN.ScriptTask"].xmlTemplate` in
+   `validator/bpmn-spec.json` for this node instead of waiting for a nonexistent
+   CLI upgrade or authoring the legacy shell. This fallback is a documented
+   serializer override for the built-in ScriptTask only; it cannot prove any
+   live resource. **Do not copy the registry key into the serialized mapping:**
+   inside every new `bpmn:scriptTask`, the mapping discriminator must be
+   `<uipath:type value="BPMN.Variables" version="v1" />`, never
+   `BPMN.ScriptTask`. Before validation, search the authored BPMN for
+   `<uipath:type value="BPMN.ScriptTask"` and treat any match in a new
+   ScriptTask as a hard failure. The local validator can accept that legacy
+   discriminator, so an exit-0 validation does not catch this mistake.
 3. **Assemble.** Author directly from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton shows
