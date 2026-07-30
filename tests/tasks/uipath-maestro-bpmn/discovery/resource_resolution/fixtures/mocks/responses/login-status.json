@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Data": {
+    "IsLoggedIn": true,
+    "BaseUrl": "https://cloud.example.invalid",
+    "Organization": "automation-lab",
+    "Tenant": "operations"
+  }
+}

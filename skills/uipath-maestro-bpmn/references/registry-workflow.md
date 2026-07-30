@@ -1,63 +1,81 @@
 # Registry workflow
 
-Every `uipath:*` payload in a Maestro `.bpmn` comes from the registry — never
-from prose, never hand-written. This file is the loop for turning user intent
-into registry-backed XML.
+Registry-listed node execution payloads come from the registry — never from
+prose or hand-written approximations. Structural BPMN and serializer-owned
+scaffold metadata follow the structural/canvas contract. This file is the loop
+for turning user intent into registry-backed node XML.
 
-## 1. Sync and discover
+## 1. Choose draft or live mode, then discover the node type
 
-```bash
-uip maestro bpmn registry pull            # sync + cache (login for connectors/processes)
-uip maestro bpmn registry list --limit -1 --output json   # all extension types
-uip maestro bpmn registry search <keyword> --output json  # find a type by intent
-uip is connections list --all-folders --output json   # live IS connections (all folders)
-```
+Choose the mode from the request before tenant-dependent discovery:
 
-Map the user's intent to an extension type from the list. Confirm the choice
-with the user (and the specific connection / process / queue) before authoring.
-**Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).
+- **Portable draft:** for synthetic, local-only, structural, or explicitly
+  draft work, default to a known login-free built-in template without adding an
+  authenticated pull or tenant-resource listing, and preserve unresolved
+  placeholders. An explicit request for raw `registry pull`, `list`, or
+  `search` evidence still authorizes those read-only registry forms without a
+  profile; it does not authorize tenant-resource inventory. If the type cannot
+  be identified without the live catalog, ask before crossing that boundary:
 
-**Connection discovery must be exhaustive.** Always pass `--all-folders` to
-`uip is connections list` — connections live in many folders and a folder-scoped
-listing silently misses them. An empty or unmatched result from a missing
-`--all-folders`, or from a connector key guessed from a brand name rather than
-found via `registry search`, is a **false negative** — never conclude "no
-connection exists" or ask the user to create one until you have searched the
-registry for the real connector key and listed across all folders.
+  ```bash
+  uip maestro bpmn registry get <known-built-in-type> --output json
+  ```
 
-`registry list` returns three buckets in `Data`: `ExtensionTypes` (the OOTB
-extension types, always available), `Connectors` and `Processes` (only after
-`uip login`). Each extension-type row carries `ExtensionType`, `Label`,
-`BpmnElement` (the host BPMN element), `ExtensionTag`, and
-`RequiresDiscovery` (`Yes` means you must resolve a concrete resource — process,
-queue, connection — before the node is runnable).
+- **Live/runnable:** when the user asks for a real, current, tenant-bound, or
+  runnable resource, verify the active context and follow
+  [live-resource-resolution-guide.md](live-resource-resolution-guide.md):
 
-In temp/smoke sandboxes, a CLI/tooling mismatch can produce valid JSON that is
-only a failure envelope (for example `"Result": "Failure"`) instead of registry
-content. For discovery-only tasks, keep that failed output in the transcript or
-`registry-evidence/cli-error.txt`, then replace the final raw evidence JSON with
-the matching entries from `validator/bpmn-spec.json`. The final saved evidence
-must literally contain the requested extension type strings, such as
-`Orchestrator.StartJob` and `Maestro.ReceiveMessageEvent`, not just the failure
-envelope.
+  ```bash
+  uip login status --profile <name> --output json
+  uip maestro bpmn registry pull --profile <name> --output json
+  uip maestro bpmn registry list --profile <name> --limit -1 --output json
+  uip maestro bpmn registry search <keyword> --profile <name> --output json
+  uip maestro bpmn registry get <extensionType> --profile <name> --output json
+  ```
+
+- **Unclear:** ask before tenant inventory when live versus portable would
+  materially change the result.
+
+`RequiresDiscovery` means a concrete resource is needed to make the node
+runnable; it does not authorize live discovery. An unknown resource adapter
+blocks a runnable claim, not a structural draft.
+
+Map intent to an extension type and inspect the full contract from `registry
+get`. `registry list` is a coarse discovery view. When authenticated, it can
+also include live `Connectors` and `Processes`; use those only in live mode.
+
+In temp/smoke sandboxes, a CLI/tooling mismatch can produce a valid JSON failure
+envelope instead of registry content. The bundled `validator/bpmn-spec.json`
+fallback is allowed only for login-free built-in-template evidence. It must
+never stand in for a live process, queue, connector, connection, operation,
+object, schema, or runnable-node claim. For a live-resource failure, stop and
+report the node as blocked.
 
 ## 2. Get the template for each chosen type
 
+For a portable built-in, use:
+
 ```bash
 uip maestro bpmn registry get <extensionType> --output json
+```
+
+For a live lookup under a named profile, repeat the profile on this command too:
+
+```bash
+uip maestro bpmn registry get <extensionType> --profile <name> --output json
 ```
 
 `Data.ExtensionType` contains everything needed to author the node:
 
 | Field | Use |
 | --- | --- |
-| `xmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only.** |
-| `bpmnElement` | The host BPMN element the template uses (for source files, normalize to lower-camel such as `bpmn:serviceTask`). |
-| `extensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |
-| `contextFields[]` | The `uipath:context` inputs; each may carry its own `bindingInfo`. |
-| `bindingInfo` | How the node binds to a resource (see §4). |
-| `inputPattern` / `inputName` / `inputTarget` | How the request body input is shaped. |
-| `requiresDiscovery` / `isDynamic` | Whether a concrete resource must be resolved first. |
+| `XmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only.** |
+| `BpmnElement` | The host BPMN element the template uses (for source files, normalize to lower-camel such as `bpmn:serviceTask`). |
+| `ExtensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |
+| `ContextFields[]` | The `uipath:context` inputs; each may carry its own `BindingInfo`. |
+| `BindingPattern` / `BindingInfo` | Whether and how the node binds to a resource; for live mode, use [live-resource-resolution-guide.md](live-resource-resolution-guide.md). |
+| `InputPattern` / `InputName` / `InputTarget` | How the request body input is shaped. |
+| `RequiresDiscovery` / `IsDynamic` | Whether a concrete resource must be resolved first. |
 
 The placeholders you fill are the obvious ones: `{id}`, `{name}`,
 `{incomingEdge}`, `{outgoingEdge}`, `{varId}` (the output variable id), plus the
@@ -80,43 +98,13 @@ only user-supplied values in the body or configurable context fields. Label the
 node non-runnable. Do not inspect sibling skills, test fixtures, or generated
 packages to invent the missing live schema.
 
-## 3. Connector (`Intsvc.*`) enrichment
+## 3. Resolve live resources only when requested
 
-For connector types (`requiresDiscovery: Yes`, e.g.
-`Intsvc.ActivityExecution`, `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`),
-resolve a live connection and object, then enrich:
-
-```bash
-uip is connections list --all-folders --output json   # pick a connection id + its connector (search all folders)
-uip maestro bpmn registry get Intsvc.ActivityExecution \
-    --connection-id <id> --object-name <object> --output json
-```
-
-The response adds an `ISEnrichment` block with the live field metadata. Write
-the activity's `body` input (`target="body"`) and `context` (`connectorKey`,
-`objectName`) from that enrichment — do not hand-author connector schemas. The
-connection is referenced through a connection binding, `=bindings.<bindingId>`
-(see §4).
-
-## 4. Bindings — from `bindingInfo`, never invented
-
-A node that targets a cloud resource carries a binding. The `bindingInfo` on the
-extension type tells you the binding shape; the concrete value comes from
-discovery or the user.
-
-- **Resource bindings** (`bindingInfo.resource` = `process` / `queue` /
-  `businessRule`): the context field named by `bindingInfo.contextField`
-  (e.g. `releaseKey`, `queueName`) holds the resource key
-  (`bindingInfo.propertyAttribute`, usually `Key`). Resolve the real key with
-  `registry search` / discovered `Processes` / `Queues`; never guess a GUID.
-- **Connection bindings** (`Intsvc.*`): the context references a connection via
-  `=bindings.<bindingId>`, and a `<uipath:binding>` of `resource="Connection"`
-  with `propertyAttribute="ConnectionId"` in the process-level
-  `<uipath:bindings>` holds the live connection id from `uip is connections list`.
-
-Declare all bindings in a single process-level `<uipath:bindings version="v1">`
-block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`,
-and a `default` value (the resolved key/id).
+For live mode, use the full-contract adapters, exact identity/folder/lifecycle
+rules, ambiguity handling, bounded refresh, and binding boundary in
+[live-resource-resolution-guide.md](live-resource-resolution-guide.md). For portable draft
+mode, keep placeholders unresolved and label the node non-runnable; do not
+substitute bundled or stale data for live proof.
 
 ## Agent wrapper selection — pick by `processType`, not the label
 
@@ -161,8 +149,9 @@ the exact `registry get Intsvc.TimerTrigger` template. It does not require a
 live connection or schema enrichment.
 
 `Intsvc.EventTrigger` and connector waits such as `Intsvc.WaitForEvent` do need
-their **trigger properties** enriched/bound through the CLI — the same
-enrichment path as `Intsvc.*` activities (§3). A hand-authored connector
+their **trigger properties** enriched/bound through the CLI — follow the same
+live contract boundary as `Intsvc.*` activities in
+[live-resource-resolution-guide.md](live-resource-resolution-guide.md). A hand-authored
 trigger shell stays **draft** until the CLI supplies the concrete trigger
 properties, connection binding, and schemas.
 
@@ -175,7 +164,8 @@ properties, connection binding, and schemas.
   resolved before upload or run, and that boundary notes should name explicitly
   — are **connection binding**, **dynamic schemas**, generated **package
   metadata** (`bindings_v2.json`, `entry-points.json`, `operate.json`,
-  `package-descriptor.json`). Do not hand-author any of these (§3).
+  `package-descriptor.json`). Do not hand-author any of these; follow the
+  [live binding boundary](live-resource-resolution-guide.md#5-preserve-the-binding-boundary).
 - **Connectionless / manual HTTP** (`Intsvc.HttpExecution`, or
   `Intsvc.UnifiedHttpRequest` when current tooling exposes the unified shape):
   use when the workflow itself owns the URL, method, payload, and response
@@ -231,8 +221,8 @@ exact template for any of them with `registry get <type>`.
 | `Maestro.SendMessageEvent` | `bpmn:intermediateThrowEvent` | event |
 | `Maestro.CaseRulesEvaluator` / `Maestro.CaseManagerGuardrails` | `bpmn:serviceTask` | activity |
 
-This table is a discovery aid, not a substitute for `registry get` — always pull
-the live template before authoring.
+This table is a discovery aid, not a substitute for `registry get` — always
+retrieve the exact template before authoring.
 
 If a registry `xmlTemplate` returns a PascalCase BPMN host tag such as
 `bpmn:SendTask` or `bpmn:ReceiveTask`, normalize only the BPMN host element
