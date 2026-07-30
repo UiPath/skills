@@ -376,6 +376,9 @@ When downstream expressions dereference properties of a ScriptTask's object
 response, declare those properties in the response variable's JSON schema.
 An unshaped `type: "object"` variable does not give Studio or the validator the
 property contract needed for expressions such as `vars.<id>.fileId`.
+List every property the script guarantees in that schema's `required` array.
+Apply the same rule to typed object arguments: declare and require each field
+the script reads, rather than leaving a permissive object shell.
 Use semantically specific property names in both the returned object and its
 schema (for example, `duplicateIssueKey` rather than an ambiguous `key`) so the
 data contract remains auditable.

@@ -256,6 +256,10 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    explicit id. Serialize `args` as CDATA or the engine-equivalent `value`
    attribute; ordinary XML text is ignored at runtime. Return the intended
    value directly and map it from `=result.response`.
+   For every typed object argument or response, declare each property that
+   downstream code dereferences and list every guaranteed property in the
+   schema's `required` array; a property name without `required` is nullable
+   to Studio and runtime validation.
 
    Give public inputs and outputs explicit runtime bridges. Bind a public input
    declaration to the root StartEvent, map it there to a mutable internal

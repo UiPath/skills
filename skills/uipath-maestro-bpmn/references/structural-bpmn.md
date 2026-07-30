@@ -225,6 +225,10 @@ does not provide the runtime arguments. Use the current runtime contract:
   `elementId="<script-task-id>"`. Give each script its own Error variable id
   and map by that id when several scripts create same-named scoped Error
   declarations.
+- For typed object arguments and responses, declare every property that the
+  script reads or downstream expressions dereference. Put each guaranteed
+  property in the enclosing schema's `required` array; `properties` alone
+  still permits the field to be absent.
 - Map the returned object's property back through `source="=result.response"`
   (the conventional scalar property) or `source="=result.response.<field>"`
   (another object field); `var` points at a declared variable id (do not put the
