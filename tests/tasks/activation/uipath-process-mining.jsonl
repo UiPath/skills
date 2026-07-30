@@ -12,3 +12,4 @@
 {"id": "uipath-process-mining-012", "prompt": "Edit the dbt models of my process app and re-run the transformation", "expected_skill": "uipath-process-mining"}
 {"id": "uipath-process-mining-013", "prompt": "Run a steps-to-resolution analysis on my ServiceNow incident data with uip pm", "expected_skill": "uipath-process-mining"}
 {"id": "uipath-process-mining-014", "prompt": "My ingestion finished with SUCCESS_WITH_WARNINGS — what do those mapping warnings mean?", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-015", "prompt": "Set up UiPath Process Mining to analyze bottlenecks in my procure-to-pay process", "expected_skill": "uipath-process-mining"}
