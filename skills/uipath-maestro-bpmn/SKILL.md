@@ -111,6 +111,21 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    `<bpmn:SendTask>` or `<bpmn:ReceiveTask>`), normalize the host tag to the
    serializer's lower-camel BPMN element (`<bpmn:sendTask>`,
    `<bpmn:receiveTask>`) while preserving the `uipath:*` payload exactly.
+
+   **Small local fast path.** For a new intent-only graph with at most twelve
+   visible nodes and no connector, subprocess, loop, or boundary event, stop
+   discovery after the single pull and one `registry get` per registry-owned
+   node. Write the project and direct XML immediately from the minimal
+   structural file plus those templates, then validate once. Do not use the
+   declarative renderer, inspect generated scaffold/package files, search
+   fixtures, or read docs for other artifact formats. Manual start/end events,
+   exclusive or parallel gateways, sequence flows, conditions, defaults, and DI
+   are structural: do not search the registry or validator spec for them. A
+   graph using only those elements plus `BPMN.Variables` tasks needs only
+   `registry get BPMN.Variables`. Copy the minimal file's namespace declarations
+   verbatim; every `di:waypoint` requires the `xmlns:di` declaration. The first
+   post-template action for this path should create or edit the requested
+   project, not perform more discovery.
 3. **Assemble.** Author directly from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
