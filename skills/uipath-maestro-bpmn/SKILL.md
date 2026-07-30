@@ -180,6 +180,12 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape)
    when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
    synthetic local project.
+   Give public inputs and outputs explicit runtime bridges. Bind each public
+   input declaration to its intended root StartEvent and map it to a mutable
+   process variable before routing or scripting. Bind each public output
+   declaration to the root EndEvent that returns it and map the mutable result
+   there. When one public result must be returned on several normal routes,
+   converge those routes on the same completion EndEvent.
 4. **Complete layout, then validate.** For file-based authoring, complete
    coherent BPMN DI before the first final CLI validation; see
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation)
@@ -195,7 +201,15 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    Exit 0 = valid; exit 1 = validation failed (the envelope lists each issue
    with its rule code). Warnings are reported but do not fail the run. Validate
    once; fix only error-severity findings. Do not re-validate in a loop chasing
-   warnings. If `validate` reports "unknown command" or clearly skips the
+   warnings.
+
+   Validation is a structural preflight, not runtime proof. It does not prove
+   that entry-point values reach mutable variables or public outputs contain
+   the intended business values.
+   When execution is authorized, inspect runtime variables, element executions,
+   and incidents before reporting behavioral success.
+
+   If `validate` reports "unknown command" or clearly skips the
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)).
 
