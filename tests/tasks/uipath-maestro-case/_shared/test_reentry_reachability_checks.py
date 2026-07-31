@@ -13,8 +13,8 @@ Runs with no model and no tenant:
 
 from __future__ import annotations
 
-import copy
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -150,17 +150,80 @@ def reject_sdd(
     )
 
 
-def run_check(script: Path, sdd_text: str) -> subprocess.CompletedProcess[str]:
+def run_check(script: Path, sdd_text: str, *args: str) -> subprocess.CompletedProcess[str]:
     with tempfile.TemporaryDirectory() as workdir:
         (Path(workdir) / "sdd.md").write_text(sdd_text, encoding="utf-8")
         return subprocess.run(
-            [sys.executable, str(script)],
+            [sys.executable, str(script), *args],
             cwd=workdir,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
         )
+
+
+class SharedParserTest(unittest.TestCase):
+    """Direct cover for the shared parser. Real SDDs carry `###` headings that are not
+    stages (`### Case Metadata`, `### Case Variables`) — the graders' fixtures alone never
+    exercise them."""
+
+    def setUp(self) -> None:
+        sys.path.insert(0, str(CASE_ROOT))
+        from _shared import entry_rule_check  # noqa: PLC0415
+
+        self.mod = entry_rule_check
+
+    def test_section_one_headings_are_not_parsed_as_stages(self) -> None:
+        text = "\n\n".join(
+            [
+                "## Section 1: Case Definition",
+                "### Case Metadata",
+                table(["Property", "Value"], [["Case Name", "VendorOnboarding"]]),
+                "### Case Variables",
+                table(["Variable", "Type"], [["vendorName", "String"]]),
+                "## Section 2: Stages & Tasks",
+                stage("Vendor Approval", [["`case-entered`", "—", "No"]], [COMPLETION_EXIT]),
+            ]
+        )
+        self.assertEqual(list(self.mod.stage_blocks(text)), ["Vendor Approval"])
+
+    def test_a_non_stage_heading_terminates_the_previous_stage_block(self) -> None:
+        text = "\n\n".join(
+            [
+                stage("Vendor Approval", [["`case-entered`", "—", "No"]], [COMPLETION_EXIT]),
+                "### Personas",
+                table(
+                    ["WHEN", "IF", "Exit Type", "Marks Stage Complete"],
+                    [["`required-tasks-completed`", "—", "wait-for-user", "No"]],
+                ),
+            ]
+        )
+        block = self.mod.stage_blocks(text)["Vendor Approval"]
+        self.assertNotIn("wait-for-user", block)
+
+    def test_stage_kind_reads_the_heading_qualifier(self) -> None:
+        blocks = self.mod.stage_blocks(
+            "\n\n".join(
+                [
+                    stage("Vendor Approval", [["`case-entered`", "—", "No"]], [COMPLETION_EXIT]),
+                    stage(
+                        "Compliance Hold", [PICKER_ENTRY], [COMPLETION_EXIT], secondary=True
+                    ),
+                    "### Exception Stage: Payment Failure",
+                    "**Type:** Exception Stage",
+                ]
+            )
+        )
+        kinds = {label: self.mod.stage_kind(body) for label, body in blocks.items()}
+        self.assertEqual(kinds["Vendor Approval"], "primary")
+        self.assertEqual(kinds["Compliance Hold"], "secondary")
+        self.assertEqual(kinds["Payment Failure"], "exception")
+
+    def test_exact_header_wins_over_a_substring_match(self) -> None:
+        # "notify" contains "if" — substring-first would return the wrong column.
+        row = {"notify": "owner@example.com", "when": "`case-entered`", "if": "=js:vars.x"}
+        self.assertEqual(self.mod.column(row, "if"), "=js:vars.x")
 
 
 class PickerPairingCheckTest(unittest.TestCase):
@@ -205,6 +268,35 @@ class PickerPairingCheckTest(unittest.TestCase):
 
     def test_rejects_missing_lane(self) -> None:
         self.assert_fail(picker_sdd(include_lane=False), "compliance hold")
+
+    def test_wait_for_user_on_an_exception_lane_does_not_expose_the_picker_lane(self) -> None:
+        # An `### Exception Stage:` heading must terminate the preceding stage's block. If it
+        # does not, its exit table is graded as the previous stage's own and a document whose
+        # only wait-for-user sits on an exception lane passes — naming the wrong stage.
+        sdd_text = "\n\n".join(
+            [
+                "# SDD — VendorOnboarding",
+                "## Section 2: Stages & Tasks",
+                "### Stage 1: Vendor Approval",
+                "**Type:** Stage",
+                "#### Stage Entry Conditions",
+                table(["WHEN", "IF", "Interrupting"], [["`case-entered`", "—", "No"]]),
+                "### Exception Stage: Payment Failure",
+                "**Type:** Exception Stage",
+                "#### Stage Exit Conditions",
+                table(
+                    ["WHEN", "IF", "Exit Type", "Marks Stage Complete"],
+                    [["`required-tasks-completed`", "—", "wait-for-user", "No"]],
+                ),
+                stage(
+                    "Compliance Hold",
+                    [PICKER_ENTRY],
+                    [["`required-tasks-completed`", "—", "return-to-origin", "Yes"]],
+                    secondary=True,
+                ),
+            ]
+        )
+        self.assert_fail(sdd_text, "wait-for-user")
 
     def test_missing_entry_table_is_not_read_off_the_following_table(self) -> None:
         # A stage whose condition section has no table must read as absent, not silently pick up
@@ -297,8 +389,71 @@ class RejectRouteCheckTest(unittest.TestCase):
     def test_rejects_ungated_origin_completion_exit(self) -> None:
         self.assert_fail(
             reject_sdd(origin_exits=[DIVERTING_EXIT, COMPLETION_EXIT]),
-            "mutually",
+            "complement",
         )
+
+    # -- guard polarity: a token test alone accepts the exact inverse of the route ----------
+
+    def test_rejects_lane_entry_guarded_on_the_negated_reject(self) -> None:
+        self.assert_fail(
+            reject_sdd(
+                lane_entry=[
+                    [
+                        '`selected-stage-exited("Eligibility Review")`',
+                        '`=js:(vars.reviewDecision !== "Reject")`',
+                        "Yes",
+                    ]
+                ]
+            ),
+            "keyed on the decision",
+        )
+
+    def test_rejects_diverting_exit_guarded_on_the_negated_reject(self) -> None:
+        negated = [
+            '`selected-tasks-completed("Reviewer Decision")`',
+            '`=js:(vars.reviewDecision !== "Reject")`',
+            "exit-only",
+            "No",
+        ]
+        self.assert_fail(reject_sdd(origin_exits=[negated, GATED_COMPLETION]), "diverting exit")
+
+    def test_rejects_completion_repeating_the_diverting_guard(self) -> None:
+        same_as_diverting = [
+            "`required-tasks-completed`",
+            '`=js:(vars.reviewDecision === "Reject")`',
+            "exit-only",
+            "Yes",
+        ]
+        self.assert_fail(
+            reject_sdd(origin_exits=[DIVERTING_EXIT, same_as_diverting]), "complement"
+        )
+
+    def test_accepts_completion_gated_on_the_positive_approve_value(self) -> None:
+        approve = [
+            "`required-tasks-completed`",
+            '`=js:(vars.reviewDecision === "Approve")`',
+            "exit-only",
+            "Yes",
+        ]
+        self.assert_pass(reject_sdd(origin_exits=[DIVERTING_EXIT, approve]))
+
+    # -- scope flag ------------------------------------------------------------------------
+
+    def test_lane_scope_ignores_a_missing_origin_diverting_exit(self) -> None:
+        result = run_check(REJECT_CHECK, reject_sdd(origin_exits=[COMPLETION_EXIT]), "--scope", "lane")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_origin_scope_still_catches_the_missing_diverting_exit(self) -> None:
+        result = run_check(
+            REJECT_CHECK, reject_sdd(origin_exits=[COMPLETION_EXIT]), "--scope", "origin"
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("diverting exit", (result.stdout + result.stderr).lower())
+
+    def test_unknown_scope_is_rejected(self) -> None:
+        result = run_check(REJECT_CHECK, reject_sdd(), "--scope", "everything")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("invalid choice", (result.stdout + result.stderr).lower())
 
     def test_rationale_prose_naming_the_anti_pattern_does_not_fail_a_correct_design(self) -> None:
         self.assert_pass(
@@ -328,8 +483,9 @@ def load_expressions(task_yaml: Path) -> list[tuple[str, object]]:
 
 
 def timer_task(name: str, run_once: bool) -> dict:
+    # Deterministic id — hash() is salted per process, so ids would differ every run.
     return {
-        "id": f"t{abs(hash(name)) % 10**8:08d}",
+        "id": "t" + re.sub(r"[^a-z0-9]", "", name.lower())[:8],
         "type": "wait-for-timer",
         "displayName": name,
         "isRequired": False,

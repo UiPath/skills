@@ -62,6 +62,9 @@ success_criteria:
       - expression: "length(nodes[?data.label=='Review'].data.tasks[][] | [?displayName=='Second Reminder' && shouldRunOnlyOnce==`false`])"
         operator: equals
         expected: 1
+      - expression: "length(nodes[?data.label=='Review'].data.tasks[][] | [?displayName=='Second Reminder' && isRequired==`false`])"
+        operator: equals
+        expected: 1
       - expression: "length(nodes[?data.label=='Review'].data.tasks[][])"
         operator: equals
         expected: 3

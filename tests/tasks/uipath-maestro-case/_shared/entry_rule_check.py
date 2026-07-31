@@ -20,11 +20,13 @@ from pathlib import Path
 ENTRY_SECTION = "Stage Entry Conditions"
 EXIT_SECTION = "Stage Exit Conditions"
 
-# `### Stage 2: Vendor Approval (`stage-vendor-approval`)` and
-# `### Secondary Stage: Compliance Hold (`stage-compliance-hold`)`.
-_STAGE_HEADING = re.compile(
-    r"(?im)^###\s+(?:secondary\s+)?stage(?:\s+\d+)?\s*:\s*(?P<label>[^(\n]+?)\s*(?:\(`[^`]*`\))?\s*$"
-)
+# Blocks are cut at EVERY `###` heading, then classified. Cutting only at headings we
+# recognize would let an unrecognized one (`### Exception Stage: X`) extend the previous
+# stage's block, so its tables would be graded as that stage's own.
+_H3 = re.compile(r"(?m)^###\s+(?P<title>\S.*?)\s*$")
+# `Stage 2: Vendor Approval (`stage-vendor-approval`)`, `Secondary Stage: Compliance Hold`,
+# `Exception Stage: Payment Failure`.
+_STAGE_TITLE = re.compile(r"(?i)^(?:(?P<kind>[a-z]+)\s+)?stage(?:\s+\d+)?\s*:\s*(?P<label>.+?)$")
 
 
 def fail(message: str) -> None:
@@ -44,13 +46,28 @@ def normalize(cell: str) -> str:
 
 
 def stage_blocks(text: str) -> dict[str, str]:
-    """Map stage label -> the markdown body of that stage's section."""
-    matches = list(_STAGE_HEADING.finditer(text))
+    """Map stage label -> the markdown body of that stage's section.
+
+    Non-stage `###` headings terminate the preceding block and are dropped, so no
+    section is ever attributed to a neighbouring stage.
+    """
+    headings = list(_H3.finditer(text))
     blocks: dict[str, str] = {}
-    for index, match in enumerate(matches):
-        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
-        blocks[normalize(match.group("label"))] = text[match.start() : end]
+    for index, heading in enumerate(headings):
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+        match = _STAGE_TITLE.match(normalize(heading.group("title")))
+        if not match:
+            continue
+        label = re.sub(r"\([^)]*\)$", "", match.group("label")).strip()
+        blocks[normalize(label)] = text[heading.start() : end]
     return blocks
+
+
+def stage_kind(block: str) -> str:
+    """`primary`, `secondary`, or whatever qualifier the heading carries."""
+    first = normalize(block.splitlines()[0]) if block.strip() else ""
+    match = re.match(r"(?i)^#+\s*(?:([a-z]+)\s+)?stage\b", first)
+    return (match.group(1) or "primary").lower() if match else "primary"
 
 
 def find_stage(blocks: dict[str, str], label: str) -> str:
@@ -104,7 +121,13 @@ def exit_rows(block: str) -> list[dict[str, str]]:
 
 
 def column(row: dict[str, str], *candidates: str) -> str:
-    """Value of the first matching column, matched loosely on the header text."""
+    """Value of the first matching column: exact header match first, substring only after.
+
+    Substring-first would let a short candidate (`if`) latch onto an unrelated header.
+    """
+    for candidate in candidates:
+        if candidate.lower() in row:
+            return row[candidate.lower()]
     for candidate in candidates:
         for header, value in row.items():
             if candidate.lower() in header:

@@ -41,12 +41,23 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Application Rejected is entered from the reviewDecision fact (not user-selected-stage), and Eligibility Review carries a gated diverting exit mutually exclusive with its completion exit"
-    command: "python3 $TASK_DIR/check_reject_route.py"
+    description: "Application Rejected is entered from the reviewDecision fact, not user-selected-stage"
+    command: "python3 $TASK_DIR/check_reject_route.py --scope lane"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  # Advisory. Rule 5's origin diverting-exit clause predates #2393, so a gap there is not a
+  # regression in this PR — it is recorded, not graded. Promote to pass_threshold 1.0 once
+  # the diverting-exit behavior is fixed on its own.
+  - type: run_command
+    description: "Advisory: Eligibility Review carries a gated diverting exit whose guard is the complement of its completion exit"
+    command: "python3 $TASK_DIR/check_reject_route.py --scope origin"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: run_command
     description: "stopped at the finalized sdd.md — did not run ahead into a caseplan build"

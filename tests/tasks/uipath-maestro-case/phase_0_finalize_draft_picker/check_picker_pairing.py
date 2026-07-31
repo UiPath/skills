@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from _shared.entry_rule_check import (  # noqa: E402
+    column,
     entry_rows,
     exit_rows,
     fail,
@@ -26,7 +27,7 @@ from _shared.entry_rule_check import (  # noqa: E402
     read_sdd,
     rule_type,
     stage_blocks,
-    column,
+    stage_kind,
 )
 
 LANE = "Compliance Hold"
@@ -53,10 +54,11 @@ def main() -> None:
         if not interrupting.startswith("y"):
             fail(f"{LANE!r} user-selected-stage entry row is not Interrupting: Yes (got {interrupting!r})")
 
-    # The pairing: some OTHER stage must expose this lane via a wait-for-user exit.
+    # The pairing: an upstream PRIMARY stage must expose this lane via a wait-for-user exit.
+    # A secondary or exception lane exposing another lane is not an upstream producer.
     exposing = []
     for label, block in blocks.items():
-        if label.lower() == LANE.lower():
+        if label.lower() == LANE.lower() or stage_kind(block) != "primary":
             continue
         for row in exit_rows(block):
             if "wait-for-user" in column(row, "exit type").lower():
