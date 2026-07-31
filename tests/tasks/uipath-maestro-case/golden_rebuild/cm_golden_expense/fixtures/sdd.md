@@ -108,7 +108,7 @@
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| `current-stage-entered` | — | Entry rule 1 |
+| `runs-sequentially` | — | Entry rule 1 |
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|
@@ -139,7 +139,7 @@
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| `selected-tasks-completed("Analyze Expense Request")` | — | Entry rule 1 |
+| `runs-sequentially` | — | Entry rule 1 |
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|
@@ -170,7 +170,7 @@
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| `selected-tasks-completed("Process Expense Request")` | — | Entry rule 1 |
+| `runs-sequentially` | — | Entry rule 1 |
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|

@@ -6,10 +6,6 @@ Judgment rules for **low-code** agents (`agent.json`). Each rule requires the ag
 
 Read [`../rule-format.md`](../rule-format.md) and [`../rule-catalog-workflow.md`](../rule-catalog-workflow.md) first.
 
-Companion file:
-
-- [`agents-common-rules.md`](agents-common-rules.md) — judgment rule shared with coded agents (schema-description informativeness)
-
 ## Layouts
 
 Low-code agents exist in two layouts. Detect first, then apply the right `Read` path in each rule.
@@ -17,7 +13,7 @@ Low-code agents exist in two layouts. Detect first, then apply the right `Read` 
 | Layout | Identifier | Key files |
 |---|---|---|
 | **Normalized** | A single JSON file with snake_case top-level keys (`system_prompt`, `tools`, `datasets`, `input_schema`, `output_schema`, `user_prompt`) | The single JSON file |
-| **Agent-builder** | `agent.json` at project root with camelCase keys + sibling `entry-points.json`, `project.uiproj`, `resources/<Name>/resource.json` | `agent.json`, `entry-points.json`, `resources/*/resource.json`, `evals/eval-sets/*.json`, `evals/evaluators/*.json` |
+| **Agent-builder** | `agent.json` at project root with camelCase keys + sibling `project.uiproj` and `resources/<Name>/resource.json` | `agent.json`, `resources/*/resource.json`, `evals/eval-sets/*.json`, `evals/evaluators/*.json` |
 
 Rules tagged `(agent-builder only)` skip silently on the normalized layout; `(normalized only)` skip on agent-builder. Untagged rules apply to both with layout-aware `detection_method`.
 
@@ -40,6 +36,7 @@ One H2 section per checker class (`EvalsChecker`, `SchemaChecker`, `ToolsChecker
 
 | rule_id | severity | category | trigger | detection_method | suggested_fix |
 |---|---|---|---|---|---|
+| `SCHEMA_NO_DESCRIPTIONS` | judgment | schema | Input/output schema properties lack **informative** descriptions | Read `.input_schema` / `.output_schema` in normalized JSON, or `agent.json.inputSchema` / `outputSchema` in Agent Builder. Judge property descriptions for useful semantic guidance, not mere presence; assess input and output separately. | Add a useful description to each property. |
 | `LC_OUTPUT_FORMAT_PROMPT_DRIFT` | warning | schema | System prompt instructs an output shape that conflicts with `outputSchema` | Read system prompt + `outputSchema`. Assess: does the prompt instruct a shape (`"respond with a single sentence"`, `"answer in markdown"`) that conflicts with the schema's structure (structured JSON, flat string, etc.)? Emit when prompt-vs-schema drift is present. file = system prompt source. | Align the prompt's output-format instructions with `outputSchema` — pick one source of truth and have the other reference it. |
 | `LC_INPUT_SCHEMA_OVERLAP` | warning | schema | Input schema has ≥2 fields with semantically overlapping names or descriptions | Read `inputSchema.properties`. Assess: are there fields with semantically overlapping names (`query` vs `question` vs `text` vs `prompt` vs `input`) or descriptions? Emit when ≥2 fields could reasonably hold the same content and the LLM would have to disambiguate at runtime. file = schema source, element = `<field_a>,<field_b>`. | Merge overlapping fields, or differentiate them with clear names + descriptions that scope each one. |
 | `LC_OUTPUT_ENUM_VS_PROMPT_DRIFT` | warning | schema | Output enum disagrees with the prompt's category list (either side has extras) | Read `outputSchema.properties.<X>.enum` and the system prompt's classification list (`"Classify into: A, B, C"`). Assess: do the two sets agree? Emit when either has extras: prompt names a class the schema doesn't accept (runtime validation rejects), OR schema accepts a class the prompt never mentions (LLM never produces it). file = schema or prompt source. | Reconcile the prompt's class list with `outputSchema.enum`. |

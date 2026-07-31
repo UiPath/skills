@@ -58,6 +58,8 @@ The task T-entry in `tasks.md §4.6` must already expose the task mode before th
 - entry-rule: runs-sequentially
 ```
 
+This pair lives on the task's own §4.6 T-entry, not on this condition T-entry. This file's own entry format below uses `rule-type:`, not `entry-rule:` — the two fields are not interchangeable and belong to two different T-entries. Writing `rule-type:` here does NOT retroactively satisfy the §4.6 requirement; if the task's own T-entry is missing `entry-rule:`, go back and add it there.
+
 For every task-entry-condition T-entry, verify the task's `activation-mode` and this condition's `rule-type` agree:
 
 | activation-mode | Allowed rule-type |

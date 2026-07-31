@@ -13,7 +13,8 @@
     {
       "fieldName": "Score",
       "displayName": "Score",
-      "type": "INTEGER",
+      "type": "DECIMAL",
+      "decimalPrecision": 0,
       "isRequired": true,
       "minValue": 0
     },
