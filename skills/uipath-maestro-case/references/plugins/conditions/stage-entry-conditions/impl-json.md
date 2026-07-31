@@ -86,6 +86,12 @@ Resolve the T-entry's `(sla-target, sla-display-name)` and `(sla-target, escalat
 
 Escalation presence carries the status: `slaId` alone is a **breach** rule (an absent `escalationId` is the persisted representation of Breached); `slaId` plus a concrete **at-risk** `escalationId` on that SLA is an at-risk rule. Never emit the Case Designer's `"any"` escalation sentinel — released `validate` rejects it as a missing escalation. Use separate entry-condition rows when the same stage handles both statuses. Set the containing condition's `isInterrupting` from the T-entry, not from the SLA's scope. The referenced SLA may live on **this same stage** (a `start-task` response: the breached stage re-enters to run its follow-up task) or on `root`/another stage (`enter-stage`); both shapes pass `validate` with `isInterrupting` either value.
 
+Three shapes `validate` accepts but that are still wrong — it passes on all three, so enforce them here:
+
+1. **A non-interrupting SLA lane stays secondary.** When the T-entry says `is-interrupting: false` on a lane entered by `sla-status-change`, keep `data.stageType: "secondary"` and `isRequired: false`. Do NOT convert the lane to a regular stage to satisfy "every secondary entry is interrupting" — a regular stage joins the main flow and can gate case completion.
+2. **A `start-task` follow-up task needs its own entry condition.** A re-entered stage never starts a task with no `entryConditions`. Give the follow-up task `current-stage-entered`, and set `shouldRunOnlyOnce: true` on the stage's pre-existing `current-stage-entered` tasks so re-entry does not restart them.
+3. **Repair `escalationId: "any"` by DELETING the key.** Never repoint it at a concrete escalation to turn `validate` green: that silently converts a Breached rule into an at-risk rule. Supply an `escalationId` only when the requirement says at-risk, and then it must be an at-risk escalation on the **same** SLA — borrowing another target's escalation fails `validate` with the same "no longer exists" error.
+
 > **Global scope.** This one entry rule can fire while any stage covered by the referenced SLA is active. Do not add matching stage-exit conditions or duplicate escalation tasks on every primary stage.
 
 ### wait-for-connector — bind a connector event

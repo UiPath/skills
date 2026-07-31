@@ -82,6 +82,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - the bindings array has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
 - `data.inputs` and `data.outputs` populated (unless placeholder)
 - `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever tasks.md recorded a `recipient:` line (omitted only for group/role, Skip, or no-Type-maps)
+- `entryConditions` is present and non-empty — a task with no entry condition is never triggered, and `validate` does NOT catch it. Use the activation the T-entry declares (`current-stage-entered`, `runs-sequentially`, `adhoc`, …); for a task added as an SLA `start-task` response, that is `current-stage-entered` so it fires when the breached stage re-enters
 - `id` captured in `id-map.json`
 
 ## Anti-patterns
