@@ -3,7 +3,17 @@
 The transformation layer is a dbt project that runs on **Snowflake**. Loaded
 source tables (one per input table) feed the models that produce the process
 model. `transformations list/get/create/update/apply/run/status/logs` is the ELT
-editor surface.
+editor surface:
+
+| Operation | Command |
+|-----------|---------|
+| List the model tree | `transformations list <app>` |
+| Read a file (or save locally) | `transformations get <app> <path> [--destination <file>]` |
+| Edit an existing file (ETag-safe) | `transformations update <app> <path> --file <local>` |
+| Create a new model file | `transformations create <app> <path> --file <local>` |
+| Re-run the **full** transform on loaded data | `transformations apply <app> --wait` |
+| Rebuild **one** dev model + dependents | `transformations run <app> --model models/X.sql` |
+| Status / logs of the last build | `transformations status <app>` · `transformations logs <app>` |
 
 ## Model set for `uipath.custom`
 

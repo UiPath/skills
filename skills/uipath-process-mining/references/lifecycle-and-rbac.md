@@ -29,7 +29,7 @@ clobbering a newer model. The result envelope carries:
 - **`Changes`** — what the publish moved.
 - **`IngestionNeeded`** — when `true`, the published stage still needs a
   re-ingestion before the change reaches the **data**. Dev transformation *or*
-  data-model changes (including `apps model add-table`) only become queryable
+  data-model changes (including `apps data-model add-table`) only become queryable
   after a re-ingest; publishing alone promotes the definition, not the rows.
 
 So the full promote loop is: validate on `dev` → `uip pm apps publish <app>` →

@@ -9,8 +9,8 @@ to `Cases` is treated as disconnected and rejected at query time
 
 | Model | Endpoint | Shape | Role |
 |-------|----------|-------|------|
-| **Data model** (structural) | `/apps/{id}/{stage}/dataModel` | `tables[]` of `{ type, name, primaryKey, foreignKeys }` | What tables exist + how they link. **`add-table` edits this.** `apps model get` reads it. |
-| **Semantic model** | `/apps/{id}/{stage}/model` | `Processes` / `Metrics` / `Tables[].Fields[]` | Field-level view `query info` reads. **Derived** from the data model by `applyCurrentDatamodel` — do not hand-edit for add-table. |
+| **Data model** (structural) | `/apps/{id}/{stage}/dataModel` | `tables[]` of `{ type, name, primaryKey, foreignKeys }` | What tables exist + how they link. **`apps data-model add-table` edits this; `apps data-model get` reads it.** |
+| **Semantic model** | `/apps/{id}/{stage}/model` | `Processes` / `Metrics` / `Tables[].Fields[]` | Field-level view `query info` (and `apps model get`) reads; edited by `apps model fields …` ([`model-editing.md`](model-editing.md)). **Derived** from the data model by `applyCurrentDatamodel` — do not hand-edit for add-table. |
 
 Edit the structural data model; `applyCurrentDatamodel` regenerates the semantic
 model (its per-column fields) from it. `add-table` does both.
@@ -98,7 +98,7 @@ case-centric graph; aggregate queries don't need it to resolve to real cases.
    ```bash
    uip pm transformations create <app> models/Workload_weekly.sql --file ./Workload_weekly.sql
    uip pm transformations apply <app> --wait
-   uip pm apps model add-table <app> --file ./Workload_weekly.table.json      # edits /dev/dataModel + applyCurrentDatamodel
+   uip pm apps data-model add-table <app> --file ./Workload_weekly.table.json  # edits /dev/dataModel + applyCurrentDatamodel
    uip pm ingestions create <app> --wait                                       # REQUIRED — materializes the table
    uip pm query run <app> --group-by Service_Component --metric Closed_Interactions:sum --output table
    ```
