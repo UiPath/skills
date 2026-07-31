@@ -10,11 +10,18 @@ query commands (default `dev`):
   of the data: ingest a sample, get the mapping + `Cases.sql` + your custom models
   and data-model tables right, verify with `query`, then move on. Short feedback
   loops matter — a full re-transform on a large dataset is slow.
-- **`published`** — the stage consumers use, carrying the **full dataset**.
-  Dashboards and shared analysis read published data.
+- **`published`** — the stage consumers use through the **dashboards / shared UI**,
+  carrying the **full dataset**. `apps publish` promotes the definition here.
 
-Typical loop: develop and validate on `--stage dev` with a subset → publish →
-run the real analysis / share on `--stage published` with everything.
+Typical loop: develop and validate on `--stage dev` with a subset → publish → let
+consumers read the **dashboards** on the published data.
+
+> **CLI caveat:** `uip pm query --stage published` is currently **not reachable** —
+> `/query/{id}/published` needs a completed ingestion on that stage and no `uip pm`
+> path produces one (`apps publish` answers `IngestionNeeded: true`, but a following
+> `ingestions create --wait` still leaves published querying at
+> `UserError_InvalidOrNoIngestion`; verified against a live tenant). So publishing
+> promotes the app to the **dashboards**, but **CLI-driven `query` stays on `dev`**.
 
 ## Publishing
 

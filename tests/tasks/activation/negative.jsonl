@@ -61,3 +61,6 @@
 {"id": "negative-062", "prompt": "Generate a Postman collection for the vendor's REST endpoints", "expected_skill": ""}
 {"id": "negative-063", "prompt": "Write a Python client wrapper around the Stripe REST API", "expected_skill": ""}
 {"id": "negative-064", "prompt": "Build a Boomi connector for our billing system", "expected_skill": ""}
+{"id": "negative-065", "prompt": "Change a column's data type from int to interval in my Postgres table", "expected_skill": ""}
+{"id": "negative-066", "prompt": "Add a computed column to my pandas DataFrame", "expected_skill": ""}
+{"id": "negative-067", "prompt": "Change the data type of a field on my Data Fabric entity", "expected_skill": ""}

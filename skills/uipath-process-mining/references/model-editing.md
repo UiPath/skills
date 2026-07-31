@@ -38,7 +38,7 @@ uip pm apps model fields remove <app-id> <field-id>
    "right": {"type":"constant","dataType":"duration","value":86400000}}
   ```
   Operators: `lt le gt ge eq ne and or add subtract multiply divide percentage`. Constant
-  `dataType` **must match** the datakind of what it's compared to (see below). Reference a field
+  `dataType` **must match** the data kind of what it's compared to (see below). Reference a field
   with `{type:"reference","referenceType":"field","reference":"<field-id>"}`.
 
 Every edit is **ETag-safe** and applies on `dev`. `fields set/remove`/`update` do a read-modify-write
@@ -58,10 +58,14 @@ UserError_UnsupportedOperatorArgumentDataKind
 → "Must be duration, not numeric, for the 'lt' input."
 ```
 
-The `fields set` / `update` commands **run this validation** and refuse an edit that would create the
-mismatch, surfacing a hint that names the conflicting comparison. So you cannot flip a field to
-`duration` while a calculated field / metric compares it to a numeric constant — update or remove that
-comparison first, or make the constant a `duration`.
+The `fields set` / `update` commands **run this validation synchronously** and refuse an edit that
+would create the mismatch, surfacing a hint that names the conflicting comparison. So via the CLI you
+cannot flip a field to `duration` while a calculated field / metric compares it to a numeric constant —
+update or remove that comparison first, or make the constant a `duration`. This synchronous check is
+exactly what the **data-manager UI does not do** (it defers the kind change to the next re-ingestion —
+the footgun below), so `fields set` is the *safe* way to change a kind. Caveat: the check covers
+comparisons in the typed model `data` (calculated fields, metrics); a kind change that conflicts only
+with an opaque dashboard **view** filter/chart is not caught, so publish and re-open to confirm.
 
 ## The data-kind footgun (DNA-46960)
 
@@ -71,7 +75,7 @@ throughput-time field (kind **duration**) compared to a **numeric** constant (10
 `lt(duration, numeric)` is evaluated when the query model is built at open, so it blocks every
 dashboard (the data-upload module stays reachable — hence "I can only reach the data upload module").
 
-How an app reaches this state even though the interactive edit validates:
+How an app reaches this state via the **data-manager UI** (not the CLI, which validates synchronously):
 
 1. Field is **numeric**; a metric/calculated field compares it to a numeric constant → valid.
 2. The field's type is changed to **duration** in the *data manager*. This is applied in a

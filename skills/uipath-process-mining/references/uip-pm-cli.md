@@ -1,11 +1,11 @@
 # `uip pm` — CLI mechanics & conventions
 
-The low-level "how to drive the tool" layer. The *decisions* — which template, when
-to add a table, why an app locks open — live in `SKILL.md` and the domain references
-([`app-types.md`](app-types.md), [`data-model.md`](data-model.md),
-[`model-editing.md`](model-editing.md), [`lifecycle-and-rbac.md`](lifecycle-and-rbac.md)).
-This file is the shared plumbing every `uip pm` command uses. **Drive Process Mining
-through the CLI — do not hand-roll the REST API.**
+The low-level "how to drive the tool" layer — the shared plumbing every `uip pm`
+command uses. The *decisions* — which template, when to add a table, why an app locks
+open — live in the domain references ([`app-types.md`](app-types.md),
+[`data-model.md`](data-model.md), [`model-editing.md`](model-editing.md),
+[`lifecycle-and-rbac.md`](lifecycle-and-rbac.md)). **Drive Process Mining through the
+CLI — do not hand-roll the REST API.**
 
 ## Command groups
 
@@ -31,8 +31,10 @@ through the CLI — do not hand-roll the REST API.**
 Every command prints a stable envelope and sets a branchable exit code:
 
 - **`Result`** — `Success` / `Failure` / `ValidationError`; **`Code`** — a stable
-  machine tag (`PmAppsCreate`, `PmQueryRun`, …); **`Data`** — the payload; on failure,
-  **`Instructions`** with the fix (e.g. "run `uip login`", "see `uip pm apps list`").
+  machine tag (`PmAppsCreate`, `PmQueryRun`, …); **`Data`** — the payload;
+  **`Instructions`** — a next-step/fix hint, present on failures ("run `uip login`",
+  "see `uip pm apps list`") and on some successful mutating commands (`add-table`,
+  `data-mapping update`, `fields set`) pointing at the required re-ingest/publish.
 - Exit `0` success, `1` failure, `3` validation (commander rejected a flag before any
   API call — e.g. an unknown `--stage`).
 - **`--output json|table|…`** picks the rendering; **`--output-filter <JMESPath>`**

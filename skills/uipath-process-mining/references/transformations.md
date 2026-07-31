@@ -23,7 +23,7 @@ Four template models: **`Event_log`** (built from the source; the events table),
 `Tags` and `Due_dates` are pre-registered **Case-child** tables — fill their stubs
 with real rows keyed on `Case_ID` to get per-case labels (`Tag`/`Tag_type`) or
 per-case SLAs (`Expected_date`/`Actual_date`/`On_time`/`Cost`) with **no add-table
-needed**. See [`references/data-model.md`](references/data-model.md) for when to use
+needed**. See [`data-model.md`](data-model.md) for when to use
 them vs a custom table. `Event_log` builds first and independently. `models/schema/sources.yml` is
 generated from the data mapping and lists every input table with **all** its
 columns (mapped → TargetName, unmapped → raw source name), so multi-table custom

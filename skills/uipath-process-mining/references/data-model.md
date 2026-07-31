@@ -10,7 +10,7 @@ to `Cases` is treated as disconnected and rejected at query time
 | Model | Endpoint | Shape | Role |
 |-------|----------|-------|------|
 | **Data model** (structural) | `/apps/{id}/{stage}/dataModel` | `tables[]` of `{ type, name, primaryKey, foreignKeys }` | What tables exist + how they link. **`apps data-model add-table` edits this; `apps data-model get` reads it.** |
-| **Semantic model** | `/apps/{id}/{stage}/model` | `Processes` / `Metrics` / `Tables[].Fields[]` | Field-level view `query info` (and `apps model get`) reads; edited by `apps model fields …` ([`model-editing.md`](model-editing.md)). **Derived** from the data model by `applyCurrentDatamodel` — do not hand-edit for add-table. |
+| **Semantic model** | `/apps/{id}/{stage}/model` | `Processes` / `Metrics` / `Tables[].Fields[]` | Field-level view `query info` (and `apps model get`) reads; edited by `apps model fields …` ([`model-editing.md`](model-editing.md)). `applyCurrentDatamodel` **reconciles** structural changes into it, preserving your semantic edits (calculated fields, metrics, data-kind overrides) — so add-table won't wipe them; just don't hand-author its per-column fields, edit the structural model. |
 
 Edit the structural data model; `applyCurrentDatamodel` regenerates the semantic
 model (its per-column fields) from it. `add-table` does both.
@@ -83,6 +83,13 @@ hand-author a `Fields[]` array.
 The table isn't one-row-per-case, but must still reach `Cases`. Give it a **surrogate
 PK** and a **nullable `Case_ID`** carrying the FK — a null FK is enough to satisfy the
 case-centric graph; aggregate queries don't need it to resolve to real cases.
+
+**Caveat — a null `Case_ID` makes the table analytically disconnected.** Case-level
+filters/selections (how PM dashboards normally scope data) won't propagate to it, and
+it can't be joined back to real cases. Use the null-FK loose link **only** for a
+genuinely case-independent aggregate (a weekly total, a cross-case study). If its rows
+*do* correspond to real cases, populate `Case_ID` with the real key so case filtering
+flows through.
 
 1. Author the dbt model. First two selected columns:
 
