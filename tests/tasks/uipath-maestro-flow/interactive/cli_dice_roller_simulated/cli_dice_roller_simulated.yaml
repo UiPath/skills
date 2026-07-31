@@ -50,7 +50,7 @@ simulation:
     WITHHELD — reveal each of these ONLY if the agent asks about it:
       - The project name should be "DiceRoller".
       - You want "uip maestro flow validate" to pass before you sign off.
-      - You do not require the project to execute before signing off.
+      - You want to see it actually produce a number when it runs before you sign off.
 
   constraints:
     - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
@@ -58,7 +58,7 @@ simulation:
     - "Do not reveal the project name 'DiceRoller' unless asked what to name it."
     - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
     - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
-    - "The moment the agent reports it has built the flow, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
+    - "When the agent reports it built the flow, do not end yet if it hasn't shown you the result: before you sign off you want to see it actually run and produce a number 1 through 6. If it only says the flow is built and validated, ask it once to run it and show you the roll. Once the agent has both built the flow AND shown you a run that produced a number 1 through 6, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, or alternative designs, and do not raise any requirement beyond seeing it actually work — the grader verifies the result from here."
   max_turns: 8
   stop_token: "<<<END>>>"
   stop_on_criteria_pass: false
