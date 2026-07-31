@@ -13,7 +13,8 @@ uip guardrails byo-configurations list --output json
 ```
 
 **Prerequisites:**
-- **Logged in**: `uip login` with an account that has admin access to AI Trust Layer in the target tenant.
+- **Logged in with a user token, not an application (client-credentials) token.** The endpoint requires an org-admin **user** session and rejects application tokens outright.
+- The logged-in user must have an org-admin role for AI Trust Layer in the target tenant. Insufficient permissions surface as a `403` with the backend's reason in `Instructions` (e.g. `"User is not a member of the Administrators group"`) — distinct from the `404`/`ByoGuardrailsUnavailable` case below.
 - No other setup — this is a read-only listing of whatever the tenant admin has already registered via the Admin UI.
 
 ### Output shape
@@ -68,6 +69,10 @@ A 404 surfaces as:
 ```
 
 This means BYOG is not enabled (feature-flagged off) for the tenant — not a transient error. Report it to the user rather than retrying.
+
+### Permission errors (distinct from feature-not-available)
+
+Any other non-2xx status (e.g. `403`) surfaces as `Message: "Failed to list BYO guardrail configurations"` with the backend's response body carried in `Instructions` (truncated to 1000 characters) — e.g. `"403 Forbidden: {\"title\":\"Forbidden\",\"detail\":\"User is not a member of the Administrators group\"}"`. This means the logged-in identity lacks the org-admin role, or is an application token (not a user token) — tell the user to re-authenticate with an admin user account rather than treating it as a feature-availability problem.
 
 ---
 
