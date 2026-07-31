@@ -1,0 +1,62 @@
+# Correspondence map: uipath-agents lowcode ↔ inline-agent plugin
+
+Authoring aid only (roadmap decision 8 — no drift control yet). One row per file in `skills/uipath-agents/references/lowcode/` (7,434 lines total), mapped to its target under `skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/`. Update the Status column as milestones land.
+
+Delta classes:
+
+- **A — near-verbatim**: token/term swaps only (`{{input.x}}` → `{{ $vars.x }}`, `settings.model` → `inputs.model`, `agent.json` → node `inputs`).
+- **B — skeleton-swap**: twin's heading skeleton + discovery/semantics kept; "author the resource.json" sections replaced by node-type pattern + full `inputs` spec + `definitions[]` requirement + artifact edge + name-authority note + projection-derived fields not to author.
+- **C — not mirrored**: standalone-only or out of mirror scope (decision 7). Cleanup/redirect handled by the M1 uipath-agents redirect pass where noted.
+- **D — inline-only new**: no twin; content sourced from the research record (flow-workbench contracts).
+
+## Map
+
+| lowcode file (lines) | plugin target | Class | Milestone | Notes |
+|---|---|---|---|---|
+| `agent-definition.md` (493) | `impl.md` §2 (agent `inputs` spec) + §10 (derived sidecar reference) | B | M1 | agent.json field reference becomes the node-inputs field table; sidecar shape survives only as the derived-artifact reference |
+| `critical-rules/critical-rules.md` (74) | `critical-rules.md` | B | M1 | ~half the rules swap to node rules (definitions verbatim, author `agentInputVariables: []`, never hand-write sidecar) |
+| `critical-rules/autonomous-critical-rules.md` (15) | `critical-rules.md` (merged) | B | M1 | Rule 1 ("definition lives as subdirectory") is the load-bearing inverted claim |
+| `critical-rules/conversational-critical-rules.md` (19) | — | C | — | plugin is autonomous-only (conversational/voice = future work) |
+| `model-selection-guide.md` (72) | `model-selection-guide.md` | A | M1 | `settings.model` → `inputs.model`; L72 inline callout deleted in the redirect pass |
+| `prompting/agent-prompting-guide.md` (17) | absorbed into prompting guide header | C | M1 | 2-file router; plugin ships one autonomous guide |
+| `prompting/autonomous-agent-prompting-guide.md` (148) | `prompting/autonomous-agent-prompting-guide.md` | A | M1 | token form `{{input.x}}` → `{{ $vars.x }}` (spaced braces); cross-skill deep link removed from the twin |
+| `prompting/conversational-agent-prompting-guide.md` (123) | — | C | — | autonomous-only |
+| `capabilities/inline-in-flow/inline-in-flow.md` (392) | — (superseded by the whole plugin) | C | M1 | shrinks to ~20-line redirect stub |
+| `capabilities/process/process.md` (258) | `capabilities/process.md` | B | M2 | discovery (`uip solution resources list/get`) verbatim; authoring → `…tool.<family>.<release-key>` node + `bindings[]` rows |
+| `capabilities/process/solution-files.md` (548) | — | C | — | solution-resource mechanics owned by the flow skill (decision 7); plugin links to flow-skill solution guidance |
+| `capabilities/built-in-tools/built-in-tools.md` (76) | `capabilities/built-in-tools.md` | B | M3 | node type `…tool.builtin.<toolType>`; identity = `inputs.id` (no `model.source`) |
+| `capabilities/built-in-tools/analyze-attachments.md` (115) | `capabilities/built-in-tools/analyze-attachments.md` | B | M3 | tenant builtin is `analyzefiles`; reconcile naming at M3 |
+| `capabilities/built-in-tools/batch-transform/{planning,impl-json,api-reference}.md` (223) | `capabilities/built-in-tools/batch-transform.md` (collapse TBD at M3) | B | M3 | impl-json's resource.json shape → node `inputs` |
+| `capabilities/built-in-tools/deeprag/{planning,impl-json,api-reference}.md` (203) | `capabilities/built-in-tools/deeprag.md` (collapse TBD at M3) | B | M3 | not in tenant registry builtins (analyzefiles/batchtransform/summarize) — verify availability at M3 |
+| `capabilities/context/context.md` (40) | absorbed into `capabilities/context-index.md` intro | C | M4 | kind router; plugin routes via impl.md §7 kind matrix |
+| `capabilities/context/index.md` (275) | `capabilities/context-index.md` | B | M4 | index discovery verbatim; flat inputs incl. ValueSourceField shapes (`query`, `folderPathPrefix` as `{mode,textValue,promptValue,argumentPath}`) |
+| `capabilities/context/attachments.md` (55) | — | C | — | out of mirror scope; revisit if inline attachments demand appears |
+| `capabilities/context/datafabric.md` (52) | — | C | — | out of mirror scope |
+| `capabilities/escalation/escalation.md` (279) | `capabilities/escalation.md` | B | M5 | variant selection via `registry search` + `AvailableOnTenant` (M0: tenant exposes only `.coded-action-app`/`.quick-form`); recipients `[{type:3,value:<email>}]`; validator enforces `app` + `recipients` (M0) |
+| `capabilities/integration-service/integration-service.md` (349) | `capabilities/integration-service.md` | B | M6 | connection discovery verbatim; `inputs.detail` DAP blob; `bindings[]` 2 rows |
+| `capabilities/mcp/mcp.md` (133) | `capabilities/mcp.md` | B | M7 | M0: no MCP node types on tenant AND no `mcp` handle on autonomous v1.3 manifest — re-verify at M7 |
+| `capabilities/memory/memory.md` (188) | `capabilities/memory.md` | B | M8 | GATED: M0 confirmed no `memory` handle on autonomous v1.3 (validator rejects the edge) and no memory node types on tenant — M8 likely documents the limitation |
+| `capabilities/guardrails/guardrails.md` (1144) | `capabilities/guardrails.md` | A | M9 | guardrails array projects unchanged; authored at agent node `inputs.guardrails`; tool-scoped `selector.matchNames` → resource `inputs.name` |
+| `capabilities/guardrails/guardrails-recommend.md` (267) | TBD at M9 | A/C | M9 | mirror only if its CLI dependencies work from a flow project |
+| `evaluations/*.md` (5 files, 948) | — | C | — | out of mirror scope (decision 7); flow-level evals via the flow skill's evaluate capability; `<GUID>/evals/` is CLI-authored (M0: eval CLI writes project-root `evals/<flow-doc-id>/`, needs no sidecar) |
+| `project-lifecycle.md` (450) | — | C | M1 | no `uip agent` lifecycle for inline; `--inline-in-flow` sections become "legacy; not part of any recipe" in the redirect pass |
+| `lowcode.md` (130) | — | C | M1 | standalone skill router; routing rows updated in the redirect pass |
+| `solution-resources.md` (290) | — | C | — | flow skill owns solution registration |
+| `debug.md` (58) | — | C | M1 | standalone `uip agent` debug; inline debugging = flow debug (impl.md §12 debug table, class D) |
+
+## Inline-only new content (class D, no twin)
+
+All sourced from [inline-agent-flow-file-research.md](inline-agent-flow-file-research.md) Tracks A/B/D:
+
+| plugin file / section | Milestone |
+|---|---|
+| `planning.md` — node identity, ports table, inline-vs-published decision, "mint the UUIDs yourself" | M1 |
+| `impl.md` §1 contract inversion, §3 manifest & `definitions[]` contract, §4 `{{ $vars.* }}` wiring + derived `agentInputVariables`, §5 output wiring, §6 registry validation, §7 resource-kind matrix + definitions-or-nothing law, §9 validate ladder + CLI-gap callout (M0), §10 derived sidecar, §11 legacy-shell migration + flag-off ping-pong, §12 debug table, §13 repair recipes | M1 |
+| `capabilities/process.md` — per-argument `{mode: text-builder\|variable\|prompt}` instance shape, `properties.processName/folderPath` | M2 |
+
+## Delta-class tallies (measured, ~7,400 lines)
+
+- A near-verbatim: ~1,630 lines (guardrails, prompting, model-selection)
+- B skeleton-swap: ~2,270 lines (capabilities, agent-definition, critical-rules)
+- C not mirrored: ~3,530 lines (evaluations, lifecycle, solution mechanics, conversational, routers)
+- D inline-only new: planning.md + impl.md core (~550 lines target)
