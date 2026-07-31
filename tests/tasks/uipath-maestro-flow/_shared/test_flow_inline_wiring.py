@@ -20,6 +20,7 @@ from flow_inline_wiring import (  # noqa: E402
     assert_definition_present,
     assert_edge,
     assert_embedded_agent,
+    assert_prompt_tokens,
     find_autonomous_agent_node,
     load_json,
 )
@@ -175,6 +176,78 @@ def test_no_sidecar_directory_required():
     # The core contract inversion: an embedded agent passes with NO <GUID>/
     # directory anywhere on disk — nothing in the helper touches the filesystem.
     assert_embedded_agent(_agent_node())
+
+
+def test_triage_placeholder_prompt_fails():
+    # Placeholder set parity with check_inline_agent.py, incl. the
+    # robust-smoke scenario's scaffold prompt.
+    node = _agent_node(systemPrompt="Triage the inbound email.")
+    with pytest.raises(SystemExit, match="placeholder"):
+        assert_embedded_agent(node)
+
+
+# ── assert_embedded_agent: never-author guards ──────────────────────────────
+
+
+def test_instance_model_block_fails():
+    node = _agent_node()
+    node["model"] = {"source": True, "type": "bpmn:ServiceTask"}
+    with pytest.raises(SystemExit, match="instance 'model' block"):
+        assert_embedded_agent(node)
+
+
+def test_content_tokens_in_inputs_fails():
+    node = _agent_node(contentTokens=[{"type": "simpleText", "rawString": "x"}])
+    with pytest.raises(SystemExit, match="contentTokens"):
+        assert_embedded_agent(node)
+
+
+def test_derived_input_definition_fails():
+    node = _agent_node(derivedInputDefinition=[])
+    with pytest.raises(SystemExit, match="derivedInputDefinition"):
+        assert_embedded_agent(node)
+
+
+# ── assert_prompt_tokens ────────────────────────────────────────────────────
+
+
+def test_prompt_tokens_pass_on_canvas_form():
+    node = _agent_node(
+        userPrompt="Answer about {{ $vars.start.output.topic }} for run "
+                   "{{ $metadata.runId }}."
+    )
+    assert_prompt_tokens(node)
+
+
+def test_prompt_tokens_pass_on_plain_static_prompts():
+    assert_prompt_tokens(_agent_node())
+
+
+@pytest.mark.parametrize("derived", [
+    "Analyze {{input.start__output__topic}} carefully.",
+    "Analyze {{ input.start__output__topic }} carefully.",
+    "Analyze {{ $agent.start__output__topic }} carefully.",
+])
+def test_prompt_tokens_fail_on_derived_namespaces(derived):
+    node = _agent_node(userPrompt=derived)
+    with pytest.raises(SystemExit, match="derived-artifact token form"):
+        assert_prompt_tokens(node)
+
+
+def test_prompt_tokens_fail_on_derived_form_in_system_prompt():
+    node = _agent_node(systemPrompt=REAL_PROMPT + " Use {{input.context}}.")
+    with pytest.raises(SystemExit, match="systemPrompt uses derived"):
+        assert_prompt_tokens(node)
+
+
+def test_prompt_tokens_require_vars_ref_fails_on_static_prompts():
+    with pytest.raises(SystemExit, match="no .* reference in either prompt"):
+        assert_prompt_tokens(_agent_node(), require_vars_ref=True)
+
+
+def test_prompt_tokens_require_vars_ref_passes_with_ref():
+    node = _agent_node(userPrompt="Classify {{ $vars.start.output.email }}.")
+    assert_prompt_tokens(node, require_vars_ref=True)
 
 
 # ── assert_agent_output_vars ────────────────────────────────────────────────

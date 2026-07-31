@@ -24,6 +24,7 @@ Import pattern in a check script:
         load_json,
         find_autonomous_agent_node,
         assert_embedded_agent,
+        assert_prompt_tokens,
         assert_agent_output_vars,
         assert_agent_input_vars,
         assert_edge,
@@ -44,21 +45,35 @@ AUTONOMOUS_NODE_TYPE = "uipath.agent.autonomous"
 # the agent-storage watcher/folder-cleanup gate on AGENT_FOLDER_UUID_REGEX;
 # uppercase or non-UUID sources break packaging identity (sanitized folder
 # name != raw source).
+# Deliberately does NOT pin the version/variant nibbles: authoring guidance
+# says UUIDv4, but grading tolerates any UUID version so hydrated/migrated
+# sources (whose GUIDs predate the v4 guidance) don't false-FAIL. Do not
+# "fix" this to v4-only.
 UUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 )
 
-# The manifest inputDefaults an agent must NOT be left on (same bar as
-# check_inline_agent.py, applied to the embedded node instead of agent.json).
+# The manifest inputDefaults an agent must NOT be left on (same bar and same
+# placeholder set as check_inline_agent.py, applied to the embedded node
+# instead of agent.json).
 SCAFFOLD_MODEL = "gpt-4o-2024-11-20"
 PLACEHOLDER_PROMPTS = {
     "",
     "you are an agentic assistant.",
     "you are an assistant.",
+    "triage the inbound email.",
     "you are a classifier.",
     "what is the current date?",
 }
 MIN_SYSTEM_PROMPT_LEN = 40
+
+# Derived-artifact token form. `.flow` prompts hold canvas-form
+# `{{ $vars.* }}` / `{{ $metadata.* }}` tokens; `{{input.<flat>}}` exists only
+# in the DERIVED agent.json (and `{{ $agent.<flat> }}` only in derived
+# resource files). An agent porting sidecar content verbatim brings these
+# along — the single most emphasized anti-pattern in the M1 docs.
+DERIVED_TOKEN_RE = re.compile(r"\{\{\s*(input|\$agent)\.")
+VARS_TOKEN_RE = re.compile(r"\{\{\s*\$(vars|metadata)\.")
 
 
 def load_json(path: Path) -> dict:
@@ -101,12 +116,34 @@ def assert_embedded_agent(
          also not the manifest scaffold default.
       4. `source` is a lowercase UUID (derived folder name, watcher regex,
          packaging identity).
+      5. Never-author guards — no instance `model` block on the node, no
+         `contentTokens` and no `derivedInputDefinition` in `inputs`. These
+         are the sidecar/BPMN-emission artifacts an agent trained on the old
+         pattern copies in. (`derivedInputDefinition` can leak into a `.flow`
+         only via a canvas save after debug/publish — never in a CLI-only
+         sandbox — so a hit here is always hand-authored.)
 
     Returns the node's `inputs` dict for follow-up assertions. Exits with a
     FAIL line naming every failing property.
     """
     inputs = node.get("inputs") or {}
     errs = []
+
+    if "model" in node:
+        errs.append(
+            "node has an instance 'model' block — never authored; node model "
+            "semantics live in definitions[], the agent model in inputs.model"
+        )
+    if "contentTokens" in inputs:
+        errs.append(
+            "inputs.contentTokens is a derived agent.json artifact — prompts "
+            "in the .flow are plain strings with {{ $vars.* }} tokens"
+        )
+    if "derivedInputDefinition" in inputs:
+        errs.append(
+            "inputs.derivedInputDefinition is a BPMN-emission artifact — "
+            "never hand-write it"
+        )
 
     for key in ("systemPrompt", "userPrompt"):
         if not isinstance(inputs.get(key), str):
@@ -141,6 +178,42 @@ def assert_embedded_agent(
     if errs:
         sys.exit(f"FAIL ({node.get('id')}): " + "; ".join(errs))
     return inputs
+
+
+def assert_prompt_tokens(node: dict, *, require_vars_ref: bool = False) -> None:
+    """Assert the node's prompts use the canvas token form, not derived forms.
+
+    `.flow` prompts are plain strings with `{{ $vars.* }}` / `{{ $metadata.* }}`
+    tokens. Fails on `{{input.<flat>}}` (derived agent.json namespace) and
+    `{{ $agent.<flat> }}` (derived resource-file namespace) — `uip maestro
+    flow validate` cannot catch these because prompts are opaque strings to it.
+
+    With `require_vars_ref`, additionally require at least one `$vars.` /
+    `$metadata.` reference across the two prompts — use in tasks that wire
+    flow data into the agent.
+    """
+    inputs = node.get("inputs") or {}
+    errs = []
+    saw_vars_ref = False
+    for key in ("systemPrompt", "userPrompt"):
+        prompt = inputs.get(key)
+        if not isinstance(prompt, str):
+            continue
+        m = DERIVED_TOKEN_RE.search(prompt)
+        if m:
+            errs.append(
+                f"{key} uses derived-artifact token form {m.group(0)!r}…}}}} — "
+                "flow prompts reference flow data as {{ $vars.<nodeId>.output.<field> }}"
+            )
+        if VARS_TOKEN_RE.search(prompt):
+            saw_vars_ref = True
+    if require_vars_ref and not saw_vars_ref:
+        errs.append(
+            "no {{ $vars.* }} / {{ $metadata.* }} reference in either prompt — "
+            "the task expects flow data wired into the agent"
+        )
+    if errs:
+        sys.exit(f"FAIL ({node.get('id')}): " + "; ".join(errs))
 
 
 def assert_agent_output_vars(
