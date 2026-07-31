@@ -1,12 +1,14 @@
 ---
 name: uipath-maestro-case
-description: "Always invoke for UiPath Maestro Case Management work: `caseplan.json`, `sdd.md`, `sdd.draft.md`, case-management SDD finalization, or greenfield case design when no SDD exists. Produces tasks.md plans and caseplan.json via per-plugin JSON recipes; edits existing caseplan.json via targeted operations. For .xaml→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn. For PDD→SDD or explicit cross-product planning, suggest `uipath-planner` in text only; never auto-invoke it."
+description: "Always invoke for UiPath Maestro Case Management work: `caseplan.json`, `sdd.md`, `sdd.draft.md`, case-management SDD finalization, or greenfield case design when no SDD exists. Produces tasks.md and authors or edits caseplan.json directly with Write/Edit. For .xaml→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn. For PDD→SDD or explicit cross-product planning, suggest `uipath-planner` in text only; never auto-invoke it."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite, Agent
 ---
 
 # UiPath Case Management Authoring Assistant
 
-Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` plan, then writes `caseplan.json` directly via per-plugin JSON recipes. CLI is reserved for read-only metadata fetches (registry, validate, debug, tasks describe, case spec) and solution boundary operations (`uip solution init` / `project add` / `upload`).
+Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` plan, then writes `caseplan.json` directly via per-plugin JSON recipes.
+
+> **Authoring invariant:** Never use mutating `uip maestro case` commands (`cases|stages|tasks|*-conditions ... add|update|remove`, including `tasks add-connector`) or explore them via `--help`. Use the CLI only for scaffolding, metadata reads, validation/debug, runtime operations, and solution sync/upload; consult [case-commands.md](references/case-commands.md) only when exact syntax is needed. CLI availability or a final `validate` requirement does not override this rule.
 
 When `sdd.md` is absent, **Phase 0** designs the case by best assumption from the request and documents, sweeps for other paths beyond the primary flow, confirms it in ONE SDD-shaped Case Review that mirrors the full design document in scan-friendly sections (case snapshot, data contract, primary and secondary stages/tasks, activation modes, task classification rationale, other paths, rules/tiers, resources, assumptions, and review flags), then starts the build with a template-complete `sdd.md` written alongside as a reference artifact. When `sdd.draft.md` is present and the user asks to finalize it, stay in this skill: read the draft as the settled case design, normalize it to the Case Management SDD template, and do not hand off to `uipath-planner`. Complex / multi-product cases may still be designed with the same workflow; suggest `uipath-planner` only when the user explicitly requests planning across products.
 
