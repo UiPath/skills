@@ -21,7 +21,7 @@ If the change feels too tangled for a sequence of `Edit` calls, use `Write` for 
 
 ## Required Strategy
 
-> **Use Edit / Write for all non-carve-out `.flow` edits.** Flow CLI is not an opt-in alternative for OOTB structural edits. Use CLI only for connector activity, connector-trigger, and managed HTTP carve-outs. Inline-agent project lifecycle commands (`uip agent init --inline-in-flow`, `uip agent refresh --inline-in-flow`, `uip agent validate --inline-in-flow`) are allowed for the agent project, but the `uipath.agent.autonomous` flow node and edges are authored directly in `.flow` JSON.
+> **Use Edit / Write for all non-carve-out `.flow` edits.** Flow CLI is not an opt-in alternative for OOTB structural edits. Use CLI only for connector activity, connector-trigger, and managed HTTP carve-outs. Inline agents have no CLI lifecycle — the full agent definition is embedded in the `uipath.agent.autonomous` node's `inputs`; the node, its resource nodes, and edges are authored directly in `.flow` JSON (never `uip agent init/refresh/validate`).
 
 | Strategy | Guide | When to use |
 |----------|-------|-------------|
@@ -55,7 +55,7 @@ Use this table to determine which strategy to follow for each operation. **Edit 
 | **Configure a connector node** | **CLI** (carve-out) | — | `uip maestro flow node configure --detail` auto-populates `inputs.detail` + `bindings_v2.json`. Hand-authored `inputs.detail` skips `essentialConfiguration` and fails at runtime — no Edit fallback. |
 | **Configure a connector trigger** | **CLI** (carve-out) | — | Same as above. |
 | **Configure a managed HTTP node** | **CLI** (carve-out) | — | Same as above for managed HTTP `inputs.detail` and connection resources. |
-| Add an inline agent node | **Edit / Write** | — | Scaffold the inline agent project with `uip agent init --inline-in-flow`, then add the `uipath.agent.autonomous` node and edges directly. |
+| Add an inline agent node | **Edit / Write** | — | No scaffold step — add the `uipath.agent.autonomous` node with full embedded `inputs` and edges directly. See [inline-agent/impl.md](plugins/inline-agent/impl.md). |
 
 ### Mixing strategies
 

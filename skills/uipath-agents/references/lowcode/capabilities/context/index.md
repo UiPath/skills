@@ -212,9 +212,9 @@ All failures (index not found, ambiguous name match, non-StorageBucket data sour
 
 See § Agent-Level Resource Shape above for the full field reference, including the three variants (`index`/`attachments`/`datafabricentityset`) and per-`retrievalMode` settings (`citationMode` for `deeprag`, `webSearchGrounding` + `outputColumns` for `batchtransform`).
 
-### Step 4b — Inline agents only: wire the context flow node
+### Step 4b — Inline agents
 
-**Skip if the agent is standalone.** If the context is on an **inline** agent (embedded in a flow), the `resource.json` alone is never reached at runtime — you MUST also add a `uipath.agent.resource.context.index.<index-name>.<index-id>` flow node connected to the autonomous node's `context` handle (bottom port). Fetch its manifest with `uip maestro flow registry get "<NodeType>" --output json`, then hand the node + edge authoring to the `uipath-maestro-flow` skill (Critical Rule 16 — this skill does not author `.flow` graphs directly). Run Step 5's refresh/validate with `--inline-in-flow` plus `--bindings-target <FlowProjectDir>/bindings_v2.json`. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
+Context on **inline** agents is embedded in the `.flow` (a context node carrying its full config); owned by the `uipath-maestro-flow` skill — see [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md). Steps here apply to standalone agents only.
 
 ### Step 5 — Refresh and validate
 
