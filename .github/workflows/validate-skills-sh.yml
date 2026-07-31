@@ -1,0 +1,30 @@
+name: Validate skills.sh Grouping
+
+on:
+  pull_request:
+    paths:
+      - 'skills/*/SKILL.md'
+      - 'skills.sh.json'
+      - 'scripts/check-skills-sh.py'
+      - '.github/workflows/validate-skills-sh.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-skills-sh:
+    runs-on: ubuntu-latest
+    name: Validate skills.sh.json against skills/
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      # skills.sh.json only affects the repo's page on skills.sh, so nothing
+      # else fails when it drifts. Adding or renaming a skill without updating
+      # it leaves the public page showing a stale grouping — this is the only
+      # thing that notices.
+      - name: Validate skills.sh grouping
+        run: python3 scripts/check-skills-sh.py
