@@ -172,7 +172,7 @@ Agent nodes invoke AI agents for reasoning, judgment, or natural language tasks.
 
 | Node Type Pattern | Plugin | When to Select |
 | --- | --- | --- |
-| `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Low-code agent is defined **inside** this flow project (scaffolded via `uip agent init --inline-in-flow`), tightly coupled to this flow, no separate versioning or cross-flow reuse |
+| `uipath.agent.autonomous` | [inline-agent](plugins/inline-agent/planning.md) | Low-code agent is defined **inside** the flow file (full agent definition embedded in node `inputs` — no scaffold command), tightly coupled to this flow, no separate versioning or cross-flow reuse |
 | `uipath.core.agent.{key}` | [agent](plugins/agent/planning.md) | Agent lives as a separate project — either in this solution (sibling of the flow) or as a **published tenant resource** (appears in the registry after `uip login` + `uip maestro flow registry pull`); reusable across flows, independently versioned |
 
 See [inline-agent/planning.md — Inline vs Published Agent Decision Table](plugins/inline-agent/planning.md#inline-vs-published-agent-decision-table) for the full decision matrix.
