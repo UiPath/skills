@@ -75,7 +75,7 @@ Legend: ☐ not started · ◐ in progress · ☑ done (date + PR). Update at se
 | # | Milestone | Docs scope | Tests (ported → new) | Status | Gate result |
 |---|---|---|---|---|---|
 | M0 | Foundations: gating experiment + baseline + branch + checker skeleton | — (findings → this doc) | — (baseline run of 18 existing tasks) | ◐ 2026-07-31 | validate ✅ / debug+pack ❌-no-synthesis → M1–M9 unblocked. Baseline table DEFERRED (owner call) — fill before M1 gate evaluation |
-| M1 | Agent core — clean slate | planning.md, impl.md, critical-rules.md, model-selection-guide.md, prompting/, supporting-ref flips, uipath-agents redirects | `inline_in_flow`→`inline_agent/base`; `smoke/inline_agent_robust`; `evaluate/inline_agent_eval` | ◐ 2026-07-31 | branch run: see M1 notes; baseline still DEFERRED — gate not evaluable until owner fills the table |
+| M1 | Agent core — clean slate | planning.md, impl.md, critical-rules.md, model-selection-guide.md, prompting/, supporting-ref flips, uipath-agents redirects | `inline_in_flow`→`inline_agent/base`; `smoke/inline_agent_robust`; `evaluate/inline_agent_eval` | ◐ 2026-07-31 (PR open) | branch run 3/3 tasks at **1.000** (9/9 replicates, claude-sonnet-5); baseline table still DEFERRED — owner fills before formal gate close (branch at ceiling) |
 | M2 | Process-family tools | capabilities/process.md | 8 tasks: `inline_{solution,external}_{rpa,agent,apiworkflow,maestro}_tool` → `inline_agent/tool_{rpa,agent,api,maestro}_{solution,external}` | ☐ | — |
 | M3 | Built-in tools | capabilities/built-in-tools.md (+ per-tool files) | `inline_builtin_tool` → `inline_agent/tool_builtin` | ☐ | — |
 | M4 | Context grounding | capabilities/context-index.md | `inline_context_index` → `inline_agent/context_index` | ☐ | — |
@@ -171,7 +171,7 @@ Exit gate: the 3 tasks ≥ baseline. Notes (2026-07-31 session):
 - Docs shipped: clean-slate `plugins/inline-agent/{planning.md,impl.md,critical-rules.md,model-selection-guide.md,prompting/autonomous-agent-prompting-guide.md}`; all listed supporting-ref flips (flow SKILL.md incl. rule 9 rewrite, author/CAPABILITY.md, planning-arch, greenfield, brownfield, editing-operations(+json), shared/file-format (project tree + identity rows + definitions-contract subsection + 1.9 floor + node/ports rows), node-output-wiring L74, cli-commands (`uip agent model list` section), evaluate/CAPABILITY.md, summarize+batch-transform `--source` notes, agent plugin wording); all listed uipath-agents redirects (inline-in-flow.md → 16-line stub; critical-rules AP-22 + autonomous Rule 1; project-lifecycle `--inline-in-flow` → legacy; 4 capability callouts → one-liners; model-selection L72; lowcode.md rows; SKILL.md L68 body row; prompting guide standalone-only incl. §2/§4 token-form conversion; coded-vs-lowcode L113).
 - Tests migrated: `inline_agent/base` (new `skill-flow-inline-agent-base`, e2e; validate-only rationale documented — debug can't run flow-only agents per M0), `smoke/inline_agent_robust` (renamed id `skill-flow-inline-agent-robust`, **new `smoke` tier tag — joins the sampled smoke pool**), `evaluate/inline_agent_eval` (init gate dropped per M0 eval finding). `_shared/check_inline_agent.py` rewritten to grade the `.flow`. Old `uipath-agents/lowcode/inline_in_flow/` deleted. `/lint-task`: base=Medium (validate-only e2e, rationale documented), robust=OK, eval=Low (integration without debug, "local CRUD only" by design). Checkers verified against synthetic pass/fail flows; `_shared` pytest suite 104/104.
 - Known leftovers for M3 (built-in tools): uipath-agents `built-in-tools/{batch-transform,deeprag}/{planning,impl-json}.md` still describe inline flow-wiring + reference the old `inline_builtin_tool` checker path.
-- Branch eval run (claude-sonnet-5, 3 replicates, `experiments/default.yaml`): recorded in the baseline table / PR. Baseline (main) side still DEFERRED — no az tooling on dev machine; owner to fill before gate evaluation.
+- Branch eval run 2026-07-31 (claude-sonnet-5, 3 replicates each, `experiments/default.yaml`, local): `skill-flow-inline-agent-base` **1.000**, `skill-flow-inline-agent-robust` **1.000**, `skill-flow-eval-inline-agent` **1.000** (9/9 replicates SUCCESS). Artifact audit: no sidecar directory created; embedded prompts + `agentInputVariables: []` + minted UUID source + discovered model; zero `uip agent init/refresh/validate` invocations. Baseline (main) side still DEFERRED — no az tooling on dev machine; owner to fill before formally closing the gate (branch results are at ceiling, so any baseline ≤ 1.0 passes).
 
 ### M2 — Process-family tools
 
@@ -269,7 +269,10 @@ Each capability file keeps its twin's heading skeleton; "author the resource.jso
 
 | Task (old id) | Baseline (claude-sonnet-5) | Baseline (codex) | Branch result (milestone) |
 |---|---|---|---|
-| _18 rows — DEFERRED; fill before M1 gate_ | | | |
+| `lowcode/inline_in_flow` → `inline_agent/base` | _DEFERRED_ | _DEFERRED_ | 1.000 (M1, 3 reps) |
+| `smoke/inline_agent_robust` | _DEFERRED_ | _DEFERRED_ | 1.000 (M1, 3 reps) |
+| `evaluate/inline_agent_eval` | _DEFERRED_ | _DEFERRED_ | 1.000 (M1, 3 reps) |
+| _15 remaining rows — DEFERRED; fill per milestone_ | | | |
 
 ## 8. Critical files
 
