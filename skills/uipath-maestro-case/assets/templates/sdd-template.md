@@ -198,8 +198,10 @@ The generated SDD must start with:
 > | Response | Source says | Where it lands |
 > |---|---|---|
 > | `notify-only` | notify / alert / email / page someone | escalation `Action` row above — no stage, no task, no entry condition |
-> | `start-task` | follow-up work inside the **same** breached stage (reminder, reassignment, manager check) | that stage's Stage Entry Conditions row referencing **its own** SLA + the follow-up task in that stage |
-> | `enter-stage` | ownership change, escalation lane, recovery, visible lifecycle step | the destination stage's Stage Entry Conditions row |
+> | `start-task` | follow-up work inside the **same** breached stage (reminder, reassignment, manager check, extra approval) — "as part of the review", "the reviewer keeps working and also does X" | that stage's Stage Entry Conditions row referencing **its own** SLA + the follow-up task in that stage. **No new stage.** |
+> | `enter-stage` | a separate lane owns it — ownership change, "hand it to", "escalate into `<Lane>`", recovery, visible lifecycle step | the destination stage's Stage Entry Conditions row |
+>
+> **`start-task` vs `enter-stage` turns on WHERE the work lives, not on whether it interrupts** — both can be `Interrupting: No`, so "the team keeps working" does not choose between them. A named **task** ("raise a Senior Assessor Check approval") never justifies a new stage: if the `Target` you are about to write is a task name rather than a lane the source describes in its own right, the response is `start-task` and the target is the breached stage.
 > | `exit-stage` | the breached stage should end, fail, or route away | that stage's Stage Exit Conditions row |
 > | `exit-case` | the case should close, cancel, fail, or reach an alternate terminal outcome | a §1.4a Case Exit Conditions row |
 >
