@@ -22,7 +22,7 @@ from coded_scaffold import write_baseline_function_agent  # noqa: E402
 
 MAIN_PY = '''from pydantic import BaseModel, Field
 from uipath.tracing import traced
-from uipath_langchain.chat_models import UiPathChat
+from uipath_langchain.chat import UiPathChat
 
 
 class Input(BaseModel):
@@ -41,11 +41,21 @@ async def main(input: Input) -> Output:
     return Output(result=response.content)
 '''
 
+PYPROJECT_TOML = '''[project]
+name = "coded-agent"
+version = "0.1.0"
+description = "A coded function agent for error-handling review testing"
+requires-python = ">=3.11"
+authors = [{ name = "Test Fixture" }]
+dependencies = ["uipath", "uipath-langchain"]
+'''
+
 
 def main() -> None:
     root = Path("CodedAgent")
     write_baseline_function_agent(root)
     (root / "main.py").write_text(MAIN_PY, encoding="utf-8")
+    (root / "pyproject.toml").write_text(PYPROJECT_TOML, encoding="utf-8")
     print("Injected unguarded external LLM call (await llm.ainvoke with no try/except)")
 
 

@@ -27,9 +27,9 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 
 ## Registry Resolution
 
-1. **Primary cache file:** `process-index.json` for `PROCESS`, `processOrchestration-index.json` for `AGENTIC_PROCESS`.
+1. **Primary cache file:** `processOrchestration-index.json` for both `PROCESS` and `AGENTIC_PROCESS`.
 2. **Identifier field:** `entityKey`.
-3. **Cross-type fallback.** If the primary cache file has no match, search both files — the sdd.md label is not authoritative. A process registered as `process` may be mislabeled `AGENTIC_PROCESS` in sdd.md and vice versa.
+3. **Cross-type fallback — mandatory before unresolved fallback.** If the primary cache file has no exact match, query the *other* process cache with the same name and folder hint before recording `selected: null`, asking the empty-lookup question, or writing a placeholder. Therefore a `PROCESS` or `AGENTIC_PROCESS` miss in `processOrchestration-index.json` **MUST** be followed by a `process-index.json` lookup. The sdd.md label is not authoritative: a runnable process can be registered under either index. When the fallback matches, use that entry's `entityKey`, `name`, and full folder path, then continue to schema discovery — do not preserve the primary miss as an unresolved task.
 4. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > no match.
 5. **`folder-path` = the SELECTED entry's `folders[0].fullyQualifiedName`** (not the sdd.md "Folder" — see the field table above). Fall back to the sdd.md folder only when there is no registry match (Unresolved path).
 5a. **`name` = the SELECTED entry's `name`** (not the sdd.md name — the Orchestrator release name is what Orchestrator uses at runtime; it may differ from the package/project name). Record this as the `name` binding default; `resourceKey = <folder-path>.<name>`. Fall back to the sdd.md name only when there is no registry match.
@@ -58,6 +58,8 @@ If no match is found across both cache files after `registry pull`:
   - <SDD output row, copied verbatim>
 - runOnlyOnce: true
 - isRequired: true
+- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
+- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
 - order: after T<m>
 - lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId

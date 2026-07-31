@@ -6,11 +6,6 @@ Judgment rules for **coded** agents (Python — `main.py` + framework config). E
 
 Read [`../rule-format.md`](../rule-format.md) and [`../rule-catalog-workflow.md`](../rule-catalog-workflow.md) first.
 
-Companion files:
-
-- [`agents-common-rules.md`](agents-common-rules.md) — judgment rule shared with low-code agents (schema-description informativeness)
-- [`agents-lowcode-rules.md`](agents-lowcode-rules.md) — low-code judgment rules (for the agent-builder coded layout that ships both `agent.json` and `main.py`)
-
 ## Framework detection
 
 Many rules below gate on framework. Detect once and reuse:
@@ -72,6 +67,7 @@ LLM-judge-only is acceptable when the agent has no tools, no classification outp
 
 | rule_id | severity | category | trigger | detection_method | suggested_fix |
 |---|---|---|---|---|---|
+| `SCHEMA_NO_DESCRIPTIONS` | judgment | schema | Input/output schema properties lack **informative** descriptions | Read the authored input/output models. Judge field descriptions for useful semantic guidance, not mere presence; assess input and output separately. | Add a useful description to each field. |
 | `CODED_SCHEMA_COMPLETENESS` | warning | schema | `StateGraph` input/output schema is technically present but the fields are insufficient for the agent's contract | Read `StateGraph(input=..., output=...)` (or `_schema=` variants). Read the agent's actual behavior. Assess: are declared input/output fields meaningful and sufficient? An agent that needs `customer_history` + `recent_invoices` but only declares `query: str` is incomplete. file = source file. | Expand the schema to carry the context the agent actually needs / returns. |
 | `CODED_SCHEMA_FIELD_NO_VALIDATION` | warning | schema | Constrained-value field declared as bare `str` (no `Literal`/`Enum`/regex pattern) | Read Pydantic / dataclass models. Assess per field: does the name suggest a constrained set (`category`, `status`, `severity`, `role`, `intent`, `classification`, `priority`)? AND is the type bare `str` (no `Literal`, no `Enum`, no validator)? AND does the agent's logic visibly map to a small enumerated set? Emit per concrete case. file = source file, element = `<Model>.<field>`. | Type the field as `Literal["a", "b", "c"]` or `Enum`, or add `Field(..., pattern="...")`. |
 | `CODED_OUTPUT_ENUM_MISSING_ON_CLASSIFIER` | warning | schema | Classifier-shaped output field declared without enum | Read output schema (Pydantic field, `StateGraph` output annotation, dataclass). Identify classifier-shape fields by name (`class`, `classification`, `label`, `category`, `intent`, `severity`, `priority`, `status`) with `type: str`. Assess: is there a `Literal[...]` / `Enum` / pattern constraint? Both this rule and `CODED_SCHEMA_FIELD_NO_VALIDATION` can fire on the same field — the more-specific firing clarifies the issue. file = source file, element = field name. | Add `Literal[...]` / `Enum` / pattern constraint to the classifier output field. |
@@ -91,11 +87,6 @@ LLM-judge-only is acceptable when the agent has no tools, no classification outp
 ---
 
 ## GuardrailsChecker
-
-> **Agent-builder coded layout** (`agent.json` + `main.py`): `agent.json`'s `guardrails[]` are reviewed by the
-> low-code semantic rules (`LC_GUARDRAIL_*`) via the low-code catalog + [`guardrails/guardrails-review.md`](guardrails/guardrails-review.md)
-> (this layout loads all three catalogs — see the detection table). The rules below cover **pure-coded** guardrails —
-> SDK middleware / `@guardrail` decorators wired in the entry `.py` (LangChain/LangGraph today), no `agent.json`.
 
 > **Validator-name authority.** Same caution as low-code: do NOT name a platform-documented validator
 > (`harmful_content` / `intellectual_property` / `user_prompt_attacks`) unless it is already present in the agent's

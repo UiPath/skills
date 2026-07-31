@@ -27,8 +27,8 @@ import subprocess
 import sys
 import time
 
-
 UIP_TIMEOUT_SECONDS = 60
+TENANT_SCOPE = "00000000-0000-0000-0000-000000000000"
 
 
 def run_uip(*args: str) -> tuple[int, str, str]:
@@ -45,9 +45,24 @@ def run_uip(*args: str) -> tuple[int, str, str]:
     return result.returncode, result.stdout, result.stderr
 
 
-def list_native_entities(include_folders: bool = False) -> list[dict]:
+def entity_folder_key(entity: dict) -> str:
+    folder_key = (
+        entity.get("FolderKey")
+        or entity.get("folderKey")
+        or entity.get("FolderId")
+        or entity.get("folderId")
+        or ""
+    )
+    return "" if str(folder_key).lower() == TENANT_SCOPE else str(folder_key)
+
+
+def list_native_entities(
+    include_folders: bool = False, folder_key: str = ""
+) -> list[dict]:
     args = ["df", "entities", "list", "--native-only"]
-    if include_folders:
+    if folder_key:
+        args += ["--folder-key", folder_key]
+    elif include_folders:
         args.append("--include-folders")
     code, out, err = run_uip(*args)
     if code != 0 or not out.strip():
@@ -66,6 +81,27 @@ def list_native_entities(include_folders: bool = False) -> list[dict]:
     return []
 
 
+def first_folder_key() -> str:
+    code, out, err = run_uip("or", "folders", "list")
+    if code != 0 or not out.strip():
+        print(f"SKIP: uip or folders list failed (exit {code}): {err.strip()}")
+        return ""
+    try:
+        data = json.loads(out)
+    except json.JSONDecodeError:
+        return ""
+    inner = data.get("Data") if isinstance(data, dict) else None
+    folders = (
+        inner
+        if isinstance(inner, list)
+        else (inner or {}).get("Items") or (inner or {}).get("Records") or []
+    )
+    if not folders:
+        return ""
+    folder = folders[0]
+    return str(folder.get("Key") or folder.get("key") or "")
+
+
 def match_by_prefix(entities: list[dict], prefix: str) -> list[tuple[str, str, str]]:
     """Return (id, name, folder_key) tuples for entities matching the prefix.
 
@@ -79,7 +115,7 @@ def match_by_prefix(entities: list[dict], prefix: str) -> list[tuple[str, str, s
             continue
         name = ent.get("Name") or ent.get("name") or ""
         eid = ent.get("ID") or ent.get("Id") or ent.get("id") or ""
-        folder_key = ent.get("FolderKey") or ent.get("folderKey") or ""
+        folder_key = entity_folder_key(ent)
         if not name or not eid:
             continue
         if name == prefix or name.startswith(suffix_match):
@@ -102,7 +138,9 @@ def delete_entity(entity_id: str, name: str, folder_key: str = "") -> None:
         for _ in range(20):
             still_there = any(
                 (e.get("ID") or e.get("Id") or e.get("id")) == entity_id
-                for e in list_native_entities(include_folders=bool(folder_key))
+                for e in list_native_entities(
+                    include_folders=False, folder_key=folder_key
+                )
             )
             if not still_there:
                 print(f"OK: deleted leftover entity {name} ({entity_id})")
@@ -163,13 +201,26 @@ def main() -> None:
         help="Also sweep folder-scoped entities. Deletes each with its --folder-key.",
     )
     parser.add_argument(
+        "--first-folder",
+        action="store_true",
+        help="Sweep only the first folder returned by `uip or folders list`.",
+    )
+    parser.add_argument(
         "--include-choice-sets",
         action="store_true",
         help="Also sweep choice sets whose Name matches the same prefix rule.",
     )
     args = parser.parse_args()
 
-    entities = list_native_entities(include_folders=args.include_folders)
+    if args.first_folder:
+        folder_key = first_folder_key()
+        if not folder_key:
+            print("SKIP: no accessible folder found")
+            entities = []
+        else:
+            entities = list_native_entities(folder_key=folder_key)
+    else:
+        entities = list_native_entities(include_folders=args.include_folders)
     matches = match_by_prefix(entities, args.name_prefix)
     if matches:
         print(f"Found {len(matches)} leftover entity/entities matching `{args.name_prefix}`:")

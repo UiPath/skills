@@ -200,7 +200,26 @@ python3 scripts/check-skill-status.py
 
 CI (`validate-skill-status.yml`) fails if a skill is missing from the manifest, has an invalid status, leaves a stale `[PREVIEW]` / `> **Preview**` marker in SKILL.md, or if the README table is out of date.
 
-### 5. Add Reference Documents (Optional)
+### 5. Register the skills.sh Grouping
+
+Add the skill to a section in [`skills.sh.json`](skills.sh.json). This controls how the skill is grouped on the repository's [skills.sh page](https://www.skills.sh/uipath/skills) — it does **not** affect what `uip skills install` or the `skills` CLI installs.
+
+```json
+{
+  "title": "Authoring",
+  "skills": ["uipath-<your-skill>"]
+}
+```
+
+Pick the section that matches the skill's purpose — the same four the README catalog uses (Authoring, Solution & Planning, Platform & Operations, Diagnostics & Feedback). Then validate:
+
+```bash
+python3 scripts/check-skills-sh.py
+```
+
+CI (`validate-skills-sh.yml`) fails if a skill is in no grouping, is listed in two, or is grouped but no longer exists on disk. `--fix` removes entries for deleted skills but will not place new ones — that is an editorial call.
+
+### 6. Add Reference Documents (Optional)
 
 Reference files go in `references/` and follow these conventions:
 
@@ -209,7 +228,7 @@ Reference files go in `references/` and follow these conventions:
 - **Organize by subdomain** when a skill covers multiple areas (e.g., `references/integration-service/`, `references/lifecycle/`)
 - **Link from SKILL.md** so the agent can discover them
 
-### 6. Add Templates/Assets (Optional)
+### 7. Add Templates/Assets (Optional)
 
 Static files like code templates go in `assets/`:
 
@@ -329,6 +348,7 @@ Before submitting your PR, verify:
 - [ ] No references to other skills (skills must be self-contained)
 - [ ] All links to reference files use relative paths and point to existing files
 - [ ] Lifecycle status registered in `assets/skill-status.json` and README table regenerated (run `python3 scripts/check-skill-status.py`)
+- [ ] Grouped in `skills.sh.json` (run `python3 scripts/check-skills-sh.py`)
 
 ### References
 - [ ] File names use kebab-case
