@@ -1,0 +1,110 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "e829d77c-2d88-472a-a534-81459997fcfd",
+      "Name": "user3@test.com",
+      "ConnectorKey": "uipath-microsoft-teams",
+      "ConnectorName": "Microsoft Teams",
+      "State": "Enabled",
+      "Owner": "replacement_email@test.com",
+      "IsDefault": "Yes",
+      "Folder": "replacement_email@test.com's workspace",
+      "FolderKey": "acdfea6d-632a-4327-94b3-e050717448d8",
+      "Created": "2026-05-13T10:52:13.873Z",
+      "Updated": "2026-06-19T07:46:58.243Z"
+    },
+    {
+      "Id": "edaf1fb3-e787-4184-946f-cc0c378f156e",
+      "Name": "user5@test.com",
+      "ConnectorKey": "uipath-zendesk-zendesk",
+      "ConnectorName": "Zendesk",
+      "State": "Enabled",
+      "Owner": "replacement_email@test.com",
+      "IsDefault": "Yes",
+      "Folder": "replacement_email@test.com's workspace",
+      "FolderKey": "acdfea6d-632a-4327-94b3-e050717448d8",
+      "Created": "2026-05-13T11:03:12.636Z",
+      "Updated": "2026-06-19T07:46:56.843Z"
+    },
+    {
+      "Id": "0b78b83b-795d-49a2-951a-19306249f26b",
+      "Name": "dev225223",
+      "ConnectorKey": "uipath-servicenow-servicenow",
+      "ConnectorName": "ServiceNow",
+      "State": "Enabled",
+      "Owner": "replacement_email@test.com",
+      "IsDefault": "Yes",
+      "Folder": "replacement_email@test.com's workspace",
+      "FolderKey": "acdfea6d-632a-4327-94b3-e050717448d8",
+      "Created": "2026-05-13T11:07:09.220Z",
+      "Updated": "2026-06-19T07:46:57.800Z"
+    },
+    {
+      "Id": "1ff8b174-8f76-4249-a467-7846f10dd6b7",
+      "Name": "user6@test.com-uipath-sandbox-380",
+      "ConnectorKey": "uipath-atlassian-jira",
+      "ConnectorName": "Jira",
+      "State": "Enabled",
+      "Owner": "replacement_email@test.com",
+      "IsDefault": "Yes",
+      "Folder": "replacement_email@test.com's workspace",
+      "FolderKey": "acdfea6d-632a-4327-94b3-e050717448d8",
+      "Created": "2026-05-13T11:08:27.966Z",
+      "Updated": "2026-06-19T07:46:57.516Z"
+    },
+    {
+      "Id": "9d95be15-8820-466e-9d87-745f23e56d9f",
+      "Name": "2144368",
+      "ConnectorKey": "uipath-oracle-netsuite",
+      "ConnectorName": "Oracle NetSuite",
+      "State": "Enabled",
+      "Owner": "replacement_email@test.com",
+      "IsDefault": "Yes",
+      "Folder": "replacement_email@test.com's workspace",
+      "FolderKey": "acdfea6d-632a-4327-94b3-e050717448d8",
+      "Created": "2026-06-15T11:26:33.420Z",
+      "Updated": "2026-06-19T07:46:57.283Z"
+    },
+    {
+      "Id": "786ad982-8263-4ba2-941e-38dae2f5c8a8",
+      "Name": "is-sandboxes",
+      "ConnectorKey": "uipath-salesforce-slack",
+      "ConnectorName": "Slack",
+      "State": "Enabled",
+      "Owner": "replacement_email@test.com",
+      "IsDefault": "Yes",
+      "Folder": "replacement_email@test.com's workspace",
+      "FolderKey": "acdfea6d-632a-4327-94b3-e050717448d8",
+      "Created": "2026-06-17T07:01:22.243Z",
+      "Updated": "2026-06-19T07:46:57.783Z"
+    },
+    {
+      "Id": "ec84c4af-b354-4209-b388-5fbdb98ee800",
+      "Name": "user5@test.com",
+      "ConnectorKey": "uipath-citrix-sharefile",
+      "ConnectorName": "Citrix ShareFile",
+      "State": "Enabled",
+      "Owner": "replacement_email@test.com",
+      "IsDefault": "Yes",
+      "Folder": "replacement_email@test.com's workspace",
+      "FolderKey": "acdfea6d-632a-4327-94b3-e050717448d8",
+      "Created": "2026-06-17T07:08:04.443Z",
+      "Updated": "2026-06-19T07:46:57.853Z"
+    },
+    {
+      "Id": "65a6d5e5-7250-4a98-a7b9-931965b5ce4e",
+      "Name": "uipath",
+      "ConnectorKey": "uipath-freshworks-freshdesk",
+      "ConnectorName": "Freshdesk",
+      "State": "Enabled",
+      "Owner": "replacement_email@test.com",
+      "IsDefault": "Yes",
+      "Folder": "replacement_email@test.com's workspace",
+      "FolderKey": "acdfea6d-632a-4327-94b3-e050717448d8",
+      "Created": "2026-06-18T11:35:25.686Z",
+      "Updated": "2026-06-19T07:46:57.366Z"
+    }
+  ]
+}

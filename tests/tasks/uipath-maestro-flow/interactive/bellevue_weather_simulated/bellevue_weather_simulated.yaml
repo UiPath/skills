@@ -1,0 +1,96 @@
+task_id: skill-flow-bellevue-weather-simulated
+description: >
+  Bellevue weather flow (HTTP → script → decision), but driven by a simulated
+  non-technical user who withholds requirements until asked. Tests the agent's
+  ability to clarify an ambiguous ask before building.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, feature:http, ipe, simulation]
+
+run_limits:
+  # Ceiling on agent turns across the whole dialog, with generous headroom so a
+  # long build is never truncated mid-flow. The dialog length itself is bounded
+  # by simulation.max_turns below.
+  max_turns: 70
+  task_timeout: 2400
+  turn_timeout: 1200
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a non-technical operations analyst. You have heard of UiPath but
+    have never built a flow yourself. You speak in plain English, never in code.
+    You are friendly but impatient: if the agent dithers, prod it to just build
+    something. You cannot read or write code — if the agent shows you code, say
+    "I trust you, just make it work."
+
+  goal: |
+    You want a UiPath Flow that checks today's weather for the Bellevue office
+    and tells you whether it's a nice day.
+
+    OPENING MESSAGE: open the way you would to a colleague — a couple of short
+    sentences covering the outcome you want plus the rules that actually
+    matter to you: it is the Bellevue, Washington office; strictly above 60
+    degrees Fahrenheit is a nice day and the result should say 'nice day', at
+    or below 60 should say 'bring a jacket'; and you want a short written
+    summary of the weather rather than raw numbers. Say that it has to be
+    built as a UiPath Maestro Flow — not an API workflow, not a standalone
+    script — and that you want it validated before you sign off. Do not name
+    files or paths and do not use technical wording. Close by inviting the
+    agent to ask you anything it needs before it starts building. Keep the
+    withheld items below to yourself until it asks.
+
+    WITHHELD — reveal each of these ONLY if the agent asks about it:
+      - The project name should be "BellevueWeather".
+      - Where the weather data comes from: the open-meteo public API, called
+        directly over HTTP — NOT an Integration Service connector.
+      - You do not require the project to execute before signing off.
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'HTTP', 'open-meteo', 'connector', 'node', 'script', or 'decision' unless the agent brings them up first."
+    - "Do not reveal the project name 'BellevueWeather' unless asked what to name it."
+    - "If the agent proposes getting the weather through an Integration Service connector, tell it to call the public open-meteo API directly over HTTP instead."
+    - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
+    - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "The moment the agent reports it has built the flow, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
+  max_turns: 8
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+
+success_criteria:
+  # Name-agnostic: any .flow the agent built must validate. The exact project
+  # name is scored separately below so a working-but-misnamed flow still earns
+  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  - type: run_command
+    description: "uip flow validate passes (any .flow)"
+    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Runtime check:
+  - type: run_command
+    description: "Flow debug runs; weather-API node executed and output contains a verdict"
+    command: "python3 $TASK_DIR/check_weather_flow.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
+  # if asked what to name it) — the flow behaves identically whatever it's called.
+  # Non-gating: reports whether the agent elicited the exact name (score 1/0), but
+  # pass_threshold 0 keeps a cosmetic miss from failing the task and the low weight
+  # keeps it from dominating the score.
+  - type: run_command
+    description: "Project/flow is named BellevueWeather (elicited from the user)"
+    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/BellevueWeather.flow',recursive=True) else 'expected a flow named BellevueWeather.flow')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

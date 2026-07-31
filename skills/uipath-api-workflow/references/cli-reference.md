@@ -353,7 +353,7 @@ Requires `uip login`. The SDK resolves folder keys via Resource Catalog Service;
 
 **Idempotency.** Import-only by design. First run for a binding triggers `addOrUpdateResourceToSolutionAsync` (status `Added`); subsequent runs skip the binding because its key is already in the solution. Re-running is safe and a no-op when nothing changed.
 
-Lives in `solution-tool`, not `api-workflow-tool`. Full details in the [solution skill](../uipath-platform).
+Lives in `solution-tool`, not `api-workflow-tool`. Full details in the uipath-solution skill.
 
 ## `uip is resources describe`
 
@@ -410,9 +410,9 @@ uip solution init <solutionName> [--output json]
 
 Output: `{ "Result": "Success", "Code": "SolutionInit", "Data": { "Status": "Created successfully", ... } }`.
 
-## `uip solution project add` *(scope: solution-tool)*
+## `uip solution projects add` *(scope: solution-tool)*
 
-For **new** API workflow projects, prefer `uip api-workflow init <name>` run inside the solution directory — it scaffolds the correct `project.uiproj` shape AND auto-registers the project in the `.uipx`. `uip solution project add` errors (`Project name already exists`) on an already-registered project, and `remove`+`add` destroys the project `Id`. Reserve direct `.uipx` edits for converting a legacy `project.json` project in place (change only `ProjectRelativePath` → `<folder>/project.uiproj`, preserve `Id`/`Type`). A registerable project folder must contain `project.uiproj` (`ProjectType: "Api"`) + `Workflow.json` + `entry-points.json` — see [workflow-file-format.md](workflow-file-format.md#project-structure-studio-web-editable-contract) and SKILL.md rule 19a. See `uip solution project add --help` for current flags.
+For **new** API workflow projects, prefer `uip api-workflow init <name>` run inside the solution directory — it scaffolds the correct `project.uiproj` shape AND auto-registers the project in the `.uipx`. `uip solution projects add` errors (`Project name already exists`) on an already-registered project, and `remove`+`add` destroys the project `Id`. Reserve direct `.uipx` edits for converting a legacy `project.json` project in place (change only `ProjectRelativePath` → `<folder>/project.uiproj`, preserve `Id`/`Type`). A registerable project folder must contain `project.uiproj` (`ProjectType: "Api"`) + `Workflow.json` + `entry-points.json` — see [workflow-file-format.md](workflow-file-format.md#project-structure-studio-web-editable-contract) and SKILL.md rule 19a. See `uip solution projects add --help` for current flags.
 
 ## `uip solution pack`
 

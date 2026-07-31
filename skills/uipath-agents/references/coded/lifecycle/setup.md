@@ -14,7 +14,6 @@ Pick the framework before starting. The package installed in the Workflow determ
 
 | Agent Type | `<FRAMEWORK_PACKAGE>` | Framework config | Guide |
 |---|---|---|---|
-| Coded Function | `uipath` | `uipath.json` | [coded-function-agents.md](../frameworks/coded-function-agents.md) |
 | LangGraph | `"uipath-langchain"` | `langgraph.json` | [langgraph-integration.md](../frameworks/langgraph-integration.md) |
 | LlamaIndex | `uipath-llamaindex` | `llama_index.json` | [llamaindex-integration.md](../frameworks/llamaindex-integration.md) |
 | OpenAI Agents | `uipath-openai-agents` | `openai_agents.json` | [openai-agents-integration.md](../frameworks/openai-agents-integration.md) |

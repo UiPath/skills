@@ -23,9 +23,8 @@ encrypted — e.g. an OAuth user token (`TEXTFIELD`) or a Google service-account
 
 ## Auth types (`auth set --auth-type`)
 
-All 14 types are supported. `init --auth` is sugar for the two most common (`oauth2`,
-`customApiKey`) at create time; everything else (and the full flag surface) goes through
-`auth set`.
+All 19 types are supported. `init --auth <type>` accepts any of them inline at create
+time (handy for `none`); type-specific flags beyond init's OAuth sugar go through `auth set`.
 
 | auth-type               | Use when                                        |
 |-------------------------|-------------------------------------------------|
@@ -33,16 +32,21 @@ All 14 types are supported. `init --auth` is sugar for the two most common (`oau
 | oauth2Pkce              | OAuth 2.0 Authorization Code + PKCE.            |
 | oauth2ClientCredentials | OAuth 2.0 Client Credentials (no user).         |
 | oauth2Password          | OAuth 2.0 Resource Owner Password.              |
+| oauth2PrivateKeyJwt     | OAuth 2.0 Private Key JWT (signed client assertion, e.g. Epic FHIR). |
 | oauth1                  | OAuth 1.0a / Token-Based Authentication (TBA).  |
 | basic                   | HTTP Basic (username + password).               |
-| jwtOauth                | JWT-bearer OAuth.                               |
-| jwtOauth2               | JWT-bearer OAuth 2.0.                           |
+| jwtOauth                | OAuth 2.0 JWT Bearer (service accounts — Salesforce, Box). |
+| jwtOauth2               | Same contract as jwtOauth (legacy alias — prefer jwtOauth). |
 | custom                  | A custom static authorization header.           |
 | customApiKey            | Vendor uses a static API key (header or query). |
 | personalAccessToken     | Personal access token authorization header.     |
 | awsv4                   | AWS Signature v4.                               |
 | googleServiceAccount    | Google service-account JSON.                    |
 | rsaCertificate          | RSA private-key certificate.                    |
+| none                    | Open/unauthenticated API (webhooks, public endpoints). |
+| firstPartyService       | UiPath internal service — platform-injected service identity. |
+| fpsUserDelegatedAccess  | UiPath internal service — acts as the connection's user. |
+| fpsRobotAccess          | UiPath internal service — robot access token.   |
 
 Per-type config key sets (which secrets, which URLs) are in
 [configuration.md](configuration.md) §"Auth as configuration".
@@ -97,6 +101,114 @@ uip is connectors builder auth set --auth-type oauth2 \
   --required-scopes read --preselected-scopes read,write
 ```
 
+## JWT Bearer (jwtOauth / jwtOauth2)
+
+The connector holds the token URL and the SHAPE of the JWT assertion; the connection user
+supplies the client id/secret, the signing key (`jwt.base64.encoded.key` — PKCS#8 PEM or
+base64), and any user-specific claim values. The runtime builds the assertion from every
+config keyed `jwt.claim.<name>` (payload) / `jwt.header.<name>` (header) — declare each with
+a repeatable flag:
+
+```bash
+uip is connectors builder auth set --auth-type jwtOauth \
+  --token-url https://login.salesforce.com/services/oauth2/token \
+  --jwt-claim aud=https://login.salesforce.com \
+  --jwt-claim iss \
+  --jwt-claim sub \
+  --scope 'api refresh_token'
+```
+
+- `--token-url` is REQUIRED (the assertion is exchanged there for an access token).
+- `--jwt-claim name=value` pre-fills the claim (still editable at connection time);
+  `--jwt-claim name` (bare) creates it required-and-empty — the connection user fills it
+  (e.g. Salesforce `iss` = consumer key, `sub` = username).
+- Label/hint the connection-form field inline: `--jwt-claim 'iss;label=Consumer Key;hint=The connected app consumer key'`
+  — without a label the field renders as "JWT claim 'iss'".
+- `--jwt-header kid=...` for assertion headers, same syntax (label/hint work too).
+- The runtime ALSO requires `oauth.api.key` (client id) and `oauth.api.secret` — the bundle
+  ships both as connection-form fields. For Salesforce-style flows where iss == client id,
+  the user enters the same value twice; that is the platform contract, not a bug.
+- jwtOauth intentionally creates NO `oauthOnTokenRefresh` resource — there is no refresh
+  token; the runtime signs a fresh assertion when the access token expires. Do not add one.
+- `jwt.base64.encoded.key` (the signing key) is `internal: true, configScreenType: none`
+  BY DESIGN — every catalog jwt connector (Box, Salesforce, uipath-http) ships it that way
+  and the IS connection UI renders the private-key field for jwt flows itself. Do NOT
+  "fix" it to `pre`.
+- Typical claim sets: Salesforce `iss`/`sub` + `aud=https://login.salesforce.com`;
+  Box `iss`/`sub` + `aud=<token url>` + `box_sub_type=enterprise`.
+- NEVER write `jwt.oauth.*` config keys (consumer.key/private.key/username) — nothing in
+  the platform reads them; a connector built with them can never authenticate.
+
+## OAuth 2.0 Private Key JWT (oauth2PrivateKeyJwt)
+
+Client-credentials-style flow where the client authenticates with a SIGNED ASSERTION
+instead of a client secret (Epic FHIR is the catalog reference):
+
+```bash
+uip is connectors builder auth set --auth-type oauth2PrivateKeyJwt \
+  --token-url https://fhir.epic.com/interconnect-fhir-oauth/oauth2/token
+```
+
+The bundle ships `oauth.api.key` (client id), `jwk.private.key`, `jwk.kid` as
+connection-form fields — the user pastes the registered key + kid at connection time.
+
+## UiPath First Party Service (firstPartyService / fpsUserDelegatedAccess / fpsRobotAccess)
+
+INTERNAL-ONLY — connectors that call UiPath's own services (Orchestrator, Data Fabric,
+Apps…). There are NO credential fields: the platform injects the caller's identity at
+runtime. Choose the flavor by whose token the connector should act with: the service
+(`firstPartyService`), the connection's user (`fpsUserDelegatedAccess`), or a robot
+(`fpsRobotAccess`).
+
+```bash
+uip is connectors builder init --name "My Service" \
+  --base-url 'https://{host}/{account}/{tenant}/myservice_'
+uip is connectors builder auth set --auth-type firstPartyService \
+  --scope MyServiceApiUserAccess
+```
+
+- `--scope` = the first-party scope the platform token is minted with (e.g.
+  `OrchestratorApiUserAccess`, `DataService`); it lands hidden on `oauth.scope` — an
+  authoring-time value, never a connection-form field.
+- base.url follows `https://{host}/{account}/{tenant}/<service>_` — `auth set` binds those
+  three placeholders to the platform headers (`x-forwarded-host`,
+  `x-uipath-internal-accountid`, `x-uipath-internal-tenantid`) automatically, CONVERTING
+  any user-fillable configs + configuration-type bindings a prior `init --base-url` seeded
+  (they show up under `ConfigChanges.removed`). Either command order works.
+- VERIFY with `auth get`: `FpsBindings` lists each placeholder and the header it resolves
+  from (`boundToHeader: null` = broken), and `ConnectionFormFields: []` proves no
+  user-facing fields. `validate` errors on any FPS connector whose placeholders are
+  user-fillable or configuration-bound.
+- `auth set` also seeds hidden RUNTIME bookkeeping entries (`oauth.user.token`,
+  `oauth.user.refresh_time`, `oauth.user.refresh_interval`, `oauth.basic.header`; the
+  delegated type adds `oauth.user.refresh_token`) — token storage the platform writes at
+  runtime, never credential fields. Leave them alone.
+
+## No authentication (none)
+
+```bash
+uip is connectors builder auth set --auth-type none
+```
+
+Records `authentication.type:"none"` with zero credential configs — for open APIs and
+webhook-style connectors (catalog: http-webhook, generic-webhooks). `validate` requires SOME
+auth type on every connector, so run this even when the API needs no credentials.
+
+## AWS Signature v4 (awsv4)
+
+```bash
+uip is connectors builder init --name "Amazon Connect" \
+  --base-url 'https://connect.{aws.region}.amazonaws.com'
+uip is connectors builder auth set --auth-type awsv4 --aws-service-name connect
+```
+
+The bundle ships `aws.api.key` / `aws.api.secret` / `aws.region` as connection-form fields
+plus hidden `aws.service.name` / `aws.host`. `--aws-service-name` sets the per-service
+SigV4 constant (e.g. `polly`, `connect`) — no `state patch` needed. Put `{aws.region}` in
+base.url — the CLI binds it to the region config automatically, and `auth set` silently
+replaces the generic placeholder config `init` seeded with the canonical AWS one (no
+`--force` required).
+
 ## customApiKey
 
 ```bash
@@ -139,10 +251,11 @@ rather than hand-editing `configuration[]`.
 `--validation-vendor-path <path>` (with optional `--validation-method`, default GET) seeds
 a `provisionAuthValidation` system resource — one read-only call at connection creation that
 rejects bad creds immediately. The probe must be read-only and must not change vendor data,
-so keep it GET. Every non-OAuth/JWT auth type (any whose name isn't `oauth*`/`jwt*` — `basic`,
-`custom`, `customApiKey`, `personalAccessToken`, `awsv4`, `googleServiceAccount`,
-`rsaCertificate`) has no token exchange to catch bad creds, so `validate` flags it as missing
-there. Details: [system-resources.md](system-resources.md) §provisionAuthValidation.
+so keep it GET. Credential auth types with no token exchange (`basic`, `custom`,
+`customApiKey`, `personalAccessToken`, `awsv4`, `googleServiceAccount`, `rsaCertificate`)
+get a `validate` warning when it is missing. OAuth/JWT flows (token exchange catches bad
+creds), `none` (no credentials), and the FPS family (platform identity) are exempt —
+`validate` does not ask for a probe there. Details: [system-resources.md](system-resources.md) §provisionAuthValidation.
 
 ## System (lifecycle) resources — `auth system`
 
@@ -150,14 +263,25 @@ Lifecycle/auth-flow endpoints with no SR file (provisionAuthValidation, onProvis
 oauthOnTokenRefresh, …) are wired with `auth system create --type <type>` / `auth system list`.
 The full type list, override-path rules, and flags: [system-resources.md](system-resources.md).
 
-## Base URL derived from a token response (e.g. Salesforce `instance_url`)
+## Base URL derived from a token response
 
-There is NO vendor-specific base-url flag (`init --base-url` is STATIC only). When the vendor
-returns the API host in its token response, it is skill-guided: a `postRequest` hook reads +
-validates the host (https scheme, allowlisted), then persists it into THIS connection's config
+There is no service-specific base-url flag (`init --base-url` is STATIC only). When the token
+response returns the API host or another per-connection value, use the generic hook pattern:
+a `postRequest` hook reads + validates the value (scheme, host/id shape, allowlist where applicable), then persists it into THIS connection's config
 at runtime via `done({configuration})` — NOT `state patch` (that baking-time edit would set one
 org's URL as everyone's default). Full pattern: [hooks.md](hooks.md) §"Pattern: base URL …
 derived from a token response".
+
+## Verifying auth setup — `auth get`
+
+`auth get` returns the full auth read model in one call: the type(s), every auth-related
+config entry (key, label, hint, screen type, hidden/required/encrypted flags, defaults
+with secrets redacted), `ConnectionFormFields` (EVERY visible config across the whole
+connector — the literal connection form; `[]` = empty form), whether
+`oauthOnTokenRefresh` / `provisionAuthValidation` exist, `FpsBindings` (FPS
+placeholder→header map), and `TemplateBindings` (each non-FPS base.url `{placeholder}`
+with whether its backing config entry + path-param binding exist). Use it instead of
+stitching `state query` calls.
 
 ## Re-running auth set
 

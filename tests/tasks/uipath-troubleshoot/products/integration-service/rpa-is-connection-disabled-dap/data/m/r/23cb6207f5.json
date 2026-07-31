@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "Data": [
+    {
+      "PermissionStatus": 0,
+      "Id": "00000000-0000-0000-856b-c1dd9e521e15",
+      "TraceId": "3baa335d-8cd1-44cf-936c-df8c013c99df",
+      "ParentId": null,
+      "Name": "Robot Job 3baa335d-8cd1-44cf-936c-df8c013c99df",
+      "StartTime": "2026-06-19T11:49:58.2096486Z",
+      "EndTime": "2026-06-19T11:50:00.5096756Z",
+      "Attributes": "{\"Exception\":\"UiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException: Connection is disabled. Please enable the connection to continue. Error code: DAP-GE-3005.\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken token)\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivityBase.BuildExecutionParametersAsync(AsyncCodeActivityContext context, RequestParameters requestParameters, CancellationToken token)\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"}",
+      "Status": 2,
+      "OrganizationId": "311c6049-4966-4ef2-a6f3-8ceccaf38d54",
+      "TenantId": "69d43765-6ede-4575-88b7-9db601a2c056",
+      "ExpiryTimeUtc": null,
+      "FolderKey": "eba26f86-ea3a-4955-a029-28c6e5006dab",
+      "Source": 4,
+      "SpanType": "RobotJob",
+      "ProcessKey": "f9ecba5f-8dd8-4505-aeee-76ec5777d954",
+      "JobKey": "3baa335d-8cd1-44cf-936c-df8c013c99df",
+      "ReferenceId": null,
+      "VerbosityLevel": 2,
+      "ExecutionType": null,
+      "UpdatedAt": "2026-06-19T11:50:00.7904098Z",
+      "AgentVersion": null,
+      "Context": null,
+      "Attachments": null
+    }
+  ]
+}

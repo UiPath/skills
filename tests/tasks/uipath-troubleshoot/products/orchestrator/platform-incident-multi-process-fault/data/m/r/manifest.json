@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the platform-incident correlation scenario (platform-incident-correlation playbook). Folder is NOT pinned — the failure is widespread. The agent uses the cross-folder fallback: jobs list --state Faulted (no folder key) returns a burst of 5 unrelated processes across 3 folders in a 5-minute window with infra errors; jobs get on two samples (Billing/NightlyBilling 503, ClaimsOps/ClaimIntake token error) confirms different processes, same infra-error class. Conclusion: platform incident — correlate with status.uipath.com, monitor/rerun/report, do not debug individual jobs. Keys are stable.",
+  "rules": [
+    { "match": "or folders list", "file": "ee2628e6b6.json" },
+    { "match": "or jobs list --state Faulted", "file": "f5f2f217c8.json" },
+    { "match": "or jobs get ddff7788-99aa-00bb-11cc-22dd33445566", "file": "78f47f7072.json" },
+    { "match": "or jobs get ddff7788-99aa-00bb-11cc-22dd33445577", "file": "2b5d9064e1.json" },
+    { "match": "or jobs logs ddff7788-99aa-00bb-11cc-22dd33445566 --level Error", "file": "3c1c7d11e4.json" },
+    { "match": "or jobs logs ddff7788-99aa-00bb-11cc-22dd33445566", "file": "1aa6279d5b.json" },
+    { "match": "docsai ask", "passthrough": true }
+  ],
+  "unmocked_default": { "response": "[]\n", "exit_code": 0 }
+}

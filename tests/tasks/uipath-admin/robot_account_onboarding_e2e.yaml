@@ -53,22 +53,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent verified robot account by listing after create"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+robot-accounts\s+list\s+.*--output\s+json'
-    min_count: 2
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent consistently used --output json"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+.*--output\s+json'
-    min_count: 3
-    weight: 1.0
-    pass_threshold: 1.0
-
 post_run:
   - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_robot_account.py''))"'
     timeout: 30

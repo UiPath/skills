@@ -46,3 +46,15 @@
 {"id": "uipath-coded-apps-047", "prompt": "Build a coded web app with a multi-step wizard, OAuth login, charts, and a print/PDF report", "expected_skill": "uipath-coded-apps"}
 {"id": "uipath-coded-apps-048", "prompt": "How do I pass folderId vs folderKey in SDK calls? Maestro vs Orchestrator services use different params", "expected_skill": "uipath-coded-apps"}
 {"id": "uipath-coded-apps-050", "prompt": "Render a coded action app inside Action Center \u2014 what URL/routing setup do I need?", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-051", "prompt": "build me an agent health dashboard", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-052", "prompt": "create a dashboard showing agent error rates and latency", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-053", "prompt": "I want to see invocation volume and success rate for my agents as a chart", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-054", "prompt": "generate an analytics dashboard with KPIs for my agent fleet", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-055", "prompt": "build a governance posture dashboard showing policy violations", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-056", "prompt": "show me agent metrics \u2014 active count, P95 latency, top erroring agents", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-057", "prompt": "I need an operations dashboard showing job completion trends and top failures", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-058", "prompt": "create a cost dashboard tracking AGU consumption and wasted units by agent", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-059", "prompt": "build me a UiPath agent health dashboard: active agents, invocation volume over 24 hours, error rate trend", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-060", "prompt": "add a governance violations widget to my existing dashboard", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-061", "prompt": "build me a runtime compliance dashboard showing ISO 42001 rule violations per agent", "expected_skill": "uipath-coded-apps"}
+{"id": "uipath-coded-apps-062", "prompt": "deploy my agent health dashboard to Automation Cloud", "expected_skill": "uipath-coded-apps"}

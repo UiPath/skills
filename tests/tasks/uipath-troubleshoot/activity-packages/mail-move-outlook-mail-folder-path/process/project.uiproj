@@ -1,0 +1,6 @@
+{
+  "Name": "OrderMailFiler",
+  "ProjectType": "Process",
+  "Description": "Files inbound order emails by moving each one into the Inbox\\Processed folder with Move Outlook Mail Message.",
+  "MainFile": "Main.xaml"
+}

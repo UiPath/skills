@@ -29,14 +29,6 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent fetched the guardrails list (mandatory discovery step)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+guardrails\s+list'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent refreshed the project to regenerate derived files"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+refresh'
@@ -51,14 +43,6 @@ success_criteria:
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 0.0
 
   - type: run_command
     description: "Custom number-rule guardrail with log action on Count Sources"

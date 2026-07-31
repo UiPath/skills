@@ -1,0 +1,62 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "question": {
+        "type": "string",
+        "description": "Support question"
+      }
+    },
+    "required": [
+      "question"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "content": {
+        "type": "string",
+        "description": "Agent response"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
+  },
+  "type": "lowCode",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Answer support questions using the SupportKnowledge context.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Answer support questions using the SupportKnowledge context."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "{{input.question}}",
+      "contentTokens": [
+        {
+          "type": "variable",
+          "rawString": "input.question"
+        }
+      ]
+    }
+  ],
+  "projectId": "22222222-2222-4222-8222-222222222222"
+}

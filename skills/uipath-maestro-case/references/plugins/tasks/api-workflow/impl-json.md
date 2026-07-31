@@ -34,13 +34,15 @@ uip maestro case tasks describe --type api-workflow --id "<entityKey>" --output 
 
 Fallback: planning-captured schema from tasks.md. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
 
+> **Built-inline sibling.** An API workflow built inline at the Rule 17 gate ([planning.md § Creating an API workflow inline](planning.md#creating-an-api-workflow-inline)) is already a **fully resolved task** by Phase 2 — bound during planning. Its I/O was read during planning from the sibling's raw `entry-points.json` (`entryPoints[0].input.properties` / `.output.properties` — case-preserving; fallbacks, warn when used: the `input.schema.document.properties` wrapper variant, then the `Workflow.json` root schemas when the entry-point I/O is `null`), located/confirmed via `uip maestro case registry search "<Name>" --type api --local --output json` (`search`, not `get` — `get --local` matches only the opaque `entityKey`, never the name). Do **not** read field names from the `--output json` `Resource.{Inputs,Outputs}` — its keys are PascalCased. NOT tenant `tasks describe` (the sibling isn't in the tenant). Skip Step 0's `tasks describe` for it; the binding shape below is identical, only the `folderPath` default differs: it is **empty `""`** (co-located — see [planning.md § Step 3 Binding](planning.md#creating-an-api-workflow-inline)), NOT the `solution_folder` sentinel (`resourceKey` keeps the sentinel; `folderPath` does not).
+
 **Step 1 — Root-level bindings:**
 
 Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape (all required — omitting any causes Studio Web render failure). Per-task overrides:
 
 - `resource`: `"process"`
 - `resourceSubType`: `"Api"`
-- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields. `folder-path` is the resolved registry `folders[0].fullyQualifiedName` (per [planning.md § Registry Resolution](planning.md#registry-resolution)) — never the raw sdd.md "Folder", which may be a parent path and faults the job at runtime.
+- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields. `folder-path` is the resolved registry `folders[0].fullyQualifiedName` (per [planning.md § Registry Resolution](planning.md#registry-resolution)) — never the raw sdd.md "Folder", which may be a parent path and faults the job at runtime. **Built-inline sibling:** `folderPath` default is **empty `""`** (co-located — the case starts the workflow in its own deployed folder) while `resourceKey="solution_folder.<name>"` keeps the sentinel. Do NOT set `folderPath` to `solution_folder` — it passes `validate` but fails invocation with `folder not exist`. See [planning.md § Creating an API workflow inline](planning.md#creating-an-api-workflow-inline).
 
 Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 
@@ -51,7 +53,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 
    **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is the `tasks describe` output (Step 0 above).
-4. Append to target stage's `tasks[laneIndex][]`
+4. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. If the task is `sequential` or its entry rule is `runs-sequentially`, append it as a new single-task inner array in planned order. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks also get their own single-task inner array. Only `activation-mode: parallel` tasks with explicit same-lane intent and rationale may share `tasks[laneIndex][]`; if `lane` conflicts with mode, mode wins.
 
 > Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
 

@@ -140,7 +140,7 @@ Snippets use the property-element form with `<VisualBasicValue>` / `<VisualBasic
 </TryCatch>
 ```
 
-**Notes:** `Try`, every `Catch.Action`, and `Finally` must wrap their body in `<Sequence>` per Rule 24. Each `Catch` requires its own `<ActivityAction x:TypeArguments="...">` holding a `<DelegateInArgument x:TypeArguments="..." Name="exception" />` — the `Name` is the variable name the handler body uses. Place specific exception types before `s:Exception`. Omit `<TryCatch.Finally>` entirely when not needed.
+**Notes:** `Try`, every `Catch.Action`, and `Finally` must wrap their body in `<Sequence>` per Rule 24. Each `Catch` requires its own `<ActivityAction x:TypeArguments="...">` holding a `<DelegateInArgument x:TypeArguments="..." Name="exception" />` — the `Name` is the variable name the handler body uses. Place specific exception types before `s:Exception`. Omit `<TryCatch.Finally>` entirely when not needed. For strategy — exception taxonomy, Retry Scope, ContinueOnError, screenshot-on-error, Global Exception Handler — see [error-handling-guide.md](error-handling-guide.md).
 
 **Long-form:** [`activity-docs/UiPath.System.Activities/26.4/activities/TryCatch.md`](activity-docs/UiPath.System.Activities/26.4/activities/TryCatch.md)
 

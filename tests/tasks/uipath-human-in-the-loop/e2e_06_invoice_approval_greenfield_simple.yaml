@@ -31,7 +31,7 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
     description: "Agent initialized a Flow project"
@@ -63,5 +63,13 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip flow validate passes against the authored .flow file"
+    command: "uip maestro flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 

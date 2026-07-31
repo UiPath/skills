@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Reads the quarterly workbook and imports the Quarterly Data sheet into the daily reporting pipeline.",
+  "MainFile": "Main.xaml"
+}

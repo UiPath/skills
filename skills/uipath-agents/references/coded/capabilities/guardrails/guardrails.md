@@ -37,7 +37,7 @@ installed/published SDK documentation does not currently support HITL guardrail 
 
 ## Check Tenant Availability (mandatory for built-in AI validators)
 
-For built-in AI validators (PII, harmful content, user prompt attacks, IP), confirm the validator is enabled on this tenant **before authoring** — run:
+For built-in AI validators (PII, harmful content, user prompt attacks, IP, LLM as Judge), confirm the validator is enabled on this tenant **before authoring** — run:
 
 ```bash
 uip agent guardrails list --output json
@@ -46,6 +46,14 @@ uip agent guardrails list --output json
 If the requested validator has `Status != "Available"` → tell the user and stop. Actually adding one that is not entitled produces a guardrail that always fails.
 
 **Skip this step only for deterministic guardrails** — they run locally with no backend dependency.
+
+> **LLM as Judge also requires LLM Gateway.** If the target is `llm_as_judge`, discover the models available on this tenant — run:
+>
+> ```bash
+> uip agent guardrails llm-as-judge-models --output json
+> ```
+>
+> Use a `ModelId` from the returned list for the `model` parameter. Prefer a non-preview model; a small, fast model (Haiku / mini class) is a sound judge default. If the command returns no models or fails (no LLM Gateway access), tell the user and ask them to configure a model in their LLM Gateway or supply a model ID.
 
 ---
 
@@ -337,7 +345,9 @@ On resume: **Approve** continues (with the reviewer's optional edit applied); **
 
 ---
 
-## Verify Guardrails Are Actually Wired (mandatory after writing)
+## Verify Guardrails Are Actually Wired (mandatory after writing for LangChain ML guardrails)
+
+> **Skip this entire section for deterministic guardrails** (`UiPathDeterministicGuardrailMiddleware` / `CustomValidator`). They run inline with no adapter registration and no LLM wrapping. For deterministic guardrails, grep-verify the class name and rule keyword are present in the file — that is sufficient.
 
 **Syntactically valid ≠ active.** Because importing from the wrong module bypasses the framework adapter and makes guardrails silently no-op (see [Imports Pattern](#imports-pattern)), `ast.parse` passing tells you nothing about whether a single guardrail will ever fire. After writing, prove the wiring at runtime.
 
@@ -379,7 +389,7 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 6. **Respect scope and stage constraints from the docs** — each middleware class has specific allowed scopes and stages; never apply a guardrail at a scope or stage the docs say it doesn't support.
 7. **Only add imports you use** — merge new names into any existing `from uipath_langchain.guardrails import (...)` block (LangChain) or `from uipath.platform.guardrails import (...)` block (every other framework).
 8. **For LangChain / LangGraph agents, import guardrail symbols from `uipath_langchain.guardrails`, not `uipath.platform.guardrails`.** Both expose the same names, but only `uipath_langchain.guardrails` registers the LangChain adapter as an import side effect; without it the decorator/middleware never wraps the LLM/tool/agent and every guardrail silently no-ops with no error or log. For any other framework (LlamaIndex, OpenAI Agents, plain Python), import from `uipath.platform.guardrails` — no framework adapter is published yet. See [Imports Pattern](#imports-pattern).
-9. **Verify wiring at runtime after writing (LangChain only)** — confirm the LangChain adapter is registered (`len(_adapters) >= 1`) and the decorated object is wrapped (`type(llm).__name__ == "_GuardedLLM"`, or `_GuardedTool` for tools). `ast.parse` is not enough; a silently-unwrapped guardrail passes syntax but never fires. For frameworks without an adapter, this wrap-check does not apply — invoke the validator directly to confirm it runs. See [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing).
+9. **Verify wiring at runtime after writing (LangChain only)** — confirm the LangChain adapter is registered (`len(_adapters) >= 1`) and the decorated object is wrapped (`type(llm).__name__ == "_GuardedLLM"`, or `_GuardedTool` for tools). `ast.parse` is not enough; a silently-unwrapped guardrail passes syntax but never fires. For frameworks without an adapter, this wrap-check does not apply — invoke the validator directly to confirm it runs. **For `UiPathDeterministicGuardrailMiddleware` / `CustomValidator`, skip both runtime checks — grep-verify the class name and rule keyword are present in the file instead.** See [Verify Guardrails Are Actually Wired](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails).
 10. **Entity/threshold values must match the docs exactly** — use enum member names, not raw strings; use only allowed threshold values.
 11. **Deterministic guardrails run locally** — no backend API call, no tenant availability check needed.
 12. **Do not duplicate existing guardrails** — read the agent code first and skip if the same guardrail is already configured.
@@ -387,4 +397,4 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 14. **`EscalateAction` must come from the fetched SDK docs** — if the docs do not expose the class or constructor parameters, stop and report that HITL guardrail escalation is not available in the current SDK docs/runtime. Never invent the class, import path, or arguments.
 15. **`EscalateAction` requires a deployed Action App** referenced by `app_name` + `app_folder_path` and declared as an `app` resource in **`bindings.json`** — discover it with `uip solution resources list --kind App`, resolve duplicate names by folder, pass the literal name/folder in code (not env vars), and sync bindings with [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md). Route the task with `TaskRecipient` when the user names a reviewer. See [Escalation action (HITL)](#escalation-action-human-in-the-loop).
 16. **Verify the escalation app schema when tenant access is available** — the app must expose the guardrail review inputs/outputs/outcomes listed in the prerequisite section. If the schema cannot be verified in a local smoke task, say that runtime readiness is unverified.
-17. **A HITL guardrail suspends, it doesn't block.** On violation `EscalateAction` suspends via `interrupt(CreateEscalation(...))`; it terminates **only on Reject** (Approve resumes). Verify by confirming the run suspends + a task is created — never expect a "block" for an escalation guardrail (Rule for the [verification step](#verify-guardrails-are-actually-wired-mandatory-after-writing)).
+17. **A HITL guardrail suspends, it doesn't block.** On violation `EscalateAction` suspends via `interrupt(CreateEscalation(...))`; it terminates **only on Reject** (Approve resumes). Verify by confirming the run suspends + a task is created — never expect a "block" for an escalation guardrail (Rule for the [verification step](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails)).

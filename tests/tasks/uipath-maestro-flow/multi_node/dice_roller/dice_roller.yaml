@@ -21,7 +21,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate DiceRoller/DiceRoller/DiceRoller.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

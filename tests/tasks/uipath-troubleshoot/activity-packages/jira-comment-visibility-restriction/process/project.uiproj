@@ -1,0 +1,6 @@
+{
+  "Name": "JiraNoteBot",
+  "ProjectType": "Process",
+  "Description": "JiraNoteBot automation project.",
+  "MainFile": "Main.xaml"
+}

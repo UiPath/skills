@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelQuarterlyProcess",
+  "ProjectType": "Process",
+  "Description": "Trims a stale data block from the quarterly report workbook via Delete Range inside an Excel Application Scope.",
+  "MainFile": "Main.xaml"
+}

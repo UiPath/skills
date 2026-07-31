@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Edit-roundtrip check.
 
-Validates the final state of GreeterAgent after the agent has
-scaffolded, validated, edited, and re-validated it:
+Validates the final state of GreeterAgent after the agent has edited
+the fixture v1 (_fixtures/GreetSol) and re-validated it:
 
   1. agent.json.inputSchema  == entry-points.json entryPoints[0].input
      agent.json.outputSchema == entry-points.json entryPoints[0].output

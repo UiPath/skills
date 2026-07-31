@@ -1,0 +1,66 @@
+task_id: skill-bpmn-queue-create-and-wait
+description: >
+  Node eval: agent uses the uipath-maestro-bpmn skill to model the synchronous
+  queue wrapper Orchestrator.CreateAndWaitForQueueItem on a bpmn:serviceTask with
+  a bound request input and a captured output — distinct from the fire-and-forget
+  Orchestrator.CreateQueueItem that rides a bpmn:sendTask. Authoring only — no
+  cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a local Maestro BPMN project named "QueueCreateAndWaitBpmn" with the
+  main file at `QueueCreateAndWaitBpmn/QueueCreateAndWaitBpmn.bpmn` for this
+  process:
+  - Manual start -> enqueue a transaction item and BLOCK until it is processed,
+    then continue -> end.
+
+  Requirements:
+  - Because the process waits for the item to finish, model this as the
+    synchronous wrapper `Orchestrator.CreateAndWaitForQueueItem` hosted on a
+    `bpmn:serviceTask` — NOT the fire-and-forget `Orchestrator.CreateQueueItem`
+    (that variant rides a `bpmn:sendTask`).
+  - Discover the wrapper via the registry (`uip maestro bpmn registry`) and author
+    its `uipath:*` payload from the served template. Do not hand-author
+    registry-owned XML from prose.
+  - Bind at least one request input (the queue item payload) and capture at least
+    one output (the processed item) into a declared process variable.
+  - Use synthetic placeholder resource/binding values only. Do not invent or paste
+    real tenant URLs, folder keys, connection IDs, release keys, or queue names.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Validate locally by parsing the BPMN and walking the skill's structural
+    checklist. Do NOT upload, publish, deploy, debug, run, or pack anything, and
+    do NOT pause for approval — build the complete local project in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "QueueCreateAndWaitBpmn/QueueCreateAndWaitBpmn.bpmn"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run any cloud-side Maestro BPMN lifecycle command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run|pack)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CreateAndWaitForQueueItem hosted on a serviceTask with bound input + captured output"
+    command: "python3 $TASK_DIR/check_queue_create_and_wait.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

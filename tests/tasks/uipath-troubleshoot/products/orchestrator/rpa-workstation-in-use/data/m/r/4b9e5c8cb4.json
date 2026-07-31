@@ -1,0 +1,45 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "a1710001-1111-4111-8111-111111111111",
+      "State": "Faulted",
+      "ProcessName": "DailyExtract",
+      "ReleaseName": "DailyExtract",
+      "StartTime": "2026-07-19T06:00:03.100Z",
+      "EndTime": "2026-07-19T06:00:03.900Z",
+      "CreationTime": "2026-07-19T06:00:02.500Z",
+      "HostMachineName": "WS-CLIENT-07",
+      "Type": "Unattended",
+      "Source": "Schedule",
+      "Priority": null
+    },
+    {
+      "Key": "a1710002-2222-4222-8222-222222222222",
+      "State": "Running",
+      "ProcessName": "HourlySync",
+      "ReleaseName": "HourlySync",
+      "StartTime": "2026-07-19T06:00:01.400Z",
+      "EndTime": null,
+      "CreationTime": "2026-07-19T06:00:00.900Z",
+      "HostMachineName": "WS-CLIENT-07",
+      "Type": "Unattended",
+      "Source": "Schedule",
+      "Priority": null
+    },
+    {
+      "Key": "a1710003-3333-4333-8333-333333333333",
+      "State": "Successful",
+      "ProcessName": "DailyExtract",
+      "ReleaseName": "DailyExtract",
+      "StartTime": "2026-07-18T06:00:02.700Z",
+      "EndTime": "2026-07-18T06:04:55.100Z",
+      "CreationTime": "2026-07-18T06:00:02.100Z",
+      "HostMachineName": "WS-CLIENT-07",
+      "Type": "Unattended",
+      "Source": "Schedule",
+      "Priority": null
+    }
+  ]
+}

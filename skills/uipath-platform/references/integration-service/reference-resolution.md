@@ -54,7 +54,7 @@ Some fields in the describe `requestFields` have a `reference` section — their
 
 | Property | Meaning |
 |---|---|
-| **`reference.objectName`** | The resource to list (use as `<object>` in `execute list`). May include query params. |
+| **`reference.objectName`** | The resource to list (use as `<object>` in `run list`). May include query params. |
 | **`reference.lookupNames`** | Fields to match the user's input against (e.g., match "general" against `name`) |
 | **`reference.lookupValue`** | The field to extract as the resolved value (e.g., `id`) |
 | **`reference.path`** | The API path — use `reference.objectName` for the list call |

@@ -10,7 +10,7 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 | Commands | What | Auth |
 |----------|------|------|
-| `solution init`, `solution project add`, `solution resources refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
+| `solution init`, `solution projects add`, `solution resources refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
 | `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
@@ -46,19 +46,19 @@ cd <SolutionDir> && uip maestro case init <ProjectName>
 |------|-------------|
 | `<ProjectName>` | **(required)** Project directory name. Created inside the current directory |
 
-Run from inside the solution directory so the resulting layout is `<SolutionDir>/<ProjectName>/`. When run from inside a solution directory, `case init` **auto-registers** the project with the parent `.uipx` — confirm via `Data.SolutionRegistration.Status` in the response (`Registered` or `AlreadyRegistered`). Pass `--skip-solution-registration` to skip auto-registration (the status is then `OptedOut`). Use `uip solution project add ./<ProjectName>` as a fallback when `Status` is `NotInSolution` (`init` ran outside a solution), `Skipped` (ambiguous discovery), or `Failed` (`.uipx` write error). Note: the SKILL's standard JSON-authoring path (see `plugins/case/impl-json.md`) does not invoke `case init` and still requires the explicit `solution project add` step — see `implementation.md` § Step 6.
+`case init` always lands the project inside a solution. Run **from inside the solution directory** so the layout is `<SolutionDir>/<ProjectName>/` — it then auto-registers the project with the parent `.uipx` (`Data.SolutionRegistration.Status`: `Registered` or `AlreadyRegistered`). Run **outside any solution** and `case init` auto-scaffolds one: it creates `<ProjectName>Solution/<ProjectName>Solution.uipx`, nests the project at `<ProjectName>Solution/<ProjectName>/`, adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`), and reports `Status: Registered`. Pass `--skip-solution-registration` to opt out of **both** auto-scaffold and registration — the project lands at the bare `<ProjectName>/` path with `Status: OptedOut`. If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<ProjectName>Solution/<ProjectName>/`, not the existing directory. Use `uip solution projects add ./<ProjectName>` as a fallback only when `Status` is `Skipped` (ambiguous discovery) or `Failed` (`.uipx` write error). Note: the SKILL's standard JSON-authoring path (see `plugins/case/impl-json.md`) does not invoke `case init` and still requires the explicit `solution projects add` step — see `implementation.md` § Step 6.
 
 ---
 
-## uip solution project add
+## uip solution projects add
 
 Register a project with an existing solution. Used in two scenarios in this skill:
 
 1. **Standard SKILL path** — after the case plugin (T01 in `impl-json.md`) writes `project.uiproj` directly via JSON authoring without invoking `case init`, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
-2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `NotInSolution`, `Skipped`, or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered`, this command is redundant. When it returns `OptedOut` (`--skip-solution-registration` was passed), the skip was intentional — run this only if you later decide to register.
+2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `Skipped` or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered` (the normal outcome both inside a solution and when it auto-scaffolds one outside), this command is redundant. When it returns `OptedOut` (`--skip-solution-registration` was passed), both auto-scaffold and registration were skipped intentionally — run this only if you later decide to register.
 
 ```bash
-uip solution project add <ProjectName> <SolutionName>.uipx
+uip solution projects add <ProjectName> <SolutionName>.uipx
 ```
 
 | Flag | Description |
@@ -183,7 +183,7 @@ uip maestro case spec --type <activity|trigger> \
 | `--type <activity\|trigger>` | **(required)** Whether the typeId is an activity or trigger TypeCache entry. |
 | `--activity-type-id <uuid>` | **(required)** Studio Web `uiPathActivityTypeId` from the relevant TypeCache index. |
 | `--connection-id <uuid>` | **(required)** IS connection UUID. Pick from `case registry get-connection` first. |
-| `--object-name <name>` | Override the typecache `objectName`. Required in two cases: (1) **entity-typed Curated triggers** whose typecache stores a placeholder (e.g. Data Service `{tenantEntityName\|folderEntityName}`); (2) **Generic-typed activities/triggers** (`activityType === "Generic"`) whose typecache definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord` covering Account/Contact/Lead/...). The CLI fails fast when missing in case (2). Discovery: `uip is resources list/describe` (Generic) or `uip is triggers objects` (entity-typed Curated). See [`connector-integration.md`](connector-integration.md) and [`connector-trigger-common.md`](connector-trigger-common.md). |
+| `--object-name <name>` | Override the typecache `objectName`. Required in two cases: (1) **entity-typed Curated triggers** whose typecache stores a placeholder (e.g. Data Service `{tenantEntityName\|folderEntityName}`); (2) **Generic-typed activities/triggers** (activity typecache `activityType === "Generic"`; trigger typecache `activityType === "GenericTrigger"`) whose typecache definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord` covering Account/Contact/Lead/...). The CLI errors at spec-fetch time when missing in case (2) — opaque `unknown_error`, see [`connector-trigger-common.md`](connector-trigger-common.md). Discovery: `uip is resources list/describe` (Generic) or `uip is triggers objects` (entity-typed Curated). See [`connector-integration.md`](connector-integration.md) and [`connector-trigger-common.md`](connector-trigger-common.md). |
 | `--skip-case-shape` | Omit `caseShape` from the response. Use during planning for a leaner payload. Mutually exclusive with `--input-details`. |
 | `--input-details <json>` | Pre-fill values into the generated `caseShape`. Activity accepts `{bodyParameters?, queryParameters?, pathParameters?, filter?}`; trigger accepts `{eventParameters?, filter?}`. Connection identity is NOT in input — derived from `--connection-id` and TypeCache. Mutually exclusive with `--skip-case-shape`. Full contract: [`case-spec-input-details.md`](case-spec-input-details.md). |
 
@@ -240,8 +240,8 @@ uip maestro case registry get <uiPathActivityTypeId> --type typecache-activities
 
 # --local: in-solution (offline) discovery of sibling projects (.uipx in cwd/parent/grandparent), no tenant/login
 uip maestro case registry list --local --output json
-uip maestro case registry search "<Name>" --type agent --local --output json    # matches by name (keyword)
-uip maestro case registry get "<entityKey-or-projectId>" --type agent --local --output json   # matches by key, NOT name
+uip maestro case registry search "<Name>" --type <agent|api> --local --output json    # matches by name (keyword); `agent` = agent sibling, `api` = api-workflow sibling
+uip maestro case registry get "<entityKey-or-projectId>" --type <agent|api> --local --output json   # matches by key, NOT name
 ```
 
 Resource types: `agent`, `process`, `api`, `processOrchestration`, `caseManagement`, `typecache-activities`, `typecache-triggers`, `action-apps`, `solution`.

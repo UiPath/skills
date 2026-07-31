@@ -1,0 +1,56 @@
+{
+  "version": 2,
+  "_doc": "Faithful-replay fixtures for a captured OrderProcessor faulted job (Get Queue Item \u2014 queue does not exist, HTTP 404 / code 1002). Names/paths/keys/timestamps scrubbed; exception text + activity class preserved verbatim.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "e282487c93.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f\" --state Faulted --output json",
+      "file": "5afb9ccbf4.json"
+    },
+    {
+      "match": "or jobs list --folder-key 4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f --state Faulted --output json",
+      "file": "5afb9ccbf4.json"
+    },
+    {
+      "match": "or jobs list --process-name OrderProcessor",
+      "file": "5afb9ccbf4.json"
+    },
+    {
+      "match": "or jobs list --folder-path Finance",
+      "file": "5afb9ccbf4.json"
+    },
+    {
+      "match": "or jobs list --folder-path \"Finance\"",
+      "file": "5afb9ccbf4.json"
+    },
+    {
+      "match": "or jobs get \"d1f3b5c7-2e46-4a8b-9c0d-3e4f5a6b7c82\" --output json",
+      "file": "a9a84840db.json"
+    },
+    {
+      "match": "or jobs get d1f3b5c7-2e46-4a8b-9c0d-3e4f5a6b7c82 --output json",
+      "file": "a9a84840db.json"
+    },
+    {
+      "match": "or jobs logs \"d1f3b5c7-2e46-4a8b-9c0d-3e4f5a6b7c82\" --level Error --output json",
+      "file": "d0ae845f72.json"
+    },
+    {
+      "match": "or jobs logs d1f3b5c7-2e46-4a8b-9c0d-3e4f5a6b7c82 --level Error --output json",
+      "file": "d0ae845f72.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

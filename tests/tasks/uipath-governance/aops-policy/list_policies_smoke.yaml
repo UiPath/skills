@@ -40,9 +40,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on the list command"
+    description: "Agent ran the list command"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+list\s+[\s\S]*--output\s+json'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

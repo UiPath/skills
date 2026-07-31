@@ -130,7 +130,9 @@ These two mechanisms both provide access to third-party systems, but they are **
 
 | Package | Version | Purpose |
 |---|---|---|
-| `UiPath.IntegrationService.Activities` | Latest | Runtime host for Integration Service connector activities |
+| `UiPath.IntegrationService.Activities` | pin at build | Runtime host for Integration Service connector activities |
+
+> `pin at build` is the template's literal sentinel — version unknowable at design time; the build skill resolves and writes the exact version back. See [rpa-sdd-template.md §14 Packages](../assets/templates/rpa-sdd-template.md).
 
 ### Example — Salesforce via NuGet native package
 
@@ -144,7 +146,7 @@ These two mechanisms both provide access to third-party systems, but they are **
 
 | Package | Version | Purpose |
 |---|---|---|
-| `UiPath.Salesforce.Activities` | Latest | Native Salesforce activities — used because Integration Service connector not available in this tenant |
+| `UiPath.Salesforce.Activities` | pin at build | Native Salesforce activities — used because Integration Service connector not available in this tenant |
 
 ## Per-Product Dependency Manager
 

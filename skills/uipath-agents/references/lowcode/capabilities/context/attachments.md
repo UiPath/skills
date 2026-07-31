@@ -25,6 +25,7 @@ For other context variants, see [context.md](context.md).
   "description": "",
   "contextType": "attachments",
   "indexName": "<ContextName>",          // same as name for attachments
+  "folderPath": "solution_folder",
   "attachments": {
     "description": "Array of files, documents, images to process."
   },

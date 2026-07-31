@@ -6,7 +6,7 @@
 
 ## Root cause
 
-Job `0fd7bea5-4182-43ed-8273-9c43410add3c` (process **ERN**, entry-point `Ofsb.xaml`, runtime type Unattended) in the **Shared** folder has been stuck in `Pending` since `2026-05-27T16:24:24Z` because Orchestrator's eligibility evaluator refused to dispatch the job — `PendingReasons.ErrorCodes` is `["RobotNoMatchingUsernames"]`.
+Job `0fd7bea5-4182-43ed-8273-9c43410add3c` (process **ERN**, entry-point `EditorLink.xaml`, runtime type Unattended) in the **Shared** folder has been stuck in `Pending` since `2026-05-27T16:24:24Z` because Orchestrator's eligibility evaluator refused to dispatch the job — `PendingReasons.ErrorCodes` is `["RobotNoMatchingUsernames"]`.
 
 The robot user account assigned to this folder/process exists, but its credential-store username does not match any machine-user mapping on the eligible machine template (`DanLaptopNew`). The job has `StartTime` empty, `MachineKey` empty, and a single Pending entry in `JobHistory` — Orchestrator never re-evaluated.
 

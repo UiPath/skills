@@ -19,7 +19,7 @@ If `~/.uip/case-resources/typecache-triggers-index.json` does not exist, run `ui
 
 Read `~/.uip/case-resources/typecache-triggers-index.json` directly. Match on `displayName`, `connectorKey`, or `eventOperation` from sdd.md. Record `uiPathActivityTypeId`.
 
-**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 17 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Skip and use placeholders`) for the lookup batch before any fallback. Only after the user picks `Skip`: mark `type-id` **and** `connector-key` `<UNRESOLVED: no typecache trigger for <query>>` and skip § 2 entirely — with no `activity-type-id` there is nothing to pass to `get-connection`. Fall through to § Placeholder fallback (event trigger → placeholder node; connector-trigger task → `data: {}`; condition rule → stub `uipath`). Continue planning — do not halt ([planning.md § 3.4](planning.md)).
+**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 17 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Use placeholders for all`) for the lookup batch before any fallback. Only after the user picks `Use placeholders for all`: mark `type-id` **and** `connector-key` `<UNRESOLVED: no typecache trigger for <query>>` and skip § 2 entirely — with no `activity-type-id` there is nothing to pass to `get-connection`. Fall through to § Placeholder fallback (event trigger → placeholder node; connector-trigger task → `data: {}`; condition rule → stub `uipath`). Continue planning — do not halt ([planning.md § 3.4](planning.md)).
 
 ### 2. Resolve the connection
 
@@ -42,7 +42,7 @@ Connection selection mechanics (`--refresh` retry, ping verification, BYOA workf
 
 > **Entity-typed Curated triggers** (e.g. UiPath Data Service `Record Created (Preview)`) carry a placeholder `objectName` in the typecache (`{tenantEntityName|folderEntityName}`). Pick a real entity via `uip is triggers objects <connector-key> <eventOperation>` and pass it as `--object-name` on the `case spec` call in Step 3.
 
-> **Generic-typed triggers** (`Config.activityType === "Generic"`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `Record Created`). The CLI fails fast on `case spec --type trigger` without `--object-name`. Discover the available objects via `uip is resources list --connector-key <connector-key>` and `uip is resources describe --connector-key <connector-key> --object-name <name>`, then pass the picked name as `--object-name` on the Step 3 call. Same `--object-name` flag as the entity-typed Curated case above; different reason.
+> **Generic-typed triggers** (`Config.activityType === "GenericTrigger"` in `typecache-triggers-index.json` — trigger entries use `GenericTrigger` / `CuratedTrigger`, not the activity-typecache's `Generic` / `Curated`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `Record Created`). Discover the available objects via `uip is resources list --connector-key <connector-key>` and `uip is resources describe --connector-key <connector-key> --object-name <name>`, then pass the picked name as `--object-name` on the Step 3 call. Same `--object-name` flag as the entity-typed Curated case above; different reason. Omit it and `case spec --type trigger` fails at fetch time with an opaque `unknown_error` (`Error fetching connector task spec`), cause buried in `Instructions`: `objectName … null or undefined … getInstanceEventObjectMetadata()` — resolve the object and re-run with `--object-name`.
 
 ### 3. Discover the trigger contract via `case spec`
 
@@ -90,7 +90,7 @@ Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNam
 
 > **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing tasks.md. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 
-> **Paginate when looking up by name.** `execute list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
+> **Paginate when looking up by name.** `run list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
 If a reference cannot be resolved, **AskUserQuestion** with the candidates (dropdown when finite set, plus "Something else"). Do not guess.
 

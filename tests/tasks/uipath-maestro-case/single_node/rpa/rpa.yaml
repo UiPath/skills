@@ -87,7 +87,7 @@ initial_prompt: |
 
   | Field | Value |
   |---|---|
-  | Process Reference | Name "ProjectEuler", Folder "Shared" |
+  | Process Reference | Name "ProjectEuler RPA", Folder "Shared/uipath-maestro-flow" |
   | Component Type | RPA |
 
   **Inputs**

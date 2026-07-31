@@ -15,6 +15,33 @@ A UiPath Solution is a container that groups multiple automation projects (proce
 - **Configuration management** -- Apply environment-specific configuration at deploy time
 - **Multi-environment promotion** -- Move solutions through dev, staging, and production
 
+### Platform availability
+
+Solutions runs on Automation Cloud and — from **Automation Suite `2.2510.0`** onward — self-hosted Automation Suite. Not available on Standalone Orchestrator.
+
+| Delivery option | Solutions |
+|---|---|
+| Automation Cloud / Automation Cloud Dedicated | ✅ |
+| Automation Suite (self-hosted) | ✅ from `2.2510.0` (added to the AS product portfolio in that release) |
+| Standalone | ❌ |
+
+Full delivery-option matrix: [Product and feature availability across delivery options](https://docs.uipath.com/overview/other/latest/overview/product-and-feature-availability-across-delivery-options).
+
+#### Available project types by Automation Suite version
+
+This table is about the **Solutions feature** (`.uipx` bundling/deploy). Which project types a Solution can bundle/deploy on self-hosted Automation Suite depends on the AS version — the backing products land in different releases of the `2.2510` line.
+
+| Automation Suite version | Project types deployable **as a Solution** (`.uipx`) |
+|---|---|
+| `< 2.2510.0` | None as a Solution — the Solutions feature is not on Automation Suite yet. **RPA still runs**: processes / libraries / tests deploy to Orchestrator directly (classic publish → deploy), as they have on Automation Suite since well before Solutions |
+| `2.2510.0`+ | RPA workflow (cross-platform / Windows — **not** Windows-Legacy), App, API workflow, Agent, Agentic process |
+| `2.2510.2`+ | adds Maestro (self-hosted): agentic-orchestration / BPMN-process runtime |
+
+- Pre-`2.2510.0` is a gap in the **Solutions packaging path only** — Orchestrator (and RPA on it) is supported on every Automation Suite version, including Standalone.
+- From `2.2510.0`+, same Solution project-type set as cloud, gated by AS version. The Solutions feature itself is unsupported on Standalone at any version.
+- Agent / agentic-process / API-workflow runtimes ship across the `2.2510` patch line; confirm exact patch level against each product's Automation Suite release notes.
+- Sources: [AS `2.2510.0` product bundle](https://docs.uipath.com/automation-suite/automation-suite/2.2510/release-notes/automation-suite-on-eks-aks-2-2510-0) · [Solutions on Automation Suite](https://docs.uipath.com/solutions-management/automation-suite/2.2510/user-guide/solutions-management-overview) · [Maestro on Automation Suite `2.2510.2`](https://docs.uipath.com/maestro/automation-suite/2.2510/release-notes/2-2510-2).
+
 ### Solution File Structure
 
 ```
@@ -40,7 +67,7 @@ MySolution/
 >
 > The `.uipx` also carries a `StudioMinVersion` field (e.g. `2025.10.0`). If users hit a version-mismatch when opening the solution, that's the constraint to check.
 
-> **Coded apps are not registered in `.uipx`.** UiPath Coded Web Apps and Coded Action Apps have no `project.uiproj` / `project.json` — `uip solution project add` does not apply, and they are not packed by `uip solution pack`. They deploy independently via `uip codedapp publish` / `deploy`. A coded app directory can sit alongside a solution but is not part of its manifest. See [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
+> **Coded apps are not registered in `.uipx`.** UiPath Coded Web Apps and Coded Action Apps have no `project.uiproj` / `project.json` — `uip solution projects add` does not apply, and they are not packed by `uip solution pack`. They deploy independently via `uip codedapp publish` / `deploy`. A coded app directory can sit alongside a solution but is not part of its manifest. See [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
 
 > **`.uis` bundles and the `pack` `.zip` are plain zip archives — unzip to inspect bundled contents.**
 

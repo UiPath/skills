@@ -1,0 +1,6 @@
+{
+  "Name": "CustomerLedgerSync",
+  "ProjectType": "Process",
+  "Description": "Synchronizes the customer ledger by running a SELECT of CustomerId, Balance and Region from CustomerLedger via Execute Query into a DataTable.",
+  "MainFile": "Main.xaml"
+}

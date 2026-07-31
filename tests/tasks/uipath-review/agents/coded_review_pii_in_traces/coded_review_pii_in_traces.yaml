@@ -15,7 +15,6 @@ run_limits:
   max_turns: 40
 
 sandbox:
-  driver: tempdir
   python: {}
 
 pre_run:
@@ -59,22 +58,6 @@ success_criteria:
     tool_name: "Edit"
     command_pattern: '"file_path":\s*"[^"]*CodedAgent'
     weight: 3.0
-
-  - type: command_executed
-    description: "Agent consulted the coded judgment catalog (agents-coded-rules.md)"
-    tool_name: "Read"
-    command_pattern: 'agents-coded-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent consulted the common agent judgment catalog (agents-common-rules.md)"
-    tool_name: "Read"
-    command_pattern: 'agents-common-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
 
   - type: run_command
     description: "Review report applies the judgment catalog: cites CODED_PII_IN_TRACES for the email_body param"

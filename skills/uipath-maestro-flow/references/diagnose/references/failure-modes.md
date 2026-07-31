@@ -13,7 +13,7 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render at the wrong size for their shape | `flow format` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
-| [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run outside a solution directory |
+| [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run with `--skip-solution-registration` (opts out of auto-scaffold + registration) |
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (MST-9107 + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
 
@@ -181,17 +181,15 @@ uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_
 
 ### Symptom
 
-`uip solution upload` rejects the project. `flow init` returned `Data.SolutionRegistration.Status: "NotInSolution"` (auto-registration walks up looking for the nearest `.uipx`; when the project is created outside the solution, it finds none, so the project was created standalone). Studio Web upload fails with structural errors. Packaging fails.
-
-The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of the required `<Solution>/<Project>/<Project>.flow` (double-nested).
+`uip solution upload` rejects the project. The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of the required `<Solution>/<Project>/<Project>.flow` (double-nested). `flow init` returned `Data.SolutionRegistration.Status: "OptedOut"` (or `"NotInSolution"`). Studio Web upload fails with structural errors. Packaging fails.
 
 ### Cause
 
-`uip maestro flow init` was run from outside a solution directory — from a bare cwd, from the user's home directory, or from the parent of the solution.
+`uip maestro flow init` was run with `--skip-solution-registration`, which opts out of both auto-scaffold and registration and leaves a bare single-nested project. (Without that flag, `flow init` outside a solution now auto-scaffolds `<Project>Solution/<Project>/` and registers — `Status: Registered` — so this layout no longer happens by accident.)
 
 ### Fix
 
-Delete the partial scaffold. Restart in the correct order — `flow init` from inside the solution directory will auto-register the project with the `.uipx`, so the explicit `uip solution project add` step is no longer needed.
+Delete the partial scaffold. Restart in the correct order — `flow init` from inside the solution directory will auto-register the project with the `.uipx`, so the explicit `uip solution projects add` step is no longer needed.
 
 ```bash
 uip solution init "<SolutionName>" --output json
@@ -199,7 +197,7 @@ cd <SolutionName>
 uip maestro flow init <ProjectName> --output json
 # Confirm Data.SolutionRegistration.Status is "Registered" in the JSON response.
 # Only if Status is "NotInSolution" / "Skipped" / "Failed" do you need:
-#   uip solution project add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
+#   uip solution projects add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
 ```
 
 After running, verify the file exists at the double-nested path. The `cd <SolutionName>` above persists across Bash calls, so anchor the check with `$(pwd)` instead of repeating `<SolutionName>/`:

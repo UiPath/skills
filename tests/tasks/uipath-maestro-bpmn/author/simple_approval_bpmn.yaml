@@ -4,7 +4,7 @@ description: >
   combines StartAgentJob, an exclusive gateway, CreateQueueItem, a script task,
   declared root variables, numeric migration metadata, and BPMN DI. Mirrors the
   manual smoke "simple approval" scenario.
-tags: [uipath-maestro-bpmn, integration, lifecycle:generate, shape:multi-node, node:gateway, node:script, node:service-task, resource]
+tags: [uipath-maestro-bpmn, integration, "mode:build", lifecycle:generate, shape:multi-node, node:gateway, node:script, node:service-task, resource]
 
 run_limits:
   expected_turns: 24

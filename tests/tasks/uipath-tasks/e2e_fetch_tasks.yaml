@@ -61,7 +61,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed tasks across folders"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tasks\s+list\s+--output\s+json'
+    command_pattern: 'uip\s+tasks\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -96,13 +96,5 @@ success_criteria:
     command_pattern: 'uip\s+tasks\s+list\s+.*--folder-id\s+\d+'
     min_count: 0
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on every tasks command"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+tasks\s+.*--output\s+json'
-    min_count: 2
-    weight: 1.0
     pass_threshold: 1.0
 

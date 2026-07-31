@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-07T06:00:19.377Z",
+      "Message": "Send Invoice Email: Failed to retrieve connection. Consider using a different connection. - The robot does not have the Connections.View permission in the folder where this connection lives. Ask your administrator to grant Connections.View on that folder, or move the connection to a folder where the robot has the required permission. (Folder: 7c9e1f22-5b3a-4d48-9e10-6a2b8c4d0e5f) Error code: DAP-GE-3000.\nin Main.xaml\n    at ConnectorActivity \"Send Invoice Email\"\n    at Sequence \"Sequence\"\n    at Main \"Main\"\n\n--- .NET stack trace ---\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken cancellationToken)\n--- inner ---\nUiPath.ConnectionClient.Contracts.ConnectionHttpException: Connection Service error reported: [StatusCode: Forbidden, ErrorCode: \"CNS1045\", TraceId: \"7f3a9c1e5b2d48f6a0c4e8b2d6f0a3c5\"]",
+      "ProcessName": "InvoiceSync"
+    }
+  ]
+}

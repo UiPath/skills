@@ -89,7 +89,7 @@ Fix: correct the expression named in `Descriptor value: '<expression>'`.
 
 ## Post-presentation actions
 
-Every fix above edits user source files (the `Descriptor` argument binding, the descriptor-building code, or re-capture in XAML). The resolution is **interactive** — the orchestrator MUST obtain explicit approval before any edit.
+Every fix above edits user source files (the `Descriptor` argument binding, the descriptor-building code, or re-capture in XAML). The resolution is **interactive** — you MUST obtain explicit approval via `AskUserQuestion` before any edit.
 
 1. **Sharing a file path is not approval.** A path the user gave for reading the project does not authorize editing it. Issue a separate `AskUserQuestion` before any edit.
 2. **Never bundle "gather input" with "apply fix" in one option.** Split into two steps: gather the input, then surface the concrete diff and confirm separately.

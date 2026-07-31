@@ -1,4 +1,5 @@
 task_id: skill-troubleshoot-no-host-pending
+skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   Faithful replay of a real UiPath troubleshooting investigation. A job is
   stuck in Pending in the Shared folder with host-family
@@ -13,10 +14,9 @@ description: >
   robot-credentials.md) and recommend connecting/assigning a machine to the
   folder's template. Re-triggering will NOT help because there is no host
   to accept the job.
-tags: [uipath-troubleshoot, orchestrator, e2e, faithful-replay, pending-job, no-host, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
@@ -26,14 +26,21 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
   python: {}
   template_sources:
     - type: template_dir
       path: ../../../_shared/mock_template
     - type: template_dir
-      path: fixtures
-  mock_path_dirs: ["mocks"]
+      path: data
+  mock_path_dirs: ["m"]
+
+pre_run:
+  # Seal the mock store before the agent starts: packs m/r/ into an opaque
+  # m/.store and removes m/r/, so the agent cannot read the recorded uip
+  # outputs and reach the diagnosis without investigating.
+  - command: "python m/seal"
+    timeout: 60
+    fail_on_error: true
 
 reference:
   file: RESOLUTION.md
@@ -53,6 +60,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
+    include_dialog: true
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
@@ -90,4 +98,5 @@ simulation:
     - "If the agent asks how to proceed when some data is missing, tell it to proceed with best-effort findings from the evidence it already gathered."
     - "Never volunteer new factual data beyond your initial report and the answers above. Keep replies short (one sentence)."
     - "Never instruct the agent to stop, abort, or skip phases."
+    - "If the agent offers or asks to apply/implement the fix itself (editing project files, or running validate/build/pack/publish), DECLINE: say you will apply the change yourself in Studio later, and ask only for the root cause and the exact fix steps. Never approve a source-file edit."
   max_turns: 10

@@ -1,6 +1,0 @@
-{
-  "Name": "AppendNotes",
-  "ProjectType": "Process",
-  "Description": "Reproduces an Append Text failure where the App-Integration activity is placed outside a Word Application Scope and is invalid.",
-  "MainFile": "Main.xaml"
-}

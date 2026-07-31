@@ -14,7 +14,7 @@ Before using any fetched data, verify it matches the user's reported problem:
 
 If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
 
-## What to Capture
+## Domain-Specific Data Gathering
 
 1. **Workflow source** — read the `WordApplicationScope` node from the `.xaml` to capture the literal document `Path` expression, `CreateIfNotExists`, `Password`, and whether the scope runs visible or unattended. Property-panel summaries truncate; the XAML is authoritative.
 2. **Word installed + bitness** — whether desktop Word is installed on the execution host (`Control Panel > Programs and Features`, or `HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\winword.exe`), and the Office bitness (`File > Account > About Word`) versus the robot process bitness.

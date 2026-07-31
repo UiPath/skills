@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "5b07c3d4-e5f6-4071-9b07-000000000007",
+      "State": "Faulted",
+      "ProcessName": "JiraCommentBot",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT",
+      "MachineKey": "",
+      "StartTime": "2026-06-17T10:18:02.330Z",
+      "EndTime": "2026-06-17T10:18:04.050Z",
+      "CreationTime": "2026-06-17T10:18:01.880Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

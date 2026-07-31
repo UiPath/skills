@@ -7,10 +7,9 @@ Directory services integration for user/group management.
 
 ## STATUS: DEPRECATED
 
-**This package has moved to an external repository:**
-https://github.com/UiPath/it-automation
+**This package has moved out of the main Activities repository.**
 
-No active development in the main Activities repository. Users should reference the external GitHub repository for current Active Directory activities.
+No active development in the main Activities repository. Active Directory activities are maintained separately.
 
 ---
 

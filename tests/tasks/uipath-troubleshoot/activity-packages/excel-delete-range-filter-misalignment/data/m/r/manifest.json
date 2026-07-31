@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Delete Range customer-list cleanup scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "2e39ca11ce.json"},
+    {"match": "or folders list --output json", "file": "2e39ca11ce.json"},
+    {"match": "or jobs list --folder-key \"f0044444-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "8a1045b8bc.json"},
+    {"match": "or jobs list --folder-key f0044444-3333-4444-5555-666677778888 --state Faulted --output json", "file": "8a1045b8bc.json"},
+    {"match": "or jobs get \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "07d8f224aa.json"},
+    {"match": "or jobs get dd333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "07d8f224aa.json"},
+    {"match": "or jobs history \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "94a675ff10.json"},
+    {"match": "or jobs history dd333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "94a675ff10.json"},
+    {"match": "or jobs logs \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "46b20bd4b3.json"},
+    {"match": "or jobs logs dd333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "46b20bd4b3.json"}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "TransactionExport",
+  "ProjectType": "Process",
+  "Description": "Exports transaction records by running a SELECT over the Transactions table via Execute Query into a DataTable.",
+  "MainFile": "Main.xaml"
+}

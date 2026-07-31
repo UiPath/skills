@@ -18,7 +18,7 @@ agent:
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
-    timeout: 30
+    timeout: 60
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
@@ -58,7 +58,7 @@ success_criteria:
   - type: command_executed
     description: "Agent activated the deployment as a standalone step"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+deploy\s+activate\b'
+    command_pattern: 'uip\s+solution\s+deploy\s+activate\b(?!\s+(?:--help|-h)\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

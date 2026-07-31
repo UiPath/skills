@@ -1,0 +1,91 @@
+task_id: skill-planner-integration-asdd-crosswalk
+description: >
+  Integration coverage for the ASDD / client-SDD crosswalk (PILOT-6045 #2).
+  Given the skill's agent-first markdown SDD plus a customer's client-SDD
+  template skeleton, the planner must assemble the client-facing document into
+  the template's section structure — pulling content from the SDD into the
+  matching sections, and carrying [SME REVIEW] markers where the SDD lacks
+  engagement data instead of fabricating it. Guards
+  references/asdd-crosswalk-guide.md. The template is supplied (a .md skeleton),
+  so this grades the crosswalk mapping — not the interactive "ask for the
+  template path" step — and stops at assembled markdown (no pandoc/.docx).
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 16
+  task_timeout: 2400
+  turn_timeout: 1500
+
+# Stage the source SDD and the customer's client-SDD template into the sandbox
+# root. Both are markdown (the crosswalk guide supports ".md → read headings
+# directly"), so no docx extraction/conversion is needed to grade the mapping.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  In the current directory:
+  - `vendor-onboarding-sdd.md` — the implementation SDD for our Vendor
+    Onboarding automation (the agent-first artifact).
+  - `client-sdd-template.md` — the client's official SDD template. It defines
+    the section structure the customer expects.
+
+  Produce the client-facing SDD: map the content from `vendor-onboarding-sdd.md`
+  into the sections of `client-sdd-template.md`, and save it as
+  `client-facing-sdd.md` in the current directory.
+
+  Before starting, load the uipath-planner skill and follow its ASDD crosswalk.
+
+  Rules:
+  - Follow the template's section structure and headings — do not invent
+    sections the template does not have, and do not restructure into this
+    skill's default SDD layout.
+  - Where a template section needs engagement information the SDD does not hold,
+    do NOT fabricate values — preserve whatever the SDD already records for that
+    field, or leave a clearly labelled placeholder.
+  - Work autonomously; do not pause for checkpoints.
+  - Deliverable is the markdown file only — do NOT convert to .docx or run any
+    `uip` commands.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill for the crosswalk"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Client-facing SDD was created"
+    path: "client-facing-sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Client doc follows the template's section structure (headings preserved)"
+    path: "client-facing-sdd.md"
+    includes:
+      - "PURPOSE"
+      - "AUTOMATED PROCESS DETAILS"
+      - "Packages"
+      - "GLOSSARY"
+    weight: 2.0
+    pass_threshold: 0.75
+
+  - type: file_contains
+    description: "Content was mapped from the source SDD, not fabricated (distinctive tokens carried through)"
+    path: "client-facing-sdd.md"
+    includes:
+      - "VendorOnboardingQueue"
+      - "UiPath.SAP.BAPI.Activities"
+    weight: 2.0
+    pass_threshold: 0.5
+
+  - type: file_contains
+    description: "Missing engagement data carries the [SME REVIEW] marker rather than a fabricated value"
+    path: "client-facing-sdd.md"
+    includes:
+      - "[SME REVIEW]"
+    weight: 2.0
+    pass_threshold: 1.0

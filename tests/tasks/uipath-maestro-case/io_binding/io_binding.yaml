@@ -1,0 +1,62 @@
+task_id: skill-case-io-binding-matrix
+description: >
+  Build and debug a Case Management definition that exercises the common
+  task-level I/O binding patterns, using existing tenant API workflows as the
+  deterministic execution resources. The
+  deterministic Golden Expense echo workflow covers literal, case-variable,
+  cross-task, expression, bare, renamed, nested, literal-assignment,
+  variable-copy, computed, and metadata bindings. Two sequential NameToAge
+  tasks retain the equal-name output regression and require collision-safe
+  task-output IDs. No inline API sibling is created.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, resource, feature:registry]
+
+run_limits:
+  expected_turns: 220
+  task_timeout: 4800
+  max_turns: 280
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "IoBindingCase" containing a
+  project also named "IoBindingCase" from the approved `sdd.md` staged in this
+  workspace. Use that file as the sole source of truth: do not rewrite,
+  summarize, simplify, or redesign it.
+
+  Treat the generated tasks.md plan and all continuation gates as pre-approved.
+  Build end-to-end in one pass and finish with `uip maestro case validate`
+  passing. Bind the exact existing resources and folders written in the SDD;
+  do not create an inline API workflow or add an API project to the solution.
+  Preserve every SDD Outputs row as its own tasks.md list item, including both
+  `estimatedAge -> estimatedAge` rows. Discover the undeclared top-level
+  `APIOutput1` resource output and auto-mint it as a bare tasks.md item; do not
+  invent an operator-free Outputs row in sdd.md.
+
+  Do not run `uip maestro case debug` yourself; the test harness runs it
+  after structural grading. The final .uipx must register exactly one project:
+  the CaseManagement project built from this SDD.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate IoBindingCase/IoBindingCase/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The task-level I/O matrix, including equal-name ID collision handling, is structurally correct and debugs successfully"
+    command: "python3 $TASK_DIR/check_io_binding_case.py"
+    timeout: 1080
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

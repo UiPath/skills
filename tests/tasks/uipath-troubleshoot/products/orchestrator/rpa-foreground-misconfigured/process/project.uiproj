@@ -1,6 +1,6 @@
 {
-  "Name": "MisconfiguredForeground",
+  "Name": "ExpenseValidation",
   "ProjectType": "Process",
-  "Description": "Repro: pure-compute workflow misconfigured as foreground so it occupies the foreground slot unnecessarily. Demonstrates the 'Starts in Background' fix.",
+  "Description": "Performs non-UI compute work and logs start and end messages.",
   "MainFile": "Main.xaml"
 }

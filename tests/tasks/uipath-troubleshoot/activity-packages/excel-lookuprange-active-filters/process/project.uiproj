@@ -1,0 +1,6 @@
+{
+  "Name": "PriceUpdater",
+  "ProjectType": "Process",
+  "Description": "Looks up a SKU in the price list workbook with Lookup Range to update its price.",
+  "MainFile": "Main.xaml"
+}

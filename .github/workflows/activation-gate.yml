@@ -1,9 +1,9 @@
 name: Skill Activation Gate
 
 # When a SKILL.md frontmatter changes, run the activation eval restricted to
-# that one skill's positives and fail if recall.yes drops more than 15pp
-# below the rounded 2026-05-08 baseline. Cross-fire and negatives stay
-# covered by the manual full run.
+# that one skill's positives and fail if recall.yes drops more than DROP_PP
+# (10pp — see tests/scripts/activation_gate.py) below the rounded 2026-06-17
+# baseline. Cross-fire and negatives stay covered by the manual full run.
 
 concurrency:
   group: activation-gate-${{ github.head_ref || github.ref }}
@@ -91,8 +91,6 @@ jobs:
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). Activation runs under the tempdir driver -- no agent image.
       - name: Install coder-eval
-        env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
       - name: Run activation gate

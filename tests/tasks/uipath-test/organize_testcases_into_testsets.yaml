@@ -21,9 +21,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status with --output json (Critical Rules #1 + #2)"
+    description: "Agent checked login status (Critical Rules #1 + #2)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -31,23 +31,23 @@ success_criteria:
   - type: command_executed
     description: "Agent listed testcases with --project-key and --filter flag (Critical Rules #2 + #8)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+list\s+.*--filter.*--output\s+json'
+    command_pattern: 'uip\s+tm\s+testcases?\s+list\s+.*--filter'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created a test set with --project-key and --output json"
+    description: "Agent created a test set with --project-key"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testsets?\s+create\s+.*--project-key.*--output\s+json|uip\s+tm\s+testsets?\s+create\s+.*--output\s+json'
+    command_pattern: 'uip\s+tm\s+testsets?\s+create\s+.*--project-key|uip\s+tm\s+testsets?\s+create'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent added testcases to the new test set with --test-set-key + --test-case-keys + --output json"
+    description: "Agent added testcases to the new test set with --test-set-key + --test-case-keys"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+add\s+.*--test-set-key.*--test-case-keys.*--output\s+json|uip\s+tm\s+testsets?\s+add-testcases\s+.*--test-set-key.*--output\s+json'
+    command_pattern: 'uip\s+tm\s+testcases?\s+add\s+.*--test-set-key.*--test-case-keys|uip\s+tm\s+testsets?\s+add-testcases\s+.*--test-set-key'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

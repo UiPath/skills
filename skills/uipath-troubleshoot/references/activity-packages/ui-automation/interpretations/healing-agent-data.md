@@ -87,15 +87,6 @@ Matching methods (in preference order):
 2. **ActivityName + WorkflowFile** (fallback) — may be ambiguous if duplicate display names exist
 3. **Line number / position** (last resort) — fragile, breaks if file is edited
 
-## XAML Selector Encoding
-
-When editing selectors in XAML, apply XML encoding in this order:
-1. `&` → `&amp;` (FIRST — otherwise it corrupts other encodings)
-2. `<` → `&lt;`
-3. `>` → `&gt;`
-4. `'` → `&apos;`
-5. `"` → `&quot;`
-
 ## How to Check if HA is Enabled
 
 Read the `AutopilotForRobots` field from job info. All three conditions must be true:
@@ -232,27 +223,19 @@ When `healing-fixes.json` contains actionable fixes, present the findings to the
 
 ### Applying `update-target` Fixes
 
-1. Match the XAML activity by `ActivityRefId` → `IdRef` attribute (unique within workflow)
-2. Check if the `uia-improve-selector` skill is available locally:
-   ```
-   Glob: pattern="**/uia-improve-selector/USAGE.md" path="{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/"
-   ```
-3. **If the skill exists:** ask the user if they want to improve the selector using it. If yes, read `<PROJECT_DIR>/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-improve-selector/USAGE.md`, pick the appropriate invocation form for this context, run the staging CLI command from that form to produce `Target_Definition.json`, spawn a subagent with the Agent tool to run the skill with `--mode recover` against the staged folder, then run the write-back CLI command from the same form to persist the recovered selector.
-4. **If the skill does not exist:** update the activity's selector in XAML directly with the HA-recommended selector from `enhancedTarget`. Apply XML encoding per the XAML Selector Encoding rules above.
-5. Validate: `uip rpa validate --file-path "<WORKFLOW_FILE>" --output json`
+1. Match the XAML activity by `ActivityRefId` → `IdRef` attribute (unique within workflow).
+2. Extract the failed selector and the HA-recommended selector (`enhancedTarget` for self-healing; the chosen detection's `EnhancedTargetDto.PartialSelector`/`FuzzyPartialSelector` for recommendation-only) — these are the `before`/`after` values to surface in the diff and hand to the delegate.
+3. On approval, the apply is **delegated to `uipath-rpa`** per the central apply contract (`SKILL.md` §1 invariant 10 / `references/presenting.md` § Interactive resolutions). `uipath-rpa` owns the XAML selector edit (including XML encoding), runtime selector recovery (it decides when and how to drive the package-bundled `uia-improve-selector`), and validation — all in its own context. Do NOT check for or invoke `uia-improve-selector` here, do NOT run any staging / `--mode recover` / write-back CLI yourself, and do NOT edit the XAML yourself. If approval cannot be obtained, no delegate is available, or the delegation fails, present the concrete change (workflow file, activity, recovered selector) as a recommendation for the user to apply in Studio, and stop. A failed delegation is never a reason to edit the workflow yourself.
 
 ### Applying `dismiss-popup` Fixes
 
-1. Ask the user if they want to add a Click activity before the failing activity to dismiss the detected popup
-2. If yes, use the `uip rpa` workflow skill to create the Click activity:
-   - Get the Click activity template: `uip rpa activities get-default-xaml --activity-class-name "UiPath.UIAutomationNext.Activities.NClick" --output json`
-   - Set the target on the Click activity using the `clickTarget` from the HA fix entry (this contains the selector and image for the popup dismiss element)
-   - Insert the Click activity immediately before the failing activity in the XAML (match by `ActivityRefId` → `IdRef`)
-3. The Click activity must be inside a `Use Application/Browser` (`NApplicationCard`) scope — verify the failing activity already has one
-4. After inserting the Click activity, verify it is correctly configured:
-   - Run `uip rpa validate --file-path "<WORKFLOW_FILE>" --output json` to confirm the workflow still compiles with zero errors
-   - If validation errors appear on the new Click activity, troubleshoot and fix them before continuing (common issues: missing target, activity outside NApplicationCard scope, XML encoding errors in the selector)
-   - Tell the user the inserted activity's `IdRef` (`<NEW_CLICK_IDREF>`) and ask them to open the workflow in Studio to visually confirm placement and target
+1. Ask the user if they want to add a Click activity before the failing activity to dismiss the detected popup.
+2. If yes, delegate the edit to `uipath-rpa`. Spawn a subagent (Agent tool) that uses the `uipath-rpa` skill with the change spec:
+   - Insert an `NClick` activity immediately before the failing activity (match by `ActivityRefId` → `IdRef`), inside the failing activity's `Use Application/Browser` (`NApplicationCard`) scope.
+   - Target it using the `clickTarget` from the HA fix entry (the selector/image for the popup dismiss element).
+
+   `uipath-rpa` owns authoring the activity, inserting it within the correct scope, and validating that the workflow compiles. Do NOT edit the XAML yourself.
+3. **If no delegate is usable** (`uipath-rpa` unavailable, or the delegation attempt fails / errors): present the concrete change (the popup dismiss target and the failing activity it should precede) as a recommendation for the user to apply in Studio, and stop. A failed delegation is never a reason to edit the XAML yourself.
 
 ## Presentation — No Internal Fields
 

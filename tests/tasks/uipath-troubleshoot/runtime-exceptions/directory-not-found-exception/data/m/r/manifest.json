@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "_doc": "Hand-authored faithful-replay fixtures. Deterministic first-match rules; unmatched commands return an empty array.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "46ac4679cc.json"
+    },
+    {
+      "match": "or jobs get c3e4a5b6-3333-4abc-9def-000000000003 --output json",
+      "file": "9eafe5f82c.json"
+    },
+    {
+      "match": "or jobs logs c3e4a5b6-3333-4abc-9def-000000000003 --level Error --output json",
+      "file": "8f1041c953.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any unmatched uip command returns an empty array so the agent can explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Agent enumerates folders to locate the folder that owns the job under investigation."
+    },
+    {
+      "pattern": "or jobs get c3e4a5b6-3333-4abc-9def-000000000003",
+      "min": 1,
+      "description": "Agent fetches the job's execution details."
+    },
+    {
+      "pattern": "or jobs logs c3e4a5b6-3333-4abc-9def-000000000003",
+      "min": 0,
+      "description": "OPTIONAL — agent may pull error-level logs for additional detail; min:0 = tracked-but-not-required."
+    }
+  ]
+}

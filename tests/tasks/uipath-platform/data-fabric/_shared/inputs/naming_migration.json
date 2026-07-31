@@ -1,0 +1,91 @@
+{
+  "_note": "Schema-migration input for integration_naming_edge_cases. Each list has a _label (used in the agent's walk-through) and a name (attempted verbatim against Data Fabric). Column entries under columns_on_A1 target the first-successful list (CE_NameOK1). C1 is 100 chars (CE_ + 97 A's \u2014 at the length boundary, should succeed); C2 is 101 chars (CE_ + 98 A's \u2014 one over, should fail).",
+  "lists": [
+    {
+      "_label": "A1",
+      "name": "CE_NameOK1"
+    },
+    {
+      "_label": "A2",
+      "name": "9StartsWithDigit"
+    },
+    {
+      "_label": "B1",
+      "name": "CE_NameWithUnderscore"
+    },
+    {
+      "_label": "B2",
+      "name": "CE-Name-With-Hyphen"
+    },
+    {
+      "_label": "C1",
+      "name": "CE_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    {
+      "_label": "C2",
+      "name": "CE_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    }
+  ],
+  "columns_on_A1": [
+    {
+      "_label": "D1",
+      "name": "Notes",
+      "type": "long text"
+    },
+    {
+      "_label": "D2",
+      "name": "Id",
+      "type": "short text"
+    },
+    {
+      "_label": "D3",
+      "name": "CreatedBy",
+      "type": "short text"
+    },
+    {
+      "_label": "D4",
+      "name": "CreateTime",
+      "type": "date with time"
+    },
+    {
+      "_label": "D5",
+      "name": "UpdatedBy",
+      "type": "short text"
+    },
+    {
+      "_label": "D6",
+      "name": "UpdateTime",
+      "type": "date with time"
+    },
+    {
+      "_label": "E1",
+      "name": "OrderStatus",
+      "type": "short text"
+    },
+    {
+      "_label": "E2",
+      "name": "Status",
+      "type": "short text"
+    },
+    {
+      "_label": "E3",
+      "name": "Order",
+      "type": "whole number"
+    },
+    {
+      "_label": "E4",
+      "name": "Group",
+      "type": "short text"
+    },
+    {
+      "_label": "E5",
+      "name": "Key",
+      "type": "short text"
+    },
+    {
+      "_label": "E6",
+      "name": "Type",
+      "type": "short text"
+    }
+  ]
+}

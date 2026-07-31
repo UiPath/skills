@@ -16,8 +16,8 @@ Pick this plugin whenever the sdd.md mentions deadlines, service-level agreement
 | Sub-op | Purpose |
 |--------|---------|
 | **Default SLA** | The time-based catch-all SLA. One per target (root or stage). Written into the SLA rules array with `expression: "=js:true"`. See [impl-json.md § Target resolution](impl-json.md) for the destination paths. |
-| **Conditional SLA rules** | Expression-driven SLA overrides. Root-only. Prepended to the root SLA rules array ahead of the default. |
-| **Escalation rules** | Notifications triggered at-risk or on breach. Attached to a specific rule via `escalationRule[]`. |
+| **Conditional SLA rules** | Expression-driven SLA overrides. Supported on root and stage targets. Prepended to the target's SLA rules array ahead of the default. |
+| **Escalation rules** | Status markers and notifications triggered at-risk or on breach. Attached to a specific rule via `escalationRule[]`; their IDs may also drive an interrupting secondary-stage `sla-status-change` entry. |
 
 ## Applying SLA at Root vs Stage
 
@@ -26,7 +26,7 @@ Pick this plugin whenever the sdd.md mentions deadlines, service-level agreement
 
 Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage > root.
 
-> **Conditional SLA rules are root-only.** They live in `metadata.slaRules[]`; per-stage conditional SLA is not supported. If the sdd.md describes one, flag to the user.
+> **Conditional SLA rules use the same target scope as defaults.** Root rules live in `metadata.slaRules[]`; stage rules live in the stage node's `data.slaRules[]`. On either target, conditional entries precede the trailing `=js:true` default.
 
 > **Secondary-stage SLA is supported.** Author it the same way as a regular Stage SLA — write `data.slaRules[]` on the `case-management:Stage` node (the secondary stage, i.e. `data.stageType: "secondary"`). See [`impl-json.md`](impl-json.md).
 
@@ -41,13 +41,18 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 | `count` | sdd.md duration number | Positive integer |
 | `unit` | sdd.md duration unit | `min` \| `h` \| `d` \| `w` \| `m` |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
+| `display-name` | sdd.md `SLA Title` (§1 Case Metadata for root; `**SLA Title:**` under `#### Stage SLA`) or generated fallback | Required non-empty SLA title, unique within the target, and MUST NOT contain `:`. Carry the SDD title verbatim. If the SDD has no title, ask for one or use the deterministic fallback `SLA Rule {N}` and record it. |
+| `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context for the target, duration, threshold, and escalation behavior. |
 
 ### Conditional SLA rule
 
 | Field | Source | Notes |
 |-------|--------|-------|
+| `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
 | `expression` | sdd.md condition | Natural-language in planning; the execution phase translates. **Do not fabricate syntax during planning.** |
 | `count`, `unit` | sdd.md duration for this condition | Same units as default |
+| `display-name` | sdd.md or generated fallback | Required non-empty unique title, no `:`; use `SLA Rule {N}` only when the author supplied no title. |
+| `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context; not emitted into JSON. |
 
 Rules are evaluated in insertion order — first truthy expression wins. The default SLA acts as the fallback.
 
@@ -56,13 +61,14 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 | Field | Source | Notes |
 |-------|--------|-------|
 | `trigger-type` | sdd.md | `at-risk` \| `sla-breached` |
-| `at-risk-percentage` | sdd.md | Required when `trigger-type: at-risk` (1–99) |
+| `at-risk-percentage` | sdd.md | Required when `trigger-type: at-risk`; preserve the supplied value because FE validates presence (it does not enforce a numeric range here). |
 | `recipient-scope` | sdd.md | `User` \| `UserGroup` |
 | `recipient-target` | sdd.md → resolver | Recipient UUID. When sdd gives an email or group name, run [§ Identity Resolution](#identity-resolution) — resolved UUID written inline. On resolver failure or user decline, mark `<UNRESOLVED: user-uuid for <email>>` / `<UNRESOLVED: group-uuid for <name>>`. |
 | `recipient-value` | sdd.md | Display value (typically the email for User, group name for UserGroup). |
-| `display-name` | sdd.md (optional) | |
+| `display-name` | sdd.md escalation-table `Display Name` cell | Required non-empty escalation title, unique across the target, and MUST NOT contain `:`. Carry the SDD title verbatim. If omitted, use `Escalation Rule {N}` and record the fallback. |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
 | `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule T-entry the escalation fires under. |
+| `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context. If this escalation enters a secondary stage, name that lane and why it is global/interrupting. |
 
 ## Identity Resolution
 
@@ -132,7 +138,7 @@ Rationale values: `auto-exact-email`, `auto-exact-name`, `user-picked-from-N`, `
 SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each target, order within the target:
 
 1. Default SLA T-entry
-2. Conditional SLA rule T-entries (root only)
+2. Conditional SLA rule T-entries for that target
 3. Escalation rule T-entries (one per rule)
 
 ## tasks.md Entry Format
@@ -142,6 +148,8 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 ```markdown
 ## T<n>: Set default SLA for "<target>" to <duration>
 - target: "<root>" | "<stage-name>"
+- display-name: "SLA Rule 1"              # required; use authored title or SLA Rule {N}
+- rationale: "<why this SLA target and duration fit>"
 - count: 5
 - unit: d
 - order: after T<m>
@@ -151,7 +159,10 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 ### Conditional SLA rule
 
 ```markdown
-## T<n>: Add conditional SLA rule for root case — <condition summary>
+## T<n>: Add conditional SLA rule for "<target>" — <condition summary>
+- target: "root" | "<stage-name>"
+- display-name: "Urgent SLA"              # required; target-unique, no ':'
+- rationale: "<why this condition changes the SLA>"
 - condition: "<natural-language condition from sdd.md>"
 - count: 30
 - unit: min
@@ -165,6 +176,7 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 ## T<n>: Add escalation rule for "<target>" — <trigger summary>
 - target: "<root>" | "<stage-name>"
 - attach-to: default | T<m>
+- rationale: "<why this threshold/recipient/action fits; name any interrupting secondary stage>"
 - trigger-type: at-risk
 - at-risk-percentage: 80
 - recipients:
@@ -179,10 +191,20 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 
 **`attach-to: default`** is the default. Use `T<m>` when sdd.md attaches an escalation to a specific conditional SLA rule.
 
+## Frontend validation parity
+
+Before emitting SLA T-entries, reject or repair the same cases the Case App rejects:
+
+- every SLA rule has a non-empty, target-unique `display-name`;
+- every escalation has a non-empty, target-unique `display-name`;
+- every SLA `count` is positive, and minute-based values are between 15 and 1000 inclusive;
+- every non-default rule has a condition/expression;
+- every escalation has at least one recipient, and every `at-risk` escalation carries `at-risk-percentage`.
+
 ## Anti-Patterns
 
 - **Do not fabricate expression syntax.** Describe conditional SLA rules in natural language during planning; the execution phase handles the exact syntax.
-- **Do not put conditional SLA rules on stages.** Conditional SLA rules live in `metadata.slaRules[]` only. Flag to the user if the sdd.md describes a per-stage conditional SLA.
+- **Do not lose the conditional rule's target.** Root and stage rules have the same entry shape but different destinations (`metadata.slaRules[]` vs `node.data.slaRules[]`). Preserve `target` through `tasks.md`.
 - **Do not invert rule order.** Conditional rules are evaluated in insertion order — insert them in the priority order the sdd.md specifies.
 - **Do not skip the resolver to save a CLI call.** Email / group-name recipients MUST go through [§ Identity Resolution](#identity-resolution). Writing `<UNRESOLVED: ...>` directly without attempting `uip admin users/groups list` is a planning bug.
 - **Do not fabricate UUIDs.** When the resolver returns 0 / multi / partial matches, AskUserQuestion or keep `<UNRESOLVED>` — never guess a UUID, never auto-pick the first candidate without the exact-email / exact-name gate.

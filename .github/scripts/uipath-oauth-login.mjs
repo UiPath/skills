@@ -112,7 +112,12 @@ function startCallbackServer() {
         const st = url.searchParams.get("state");
         const error = url.searchParams.get("error");
         if (error) {
-          res.writeHead(200);
+          // Explicit text/plain + nosniff so the reflected provider error
+          // can never be interpreted as HTML (XSS, see #2273).
+          res.writeHead(400, {
+            "Content-Type": "text/plain; charset=utf-8",
+            "X-Content-Type-Options": "nosniff",
+          });
           res.end("Login failed: " + error);
           server.close();
           reject(new Error("OAuth error: " + error));

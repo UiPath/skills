@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "_doc": "Mocked public-safe deployed BPMN asset that has drifted from local source.",
+  "rules": [
+    { "match": "instance asset inst-triage-001 -f folder-public", "file": "instance-asset.json", "exit_code": 0 },
+    { "match": "instance asset inst-triage-001 --folder-key folder-public", "file": "instance-asset.json", "exit_code": 0 },
+    { "match": "instance asset inst-triage-001", "file": "instance-asset.json", "exit_code": 0 }
+  ],
+  "unmocked_default": {
+    "response": "{\"error\":\"unmocked public-safe BPMN command\"}\n",
+    "exit_code": 1
+  }
+}

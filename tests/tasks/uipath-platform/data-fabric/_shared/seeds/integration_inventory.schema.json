@@ -1,0 +1,41 @@
+{
+  "displayName": "Integration Inventory",
+  "description": "Seed entity for integration_csv_import brownfield test. Schema-only (no seed records — agent imports a CSV).",
+  "fields": [
+    {
+      "fieldName": "SKU",
+      "displayName": "Stock-Keeping Unit",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": true,
+      "lengthLimit": 30
+    },
+    {
+      "fieldName": "Quantity",
+      "displayName": "On-Hand Quantity",
+      "type": "INTEGER",
+      "isRequired": true,
+      "minValue": 0
+    },
+    {
+      "fieldName": "UnitCost",
+      "displayName": "Unit Cost",
+      "type": "DECIMAL",
+      "isRequired": true,
+      "minValue": 0,
+      "decimalPrecision": 2
+    },
+    {
+      "fieldName": "Available",
+      "displayName": "Available for Sale",
+      "type": "BOOLEAN",
+      "isRequired": true,
+      "defaultValue": true
+    },
+    {
+      "fieldName": "LastRestocked",
+      "displayName": "Last Restocked Date",
+      "type": "DATE"
+    }
+  ]
+}

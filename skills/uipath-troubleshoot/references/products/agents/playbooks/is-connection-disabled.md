@@ -7,7 +7,7 @@ confidence: medium
 ## Context
 
 What this looks like:
-- Agent job faults during an IS tool call; `uip agent run status <job-id> --output json` shows `Faulted`
+- A deployed agent job or `uip agent debug` run faults during an IS tool call
 - `uip traces spans get <trace-id> --output json` contains a `toolCall` span whose `ATTRIBUTES.error` contains:
   ```
   Your connection has been temporarily disabled due to multiple unsuccessful attempts. To restore access, please reauthenticate
@@ -30,11 +30,13 @@ What to look for:
 
 ## Investigation
 
-1. Get the job trace ID:
+1. Get the spans for the failing run. If you already have a trace ID, use it directly. If you only have an Orchestrator job key, resolve it through traces:
 
    ```bash
-   uip agent run status <job-id> --output json \
-     --output-filter "traceId"
+   uip traces spans get <trace-id> --output json
+
+   # or
+   uip traces spans get --job-key <job-key> --folder-path "<folder-path>" --output json
    ```
 
 2. Find the faulting `toolCall` span and extract IS connection details:

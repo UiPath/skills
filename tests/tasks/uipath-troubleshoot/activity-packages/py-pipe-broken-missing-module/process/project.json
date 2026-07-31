@@ -1,0 +1,37 @@
+{
+  "name": "PythonInvoiceParser",
+  "projectId": "f1a11111-7777-4bbb-8ccc-aa1111119999",
+  "description": "Parses an invoice by loading a Python script in a Python Scope and invoking it to extract the total amount.",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.Python.Activities": "[1.9.1]",
+    "UiPath.System.Activities": "[26.2.6]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "26.0.194.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "isPausable": false,
+    "isAttended": false,
+    "requiresUserInteraction": false,
+    "supportsPersistence": false,
+    "workflowSerialization": "NewtonsoftJson",
+    "excludedLoggedData": ["Private:*", "*password*"],
+    "executionType": "Workflow",
+    "mustRestoreAllDependencies": true
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {"privateWorkflows": []},
+    "processOptions": {"ignoredFiles": []},
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "VisualBasic",
+  "modernBehavior": true,
+  "targetFramework": "Windows"
+}

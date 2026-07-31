@@ -8,6 +8,10 @@ description: >
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 max_iterations: 1
 
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  disallowed_tools: ["TaskCreate", "TaskUpdate", "TaskList", "TaskGet"]
+
 sandbox:
   template_sources:
     - type: template_dir
@@ -18,6 +22,7 @@ initial_prompt: |
   that posts research briefings to Slack. I'm worried it might accidentally publish
   CONFIDENTIAL content. What guardrail(s) should I add to prevent that, and can you
   set them up? Validate when done.
+
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.
@@ -64,6 +69,6 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 16
+  expected_turns: 24
   max_turns: 40
   turn_timeout: 1200

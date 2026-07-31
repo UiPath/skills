@@ -1,0 +1,69 @@
+task_id: skill-bpmn-diagnose-stuck-gateway
+description: >
+  Diagnose coverage for the uipath-maestro-bpmn skill: a BPMN run is stuck (not
+  faulted) at an exclusive gateway. The agent reads element-executions and
+  cursors, identifies the blocking element, and explains why the token cannot
+  advance (no outgoing condition matched and no default flow). Read-only mocked
+  CLI; no lifecycle mutations.
+tags: [uipath-maestro-bpmn, integration, "mode:diagnose", "lifecycle:discover"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  A UiPath Maestro BPMN run is stuck: it never faulted and never completed. It
+  is parked mid-flow. Diagnose it using the mocked `uip` CLI already on PATH.
+  Public-safe identifiers:
+  - instance id: inst-triage-001
+  - folder key: folder-public
+
+  Use element executions and cursors to find where the runtime stopped and why
+  the token cannot move forward.
+
+  Write your conclusion to diagnosis.md. Include these EXACT labeled lines:
+    STUCK_ELEMENT: <the element id where the run is blocked>
+    STUCK_REASON: <one line naming why it cannot advance>
+  The reason must state that no outgoing condition matched and the gateway has
+  no default flow.
+
+  Use `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,
+  `fixtures/`, or any response JSON files directly. Do NOT retry, cancel,
+  migrate, move a cursor, debug, run, upload, publish, or deploy anything.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent read element executions with folder context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+element-executions\s+inst-triage-001\b.*folder-public'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read cursors with folder context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+cursors\s+inst-triage-001\b.*folder-public'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Diagnosis names the stuck gateway and the missing-default root cause"
+    path: "diagnosis.md"
+    includes:
+      - "STUCK_ELEMENT: Gw_ApprovalRoute"
+      - "default"
+    weight: 3.0
+    pass_threshold: 1.0

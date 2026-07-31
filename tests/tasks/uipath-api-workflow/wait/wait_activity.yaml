@@ -6,39 +6,41 @@ description: >
 tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate]
 
 initial_prompt: |
-  Make a UiPath API Workflow JSON file at Workflow.json that waits ~1 second
-  using a Wait activity, then returns { "done": true }.
+  Author a UiPath API Workflow — in a project named `WaitDone` (its workflow
+  file will be `WaitDone/Workflow.json`) — that waits ~1 second using a Wait
+  activity, then returns { "done": true }.
 
   Validate and run it locally to confirm it completes and returns done; it must
   survive a StudioWeb designer roundtrip.
 
 success_criteria:
-  - type: file_exists
-    description: "Workflow.json was created"
-    path: "Workflow.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Workflow.json is valid JSON"
-    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "Uses a Wait activity"
-    path: "Workflow.json"
-    includes:
-      - "Wait"
-      - "wait"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "Wait" "$WF" && grep -q "wait" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Workflow completes after the wait and returns done"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --output json | grep -qi ''"done"'''
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --output json | grep -qi ''"done"'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

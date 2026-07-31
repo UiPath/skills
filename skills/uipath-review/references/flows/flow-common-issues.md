@@ -253,28 +253,4 @@ grep "console.log" *.flow
 
 **Severity:** Warning
 
-## API Workflow Antipatterns (Studio Web)
-
-### No Input Schema Enforcement
-
-**Symptom:** API workflow has input schema defined, but the first steps do not validate required inputs. Callers can send malformed payloads and the workflow tries to process them.
-
-**Impact:** NullReferenceException deep in the logic instead of a clear 400 Bad Request. Consumers get unhelpful errors.
-
-**Detection:** Inspect API workflow's initial activities. Check for explicit validation (required-field checks, type validation) before business logic begins.
-
-**Fix:** Add input validation as the first step. Return structured 400 responses with field-specific error messages.
-
-**Severity:** Warning
-
-### Synchronous Long-Running API Workflow
-
-**Symptom:** API workflow performing long-running logic (DB migrations, bulk processing, chained API calls) synchronously. Hard timeout: 10 minutes (5 min CPU for serverless).
-
-**Impact:** Request times out with no result, no recovery path. Caller sees timeout error. Work may be partially complete with no rollback.
-
-**Detection:** API workflow test execution exceeds 5 minutes.
-
-**Fix:** Convert to async pattern — accept request, return job ID, process in background (via queue), let caller poll. Or use `Wait for Event and Resume` for suspend/resume.
-
-**Severity:** Warning
+API workflow antipatterns moved to [api-workflow-review-checklist.md](../api-workflows/api-workflow-review-checklist.md) — API workflows are a separate project type.

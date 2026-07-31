@@ -78,10 +78,10 @@ def main():
             f"FAIL: Review should have ≥2 parallel wait-for-timer tasks "
             f"('Hold For 1 Hour' + 'Notify Reviewer'); got {len(review_timers)} ({labels})"
         )
-    if len(timer_lane_indices) < 2:
+    if len(timer_lane_indices) != 1:
         sys.exit(
-            f"FAIL: Review's two timer tasks must occupy distinct lanes in "
-            f"data.tasks (parallel layout); got lane indices {sorted(timer_lane_indices)}"
+            f"FAIL: Review's explicit parallel timer tasks must share one "
+            f"data.tasks inner task set; got set indices {sorted(timer_lane_indices)}"
         )
 
     def _by_label(label: str) -> dict | None:
@@ -232,7 +232,7 @@ def main():
         "OK: 3 stages (Intake → Review → Decision) chained via condition-driven "
         "transitions (Review←Intake, Decision←Review via selected-stage-completed); "
         "case-entered on Intake; "
-        "TWO parallel wait-for-timer tasks on Review in distinct lanes — "
+        "TWO parallel wait-for-timer tasks on Review in one shared task set — "
         "'Hold For 1 Hour' (shouldRunOnlyOnce + skipCondition =vars.skipReview) "
         "and 'Notify Reviewer' (isRequired=false) — both carrying "
         "current-stage-entered task-entry; root has all 7 variables "

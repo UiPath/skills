@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-19T11:50:00.487Z",
+      "Message": "Create Folder: Connection is disabled. Please enable the connection to continue. Error code: DAP-GE-3005.\nin Main.xaml\n    at ConnectorActivity \"Create Folder\"\n    at Sequence \"Sequence\"\n    at Main \"Main\"\n\n--- .NET stack trace ---\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken token)\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivityBase.BuildExecutionParametersAsync(AsyncCodeActivityContext context, RequestParameters requestParameters, CancellationToken token)\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

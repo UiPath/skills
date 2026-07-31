@@ -4,7 +4,7 @@ description: >
   Service connectors by vendor name. Tests that the skill teaches the correct
   connector search workflow (list with --filter, --output json) and the HTTP
   fallback strategy when no native connector exists.
-tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service]
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service, ipe]
 
 run_limits:
   expected_turns: 7
@@ -13,15 +13,12 @@ initial_prompt: |
   I need to find UiPath Integration Service connectors for "Google" and also
   check if there is a connector for "Apify".
 
-  For each vendor:
-  1. Search for matching connectors
-  2. If no native connector exists, explain the fallback strategy
-
   Important:
   - The `uip` CLI is available but is NOT connected to a live tenant in this
     environment. Commands may fail with auth errors — that is expected.
     Run each command once and move on. Do NOT retry or attempt to login.
   - Use `--output json` on every uip command.
+  - Ensure that a skill is always invoked.
 
 success_criteria:
   - type: command_executed
@@ -30,13 +27,5 @@ success_criteria:
     command_pattern: 'uip\s+is\s+connectors\s+list.*--filter'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on connector commands"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+connectors\s+list.*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0
 

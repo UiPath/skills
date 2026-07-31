@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-25T16:02:47.690Z",
+      "Message": "Initialize Apps Hub Connection: One or more errors occurred. (SignalR: Invalid SessionId:  OR Orchestrator Url: )\r\nin Main.xaml\r\n    at InitializeHubConnection\r\n    at Main\r\n\r\n--- .NET stack trace ---\r\nSystem.AggregateException\r\n ---> System.Activities.WorkflowApplicationException: SignalR: Invalid SessionId:  OR Orchestrator Url: \r\n   at UiPath.WorkflowEvents.Activities.NetCore.Activities.InitializeHubConnection.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken cancellationToken)\r\n   --- End of inner exception stack trace ---\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

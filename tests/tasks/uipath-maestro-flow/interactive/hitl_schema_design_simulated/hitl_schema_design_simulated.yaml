@@ -1,0 +1,117 @@
+task_id: skill-flow-hitl-schema-design-simulated
+description: >
+  Purchase-order review flow with an inline HITL quickform (trigger → script →
+  HITL → decision → approve/reject), driven by a simulated procurement officer
+  who describes the review but withholds the form details until asked. Tests
+  whether the agent elicits which fields are read-only vs fill-in, the outcomes,
+  and the priority before building the quickform schema.
+  Validate-only — inline HITL nodes block on human review and can't be flow-debugged.
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl, simulation]
+
+run_limits:
+  # Ceiling on agent turns across the whole dialog, with generous headroom so a
+  # long build is never truncated mid-flow. The dialog length itself is bounded
+  # by simulation.max_turns below.
+  max_turns: 80
+  task_timeout: 2400
+  turn_timeout: 1200
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a non-technical procurement officer. You review purchase orders every
+    day and know exactly what you need to see and decide, but you have never
+    built a flow and you speak in plain English, never in code. You are friendly
+    but impatient: if the agent dithers, prod it to just build something. You
+    cannot read or write code — if the agent shows you code, say "I trust you,
+    just make it work."
+
+  goal: |
+    You want a UiPath Flow that presents a purchase order to you for review
+    and routes it based on your decision.
+
+    OPENING MESSAGE: open the way you would to a colleague — a short paragraph
+    covering the outcome you want plus the details that matter to you: the
+    review is time-sensitive, so it has to be treated as urgent, high
+    priority; you need to see the PO number, the vendor name and the total
+    amount, and you must not be able to change any of them; what you fill in
+    is your decision, Approve or Reject, plus optional notes, with Approve as
+    the main button; if you approve, a step logs "PO approved", and if you
+    reject, the flow just ends. Say that it has to be built as a UiPath
+    Maestro Flow — not an API workflow, not a standalone script — and that you
+    want it validated before you sign off. Do not name files or paths and do
+    not use technical wording. Close by inviting the agent to ask you anything
+    it needs before it starts building. Keep the withheld items below to
+    yourself until it asks.
+
+    WITHHELD — reveal each of these ONLY if the agent asks about it:
+      - The project name should be "VendorPOReview".
+      - Where the PO data comes from: nowhere real yet — mock it, just set some
+        values.
+      - The flow should start manually.
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'HITL', 'quickform', 'schema', 'field', 'direction', 'outcome', or 'node' unless the agent brings them up first."
+    - "If the agent describes its plan BEFORE building and has not treated the review as High priority, remind it then — but never after it has built."
+    - "Do not reveal the project name 'VendorPOReview' unless asked what to name it."
+    - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
+    - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "The moment the agent reports it has built the flow, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
+  max_turns: 8
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+
+success_criteria:
+  # Name-agnostic: any .flow the agent built must validate. The exact project
+  # name is scored separately below so a working-but-misnamed flow still earns
+  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  - type: run_command
+    description: "uip flow validate passes (any .flow)"
+    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Mirrors the skills-repo quality_01_schema_design checks (file_contains):
+  # an inline HITL node with input-direction (read-only) AND output/inOut
+  # (fill-in) fields and Approve+Reject outcomes. Priority is graded separately
+  # below so a missing priority does not zero out an otherwise-correct schema.
+  - type: run_command
+    description: "HITL quickform has input + output fields and Approve/Reject outcomes"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file'; f=json.load(open(flows[0])); nodes=f['nodes']; hitl=[n for n in nodes if str(n.get('type','')).startswith('uipath.human-in-the-loop')]; assert hitl,'need a HITL quickform node'; fields=hitl[0].get('inputs',{}).get('schema',{}).get('fields',[]); dirs={x.get('direction') for x in fields}; assert 'input' in dirs,'need an input-direction (read-only) field'; assert 'output' in dirs or 'inOut' in dirs,'need an output/inOut (fill-in) field'; s=json.dumps(f).lower(); assert 'approve' in s and 'reject' in s,'need Approve and Reject outcomes'; print('OK')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  # Priority is a BEHAVIORAL (not cosmetic) withheld requirement — High priority
+  # changes the review's urgency/SLA. Split out of the schema check above so a
+  # missed priority dings only its own weight, but still gating (the agent is
+  # expected to elicit urgency when the persona flags the review as time-sensitive).
+  - type: run_command
+    description: "HITL review priority is set to High (elicited from the user)"
+    command: "python3 -c \"import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file'; f=json.load(open(flows[0])); hitl=[n for n in f['nodes'] if str(n.get('type','')).startswith('uipath.human-in-the-loop')]; assert hitl,'need a HITL quickform node'; assert 'high' in json.dumps(hitl[0]).lower(),'priority should be High'; print('OK')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
+  # if asked what to name it) — the flow behaves identically whatever it's called.
+  # Non-gating: reports whether the agent elicited the exact name (score 1/0), but
+  # pass_threshold 0 keeps a cosmetic miss from failing the task and the low weight
+  # keeps it from dominating the score.
+  - type: run_command
+    description: "Project/flow is named VendorPOReview (elicited from the user)"
+    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/VendorPOReview.flow',recursive=True) else 'expected a flow named VendorPOReview.flow')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

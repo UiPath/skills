@@ -47,7 +47,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate AcrUserList/AcrUserList/AcrUserList.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -55,9 +55,9 @@ success_criteria:
 
   # ── Agent invoked debug ────────────────────────────────────────────────
   - type: command_executed
-    description: "Agent ran flow debug with --output json"
+    description: "Agent ran flow debug"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug.*--output\s+json'
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

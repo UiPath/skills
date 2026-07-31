@@ -1,0 +1,135 @@
+task_id: skill-coded-apps-sdk-insights-rtm-smoke
+description: >
+  Smoke test (mode:build): agent authors a service module using all three
+  Insights-RTM SDK services — `Agents`, `AgentMemory`, and `AgentTraces`
+  (non-governance methods) — in one file, which forces the agent to honor
+  the calling-convention CONTRAST the skill documents as a trap:
+  `Agents.getAll` takes positional `Date` args, while `AgentMemory` and
+  `AgentTraces` methods take a single options object with dates INSIDE
+  it. Merged from the former sdk_agents_memory_smoke + sdk_traces_smoke
+  (same scope, same file shape) — identical component coverage, one test,
+  and the convention matrix graded side-by-side.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, author `src/insights-rtm.ts` exporting
+  five functions using the three Insights-RTM SDK services. The services
+  have DIFFERENT calling conventions — do not mix them up:
+
+  Using `Agents` (positional `Date` arguments):
+
+  1. `listAgentsInWindow(start: Date, end: Date)` — fetch the agent list
+     with consumption + health metadata over a time window.
+     `Agents.getAll(startTime, endTime, options?)` takes the dates as
+     POSITIONAL arguments.
+
+  Using `AgentMemory` (options object — dates inside it):
+
+  2. `getMemoryTimeline(opts: { startTime?: Date; endTime?: Date })` —
+     fetch a memory timeline via `AgentMemory.getTimeline({ ... })`.
+
+  Using `AgentTraces` (options object — dates inside it):
+
+  3. `errorTimeline(opts: { startTime?: Date; endTime?: Date })` — via
+     `getErrorsTimeline`. Returns a bare array of `{ name, value, date }`
+     (no `.items` unwrapping).
+  4. `latencyTimeline(opts: { startTime?: Date; endTime?: Date })` — via
+     `getLatencyTimeline` (`value` is in seconds).
+  5. `unitConsumption(opts?: { folderKeys?: string[] })` — via
+     `getUnitConsumption` (per-agent AGU/PLTU totals).
+  6. `spansForTrace(traceId: string)` — via `getSpansByTraceId` (all
+     spans of one trace — the record-grain drill-down for inspecting a
+     single agent execution's LLM/tool calls).
+
+  Also write `.env.example` with the standard `VITE_UIPATH_*` env vars.
+  Fill `VITE_UIPATH_SCOPE` with the ACTUAL scope value all three
+  Insights-RTM services require (look it up in the skill's Agents /
+  traces references — they share one scope). Do not leave it empty or as
+  a placeholder.
+
+  Use subpath imports for each service and constructor DI. Do NOT run
+  `uip` or `npm` commands.
+
+  Construct the SDK and every service instance INSIDE the module —
+  exported functions take ONLY the data arguments shown above; do NOT
+  accept service instances as parameters.
+
+success_criteria:
+  - type: file_exists
+    description: "src/insights-rtm.ts was created"
+    path: "src/insights-rtm.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: ".env.example was created"
+    path: ".env.example"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/insights-rtm.ts imports Agents via the /agents subpath (Anti-pattern #1)"
+    path: "src/insights-rtm.ts"
+    includes:
+      - "@uipath/uipath-typescript/agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/insights-rtm.ts imports AgentMemory via the /agent-memory subpath"
+    path: "src/insights-rtm.ts"
+    includes:
+      - "@uipath/uipath-typescript/agent-memory"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/insights-rtm.ts imports AgentTraces via the /traces subpath"
+    path: "src/insights-rtm.ts"
+    includes:
+      - "@uipath/uipath-typescript/traces"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/insights-rtm.ts constructs all three services via DI: new Agents, new AgentMemory, new AgentTraces"
+    command: "grep -E 'new\\s+Agents\\(' src/insights-rtm.ts && grep -E 'new\\s+AgentMemory\\(' src/insights-rtm.ts && grep -E 'new\\s+AgentTraces\\(' src/insights-rtm.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "all six exported functions exist (listAgentsInWindow, getMemoryTimeline, errorTimeline, latencyTimeline, unitConsumption, spansForTrace)"
+    command: "grep -qE '\\blistAgentsInWindow\\b' src/insights-rtm.ts && grep -qE '\\bgetMemoryTimeline\\b' src/insights-rtm.ts && grep -qE '\\berrorTimeline\\b' src/insights-rtm.ts && grep -qE '\\blatencyTimeline\\b' src/insights-rtm.ts && grep -qE '\\bunitConsumption\\b' src/insights-rtm.ts && grep -qE '\\bspansForTrace\\b' src/insights-rtm.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the four AgentTraces methods are called (getErrorsTimeline, getLatencyTimeline, getUnitConsumption, getSpansByTraceId — the last is the D4 span-drill surface)"
+    command: "grep -qE '\\.getErrorsTimeline\\(' src/insights-rtm.ts && grep -qE '\\.getLatencyTimeline\\(' src/insights-rtm.ts && grep -qE '\\.getUnitConsumption\\(' src/insights-rtm.ts && grep -qE '\\.getSpansByTraceId\\(' src/insights-rtm.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/insights-rtm.ts has NO package-root SDK SERVICE-CLASS imports (Anti-pattern #1). Root-level `{ UiPath }` / `import type { UiPath }` is allowed — it's the SDK class itself."
+    command: "sed 's|//.*||' src/insights-rtm.ts | grep -v -E '^\\s*(/\\*|\\*/|\\*)' | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\bUiPath\\b'"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_SCOPE references Insights.RealTimeData (Rule #16 — the shared scope for all three Insights-RTM services)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*Insights\\.RealTimeData' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

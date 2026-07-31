@@ -7,7 +7,7 @@ description: >
 tags: [uipath-agents, smoke, coded, lifecycle:edit, feature:antipattern]
 
 run_limits:
-  expected_turns: 8
+  expected_turns: 14
   turn_timeout: 1200
 
 pre_run:
@@ -15,19 +15,22 @@ pre_run:
     timeout: 10
 
 initial_prompt: |
-  I have an existing UiPath coded agent project at `bad-import/`
-  (pyproject.toml + main.py) that I'm trying to run.
-
-  Review it for UiPath coded-agent anti-patterns and fix them in
-  place. main.py uses `from uipath import UiPath` — that import
-  path does not exist and raises `ImportError` at module-import
-  time. Fix the import. The agent should still call
-  `sdk.assets.retrieve_async` with the same arguments.
+  I've got a UiPath coded agent at `bad-import/` that won't run - it
+  blows up on import before it does anything. Can you review it for
+  UiPath coded-agent anti-patterns and fix them in place? It still
+  needs to call `sdk.assets.retrieve_async` with the same arguments.
 
   Do NOT publish, upload, or deploy. Do NOT pause between planning
   and implementation. Complete end-to-end in a single pass.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "main.py exists under bad-import/"
     path: "bad-import/main.py"

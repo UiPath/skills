@@ -1,0 +1,33 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "b8f3c1d2-4a67-4e90-9c15-2d7e6f0a3b58",
+    "StartTime": "2026-07-19T03:05:11.240Z",
+    "EndTime": "2026-07-19T03:05:12.980Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Schedule",
+    "SourceType": "Schedule",
+    "Info": "Filter active invoices: The source contains no data rows.\r\n\r\nin Main.xaml\r\n    at Assign \"Filter active invoices\"\r\n    at Sequence \"Main Sequence\"\r\n    at DynamicActivity \"Main\"\r\n\r\nSystem.InvalidOperationException: The source contains no data rows.\r\n   at System.Data.DataTableExtensions.CopyToDataTable[T](IEnumerable`1 source)\r\n   at InvoiceReconciliation_Expressions.__Expr1Get(Object[] locations, IEnumerable`1 executionProperties)\r\n   at System.Activities.Expressions.CompiledExpressionInvoker.InvokeExpression(ActivityContext activityContext)\r\n   at System.Activities.CodeActivity`1.InternalExecuteInResolutionContext(CodeActivityContext context)\r\n   at System.Activities.InArgument`1.TryPopulateValue(...)",
+    "CreationTime": "2026-07-19T03:05:11.240Z",
+    "ReleaseName": "InvoiceReconciliation",
+    "Type": "Unattended",
+    "InputArguments": "{}",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "a2f18c53-9d07-4b26-8e41-6c0b3a9f7d28",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\svc_robot",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "LastModificationTime": "2026-07-19T03:05:12.980Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "b8f3c1d24a674e909c152d7e6f0a3b58",
+    "Id": 66812345
+  }
+}

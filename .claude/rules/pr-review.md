@@ -28,7 +28,9 @@ When reviewing or creating pull requests for this repository, enforce these rule
 ### Hook Changes Checklist
 
 - [ ] Script works cross-platform (Windows, macOS, Linux)
-- [ ] Uses `bash` shell syntax (not cmd.exe or PowerShell-specific)
+- [ ] **Twin updated:** session hooks exist as `.sh` + `.ps1` pairs — a change to one file includes the equivalent change to its twin in the same PR
+- [ ] `.ps1` scripts use PowerShell syntax compatible with BOTH Windows PowerShell 5.1 and PowerShell 7+ (no `&&`/`||` pipeline chains, no ternary or null-conditional operators)
+- [ ] `hooks.json` entries keep the bash/PowerShell polyglot command shape (see CONTRIBUTING.md § Hooks): no `shell` field, the sh branch never contains the sequence `#>`, and the PowerShell branch stays wrapped in the `: <<'POLYEOF' … POLYEOF` heredoc (zsh parses the whole command up front and fails on unwrapped PowerShell syntax)
 - [ ] Is safe to run multiple times
 - [ ] Has appropriate timeout configured in hooks.json
 - [ ] Does not hardcode OS-specific paths

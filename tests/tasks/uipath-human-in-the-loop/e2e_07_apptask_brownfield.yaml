@@ -9,7 +9,7 @@ description: >
   authoring path: credentials from ~/.uipath/.auth, solution context resolution,
   app search, retrieve-configuration, resource file writing, debug overwrites,
   node JSON with inputs.type=custom. Does not deploy or execute the flow.
-tags: [uipath-human-in-the-loop, e2e, brown-field, apptask]
+tags: [uipath-human-in-the-loop, e2e, brown-field, apptask, path-to-ga]
 skip: true
 # Blocked: requires live tenant with a deployed Action App and ~/.uipath/.auth
 # credentials. Cannot be run in tempdir sandbox without real infrastructure.
@@ -68,4 +68,3 @@ success_criteria:
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
-

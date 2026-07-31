@@ -1,0 +1,106 @@
+task_id: skill-flow-customer-escalation-simulated
+description: >
+  Multi-branch Outlook→classify→decision escalation flow, but driven by a
+  simulated non-technical user who withholds requirements until asked. Tests the
+  agent's ability to clarify a complex ambiguous ask before building.
+  Validate-only — the sandbox has no live Outlook/Slack tenant.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, node:decision, feature:trigger, connector, simulation]
+
+run_limits:
+  # Ceiling on agent turns across the whole dialog, with generous headroom so a
+  # long build is never truncated mid-flow. The dialog length itself is bounded
+  # by simulation.max_turns below.
+  max_turns: 90
+  task_timeout: 2400
+  turn_timeout: 1200
+
+# No initial_prompt — the simulator generates turn 1 from its persona + goal.
+
+simulation:
+  enabled: true
+
+  persona: |
+    You are a non-technical customer-support team lead. You have heard of UiPath
+    but have never built a flow yourself. You speak in plain English, never in
+    code. You are friendly but impatient: if the agent dithers, prod it to just
+    build something. You cannot read or write code — if the agent shows you code,
+    say "I trust you, just make it work."
+
+  goal: |
+    You want a UiPath Flow that automatically triages the support emails
+    landing in your Outlook inbox so your best customers get a fast, personal
+    response.
+
+    OPENING MESSAGE: open the way you would to a colleague — a short paragraph
+    covering the outcome you want plus the rules that matter to you: it should
+    kick in by itself whenever a new email arrives in your Outlook inbox; two
+    things decide what happens to each email, whether it looks urgent and
+    whether the sender is a VIP customer; if an email is both urgent AND from
+    a VIP you want a heads-up posted in Slack and a quick acknowledgment reply
+    sent back to the sender; anything else should get a support ticket created
+    and a reply to the sender with the ticket details. Say that it has to be
+    built as a UiPath Maestro Flow — not an API workflow, not a standalone
+    script — and that you want it validated before you sign off. Do not name
+    files or paths and do not use technical wording. Close by inviting the
+    agent to ask you anything it needs before it starts building. Keep the
+    withheld items below to yourself until it asks.
+
+    WITHHELD — reveal each of these ONLY if the agent asks about it:
+      - The project name should be "CustomerEscalation".
+      - You do NOT have a fixed urgency keyword list or VIP rule — you trust the
+        agent to decide reasonable ones (e.g. urgent keywords, a VIP domain
+        allow-list). Say "you decide, use your best judgment."
+      - You do not require the project to execute before signing off (there is no
+        live mailbox to test against).
+
+  constraints:
+    - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
+    - "Do not mention 'trigger', 'connector', 'decision', 'script', or 'node' unless the agent brings them up first."
+    - "Do not reveal the project name 'CustomerEscalation' unless asked what to name it."
+    - "The one thing worth pushing back on: if the agent reports it built something that is not a Maestro Flow at all (e.g. an API workflow), tell it you specifically want a Maestro Flow — i.e. a `.flow` file in the workspace — and are not satisfied until there is one."
+    - "If the agent asks you anything before it starts building, answer every outstanding question in ONE message — include any withheld fact it asked about, stated plainly — and then let it build."
+    - "The moment the agent reports it has built the flow, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
+  max_turns: 8
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+
+success_criteria:
+  # Name-agnostic: any .flow the agent built must validate. The exact project
+  # name is scored separately below so a working-but-misnamed flow still earns
+  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  - type: run_command
+    description: "uip flow validate passes (any .flow)"
+    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # Behavioural correctness — asserts the flow DOES the triage (trigger → route
+  # on urgency+VIP → Slack notify / email reply / ticket) without pinning the
+  # implementation SHAPE. Unlike a "'>='2 script nodes" check, this accepts a
+  # flow that classifies with an agent node or routes with a switch, so it does
+  # not penalise the agent for a detail the non-technical persona can never
+  # provide. See check_escalation_behavior.py for the rationale.
+  - type: run_command
+    description: "Flow performs the triage: trigger, urgency+VIP routing, Slack notify, email reply, ticket creation"
+    command: "python3 $TASK_DIR/check_escalation_behavior.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 10.0
+    pass_threshold: 1.0
+
+  # The project name is a WITHHELD, COSMETIC requirement (persona reveals it only
+  # if asked what to name it) — the flow behaves identically whatever it's called.
+  # Non-gating: reports whether the agent elicited the exact name (score 1/0), but
+  # pass_threshold 0 keeps a cosmetic miss from failing the task and the low weight
+  # keeps it from dominating the score.
+  - type: run_command
+    description: "Project/flow is named CustomerEscalation (elicited from the user)"
+    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/CustomerEscalation.flow',recursive=True) else 'expected a flow named CustomerEscalation.flow')\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

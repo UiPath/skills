@@ -11,7 +11,7 @@ A `Get Asset` or `Get Orchestrator Asset` activity completes without throwing an
 What this looks like:
 - Activity completes successfully (no exception in job traces)
 - Output variable contains null, zero, or empty string instead of the expected asset value
-- Downstream logic fails because it receives an unexpected empty value
+- Downstream logic fails because it receives an unexpected empty value — typically a `System.NullReferenceException` ("Object reference not set to an instance of an object") thrown by a consumer of the asset value, NOT by the Get Asset activity itself. Plain null in user workflow logic with no Get Asset upstream → runtime-exceptions null-reference-exception.md
 
 What can cause it:
 - Activity was copy-pasted from another sequence — copy-paste retains internal state from the original activity

@@ -108,7 +108,7 @@ User message: `""` — left blank. The Conversational Service injects the user t
 | `settings.temperature` | `0` | Raise for open-ended brainstorming or casual chats. Keep `0` for factual support flows. |
 | `settings.maxTokens` | `64000` | Set ≤ the model's `MaxTokens` cap — see [model-selection-guide.md](../model-selection-guide.md#1-discover-primary-path). |
 | `settings.model` | `anthropic.claude-sonnet-4-5-20250929-v1:0` | **Always verify** — discover + select per [model-selection-guide.md](../model-selection-guide.md). |
-| `guardrails` | `[]` | Tool-scope only; mirror in tool `resource.json`. See [capabilities/guardrails/guardrails.md](../capabilities/guardrails/guardrails.md) ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Critical Rule 1). |
+| `guardrails` | `[]` | Custom (deterministic) Tool guardrails only — no built-in validators; mirror in tool `resource.json`. See [capabilities/guardrails/guardrails.md](../capabilities/guardrails/guardrails.md) ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Critical Rule 1). |
 
 ## Anti-patterns
 
@@ -118,6 +118,6 @@ User message: `""` — left blank. The Conversational Service injects the user t
 - **Populating `outputSchema`** — runtime streams events; populated schemas never get filled and confuse the agent ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 1).
 - **Templating data into the user message** — the user message content stays blank; per-exchange context goes into the **system prompt** via `inputSchema` templating.
 - **Adding `messages` or `uipath__*` to `inputSchema`** — reserved names; runtime injects ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-patterns 4 and 5).
-- **Using `Agent` or `Llm` guardrail scopes** — silently ignored; only Tool-scope guardrails apply ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Critical Rule 1).
+- **Using built-in validator guardrails (PII, harmful content, etc.) or `Agent`/`Llm` scopes** — built-in validators are autonomous-only and silently ignored; conversational agents support only Custom deterministic `Tool`-scoped guardrails ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Critical Rule 1).
 - **Defining citation-generation format in the system prompt** — agent runtime wraps citation formatting around the prompt; redefining it conflicts or confuses citation generation (see § 1 callout).
 - **Cargo-culted `temperature`** — copying a nonzero temperature into a deterministic, factual-based conversation task.

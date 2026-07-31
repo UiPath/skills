@@ -1,0 +1,6 @@
+{
+  "Name": "PythonInvoiceParser",
+  "ProjectType": "Process",
+  "Description": "Parses an invoice by loading a Python script in a Python Scope and invoking it to extract the total amount.",
+  "MainFile": "Main.xaml"
+}

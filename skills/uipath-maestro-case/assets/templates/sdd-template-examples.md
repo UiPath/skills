@@ -506,7 +506,7 @@ In v1, **every variable accessible via `=vars.X` must appear in the Case Variabl
 
 **Workaround:** if you want a "task-local" variable that doesn't pollute Case Variables, rely on the task's auto-emitted schema fields directly via their natural names. The skill auto-emits all of a task's response fields; you only need a Case Variables row when you want to RENAME the variable or expose it as case-level state with custom Default / Type / Description.
 
-**In an expression — `vars.$xref(...)`.** When the upstream output is one term *inside* a larger `=js:` expression (a composite payload, an `IF`, an SLA expression) rather than the whole input value, embed the in-expression marker `vars.$xref('Stage Name','Task Name','output_name')` (single quotes only). It resolves to the source output's `var` at build time (Step 11.5) — no Case Variables row, no "middle variable". Use whole-value `<- "Stage"."Task".out` when the output IS the entire input.
+**In an expression — `vars.$xref(...)`.** When the upstream output is one term *inside* a larger `=js:` expression (a composite payload, an `IF`, an SLA expression) rather than the whole input value, embed the in-expression marker `vars.$xref('Stage Name','Task Name','output_name')` (single quotes only). It resolves to the source output's runtime reference ID at build time (Step 11.5) — no Case Variables row, no "middle variable". Use whole-value `<- "Stage"."Task".out` when the output IS the entire input.
 
 **Worked example** — a composite input payload built from two upstream decisions, no Case Variables rows:
 

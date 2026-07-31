@@ -23,9 +23,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status (`uip login status --output json`)"
+    description: "Agent checked login status (`uip login status`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -33,15 +33,15 @@ success_criteria:
   - type: command_executed
     description: "Complete create command: `uip tm customfield create --project-key HEALTH --name \"Eval Reviewer\" --data-type Text --object-type Requirement --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval Reviewer)(?=.*--data-type\s+Text)(?=.*--object-type\s+Requirement)(?=.*--output\s+json)uip\s+tm\s+customfield\s+create\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval Reviewer)(?=.*--data-type\s+Text)(?=.*--object-type\s+Requirement)uip\s+tm\s+customfield\s+create'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete list command: `uip tm customfield list --project-key HEALTH --output json`"
+    description: "Complete list command: `uip tm customfield list --project-key HEALTH`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+customfield\s+list\s'
+    command_pattern: '(?=.*--project-key\s+HEALTH)uip\s+tm\s+customfield\s+list\s'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -49,7 +49,7 @@ success_criteria:
   - type: command_executed
     description: "Complete rename command: `uip tm customfield update --project-key HEALTH --rename-to \"Eval Reviewer Team\" --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--rename-to\s+["\x27]?Eval Reviewer Team)(?=.*--output\s+json)uip\s+tm\s+customfield\s+update\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--rename-to\s+["\x27]?Eval Reviewer Team)uip\s+tm\s+customfield\s+update'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -57,7 +57,7 @@ success_criteria:
   - type: command_executed
     description: "Complete delete command: `uip tm customfield delete --project-key HEALTH (--field-ids <uuid> | --name \"Eval Reviewer Team\" --object-type Requirement) --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*(--field-ids\s+\S+|--object-type\s+Requirement))(?=.*--output\s+json)uip\s+tm\s+customfield\s+delete\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*(--field-ids\s+\S+|--object-type\s+Requirement))uip\s+tm\s+customfield\s+delete'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "_doc": "Hand-authored for the CNS error-code playbooks (ENGCE-59477); fixtures reproduce the production CNS signature.",
+  "rules": [
+    {
+      "match": "--version",
+      "file": "02e8acc99f.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "2e37ebc77e.json"
+    },
+    {
+      "match": "or jobs list --folder-key f1a2b3c4-9d0e-4f61-8a72-3b4c5d6e7f80",
+      "file": "0baae564a8.json"
+    },
+    {
+      "match": "or jobs get 4b8a2c6d-1e3f-4a50-b7c9-d0e1f2a3b4c5",
+      "file": "4b62941f74.json"
+    },
+    {
+      "match": "or jobs logs 4b8a2c6d-1e3f-4a50-b7c9-d0e1f2a3b4c5",
+      "file": "cec8826987.json"
+    },
+    {
+      "match": "is connections list --folder-key 7c9e1f22-5b3a-4d48-9e10-6a2b8c4d0e5f",
+      "file": "a80d7a5467.json"
+    },
+    {
+      "match": "is connections list --folder-key f1a2b3c4-9d0e-4f61-8a72-3b4c5d6e7f80",
+      "file": "6ec16f49db.json"
+    },
+    {
+      "match": "is connections ping 8d2f4a6b-3c5e-4710-92a4-b6c8d0e2f4a6",
+      "file": "49aa96c747.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  }
+}

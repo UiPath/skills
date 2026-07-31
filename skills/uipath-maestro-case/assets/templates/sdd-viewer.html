@@ -369,7 +369,7 @@
     }
     .schema-name { display: none; }
 
-    /* warning banner (lightweight-override) */
+    /* warning banner */
     .banner-warn {
       background: var(--warn-bg);
       border: 1px solid var(--warn-border);
@@ -500,7 +500,6 @@
         "prefix": string,                     // 2-4 UPPER (constant only)
         "identifierType": "constant" | "external",
         "identifierExpression": string | null, // external only: =vars.<id> or =js:`...`
-        "priority": { "values": string[], "default": string } | null,
         "sla": { "count": number, "unit": "h"|"d"|"w"|"m", "type": "Static"|"Variable" } | null,
         "slaEscalation": [{ "status": "At-Risk"|"Breached", "threshold": string, "action": string }],
         "variableSla": [{ "expression": string, "sla": number, "unit": string }],
@@ -630,7 +629,7 @@
       const mount = $("#banner-mount");
       mount.innerHTML = "";
       if (data.warningHeader) {
-        mount.appendChild(el("div", { class: "banner-warn", html: "<strong>⚠ Generated lightweight.</strong> " + escapeHtml(data.warningHeader) }));
+        mount.appendChild(el("div", { class: "banner-warn", html: "<strong>⚠ </strong>" + escapeHtml(data.warningHeader) }));
       }
     }
 
@@ -684,7 +683,6 @@
         ["Identifier", c.identifierType === "external"
           ? `${c.identifierExpression || "—"} (external)`
           : (c.prefix ? `${c.prefix} (${c.identifierType || "constant"})` : null)],
-        ["Priority", c.priority ? `${(c.priority.values || []).join(", ")} — default ${c.priority.default || "—"}` : null],
         ["Case-Level SLA", c.sla ? `${c.sla.count} ${c.sla.unit} — ${c.sla.type || "Static"}` : null]
       ];
       const tbl = el("table");

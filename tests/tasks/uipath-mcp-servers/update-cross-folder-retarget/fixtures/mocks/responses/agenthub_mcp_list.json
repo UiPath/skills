@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "AgentHubMcpList",
+  "Data": {
+    "items": [
+      {
+        "id": "mcp-mock-uipath-01",
+        "slug": "test-mcp-skill",
+        "name": "Test MCP Skill",
+        "type": "uipath",
+        "folderKey": "folder-mock-shared",
+        "description": "Mock uipath-type server for skill regression tests."
+      }
+    ],
+    "total": 1,
+    "count": 1
+  }
+}

@@ -16,6 +16,13 @@ description: >
   agent does NOT skip disambiguation.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover]
 
+# No cleanup hook: correct behavior here is to ask the disambiguation question
+# and create NOTHING. A policy only appears if the agent fails the test, and
+# its name would be agent-chosen (not deterministic), so there is nothing safe
+# to target. The failing "must not create" criterion is the signal to
+# investigate. (Deterministic-by-design creators are cleaned up; this is not
+# one — see the compliance-pack tasks and nonregression_branch_a.)
+
 run_limits:
   expected_turns: 5
 

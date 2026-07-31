@@ -1,0 +1,50 @@
+task_id: skill-insights-smoke-absolute-time-range
+description: >
+  Smoke test: agent correctly handles absolute time ranges when the user
+  specifies exact dates instead of relative durations. The agent should
+  convert dates to epoch milliseconds and use --started-after/--started-before
+  instead of --time-range. Auth errors are expected (no live tenant).
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  Show me job metrics from July 1st 2026 to July 5th 2026 specifically.
+  I want the summary and the completed timeline for that exact date range.
+
+  Use --output json on every command. The CLI is not connected to a live tenant,
+  so commands will fail with auth errors — that's expected. Run each command
+  once and move on. Do NOT retry or attempt to login.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --started-after with epoch milliseconds"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s+.*--started-after\s+\d{13}'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --started-before with epoch milliseconds"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s+.*--started-before\s+\d{13}'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran at least two different subcommands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+(summary|completed-timeline)'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0

@@ -21,6 +21,8 @@ What can cause it:
 - Debug run with redirected folder bindings changing execution context
 - Child service task stuck waiting for completion
 
+Arriving from Maestro: if the stuck job has a `ParentJobKey` and was started by a Maestro service task, the parent instance shows incident code `170002` - arrive from [service-task-child-job-faulted](../../maestro/playbooks/service-task-child-job-faulted.md); this playbook still owns the child job's diagnosis.
+
 What to look for:
 - Check job traces for the last activity that executed
 - Check if the process is ProcessOrchestration runtime — look for empty HostMachineName

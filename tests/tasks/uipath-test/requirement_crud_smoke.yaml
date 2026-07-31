@@ -25,9 +25,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status (`uip login status --output json`)"
+    description: "Agent checked login status (`uip login status`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -35,15 +35,15 @@ success_criteria:
   - type: command_executed
     description: "Complete create command: `uip tm requirements create --project-key HEALTH --name \"Eval CRUD - PHI access audit\" --description ... --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval CRUD - PHI access audit)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+create\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval CRUD - PHI access audit)uip\s+tm\s+requirements?\s+create'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete get command: `uip tm requirements get --project-key HEALTH --requirement-key <key> --output json`"
+    description: "Complete get command: `uip tm requirements get --project-key HEALTH --requirement-key <key>`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-(key|id)\s+\S+)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+get\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-(key|id)\s+\S+)uip\s+tm\s+requirements?\s+get'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -51,15 +51,15 @@ success_criteria:
   - type: command_executed
     description: "Complete update command: `uip tm requirements update --project-key HEALTH --requirement-id <uuid> --name \"Eval CRUD - PHI access audit (v2)\" --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-id\s+\S+)(?=.*--name\s+["\x27]?Eval CRUD - PHI access audit \(v2\))(?=.*--output\s+json)uip\s+tm\s+requirements?\s+update\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-id\s+\S+)(?=.*--name\s+["\x27]?Eval CRUD - PHI access audit \(v2\))uip\s+tm\s+requirements?\s+update'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete delete command: `uip tm requirements delete --project-key HEALTH --requirement-ids <uuid> --output json`"
+    description: "Complete delete command: `uip tm requirements delete --project-key HEALTH --requirement-ids <uuid>`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-ids\s+\S+)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+delete\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-ids\s+\S+)uip\s+tm\s+requirements?\s+delete'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

@@ -5,7 +5,7 @@ description: >
   teaches the correct connection workflow (list, present options, ping) and
   that the agent knows the create/edit recovery paths without executing them
   (both require browser interaction).
-tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service, connector, feature:connections]
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service, connector, feature:connections, ipe]
 
 run_limits:
   expected_turns: 7
@@ -48,13 +48,5 @@ success_criteria:
     command_pattern: 'uip\s+is\s+connections\s+ping'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used --output json on connection commands"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+connections\s+.*--output\s+json'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0
 

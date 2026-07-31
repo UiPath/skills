@@ -195,7 +195,7 @@ Follow the [CLI: Replace manual trigger with connector trigger](../../editing-op
 
 > **MUST READ before `node configure`:** [/uipath:uipath-platform — triggers.md](../../../../../../uipath-platform/references/integration-service/triggers.md). The parameters fetched there (`triggers objects` → `parameters[]`, Step 1b) and fields (`triggers describe`, Step 1b-2) are the source of truth for everything in `--detail`. If you have not run both calls, go back to Step 1b.
 
-**Read the `--detail` field table below before calling `node configure`.** The fields and types are strict — unknown keys or wrong types cause validation errors. Do not guess field names from other node types (e.g., activity nodes use `method`/`endpoint`/`bodyParameters`; triggers use `eventMode`/`eventParameters`/`filter`).
+**Read the `--detail` field table below before calling `node configure`.** The fields and types are strict — unknown keys or wrong types cause validation errors. Do not guess field names from other node types (e.g., activity nodes use `method`/`endpoint`/`bodyParameters`; triggers use `eventMode`/`eventParameters`/`filter`, plus `objectName` for generic triggers).
 
 Use `node configure` with trigger-specific `--detail` fields:
 
@@ -204,6 +204,7 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detai
   "connectionId": "<CONNECTION_ID>",
   "folderKey": "<FOLDER_KEY>",
   "eventMode": "<EVENT_MODE>",
+  "objectName": "<OBJECT_NAME>",
   "eventParameters": { "<paramName>": "<RESOLVED_VALUE>" },
   "filter": {
     "groupOperator": 0,
@@ -226,6 +227,7 @@ uip maestro flow node configure <PROJECT>.flow <triggerId> --output json --detai
 | `connectionId` | Yes | Connection UUID from Step 1c (the final connection — BYOA if required) |
 | `folderKey` | Yes | Orchestrator folder key for the connection |
 | `eventMode` | Yes | `"webhooks"` or `"polling"` — from `registry get` response |
+| `objectName` | Generic triggers only | The IS object the event subscribes to (e.g. the Data Fabric entity name) — the object name resolved in Step 1b-2. **Required for generic triggers** (`activityType: "GenericTrigger"` in the definition's `connectorDetail.configuration` — one manifest templated across every object, so its `objectName` context entry ships empty). **Omit for curated triggers** (`activityType: "CuratedTrigger"`) — the manifest's baked-in objectName always wins. |
 | `eventParameters`, `queryParameters`, `pathParameters` | No | JSON objects of resolved values from Steps 3-4. Bucket each `parameters[]` entry by its `type`: `"query"` → `queryParameters` (e.g. GitHub `{"repo":"cli"}`, Outlook `{"sharedMailboxAddress":"..."}`), `"path"` → `pathParameters` (e.g. GitHub `{"owner":"uipath"}`), otherwise → `eventParameters`. Within each bucket, the key is `parameters[].name`. Each must be a JSON object. |
 | `filter` | No | Structured filter tree — see [Filter Trees](#filter-trees) below. Omit to trigger on all events |
 
@@ -487,6 +489,7 @@ uip maestro flow debug . --output json
 | Error | Cause | Fix |
 |---|---|---|
 | `Trigger nodes require --connection-id` | Ran `registry get` without `--connection-id` | Re-run with `--connection-id <id>` — required for all trigger nodes |
+| `Invalid --detail` saying `objectName is required for the trigger` — or, on older CLIs, an opaque `Error configuring node` / `Response returned an error code` on every `--detail` shape | The trigger is **generic** (`activityType: "GenericTrigger"`, e.g. Data Fabric `record-created`): its manifest ships the `objectName` context entry without a value, and configure needs the object to fetch trigger metadata. Older CLIs rejected `objectName` as a `--detail` key and called the metadata API with an empty object name — hence the opaque server error. | Pass the object in `--detail.objectName` (resolve it per Step 1b-2). On an older CLI that rejects the key, `Edit` the trigger **definition's** `model.context` `objectName` entry to add `"value": "<object>"`, then re-run `node configure`. Curated triggers never need this — their manifest carries the objectName. |
 | No trigger nodes in registry | Not authenticated or registry not pulled | Run `uip login` then `uip maestro flow registry pull --force` |
 | Connection not found in bindings | `node configure` not run or connection expired | Re-run `node configure` with valid `connectionId` and `folderKey` |
 | Event parameter missing at runtime | Required event parameter not configured (commonly one returned by `triggers describe` but absent from `triggers objects → parameters[]`) | Re-run **both** `uip is triggers objects` (Step 1b) **and** `uip is triggers describe` (Step 1b-2). Configure every field marked `required` in **either** `parameters[]` or `EventParameters` (resolving references) under the correct `--detail` bucket. |

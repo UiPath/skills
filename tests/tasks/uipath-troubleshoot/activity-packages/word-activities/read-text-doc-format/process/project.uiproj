@@ -1,6 +1,0 @@
-{
-  "Name": "LegacyDocReader",
-  "ProjectType": "Process",
-  "Description": "Reproduces a Read Text failure where the standalone System > File > Word Document Read Text activity (OpenXML, .docx-only) fails on a legacy binary .doc file.",
-  "MainFile": "Main.xaml"
-}

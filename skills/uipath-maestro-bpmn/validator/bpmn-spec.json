@@ -2401,8 +2401,12 @@
         "bpmnElement": "uipath.agent",
         "category": "uipathShortcut"
       },
-      "uipath.human-in-the-loop": {
-        "bpmnElement": "uipath.human-in-the-loop",
+      "uipath.human-in-the-loop.quick-form": {
+        "bpmnElement": "uipath.human-in-the-loop.quick-form",
+        "category": "uipathShortcut"
+      },
+      "uipath.human-in-the-loop.coded-action-app": {
+        "bpmnElement": "uipath.human-in-the-loop.coded-action-app",
         "category": "uipathShortcut"
       },
       "uipath.api-workflow": {

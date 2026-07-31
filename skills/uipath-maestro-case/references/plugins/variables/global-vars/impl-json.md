@@ -16,7 +16,7 @@ return allVariables.find(v => v.id === variableId);
 |---|---|---|
 | `id` | The resolver match key | YES — sole match key |
 | `name` | Human-readable label / FE display | No — never matched |
-| `var` | Pointer field. On wires (Out-arg formal, trigger output): points OUTWARD to the slot. On self-declarations (task output, trigger spec auto-emit): mirrors `id`. | Only when `id` is absent (FE fallback: synthesizes `Variable.id = "=vars.<var>"` — partial form, non-resolvable) |
+| `var` | Pointer field. On wires (Out-arg formal, trigger output, reassigned task output): points OUTWARD to the target slot. On bare self-declarations and trigger spec auto-emits: mirrors `id`. | Only when `id` is absent (FE fallback: synthesizes `Variable.id = "=vars.<var>"` — partial form, non-resolvable) |
 | `elementId` | FE picker scope only. Controls which panel displays the variable. **Not used by the resolver.** | No |
 | `source` | Runtime extraction expression (e.g., `=Decision`, `=response.subject`) | No — read by BPMN engine at runtime |
 | `target` | Runtime write expression (rarely matters) | No |
@@ -31,7 +31,7 @@ return allVariables.find(v => v.id === variableId);
 | `variables.inputOutputs[]` *(top level)* | YES if `id` present | Canonical declaration site |
 | `variables.inputs[]` *(top level)* | YES — by random `id` | Picker-invisible (resolution works, but the FE picker does not surface it); target only via the companion |
 | `variables.outputs[]` *(top level)* | YES (the formal entry) | But its `var` points elsewhere — see Out-arg shape below |
-| `task.data.outputs[]` | YES if `id` present | Self-declares — task plugin writes id matching the SDD-given name |
+| `task.data.outputs[]` | YES if `id` present | Bare outputs self-declare with `id === var`; reassigned outputs may have a collision-safe `id` while `var` points to the target Case variable |
 | `task.data.inputs[]` | YES — by random `id` | Picker-invisible; used for the In-arg formal slot |
 | `triggerNode.data.uipath.outputs[]` | YES if `id` present; **NO if only `var` (no `id`)** | Pattern A entries (`id === var`) self-resolve; Pattern C entries (`var` only) require a companion in `root.inputOutputs[]` |
 
@@ -62,14 +62,18 @@ Under the B refactor, this plugin is **the sole owner** of:
 
 ## Uniqueness Rule
 
-Every `var` / `id` must be globally unique across the case. When a name collides, append a counter starting at 2:
+Every independently minted `var` / `id` must be globally unique across the case, except for the single root-companion alias defined below for an equal-name `->` extraction. When a name collides, append a counter starting at 2:
 
 ```
 "decision" exists → "decision2" → "decision3"
 "error" + "error2" exist → "error3"
 ```
 
-The `source` and `name` fields keep the original value — only `var` / `id` / `target` get the suffix.
+The `source` and `name` fields keep the original value. Independently minted `var` / `id` values and their `target` get the suffix; on a reassign shape, `originalVar` mirrors the allocated `id` and receives the same suffix.
+
+**Reassigned-output collision.** A normal `field -> caseVar` output owns an independently minted source-side `id` even though its `var` points at the existing Case variable. Deduplicate that `id` against the global pool and update `target` plus `originalVar` to match it; do not suffix the pointer `var`. For example, if `aPIOutput1` already exists, `APIOutput1 -> renamedResult` emits `id: "aPIOutput12"`, `target: "=aPIOutput12"`, `var: "renamedResult"`, and `originalVar: "aPIOutput12"`. See [io-binding § Output Binding Shapes](../io-binding/impl-json.md#output-binding-shapes).
+
+**Controlled alias — equal-name `->` extraction.** A reassigned task/rule output is a wire to an existing Case-variable slot, not an independent declaration. When `baseId == target case-variable id`, exclude exactly that matching `variables.inputOutputs[]` companion (`id == target`, `elementId == "root"`) from the source-side allocation scan. Do not exclude any task, trigger, rule, argument, or unrelated root entry. Thus the first `greeting -> greeting` may emit `id == var == originalVar == "greeting"` alongside the root companion, but if another output already owns `greeting`, the wire emits `id: "greeting2"`, `originalVar: "greeting2"`, and `target: "=greeting2"` while `var` and `value` remain `"greeting"`. Never suffix the root companion or the `var` pointer. `originalVar` marks both forms as reassigned, so `mutateRootVariables` retains the existing root companion instead of auto-mirroring a duplicate.
 
 ### Pool composition (what to scan)
 
@@ -418,6 +422,8 @@ When a task's `data.outputs[]` entry has `id` set (which is always the case unde
 ```
 
 This is the **reassign shape** (FE Scenario B/D). The `originalVar` field tells the FE's `mutateRootVariables` to filter this entry out of root-mirroring (`VariableMutationUtils.ts:135`), so the case Variables companion stays intact across FE edits. Without `originalVar`, FE edits would create duplicate root entries and orphan the case variable.
+
+When source and destination have the same name (`Decision -> decision` after camel-casing, or `greeting -> greeting`), the shape does not become bare. With no unrelated owner, `id`, `var`, and `originalVar` may intentionally be identical and may match the root companion ID. With an unrelated collision, only `id`, `originalVar`, and `target` take the allocated suffix; `var` and `value` keep pointing to the existing Case variable. `originalVar` is required in both forms and is what makes the alias safe.
 
 For `=` operator rows (Scenario E), the task plugin emits a separate `custom: true` entry — see Custom Outputs section above.
 

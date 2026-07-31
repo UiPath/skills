@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceMailer",
+  "ProjectType": "Process",
+  "Description": "Sends invoice emails to recipients with Send Outlook Mail Message from the Robot host.",
+  "MainFile": "Main.xaml"
+}

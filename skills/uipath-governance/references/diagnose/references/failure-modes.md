@@ -63,7 +63,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
    ```bash
    uip gov aops-policy deployment tenant get "$TENANT_ID" --output json
    ```
-3. Verify the product is included in the target license type (see [aops-policy-deploy-guide.md — License-type → product compatibility](../aops-policy/aops-policy-deploy-guide.md#license-type--product-compatibility)).
+3. Verify the product is included in the target license type (see [aops-policy-deploy-guide.md — License-type → product compatibility](../../aops-policy/aops-policy-deploy-guide.md#license-type--product-compatibility)).
 
 **Fix:** Cause 1 → redeploy to a license type that includes the target product. Cause 2 → deploy to the license type the affected users actually hold. Cause 3 → deploy to all relevant license types.
 
@@ -100,7 +100,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
    uip gov access-policy list --filter "status in ('Active')" --output json
    ```
 
-**Fix:** Cause 1 → narrow selector `resourceType`/`tags`. Cause 2 → add the calling user/group to `actorRule`. Cause 3 → add the actor process type to `executableRule`. Cause 4 → adjust tags on the resource or policy. Cause 5 → see [plugins/actor/impl.md — Robot intent](../access-policy/plugins/actor/impl.md) for the User-fallback pattern.
+**Fix:** Cause 1 → narrow selector `resourceType`/`tags`. Cause 2 → add the calling user/group to `actorRule`. Cause 3 → add the actor process type to `executableRule`. Cause 4 → adjust tags on the resource or policy. Cause 5 → see [plugins/actor/impl.md — Robot intent](../../access-policy/plugins/actor/impl.md) for the User-fallback pattern.
 
 ---
 
@@ -133,7 +133,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
    ```
 4. Verify the resource's tags in the Resource Catalog match the selector's tag filter.
 
-**Fix:** Cause 1 → broaden selector or add a new policy covering the gap. Cause 2 → update status to `Active`. Cause 3 → correct tags on resource or policy. Cause 4 → reframe deny intent as allow-only (see [plugins/tags/planning.md — Deny-to-Allow flip](../access-policy/plugins/tags/planning.md#deny-to-allow-flip)). Cause 5 → use correct enum values from [plugins/selector/impl.md](../access-policy/plugins/selector/impl.md).
+**Fix:** Cause 1 → broaden selector or add a new policy covering the gap. Cause 2 → update status to `Active`. Cause 3 → correct tags on resource or policy. Cause 4 → reframe deny intent as allow-only (see [plugins/tags/planning.md — Deny-to-Allow flip](../../access-policy/plugins/tags/planning.md#deny-to-allow-flip)). Cause 5 → use correct enum values from [plugins/selector/impl.md](../../access-policy/plugins/selector/impl.md).
 
 ---
 
@@ -165,7 +165,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
    uip gov aops-policy deployment user get "$USER_ID" --output json
    ```
 
-**Fix:** Cause 1 → deploy a policy via [aops-policy-deploy-guide.md](../aops-policy/aops-policy-deploy-guide.md). Cause 2 → redeploy to the correct tenant. Cause 3 → use the product `name` (not label) from `product list`. Cause 4 → remove the `null` override or deploy a policy at a broader scope.
+**Fix:** Cause 1 → deploy a policy via [aops-policy-deploy-guide.md](../../aops-policy/aops-policy-deploy-guide.md). Cause 2 → redeploy to the correct tenant. Cause 3 → use the product `name` (not label) from `product list`. Cause 4 → remove the `null` override or deploy a policy at a broader scope.
 
 ---
 
@@ -198,4 +198,4 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
    ```
 4. For Access — check error message in response `Data.errors`.
 
-**Fix:** Cause 1 → use `name` from `product list`. Cause 2 → fix JSON (validate with `jq`). Cause 3 → switch to `enforcement: "Allow"`. Cause 4 → add `"values": ["*"]` to selector entries. Cause 5 → choose a different name. Cause 6 → regenerate from template via [configure-aops-policy-data-guide.md](../aops-policy/configure-aops-policy-data-guide.md).
+**Fix:** Cause 1 → use `name` from `product list`. Cause 2 → fix JSON (validate with `jq`). Cause 3 → switch to `enforcement: "Allow"`. Cause 4 → add `"values": ["*"]` to selector entries. Cause 5 → choose a different name. Cause 6 → regenerate from template via [configure-aops-policy-data-guide.md](../../aops-policy/configure-aops-policy-data-guide.md).

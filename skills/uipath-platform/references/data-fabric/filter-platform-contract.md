@@ -33,7 +33,7 @@ Example:
 - `value` is always a JSON **string** (`"18"`, `"true"`, ISO-8601 dates) — the server parses it.
 - `in` / `not in` use `valueList`; everything else uses `value`.
 - `null` value = is-empty (`=`) / is-not-empty (`!=`).
-- Response: `{ Items, TotalCount, HasNextPage, NextCursor? }` (the rows are under `Items`, not `Records`). Page with `--limit` / `--cursor` flags, never body keys.
+- Response: `{ Items, TotalCount, HasNextPage, NextCursor: { Value }, CurrentPage, TotalPages, SupportsPageJump }`. Records live in `Data.Items` (NOT `Data.Records`). Page with `--limit` / `--cursor` flags (pass `NextCursor.Value`), never body keys.
 
 ## Operator support by field type
 
@@ -49,6 +49,8 @@ Build only within this matrix (✅ supported). The API *runs* some ❌ cells any
 | `in` `not in` | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ |
 
 Complex-field values: **Choice Set** — the integer `NumberId` (multi: `=` takes a sorted JSON-array string `"[1,3]"`, `contains` takes a bare id `"3"`). **Relationship** — the target record's UUID `Id`.
+
+**`MULTILINE_MAX` is outside the matrix entirely** — the Text / Multiline column does NOT cover it. No operator is supported (including is-empty), and no `sortOptions`: server rejects with 400 — *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."* / *"Sort field '<name>' is of type MULTILINE_MAX and cannot be used for sorting."* Don't offer the field in filter/sort; if the user asks, surface the limitation and (only with their approval) fetch full values via `records get` and evaluate client-side.
 
 ## Unsupported operator, or missing value
 

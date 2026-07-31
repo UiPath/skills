@@ -1,0 +1,6 @@
+{
+  "Name": "NightlyReconcileTxn",
+  "ProjectType": "Process",
+  "Description": "Runs the nightly reconciliation inside a Start Transaction scope, updating ReconciliationLine status within a single database transaction.",
+  "MainFile": "Main.xaml"
+}

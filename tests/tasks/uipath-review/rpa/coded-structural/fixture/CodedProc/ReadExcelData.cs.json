@@ -1,0 +1,45 @@
+{
+  "DisplayName": "Read Excel Data",
+  "Tooltip": null,
+  "HelpLink": null,
+  "Color": null,
+  "OriginalIconFileName": null,
+  "Arguments": [
+    {
+      "Name": "filePath",
+      "DisplayName": "File Path",
+      "Category": null,
+      "Tooltip": "Full path to the Excel file to read.",
+      "Placeholder": null,
+      "Widget": null,
+      "IsRequired": true,
+      "IsPrincipal": true,
+      "ArgumentType": 0,
+      "DataSourceItems": null
+    },
+    {
+      "Name": "excelData",
+      "DisplayName": "Excel Data",
+      "Category": null,
+      "Tooltip": "DataTable containing the data read from the Excel file.",
+      "Placeholder": null,
+      "Widget": null,
+      "IsRequired": false,
+      "IsPrincipal": false,
+      "ArgumentType": 1,
+      "DataSourceItems": null
+    },
+    {
+      "Name": "Output",
+      "DisplayName": "Output",
+      "Category": null,
+      "Tooltip": null,
+      "Placeholder": null,
+      "Widget": null,
+      "IsRequired": true,
+      "IsPrincipal": true,
+      "ArgumentType": 0,
+      "DataSourceItems": null
+    }
+  ]
+}

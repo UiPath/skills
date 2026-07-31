@@ -4,7 +4,7 @@ Two node types implement human-in-the-loop checkpoints. Choose based on whether 
 
 ---
 
-## Option 1 — `uipath.human-in-the-loop` (Inline Schema — OOTB)
+## Option 1 — `uipath.human-in-the-loop.quick-form` (Inline Schema — OOTB)
 
 This is the preferred option. No registry pull, no app publishing, no tenant dependency. Write the node directly into the `.flow` file as JSON.
 
@@ -24,17 +24,16 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 ```json
 {
   "id": "hitlReview1",
-  "type": "uipath.human-in-the-loop",
+  "type": "uipath.human-in-the-loop.quick-form",
   "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
-    "type": "quick",
     "schema": {
       "schemaId": "<uuid>",
       "fields": [
         { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "vars.fetchInvoice.output.invoiceId" },
         { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "vars.fetchInvoice.output.amount" },
-        { "id": "decision",  "label": "Decision",   "type": "text",   "direction": "output", "variable": "decision" }
+        { "id": "decision",  "label": "Decision",   "type": "text",   "direction": "output", "variable": "vars.decision" }
       ],
       "outcomes": [
         { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "action": "Continue" },
@@ -69,10 +68,10 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 
 **Field format rules:**
 - **Input fields**: `binding: "vars.<nodeId>.output.<field>"` (raw path, no `=js:$` prefix). No `variable` property on input fields.
-- **Output fields**: `variable: "<globalName>"` (plain name, **no** `vars.` prefix). No `binding`.
+- **Output fields**: `variable: "vars.<globalName>"` (`vars.` prefix required). No `binding`.
 - **InOut fields**: both `binding` and `variable`, same formats as above.
 - `schemaId` (not `id`) at the schema level — generate a fresh UUID.
-- `typeVersion` — always `"1.0"` for `uipath.human-in-the-loop`. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
+- `typeVersion` — always `"1.0"` for `uipath.human-in-the-loop.quick-form`. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
 - No `model` block on node instances — only the definition carries it.
 
 **outputs block**: only `output` (with `properties` for output/inOut fields + `Action` outcome) and `status` (with `enum`/`default` from outcomes). No per-field `custom: true` entries.
@@ -83,13 +82,13 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 - `$vars.{nodeId}.output` — object with all `output` / `inOut` field values, keyed by **field `id`**
 - `$vars.{nodeId}.output.{fieldId}` — individual field value (e.g. `$vars.hitlReview1.output.decision`)
 - `$vars.{nodeId}.status` — selected outcome name (e.g. `"Approve"`, `"Reject"`)
-- `$vars.{globalId}` — workflow-global variable for output/inOut fields; `globalId` is derived from `field.variable` (strip `vars.` prefix)
+- `$vars.{globalId}` — workflow-global alias; `globalId` is `field.variable` with `vars.` stripped. **Do not use this in scripts — always use `$vars.{nodeId}.output.{fieldId}` instead.**
 
 ---
 
-## Option 2 — App-Based HITL (`uipath.human-in-the-loop` with `inputs.type = "custom"`)
+## Option 2 — App-Based HITL (`uipath.human-in-the-loop.coded-action-app`)
 
-Use when there is an existing deployed Action Center app that should serve as the task form. Same node type as Option 1 — only `inputs.type`, `inputs.app`, and `inputs.appInputBindings` differ.
+Use when there is an existing deployed Action Center app that should serve as the task form.
 
 ### Discovery
 
@@ -120,11 +119,10 @@ Full step-by-step (app search → retrieve-configuration → resource files → 
 ```json
 {
   "id": "invoiceReview1",
-  "type": "uipath.human-in-the-loop",
+  "type": "uipath.human-in-the-loop.coded-action-app",
   "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Invoice Review" },
   "inputs": {
-    "type": "custom",
     "recipient": { "channels": ["ActionCenter"], "connections": {}, "assignee": { "type": "group" } },
     "app": {
       "displayName": "Invoice Approval",
@@ -175,6 +173,8 @@ Full step-by-step (app search → retrieve-configuration → resource files → 
   }
 }
 ```
+
+**`typeVersion`** — fill in the version returned by `uip maestro flow registry get <appKey>` for the specific deployed app. Unlike QuickForm (always `"1.0"`), AppTask version varies per app definition.
 
 **`inputs.app`**: `inputSchema` and `outputSchema` are JSON Schema objects (`{ "type": "object", "properties": { ... } }`), **not arrays**.
 

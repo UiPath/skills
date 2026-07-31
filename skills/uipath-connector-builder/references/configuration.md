@@ -83,14 +83,20 @@ connector; the tenant user supplies the real secret at connection time. Key sets
 - **OAuth2** (16 entries — canonical list; `auth set` writes all of them):
   `oauth.api.key`, `oauth.api.secret` (PASSWORD, encrypt, isPrivate), `oauth.callback.url`
   (auto-set, do NOT hardcode), `oauth.authorization.url`, `oauth.token.url`,
-  `oauth.token.refresh.url`, `oauth.token.revoke.url`, `oauth.scope`,
-  `oauth.basic.header`, `oauth.user.token`, `oauth.user.refresh.token`,
-  `oauth.user.refresh.interval` (sec, default 3600), plus auto-set internals
-  `oauth.user.refresh.time`, `oauth.decode.authorization.code`, `authentication.time`,
+  `oauth.token.refresh_url`, `oauth.token.revoke_url`, `oauth.scope`,
+  `oauth.basic.header`, `oauth.user.token`, `oauth.user.refresh_token`,
+  `oauth.user.refresh_interval` (sec, default 3600), plus auto-set internals
+  `oauth.user.refresh_time`, `oauth.decode.authorization.code`, `authentication.time`,
   `expires_in`. Sets `authentication.type:"oauth2"`, `typeOauth:true`.
+  NOTE the underscore in the last segment of the four refresh/revoke keys
+  (`refresh_url`, `refresh_token`, `refresh_time`, `refresh_interval`) — the
+  all-dots spellings are dead keys the runtime never reads.
 - **OAuth2 PKCE** adds `oauth.pkce.code.challenge.verifier`, `oauth.pkce.code.challenge`,
   `oauth.pkce.code.challenge.method` (`"S256"`).
 - **OAuth2 Client Credentials**: subset — no auth URL, no refresh token.
+- **oauth2PrivateKeyJwt** (client authenticates with a signed assertion, e.g. Epic FHIR):
+  `oauth.api.key`, `oauth.token.url`, `jwk.private.key` (TEXTAREA, encrypt), `jwk.kid` —
+  the connection user supplies the key + kid. `typeOauth:true`.
 - **customApiKey** (the on-disk type for any "API key" auth — the UI labels it "API key",
   but never use periodic's bare `apiKey`): one PASSWORD secret config (default
   `custom.api.key`, encrypt, isPrivate, `groupBy:"customApiKey"`) + one `type:"value"`
@@ -98,9 +104,25 @@ connector; the tenant user supplies the real secret at connection time. Key sets
   `authentication.type:"customApiKey"`, `typeOauth:false`. CLI flow + flags:
   [auth.md](auth.md) §customApiKey.
 - **basic**: `username`, `password` (PASSWORD, encrypt).
-- **jwtOauth**: `jwt.oauth.consumer.key`, `jwt.oauth.private.key`, `jwt.oauth.username`,
-  `jwt.oauth.token.url`, `jwt.oauth.scope`. `typeOauth:true`.
-- **awsv4**: `aws.api.key`, `aws.api.secret`, `aws.region`, `aws.service.name`, `aws.host`.
+- **jwtOauth / jwtOauth2** (OAuth 2.0 JWT Bearer): `oauth.api.key`, `oauth.api.secret`,
+  `oauth.callback.url`, `oauth.token.url`, `jwt.base64.encoded.key` (TEXTAREA — the signing
+  key, PKCS#8 PEM or base64), plus one `jwt.claim.<name>` config per assertion claim and
+  `jwt.header.<name>` per assertion header (the runtime builds the JWT from every config
+  with those prefixes — Salesforce ships `jwt.claim.iss/sub/aud`). Wire claims with
+  `auth set --jwt-claim` / `--jwt-header` ([auth.md](auth.md) §"JWT Bearer"). `typeOauth:true`.
+  (The old `jwt.oauth.*` keys are read by NOTHING — never write them.)
+- **awsv4**: `aws.api.key`, `aws.api.secret`, `aws.region` (user-filled), `aws.service.name`
+  (hidden, per-service constant like `connect`), `aws.host` (hidden). Put the region in the
+  base URL as `https://<service>.{aws.region}.amazonaws.com` — the CLI binds `{aws.region}`
+  to the config automatically.
+- **none**: no auth configs at all — `authentication.type:"none"` only (open APIs, webhooks).
+- **firstPartyService / fpsUserDelegatedAccess / fpsRobotAccess** (UiPath internal services
+  ONLY): no user credentials — the platform injects the caller's identity. `oauth.scope`
+  (hidden) carries the service scope (set via `auth set --scope`). base.url uses
+  `https://{host}/{account}/{tenant}/<service>_` and the CLI binds those three placeholders
+  to the internal headers `x-forwarded-host` / `x-uipath-internal-accountid` /
+  `x-uipath-internal-tenantid` (`type:"header"` path params) — they are NOT connection-form
+  fields. `fpsUserDelegatedAccess` adds `oauth.user.refresh_token`.
 
 ## Multi-auth (groupControl)
 An `authentication.type` COMBO with `"groupControl": true` plus per-type config entries

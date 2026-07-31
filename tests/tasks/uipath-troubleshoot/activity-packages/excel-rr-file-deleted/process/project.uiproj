@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Reads the 'Data' sheet from the daily sales workbook at C:\\Robot\\Data\\sales-2026-05.xlsx into a DataTable via Read Range.",
+  "MainFile": "Main.xaml"
+}

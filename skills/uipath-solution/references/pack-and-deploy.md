@@ -45,6 +45,7 @@ uip solution restore ./MySolution --output json
 |--------|-------------|---------|
 | `<solutionPath>` | Solution directory (containing a `.uipx`) or a `.uis` file (required) | -- |
 | `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI refreshes it before restore starts | 10 |
+| `--nuget-sources-config-path <path>` | Local `NuGet.config` that sets the package sources used for resolution | -- |
 
 `restore` resolves dependencies on disk and does **not** produce a package. It needs an authenticated session (`uip login`) to reach private Orchestrator feeds. `pack` already restores internally, so this step is an **optimization, not a requirement** — its value is in CI, where running `login → restore → pack` fails fast on a missing or unreachable feed before the heavier pack step runs. Skip it for a plain local pack.
 
@@ -65,8 +66,11 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | `<output-path>` | Directory where the .zip will be written (required positional, no default — omitting it errors with `missing required argument 'output-path'`) | -- |
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
+| `--nuget-sources-config-path <path>` | Local `NuGet.config` that sets the package sources used for resolution | -- |
 
 The output is a `.zip` file named `<name>.<version>.zip` written under `<output-path>/` (e.g., `MySolution.2.0.0.zip`). Run `solution resources refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
+
+**Controlling package sources.** In offline or air-gapped environments, or when packages must be resolved from specific feeds, pass `--nuget-sources-config-path <path>` pointing at a local `NuGet.config`. Both `pack` and `restore` accept the flag; the sources declared in that file determine where each project's dependencies are resolved from, giving you precise control over feed selection.
 
 ## Step 2: Publish to the Solution Feed
 
@@ -91,7 +95,7 @@ uip solution upload ./MySolution --output json
 
 This uploads to Studio Web for collaborative editing. It does **not** place the package on the solution feed and cannot be used with `deploy run`. If the `SolutionId` in `.uipx` already exists in Studio Web, `upload` refuses unless `--force` is passed (forcing replaces the cloud project in place and wipes its Studio Web version history).
 
-`upload` always lands the solution in Studio Web's **Cloud workspace** tab, not the Local tab. SW's Local tab is a separate registration for solutions whose source of truth is a tracked local folder — populated by SW-initiated flows (creating a solution from the SW UI, or downloading a cloud solution to local) or by Studio Desktop signing into the same tenant. `uip solution upload` does not address the Local tab. Authoring with `uip solution new` then `upload` produces a Cloud-tab solution; the local folder on disk has no live link to either tab afterward — edits in one place do not propagate to the other without a re-upload (Cloud) or a download (Local).
+`upload` always lands the solution in Studio Web's **Cloud workspace** tab, not the Local tab. SW's Local tab is a separate registration for solutions whose source of truth is a tracked local folder — populated by SW-initiated flows (creating a solution from the SW UI, or downloading a cloud solution to local) or by Studio Desktop signing into the same tenant. `uip solution upload` does not address the Local tab. Authoring with `uip solution init` then `upload` produces a Cloud-tab solution; the local folder on disk has no live link to either tab afterward — edits in one place do not propagate to the other without a re-upload (Cloud) or a download (Local).
 
 ## Step 4: Deploy to Orchestrator
 
@@ -143,9 +147,12 @@ The CLI also falls back to the persistent `searchSearchDeployments22` record if 
 ```bash
 uip solution deploy list --output json
 uip solution deploy list --folder-path "Shared" --limit 20 --sort-by "Name" --sort-order "Ascending" --output json
+uip solution deploy list --limit 50 --offset 50 --output json   # page 2
 ```
 
-Options: `--folder-path`, `--limit` (default 50), `--sort-by`, `--sort-order` (`Ascending`/`Descending`).
+Options: `--folder-path`, `--limit` (default 50), `--offset` (default 0), `--sort-by`, `--sort-order` (`Ascending`/`Descending`).
+
+The response's `Pagination` block reports `Total` and `HasMore`; when `HasMore` is `true`, fetch the next page with `--offset`. Note that `--folder-path` filters client-side after the fetch, so with that flag `Returned` counts the filtered rows while `Offset`/`Total` stay server-side — page with `--offset` first, then filter.
 
 ---
 

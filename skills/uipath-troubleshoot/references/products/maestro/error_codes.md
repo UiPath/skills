@@ -313,7 +313,7 @@ For high-volume production errors, see the **Top-20 Production Errors** table at
 
 ## Top-20 Production Errors → Playbook Mapping
 
-Ranked by production telemetry volume. Source: [PO.BpmnEngine PR #3092 — `docs/error-catalog.md`](https://github.com/UiPath/PO.BpmnEngine/pull/3092). API-debuggability column tells you whether PIMS APIs alone are enough.
+Ranked by production telemetry volume. API-debuggability column tells you whether PIMS APIs alone are enough.
 
 | # | Error | HTTP | Engine code | Orch / connector code | API debug | Playbook |
 |---|-------|:----:|-------------|-----------------------|:---------:|----------|
@@ -338,4 +338,4 @@ Ranked by production telemetry volume. Source: [PO.BpmnEngine PR #3092 — `docs
 | 19 | Foreground job requires unattended robot | 409 | — | #1230 | Full | [foreground-unattended-robot.md](./playbooks/foreground-unattended-robot.md) |
 | 20 | Index outside bounds of array | 502 | — | — | None | [index-out-of-bounds.md](./playbooks/index-out-of-bounds.md) |
 
-> *\* Error #9 (`NoOutgoingFlow`) becomes Fully Troubleshootable once [PR #3092](https://github.com/UiPath/PO.BpmnEngine/pull/3092) lands and the `IncludeGatewayDebugInfoInIncidents` targeted feature flag is enabled — incident `errorDetails` then includes all outgoing flow conditions, the default flow config, and variable values (truncated to 200 chars) at evaluation time.*
+> *\* Error #9 (`NoOutgoingFlow`) becomes Fully Troubleshootable once the BPMN engine's gateway-debug-info incident enrichment lands and the `IncludeGatewayDebugInfoInIncidents` targeted feature flag is enabled — incident `errorDetails` then includes all outgoing flow conditions, the default flow config, and variable values (truncated to 200 chars) at evaluation time.*

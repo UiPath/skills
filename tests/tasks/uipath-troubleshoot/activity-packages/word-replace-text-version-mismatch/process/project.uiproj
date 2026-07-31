@@ -1,0 +1,6 @@
+{
+  "Name": "ClauseInserter",
+  "ProjectType": "Process",
+  "Description": "Inserts the confidentiality clause into the agreement document by replacing the clause placeholder.",
+  "MainFile": "Main.xaml"
+}

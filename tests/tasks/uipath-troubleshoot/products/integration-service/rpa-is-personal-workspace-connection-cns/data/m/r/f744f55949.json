@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-08T04:15:09.801Z",
+      "Message": "Upload Offer Letter: Failed to retrieve connection. Consider using a different connection. - Connection 'b4d6f8a0-c2e4-4671-8390-a1b2c3d4e5f6' is on a personal folder and can only be used by its owner. Error code: DAP-GE-3000.\nin Main.xaml\n    at ConnectorActivity \"Upload Offer Letter\"\n    at Sequence \"Sequence\"\n    at Main \"Main\"\n\n--- .NET stack trace ---\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken cancellationToken)\n--- inner ---\nUiPath.ConnectionClient.Contracts.ConnectionHttpException: Connection Service error reported: [StatusCode: NotFound, ErrorCode: \"CNS1049\", TraceId: \"5d7f9b1c3e0a42c6e8a0b2c4d6e8f0a1\"]",
+      "ProcessName": "NewHireDocs"
+    }
+  ]
+}

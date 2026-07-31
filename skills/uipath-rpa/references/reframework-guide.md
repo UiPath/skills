@@ -90,6 +90,8 @@ One execution, no transaction loop. Useful for scheduled jobs that just need REF
 
 ## Exception Handling Strategy
 
+REFramework owns the per-transaction retry/counter flow below. For error-handling patterns **outside** REFramework — Try/Catch discipline, Retry Scope, ContinueOnError, Throw/Rethrow, screenshot-on-error, and the Global Exception Handler — see [error-handling-guide.md](error-handling-guide.md). Do **not** add a Global Exception Handler to a REFramework project (it conflicts with the framework's per-state Try/Catch).
+
 | Exception | Class | Retry? | Counter behavior |
 |-----------|-------|--------|------------------|
 | Business Rule Exception | `UiPath.Core.BusinessRuleException` | No — data won't fix itself | `ConsecutiveSystemExceptions` resets to 0 |

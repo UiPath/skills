@@ -1,0 +1,6 @@
+{
+  "Name": "ContractTextExtract",
+  "ProjectType": "Process",
+  "Description": "Extracts the full text of a contract Word document and logs the captured content.",
+  "MainFile": "Main.xaml"
+}

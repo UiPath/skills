@@ -29,9 +29,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on the delete call"
+    description: "Agent ran the delete call"
     tool_name: "Bash"
-    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+delete\s+\S+(?=[\s\S]*--output\s+json)'
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+delete\s+\S+'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

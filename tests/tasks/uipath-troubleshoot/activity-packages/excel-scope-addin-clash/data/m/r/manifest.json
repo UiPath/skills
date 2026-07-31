@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Excel Application Scope reconciliation-export scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "6194634ea7.json"},
+    {"match": "or folders list --output json", "file": "6194634ea7.json"},
+    {"match": "or jobs list --folder-key \"f0066666-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "429111d7a7.json"},
+    {"match": "or jobs list --folder-key f0066666-3333-4444-5555-666677778888 --state Faulted --output json", "file": "429111d7a7.json"},
+    {"match": "or jobs get \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "80ce0cb156.json"},
+    {"match": "or jobs get aa666666-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "80ce0cb156.json"},
+    {"match": "or jobs history \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "289d2a67b7.json"},
+    {"match": "or jobs history aa666666-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "289d2a67b7.json"},
+    {"match": "or jobs logs \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "d71286fc73.json"},
+    {"match": "or jobs logs aa666666-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "d71286fc73.json"}
+  ]
+}
