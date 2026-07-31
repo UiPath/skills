@@ -1,6 +1,6 @@
 # Agent Node — Implementation
 
-Agent nodes invoke UiPath AI agents via node type `uipath.core.agent.{key}`. Coded (Python) agents always use this plugin; low-code (`agent.json`) agents use it only when they are a standalone project (in-solution sibling or published). Inline low-code agents (embedded as a UUID subdirectory inside the flow project) use `uipath.agent.autonomous` — see the [inline-agent plugin](../inline-agent/impl.md).
+Agent nodes invoke UiPath AI agents via node type `uipath.core.agent.{key}`. Coded (Python) agents always use this plugin; low-code (`agent.json`) agents use it only when they are a standalone project (in-solution sibling or published). Inline low-code agents (defined directly in the flow file, full definition in node `inputs`) use `uipath.agent.autonomous` — see the [inline-agent plugin](../inline-agent/impl.md).
 
 The agent lives in one of two places:
 
