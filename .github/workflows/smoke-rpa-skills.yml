@@ -272,6 +272,16 @@ jobs:
           uip rpa list-instances --output json 2>&1 || true
           taskkill //F //IM UiPath.Studio.Helm.exe 2>/dev/null || true
 
+      # Model guard, deliberately its OWN step (mirror of smoke-skills.yml): the smoke
+      # step below carries continue-on-error, so a guard inside it is swallowed and the
+      # failure surfaces only as a downstream "no task.json" error. Fail here instead,
+      # named, before the run starts.
+      - name: Require an agent model
+        shell: bash
+        env:
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
+        run: ': "${AGENT_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}"'
+
       - name: Run RPA smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
@@ -292,14 +302,13 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # The gate's agent model, passed on the command line rather than pinned in
           # experiments/smoke-windows.yaml (see smoke-skills.yml for why). No literal
-          # fallback: an unset variable fails the step rather than gating a model
-          # nobody configured.
+          # fallback: an unset variable fails the guard step above rather than gating a
+          # model nobody configured.
           AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
         working-directory: tests
         id: smoke
         shell: bash
         run: |
-          : "${AGENT_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}"
           # Run each task separately, killing Helm between tasks so one
           # task's stale Studio state doesn't leak into the next. Track
           # per-task exit codes so one failure doesn't abort the loop

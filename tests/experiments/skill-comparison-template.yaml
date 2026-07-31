@@ -26,11 +26,7 @@ defaults:
     turn_timeout: 300
   repeats: 1
   agent:
-    # type AND model omitted on purpose — the runner passes both as CLI flags, and those
-    # outrank this file: --type picks the harness (codex/antigravity/delegate-sdk;
-    # coder-eval's baseline default experiment supplies claude-code otherwise), and
-    # --model carries that harness's model, which the CI wrapper resolves from that
-    # harness's own env var. A bare local run takes the model from $BEDROCK_MODEL.
+    # No agent.type / agent.model here: the runner passes both as CLI flags, which outrank this file.
     permission_mode: bypassPermissions
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     system_prompt: |
