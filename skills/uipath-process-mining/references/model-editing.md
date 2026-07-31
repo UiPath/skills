@@ -26,10 +26,11 @@ uip pm apps model fields remove <app-id> <field-id>
   new **calculated field** is created in `--table` — so `--table` + `--expression` (+ `--kind`) are
   required to create. Mapped *column* fields can't be created through the model; they come from the
   ingested data.
-- **Data kinds:** `ordinal, nominal, numeric, datetime, boolean, percentage, currency, duration, ref, id`.
-  Only `numeric/currency/duration/percentage/datetime/boolean/nominal/ordinal` are derivable from data;
+- **Data kinds you can set (`--kind`):** `ordinal, nominal, numeric, datetime, boolean, percentage, currency, duration`
+  — the union of the data manager's field-type options (FE `ColumnDataTypeFieldCompatibilityMap`).
   `duration`, `currency`, `percentage` are **user choices stored in the model `kind`** (a number column
-  defaults to `numeric` — the user upgrades it).
+  defaults to `numeric` — the user upgrades it). `id` and `ref` are **structural** (system-assigned to
+  key/reference columns) and not settable, though `fields list` may report a field that already has them.
 - **Expressions** are JSON expression-node trees, the same shape the app model stores. A comparison:
   ```json
   {"type":"operator","operation":"lt",
