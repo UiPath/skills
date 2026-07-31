@@ -248,12 +248,12 @@ jobs:
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
           AGENT:                    ${{ inputs.agent }}
           AGENT_MODEL:              ${{ inputs.agent_model }}
-          # Per-harness default when agent_model is blank: one repo variable per harness,
-          # named the same as the nightly runner's, each with a hardcoded fallback so an
-          # unset variable changes nothing. Keeps the model out of this file's logic.
-          CLAUDE_CODE_MODEL:        ${{ vars.CLAUDE_CODE_MODEL || 'claude-sonnet-5' }}
-          CODEX_MODEL:              ${{ vars.CODEX_MODEL || 'gpt-5.6-terra' }}
-          ANTIGRAVITY_MODEL:        ${{ vars.ANTIGRAVITY_MODEL || 'gemini-3.6-flash' }}
+          # The model when agent_model is blank: one repo variable per harness, named the
+          # same as the nightly runner's, and no hardcoded fallback — an unset variable
+          # fails the run (guard below) rather than evaluating a model nobody chose.
+          CLAUDE_CODE_MODEL:        ${{ vars.CLAUDE_CODE_MODEL }}
+          CODEX_MODEL:              ${{ vars.CODEX_MODEL }}
+          ANTIGRAVITY_MODEL:        ${{ vars.ANTIGRAVITY_MODEL }}
           CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
           CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
           GEMINI_API_KEY:           ${{ secrets.GEMINI_API_KEY }}
@@ -270,11 +270,14 @@ jobs:
           # Passed explicitly because the experiment YAML pins no model (it is shared by
           # all three harnesses). Driver is unchanged (docker here).
           if [ "$AGENT" = "codex" ]; then
-            agent_flags="--type codex --model ${AGENT_MODEL:-$CODEX_MODEL}"
+            model="${AGENT_MODEL:-${CODEX_MODEL:?unset — set the CODEX_MODEL repo variable}}"
+            agent_flags="--type codex --model $model"
           elif [ "$AGENT" = "antigravity" ]; then
-            agent_flags="--type antigravity --model ${AGENT_MODEL:-$ANTIGRAVITY_MODEL}"
+            model="${AGENT_MODEL:-${ANTIGRAVITY_MODEL:?unset — set the ANTIGRAVITY_MODEL repo variable}}"
+            agent_flags="--type antigravity --model $model"
           else
-            agent_flags="--model ${AGENT_MODEL:-$CLAUDE_CODE_MODEL}"
+            model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
+            agent_flags="--model $model"
           fi
           echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml $agent_flags -j $j ($TASK_COUNT task files)"
           coder-eval run $TASK_GLOBS \
@@ -526,12 +529,12 @@ jobs:
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
           AGENT:                    ${{ inputs.agent }}
           AGENT_MODEL:              ${{ inputs.agent_model }}
-          # Per-harness default when agent_model is blank: one repo variable per harness,
-          # named the same as the nightly runner's, each with a hardcoded fallback so an
-          # unset variable changes nothing. Keeps the model out of this file's logic.
-          CLAUDE_CODE_MODEL:        ${{ vars.CLAUDE_CODE_MODEL || 'claude-sonnet-5' }}
-          CODEX_MODEL:              ${{ vars.CODEX_MODEL || 'gpt-5.6-terra' }}
-          ANTIGRAVITY_MODEL:        ${{ vars.ANTIGRAVITY_MODEL || 'gemini-3.6-flash' }}
+          # The model when agent_model is blank: one repo variable per harness, named the
+          # same as the nightly runner's, and no hardcoded fallback — an unset variable
+          # fails the run (guard below) rather than evaluating a model nobody chose.
+          CLAUDE_CODE_MODEL:        ${{ vars.CLAUDE_CODE_MODEL }}
+          CODEX_MODEL:              ${{ vars.CODEX_MODEL }}
+          ANTIGRAVITY_MODEL:        ${{ vars.ANTIGRAVITY_MODEL }}
           CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
           CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
           GEMINI_API_KEY:           ${{ secrets.GEMINI_API_KEY }}
@@ -558,11 +561,14 @@ jobs:
           # one-off run. Passed explicitly because the experiment YAML pins no model.
           # Driver is unchanged (tempdir here).
           if [ "$AGENT" = "codex" ]; then
-            agent_flags="--type codex --model ${AGENT_MODEL:-$CODEX_MODEL}"
+            model="${AGENT_MODEL:-${CODEX_MODEL:?unset — set the CODEX_MODEL repo variable}}"
+            agent_flags="--type codex --model $model"
           elif [ "$AGENT" = "antigravity" ]; then
-            agent_flags="--type antigravity --model ${AGENT_MODEL:-$ANTIGRAVITY_MODEL}"
+            model="${AGENT_MODEL:-${ANTIGRAVITY_MODEL:?unset — set the ANTIGRAVITY_MODEL repo variable}}"
+            agent_flags="--type antigravity --model $model"
           else
-            agent_flags="--model ${AGENT_MODEL:-$CLAUDE_CODE_MODEL}"
+            model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
+            agent_flags="--model $model"
           fi
           overall_exit=0
           for task in $TASK_GLOBS; do

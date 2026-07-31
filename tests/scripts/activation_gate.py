@@ -21,10 +21,11 @@ from pathlib import Path
 # The gate's agent model. Passed explicitly rather than pinned in
 # experiments/activation.yaml so one variable moves every eval entry point in this
 # repo, and so the model the baselines below were measured against is visible at the
-# call site. Falls back to the value activation.yaml used to pin, so an unset
-# variable changes nothing. NOT $BEDROCK_MODEL: that is the evaluation-side model
-# (llm_judge + the simulated user), which must not move with the agent under test.
-AGENT_MODEL = os.environ.get("AGENT_MODEL", "").strip() or "claude-sonnet-5"
+# call site. No default: the baselines are model-specific, so silently gating a
+# different model than the one they were measured on would report a meaningless
+# verdict. NOT $BEDROCK_MODEL: that is the evaluation-side model (llm_judge + the
+# simulated user), which must not move with the agent under test.
+AGENT_MODEL = os.environ.get("AGENT_MODEL", "").strip()
 
 # Rounded recall.yes baseline (in %) per skill, measured 2026-06-17 over each
 # skill's FULL positive set on claude-sonnet-4-6 via Bedrock at max_turns: 1 —
@@ -111,6 +112,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--skill", required=True)
     skill = parser.parse_args().skill
+
+    if not AGENT_MODEL:
+        print("ERROR: AGENT_MODEL is unset — set the CLAUDE_CODE_MODEL repo variable", file=sys.stderr)
+        return 2
 
     if skill not in BASELINES_PCT:
         print(f"SKIP: no baseline for {skill!r}", file=sys.stderr)

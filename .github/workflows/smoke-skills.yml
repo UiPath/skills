@@ -418,14 +418,16 @@ jobs:
           # The gate's agent model, passed explicitly on the command line rather than
           # pinned in experiments/smoke.yaml — one repo variable moves every gate here,
           # and the experiment file stays harness-agnostic (the nightly runs the same
-          # file under codex/antigravity with their own models). The fallback is the
-          # value smoke.yaml used to pin, so an unset variable changes nothing.
-          # NOT $BEDROCK_MODEL: that is the evaluation-side model (llm_judge + the
-          # simulated user), and reusing it here would move the grader with the agent.
-          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL || 'claude-sonnet-5' }}
+          # file under codex/antigravity with their own models). No literal fallback:
+          # gating on a model nobody configured reports a verdict about the wrong thing,
+          # so an unset variable fails the step (guard below). NOT $BEDROCK_MODEL: that
+          # is the evaluation-side model (llm_judge + the simulated user), and reusing
+          # it here would move the grader with the agent.
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
         working-directory: tests
         id: smoke
         run: |
+          : "${AGENT_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}"
           shopt -s globstar nullglob
           echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --model $AGENT_MODEL --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \

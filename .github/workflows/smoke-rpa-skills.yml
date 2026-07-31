@@ -291,13 +291,15 @@ jobs:
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # The gate's agent model, passed on the command line rather than pinned in
-          # experiments/smoke-windows.yaml (see smoke-skills.yml for why). The fallback is
-          # the value that file used to pin, so an unset variable changes nothing.
-          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL || 'claude-sonnet-5' }}
+          # experiments/smoke-windows.yaml (see smoke-skills.yml for why). No literal
+          # fallback: an unset variable fails the step rather than gating a model
+          # nobody configured.
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
         working-directory: tests
         id: smoke
         shell: bash
         run: |
+          : "${AGENT_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}"
           # Run each task separately, killing Helm between tasks so one
           # task's stale Studio state doesn't leak into the next. Track
           # per-task exit codes so one failure doesn't abort the loop
