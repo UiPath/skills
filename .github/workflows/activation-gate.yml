@@ -103,4 +103,7 @@ jobs:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
+          # The agent model the gate measures (activation_gate.py passes it as --model).
+          # Its recall baselines are model-specific, so re-baseline when this moves.
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL || 'claude-sonnet-5' }}
         run: python tests/scripts/activation_gate.py --skill "$SKILL"

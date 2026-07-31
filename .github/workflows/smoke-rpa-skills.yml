@@ -290,6 +290,10 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The gate's agent model, passed on the command line rather than pinned in
+          # experiments/smoke-windows.yaml (see smoke-skills.yml for why). The fallback is
+          # the value that file used to pin, so an unset variable changes nothing.
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL || 'claude-sonnet-5' }}
         working-directory: tests
         id: smoke
         shell: bash
@@ -329,7 +333,7 @@ jobs:
             for attempt in 1 2 3; do
               echo "--- $task attempt $attempt ---"
               if coder-eval run "$task" \
-                  -e experiments/smoke-windows.yaml --tags smoke -j 1 -v; then
+                  -e experiments/smoke-windows.yaml --model "$AGENT_MODEL" --tags smoke -j 1 -v; then
                 break
               fi
               # Only retry on Bedrock content-filter ERRORs (not on real

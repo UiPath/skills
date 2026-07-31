@@ -415,13 +415,22 @@ jobs:
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_PARALLELISM: ${{ vars.TASK_PARALLELISM || '1' }}
+          # The gate's agent model, passed explicitly on the command line rather than
+          # pinned in experiments/smoke.yaml — one repo variable moves every gate here,
+          # and the experiment file stays harness-agnostic (the nightly runs the same
+          # file under codex/antigravity with their own models). The fallback is the
+          # value smoke.yaml used to pin, so an unset variable changes nothing.
+          # NOT $BEDROCK_MODEL: that is the evaluation-side model (llm_judge + the
+          # simulated user), and reusing it here would move the grader with the agent.
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL || 'claude-sonnet-5' }}
         working-directory: tests
         id: smoke
         run: |
           shopt -s globstar nullglob
-          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
+          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --model $AGENT_MODEL --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
             -e experiments/smoke.yaml \
+            --model "$AGENT_MODEL" \
             -j "$TASK_PARALLELISM" -v \
             --run-dir /tmp/runs \
             --tags smoke

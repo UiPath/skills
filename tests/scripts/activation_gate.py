@@ -12,10 +12,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+# The gate's agent model. Passed explicitly rather than pinned in
+# experiments/activation.yaml so one variable moves every eval entry point in this
+# repo, and so the model the baselines below were measured against is visible at the
+# call site. Falls back to the value activation.yaml used to pin, so an unset
+# variable changes nothing. NOT $BEDROCK_MODEL: that is the evaluation-side model
+# (llm_judge + the simulated user), which must not move with the agent under test.
+AGENT_MODEL = os.environ.get("AGENT_MODEL", "").strip() or "claude-sonnet-5"
 
 # Rounded recall.yes baseline (in %) per skill, measured 2026-06-17 over each
 # skill's FULL positive set on claude-sonnet-4-6 via Bedrock at max_turns: 1 —
@@ -127,6 +136,7 @@ def main() -> int:
             [
                 "coder-eval", "run", str(task_yaml),
                 "-e", "tests/experiments/activation.yaml",
+                "--model", AGENT_MODEL,
                 "-j", "4",
                 "--run-dir", str(run_dir),
             ],

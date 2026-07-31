@@ -26,10 +26,12 @@ defaults:
     turn_timeout: 300
   repeats: 1
   agent:
-    # type omitted on purpose — the runner selects the harness via --type (codex/antigravity);
-    # coder-eval's baseline default experiment supplies claude-code otherwise.
+    # type AND model omitted on purpose — the runner passes both as CLI flags, and those
+    # outrank this file: --type picks the harness (codex/antigravity/delegate-sdk;
+    # coder-eval's baseline default experiment supplies claude-code otherwise), and
+    # --model carries that harness's model, which the CI wrapper resolves from that
+    # harness's own env var. A bare local run takes the model from $BEDROCK_MODEL.
     permission_mode: bypassPermissions
-    model: claude-sonnet-5
     allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
     system_prompt: |
       You are a coding agent. Work only inside your current working directory.
