@@ -332,7 +332,7 @@ Additional fields are plugin-specific; read the plugin's `planning.md` before fi
 > A task whose only reason for `selected-tasks-completed` is "it follows the immediately previous task" is a planning defect. Convert that contiguous run to `runs-sequentially` instead. `selected-tasks-completed` remains correct for fan-in, branch convergence, non-immediate dependencies, and stage-exit routing conditions.
 > Before leaving §4.6, audit each stage's planned lanes: sequential tasks that form a strict chain MUST NOT share a lane with each other or with adhoc/event-driven/parallel work. If `activation-mode`/`entry-rule` conflicts with `lane`, the mode wins and the lane must be corrected. Same-lane grouping is reserved for intentionally parallel siblings, and the rationale must say why they run in parallel.
 
-> **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
+> **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD Outputs table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-outputs-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
 
 > **Registry handoff:** For a resolved `action` or `case-management` T-entry, translate the selected audit object into the canonical `tasks.md` labels and values:
 >
@@ -381,9 +381,19 @@ Treat the generated `tasks.md` as approved and proceed directly to Phase 2 by de
 
 Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)); context may have compacted during planning. `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.
 
-**Plan-shape gate.** Before Phase 2, verify every task declaration carries
-**exactly one** `activation-mode:` and **exactly one** `entry-rule:` field, and
-that the pair is legal for that mode — re-run the §4.6 Activation-mode audit
-over the finished plan, covering all six modes, not just `sequential`. Correct
-the plan before building; validation of `caseplan.json` cannot detect a
-malformed Phase 1 handoff.
+**Plan-shape gate.** Before Phase 2, re-read every §4.6 task T-entry itself
+(not the §4.7 condition entries) and confirm it literally contains its own
+`- activation-mode:` line and its own `- entry-rule:` line — **exactly one of
+each, colocated on the task's own T-entry** — and that the pair is legal for
+that mode. Re-run the §4.6 Activation-mode audit over the finished plan,
+covering all six modes, not just `sequential`.
+
+**Known failure pattern:** deferring the rule to a *separate* §4.7
+task-entry-condition entry (`rule-type:`) does not satisfy this gate —
+`caseplan.json` can end up fully correct while `tasks.md` itself still fails
+this check, because §4.6 and §4.7 are graded as separate artifacts. See
+[task-entry-conditions/planning.md § Phase 1 Plan Presentation Contract](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract)
+for the compliant §4.6 shape.
+
+Correct the plan before building; validation of `caseplan.json` cannot detect
+a malformed Phase 1 handoff.
