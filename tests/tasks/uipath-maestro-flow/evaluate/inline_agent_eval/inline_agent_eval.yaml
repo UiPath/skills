@@ -25,11 +25,11 @@ initial_prompt: |
     linked via `uip solution project add`.
   - One start trigger with a string input variable named `email`.
   - One inline agent node (uipath.agent.autonomous) that classifies the
-    inbound `email` into a category and a priority. Scaffold it with
-    `uip agent init --inline-in-flow`. Configure it to a production bar:
-    pick a current model (not the scaffold default), write a real system
-    prompt for the classification task, and declare a typed outputSchema
-    with `category` and `priority` fields.
+    inbound `email` into a category and a priority. Define it directly in
+    the flow file and configure it to a production bar: pick a current
+    model (not a stale default), write a real system prompt for the
+    classification task, and declare typed output variables `category`
+    and `priority`.
   - One end node whose output is mapped from the inline agent's result.
   - Validate the flow with `uip maestro flow validate` before adding eval
     scaffolding.
@@ -58,12 +58,11 @@ initial_prompt: |
     planning and implementation. Build it end-to-end in a single pass.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent scaffolded the inline agent with uip agent init --inline-in-flow"
+  - type: command_not_executed
+    description: "No legacy inline-agent lifecycle commands (definition lives in the .flow)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+agent\s+init\s+.*--inline-in-flow'
-    min_count: 1
-    weight: 1.5
+    command_pattern: '(uip|\$UIP)\s+agent\s+(init|refresh|validate)\s+.*--inline-in-flow'
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
@@ -134,7 +133,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Inline agent + llm-judge evaluator + eval set with a data point all exist on disk"
+    description: "Embedded inline agent in the .flow + llm-judge evaluator + eval set with a data point all exist on disk"
     command: 'python3 "$TASK_DIR/check_inline_agent_eval.py"'
     timeout: 15
     expected_exit_code: 0

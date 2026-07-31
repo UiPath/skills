@@ -45,16 +45,13 @@ The user message carries the task and the data — not the role.
 ```text
 <TASK INSTRUCTION>.
 
-<LABEL>: {{ $vars.<flowNodeId>.output.<field> }}
-<LABEL>: {{ $vars.<flowNodeId>.output.<field> }}
+<LABEL>: {{input.<field>}}
+<LABEL>: {{input.<field>}}
 
 <EXPLICIT OUTPUT INSTRUCTION — e.g. "Return the category and a one-sentence reason.">
 ```
 
-Token form depends on context:
-
-- **Inline-in-flow agents** reference upstream flow nodes: `{{ $vars.<flowNodeId>.output[.<field>] }}`. See the [uipath-maestro-flow inline-agent prompt-wiring guide](../../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
-- **Standalone agents** reference declared inputs: `{{input.<field>}}`.
+Standalone agents reference declared inputs as `{{input.<field>}}`. (Inline-in-flow agents use a different token form and are owned by the `uipath-maestro-flow` skill.)
 
 Mirror every `{{ ... }}` in `contentTokens[]` per [agent-definition.md § contentTokens Construction](../agent-definition.md#contenttokens-construction).
 
@@ -64,7 +61,7 @@ Reference inputs through tokens — never restate their literal contents in pros
 
 ## 4. Worked example — email triage
 
-Realistic inline-in-flow agent. Note the **structured `outputSchema`**, not a bare `content` blob.
+Realistic standalone agent. Note the **structured `outputSchema`**, not a bare `content` blob.
 
 **Before (toy):**
 
@@ -116,10 +113,10 @@ User prompt:
 ```text
 Classify the following email.
 
-From: {{ $vars.emailReceived1.output.from }}
-Subject: {{ $vars.emailReceived1.output.subject }}
+From: {{input.from}}
+Subject: {{input.subject}}
 
-{{ $vars.emailReceived1.output.body }}
+{{input.body}}
 
 Return category, priority, a one-sentence reason, and needsHuman.
 ```

@@ -40,7 +40,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 
 Optional top-level `runtime`: a CLI-managed object that appears on some flows (e.g. after `uip maestro flow node add` for an HTTP/connector node) and is absent on others. It is not user-authored — do not add, remove, or anchor on it. Its presence and position are not guaranteed.
 
-**Top-level `version`** = workflow file-format version. **Use the exact value `uip maestro flow init` scaffolds** — do not hand-pick, hardcode, or downgrade it. It is not a semver string; the schema gates on an exact literal for the current file-format version, so an older value (e.g. `"1.0"`, `"1.0.0"`) that worked for a legacy parser will fail for a new flow. `init` always writes the accepted value; preserve it. To see the current value, scaffold a throwaway flow with `init` and read its top-level `version`, or read it from an existing `init`-generated `.flow`.
+**Top-level `version`** = workflow file-format version. **Use the exact value `uip maestro flow init` scaffolds** — do not hand-pick, hardcode, or downgrade it. It is not a semver string; the schema gates on an exact literal for the current file-format version, so an older value (e.g. `"1.0"`, `"1.0.0"`) that worked for a legacy parser will fail for a new flow. `init` always writes the accepted value; preserve it. To see the current value, scaffold a throwaway flow with `init` and read its top-level `version`, or read it from an existing `init`-generated `.flow`. When hand-authoring a whole `.flow` (e.g. an inline-agent flow) without an `init` scaffold to copy from, the minimum supported schema version is `"1.9"` — older values fail to parse.
 
 > **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) are validated by `versionSchema`, a regex that accepts both `x.y` and `x.y.z` (`/^\d+\.\d+(\.\d+)?$/`, error `'Version must be in format "x.y" or "x.y.z"'`). Both layers are canonically `x.y`, but the node-level regex still accepts legacy 3-part strings so registry definitions (`"1.0"`) and older scaffolded nodes (`"1.0.0"`) both parse. The two layers report distinct errors, but Zod may collapse a node-level mismatch to path `(root)`. If you see a version-related error at `(root)`, audit the top-level `version` first; if it's correct, check each node's `typeVersion` against the matching `definitions[].version`.
 
@@ -57,7 +57,12 @@ Optional top-level `runtime`: a CLI-managed object that appears on some flows (e
 ├── bindings_v2.json        # resource bindings
 ├── entry-points.json       # input/output schema declarations
 ├── operate.json            # runtime options
-└── package-descriptor.json # packaging manifest
+├── package-descriptor.json # packaging manifest
+└── <GUID>/                 # DERIVED inline-agent sidecar (one per inline agent; only present
+                            # after a canvas save/debug) — agent.json, resources/, features/.
+                            # Never author or edit; regenerated from the .flow. Exception:
+                            # <GUID>/evals/ is written by `uip maestro flow eval`.
+                            # See the inline-agent plugin.
 ```
 
 ## Node instance
@@ -100,7 +105,7 @@ Optional top-level `runtime`: a CLI-managed object that appears on some flows (e
 >
 > The error path is `(root)` and does NOT pinpoint which node or which field is missing. If you see this error after editing a `.flow` file, audit every node for a `display` block before doing anything else.
 
-> **No instance `model` block.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). This applies to every inline-agent-related node too: `uipath.agent.autonomous` plus every attached `uipath.agent.resource.*` node (tool, escalation, context) carries source identity at `inputs.source`. Their definitions declare `model.source: true`; flow-core hoists that identity onto each instance's `inputs.source`. Do not write a `"model": { "source": ... }` block on the instance.
+> **No instance `model` block.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). This applies to every inline-agent-related node too: `uipath.agent.autonomous` plus every attached `uipath.agent.resource.*` node (tool, escalation, context) carries source identity at an author-minted lowercase-UUID `inputs.source` (exception: builtin tools like summarize/batch-transform declare no `model.source` — identity is `inputs.id`). Their definitions declare `model.source: true`; flow-core hoists that identity onto each instance's `inputs.source`. Do not write a `"model": { "source": ... }` block on the instance.
 >
 > **No `ui` block on nodes.** Position and size are stored in the top-level `layout` object, not on individual nodes. See [Layout](#layout) below.
 
@@ -112,7 +117,8 @@ A few per-instance identity fields live on the node instance:
 |-------|---------|---------|
 | `inputs.entryPointId` | All trigger nodes (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers) | Stable UUID identifying the entry point |
 | `inputs.isDefaultEntryPoint` | Trigger nodes in subflows | Boolean marking the default entry point when a subflow has multiple triggers |
-| `inputs.source` | `uipath.agent.autonomous` and every attached `uipath.agent.resource.*` node (tool, escalation, context) | For `uipath.agent.autonomous`: the inline agent's `projectId`. For resource nodes: the attached resource UUID. Definitions declare `model.source: true`; flow-core hoists onto the instance — no instance `model` block. |
+| `inputs.source` | `uipath.agent.autonomous` and attached `uipath.agent.resource.*` nodes (tool, escalation, context) | Author-minted lowercase UUID. For `uipath.agent.autonomous`: the agent's identity — becomes the derived sidecar folder name and packaging identity. For resource nodes: the resource identity. Definitions declare `model.source: true`; flow-core hoists onto the instance — no instance `model` block. |
+| `inputs.id` | Builtin tool nodes (`uipath.agent.resource.tool.builtin.*`, e.g. summarize / batch-transform) | Identity for builtin tools — their manifests declare no `model.source`; their `source` input may hold a `$vars` file expression instead. |
 | `inputs.color`, `inputs.content` | Sticky-note nodes | Visual content of the sticky note |
 
 Example — manual start trigger:
@@ -251,6 +257,12 @@ uip maestro flow registry get core.action.script --output json
 
 Copy the returned node definition object into your `definitions` array. Depending on CLI/plugin version, that object may appear at `Data.Node` or as the top-level object containing fields such as `nodeType`, `version`, and `handleConfiguration`. Do not write definitions by hand — always pull from the registry to ensure schema compliance.
 
+**The `definitions[]` contract:**
+
+- Keying is `(nodeType, version)` matched from each instance's `(type, typeVersion)` — exact match on both. Multiple versions of one nodeType legally coexist in a file; one entry covers all instances sharing that `type:typeVersion`.
+- `definitions[]` is **canvas-owned**: the Studio Web / VS Code canvas rebuilds it wholesale from its live manifest registry on every save (entries with `model.projectId` — in-solution resources — keep their file-provided `inputDefinition`/`outputDefinition`/`form`). Hand-edits to a definition entry do not survive a canvas save; to repair one, re-fetch from the registry and splice it in.
+- A node instance whose `(type, typeVersion)` has no matching entry does not hydrate and fails `flow validate` (the error names the exact `registry get` command to run). For inline-agent resource nodes the failure is harsher: the node silently vanishes from the derived agent and the package.
+
 ## Common node types
 
 | Type | Purpose | Key inputs |
@@ -266,6 +278,7 @@ Copy the returned node definition object into your `definitions` array. Dependin
 | `core.logic.merge` | Sync parallel paths | — |
 | `core.control.end` | Graceful end | — |
 | `core.logic.terminate` | Abort workflow | — |
+| `uipath.agent.autonomous` | Inline AI agent (full definition embedded) | `source`, `systemPrompt`, `userPrompt`, `model`, `agentOutputVariables` — see the inline-agent plugin |
 
 > The BPMN type for each node (e.g., `bpmn:StartEvent`, `bpmn:ScriptTask`) lives in the `definitions` entry copied from `uip maestro flow registry get`. Instances do not carry the BPMN type.
 
@@ -291,6 +304,8 @@ uip maestro flow registry search <keyword>
 | `core.logic.merge` | `output` | `input` |
 | `core.control.end` | — | `input` |
 | `core.logic.terminate` | — | `input` |
+| `uipath.agent.autonomous` | `success`, `error` + artifact `tool`, `context`, `escalation` | `input` |
+| `uipath.agent.resource.*` | — | `input` (artifact; max 1 connection) |
 
 Connector activities, agent nodes, and RPA nodes follow the same pattern as the generic action nodes above: a primary source port plus an implicit `error` port.
 

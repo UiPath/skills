@@ -189,7 +189,7 @@ The validator checks that required inputs (`attachment`, `prompt`) are present a
 ## What NOT to Do
 
 - **Do not hand-author `model.bindings`** on the node — Summarize has no process or connector binding. Adding a `bindings` block will be stripped or cause validate errors.
-- **Do not pass `--source` on `uip maestro flow node add`** — `--source` is only for inline agent nodes. Summarize has no agent project behind it.
+- **Do not pass `--source` on `uip maestro flow node add`** — Summarize is a builtin pattern with no `inputs.source` identity (its identity, when used as an inline-agent builtin tool, is `inputs.id`). Inline-agent nodes — which DO carry `inputs.source` — are authored directly in `.flow` JSON, not via `node add`.
 - **Do not chain Summarize for multi-turn chat.** It is single-turn; each call is independent. Use a published [Agent](../agent/impl.md) for conversational flows.
 - **Do not stuff `prompt` with entire document text.** The attachment is already ingested — the prompt should describe **the task**, not the input.
 - **Do not assume `content.Citations` is always present.** When `returnCitations: false`, the field is omitted; downstream code must guard.
