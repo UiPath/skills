@@ -30,10 +30,10 @@ Example:
 }
 ```
 
-- `value` is always a JSON **string** (`"18"`, `"true"`, ISO-8601 dates) — the server parses it.
+- `value` is a JSON **string** (`"18"`, `"true"`, ISO-8601 dates), except `null` for empty checks.
 - `in` / `not in` use `valueList`; everything else uses `value`.
 - `null` value = is-empty (`=`) / is-not-empty (`!=`).
-- Response: `{ Items, TotalCount, HasNextPage, NextCursor: { Value }, CurrentPage, TotalPages, SupportsPageJump }`. Records live in `Data.Items` (NOT `Data.Records`). Page with `--limit` / `--cursor` flags (pass `NextCursor.Value`), never body keys.
+- Response data: `Data: { Items, TotalCount, HasNextPage, NextCursor: { Value }, CurrentPage, TotalPages, SupportsPageJump }`. Records live in `Data.Items`. Page with `--limit` / `--cursor` flags (pass `NextCursor.Value`), never body keys.
 
 ## Operator support by field type
 

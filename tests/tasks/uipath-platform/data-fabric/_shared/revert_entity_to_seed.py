@@ -14,8 +14,8 @@ Usage (typically called from a brownfield task's post_run):
         --schema-file seeds/integration_orders.schema.json \
         --records-file seeds/integration_orders.records.json
 
-Exits with the same status as seed_entity.py (which is always 0 unless
-arg validation fails) — cleanup never blocks the test.
+Exits with the same status as seed_entity.py so a partial restore is visible
+to the test harness.
 """
 
 import os
