@@ -4,10 +4,14 @@ description: >
   *definition* through its lifecycle — create a Text field scoped to
   Requirement, list to confirm, rename it, then delete it. The task is
   self-contained and deterministic: it creates its own field with a fixed
-  name in the HEALTH project (which has no custom fields) and removes it
-  again. Every assertion validates the complete command — the
-  case-sensitive `--object-type Requirement` and `--data-type Text`, the
-  exact field name, `--rename-to`, and `--output json` — not a fragment.
+  name in the HEALTH project and removes it again, and it self-heals
+  leftover state — an earlier interrupted run can strand an "Eval
+  Reviewer" field (observed in CI: the agent found the leftover, stopped
+  to ask how to proceed, and the single-turn run ended at 3/5 criteria),
+  so the prompt pre-authorizes deleting leftovers and continuing. Every
+  assertion validates the complete command — the case-sensitive
+  `--object-type Requirement` and `--data-type Text`, the exact field
+  name, `--rename-to`, and `--output json` — not a fragment.
 tags: [uipath-test, smoke, mode:operate, lifecycle:manage, feature:customfield]
 
 run_limits:
@@ -20,6 +24,11 @@ initial_prompt: |
   reviewed a requirement. Show me the project's custom fields so I can
   check it's there. Actually, rename it to "Eval Reviewer Team". And once
   we're done, remove it so we don't leave anything behind.
+
+  Heads up: HEALTH is our disposable eval project. If an "Eval Reviewer"
+  or "Eval Reviewer Team" field is already lying around from an earlier
+  interrupted session, just delete it first and proceed with the flow
+  above — no need to check with me.
 
 success_criteria:
   - type: command_executed
