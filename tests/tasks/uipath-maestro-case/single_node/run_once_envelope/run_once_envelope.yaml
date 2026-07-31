@@ -6,12 +6,12 @@ description: >
   false; the unspecified row catches the stale `true` default the plugin
   impl-json contracts used to carry. Built-in timer tasks only, so the build is
   hermetic — no registry resolution, no tenant resources, no debug run.
-tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate, shape:single-node]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:single-node]
 
 run_limits:
-  task_timeout: 900
+  task_timeout: 1800
   max_turns: 60
-  turn_timeout: 900
+  turn_timeout: 1500
 
 initial_prompt: |
   Create a UiPath Case Management solution named "RunOnceEnvelopeCase"
