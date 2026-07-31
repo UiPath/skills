@@ -199,22 +199,26 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 | Identifier prefix | yes | UPPER, 2-4 chars (e.g., `MLO`) | Default mechanically from PascalCase first letters; record in source ledger. |
 | Case SLA | conditional | Duration (e.g., `5 business days`) | `—` when case has no SLA; otherwise block Approve. |
 | SLA Type | conditional | `time-based` (single unconditional duration) / `condition-based` (one or more conditionExpression-keyed overrides + a default time-based row) | Default `time-based` when Case SLA set with no per-condition overrides. The FE persists `condition-based` whenever ≥ 1 `slaRules[]` entry carries a non-empty `conditionExpression` (see PO.Frontend `CaseManagementSlaProperties.tsx:27-30`). `condition-based` requires populating the §Variable SLA Rules table; `time-based` omits it. |
+| SLA Title | conditional | Non-empty root-unique SLA rule title, no `:` | Omit the row when Case SLA is `—` (never render `—` here). Else default `SLA Rule 1` and record in source ledger; a title a `sla-status-change` references must be concrete (§ Logical integrity step 6). |
 | Case App | optional | `Enabled` / `Disabled` — whether the in-product Case App UI is on (`metadata.caseAppEnabled`). | Default `Disabled`; record in source ledger. |
 | Task-output passing | optional | `Direct` / `Shared` — `metadata.caseDirectlyPassTaskOutputs`. `Direct` passes a task's outputs straight to downstream tasks (default). | Default `Direct`. |
 
-**PO.Frontend validation parity.** Before Approve, apply the same name and SLA checks that the Case App applies:
+**PO.Frontend validation parity plus safe generated names.** Before Approve, apply the same name and SLA checks that the Case App applies, then apply the skill's stricter safe-display-name contract to anything the skill generates or carries into Case Designer display/title fields.
 
 | Surface | Required checks |
 |---|---|
-| Stage label | Non-empty; unique across stages; no `:`. A non-Case-Manager stage also cannot reuse the reserved default Case Manager stage label when a Case Manager stage exists. |
-| Task display name | No `:` for materialized tasks. |
-| SLA rule title (`displayName`) | Non-empty; unique within the root or stage target; no `:`. |
-| Escalation title (`displayName`) | Non-empty; unique across escalations on the target; no `:`. |
+| Stage label | Non-empty; unique across stages; safe display characters only. A non-Case-Manager stage also cannot reuse the reserved default Case Manager stage label when a Case Manager stage exists. |
+| Task display name | Safe display characters only for materialized tasks. |
+| Rule display name | Safe display characters only for entry, exit, task-entry, and case-exit condition display names. |
+| SLA rule title (`displayName`) | Non-empty; unique within the root or stage target; safe display characters only. |
+| Escalation title (`displayName`) | Non-empty; unique across escalations on the target; safe display characters only. |
 | SLA duration | `count > 0`; when `unit: min`, `15 ≤ count ≤ 1000`. Supported units are `min`, `h`, `d`, `w`, and `m`. |
 | Conditional SLA | Every non-default SLA rule has a non-empty expression/condition. |
 | Escalation payload | Every escalation has at least one recipient; an `at-risk` escalation has an `atRiskPercentage` value. |
 
-These are blocking authoring errors, not optional style warnings. Preserve the user's wording when repairing a name, but ask for a replacement when uniqueness or a reserved delimiter is violated; never silently suffix or truncate it.
+Safe display characters are letters, numbers, spaces, hyphen (`-`), and underscore (`_`) only. Do not generate colons (`:`), periods (`.`), slashes, backslashes, quotes, parentheses, ampersands, commas, semicolons, emoji, or other symbols in stage/task/rule/SLA/escalation display names. Repair unsafe generated or user-carried display names mechanically by replacing runs of disallowed characters with one space, collapsing spaces, and trimming. Preserve words and casing. If the result is empty or collides, pick a safe qualifier or numeric suffix and disclose it in the Case Review.
+
+These are blocking authoring errors, not optional style warnings. Do not normalize external registry or tenant lookup names (Action App titles, process names, connector names, API names, queue/bucket names); those are matching keys. Keep separate safe Case Designer display names when a lookup name contains punctuation.
 
 The same rule governs **numeric** violations: never silently clamp, round, or substitute an out-of-range value to satisfy validation. A minute-based SLA authored below 15 or above 1000 is not repaired to the nearest legal bound — surface the violation and Ask for a replacement duration (or a different `unit`), naming the original value. This applies whether the value came from the interview or from an SDD supplied on disk: rewriting a user-authored duration to pass validation is a silent requirements change, not a fix.
 
@@ -222,10 +226,12 @@ The same rule governs **numeric** violations: never silently clamp, round, or su
 
 Required when Case SLA is set. Always renders with both rows; no `—` allowed in any cell.
 
-| Threshold | Trigger | Recipient |
-|---|---|---|
-| At-risk | `<pct>%` of case SLA (defaults below) | `UserGroup: <owner-group>` or `User: <name>` |
-| Breached | 100% of case SLA | One tier up — leadership group; Compliance for regulation-driven cases |
+| Threshold | Trigger | Recipient | Display Name |
+|---|---|---|---|
+| At-risk | `<pct>%` of case SLA (defaults below) | `UserGroup: <owner-group>` or `User: <name>` | Non-empty root-unique escalation title, no `:` |
+| Breached | 100% of case SLA | One tier up — leadership group; Compliance for regulation-driven cases | Non-empty root-unique escalation title, no `:` |
+
+`Display Name` defaults to `Escalation Rule {N}` only when no `sla-status-change` entry references that escalation.
 
 **Default thresholds** when user did not name them:
 
@@ -377,7 +383,7 @@ The trailing `` `{stage_id}` `` (e.g., `` `stage-intake` ``) MUST appear so read
 | Description | yes (primary) / optional (secondary) | One prose sentence |
 | Required for case completion | yes | `Yes` (primary, default) / `No` (secondary stages always `No`) |
 | Interrupting | secondary stages only | `Yes` — secondary stages are interrupting lanes. If the work should not interrupt, model it as a regular stage/parallel path or an `adhoc` task. |
-| Stage SLA | yes when stage has SLA | Default duration + `time-based` or `condition-based`, plus conditional-rule and escalation tables |
+| Stage SLA | yes when stage has SLA | Default duration + `time-based` or `condition-based` + `SLA Title` (non-empty, stage-unique, no `:`), plus conditional-rule and escalation tables |
 
 ### Stage Entry Conditions table
 
@@ -385,7 +391,9 @@ The trailing `` `{stage_id}` `` (e.g., `` `stage-intake` ``) MUST appear so read
 
 | WHEN | IF | Interrupting | Display Name |
 |---|---|---|---|
-| `case-entered` (root only) / `selected-stage-completed("<Stage>")` / `selected-stage-exited("<Stage>")` / `wait-for-connector` / `user-selected-stage` / `sla-status-change("<SLA>","<Escalation>")` | optional `conditionExpression` | `Yes` for every secondary-stage entry row; `No` for regular-stage entry | optional |
+| `case-entered` (root only) / `selected-stage-completed("<Stage>")` / `selected-stage-exited("<Stage>")` / `wait-for-connector` / `user-selected-stage` / `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")` | optional `conditionExpression` | `Yes` for every secondary-stage entry row; `No` for regular-stage entry | optional |
+
+`sla-status-change` args are specified in [sdd-template.md](../assets/templates/sdd-template.md) § Stage Entry Conditions; closure is enforced by § Logical integrity step 6.
 
 ### Stage Completion Conditions table (`Marks Stage Complete: Yes`)
 
@@ -422,10 +430,10 @@ Render when the Stage SLA type is `condition-based`. Each expression-keyed overr
 
 Always rendered when Stage SLA is set. Concrete cells in both rows; never `—`.
 
-| Threshold | Trigger | Recipient |
-|---|---|---|
-| At-risk | `<pct>%` of stage SLA (defaults below) | `UserGroup: <owner-group>` / `User: <name>` |
-| Breached | 100% of stage SLA | Leadership group; Compliance for regulation-driven stages |
+| Threshold | Trigger | Recipient | Display Name |
+|---|---|---|---|
+| At-risk | `<pct>%` of stage SLA (defaults below) | `UserGroup: <owner-group>` / `User: <name>` | Non-empty stage-unique escalation title, no `:` |
+| Breached | 100% of stage SLA | Leadership group; Compliance for regulation-driven stages | Non-empty stage-unique escalation title, no `:` |
 
 **Defaults** when user did not name them (mirror §1.2):
 
@@ -808,7 +816,8 @@ Beyond schema-pairing checks (§Finalization step 1), the case must be a connect
 3. **Every case-exit row references a stage that exists.** No dangling `Required Stages` references.
 4. **Every `Required Stages` cell in §1.4 names ≥ 1 primary stage with `Required for case completion: Yes`.** Otherwise the case can never complete.
 5. **Secondary stages must have ≥1 interrupting entry condition, each DISTINCT, chosen by trigger source.** Map the lane's *trigger* to the rule: a gate decision → `selected-stage-completed` / `selected-stage-exited` (+ `IF` on the decision var); a person launches it → `user-selected-stage`; an external event → `wait-for-connector`; a case/stage SLA at-risk or breach event that requires stage work → `sla-status-change` referencing the SLA + escalation rule. Warning-only SLA escalation stays a notification. `adhoc` is task-entry only — never a stage entry. Every secondary-stage entry row carries `Interrupting: Yes`. Two secondary stages whose entry rules are identical (same rule type + selector fields + `conditionExpression`) fail `validate` (`CASE_MGMT_SECONDARY_STAGE_ENTRY_RULES_DUPLICATE`) — give each a distinct event/SLA selector or expression guard. Terminal lanes (Rejected / Withdrawn) exit `exit-only` and declare a §1.4a case-exit (`marks-case-complete: false`); return lanes (Escalation / Customer Comms) exit `return-to-origin`. **Global events:** one `wait-for-connector` or `sla-status-change` entry on the destination secondary stage covers every active origin; do not repeat a task or exit rule across primary stages. **Decision-reachable lanes:** when any decision button's Behavior (or the user's stated intent) names a secondary stage as a destination ("route to / send to / escalate via the X lane"), that lane's entry conditions MUST include a `selected-stage-completed` / `selected-stage-exited` rule with an `IF` on the deciding variable's value. A lane described as decision-reachable but entered ONLY via `wait-for-connector` (no decision-keyed entry) is unreachable from its stated source → blocking error. A `wait-for-connector` entry may coexist as a separate trigger, but cannot be the lane's only entry when a decision is supposed to reach it. **Only a `selected-stage-completed`/`selected-stage-exited` lane entry requires a matching origin diverting exit.** On the *origin* stage add a **gated diverting exit** (`Marks Stage Complete: No`, WHEN `selected-tasks-completed("<decider task>")`, `IF =js:(<signal> === <exception-value>)`, `exit-only`, `exitToStageId` → the lane) **and** gate the origin's completion exit with the inverse `IF` (`=js:(<signal> !== <exception-value>)`) so the two are mutually exclusive. Without the diverting exit the decision path either **dual-fires** (ungated completion → the next stage *and* the lane both enter) or **deadlocks** (gated completion with no alternative exit). `selected-stage-exited` fires *after* the origin exits, so this is a **divert-and-return, not a true mid-stage interrupt** — a genuine mid-stage interrupt needs `user-selected-stage`, `wait-for-connector`, or `sla-status-change` (mental-model shapes (a)/(c)). Missing origin diverting exit, or a completion exit not mutually exclusive with it → blocking error.
-6. **Every secondary stage is interrupting.** Set the stage-level `Interrupting` field and every secondary-stage entry row to `Yes`. If the user describes work that can run alongside the main flow without interrupting it, do not mark it secondary; model it as a regular parallel stage/path or as an `adhoc` task in the active stage. A secondary stage with `Interrupting: No` is a blocking classification error.
+6. **Every `sla-status-change` entry resolves.** For each row: the target is `root` or an existing stage, that target has an SLA configured (§1.1 + §1.2, or its `#### Stage SLA` block), and both titles match rows declared on **that** target. Any miss — SLA absent, title left `—`/defaulted, typo, or an escalation borrowed from another target — cannot resolve to `slaId` + `escalationId`, leaves the lane unreachable, and is a **blocking error**. A notification-only escalation needs no entry rule.
+7. **Every secondary stage is interrupting.** Set the stage-level `Interrupting` field and every secondary-stage entry row to `Yes`. If the user describes work that can run alongside the main flow without interrupting it, do not mark it secondary; model it as a regular parallel stage/path or as an `adhoc` task in the active stage. A secondary stage with `Interrupting: No` is a blocking classification error.
 
 **Worked example — decision/signal-routed return exception (AP Review → SLA Escalation).** The origin "AP Review" routes to the exception lane "SLA Escalation" on a `requiresEscalation` decision, then returns:
 
@@ -876,6 +885,7 @@ Phase 0 runs these checks **once, against the in-memory case model, before prese
    - Stage-exit `Yes` + `selected-tasks-completed` → error
 2. **Render-contract check.** Every required cell in §Case content rules, §Stage content rules, §Task content rules has a concrete value (no banned `—` / `<UNRESOLVED>`).
 2a. **Template-shape check.** The exact rendered `sdd.md` text must pass [phase-0-interview.md § Template conformance gate](phase-0-interview.md#template-conformance-gate--before-sddmd-is-written): `# SDD — {Case Name}`, `## Table of Contents`, `## Section 1: Case Definition`, `## Section 2: Stages & Tasks`, `## Section 3: Personas & App Views`, `## Section 4: Integrations`, required Section 1 subsections, one complete stage block per stage, one complete task block per task, personas/app views, and integrations. Each task block must contain the exact marker `**Task envelope**` before the Required / Run Only Once / Skip Condition table; `**Task envelope:**` with a colon is a render failure. Secondary-stage task headings must use numeric `Task S{K}.{M}` form, never lettered prefixes such as `Task R.1`, `Task W.1`, `Task CC.1`, or `Task ESC.1`. Missing headings, missing full detail blocks, or top-level summary replacements (`## Source`, `## Case Objective`, `## Stages`, `## Task Plan`, etc.) are blocking render failures. This check runs before Write; if it fails after Write is observed, stop and repair before Phase 1.
+2b. **Safe display-name check.** Every generated or carried Case Designer display/title field for stages, tasks, rule names, SLA rules, and escalation rules uses only letters, numbers, spaces, hyphen, and underscore. Repair unsafe punctuation mechanically and disclose changed names in the Case Review. Do not normalize external resource lookup names.
 3. **Decision-task button check.** Every `action` task with `is_decision: Yes` has ≥ 2 buttons; every button's `Maps To` LHS references a declared §1.5 variable (by `Name`) or `taskOutcome`.
 4. **Recipient encoding check.** Every `action` task recipient uses one of the five typed prefixes (`Email:` / `User:` / `UserGroup:` / `Role:` / `Expression:`) — no bare strings.
 5. **Connector-id check.** Every `wait-for-connector` / `execute-connector-activity` **task** has concrete `Connection ID` AND `Activity Type ID`. Every `wait-for-connector` **condition rule** (in any scope — stage-entry / stage-exit / case-exit / task-entry) has a `Connector Rule Detail` block resolving to a concrete `Connector Key` AND `Event Operation` (and `Connection ID` when not a tenant-default). Missing identity → paired `high`-severity review item.
@@ -898,7 +908,7 @@ Phase 0 runs these checks **once, against the in-memory case model, before prese
 
     This is informational, not blocking. But missing it suppresses a known integration gotcha.
 
-12. **Stage-graph connectivity check.** Run the §Logical integrity stage-graph checks (every stage reachable, every stage exits, every Required Stages cell points to existing primary stages, every secondary stage has ≥ 1 entry condition, and every secondary stage / secondary-stage entry row has `Interrupting: Yes`). Any failure → blocking error.
+12. **Stage-graph connectivity check.** Run the §Logical integrity stage-graph checks (every stage reachable, every stage exits, every Required Stages cell points to existing primary stages, every secondary stage has ≥ 1 entry condition, every `sla-status-change` entry names an SLA rule + escalation declared on the target it points at, and every secondary stage / secondary-stage entry row has `Interrupting: Yes`). Any failure → blocking error.
 13. **Domain-fidelity scan.** Run a single pass over every narrative cell (Description, persona name, stage name, task name, button label, app-view purpose). For each customer-named entity surfaced in §Source ledger as `verbatim:"..."`, confirm the rendered cell still uses the verbatim phrase (no synonym drift). Mismatch → list and offer `Re-edit` with the verbatim phrase pre-filled.
 14. **Architect's-lens advisory pass.** Run the §Architect's lens checks. Emit `medium` review items for each trigger (the `high` variants — `rev_substitute_app`, and `rev_no_failure_path` at the ≥ 2-connector threshold — emit `high` and gate via the opt-in). `medium` is non-blocking; Approve summary surfaces the count.
 15. **Decision-routing closure.** For every `action` task with `is_decision: Yes`, each button's `Maps To` variable+value MUST be consumed by ≥ 1 downstream rule (stage-entry `IF`, task-entry `IF`, stage-exit, or case-exit) OR the button's Behavior MUST declare it terminal (no routing claim). When a button's Behavior names a destination stage / lane ("route to / send to / via the X lane") and no entry condition keys off that variable+value, the branch is dead → **blocking error**. Pair with §Logical integrity step 5 (lane reachability). A fully-orphaned decision variable (produced by a button, read by nothing) on an `is_decision: Yes` task is blocking; the `medium` `rev_orphan_decision` variant in §Architect's lens applies only when the variable IS read but not for branching.

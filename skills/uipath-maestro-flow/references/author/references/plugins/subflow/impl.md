@@ -25,21 +25,17 @@ Confirm: input port `input`, output ports `output` and `error`. Set the node ins
     "b": 3
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the subflow",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the subflow fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
 }
 ```
+
+**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
 
 ## Subflow Definition
 
@@ -86,7 +82,7 @@ Subflow contents are stored in a top-level `subflows` object keyed by the parent
             "error": {
               "type": "object",
               "description": "Error information if the script fails",
-              "source": "=result.Error",
+              "source": "=Error",
               "var": "error"
             }
           }
@@ -185,7 +181,7 @@ the subflow's `in` variable:
       "type": "core.trigger.manual",
       "typeVersion": "1.0",
       "inputs": { "entryPointId": "<uuid>", "isDefaultEntryPoint": true },
-      "outputs": { "output": { "type": "object", "source": "=result.response", "var": "output" } }
+      "outputs": { "output": { "type": "object", "description": "Data passed when manually triggering the process.", "source": "null", "var": "output" } }
     },
     {
       "id": "reverseSubflow",

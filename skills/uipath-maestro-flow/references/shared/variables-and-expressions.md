@@ -666,8 +666,8 @@ A flow with input, state, and output variables:
       "outputs": {
         "output": {
           "type": "object",
-          "description": "The return value of the trigger.",
-          "source": "=result.response",
+          "description": "Data passed when the flow is triggered manually.",
+          "source": "null",
           "var": "output"
         }
       }
@@ -689,7 +689,7 @@ A flow with input, state, and output variables:
         "error": {
           "type": "object",
           "description": "Error information if the script fails",
-          "source": "=result.Error",
+          "source": "=Error",
           "var": "error"
         }
       }

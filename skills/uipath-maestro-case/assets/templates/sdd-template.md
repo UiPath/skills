@@ -40,7 +40,7 @@ build the case in the Case Designer without guessing.
    - `adhoc` — ad-hoc / manually triggered task entry
    - `runs-sequentially` — runs sequentially
    - `user-selected-stage` - target of an upstream `wait-for-user` exit
-   - `sla-status-change` — a referenced case/stage SLA escalation changed status (stage entry only)
+   - `sla-status-change` — a referenced case/stage SLA escalation changed status (stage entry only; 3 args — see the reference contract under Stage Entry Conditions)
 
 4. **Exit conditions:** Every exit condition MUST specify:
    - **Exit Type:** `exit-only` | `return-to-origin` | `wait-for-user`
@@ -107,6 +107,8 @@ build the case in the Case Designer without guessing.
 - **Workflows/Processes:** PascalCase (e.g., `ValidateEligibility`)
 - **Entity names:** PascalCase (e.g., `LoanApplication`)
 - **Entity fields:** camelCase (e.g., `applicantName`)
+- **Case Designer display names:** stages, tasks, condition rule names, SLA rule titles, and escalation titles use only letters, numbers, spaces, hyphen (`-`), and underscore (`_`). Do not generate colons, periods, slashes, backslashes, quotes, parentheses, ampersands, commas, semicolons, emoji, or other symbols. Normalize unsafe display punctuation to spaces, collapse spaces, and disclose any changed display names in the Case Review.
+- **External lookup names:** do not normalize deployed resource names, connector names, Action App titles, API/process/agent names, queue names, or bucket names used for tenant lookup. Keep a separate safe Case Designer display name when an external lookup name contains punctuation.
 
 ### Output Structure
 
@@ -165,28 +167,31 @@ The generated SDD must start with:
 | Case Identifier | Type: {constant \| external}. Constant → Prefix: {2-4 char UPPER prefix}. External → Source: {=vars.<In/InOut variable> \| =js:`expression`} |
 | Case-Level SLA | {count} {unit: min/h/d/w/m} |
 | SLA Type | {time-based \| condition-based} |
+| SLA Title | {non-empty title, no `:`; omit this row when `Case-Level SLA` is `—`} |
 | Case App | {Enabled \| Disabled} — whether the in-product Case App UI is on (`caseAppEnabled`; default Disabled) |
 | Task-output passing | {Direct \| Shared} — `caseDirectlyPassTaskOutputs` (Direct = a task's outputs flow straight to downstream tasks; default Direct) |
 | Case Identifier source | {`=metadata.ExternalId` (platform-generated — the default) \| custom} — what every `caseId` task input binds to |
 
-> **Case App validation contract:** Stage names must be non-empty, unique, and contain no `:`. Task names must contain no `:`. Every SLA rule and escalation needs a non-empty, target-unique title/display name with no `:`. SLA durations must be positive; minute-based SLAs must be 15–1000 minutes. Non-default SLA rows need an expression; escalations need a recipient, and at-risk escalations need a percentage.
+> **Case App validation contract:** Stage names must be non-empty, unique, and safe for Case Designer display. Task names and condition display names must be safe. Every SLA rule and escalation needs a non-empty, target-unique safe title/display name. Safe display characters are letters, numbers, spaces, hyphen, and underscore. SLA durations must be positive; minute-based SLAs must be 15–1000 minutes. Non-default SLA rows need an expression; escalations need a recipient, and at-risk escalations need a percentage.
 
 ### Case-Level SLA Escalation Rules
 
 **Design Rationale:** {Why this target, at-risk threshold, recipients, and breach behavior fit the case requirement; name any interrupting secondary stage entered through `sla-status-change`.}
 
-| SLA Status | Threshold | Action |
-|------------|-----------|--------|
-| At-Risk | {percentage}% of SLA duration | {Notify: recipient or group} |
-| Breached | 100% of SLA duration | {Notify: recipient or group} |
+| SLA Status | Threshold | Action | Display Name |
+|------------|-----------|--------|--------------|
+| At-Risk | {percentage}% of SLA duration | {Notify: recipient or group} | {escalation title, root-unique, no `:`} |
+| Breached | 100% of SLA duration | {Notify: recipient or group} | {escalation title, root-unique, no `:`} |
+
+> `Display Name` is what a `sla-status-change` entry references. `—` → `Escalation Rule {N}`, valid only when nothing references that escalation.
 
 ### Variable SLA Rules
 
 > Include this table only if SLA Type is `condition-based`. Each row defines an expression-keyed SLA override; the time-based default lives in the Case Metadata `Case-Level SLA` cell above. FE persists `slaRules[]` with non-empty `conditionExpression` per row (PO.Frontend `CaseManagementSlaProperties.tsx`).
 
-| Expression | SLA | Unit |
-|------------|-----|------|
-| {conditionExpression evaluated against case variables} | {count} | {h \| d \| w \| m} |
+| Expression | SLA | Unit | Display Name |
+|------------|-----|------|--------------|
+| {conditionExpression evaluated against case variables} | {count} | {h \| d \| w \| m} | {non-empty root-unique title without `:`} |
 
 ### Case Triggers
 
@@ -328,7 +333,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 #### Stage Entry Conditions
 
-> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (external/global event interrupt), `sla-status-change("<SLA display name>","<Escalation display name>")` (case/stage SLA at-risk or breach interrupt). Other rule types from Key Rule 3 are NOT valid here.
+> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (external/global event interrupt), `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")` (case/stage SLA at-risk or breach interrupt — all three args required, see the reference contract below). Other rule types from Key Rule 3 are NOT valid here.
 >
 > **Interrupting column:** `Yes` lets the condition fire while another stage is active and interrupt it. Use `Yes` on every secondary-stage entry row. Use `No` only for normal entry on regular stages; if the work should not interrupt, it is not a secondary stage.
 >
@@ -336,11 +341,13 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 | WHEN | IF | Interrupting | Display Name |
 |------|-----|-------------|--------------|
-| {one of: `case-entered` \| `selected-stage-completed("StageName")` \| `selected-stage-exited("StageName")` \| `user-selected-stage` \| `wait-for-connector` \| `sla-status-change("<SLA>","<Escalation>")`} | {conditionExpression, or "—" if none} | {Yes \| No} | {optional label, or "—" → defaults to `Entry Rule {N}`} |
+| {one of: `case-entered` \| `selected-stage-completed("StageName")` \| `selected-stage-exited("StageName")` \| `user-selected-stage` \| `wait-for-connector` \| `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")`} | {conditionExpression, or "—" if none} | {Yes \| No} | {optional label, or "—" → defaults to `Entry Rule {N}`} |
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 >
 > A global `wait-for-connector` / `sla-status-change` entry on an interrupting secondary stage applies regardless of which primary stage is active. Do not repeat the event as a task or exit rule on every primary stage.
+>
+> **`sla-status-change` reference contract.** All three args required, all three declared in this SDD — the rule has no duration of its own. `<SLA target>` is `root` (case-level SLA; reserved token) or the SLA-owning stage name, and scopes both lookups to that target's tables: `<SLA Title>` is its `SLA Title` cell (or a Variable SLA Rules `Display Name`), `<Escalation Display Name>` one of its escalation `Display Name`s — whose At-Risk/Breached status picks the interrupt status, so use one row per status. Phase 1 resolves the pair to `slaId` + `escalationId`; a reference that does not resolve is a blocking error. Example: `sla-status-change("root","Application SLA","Case SLA breached")`.
 
 #### Stage Exit Conditions
 
@@ -361,10 +368,11 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 **Design Rationale:** {Why this target, duration, at-risk threshold, recipients, and breach behavior fit the stage requirement; name any interrupting escalation stage entered through `sla-status-change`.}
 **SLA Type:** {time-based | condition-based}
+**SLA Title:** {non-empty stage-unique title, no `:`}
 
-| SLA | Unit | At-Risk | At-Risk Action | Breach Action |
-|-----|------|---------|----------------|---------------|
-| {count} | {min \| h \| d \| w \| m} | {percentage}% | {Notify: recipient or specific action} | {Notify: recipient or specific action} |
+| SLA | Unit | At-Risk | At-Risk Action | At-Risk Display Name | Breach Action | Breach Display Name |
+|-----|------|---------|----------------|----------------------|---------------|---------------------|
+| {count} | {min \| h \| d \| w \| m} | {percentage}% | {Notify: recipient or specific action} | {escalation title, stage-unique, no `:`} | {Notify: recipient or specific action} | {escalation title, stage-unique, no `:`} |
 
 ##### Stage Variable SLA Rules
 

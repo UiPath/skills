@@ -12,10 +12,25 @@ tags: [uipath-platform, smoke, licensing, users]
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
 
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
 initial_prompt: |
   How many Attended Named User seats does this account have available right
   now? When you reply, refer to the bundle by its friendly name AND its code,
   per the skill's docs-page resolution rule.
+
+  Fetch the UiPath docs license-codes page and save the mapping you use as
+  `license-codes-evidence.json` in the current directory. Include the source
+  URL and the resolved friendly-name/code pair you used.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live tenant in this
@@ -26,19 +41,29 @@ initial_prompt: |
   - Use `--output json` on every uip command.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent ran `uip platform users licenses available`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+users\s+licenses\s+available'
-    min_count: 1
+  - type: run_command
+    description: "Agent ran `uip platform users licenses available` (.uip-cmdlog shim log)"
+    command: "grep -Eq 'uip platform users licenses available' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent fetched the UiPath docs license-codes page"
-    tool_name: "WebFetch"
-    command_pattern: 'docs\.uipath\.com.*license-codes'
-    min_count: 1
+  - type: file_exists
+    description: "Agent wrote web-resolution evidence at license-codes-evidence.json"
+    path: "license-codes-evidence.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Evidence file records the docs source URL and the resolved ATTUNU bundle code"
+    path: "license-codes-evidence.json"
+    includes:
+      [
+        "docs.uipath.com",
+        "license-codes",
+        "ATTUNU"
+      ]
     weight: 1.5
     pass_threshold: 1.0
 
@@ -47,11 +72,12 @@ success_criteria:
     include_agent_output: true
     prompt: |
       Evaluate ONLY the agent's final reply to the user. Score 1.0 if it
-      references the Attended Named User bundle in the form
-      `<Friendly Name> (<CODE>)` — e.g., `Attended Named User (ATTUNU)` or
-      `Attended Named User (`ATTUNU`)`. Score 0.0 if the reply shows only the
-      raw code (`ATTUNU` alone, no friendly name) or only the friendly name
-      without the code. Ignore whether the CLI call succeeded — the rubric is
-      solely about the reporting format.
+      references the ATTUNU bundle in `<Friendly Name> (<CODE>)` form, with
+      both an Attended Named User label and `ATTUNU` together. Accept both the
+      official docs spelling `Attended - Named User (ATTUNU)` and the
+      normalized `Attended Named User (ATTUNU)`; punctuation and code
+      backticks are equivalent. Score 0.0 if the reply shows only the raw code
+      or only the friendly name. Ignore whether the CLI call succeeded — the
+      rubric is solely about the reporting format.
     weight: 2.0
     pass_threshold: 1.0

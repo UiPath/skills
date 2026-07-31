@@ -41,7 +41,7 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 | `count` | sdd.md duration number | Positive integer |
 | `unit` | sdd.md duration unit | `min` \| `h` \| `d` \| `w` \| `m` |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
-| `display-name` | sdd.md or generated fallback | Required non-empty SLA title, unique within the target, and MUST NOT contain `:`. If the SDD has no title, ask for one or use the deterministic fallback `SLA Rule {N}` and record it. |
+| `display-name` | sdd.md `SLA Title` (§1 Case Metadata for root; `**SLA Title:**` under `#### Stage SLA`) or generated fallback | Required non-empty SLA title, unique within the target, and MUST NOT contain `:`. Carry the SDD title verbatim. If the SDD has no title, ask for one or use the deterministic fallback `SLA Rule {N}` and record it. |
 | `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context for the target, duration, threshold, and escalation behavior. |
 
 ### Conditional SLA rule
@@ -65,7 +65,7 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 | `recipient-scope` | sdd.md | `User` \| `UserGroup` |
 | `recipient-target` | sdd.md → resolver | Recipient UUID. When sdd gives an email or group name, run [§ Identity Resolution](#identity-resolution) — resolved UUID written inline. On resolver failure or user decline, mark `<UNRESOLVED: user-uuid for <email>>` / `<UNRESOLVED: group-uuid for <name>>`. |
 | `recipient-value` | sdd.md | Display value (typically the email for User, group name for UserGroup). |
-| `display-name` | sdd.md or generated fallback | Required non-empty escalation title, unique across the target, and MUST NOT contain `:`. If omitted, use `Escalation Rule {N}` and record the fallback. |
+| `display-name` | sdd.md escalation-table `Display Name` cell | Required non-empty escalation title, unique across the target, and MUST NOT contain `:`. Carry the SDD title verbatim. If omitted, use `Escalation Rule {N}` and record the fallback. |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
 | `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule T-entry the escalation fires under. |
 | `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context. If this escalation enters a secondary stage, name that lane and why it is global/interrupting. |
