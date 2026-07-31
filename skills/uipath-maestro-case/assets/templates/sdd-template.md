@@ -424,7 +424,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 |----------|---------------|----------------|
 | {Yes \| No} | {Yes \| No} | {`=js:` expression that skips the task when truthy, or `—`} |
 
-> `Required: Yes` means the task counts toward the stage's `required-tasks-completed` exit — **at least one task per stage MUST be `Required: Yes`**, or the stage can never complete. `Skip Condition` is the task-level `skipCondition` envelope field (sibling of `data`); use it for "run this task only when X" gating that is not expressible as a task-entry `IF`.
+> `Required: Yes` means the task counts toward the stage's `required-tasks-completed` exit — **at least one task per stage MUST be `Required: Yes`**, or the stage can never complete. `Run Only Once` is a re-entry decision, not a task-type default: use `No` for request/review/decision/validation tasks that must rerun after corrections or resubmission; use `Yes` only for immutable setup or a documented re-evaluate-existing-fact return. `Skip Condition` is the task-level `skipCondition` envelope field (sibling of `data`); use it for "run this task only when X" gating that is not expressible as a task-entry `IF`.
 
 ---
 
