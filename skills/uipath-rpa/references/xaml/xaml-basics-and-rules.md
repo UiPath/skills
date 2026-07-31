@@ -11,7 +11,7 @@ Discovery-first approach with iterative error-driven refinement. Always understa
 1. **Activity Docs Are the Source of Truth** — installed packages ship structured documentation at `{projectRoot}/.local/docs/packages/{PackageId}/` with source-accurate properties, types, defaults, enum values, conditional property groups, and working XAML examples. Always check for them first.
 2. **Know Before You Write** — **NEVER** generate XAML blind. Understand the project structure, packages, expression language, and existing patterns.
 3. **Use What You Know, Skip What You Don't Need** — if you already know the package ID and activity class name, go directly to its doc file. The discovery steps are a priority ladder, not a mandatory checklist.
-4. **Start Minimal, Validate Continuously, Fix by Category** — one activity at a time; after every change run `validate`, and exit only on a clean project-level `build` (§ Phase 3). Fix order: Package → Structure → Type → Activity Properties → Logic.
+4. **Batch-Author, Single Gate, Fix by Category** — one workflow at a time; author each workflow complete in one pass (SKILL.md Rule 18; source activities card → memory → discovery triple), then per-file `validate` to clean and exit only on a clean project-level `build` (§ Phase 3). Fix order: Package → Structure → Type → Activity Properties → Logic.
 
 **Classify the request:**
 
@@ -26,7 +26,7 @@ If unclear which file to edit, **ask the user** rather than guessing.
 
 **Goal:** understand project context, leverage installed activity documentation, study existing patterns, identify reusable components, and discover activities before writing any XAML.
 
-> **Batch discovery across activities.** When the workflow needs several activities, do NOT run the find → read-doc → `get-default-xaml` triple one activity at a time. Emit all `activities find` calls in parallel, then all `<Activity>.md` `Read`s in parallel, then all `get-default-xaml` calls in parallel (SKILL.md § Call Batching). Only the per-activity *authoring + validate* loop (Phase 2 / Phase 3) stays sequential — discovery fans out.
+> **Batch discovery across activities.** When the workflow needs several activities, do NOT run the find → read-doc → `get-default-xaml` triple one activity at a time. Emit all `activities find` calls in parallel, then all `<Activity>.md` `Read`s in parallel, then all `get-default-xaml` calls in parallel (SKILL.md § Execution Maps). Authoring batches too — one complete `Write` per workflow (Rule 18), then the Phase 3 gate.
 
 #### Step 1.1: Project Structure
 
@@ -140,7 +140,7 @@ For end-to-end authoring of `ConnectorActivity` XAML (connection + type ID + Con
 
 **UI Automation — Target Configuration Gate (MANDATORY).** Before writing any XAML with UI activities: the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). Every UI element target MUST be configured through the `uia-configure-target` skill flow — the guide mandates the target-capture orchestration reference to read IN FULL first. **NEVER** manually call low-level `uip rpa uia` CLI commands outside of the skill flow.
 
-**For CREATE requests:** generate a minimal working version, one activity at a time, validate frequently. Use the `Write` tool to create the `.xaml` file per [§ XAML File Anatomy](#xaml-file-anatomy). Infer the file path from folder conventions; use descriptive filenames.
+**For CREATE requests:** author the workflow complete in one `Write` (SKILL.md Rule 18 — every activity sourced card → memory → discovery triple), then gate in Phase 3. Use the `Write` tool to create the `.xaml` file per [§ XAML File Anatomy](#xaml-file-anatomy). Infer the file path from folder conventions; use descriptive filenames.
 
 **For EDIT requests:** always `Read` current content before editing; use `Edit` with exact, unique `old_string` matches.
 
@@ -153,7 +153,7 @@ uip rpa validate --file-path "Workflows/MyWorkflow.xaml" --output json
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
-`--file-path` must be **relative to the project directory**. Treat `validate` clean as half-done — `build` clean is the signal to exit the loop.
+`--file-path` must be **relative to the project directory**. Treat `validate` clean as half-done — `build` clean is the signal to exit the loop. A clean gate is still not runtime proof: for observable-output workflows, end with one `uip rpa run` and check the outputs ([execution-maps-guide.md § Gate ≠ runtime proof](../execution-maps-guide.md#gate--runtime-proof)).
 
 **Fix order:** Package → Structure → Type → Activity Properties → Logic.
 
@@ -171,7 +171,7 @@ Report: file path of created/edited workflow · brief description · key activit
 
 ### Anti-Patterns
 
-- **NEVER** generate large, complex workflows in one go
+- **NEVER** design sprawling monolith workflows — break logic into multiple invoked files ([../environment-setup.md § Designing for Reuse](../environment-setup.md#designing-for-reuse)); batch-authoring ONE workflow complete is the rule (Rule 18), monolith design is the anti-pattern
 - **NEVER** manually craft UI selectors outside of the `uia-configure-target` skill flow
 - **NEVER** guess properties, types, or configurations without checking docs
 - **NEVER** use incorrect keys with `uip rpa workflow-examples get` (always from list results)
@@ -179,7 +179,7 @@ Report: file path of created/edited workflow · brief description · key activit
 - **NEVER** retry failing CLI commands in a loop without diagnosing the root cause
 - **NEVER** use connector activities without checking connection existence
 - **NEVER** ignore activity doc conditional property groups (OverloadGroup conflicts cause validation errors)
-- **NEVER** generate full XAML from scratch without using `activities get-default-xaml` as a starting point
+- **NEVER** generate full XAML from scratch without a sourced starter per activity — a card/pattern-card entry, a validated memory snippet, or `activities get-default-xaml` (precedence: SKILL.md Rule 21)
 - **NEVER** assume a create/edit succeeded — validate with `uip rpa validate` AND `uip rpa build` after every mutation
 - **NEVER** treat "no diagnostics found" from `validate` as final — `build` catches a further class of errors; run it next
 - **NEVER** skip environment readiness — check the project opens and restores cleanly first ([environment-setup.md](../environment-setup.md))
