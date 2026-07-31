@@ -194,6 +194,9 @@ jobs:
       # image extends it below. Tag defaults to the wheel version but can be
       # overridden (coder_eval_image_tag) for ad-hoc / unreleased images.
       # Needs read:packages only — GH_PACKAGES_TOKEN, never the repo-write PAT.
+      # This workflow is `workflow_dispatch`-triggered, so it is not exposed to
+      # the fork/branch-push reader that motivates the split in smoke-skills.yml
+      # and smoke-rpa-skills.yml; the narrower token is least-privilege here.
       - name: Pull coder-eval-agent image
         run: |
           echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
