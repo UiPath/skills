@@ -13,7 +13,8 @@
     {
       "fieldName": "Quantity",
       "displayName": "On-Hand Quantity",
-      "type": "INTEGER",
+      "type": "DECIMAL",
+      "decimalPrecision": 0,
       "isRequired": true,
       "minValue": 0
     },

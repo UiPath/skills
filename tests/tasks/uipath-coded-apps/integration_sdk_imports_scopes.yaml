@@ -12,7 +12,12 @@ description: >
 tags: [uipath-coded-apps, integration, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 10
-  turn_timeout: 600
+
+# Skill refs defer SDK signatures/scopes to the npm package — preinstall so the agent reads them locally.
+sandbox:
+  node:
+    env_packages:
+      - "@uipath/uipath-typescript"
 
 initial_prompt: |
   Inside a UiPath Coded Web App, build `src/api.ts` and `.env.example`.

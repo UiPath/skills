@@ -193,10 +193,13 @@ jobs:
       # Pull the agent image from GHCR (never built from source); the skills
       # image extends it below. Tag defaults to the wheel version but can be
       # overridden (coder_eval_image_tag) for ad-hoc / unreleased images.
-      # GH_PAT needs read:packages.
+      # Needs read:packages only — GH_PACKAGES_TOKEN, never the repo-write PAT.
+      # This workflow is `workflow_dispatch`-triggered, so it is not exposed to
+      # the fork/branch-push reader that motivates the split in smoke-skills.yml
+      # and smoke-rpa-skills.yml; the narrower token is least-privilege here.
       - name: Pull coder-eval-agent image
         run: |
-          echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_image_tag }}
 
       # Build the skills extension image (`@uipath/cli` + `@uipath/admin-tool`
@@ -205,7 +208,7 @@ jobs:
         run: |
           docker build \
             --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_image_tag }} \
-            --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
+            --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
@@ -402,7 +405,7 @@ jobs:
         shell: bash
         env:
           CLI_VERSION:    ${{ inputs.cli_version }}
-          NPM_AUTH_TOKEN: ${{ secrets.GH_PAT }}
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
         run: |
           set -e
           install_dir="$(mktemp -d)"

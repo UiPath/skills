@@ -211,6 +211,13 @@ Procedure:
 3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
 4. **`registry-resolved.json`.** Same section-batched discipline — one Read per section, N Edit-appends, no re-Read between siblings.
 
+**T-entry heading contract.** Every declaration is its own level-two heading in
+the exact form `## T<n>: <action>`. Do not use level-three-or-deeper headings
+for T-entries, and do not nest a task beneath a stage's T-entry. A task
+heading must quote its display name, for example
+`## T08: Add wait-for-timer task "First Step" to "Process"`. This keeps the
+plan independently addressable by Phase 2 and by plan validators.
+
 Why: section-batched round-trips keep tool-call transcript reviewable, preserve rollback granularity at section boundary, allow mid-run interruption recovery via re-Read + resume from next un-applied T-entry, and surface omissions before they propagate — without paying a per-T-entry Read tax that inflates inference latency by ~5s per turn.
 
 **Hard cap on tasks.md write size.** After the §4.0a Step 1 Seed Write (Inventory placeholder, <1KB), the only legal mutation of `tasks.md` is **Edit-append** per the section-batched contract above. A single Write replacing the whole `tasks.md` is **forbidden** regardless of size. A single Edit-append payload >30KB is also forbidden — split into per-section Edit-appends even when consecutive Edits would total >30KB combined. Rationale: a single 96KB Write of tasks.md emits ~40K output tokens in one turn = ~360s inference latency = ~20% of total session in one tool call. Section-batched Edit-appends spread that cost across ~7 turns of ~50s each, recovers reviewability, and matches the recovery contract (re-Read + resume from next un-applied T-entry).
@@ -325,7 +332,7 @@ Additional fields are plugin-specific; read the plugin's `planning.md` before fi
 > A task whose only reason for `selected-tasks-completed` is "it follows the immediately previous task" is a planning defect. Convert that contiguous run to `runs-sequentially` instead. `selected-tasks-completed` remains correct for fan-in, branch convergence, non-immediate dependencies, and stage-exit routing conditions.
 > Before leaving §4.6, audit each stage's planned lanes: sequential tasks that form a strict chain MUST NOT share a lane with each other or with adhoc/event-driven/parallel work. If `activation-mode`/`entry-rule` conflicts with `lane`, the mode wins and the lane must be corrected. Same-lane grouping is reserved for intentionally parallel siblings, and the rationale must say why they run in parallel.
 
-> **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
+> **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD Outputs table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-outputs-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
 
 > **Registry handoff:** For a resolved `action` or `case-management` T-entry, translate the selected audit object into the canonical `tasks.md` labels and values:
 >
@@ -373,3 +380,20 @@ Treat the generated `tasks.md` as approved and proceed directly to Phase 2 by de
 **Stop-after-plan exception (the virtual gate).** When the request explicitly scoped the work to planning only (e.g. "just build tasks.md", "Phase 1 only", "stop after the plan for review", "don't build the case yet"), stop here: report the finished plan and do NOT create a solution or caseplan. This is the only condition that halts the auto-proceed.
 
 Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)); context may have compacted during planning. `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.
+
+**Plan-shape gate.** Before Phase 2, re-read every §4.6 task T-entry itself
+(not the §4.7 condition entries) and confirm it literally contains its own
+`- activation-mode:` line and its own `- entry-rule:` line — **exactly one of
+each, colocated on the task's own T-entry** — and that the pair is legal for
+that mode. Re-run the §4.6 Activation-mode audit over the finished plan,
+covering all six modes, not just `sequential`.
+
+**Known failure pattern:** deferring the rule to a *separate* §4.7
+task-entry-condition entry (`rule-type:`) does not satisfy this gate —
+`caseplan.json` can end up fully correct while `tasks.md` itself still fails
+this check, because §4.6 and §4.7 are graded as separate artifacts. See
+[task-entry-conditions/planning.md § Phase 1 Plan Presentation Contract](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract)
+for the compliant §4.6 shape.
+
+Correct the plan before building; validation of `caseplan.json` cannot detect
+a malformed Phase 1 handoff.
