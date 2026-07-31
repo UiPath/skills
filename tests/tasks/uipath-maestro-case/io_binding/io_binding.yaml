@@ -37,8 +37,9 @@ initial_prompt: |
   invent an operator-free Outputs row in sdd.md.
 
   Do not run `uip maestro case debug` yourself; the test harness runs it
-  after structural grading. The final .uipx must register exactly one project:
-  the CaseManagement project built from this SDD.
+  after structural grading. Leave exactly one .uipx in the workspace,
+  registering exactly one project: the CaseManagement project built from this
+  SDD. Delete any other solution directory created along the way.
 
 success_criteria:
   - type: run_command
