@@ -92,6 +92,15 @@ For every task, trigger, and condition in the sdd.md:
 
 If the plan-only / no-build exception is active, skip registry and schema discovery in this step and do not fan out through every plugin `planning.md`. The compact no-build T-entry shape and artifact contract are canonical in [phase-0-interview.md § Build start → No-build design + plan request](phase-0-interview.md#build-start--sdd-written-alongside-the-build) — read only that contract, not the full interview flow. Summary: each declaration still gets a T-number with review-oriented fields; preserve SDD portable names; emit tenant identities as `resolve at build`; carry every rationale; no registry-derived fields (`taskTypeId`, `connectionId`, resolved schemas, `inputs`/`outputs`) and no audit files. The compact plan is exempt from the normal section-batched planning workflow because it is a review artifact, not a build handoff: create `tasks/` if needed and write the complete concise `tasks/tasks.md` with one direct Write, then stop. The later build run owns authoritative resource resolution and regenerates any registry-derived fields before Phase 2.
 
+**Compact no-build T-entry shape:** each declaration still gets a T-number, but the fields are intentionally review-oriented:
+
+- Task declarations use an H2 heading with a quoted display name: `## T{N}: task "{Task Name}"`. Do not use dotted task T-numbers (for example, `T12.1`) as the task entry heading; if you group entries by stage, the task's own T-entry still remains the H2.
+- Stage entries: `stage-kind`, `entry-rule`, `exit-rule`, `interrupting`, `required`, `sla`, `rationale`.
+- Task entries: `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, `rationale`.
+- Trigger/condition/SLA entries: `rule-type`, `source/status`, `target stage/task`, `return-or-close behavior`, `rationale`.
+
+Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json` in this mode; those require tenant evidence and belong to the later build run. End the response with suggested next steps: review the SDD and plan, then run a later build to resolve tenant resources and create `caseplan.json`.
+
 When the plan-only / no-build exception is not active, continue with the normal build-planning path:
 
 1. **Identify the plugin** by matching the sdd.md component description to an entry in the catalogs below (§3.1–§3.3).
