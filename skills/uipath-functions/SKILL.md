@@ -44,7 +44,7 @@ Use Python when the logic needs job semantics, platform SDK access, or is invoke
 
 ## Critical Rules
 
-1. **Pass `-l py`.** `uip function new` defaults to TypeScript. Omitting the flag scaffolds the wrong project type.
+1. **Pass `-l py`, then verify the scaffold.** `uip function new` defaults to TypeScript. And when `uipath-langchain` is installed it emits a LangGraph *agent* even with `-l py` — check for `langgraph.json` and replace the scaffold if present (Step 1).
 2. **Add `authors` to `pyproject.toml` right after scaffolding.** The scaffold omits it; `uip function pack` then fails with `Project authors cannot be empty`. Do this as part of scaffolding, not before packing — every project needs it, including ones you only run locally.
 3. **Never instantiate `UiPath()` at module level.** Use a lazy getter (Step 3 template).
 4. **Return errors, never raise them.** Populate `error_type`/`error_message` on the output model; an exception escaping the entrypoint faults the job.
@@ -80,6 +80,14 @@ uip function new <name> --language js       # JavaScript Function (JS/TS, no job
 **`--language py` is required for Python.** The default language is TypeScript — omitting `--language` scaffolds a JS/TS project. Always pass `-l py` or `--language py` when building a Python Coded Function.
 
 `--empty` skips the hello-world function (JS/TS only).
+
+**Verify what you got before writing logic.** `uip function new -l py` passes through to `uipath new`. When `uipath-langchain` is installed in the same environment, its `langgraph_new_middleware` intercepts that command and scaffolds a **LangGraph agent instead of a Function** ([uipath-python#1543](https://github.com/UiPath/uipath-python/issues/1543)). Symptoms: a `langgraph.json` file, a `main.py` importing `langgraph` / `UiPathChat`, and no `functions` map in `uipath.json`.
+
+```bash
+ls langgraph.json 2>/dev/null && echo "WRONG SCAFFOLD — agent, not function"
+```
+
+If you see it: delete `langgraph.json`, replace `main.py` with the Step 3 template, and write `uipath.json` per Step 4. Do not try to adapt the agent template — it carries an LLM call, which Critical Rule 5 forbids. Two edits fix it; iterating on the wrong scaffold burns the whole turn budget.
 
 ### Step 2: Define Function Schema
 
