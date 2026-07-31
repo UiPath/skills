@@ -15,6 +15,13 @@ package-version load failure, a project-cache "invoked workflows missing" fault,
 excluded from the package, or a newly required argument left unmapped — use
 [invoke-workflow-file-design-time-errors.md](./invoke-workflow-file-design-time-errors.md).
 
+> For trigger **infrastructure** failures — a `Trigger Scope` / `Run Local Triggers` that fails to
+> compile, register its triggers, or start/stop monitoring (missing/stale
+> `.local\generated\Triggers.Generated.xaml`, duplicate `TriggerId` / mismatched Form field key, a
+> `Trigger Scope` that blocks the flow, legacy `UiPath.Core.Activities` package conflict, hotkey won't
+> bind) — see [trigger-scope-and-local-triggers-failed.md](./trigger-scope-and-local-triggers-failed.md).
+> This playbook covers only `Start Triggers` acting as a **workflow invoker**.
+
 What this looks like:
 - The invoked workflow file cannot be found or loaded at run time
 - An argument mismatch — the arguments passed do not match the invoked workflow's argument names,

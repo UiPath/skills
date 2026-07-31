@@ -25,7 +25,6 @@ defaults:
         - UIPATH_CLI_ORGANIZATION_ID
         - UIPATH_CLI_TENANT_NAME
         - UIPATH_CLI_TENANT_ID
-        - TRACES_SMOKE_PROCESS_KEY
         - CODEX_API_KEY
         - CODEX_BASE_URL
       extra_mounts:

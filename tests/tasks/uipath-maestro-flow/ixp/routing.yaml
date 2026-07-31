@@ -12,12 +12,16 @@ description: >
   Failure here is signal about SKILL.md or the IxP Plugin Index entry —
   do NOT relax assertions; feed findings back in.
 
+  Rows are phrased as greenfield builds because the sandbox seeds no `.flow`.
+  A prompt claiming "I have a UiPath Flow" makes the agent rightly decline to
+  attach a node to a project that does not exist.
+
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, node:ixp]
 dataset:
   rows:
     - id: explicit
       prompt: >-
-        I have a UiPath Flow. Add an IXP node that reads PDF invoices from a
+        Build a UiPath Flow with an IXP node that reads PDF invoices from a
         SharePoint folder and extracts the structured fields so the next step
         can post them to SAP.
 
@@ -40,7 +44,7 @@ dataset:
 
     - id: forms-classify
       prompt: >-
-        I have a Maestro flow. Add an IxP node that classifies incoming PDF
+        Build a Maestro flow with an IxP node that classifies incoming PDF
         forms and extracts their fields before the next step.
 
 initial_prompt: |

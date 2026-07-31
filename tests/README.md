@@ -146,7 +146,7 @@ tests/
 │   ├── nightly.yaml              # Nightly cron — docker, full lifecycle, staging tenant
 │   ├── smoke.yaml                # PR-gate smoke (Linux, docker, faster budget)
 │   ├── smoke-windows.yaml        # Windows RPA smoke (tempdir)
-│   ├── activation.yaml           # Opt-in skill-activation benchmark (1-turn)
+│   ├── activation.yaml           # Opt-in skill-activation benchmark (early-stop)
 │   ├── skill-comparison-playbook.md      # A/B comparison playbook (research)
 │   └── skill-comparison-template.yaml    # Template for compare-<a>-vs-<b>.yaml (research)
 ├── tasks/
@@ -176,9 +176,9 @@ Run-time caps live under `defaults.run_limits` (see coder_eval `RunLimits`).
 | `nightly.yaml` | docker | Nightly cron (`daily.sh`) | 200 | 1200s | 900s |
 | `smoke.yaml` | docker | PR-gate smoke (Linux) | 40 | 900s | 900s |
 | `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
-| `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 1 | 120s | 120s |
+| `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 
-`activation.yaml` is a different shape from the tiered configs above — it runs the agent for exactly one turn against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
+`activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`) with `stop_early: true`: the armed `skill_triggered` criteria (`stop_when: auto`) end a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.1. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 
 For **A/B comparisons between two skill variants** (e.g. `main` vs a feature branch, or two historical commits), see [`experiments/skill-comparison-playbook.md`](experiments/skill-comparison-playbook.md) and the [`experiments/skill-comparison-template.yaml`](experiments/skill-comparison-template.yaml). The playbook covers worktree setup, SHA pinning for reproducibility, getting N>1, and interpreting divergent tasks. To automate the whole flow, use the `/skill-compare <ref_a> <ref_b> [task_selector] [n_reps]` slash command — each ref can be a branch name or a commit SHA, and `task_selector` accepts a skill name (`uipath-maestro-flow`), tag list (`tags:smoke,init`), or path globs (`paths:tasks/uipath-maestro-flow/*.yaml`).
 
@@ -215,10 +215,11 @@ initial_prompt: |
 ## Lifecycle E2E tests (uipath-platform pattern)
 
 `tests/tasks/uipath-platform/{orchestrator,resources}/` and
-`tests/tasks/uipath-solution/` follow the same shape as `traces_e2e.yaml`:
-the agent receives a process key (and derived folder) via env var, exercises
-the operational scenario, and a `check_*.py` script verifies tenant state
-directly.
+`tests/tasks/uipath-solution/` follow the same shape as
+`orchestrator/job_run_logs_e2e.yaml`: the agent receives a process key (and
+derived folder) via env var, exercises the operational scenario, and a
+`check_*.py` script verifies tenant state directly. The traces e2e tasks are
+the exception — they inline their fixture key instead of reading an env var.
 
 ### Shape
 
@@ -237,7 +238,7 @@ writes `uuid8`.
 ### Tenant prerequisites
 
 Two pre-existing processes on the tenant, referenced by their keys via CI
-secrets (matches the existing `TRACES_SMOKE_PROCESS_KEY` pattern):
+secrets:
 
 | Secret | Purpose | Used by |
 |---|---|---|

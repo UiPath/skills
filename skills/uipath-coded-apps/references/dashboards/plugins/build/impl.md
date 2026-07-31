@@ -9,6 +9,7 @@ By the time you read this you have already loaded all docs, checked state, and f
 3. **The build runs in a subagent when one is available, else inline (Phase 4).** After confirmation, the main thread prints one "Building…" line. **Best effort: if the host agent already provides a sub-task/subagent mechanism (the `Task` tool in Claude Code; the equivalent in Codex/Gemini/others), use it automatically** — spawn a build subagent so the build command, events, tsc/npm output, and retries stay hidden, then relay its returned milestone block. **If no such mechanism exists, fall back to running the same build steps inline in the main thread** — the build and its output are identical; only the noise-hiding is lost. Subagent use is an optimization, never a hard requirement.
 4. Never read `build-dashboard.mjs` — this file documents everything.
 5. Never run directory exploration via any shell — `ls`, `find`, `dir`, `Get-ChildItem`, `tree`.
+6. **A build is ALWAYS compiler-driven — never hand-roll.** Author `intent.json` (pure metadata) + one `metrics/<name>.ts` per metric, then run `build-dashboard.mjs intent.json`. NEVER hand-write `src/metrics/`, `src/dashboard/`, or a bespoke React app and `npm run build` it directly: a hand-rolled build authors no `intent.json`, so the compiler cannot edit/upgrade it and validation fails. This holds for EVERY build — including custom (T3) metrics, governance (`AgentTraces.getGovernance*`), job routing/classification (`ProcessType` filters), and detail-view / row-link dashboards. No metric is "too custom" for the compiler; express it as `intent.json` + a `metrics/*.ts` module. Hand-edited `src/` is valid ONLY in an already-**ejected** project (CAPABILITY.md § Regimes), never a fresh build.
 
 ---
 
@@ -86,7 +87,7 @@ The plan message ends there — no OAuth talk in the plan, no tool calls in the 
 > views) when the prompt signals runtime-governance intent — "governance/policy violation(s)", "compliance",
 > a standard/pack reference (`ISO 42001`, `A.8.4`, "standard", "pack"), or runtime-governance terms. Then read
 > `sdk/governance-traces.md` and build the modules on `AgentTraces.getGovernanceDecisions` /
-> `getGovernanceSummary` (SDK ≥ 1.5.1). NEVER add them to a plain agent-health/ops dashboard. They need an
+> `getGovernanceSummary`. NEVER add them to a plain agent-health/ops dashboard. They need an
 > **org-admin** caller — a 403 means the user's account lacks governance access (say so; the rest of the
 > dashboard still builds). Widgets honor the dashboard time range like any other metric.
 
@@ -274,7 +275,7 @@ If both fail: direct the user to `<CLOUD_URL>/<ORG>/portal_/adminui/#/externalAp
 
 **The build subagent (Phase 4) authors these modules and applies this check — it is NOT done in the main thread.** When the subagent writes each `metrics/<name>.ts` from the SDK references, it cross-checks every one against the **Example response** and **semantics notes** in the relevant `references/sdk/*.md` file (already loaded in the parallel blast). For each metric, confirm:
 
-1. **The field you filter or read on appears in the example response** — with the value you expect. Not just "the field exists in the type" (both `sourceType` and `packageType` exist) — the example shows the real *value*. **Appearing in the response does NOT make a field filterable**: mapped fields like `processName` are read-only and throw `Invalid OData query options` in a `$filter` (see `orchestrator.md § Filterable vs read-only Job fields`). Filter only on documented raw fields and match mapped fields client-side.
+1. **The field you filter or read on appears in the example response** — with the value you expect. Not just "the field exists in the type" (both `sourceType` and `packageType` exist) — the example shows the real *value*. SDK field names work in `$filter`/`orderby` (the SDK rewrites them to API names — see `orchestrator.md § OData filter field names`); `folderId` is header-scoped, never a `$filter` field, and there is no server-side name filter — match `processName` client-side.
 2. **No semantics note warns against your choice.** The references flag the traps types can't express.
 3. **Your return shape matches the example** — `.items` vs `.data` vs a top-level array, and the exact field names you map to `xKey`/`yKey`/columns.
 4. **Table column keys match the return shape.** For a `data-table`/`ranked-table`, every `columns`/`columnDefs` key must be a field your module actually returns per row — a key with no matching field renders an empty `—` column. Tables use `columns`/`columnDefs` (NOT `detailColumns`, which only feeds chart drill-down views); a T3 table with no columns is rejected by the build.
@@ -348,6 +349,7 @@ Building **[Dashboard Name]**…
 The build subagent prompt:
 
 > You are the dashboard build executor. You NEVER surface raw output or file edits — your final message is the only thing shown.
+> 0. **Build ONLY via the compiler.** Author `intent.json` + `metrics/*.ts`, then run `build-dashboard.mjs intent.json`. NEVER hand-write `src/metrics/`/`src/dashboard/` or run your own bundler — even for custom (T3) metrics, governance, `ProcessType` routing, or detail-view/row-link features. A hand-rolled build authors no `intent.json` and fails validation.
 > 1. Read `<SKILL_BASE_DIR>/references/dashboards/plugins/build/impl.md` §§ "Phase 3.5" and "Build subagent — execution" and follow them exactly.
 > 2. All work happens inside the pre-warmed project folder `<ROUTING>`, which already exists in the current working directory. Reference it ONLY by this relative name — NEVER type an absolute `/tmp/…` path (a mistyped character silently builds a sibling project). Author `<ROUTING>/intent.json` (pure metadata — `schemaVersion: 2`, no `fnBody`, `"projectDir": "."`) and one `<ROUTING>/metrics/<name>.ts` per metric (`export const fetchData: MetricFn`), writing each module from the SDK references and applying the Phase 3.5 cross-check. Implement exactly this approved plan:
 >    - Project: dashboardName=`<NAME>`, routingName=`<ROUTING>`, projectDir=`"."`, orgName=`<ORG>`, tenantName=`<TENANT>`, cloudUrl=`<CLOUD_URL>`, apiUrl=`<API_URL>`, timeRange=`<RANGE>`, clientId=`<CLIENT_ID or empty>`

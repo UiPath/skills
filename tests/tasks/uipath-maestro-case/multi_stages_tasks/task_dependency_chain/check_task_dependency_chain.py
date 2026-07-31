@@ -2,6 +2,8 @@
 """TaskDependencyChain: task-driven exits + under-covered task-entry rule-types."""
 
 import os
+import glob
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -60,8 +62,51 @@ def _task_entry_rule(task: dict) -> str | None:
     return None
 
 
+def _read_all_tasks_md() -> str:
+    matches = sorted(
+        p for p in glob.glob("**/tasks.md", recursive=True) if "/.venv/" not in p
+    )
+    if not matches:
+        sys.exit("FAIL: no tasks.md found; Phase 1 planning artifact is required")
+    chunks = []
+    for path in matches:
+        with open(path, encoding="utf-8") as f:
+            chunks.append(f"\n<!-- {path} -->\n" + f.read())
+    return "\n".join(chunks)
+
+
+def _task_plan_section(tasks_md: str, task_name: str) -> str:
+    pattern = re.compile(
+        rf"(?ims)^##\s+T\d+:.*?\"{re.escape(task_name)}\".*?(?=^##\s+T\d+:|\Z)"
+    )
+    match = pattern.search(tasks_md)
+    if not match:
+        sys.exit(f"FAIL: tasks.md has no T-entry for task {task_name!r}")
+    return match.group(0)
+
+
+def _assert_plan_sequential_mode(tasks_md: str, task_name: str) -> None:
+    section = _task_plan_section(tasks_md, task_name)
+    if not re.search(r"(?im)^-\s*activation-mode:\s*sequential\s*$", section):
+        sys.exit(
+            f"FAIL: tasks.md T-entry for {task_name!r} must expose "
+            "`activation-mode: sequential`"
+        )
+    if not re.search(r"(?im)^-\s*entry-rule:\s*runs-sequentially\s*$", section):
+        sys.exit(
+            f"FAIL: tasks.md T-entry for {task_name!r} must expose "
+            "`entry-rule: runs-sequentially`"
+        )
+    if re.search(r"(?im)^-\s*entry-rule:\s*selected-tasks-completed\b", section):
+        sys.exit(
+            f"FAIL: tasks.md T-entry for {task_name!r} models an immediate "
+            "ordered step as selected-tasks-completed instead of runs-sequentially"
+        )
+
+
 def main():
     plan = read_caseplan()
+    tasks_md = _read_all_tasks_md()
 
     stages = find_stages(plan, include_exception=False)
     if len(stages) != 3:
@@ -129,6 +174,7 @@ def main():
             )
 
     for name in ("First Step", "Second Step"):
+        _assert_plan_sequential_mode(tasks_md, name)
         task = expectations[name][0]
         rules = [
             (first_rule_of_condition(condition) or {}).get("rule")
@@ -158,16 +204,31 @@ def main():
             f"'current-stage-entered' (or default); got {rc_rule!r}"
         )
 
-    # The frontend keeps tasks in an ordered structural set. The rule and
-    # declaration order, not the set/lane alone, express sequential behavior.
+    # A strict sequential chain uses consecutive single-task structural sets.
+    # Same-set grouping is reserved for explicitly parallel siblings.
     first_step_lane = _stage_task_lane(process, "First Step")
     second_step_lane = _stage_task_lane(process, "Second Step")
-    if first_step_lane != second_step_lane:
+    if first_step_lane == second_step_lane:
         sys.exit(
-            f"FAIL: 'First Step' and 'Second Step' must share the ordered task "
-            f"set in Process data.tasks; got set {first_step_lane} and set "
-            f"{second_step_lane}"
+            f"FAIL: strict sequential tasks 'First Step' and 'Second Step' must "
+            f"not share a parallel task set; both are in set {first_step_lane}"
         )
+    if first_step_lane >= second_step_lane:
+        sys.exit(
+            f"FAIL: strict sequential task sets must preserve declaration order; "
+            f"First Step set={first_step_lane}, Second Step set={second_step_lane}"
+        )
+    process_sets = (process.get("data") or {}).get("tasks") or []
+    for task_name, set_idx in (("First Step", first_step_lane), ("Second Step", second_step_lane)):
+        if len(process_sets[set_idx] or []) != 1:
+            labels = [
+                (t or {}).get("displayName") or (t or {}).get("label")
+                for t in (process_sets[set_idx] or [])
+            ]
+            sys.exit(
+                f"FAIL: strict sequential task {task_name!r} must be alone in "
+                f"its task set; set {set_idx} contains {labels!r}"
+            )
 
     if optional_audit.get("type") != "process":
         sys.exit(

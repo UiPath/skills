@@ -1,24 +1,30 @@
 # SDD Generation Rules
 
-Content-quality contract for Phase 0's `sdd.md`. The interview in [phase-0-interview.md](phase-0-interview.md) owns the **conversation flow** (Listen / Sketch / Ask / Resolve / Approve). This file owns the **content rules** every generated `sdd.md` must satisfy before Approve renames the draft.
+Content-quality contract for Phase 0's `sdd.md`. The interview in [phase-0-interview.md](phase-0-interview.md) owns the **conversation flow** (Listen / Sketch / Confirm / Build start). This file owns the **content rules** the in-memory case model must satisfy before the confirmation is presented — and therefore before `sdd.md` renders from it. Where older wording says "Approve" or "the Approve summary", read the §Confirm checkpoint and its `Decisions I made` block.
 
 Phase 1 trusts `sdd.md` as written (SKILL.md Rule 2). These rules make that trust safe.
 
 ## Mental model: stages, secondary stages, tasks
 
-Reason the case shape from the process the user describes — **do not reach for the template first.** The template renders a shape you already decided; it does not decide it for you. Build the model in this order: stages → tasks → types → pull exceptions out. Each concept below is a question to ask of the user's process, not a slot to fill.
+Reason the case shape from the process the user describes — **do not reach for the template first.** The template renders a shape you already decided; it does not decide it for you. Build the model in this order: stages → tasks → types → sweep other paths. Each concept below is a question to ask of the user's process, not a slot to fill.
 
 **Stage** — a phase the case works through: a bounded milestone with an *entry* (when it starts), *tasks* (the work done inside it), and a *completion/exit* (when it's done and where the case goes next). Stages are the backbone; they run in sequence (or parallel), wired by **entry/exit conditions** (the case has no edges — transitions are condition-driven). Derive one stage per milestone the user names ("intake", "underwriting", "funding"). Ask: *what is the case working toward right now, and what makes that done?* A stage that "marks the case complete" is on the main flow (`isRequired: true`).
 
-**Secondary stage** (a `case-management:Stage` node carrying `data.stageType: "secondary"` — the `case-management:ExceptionStage` node type is removed at v22) — work that is **not a fixed step on the line**: it can fire at many points and only under a condition. Errors, escalations, rejections, rework loops, cancellations. Three rules define it, all CLI-enforced:
+**Secondary stage** (a `case-management:Stage` node carrying `data.stageType: "secondary"` — the `case-management:ExceptionStage` node type is removed at v22) — an **interrupting** lane for work that is **not a fixed step on the line**: it can fire at many points and only under a condition. Errors, escalations, rejections, rework loops, cancellations. If the work is just an optional one-off inside the current stage, keep it as a task with an `adhoc` entry condition instead of promoting it to a secondary stage. Four rules define secondary stages, all CLI-enforced:
 
 - **No edges** — reached and exited purely by conditions, never wired by an edge (true of every stage — edges retired). It is detached from any flow graph.
 - **Entered by its own condition**, never by an edge — but the entry shape depends on the lane's trigger:
   - **(a) Mid-stage interrupt** — user-launched (`user-selected-stage`, paired with a `wait-for-user` exit) or external (`wait-for-connector`). Fires *while the origin is still active* and genuinely interrupts it.
-  - **(b) Decision/signal divert** — the **origin** stage carries a **gated diverting exit** (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → this lane), and this lane's `selected-stage-exited(origin) + IF` entry **matches** it. Fires when the origin *exits* — a divert-and-return, NOT a true mid-stage interrupt. A variable-driven mid-stage interrupt is not expressible without a connector, so a decision- or signal-gated lane MUST use shape (b). See [§ Logical integrity step 5](#logical-integrity--stage-graph).
-- **Exits via `return-to-origin`** — routes the case back to the origin stage, through the exit rule, not a new edge. Requires `Interrupting: Yes`.
+  - **(b) Decision/signal divert** — the **origin** stage carries a **gated diverting exit** (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → this lane), and this lane's `selected-stage-exited(origin) + IF` entry **matches** it. Fires when the origin *exits* — a divert-and-return, NOT a true mid-stage interrupt. The secondary lane still carries `Interrupting: Yes`; a variable-driven mid-stage interrupt is not expressible without a connector, so a decision- or signal-gated lane MUST use shape (b). See [§ Logical integrity step 5](#logical-integrity--stage-graph).
+  - **(c) SLA status interrupt** — `sla-status-change` references the target SLA rule and one of its at-risk/breached escalation rules. It can fire while any stage in that SLA's scope is active.
+- **Every secondary-stage entry is interrupting** — set the stage-level `Interrupting` field to `Yes` and set every Stage Entry Conditions row for that secondary stage to `Interrupting: Yes`. A secondary stage with `Interrupting: No` is misclassified; make it a regular parallel stage or an `adhoc` task instead.
+- **Exits by intent** — returning/rework lanes use `return-to-origin` to route back to the origin stage; terminal lanes use `exit-only` plus a root case-exit row. Neither shape uses a new edge. Since secondary stages are interrupting lanes, both shapes still require `Interrupting: Yes` on the stage and every entry row.
 
-Ask: *does this work belong at one fixed point (regular stage), or could it happen at several points / only on a condition (secondary stage)?* "Handle rejected application", "escalate on SLA breach", "rework loop" → secondary. Pull these out of the main flow; do not string them inline as ordinary stages.
+Ask: *does this work belong at one fixed point (regular stage), or could it happen at several points / only on a condition (secondary stage)?* "Handle rejected application", "escalate on SLA breach", "rework loop" → secondary. Returning work uses `return-to-origin`; terminal rejection/withdrawal/cancel work uses `exit-only` plus a case-exit row. Pull these out of the main flow; do not string them inline as ordinary stages.
+
+**Global-event normalization.** When an external status event (for example, a withdrawal received from a portal) or an SLA status change may happen at any point **and requires case work/routing**, define it once as an interrupting entry rule on the destination secondary stage. Use `wait-for-connector` for the external event and `sla-status-change` for the SLA event. A warning-only SLA escalation remains a notification. Do **not** add the same task or exit rule to every primary stage: the interrupting entry automatically exits whichever stage is active. A recoverable lane returns with `return-to-origin`; a terminal lane uses `exit-only` plus a root case-exit rule.
+
+**Other-path sweep.** Before Phase 0 confirmation, actively look beyond the primary flow. Consider rework / needs-info loops; rejection, withdrawal, and cancellation; SLA escalation; external-system failure; manual override or worker-selected side work; optional side work; and terminal outcomes that differ from successful completion. Do not force every item into a secondary stage: choose the smallest faithful model, such as a secondary stage, terminal case exit, non-completing case exit, task-level branch, `adhoc` task, or SLA notification-only row. Clear source signals are modeled by best assumption and disclosed in the confirmation's **Other Paths Considered** table. When the source has no signal at all, Phase 0 asks one bounded question before confirmation; if the user chooses primary-flow-only, record that as an intentional decision and do not invent a path.
 
 **Task** — one unit of work inside a stage, owned by a *persona* (a human role) or by the *system* (automation / AI / API). It has an entry condition (when it runs within the stage), inputs, outputs, and a **type** that says *how* the work gets done. One verb in the user's description ≈ one task. Ask: *who or what performs this, and how?* The "how" answer is the task type — see [§ Choosing the task type](#choosing-the-task-type).
 
@@ -31,10 +37,10 @@ The case, each stage, and each task move through a lifecycle gated by **rules** 
 | Gate | What it answers | Legal rule types (CLI) |
 |---|---|---|
 | **Case entry** | how does a case instance begin? | No case-entry condition object — a **trigger** starts the case; the root stage carries `case-entered`. |
-| **Stage entry** | when does this stage activate? | `case-entered` (root only) · `selected-stage-completed` · `selected-stage-exited` · `wait-for-connector` · `user-selected-stage` |
-| **Stage completion** (`Marks Stage Complete: Yes`) | when is the stage done, on the main flow? | `required-tasks-completed` · `wait-for-connector` |
-| **Stage exit** (`Marks Stage Complete: No`) | early hand-off / route without completing | `selected-tasks-completed` · `wait-for-connector`; exit `type`: `exit-only` / `wait-for-user` / `return-to-origin` |
-| **Task entry** | when does this task start inside its stage? | `current-stage-entered` (first task — required) · `selected-tasks-completed` · `wait-for-connector` · `adhoc` · `runs-sequentially` |
+| **Stage entry** | when does this stage activate? | `case-entered` (root only) · `selected-stage-completed` · `selected-stage-exited` · `wait-for-connector` · `user-selected-stage` · `sla-status-change` |
+| **Stage completion** (`Marks Stage Complete: Yes`) | when is the stage done, on the main flow, a returning lane, or a terminal secondary lane? | `required-tasks-completed` · `wait-for-connector`; exit `type`: `exit-only` / `wait-for-user` / `return-to-origin` |
+| **Stage exit** (`Marks Stage Complete: No`) | early hand-off / route without completing | `selected-tasks-completed` · `wait-for-connector`; exit `type`: `exit-only` / `wait-for-user` |
+| **Task entry** | when does this task start inside its stage? | `current-stage-entered` (stage-started/default tasks) · `selected-tasks-completed` · `wait-for-connector` · `adhoc` · `runs-sequentially` |
 | **Task completion / exit** | — | A task has **no** exit/completion condition. It completes when its own work finishes; downstream stages/tasks key off that via `required-tasks-completed` / `selected-tasks-completed`. |
 | **Case completion** (`Marks Case Complete: Yes`) | when does the case close successfully? | `required-stages-completed` · `wait-for-connector` |
 | **Case exit** (`Marks Case Complete: No`) | alternate disposition (cancel / route out) | `selected-stage-completed` · `selected-stage-exited` · `wait-for-connector` |
@@ -42,10 +48,10 @@ The case, each stage, and each task move through a lifecycle gated by **rules** 
 How to reason with these:
 
 - **`required-*` vs `selected-*`.** `required-tasks-completed` / `required-stages-completed` = "all items flagged required are done" (the `isRequired` flow). `selected-tasks-completed` / `selected-stage-completed` / `selected-stage-exited` = "these *specific named* items." Pairing rule (Key Rule 4): `Marks Complete: Yes` pairs only with `required-*`; `selected-*` is for `No` (routing / early exit / alternate disposition). A `Yes` + `selected-*` pair is a schema error.
-- **Secondary stage** uses **stage-entry + stage-exit rules only, never edges** (true of every stage — edges retired). Its entry rule is typically *interrupting* (`isInterrupting: true`); its exit uses `return-to-origin` to rejoin the flow it left. **For a decision/signal-routed lane, the routing lives on the *origin* stage:** a gated diverting exit (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → the lane), with the origin's completion exit gated by the inverse `IF` so the two paths are mutually exclusive — see [§ Logical integrity step 5](#logical-integrity--stage-graph).
-- **First event-driven task in a stage** must carry `current-stage-entered` (emit it explicitly). A sequential chain is the exception: the first sequential task carries only `runs-sequentially`, which the frontend interprets as current-stage-entered; later sequential tasks carry only `runs-sequentially`, which the frontend interprets as the preceding task completing. `wait-for-connector` makes a gate pause for an inbound connector callback — its `conditionExpression` gates on **case state** only (no `event` payload; in-rule extract-then-gate is unsupported at runtime — gate a downstream condition instead); `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule).
+- **Secondary stage** uses **stage-entry + stage-exit rules only, never edges** (true of every stage — edges retired). Its entry rules are always interrupting (`isInterrupting: true`). Returning exits use the canonical completion shape `return-to-origin` + `Marks Stage Complete: Yes` + `required-tasks-completed` to rejoin the flow they left; terminal exits use `exit-only` + `Marks Stage Complete: Yes` plus a root case-exit row. **For a decision/signal-routed lane, the routing lives on the *origin* stage:** a gated diverting exit (`Marks Stage Complete: No`, `IF` on the decision/signal, `exitToStageId` → the lane), with the origin's completion exit gated by the inverse `IF` so the two paths are mutually exclusive. **For a global connector/SLA event, routing lives only on the destination secondary stage:** no per-origin exit rule is needed. See [§ Logical integrity step 5](#logical-integrity--stage-graph).
+- **Task-entry mode is exclusive.** Use `current-stage-entered` only for stage-started/default tasks. Event-triggered tasks carry the explicit event rule (`wait-for-connector` with connector configuration), adhoc tasks carry only `adhoc`, and sequential tasks carry only `runs-sequentially`; do not add `current-stage-entered` to those tasks just because they are first in a stage. For sequential chains, the first task's `runs-sequentially` means current-stage-entered, and later tasks use it as the preceding-task-completed trigger. `wait-for-connector` makes a gate pause for an inbound connector callback — its `conditionExpression` gates on **case state** only (no `event` payload; in-rule extract-then-gate is unsupported at runtime — gate a downstream condition instead); `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule).
 
-**Frontend task-mode mapping.** The UI's `sequential`, `event-triggered`, and `manually-triggered` choices are not interchangeable: sequential means the task-only `runs-sequentially` rule; event-triggered means an explicit event/condition rule (use `wait-for-connector` for an external connector callback); manually-triggered means an `adhoc`-only task with `isRequired: false`. Do not infer one mode from `data.tasks` lanes, and do not add a second entry rule that changes the selected mode.
+**Frontend task-mode mapping.** The UI's `sequential`, `event-triggered`, and `manually-triggered` choices are not interchangeable: sequential means the task-only `runs-sequentially` rule; event-triggered means an explicit event/condition rule (use `wait-for-connector` for an external connector callback); manually-triggered means an `adhoc`-only task with `isRequired: false`. `adhoc` decides how the task starts; it does not decide the task type. A manually triggered task may still be `action`, `agent`, `api-workflow`, `process`, etc. Do not infer one mode from `data.tasks` lanes, and do not add a second entry rule that changes the selected mode.
 - **`user-selected-stage`** (stage entry) starts a stage on demand by a user rather than by flow. The CLI validator requires it to pair with a `wait-for-user` stage exit elsewhere: a `wait-for-user` exit with no `user-selected-stage` entry — or a `user-selected-stage` entry with no `wait-for-user` exit — fails `validate`.
 
 Exact cell formats live in [§ Stage content rules](#stage-content-rules) and [§ Task content rules](#task-content-rules) — this table is the conceptual map of *which rule belongs where*.
@@ -58,7 +64,7 @@ Exact cell formats live in [§ Stage content rules](#stage-content-rules) and [�
 - `Intsvc.TimerTrigger` → **Timer**: a schedule starts it.
 - `Intsvc.EventTrigger` → **Connector Event**: an external system fires it.
 
-One trigger is the root; additional triggers are secondary. Ask: *what makes a new case appear?* A portal signup, inbound form, or schedule is NEVER Manual — trigger type is Always-Ask the moment such a source is named.
+One trigger is the root; additional triggers are secondary. Reason: *what makes a new case appear?* A portal signup, inbound form, or schedule is NEVER Manual — assume the event/timer trigger per the playbook and disclose the decision the moment such a source is named.
 
 **Connector** — the case's hands into an external system (an Integration Service connection). It surfaces three ways: an `execute-connector-activity` task (perform one operation — push), a `wait-for-connector` task/rule (pause for an inbound event — pull), or an `Intsvc.EventTrigger` (start on an event). Identity (`typeId` + `connectionId`) resolves from the registry — never fabricate IDs (SKILL.md Rule 8). Ask: *which system, and does the case call it (push) or wait for it (pull)?*
 
@@ -77,10 +83,10 @@ Reason the shape; do not template it:
 
 - **Milestones → stages:** Intake → Screening → Compliance → Finance Setup → Activation — regular stages on the main flow.
 - **"goes back for remediation" → secondary stage.** Remediation fires only on a condition (compliance failed) and routes back — model it as a secondary stage (condition-entered, `return-to-origin`), **not** a sixth inline primary stage.
-- **"sign up through portal" → trigger.** A portal signup is an inbound event, not Manual — Always-Ask the trigger type.
+- **"sign up through portal" → trigger.** A portal signup is an inbound event, not Manual — assume the event trigger and disclose it.
 - **Tasks + types** (read verb + actor, ask the [§ Choosing](#choosing-the-task-type) question):
   - *screen them* → AI judges unstructured docs → `agent`
-  - *compliance check* → ambiguous: a connector call (`execute-connector-activity`) vs human sign-off (`action`); the verb is Always-Ask, and a "licensed officer signs off" phrase forces `action`.
+  - *compliance check* → ambiguous: a connector call (`execute-connector-activity`) vs human sign-off (`action`); decide per the assumption playbook, and a "licensed officer signs off" phrase forces `action`.
   - *set them up in finance system* → SAP connector operation → `execute-connector-activity`; if a deployed process packages it → `process`.
   - *activate* → one connector op or a human flip → confirm with the user.
 
@@ -106,13 +112,13 @@ When signals conflict, apply this priority — top wins:
 
 1. **Platform schema constraints** ([case-schema.md](case-schema.md)) — schema-invalid values never ship, regardless of source. Examples: task `type` outside the 9-value enum (SKILL.md Rule 16); `Marks Stage Complete: Yes` paired with `selected-tasks-completed` (sdd-template Key Rule 4).
 2. **Regulatory / compliance constraint** stated or implied by the user (ECOA, NCQA, GDPR, HIPAA, SOC 2, FCRA, FINRA, etc.). Forces specific types — see §Task-type override priority.
-3. **Tenant evidence** from the registry cache — a deployed Action App, process, agent, or API workflow that already matches the task. Prefer that resource's type.
+3. **Tenant evidence** from the registry cache — a deployed Action App, process, agent, API workflow, connector activity/trigger, or enabled connection that already matches work the user described. Prefer that resource's type/identity, but never add stages/tasks or rename business work merely because the tenant has a resource.
 4. **User-stated preference** in chat (verbatim "set the task to agent", "trigger = portal event").
 5. **Doc-extracted values** from user-shared docs.
-6. **Inferred defaults** per the high-confidence test in [phase-0-interview.md § When to Ask vs Default](phase-0-interview.md#when-to-ask-vs-default).
+6. **Inferred defaults** per the assumption playbook in [phase-0-interview.md § Sketch](phase-0-interview.md#sketch--best-assumption-every-field).
 7. **General-practice fallback.**
 
-When a higher tier overrides a lower one, narrate the override in chat AND surface it in the Approve summary's `Inferred / defaulted` block with provenance `(source: <higher-tier>-override)`.
+When a higher tier overrides a lower one, apply it and surface it in the confirmation's `Decisions I made` block with provenance `(source: <higher-tier>-override)`.
 
 ## Choosing the task type
 
@@ -130,11 +136,11 @@ The `type` says **how the work gets done**, not what it's about. Read the verb +
 | `wait-for-timer` | the case **pauses for a duration or until a datetime** | Is the case just waiting on time? |
 | `case-management` | the step **launches / coordinates a child case** | Does this spin up a sub-case? |
 
-**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. "Approve / review / decide" verbs are ambiguous between `action` (human) and `agent` (AI) — these are Always-Ask ([phase-0-interview.md § When to Ask vs Default](phase-0-interview.md#when-to-ask-vs-default)); never guess. A compliance trigger phrase forces `action` regardless of the pick above (see below).
+**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. "Approve / review / decide" verbs are ambiguous between `action` (human) and `agent` (AI) — decide per the assumption playbook in [phase-0-interview.md § Sketch](phase-0-interview.md#sketch--best-assumption-every-field) and disclose the decision in the confirmation. A compliance trigger phrase forces `action` regardless of the pick above (see below).
 
 ## Task-type override priority
 
-Extends the Always-Ask gate. Apply in this order when picking task `type`:
+Extends the assumption playbook. Apply in this order when picking task `type`:
 
 1. **User decision pinned to a type** — honor unless schema-invalid (Rule 16) or conflicting with (2).
 2. **Regulatory constraint requiring human sign-off** — task MUST be `action`. Trigger phrases that force `action` (regardless of user preference):
@@ -151,7 +157,7 @@ Extends the Always-Ask gate. Apply in this order when picking task `type`:
 
 3. **Tenant evidence** — if the registry cache resolves a deployed Action App / process / agent / api-workflow / RPA that fits, prefer that resource's type and surface the match.
 4. **Connector availability** — when an IS connector matches the integration, choose `execute-connector-activity` over `api-workflow`.
-5. **Verb signal** — fall through to the Always-Ask table in [phase-0-interview.md § When to Ask vs Default](phase-0-interview.md#when-to-ask-vs-default).
+5. **Verb signal** — fall through to the assumption playbook in [phase-0-interview.md § Sketch](phase-0-interview.md#sketch--best-assumption-every-field).
 6. **Fallback** — keep the user's stated value if any; otherwise emit a placeholder per SKILL.md Rule 8 and pair it with a high-severity review item (§Review items).
 
 **Worked examples:**
@@ -160,7 +166,7 @@ Extends the Always-Ask gate. Apply in this order when picking task `type`:
 |---|---|---|---|
 | Adverse-action notice (lending) — "ECOA mandates licensed compliance officer signs off" | `agent` (LLM drafts notice) | Yes — tier 2 | `action` (Compliance Officer recipient; LLM-drafted body bound to the action's form context) |
 | Vendor scoring on intake | `agent` (LLM scores docs) | No — no regulation, no licensed role | `agent` |
-| Underwriting decision on mortgage | `agent` (LLM applies criteria) | Maybe — depends on jurisdiction; verb `decision` Always-Ask + tier-2 trigger phrase absent → Ask user | Ask |
+| Underwriting decision on mortgage | `agent` (LLM applies criteria) | Maybe — jurisdiction-dependent; no tier-2 trigger phrase in transcript → keep user's `agent`, disclose the compliance caveat as a decision line | `agent` (disclosed) |
 | Inbound webhook from Salesforce | `api-workflow` | No — but tier 4 says prefer connector | `execute-connector-activity` if Salesforce connector exists in tenant; else `api-workflow` |
 | Process orchestration call | `process` | No | `process` |
 
@@ -170,7 +176,9 @@ Extends the Always-Ask gate. Apply in this order when picking task `type`:
 
 Reason the shape first — [§ Mental model](#mental-model-stages-secondary-stages-tasks) — then apply this contract; it governs *how* a decided stage / secondary stage / task is written, not *whether* it should exist.
 
-Phase 1 reads `sdd.md` as written (Rule 2). The following three sections define **what each case / stage / task element MUST contain** before Approve renames the draft. Every block specifies required vs optional cells, allowed values, source of truth, and the fallback when a value is missing.
+Phase 1 reads `sdd.md` as written (Rule 2). The following three sections define **what each case / stage / task element MUST contain** before the model may render to `sdd.md`. Every block specifies required vs optional cells, allowed values, source of truth, and the fallback when a value is missing — in Phase 0, "Ask" fallbacks are settled by playbook assumption first and the one clarifying call only when no assumption is defensible.
+
+**Template shape is part of the render contract.** A valid model is not enough if the written file collapses into a prose summary. The rendered `sdd.md` must preserve the structure in `assets/templates/sdd-template.md`: title, table of contents, Section 1/2/3/4 headings, case metadata/triggers/variables, one full stage block per modeled stage, one full task detail block per modeled task, personas/app views, and integration/resource inventory. The compact Phase 0 confirmation is not an SDD substitute.
 
 **Allowed `—`** (cells the user did not touch and Phase 1 can default safely): case-level Description, variable defaults, persona scope notes, app-view detail, secondary-stage description, optional `IF` conditionExpressions, business calendars on timers.
 
@@ -189,34 +197,41 @@ Defines what `sdd.md` Section 1 (Case Definition) must contain.
 | Case Name | yes | PascalCase identifier (e.g., `MortgageLoanOrigination`) | Block Approve. Ask. |
 | Description | optional | One prose sentence | `—` |
 | Identifier prefix | yes | UPPER, 2-4 chars (e.g., `MLO`) | Default mechanically from PascalCase first letters; record in source ledger. |
-| Priority | optional | `Low` / `Medium` / `High` / `Critical` | Default `Medium`; record in source ledger. |
 | Case SLA | conditional | Duration (e.g., `5 business days`) | `—` when case has no SLA; otherwise block Approve. |
 | SLA Type | conditional | `time-based` (single unconditional duration) / `condition-based` (one or more conditionExpression-keyed overrides + a default time-based row) | Default `time-based` when Case SLA set with no per-condition overrides. The FE persists `condition-based` whenever ≥ 1 `slaRules[]` entry carries a non-empty `conditionExpression` (see PO.Frontend `CaseManagementSlaProperties.tsx:27-30`). `condition-based` requires populating the §Variable SLA Rules table; `time-based` omits it. |
+| SLA Title | conditional | Non-empty root-unique SLA rule title, no `:` | Omit the row when Case SLA is `—` (never render `—` here). Else default `SLA Rule 1` and record in source ledger; a title a `sla-status-change` references must be concrete (§ Logical integrity step 6). |
 | Case App | optional | `Enabled` / `Disabled` — whether the in-product Case App UI is on (`metadata.caseAppEnabled`). | Default `Disabled`; record in source ledger. |
 | Task-output passing | optional | `Direct` / `Shared` — `metadata.caseDirectlyPassTaskOutputs`. `Direct` passes a task's outputs straight to downstream tasks (default). | Default `Direct`. |
 
-**PO.Frontend validation parity.** Before Approve, apply the same name and SLA checks that the Case App applies:
+**PO.Frontend validation parity plus safe generated names.** Before Approve, apply the same name and SLA checks that the Case App applies, then apply the skill's stricter safe-display-name contract to anything the skill generates or carries into Case Designer display/title fields.
 
 | Surface | Required checks |
 |---|---|
-| Stage label | Non-empty; unique across stages; no `:`. A non-Case-Manager stage also cannot reuse the reserved default Case Manager stage label when a Case Manager stage exists. |
-| Task display name | No `:` for materialized tasks. |
-| SLA rule title (`displayName`) | Non-empty; unique within the root or stage target; no `:`. |
-| Escalation title (`displayName`) | Non-empty; unique across escalations on the target; no `:`. |
+| Stage label | Non-empty; unique across stages; safe display characters only. A non-Case-Manager stage also cannot reuse the reserved default Case Manager stage label when a Case Manager stage exists. |
+| Task display name | Safe display characters only for materialized tasks. |
+| Rule display name | Safe display characters only for entry, exit, task-entry, and case-exit condition display names. |
+| SLA rule title (`displayName`) | Non-empty; unique within the root or stage target; safe display characters only. |
+| Escalation title (`displayName`) | Non-empty; unique across escalations on the target; safe display characters only. |
 | SLA duration | `count > 0`; when `unit: min`, `15 ≤ count ≤ 1000`. Supported units are `min`, `h`, `d`, `w`, and `m`. |
 | Conditional SLA | Every non-default SLA rule has a non-empty expression/condition. |
 | Escalation payload | Every escalation has at least one recipient; an `at-risk` escalation has an `atRiskPercentage` value. |
 
-These are blocking authoring errors, not optional style warnings. Preserve the user's wording when repairing a name, but ask for a replacement when uniqueness or a reserved delimiter is violated; never silently suffix or truncate it.
+Safe display characters are letters, numbers, spaces, hyphen (`-`), and underscore (`_`) only. Do not generate colons (`:`), periods (`.`), slashes, backslashes, quotes, parentheses, ampersands, commas, semicolons, emoji, or other symbols in stage/task/rule/SLA/escalation display names. Repair unsafe generated or user-carried display names mechanically by replacing runs of disallowed characters with one space, collapsing spaces, and trimming. Preserve words and casing. If the result is empty or collides, pick a safe qualifier or numeric suffix and disclose it in the Case Review.
+
+These are blocking authoring errors, not optional style warnings. Do not normalize external registry or tenant lookup names (Action App titles, process names, connector names, API names, queue/bucket names); those are matching keys. Keep separate safe Case Designer display names when a lookup name contains punctuation.
+
+The same rule governs **numeric** violations: never silently clamp, round, or substitute an out-of-range value to satisfy validation. A minute-based SLA authored below 15 or above 1000 is not repaired to the nearest legal bound — surface the violation and Ask for a replacement duration (or a different `unit`), naming the original value. This applies whether the value came from the interview or from an SDD supplied on disk: rewriting a user-authored duration to pass validation is a silent requirements change, not a fix.
 
 ### 1.2 Case-level SLA escalation
 
 Required when Case SLA is set. Always renders with both rows; no `—` allowed in any cell.
 
-| Threshold | Trigger | Recipient |
-|---|---|---|
-| At-risk | `<pct>%` of case SLA (defaults below) | `UserGroup: <owner-group>` or `User: <name>` |
-| Breached | 100% of case SLA | One tier up — leadership group; Compliance for regulation-driven cases |
+| Threshold | Trigger | Recipient | Display Name |
+|---|---|---|---|
+| At-risk | `<pct>%` of case SLA (defaults below) | `UserGroup: <owner-group>` or `User: <name>` | Non-empty root-unique escalation title, no `:` |
+| Breached | 100% of case SLA | One tier up — leadership group; Compliance for regulation-driven cases | Non-empty root-unique escalation title, no `:` |
+
+`Display Name` defaults to `Escalation Rule {N}` only when no `sla-status-change` entry references that escalation.
 
 **Default thresholds** when user did not name them:
 
@@ -364,18 +379,21 @@ The trailing `` `{stage_id}` `` (e.g., `` `stage-intake` ``) MUST appear so read
 |---|---|---|
 | Type | yes | `Stage` |
 | Stage Kind | optional | `primary` (default — omit the line) / `secondary` (emits `data.stageType: "secondary"`; replaces the old `ExceptionStage` type) |
+| Design Rationale | yes | One concrete sentence explaining why this is primary/secondary and why its entry/exit behavior fits the requirement. For global-event lanes, name the event and state that one interrupting entry replaces per-stage duplication. |
 | Description | yes (primary) / optional (secondary) | One prose sentence |
 | Required for case completion | yes | `Yes` (primary, default) / `No` (secondary stages always `No`) |
-| Interrupting | secondary stages only | `Yes` / `No` — does this stage interrupt active stages on activation? |
-| Stage SLA | yes when stage has SLA | Duration + type, plus escalation table |
+| Interrupting | secondary stages only | `Yes` — secondary stages are interrupting lanes. If the work should not interrupt, model it as a regular stage/parallel path or an `adhoc` task. |
+| Stage SLA | yes when stage has SLA | Default duration + `time-based` or `condition-based` + `SLA Title` (non-empty, stage-unique, no `:`), plus conditional-rule and escalation tables |
 
 ### Stage Entry Conditions table
 
 ≥ 1 row required.
 
-| WHEN | IF | Display Name |
-|---|---|---|
-| `case-entered` (root only) / `selected-stage-completed("<Stage>")` / `selected-stage-exited("<Stage>")` / `wait-for-connector` / `user-selected-stage` | optional `conditionExpression` | optional |
+| WHEN | IF | Interrupting | Display Name |
+|---|---|---|---|
+| `case-entered` (root only) / `selected-stage-completed("<Stage>")` / `selected-stage-exited("<Stage>")` / `wait-for-connector` / `user-selected-stage` / `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")` | optional `conditionExpression` | `Yes` for every secondary-stage entry row; `No` for regular-stage entry | optional |
+
+`sla-status-change` args are specified in [sdd-template.md](../assets/templates/sdd-template.md) § Stage Entry Conditions; closure is enforced by § Logical integrity step 6.
 
 ### Stage Completion Conditions table (`Marks Stage Complete: Yes`)
 
@@ -398,14 +416,24 @@ Optional. Used for early hand-offs / routing. Same columns and order as the comp
 |---|---|---|---|---|
 | `selected-tasks-completed("<Task>")` / `wait-for-connector` | optional | `exit-only` / `wait-for-user` | `No` | optional |
 
+`return-to-origin` is a completion exit, not a divergent exit: render it in the `Yes` table with `required-tasks-completed` (or `wait-for-connector`). Never generate `return-to-origin` + `No` + `selected-tasks-completed`.
+
+### Stage conditional SLA rules table
+
+Render when the Stage SLA type is `condition-based`. Each expression-keyed override targets this stage's `data.slaRules[]` and precedes its default row.
+
+| Expression | SLA | Unit | Display Name |
+|---|---|---|---|
+| condition evaluated against case variables | positive count | `min` / `h` / `d` / `w` / `m` | non-empty, stage-unique title without `:` |
+
 ### Stage SLA escalation table
 
 Always rendered when Stage SLA is set. Concrete cells in both rows; never `—`.
 
-| Threshold | Trigger | Recipient |
-|---|---|---|
-| At-risk | `<pct>%` of stage SLA (defaults below) | `UserGroup: <owner-group>` / `User: <name>` |
-| Breached | 100% of stage SLA | Leadership group; Compliance for regulation-driven stages |
+| Threshold | Trigger | Recipient | Display Name |
+|---|---|---|---|
+| At-risk | `<pct>%` of stage SLA (defaults below) | `UserGroup: <owner-group>` / `User: <name>` | Non-empty stage-unique escalation title, no `:` |
+| Breached | 100% of stage SLA | Leadership group; Compliance for regulation-driven stages | Non-empty stage-unique escalation title, no `:` |
 
 **Defaults** when user did not name them (mirror §1.2):
 
@@ -446,6 +474,8 @@ The convergence task is the stage's only `Required: Yes` task, so `required-task
 
 Defines per-task detail blocks. Every task opens with an **Entry Condition** block. Additional blocks depend on task type.
 
+Every task also declares **Design Rationale**: one concrete sentence explaining why the selected task type fits the actor/work and why the selected activation mode fits the timing. For sequential tasks, name the ordering/dependency evidence; for parallel tasks, state that the work is independent. This rationale is persisted into the matching task and task-entry T-entries in `tasks.md`.
+
 ### Entry Condition block (every task)
 
 ```
@@ -458,15 +488,15 @@ Defines per-task detail blocks. Every task opens with an **Entry Condition** blo
 
 | Rule | When to use |
 |---|---|
-| `current-stage-entered` | First event-driven task in stage, or any ungated task (including connector tasks) that should start when its stage is entered. A first task in a sequential chain uses `runs-sequentially` instead. When a task has multiple entry rows, render this one first. |
+| `current-stage-entered` | Ungated stage-started task that should start when its stage is entered. Do not add this row to event-triggered (`wait-for-connector`), manually triggered (`adhoc`), or sequential (`runs-sequentially`) tasks. When a task intentionally has multiple entry rows and one is stage-started, render this row first. |
 | `selected-tasks-completed("<Task>")` | Explicit sibling gate, fan-in, branch convergence, or conditional handoff where this task should start only after named sibling task(s) complete. Multiple tasks comma-separated inside the parens. Do not use it merely to express the next step in a simple top-to-bottom task list; use `runs-sequentially` for that UI mode. |
 | `wait-for-connector` | Async connector callback. Pair with `conditionExpression` to gate on **case state** (`vars.X`); the event payload is not accessible (no `event` namespace). **In-rule extract-then-gate (extract + same-rule `=js:vars.caseVar` gate) does NOT work at runtime** — case-backend evaluates the gate before the extract populates the case var. To condition on payload content: extract `response.field -> caseVar` on the connector rule and place the case-state gate on a DOWNSTREAM stage-entry / task-entry condition. |
-| `adhoc` | Manual fire from the case app. Optional gating expression. |
+| `adhoc` | Manual fire from the case app. Optional gating expression. Task-entry only; set `Required: No`. It is an activation mode, not a task type. |
 | `runs-sequentially` | Tasks that should run top-to-bottom in their stage declaration order. The frontend toggle writes this as the task's only entry rule; it is not represented by a lane. |
 
 Multiple entry conditions render as multiple rows (DNF outer-OR). When `current-stage-entered` is among them, render it first.
 
-**Sequential normalization rule.** When a contiguous set of tasks in one stage is described as a plain ordered workflow with no branch condition, fan-in, alternate trigger, or manually launched task between them, author **each task in that run** with exactly one `runs-sequentially` Entry Condition row. This includes the first task: do not write `current-stage-entered` for the first item and `selected-tasks-completed("<previous>")` for later items. That explicit chain is valid backend logic, but Studio Web classifies it as condition/event-driven rather than Sequential. Break the run at tasks that are `adhoc`, `wait-for-connector` entry-triggered by an external event, condition-gated, or intentionally dependent on non-immediate sibling task(s).
+**Sequential normalization rule.** When the requirement states order/dependency (`then`, `after`, `before`, `in order`, an upstream output prerequisite) for a contiguous set of tasks in one stage, author **each task in that run** with exactly one `runs-sequentially` Entry Condition row. This includes the first task: do not write `current-stage-entered` for the first item and `selected-tasks-completed("<previous>")` for later items. That explicit chain is valid backend logic, but Studio Web classifies it as condition/event-driven rather than Sequential. A missing data binding does not erase stated ordering. Use parallel `current-stage-entered` tasks only when the work is explicitly independent; use `selected-tasks-completed` for fan-in/non-immediate dependencies. Break a sequential run at tasks that are `adhoc`, `wait-for-connector` entry-triggered by an external event, condition-gated, or intentionally dependent on non-immediate sibling task(s).
 
 ### `action` task — required cells
 
@@ -569,7 +599,7 @@ These four runnable types share a single render block. The SDD surfaces both por
 | Inputs | yes | Table: `Field | Type | Binding` — `Field` MUST match the runnable's declared In argument name verbatim; `Binding` per §Binding cell |
 | Outputs | yes | Table: `Field | Binding / Value` — `Field` MUST match the runnable's declared Out argument name verbatim for `->` rows (or `—` for `=` rows); see §Outputs cell operators |
 
-**Where the rest of the metadata lives.** Deep per-type runtime metadata that does NOT affect replication of the case plan (agent system prompt, RPA package version, api-workflow endpoint URL, process release tag) stays out of the SDD body — it is resolved during §Resolve in [phase-0-interview.md](phase-0-interview.md#resolve) and persisted in `tasks/registry-resolved.json` under the task's resolution entry (per SKILL.md Rule 9 shape). The SDD carries the resource **name + folder + id + sub-type** (above). Phase 1 may reuse deeper metadata only after the cached type/name/folder/identity matches the current SDD per [planning.md § Phase 0 carryover](planning.md#step-2--locate-and-parse-the-design-document); otherwise it re-runs discovery from the SDD and replaces the stale entry. Mapping:
+**Where the rest of the metadata lives.** Deep per-type runtime metadata that does NOT affect replication of the case plan (agent system prompt, RPA package version, api-workflow endpoint URL, process release tag) stays out of the SDD body — it is resolved during Phase 1 discovery ([planning.md](planning.md)) and persisted in `tasks/registry-resolved.json` under the task's resolution entry (per SKILL.md Rule 9 shape). The SDD carries the resource **name + folder + id + sub-type** (above). Phase 1 may reuse deeper metadata only after the cached type/name/folder/identity matches the current SDD per [planning.md § Phase 0 carryover](planning.md#step-2--locate-and-parse-the-design-document); otherwise it re-runs discovery from the SDD and replaces the stale entry. Mapping:
 
 | Task type | Registry source | Identity field in `registry-resolved.json` |
 |---|---|---|
@@ -636,15 +666,15 @@ For worked patterns by Category and operator, see [`sdd-template-examples.md`](.
 
 ### Resolved-resource I/O completeness
 
-When a task resolves to a **live** resource (`process` / `agent` / `rpa` / `api-workflow` / `action` / `execute-connector-activity` / `wait-for-connector` / `case-management`), the SDD's binding contract MUST cover that resource's declared I/O — not merely match names verbatim where rows exist (§Binding cell, §Outputs cell). The declared contract is the one pulled at §Resolve in [phase-0-interview.md](phase-0-interview.md#resolve) (`tasks describe` for runnables, `spec` for connectors) and persisted — including each input's `required` flag and the full output-field list — in `tasks/registry-resolved.json`. Coverage is two-directional:
+When a task resolves to a **live** resource (`process` / `agent` / `rpa` / `api-workflow` / `action` / `execute-connector-activity` / `wait-for-connector` / `case-management`), the SDD's binding contract MUST cover that resource's declared I/O — not merely match names verbatim where rows exist (§Binding cell, §Outputs cell). The declared contract is the one pulled during build-phase discovery (`tasks describe` for runnables, `spec` for connectors — Phase 1 per [planning.md](planning.md), re-verified in Phase 3) and persisted — including each input's `required` flag and the full output-field list — in `tasks/registry-resolved.json`. Coverage is two-directional:
 
-**Inputs — required-coverage.** Every **required** declared input has an Inputs row whose `Binding` is non-empty (any allowed form in §Binding cell), OR is explicitly `<UNRESOLVED>` paired with a `high` review item (`rev_unbound_input_<task>_<field>`). A required input silently absent from the Inputs table is the defect this rule catches — it resolves to runtime null and faults the job. **Optional** declared inputs MAY be omitted; an optional input the user described but did not map → `medium` review item (existing §Resolve behavior). Never invent a `Default` to suppress an unmapped required input.
+**Inputs — required-coverage.** Every **required** declared input has an Inputs row whose `Binding` is non-empty (any allowed form in §Binding cell), OR is explicitly `<UNRESOLVED>` paired with a `high` review item (`rev_unbound_input_<task>_<field>`). A required input silently absent from the Inputs table is the defect this rule catches — it resolves to runtime null and faults the job. **Optional** declared inputs MAY be omitted; an optional input the user described but did not map → `medium` review item (build-phase discovery behavior). Never invent a `Default` to suppress an unmapped required input.
 
 **Outputs — field fidelity.** Every Outputs `-> caseVar` (extract) row's `Field` (its top-level leaf) MUST exist verbatim in the resolved output contract. A `Field` the resource does not emit → `high` review item (`rev_phantom_output_<task>_<field>`); it cannot bind. The case still binds outputs **selectively** — only the outputs it consumes need rows; this rule forbids referencing outputs the resource never produces, not under-consuming. (This generalizes the action-app-only fidelity rule, §Finalization step 16, to all runnable/connector types.)
 
 **xref carve-out — an upstream-output-fed input is *defined*, NOT a case variable.** When a required input is satisfied by an upstream task's output — whole-value `<- "Stage"."Task".out` (resolves to `=vars.<outputId>`) or in-expression `vars.$xref('Stage','Task','out')` — it counts as covered: do **NOT** raise a "missing variable" finding for it. The emitting task self-declares the output and is its own producer; declare a §1.5 row for it only per the [§ 1.5 declare-vs-xref test](#15-case-variables) (rename / custom `Default` / `Type` / `Description` / case-level state read in ≥ 2 places). See also [§ Variable lineage closure → Task-output direct reference](#variable-lineage-closure).
 
-Enforced at the Approve gate (§Variable lineage closure audit checklist + §Finalization step 19) and re-verified at build (Phase 3 io-binding Check 5, [`io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)). A task whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` has no resolved contract and is skipped by this rule. Its type-specific portable name remains concrete.
+Enforced at build (Phase 1 discovery + Phase 3 io-binding Check 5, [`io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)) — Phase 0's best-assumption path pulls no I/O contracts, so its `Field` cells reflect the best-known names and Phase 3 discovery reconciles them against the live contract during binding. For a user-authored SDD the rule applies as written. A task whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` has no resolved contract and is skipped by this rule. Its type-specific portable name remains concrete.
 
 ## Integrations content rules (Section 4)
 
@@ -715,7 +745,7 @@ Otherwise the variable is open-lineage and Phase 0 cannot Approve.
 
 Pattern X1 is preferred unless an actual connector emits the close event. When the pattern is detected at Sketch time (multiple terminal candidates AND a branching decision earlier in the case), narrate the choice and surface BOTH patterns to the user via AskUserQuestion before drafting the rows.
 
-**Audit checklist** (run before Approve renames the draft):
+**Audit checklist** (run against the in-memory model before the confirmation is presented):
 
 1. Every variable referenced by any `=vars.<name>` (or `=vars.<name>.<sub>`) anywhere in `sdd.md` (task Inputs, IF columns, exit rules, button `Maps To`, SLA expressions) has a matching §1.5 row whose `Name` equals `<name>` — OR `<name>` is an upstream task's auto-emitted output field (see §Variable lineage closure → Task-output direct reference; never add a §1.5 row to back such a ref).
 2. Every §1.5 row's `Category` is exactly one of `In` / `Out` / `Variable` — never blank, never `—`.
@@ -727,11 +757,11 @@ Pattern X1 is preferred unless an actual connector emits the close event. When t
 8. **Forbidden body vocabulary.** No occurrence in any narrative cell of: `Pattern C`, `bridge`, `companion`, `inputOutputs[]`, `=jsonString:` (outside connector `Operation Configuration` cells), `groupOperator`, `essentialConfiguration` (as prose), `savedFilterTrees`, `dispatcher`, `Phase 2 validator`, `Phase 3 dispatcher`, `Q10 II`, `Finding #N`, `io-binding`, `aliased into / from / back into`, `reassign`, `originalVar`, `auto-mint`. These are skill-internal terms — see [sdd-template.md § Output Rules](../assets/templates/sdd-template.md).
 9. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness). For each task resolved to a live resource (contract present in `tasks/registry-resolved.json`): every **required** declared input has a non-empty `Binding` row OR `<UNRESOLVED>` + a paired `high` review item; every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract. An upstream-output-fed input (whole-value `<-` or `vars.$xref(...)`) satisfies coverage with NO §1.5 row — do not flag it as a missing variable. Skip tasks whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` (no contract).
 
-Any failure → Phase 0 cannot Approve. Surface in edit-validation errors. AskUserQuestion `Re-edit` / `Restart` / `Abort`.
+Any failure → fix in the model before presenting the confirmation (lineage defects are the agent's, not the user's); a genuinely unfixable item becomes a ⚠ flagged line in the confirmation's `Decisions I made` block.
 
 ## Review items
 
-A review item is a structured gap escalation. Phase 0 emits one whenever a field could not be fully resolved but Phase 1 needs the context. Review items live in `tasks/registry-resolved.json` under the matching task's `review_items[]` array and surface in the Approve summary — never in the `sdd.md` body (per [sdd-template.md § Output Rules](../assets/templates/sdd-template.md): review items belong in the summary, not the document).
+A review item is a structured gap escalation. Phase 0 emits one whenever a field could not be fully resolved but Phase 1 needs the context. In Phase 0 they live in the in-memory model and surface as ⚠ lines in the confirmation's `Decisions I made` block — never in the `sdd.md` body (per [sdd-template.md § Output Rules](../assets/templates/sdd-template.md)); Phase 1 persists them into `tasks/registry-resolved.json` under the matching task's `review_items[]` array when it writes that file.
 
 Shape:
 
@@ -753,7 +783,7 @@ Severity:
 | **medium** | Phase 1 can default with a prompt. | Missing SLA escalation recipient (default = owner group); missing variable default; ambiguous recipient (persona name without group resolution). |
 | **low** | Cosmetic. | Missing case-level description; missing secondary-stage description; stylistic placeholder. |
 
-**Approve gate behavior.** When any `high` review items exist, Approve adds an explicit follow-up: `Approve despite N high-severity items` (with the count populated). User must opt in — silent approval is forbidden. Medium and low items show in the Approve summary count but do not require explicit acknowledgment.
+**Confirmation gate behavior.** When any `high` review items exist, they appear as ⚠ lines in the confirmation's `Decisions I made` block and the Build option is relabeled `Build despite N flagged items` (count populated). User must pick it — silently building past `high` items is forbidden. Medium and low items surface as advisory lines and need no acknowledgment.
 
 ## Domain fidelity
 
@@ -773,7 +803,7 @@ Phase 0's narrative cells (Description, persona names, stage names, task names, 
 - 2-4 char identifier prefix from the PascalCase name.
 - camelCase variable names from spaced phrases (`loan amount` → `loanAmount`).
 
-**Detection — when user writes a term once, surface it in the source ledger** as `verbatim:"<quoted exact phrase>"` (see §Source ledger). On Approve, the user is asked to confirm spelling/casing for every customer-named entity.
+**Detection — when user writes a term once, surface it in the source ledger** as `verbatim:"<quoted exact phrase>"` (see §Source ledger). The confirmation's tables render every customer-named entity verbatim — that display is the spelling/casing check; corrections fix any drift. No separate confirmation question.
 
 **Anti-paraphrase rule.** When the agent feels the urge to write `the manager approves the request` and the user said `the senior underwriter signs off`, the agent MUST use `the senior underwriter signs off`. Synonyms are a fidelity bug, not a polish improvement.
 
@@ -781,12 +811,13 @@ Phase 0's narrative cells (Description, persona names, stage names, task names, 
 
 Beyond schema-pairing checks (§Finalization step 1), the case must be a connected graph. **Edges are retired — these condition-based checks are the SOLE reachability guard; there is no edge graph to fall back on.** A malformed or missing entry condition is the only thing that can orphan a stage, so this walk is load-bearing.
 
-1. **Every stage reachable from a trigger.** Walk forward from each trigger row through Stage Entry Conditions (`case-entered` from root, `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`) — condition-only, no edges. Every primary stage's id must be reached. Unreachable stage → blocking error (orphan stage).
+1. **Every stage reachable from a trigger.** Walk forward from each trigger/SLA source through Stage Entry Conditions (`case-entered` from root, `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`, `sla-status-change`) — condition-only, no edges. Every primary stage's id must be reached. Unreachable stage → blocking error (orphan stage).
 2. **Every stage exits.** Every primary stage must have either (a) a completion row (`Marks Stage Complete: Yes`) whose completion is consumed by a downstream stage's Entry Condition or a case-exit, OR (b) another primary stage whose Entry Condition references it (`selected-stage-completed`/`selected-stage-exited`), OR (c) feed a secondary stage. A stage no other stage (or case-exit) keys off → blocking error (terminal-loop stage).
 3. **Every case-exit row references a stage that exists.** No dangling `Required Stages` references.
 4. **Every `Required Stages` cell in §1.4 names ≥ 1 primary stage with `Required for case completion: Yes`.** Otherwise the case can never complete.
-5. **Secondary stages must have ≥1 entry condition, each DISTINCT, chosen by trigger source.** Map the lane's *trigger* to the rule: a gate decision → `selected-stage-completed` / `selected-stage-exited` (+ `IF` on the decision var); a person launches it → `user-selected-stage`; an external event → `wait-for-connector`. `adhoc` is task-entry only — never a stage entry. Two secondary stages whose entry rules are identical (same rule type + `selectedStageId` + `conditionExpression`) fail `validate` (`CASE_MGMT_SECONDARY_STAGE_ENTRY_RULES_DUPLICATE`) — give each a distinct `selectedStageId` or `conditionExpression` guard. Set `Interrupting: Yes` for lanes that fire mid-stage (escalation, comms, withdrawal). Terminal lanes (Rejected / Withdrawn) exit `exit-only` and declare a §1.4a case-exit (`marks-case-complete: false`); return lanes (Escalation / Customer Comms) exit `return-to-origin`. **Decision-reachable lanes:** when any decision button's Behavior (or the user's stated intent) names a secondary stage as a destination ("route to / send to / escalate via the X lane"), that lane's entry conditions MUST include a `selected-stage-completed` / `selected-stage-exited` rule with an `IF` on the deciding variable's value. A lane described as decision-reachable but entered ONLY via `wait-for-connector` (no decision-keyed entry) is unreachable from its stated source → blocking error. A `wait-for-connector` entry may coexist as a separate trigger, but cannot be the lane's only entry when a decision is supposed to reach it. **A `selected-stage-completed`/`selected-stage-exited` lane entry REQUIRES a matching origin diverting exit — the entry alone is not enough.** On the *origin* stage add a **gated diverting exit** (`Marks Stage Complete: No`, WHEN `selected-tasks-completed("<decider task>")`, `IF =js:(<signal> === <exception-value>)`, `exit-only`, `exitToStageId` → the lane) **and** gate the origin's completion exit with the inverse `IF` (`=js:(<signal> !== <exception-value>)`) so the two are mutually exclusive. Without the diverting exit the decision path either **dual-fires** (ungated completion → the next stage *and* the lane both enter) or **deadlocks** (gated completion with no alternative exit). `selected-stage-exited` fires *after* the origin exits, so this is a **divert-and-return, not a true mid-stage interrupt** — a genuine mid-stage interrupt needs `user-selected-stage` or `wait-for-connector` (mental-model shape (a)). Missing origin diverting exit, or a completion exit not mutually exclusive with it → blocking error.
-6. **Classify each secondary stage's `Interrupting` flag by whether it must halt active work.** `Interrupting: Yes` pauses the active stage(s) when the lane fires; `Interrupting: No` runs alongside them in parallel while the main flow continues. Choose the value from the lane's intent — does handling it require stopping the rest of the case, or can it proceed concurrently? Interrupting is independent of whether the lane is terminal or returning. The one hard rule: a `return-to-origin` exit **requires `Interrupting: Yes`** — the case can only return to a stage it interrupted, so a non-interrupting `return-to-origin` lane is incoherent → blocking error.
+5. **Secondary stages must have ≥1 interrupting entry condition, each DISTINCT, chosen by trigger source.** Map the lane's *trigger* to the rule: a gate decision → `selected-stage-completed` / `selected-stage-exited` (+ `IF` on the decision var); a person launches it → `user-selected-stage`; an external event → `wait-for-connector`; a case/stage SLA at-risk or breach event that requires stage work → `sla-status-change` referencing the SLA + escalation rule. Warning-only SLA escalation stays a notification. `adhoc` is task-entry only — never a stage entry. Every secondary-stage entry row carries `Interrupting: Yes`. Two secondary stages whose entry rules are identical (same rule type + selector fields + `conditionExpression`) fail `validate` (`CASE_MGMT_SECONDARY_STAGE_ENTRY_RULES_DUPLICATE`) — give each a distinct event/SLA selector or expression guard. Terminal lanes (Rejected / Withdrawn) exit `exit-only` and declare a §1.4a case-exit (`marks-case-complete: false`); return lanes (Escalation / Customer Comms) exit `return-to-origin`. **Global events:** one `wait-for-connector` or `sla-status-change` entry on the destination secondary stage covers every active origin; do not repeat a task or exit rule across primary stages. **Decision-reachable lanes:** when any decision button's Behavior (or the user's stated intent) names a secondary stage as a destination ("route to / send to / escalate via the X lane"), that lane's entry conditions MUST include a `selected-stage-completed` / `selected-stage-exited` rule with an `IF` on the deciding variable's value. A lane described as decision-reachable but entered ONLY via `wait-for-connector` (no decision-keyed entry) is unreachable from its stated source → blocking error. A `wait-for-connector` entry may coexist as a separate trigger, but cannot be the lane's only entry when a decision is supposed to reach it. **Only a `selected-stage-completed`/`selected-stage-exited` lane entry requires a matching origin diverting exit.** On the *origin* stage add a **gated diverting exit** (`Marks Stage Complete: No`, WHEN `selected-tasks-completed("<decider task>")`, `IF =js:(<signal> === <exception-value>)`, `exit-only`, `exitToStageId` → the lane) **and** gate the origin's completion exit with the inverse `IF` (`=js:(<signal> !== <exception-value>)`) so the two are mutually exclusive. Without the diverting exit the decision path either **dual-fires** (ungated completion → the next stage *and* the lane both enter) or **deadlocks** (gated completion with no alternative exit). `selected-stage-exited` fires *after* the origin exits, so this is a **divert-and-return, not a true mid-stage interrupt** — a genuine mid-stage interrupt needs `user-selected-stage`, `wait-for-connector`, or `sla-status-change` (mental-model shapes (a)/(c)). Missing origin diverting exit, or a completion exit not mutually exclusive with it → blocking error.
+6. **Every `sla-status-change` entry resolves.** For each row: the target is `root` or an existing stage, that target has an SLA configured (§1.1 + §1.2, or its `#### Stage SLA` block), and both titles match rows declared on **that** target. Any miss — SLA absent, title left `—`/defaulted, typo, or an escalation borrowed from another target — cannot resolve to `slaId` + `escalationId`, leaves the lane unreachable, and is a **blocking error**. A notification-only escalation needs no entry rule.
+7. **Every secondary stage is interrupting.** Set the stage-level `Interrupting` field and every secondary-stage entry row to `Yes`. If the user describes work that can run alongside the main flow without interrupting it, do not mark it secondary; model it as a regular parallel stage/path or as an `adhoc` task in the active stage. A secondary stage with `Interrupting: No` is a blocking classification error.
 
 **Worked example — decision/signal-routed return exception (AP Review → SLA Escalation).** The origin "AP Review" routes to the exception lane "SLA Escalation" on a `requiresEscalation` decision, then returns:
 
@@ -819,14 +850,16 @@ Phase 0's job is to surface execution-readiness gaps, not just schema validity. 
 | **Multiple parallel single-recipient bottlenecks** | ≥ 2 stages have single-recipient bottleneck check fire AND they fan-in to the same downstream stage | `rev_multi_bottleneck_<stages>`: "Multiple single-recipient bottlenecks gate a downstream stage — fan-in stalls cascade." |
 | **Case-var relay (over-declaration)** | A §1.5 `Variable` row whose **only** producer is one task's Outputs `->` row AND whose **only** consumer is one downstream binding (one task Input `=vars.X`, OR one `=js:` expression / `IF`) — i.e., it carries a single output to a single consumer and is neither `In`/`Out` nor read in ≥ 2 places. **Exempt:** rows that rename, set a custom `Default` / `Type` / `Description`, or are read by ≥ 2 consumers / a condition. | `rev_relay_var_<name>`: "Variable `<name>` relays one task's output to a single consumer — reference the output directly (`<- \"Stage\".\"Task\".out` or `vars.$xref('Stage','Task','out')`) and drop the §1.5 row (see § 1.5 declare-vs-xref test)." |
 
-`medium` items DO NOT block Approve. They surface in the Approve summary's `Review items` count (not in the `sdd.md` body) — `medium` requires no acknowledgment but should not be silently buried. The **`high` variants above** (`rev_substitute_app`, and `rev_no_failure_path` at the ≥ 2-connector threshold) gate Approve like any other `high` item: the user can only `Approve despite N high-severity items`.
+`medium` items DO NOT block the confirmation. They surface as advisory lines in it (not in the `sdd.md` body) — no acknowledgment required, but never silently buried. The **`high` variants above** (`rev_substitute_app`, and `rev_no_failure_path` at the ≥ 2-connector threshold) gate like any other `high` item: the user can only `Build despite N flagged items`.
 
 ## Source ledger (provenance)
 
 When Phase 0 defaults or infers a value, record provenance so Phase 1 and downstream auditors can trace it. The ledger has two surfaces:
 
 1. **Inline in `sdd.md`** — italic source attribution after the value: `Manual _(source: user-stated)_`. Omit attribution when the kind is `user-stated`.
-2. **Approve summary `Inferred / defaulted` block** — see [phase-0-interview.md § Approve](phase-0-interview.md#approve).
+2. **Confirmation `Decisions I made` block** — see [phase-0-interview.md § Confirm](phase-0-interview.md#confirm--the-single-checkpoint).
+
+**Design rationale is durable, not chat-only.** Provenance says *where a value came from*; rationale says *why the design choice fits*. Persist the latter in each stage/task `Design Rationale` field and in each case/stage SLA rationale field. The confirmation may summarize those reasons, but it is not their sole storage. Phase 1 copies the rationale to each matching `tasks.md` T-entry so an implementer can review the choice without the original conversation.
 
 Provenance kinds:
 
@@ -845,12 +878,14 @@ A non-`user-stated` and non-`verbatim` field without provenance is a validation 
 
 ## Finalization
 
-Before Approve atomic-renames `sdd.draft.md` → `sdd.md`, Phase 0 runs these checks in order. Failure at any step blocks the rename; the draft is preserved.
+Phase 0 runs these checks **once, against the in-memory case model, before presenting the §Confirm checkpoint** ([phase-0-interview.md § Confirm](phase-0-interview.md#confirm--the-single-checkpoint)). Failures are the agent's defects: fix them in the model silently and re-check; a genuinely unfixable item becomes a ⚠ flagged line in the confirmation. After a user correction, re-run only the affected checks. **Steps 16 and 19 require resolved I/O contracts, which Phase 0's light pass does not pull — they are enforced at build time instead (Phase 1 discovery + Phase 3 io-binding Check 5); run them in Phase 0 only when a contract happens to be in memory.** The rendered `sdd.md` must match the confirmed model exactly; passing checks make the model eligible for rendering, they do not create the file.
 
 1. **Schema check.** Every task `type` ∈ 9-value enum (Rule 16). Every WHEN ↔ Marks-complete pair valid per sdd-template Key Rule 4:
    - Case-exit `Yes` + `selected-stage-*` → error
    - Stage-exit `Yes` + `selected-tasks-completed` → error
 2. **Render-contract check.** Every required cell in §Case content rules, §Stage content rules, §Task content rules has a concrete value (no banned `—` / `<UNRESOLVED>`).
+2a. **Template-shape check.** The exact rendered `sdd.md` text must pass [phase-0-interview.md § Template conformance gate](phase-0-interview.md#template-conformance-gate--before-sddmd-is-written): `# SDD — {Case Name}`, `## Table of Contents`, `## Section 1: Case Definition`, `## Section 2: Stages & Tasks`, `## Section 3: Personas & App Views`, `## Section 4: Integrations`, required Section 1 subsections, one complete stage block per stage, one complete task block per task, personas/app views, and integrations. Each task block must contain the exact marker `**Task envelope**` before the Required / Run Only Once / Skip Condition table; `**Task envelope:**` with a colon is a render failure. Secondary-stage task headings must use numeric `Task S{K}.{M}` form, never lettered prefixes such as `Task R.1`, `Task W.1`, `Task CC.1`, or `Task ESC.1`. Missing headings, missing full detail blocks, or top-level summary replacements (`## Source`, `## Case Objective`, `## Stages`, `## Task Plan`, etc.) are blocking render failures. This check runs before Write; if it fails after Write is observed, stop and repair before Phase 1.
+2b. **Safe display-name check.** Every generated or carried Case Designer display/title field for stages, tasks, rule names, SLA rules, and escalation rules uses only letters, numbers, spaces, hyphen, and underscore. Repair unsafe punctuation mechanically and disclose changed names in the Case Review. Do not normalize external resource lookup names.
 3. **Decision-task button check.** Every `action` task with `is_decision: Yes` has ≥ 2 buttons; every button's `Maps To` LHS references a declared §1.5 variable (by `Name`) or `taskOutcome`.
 4. **Recipient encoding check.** Every `action` task recipient uses one of the five typed prefixes (`Email:` / `User:` / `UserGroup:` / `Role:` / `Expression:`) — no bare strings.
 5. **Connector-id check.** Every `wait-for-connector` / `execute-connector-activity` **task** has concrete `Connection ID` AND `Activity Type ID`. Every `wait-for-connector` **condition rule** (in any scope — stage-entry / stage-exit / case-exit / task-entry) has a `Connector Rule Detail` block resolving to a concrete `Connector Key` AND `Event Operation` (and `Connection ID` when not a tenant-default). Missing identity → paired `high`-severity review item.
@@ -859,6 +894,7 @@ Before Approve atomic-renames `sdd.draft.md` → `sdd.md`, Phase 0 runs these ch
 8. **Alt-disposition coverage.** If ≥ 1 secondary stage exists, Section 1.4a is non-empty OR a `high`-severity review item is open.
 9. **Review-items high-severity acknowledgment.** Approve adds the explicit follow-up when `high` items exist.
 10. **Source-ledger check.** Every non-`user-stated` and non-`verbatim` field has provenance.
+10a. **Design-rationale check.** Every stage explains its kind and routing choice; every task explains its type and activation/sequencing choice; every configured case/stage SLA explains its thresholds, recipients, and any interrupting escalation lane. Missing rationale is a blocking render-contract error because Phase 1 must preserve it.
 11. **File-In-arg caller-obligation surfacing.** When ≥ 1 §1.5 row has `Category: In` AND `Type: file`, the Approve summary MUST include a `Caller obligation` block:
 
     ```
@@ -872,7 +908,7 @@ Before Approve atomic-renames `sdd.draft.md` → `sdd.md`, Phase 0 runs these ch
 
     This is informational, not blocking. But missing it suppresses a known integration gotcha.
 
-12. **Stage-graph connectivity check.** Run the §Logical integrity stage-graph checks (every stage reachable, every stage exits, every Required Stages cell points to existing primary stages, every secondary stage has ≥ 1 entry condition, and each secondary stage's Interrupting flag matches its exit — `return-to-origin` ⟹ `Interrupting: Yes`). Any failure → blocking error.
+12. **Stage-graph connectivity check.** Run the §Logical integrity stage-graph checks (every stage reachable, every stage exits, every Required Stages cell points to existing primary stages, every secondary stage has ≥ 1 entry condition, every `sla-status-change` entry names an SLA rule + escalation declared on the target it points at, and every secondary stage / secondary-stage entry row has `Interrupting: Yes`). Any failure → blocking error.
 13. **Domain-fidelity scan.** Run a single pass over every narrative cell (Description, persona name, stage name, task name, button label, app-view purpose). For each customer-named entity surfaced in §Source ledger as `verbatim:"..."`, confirm the rendered cell still uses the verbatim phrase (no synonym drift). Mismatch → list and offer `Re-edit` with the verbatim phrase pre-filled.
 14. **Architect's-lens advisory pass.** Run the §Architect's lens checks. Emit `medium` review items for each trigger (the `high` variants — `rev_substitute_app`, and `rev_no_failure_path` at the ≥ 2-connector threshold — emit `high` and gate via the opt-in). `medium` is non-blocking; Approve summary surfaces the count.
 15. **Decision-routing closure.** For every `action` task with `is_decision: Yes`, each button's `Maps To` variable+value MUST be consumed by ≥ 1 downstream rule (stage-entry `IF`, task-entry `IF`, stage-exit, or case-exit) OR the button's Behavior MUST declare it terminal (no routing claim). When a button's Behavior names a destination stage / lane ("route to / send to / via the X lane") and no entry condition keys off that variable+value, the branch is dead → **blocking error**. Pair with §Logical integrity step 5 (lane reachability). A fully-orphaned decision variable (produced by a button, read by nothing) on an `is_decision: Yes` task is blocking; the `medium` `rev_orphan_decision` variant in §Architect's lens applies only when the variable IS read but not for branching.
@@ -881,13 +917,17 @@ Before Approve atomic-renames `sdd.draft.md` → `sdd.md`, Phase 0 runs these ch
 18. **Resolved-resource presence (standalone replicability).** Every process/agent/rpa/api-workflow task has a concrete `Resolved Resource`; every action has a concrete Action App title in `HITL Implementation`; every case-management task has a concrete `Child Case`. These portable names are never `<UNRESOLVED>`. Each task also has its required type-specific identity + folder pair (`Resource Identity` + `Folder Path`, or `Action App ID` + `Deployment Folder`): a concrete identity requires the exact concrete folder; an unresolved identity permits an unresolved folder and requires a paired `high` review item. Every connector task has `Connection ID` + `Activity Type ID`. Missing portable intent, or unresolved identity with no review item, is a blocking error.
 19. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness; audit-checklist item 9). For every task resolved to a live resource (contract in `tasks/registry-resolved.json`): every **required** declared input is bound (any §Binding cell form, incl. an upstream-output ref — which needs NO §1.5 row) OR `<UNRESOLVED>` + a paired `high` review item (`rev_unbound_input_<task>_<field>`); every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract (a phantom field → `high` `rev_phantom_output_<task>_<field>`). Unbound required input with no review item → blocking error. Step 16 is the `action`-app instance of the output-fidelity direction; this step extends both directions to all runnable/connector types. Tasks whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` (no contract) are skipped.
 
-On pass: atomic rename `sdd.draft.md` → `sdd.md`, print Approve summary (with Inferred / defaulted block + Caller obligation block when applicable + review-items count), run Approve AskUserQuestion.
+On pass: present the §Confirm checkpoint (SDD-shaped Case Review with a stages list that marks primary vs secondary, task classification rationale, activation modes, complete `Decisions I made` block, Caller obligation block when applicable, and ⚠ flags). A Build answer is the consent — `sdd.md` renders from the confirmed model batched with the first build actions ([phase-0-interview.md § Build start](phase-0-interview.md#build-start--sdd-written-alongside-the-build)); an explicit sign-off request adds one approval prompt before any file is created; design-only/draft requests save and stop. Corrections update the model and re-run only the affected checks.
 
-On fail: list the specific failing checks, return to AskUserQuestion `Re-edit` / `Restart` / `Abort`. On `Re-edit`, fix the cited rows and **re-run only the checks that failed** (plus any whose inputs changed) — not the full suite, and without re-reading the whole document. No Approve until the cited checks pass.
+On fail: fix the model and re-run the failed checks (plus any whose inputs changed) — not the full suite. Do not present the confirmation, and never render `sdd.md`, while a fixable check is failing; surface only the unfixable as ⚠ flags.
 
 ## Anti-patterns
 
 - **Do NOT silently accept a user-proposed type when a compliance trigger phrase is in the transcript.** Tier 2 of the authority hierarchy overrides user preference; Ask before recording.
+- **Do NOT create `sdd.md` before the confirmation's Build (or save) answer.** Finalization validates the in-memory model before the confirmation; the file renders only after consent — batched with the first build actions, or alone for design-only/draft requests. Never render with a failing fixable check or an undisclosed decision, and never build past a `high` item without the `Build despite N flagged items` pick.
+- **Do NOT leave design rationale only in chat.** The confirmation's `Decisions I made` block is transient; stage kind/routing, task type/activation/sequencing, and SLA/escalation reasons must also live in the SDD's `Design Rationale` fields so Phase 1 can preserve them.
+- **Do NOT treat a validating case as proof the SDD followed the template.** `caseplan.json` validation checks executable JSON, not whether `sdd.md` preserved the template. A summary-style `sdd.md` with top-level `Source`, `Case Objective`, `Task Plan`, or `Acceptance Scenarios` sections is a render defect even when the built case validates.
+- **Do NOT repeat a global event on every primary stage.** External withdrawn/cancel events and SLA status changes belong on one interrupting secondary-stage entry rule. Per-stage task/exit duplication is a modeling defect.
 - **Do NOT ship `sdd.md` with a banned `—` or `<UNRESOLVED>` on a render-required field.** Emit a placeholder + review item, or Ask.
 - **Do NOT pair `Marks Stage Complete: Yes` with `selected-tasks-completed` or `Marks Case Complete: Yes` with `selected-stage-*`.** Both are schema-pairing errors (Key Rule 4).
 - **Do NOT emit an `action` task without typed recipient prefix.** Bare strings (`"the underwriter"`) force Phase 1 to guess.

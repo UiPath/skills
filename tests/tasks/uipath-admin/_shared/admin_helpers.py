@@ -78,3 +78,19 @@ def fail(message: str):
 def ok(message: str):
     """Print OK message."""
     print(f"OK: {message}")
+
+
+def first_list(o):
+    """Return the first list found anywhere in a nested dict/list structure.
+
+    Tolerates how an API/agent wraps a collection (bare list, under a key, or in
+    a paginated envelope). Returns None if no list exists.
+    """
+    if isinstance(o, list):
+        return o
+    if isinstance(o, dict):
+        for v in o.values():
+            r = first_list(v)
+            if r is not None:
+                return r
+    return None

@@ -16,9 +16,10 @@ Scope:
 - Out of scope: <what to refuse or escalate>
 
 Tools:
-- <toolName>: call when <explicit condition>. Do not call when <condition>.
+- <toolName>: call when <explicit condition>. Do not call when <condition>. Call at most <N> times (N ≤ 3 for a single decision).
 - <toolName>: ...
 Stop calling tools once <stop condition>; then produce the final answer.
+If a tool result does not cover a detail, say so in <rationaleField>, lower <confidenceField>, and still return every outputSchema field. Never end a run without a final answer.
 
 Output:
 - Return a result conforming to the output schema. <field>: <how to fill it>.
@@ -131,7 +132,7 @@ A robust agent is more than its prompt. Each field: default, and when to change.
 |-------|---------|-------------|
 | `outputSchema` | Scaffold gives a single `content` string | **Almost always** — define typed fields a downstream node can consume. Bare `content` forces brittle string-parsing. |
 | `settings.temperature` | `0` | Keep `0` for extraction/classification/judgment. Raise only when output *variation* is wanted (drafting, brainstorming). |
-| `settings.maxIterations` | `25` | Lower (≤5) for single-shot classification. Higher for multi-tool research loops. |
+| `settings.maxIterations` | `25` | `≤5` only if tool-less and single-shot. Kill switch, not a loop fix: without a per-tool cap the agent loops to the ceiling — observed dying at 5 and at 25 alike (`TERMINATION_MAX_ITERATIONS`). |
 | `settings.maxTokens` | Scaffold value | Set ≤ the model's `MaxTokens` cap — see [model-selection-guide.md](../model-selection-guide.md#1-discover-primary-path). |
 | `settings.model` | `gpt-5.4` | **Always override** — discover + select per [model-selection-guide.md](../model-selection-guide.md). |
 | `guardrails` | `[]` | Add input/output policy enforcement (PII, content, escalation). See [capabilities/guardrails/guardrails.md](../capabilities/guardrails/guardrails.md). |

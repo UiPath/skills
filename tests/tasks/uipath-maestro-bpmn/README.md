@@ -36,9 +36,10 @@ authoring-only skill for producing valid, importable Maestro `.bpmn` XML.
   skill retains.
 - `_shared/` contains small Python helpers for durable XML shape assertions.
 
-There is **no** `uip maestro bpmn validate` or `pack` command — validate by
-parsing the BPMN for well-formedness and walking the structural checklist in
-the skill's `references/structural-bpmn.md`.
+These tasks validate with `uip maestro bpmn validate <file>`, which runs the
+full PO.Frontend canvas rule set offline (added in UiPath/cli#3135). If the CLI
+is unavailable, they fall back to parsing the BPMN for well-formedness and
+walking the structural checklist in the skill's `references/structural-bpmn.md`.
 
 ## Contributor Commands
 

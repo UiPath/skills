@@ -22,6 +22,7 @@ initial_prompt: |
   Route failure to a Terminate node with error message "Enum test failed".
   Route success to a final action that logs "Enum test passed".
   Validate the final flow file.
+  Use the connection present in Shared/uipath-maestro-flow.
 
 success_criteria:
   - type: command_executed

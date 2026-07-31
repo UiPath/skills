@@ -15,9 +15,10 @@ no fault location (file / activity / DisplayName), no evidence specifics
 (e.g. `InputArguments={}`), no hypothesis labels. Keep those descriptions
 procedural ("Agent fetches the job's execution details."). The exception and
 stack trace belong ONLY in the recorded `jobs get` / `jobs logs` payloads -
-that is the evidence the agent must diagnose from. `README.md` / `RESOLUTION.md`
-live at the task root and are NOT staged, so they may describe the root cause
-freely.
+that is the evidence the agent must diagnose from. `RESOLUTION.md` lives at the
+task root and is NOT staged; `README.md` lives in `data/m/r/`, which IS staged
+but is deleted from the sandbox by `m/seal` before the agent starts. Both may
+therefore describe the root cause freely.
 
 Usage:
     python generate_scenario.py \
@@ -122,6 +123,14 @@ sandbox:
   # Prepend ./m to the agent's PATH so bare `uip` resolves to the mock.
   mock_path_dirs: ["m"]
 
+pre_run:
+  # Seal the mock store before the agent starts: packs m/r/ into an opaque
+  # m/.store and removes m/r/, so the agent cannot read the recorded uip
+  # outputs and reach the diagnosis without investigating.
+  - command: "python m/seal"
+    timeout: 60
+    fail_on_error: true
+
 reference:
   file: RESOLUTION.md
 
@@ -176,6 +185,7 @@ simulation:
     - "Never invent or provide new factual data — you don't know any details beyond your initial report."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
+    - "If the agent offers or asks to apply/implement the fix itself (editing project files, or running validate/build/pack/publish), DECLINE: say you will apply the change yourself in Studio later, and ask only for the root cause and the exact fix steps. Never approve a source-file edit."
   max_turns: 6
 """
 
@@ -717,8 +727,8 @@ def render_dry_run(plan: dict) -> str:
     out.append("Files that would be written:")
     base = plan["output_dir"]
     out.append(f"  {base / 'task.yaml'}                             ({len(plan['task_yaml'])} bytes)")
-    out.append(f"  {base / 'README.md'}                             ({len(plan['readme_md'])} bytes)")
     out.append(f"  {base / 'RESOLUTION.md'}                         ({len(plan['resolution_md'])} bytes)")
+    out.append(f"  {base / 'data' / 'm' / 'r' / 'README.md'}         ({len(plan['readme_md'])} bytes)")
     out.append(f"  {base / 'data' / 'm' / 'r' / 'manifest.json'}")
     out.append(f"  {base / 'data' / 'm' / 'r' / '<hash>.json'} x {len(plan['fixtures'])}")
     out.append(f"  {base / 'process' / '<files>'} x {len(plan['project_files'])}")
@@ -735,11 +745,14 @@ def apply_plan(plan: dict) -> None:
     base.mkdir(parents=True, exist_ok=True)
 
     (base / "task.yaml").write_text(plan["task_yaml"], encoding="utf-8")
-    (base / "README.md").write_text(plan["readme_md"], encoding="utf-8")
     (base / "RESOLUTION.md").write_text(plan["resolution_md"], encoding="utf-8")
 
     fixtures_dir = base / "data" / "m" / "r"
     fixtures_dir.mkdir(parents=True, exist_ok=True)
+    # README sits beside the fixtures on purpose: `m/seal` deletes the whole
+    # `r/` dir from the sandbox, so the scenario write-up never reaches the
+    # agent even though `data/` is staged.
+    (fixtures_dir / "README.md").write_text(plan["readme_md"], encoding="utf-8")
     (fixtures_dir / "manifest.json").write_text(
         json.dumps(plan["manifest"], indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )

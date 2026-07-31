@@ -92,7 +92,7 @@ Orchestrator deploy of the wrapping `.uipx` solution requires `uipath-solution`.
 
 ## Pattern 6 — Build an AgentHub MCP server
 
-**When it applies:** the request is to register an AgentHub MCP server that wraps a coded agent or uses Orchestrator-asset-backed auth that does not exist yet. Pure `uipath-mcp-servers` work — `uipath` / `command` / `platform` servers, `remote`/`swagger` with auth assets already in place, or any `is-activity` tool authoring against existing IS connections — is single-skill; go straight to `uipath-mcp-servers`.
+**When it applies:** the request is to register an AgentHub MCP server that wraps a coded agent or uses Orchestrator-asset-backed auth that does not exist yet. Pure `uipath-mcp-servers` work — `uipath` servers with resource tools, `command` / `platform` servers, or `remote` / `swagger` servers with auth assets already in place — is single-skill; go straight to `uipath-mcp-servers`.
 
 Wrapping a not-yet-built coded agent (server type `coded`):
 
@@ -107,8 +107,6 @@ Orchestrator assets needed for `remote` / `swagger` Bearer / header substitution
 1. uipath-platform    → create the Orchestrator asset(s) holding the auth values
 2. uipath-mcp-servers → register the server with asset-substituted headers
 ```
-
-Missing IS connections are **not** a `uipath-platform` prereq — IS connections are created interactively in the Integration Service UI via OAuth, not by the CLI.
 
 ## Pattern routing for PDD-driven lane
 

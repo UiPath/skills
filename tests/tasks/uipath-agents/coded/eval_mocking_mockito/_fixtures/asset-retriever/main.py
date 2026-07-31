@@ -1,15 +1,19 @@
-from dataclasses import dataclass
 import requests
+from langgraph.graph import START, StateGraph, END
+from pydantic import BaseModel
 from uipath.platform import UiPath
 
 
-@dataclass
-class SecretPeekInput:
+class GraphInput(BaseModel):
     asset_name: str
 
 
-@dataclass
-class SecretPeekOutput:
+class GraphState(BaseModel):
+    asset_name: str
+    secret_value: str = ""
+
+
+class GraphOutput(BaseModel):
     masked_key: str
     label: str
 
@@ -20,8 +24,7 @@ def fetch_label(key_id: str) -> str:
     try:
         response = requests.get(url, timeout=5)
         response.raise_for_status()
-        data = response.json()
-        return data.get("label", "unknown")
+        return response.json().get("label", "unknown")
     except Exception:
         return "unknown"
 
@@ -33,17 +36,26 @@ def mask_secret(secret: str) -> str:
     return secret[:4] + "*" * (len(secret) - 4)
 
 
-def main(input: SecretPeekInput) -> SecretPeekOutput:
+async def retrieve_asset(state: GraphState) -> dict:
     sdk = UiPath()
+    asset = sdk.assets.retrieve(state.asset_name, folder_name="Shared")
+    return {"secret_value": asset.value}
 
-    # Read asset from Shared folder
-    asset = sdk.assets.retrieve(input.asset_name, folder_name="Shared")
-    secret_value = asset.value
 
-    # Mask the secret
-    masked = mask_secret(secret_value)
+async def build_summary(state: GraphState) -> GraphOutput:
+    return GraphOutput(
+        masked_key=mask_secret(state.secret_value),
+        label=fetch_label(state.asset_name),
+    )
 
-    # Fetch label from registry
-    label = fetch_label(input.asset_name)
 
-    return SecretPeekOutput(masked_key=masked, label=label)
+builder = StateGraph(GraphState, input=GraphInput, output=GraphOutput)
+
+builder.add_node("retrieve_asset", retrieve_asset)
+builder.add_node("build_summary", build_summary)
+
+builder.add_edge(START, "retrieve_asset")
+builder.add_edge("retrieve_asset", "build_summary")
+builder.add_edge("build_summary", END)
+
+graph = builder.compile()
