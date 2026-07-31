@@ -1,4 +1,5 @@
 ---
+name: install-permissions
 description: Install a curated Claude Code allowlist for safe `uip` subcommands so the agent is not prompted on every command.
 ---
 

@@ -32,6 +32,7 @@
     "hooks",
     "assets",
     ".claude-plugin",
+    ".cursor-plugin",
     "version-manifest.json",
     "README.md",
     "LICENSE",

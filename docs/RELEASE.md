@@ -12,6 +12,7 @@ The whole skills repo is published as an npm package, **`@uipath/skills`**, vers
 | `.claude-plugin/plugin.json` | `version` | Claude Code plugin version — always equals `package.json`'s base `M.N.P` (pre-release suffix stripped) — the canonical plugin version |
 | `.claude-plugin/marketplace.json` | `plugins[0].version` | Always equals `plugin.json` `version` |
 | `.codex-plugin/plugin.json` | `version` | Codex plugin version — always equals `plugin.json` `version` |
+| `.cursor-plugin/plugin.json` | `version` | Cursor plugin version — always equals `plugin.json` `version` |
 
 ### One version line
 
@@ -22,9 +23,9 @@ All channels carry `package.json`'s version; the pre-release channels (`dev`, `p
 | npm `latest` | npmjs | `M.N.<release>` | per stable release — what the CLI pins |
 | npm `preview` | npmjs | `M.N.<release>-preview.<run>` | per merge to `release/v*`, or preview dispatch (stamp never committed) |
 | npm `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per merge to `main` (stamp never committed) |
-| plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`) | — | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex plugin auto-update |
+| plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`) | — | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex / Cursor plugin auto-update |
 
-`sync-version.mjs` enforces the line: the plugin version always equals `package.json`'s base `M.N.P` — there is **no independent plugin patch counter**. It **refuses to downgrade** (plugin auto-update never goes backwards, so a reverted `package.json` would freeze users), and it strips pre-release suffixes so the `dev`/`preview` stamps from `publish.yml` never land in the plugin manifests. The marketplace and Codex versions must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line. To bump the plugin version, bump `package.json` and run the sync — that is the only lever.
+`sync-version.mjs` enforces the line: the plugin version always equals `package.json`'s base `M.N.P` — there is **no independent plugin patch counter**. It **refuses to downgrade** (plugin auto-update never goes backwards, so a reverted `package.json` would freeze users), and it strips pre-release suffixes so the `dev`/`preview` stamps from `publish.yml` never land in the plugin manifests. The marketplace, Codex, and Cursor versions must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line. To bump the plugin version, bump `package.json` and run the sync — that is the only lever.
 
 Run after any version change:
 
