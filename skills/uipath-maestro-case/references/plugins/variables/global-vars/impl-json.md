@@ -98,6 +98,8 @@ In/Out-arg formal slots (`variables.inputs[].id`, `variables.outputs[].id`) MUST
 
 Rationale: the formal In-arg slot id surfaces in the case BPMN as `<uipath:input id="...">` and is dot-referenced via `=vars.<id>` (the bridge, § In argument). A prefix-less random id can lead with a digit → BPMN parser rejects it (`illegal ID <5AinMKBDm>`); C# identifier + XML NCName rules require a leading letter/underscore. Companion ids (`inputOutputs[].id`) keep the human-readable name (`applicantName`) and are already letter-leading — only the random formal-slot id needs the `v` prefix.
 
+**Anti-pattern:** do not copy the companion's readable name into the formal slot id (e.g. `variables.inputs[].id: "applicantName"`). That satisfies the companion's naming convention but violates the formal slot's mint-as-`v`+8-chars requirement — the two ids are deliberately different values, not the same value written twice.
+
 ## Inputs the plugin reads at Phase 3 Step 6.2
 
 1. **`tasks.md`** variable T-entries — for category, type, default, sourceTrigger(s), sourceField(s). On `Category=In` rows, `sourceTriggers` is a single T-number selecting the bound trigger (blank → primary trigger)
