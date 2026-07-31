@@ -64,6 +64,14 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: file_contains
+    description: "Flow contains the inline agent node type"
+    path: "GreetingSol/GreetingFlow/GreetingFlow.flow"
+    includes:
+      - '"uipath.agent.autonomous"'
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_not_executed
     description: "No legacy inline-agent lifecycle commands (definition lives in the .flow)"
     tool_name: "Bash"
@@ -73,7 +81,7 @@ success_criteria:
 
   - type: run_command
     description: "Embedded inline agent: self-contained inputs, typed outputs, definition present, input/success edges"
-    command: "python3 $TASK_DIR/check_inline_agent_base.py"
+    command: 'python3 "$TASK_DIR/check_inline_agent_base.py"'
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

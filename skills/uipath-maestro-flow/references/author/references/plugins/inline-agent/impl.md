@@ -1,6 +1,6 @@
 # Inline Agent Node — Implementation
 
-The inline agent is authored **entirely in the `.flow` file**. This plugin covers the agent node itself — prompts, model config, schemas, identity, wiring in/out, validation — plus the derived-sidecar contract and legacy migration. Resource capabilities (tools, context, escalation) get their own files under `capabilities/` (landing per roadmap milestone; see [§ Resource Nodes](#resource-nodes)).
+The inline agent is authored **entirely in the `.flow` file**. This plugin covers the agent node itself — prompts, model config, schemas, identity, wiring in/out, validation — plus the derived-sidecar contract and legacy migration. Resource capabilities (tools, context, escalation) get their own files under `capabilities/` (landing per roadmap milestone; see [§ Resource Nodes](#7-resource-nodes)).
 
 Mandatory constraints: [critical-rules.md](critical-rules.md). Prompt quality: [prompting/autonomous-agent-prompting-guide.md](prompting/autonomous-agent-prompting-guide.md). Model choice: [model-selection-guide.md](model-selection-guide.md).
 
@@ -24,7 +24,7 @@ Mandatory constraints: [critical-rules.md](critical-rules.md). Prompt quality: [
 | `temperature` | number | No | 0 for extraction/classification/judgment; raise only when variation is wanted. |
 | `maxTokenPerResponse` | number | No | ≤ the chosen model's `MaxTokens` cap. Derived to `settings.maxTokens`. |
 | `maxIterations` | number | No | Default 25. `≤5` only tool-less single-shot; a looping agent needs a prompt stop rule, not a higher cap. |
-| `guardrails` | array | No | Author `[]` at M-core; guardrail authoring doc lands per roadmap milestone. |
+| `guardrails` | array | No | Author `[]`; guardrail authoring doc lands per roadmap milestone. |
 | `agentInputVariables` | array | Yes | **Author `[]` — entries are derived** (see § 4). |
 | `agentOutputVariables` | array | Yes | Typed output declarations `{id, type, description?}` — see § 5. Default `[{"id": "content", "type": "string"}]` is the untyped fallback; declare real fields. |
 | `byomConnectionId` / `byomConnectorKey` | string | No | Bring-your-own-model connection pair; omit otherwise. |
@@ -32,7 +32,7 @@ Mandatory constraints: [critical-rules.md](critical-rules.md). Prompt quality: [
 Quality obligations (build-time minimum; the *how* is in the linked guides):
 
 1. **Override the model** — discover with `uip agent model list --output json`, pick the newest GA model for the task class ([model-selection-guide.md](model-selection-guide.md)).
-2. **Write a real system prompt** — bounded role, per-tool call/stop criteria, output contract, grounding ([prompting guide](prompting/autonomous-agent-prompting-guide.md#1-system-prompt-skeleton)). Every tool/context handle needs a call cap plus a decide-anyway fallback, or the agent re-queries until the runtime kills it (`AGENT_RUNTIME.TERMINATION_MAX_ITERATIONS`, incident `170002`):
+2. **Write a real system prompt** — bounded role, per-tool call/stop criteria, output contract, grounding ([prompting guide](prompting/autonomous-agent-prompting-guide.md#1-system-prompt-skeleton)). Every tool/context handle needs a call cap plus a decide-anyway fallback, or the agent re-queries until the runtime kills it (`AGENT_RUNTIME.TERMINATION_MAX_ITERATIONS` — surfaced under incident `170002`, the generic job-failure envelope):
 
    ```text
    Call <toolName> at most <N> times (N ≤ 3 for a single decision). After the last call, stop retrieving and decide with the evidence you already have.
@@ -263,7 +263,7 @@ uip maestro flow validate "<FILE>.flow" --output json
 
 Read this to understand what the canvas materializes — never to author it.
 
-**Layout at rest:** `<GUID>/` (= agent `inputs.source`) containing `agent.json`, `flow-layout.json`, `resources/<resourceId>/resource.json`, `features/<featureId>/feature.json`, `evals/{eval-sets,evaluators}`.
+**Layout at rest:** `<GUID>/` (= agent `inputs.source`) containing `agent.json`, `flow-layout.json`, `resources/<resourceId>/resource.json`, `features/<featureId>/feature.json` (memory features — not derivable from autonomous agents today; the current autonomous manifest exposes no `memory` handle), `evals/{eval-sets,evaluators}`.
 
 **Who derives, when:** one projection is used by both the canvas save-flush (400ms debounce; immediate for new agents; forced before publish/debug/eval) and packaging synthesis — flushed bytes ≡ synthesized bytes. Packaging additionally emits `<GUID>/.agent-builder/{agent.json,bindings.json}` (what the `pythonAgent` runtime consumes) and an `Agent` entry point at `content/<GUID>/agent.json`.
 
@@ -329,7 +329,7 @@ Only the first form is ever authored.
 | Prompt value empty at run time, validate clean | Referenced trigger field not declared in `variables.globals[]` (`direction: "in"`, `triggerNodeId`), or the `$vars` path names no real node output | Declare the trigger global; verify the node id + field (§ 4) |
 | Debug Completes but an `out` global is null | `.content.` wrapper on a typed output — `agentOutputVariables:[{content}]` + End `=js:…output.content.<field>` | Declare each field in `agentOutputVariables[]`, map End to `=js:$vars.<node>.output.<field>` (§ 5) |
 | `Orchestrator.StartAgentJob` error at runtime | Stale instance `model` block overrides the definition's `serviceType` | Delete the instance `model` block; keep `Orchestrator.StartInlineAgentJob` in the `definitions[]` entry (§ 13) |
-| Agent runs with default/wrong model | `inputs.model` missing (canvas would seed it; hand-authored file must set it) or left on a scaffold default | Discover + set per [model-selection-guide.md](model-selection-guide.md) |
+| Agent runs with a stale/wrong model | `inputs.model` left on a copied example or manifest-default value — validate requires the field but not that it's current | Discover + set per [model-selection-guide.md](model-selection-guide.md) |
 | My sidecar edits disappeared | Expected — the `.flow` wins; the canvas overwrites the sidecar on save (§ 10) | Make the edit in the node `inputs` |
 | `agentInputVariables` entries appeared/disappeared after a canvas touch | Expected — entries are derived from `$vars` refs and pruned when unreferenced (§ 4) | Leave them; author `[]` for new nodes |
 | Agent node lost its `source` / got a fresh UUID after canvas open | `inputs.source` was absent — canvas minted one | Always author `inputs.source` explicitly ([planning.md § Identity](planning.md#identity--mint-the-uuids-yourself)) |

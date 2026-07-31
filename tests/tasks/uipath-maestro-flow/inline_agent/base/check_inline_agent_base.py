@@ -53,8 +53,8 @@ def main() -> None:
     assert_embedded_agent(node)
     print(f"OK: {node['id']} is self-contained (embedded prompts, model, UUID source)")
 
-    assert_prompt_tokens(node)
-    print("OK: prompts use the canvas token namespace")
+    assert_prompt_tokens(node, require_vars_ref=True)
+    print("OK: prompts use the canvas token namespace and wire flow data in")
 
     assert_agent_input_vars(node)
     assert_agent_output_vars(node, {"greeting": "string"})

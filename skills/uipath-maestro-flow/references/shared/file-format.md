@@ -65,6 +65,8 @@ Optional top-level `runtime`: a CLI-managed object that appears on some flows (e
                             # See the inline-agent plugin.
 ```
 
+Inline-agent sidecar derivation contract: [author/references/plugins/inline-agent/impl.md § 10](../author/references/plugins/inline-agent/impl.md#10-derived-sidecar--reference).
+
 ## Node instance
 
 ```json

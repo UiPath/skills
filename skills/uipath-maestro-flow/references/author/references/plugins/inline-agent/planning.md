@@ -71,7 +71,7 @@ The agent attaches resource nodes to its artifact ports (tools on `tool`, contex
 In the architectural plan:
 
 - `inline-agent: <description>` — mint the `inputs.source` UUID during Phase 2 authoring
-- `inline-agent-tool: <ToolName> (<kind>, solution|external) → <name> in <folder-path>` — one line per external tool. `<kind>` is one of `process` | `agent` | `api` | `processOrchestration`.
+- `inline-agent-tool: <ToolName> (<kind>, solution|external) → <name> in <folder-path>` — one line per external tool. `<kind>` is one of `process` | `agent` | `api` | `processOrchestration` (annotation casing only — the node-type segment is lowercase: `…tool.processorchestration.<release-key>`).
 - `inline-agent-escalation: <EscalationName> → <AppName> in <folder-path>` — one line per escalation (Action Center HITL).
 - `inline-agent-context: <ContextName> (index) → <IndexName> in <folder-path>` — one line per context resource.
 - `inline-agent-builtin-tool: <ToolName> (<toolType>)` — one line per built-in tool; no folder (self-contained).

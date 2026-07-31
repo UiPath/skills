@@ -66,7 +66,7 @@ def main() -> None:
     flow = load_json(FLOW_PATH)
     node = find_autonomous_agent_node(flow)
     assert_embedded_agent(node)
-    assert_prompt_tokens(node)
+    assert_prompt_tokens(node, require_vars_ref=True)
     assert_agent_output_vars(node, {"category": "string", "priority": "string"})
     print(f"OK: embedded inline agent node {node['id']!r} in {FLOW_PATH}")
 

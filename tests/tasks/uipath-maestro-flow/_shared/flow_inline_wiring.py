@@ -56,6 +56,8 @@ UUID_RE = re.compile(
 # The manifest inputDefaults an agent must NOT be left on (same bar and same
 # placeholder set as check_inline_agent.py, applied to the embedded node
 # instead of agent.json).
+# Single stale-default sentinel: if the manifest/CLI default model changes,
+# this check silently weakens — re-pin at the M11 final sweep (roadmap).
 SCAFFOLD_MODEL = "gpt-4o-2024-11-20"
 PLACEHOLDER_PROMPTS = {
     "",
@@ -259,10 +261,13 @@ def assert_agent_input_vars(node: dict) -> None:
     refs. Derived entries persist in the `.flow` after canvas/debug touch, so
     a non-empty list is acceptable ONLY when every entry looks derived (has a
     string `id` and a `binding` starting with `=`). Hand-authored freeform
-    entries (no binding) fail.
+    entries (no binding) fail. An ABSENT key is accepted as equivalent to []
+    — tooling derives regardless of whether the empty list is spelled out.
     """
     inputs = node.get("inputs") or {}
     declared = inputs.get("agentInputVariables")
+    if declared is None:
+        return
     if not isinstance(declared, list):
         sys.exit(
             f"FAIL ({node.get('id')}): inputs.agentInputVariables is not a list "

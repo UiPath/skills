@@ -79,11 +79,13 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent validated the flow"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
-    min_count: 1
+  # Outcome-graded: re-runs validate at grading time so a failing validation
+  # can't earn the weight (the prompt requires validate before eval scaffolding).
+  - type: run_command
+    description: "uip maestro flow validate passes on the authored flow"
+    command: 'python3 "$TASK_DIR/../../_shared/validate_flow.py"'
+    timeout: 120
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
