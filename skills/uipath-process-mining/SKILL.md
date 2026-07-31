@@ -103,6 +103,7 @@ The killer use case is your own SQL. Add analytical dbt models with `transformat
 | [`references/pre-flight.md`](references/pre-flight.md) | before any upload — encoding/delimiter/date-format/empty-row checks and the minimal `mapping.json` recipe; **also** the post-create mapping fix loop (`apps data-mapping get`/`update`) and its failure modes |
 | [`references/transformations.md`](references/transformations.md) | authoring/fixing dbt models — the `Cases.sql` patch, apply-vs-run, pm_utils macros, Snowflake identifier quoting |
 | [`references/data-model.md`](references/data-model.md) | exposing a custom table to `query`/dashboards — the case-centric add-table pattern (DataModelDto + re-ingest) and the Tags/Due_dates decision table |
+| [`references/model-editing.md`](references/model-editing.md) | editing the app model — a field's **data kind** (e.g. numeric→duration), calculated fields, the two models (semantic `apps model` vs structural `apps data-model`), and the data-kind comparison rule that locks an app open (DNA-46960) |
 | [`references/querying.md`](references/querying.md) | pulling numbers out — the aggregate body AST, the `--group-by/--metric` sugar, the `AggregationFunction` enum, and the event-table restriction |
 | [`references/lifecycle-and-rbac.md`](references/lifecycle-and-rbac.md) | dev vs published stages, publishing, and where process-app RBAC is configured |
 
