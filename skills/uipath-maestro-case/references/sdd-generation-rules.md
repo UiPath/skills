@@ -603,9 +603,9 @@ These four runnable types share a single render block. The SDD surfaces both por
 
 | Task type | Registry source | Identity field in `registry-resolved.json` |
 |---|---|---|
-| `process` | `process-index.json` | `processOrchestrationId` |
+| `process` | `processOrchestration-index.json` | `processOrchestrationId` |
 | `agent` | `agent-index.json` | `agentId` (+ version) |
-| `rpa` | (registry per RPA convention) | `processOrchestrationId` for RPA processes |
+| `rpa` | `process-index.json` | `processOrchestrationId` for RPA processes |
 | `api-workflow` | `api-index.json` | `apiWorkflowId` (+ endpoint) |
 
 Unresolved registry identity → `high`-severity review item (§Review items). The SDD shows the runnable name + In/Out bindings; the identity flows through the audit trail.
