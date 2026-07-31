@@ -195,7 +195,7 @@ Use the component type from the sdd.md to identify the **primary** cache file, t
 | CASE_MANAGEMENT | `caseManagement-index.json` |
 | CONNECTOR_ACTIVITY | `typecache-activities-index.json` |
 | CONNECTOR_TRIGGER | `typecache-triggers-index.json` |
-| PROCESS | `process-index.json` |
+| PROCESS | `processOrchestration-index.json` |
 | EXTERNAL_AGENT | *(not in cache)* |
 | TIMER | *(not in cache)* |
 
@@ -272,7 +272,7 @@ After finding a match, map the **cache file type** (not the sdd.md component typ
 | Cache file | Task `type` | Identifier field |
 |---|---|---|
 | `agent-index.json` | `agent` | `entityKey` |
-| `process-index.json` | `process` | `entityKey` |
+| `process-index.json` | `rpa` | `entityKey` |
 | `api-index.json` | `api-workflow` | `entityKey` |
 | `processOrchestration-index.json` | `process` | `entityKey` |
 | `caseManagement-index.json` | `case-management` | `entityKey` |
