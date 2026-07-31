@@ -166,7 +166,7 @@ The validator checks that required inputs (`attachment`, `prompt`, `outputColumn
 ## What NOT to Do
 
 - **Do not hand-author `model.bindings`** on the node — Batch Transform has no process or connector binding. Adding a `bindings` block will be stripped or cause validate errors.
-- **Do not pass `--source` on `uip maestro flow node add`** — `--source` is only for inline agent nodes (`uipath.agent.autonomous`). Batch Transform has no agent project behind it.
+- **Do not pass `--source` on `uip maestro flow node add`** — Batch Transform is a builtin pattern with no `inputs.source` identity (its identity, when used as an inline-agent builtin tool, is `inputs.id`). Inline-agent nodes — which DO carry `inputs.source` — are authored directly in `.flow` JSON, not via `node add`.
 - **Do not reshape `outputColumns` to a map** — the array-of-`{name, description}` shape is contractual with the canvas property panel and the BPMN `ECS.BatchTransform` serializer.
 - **Do not reference downstream rows inside the prompt** — each row is processed independently; there is no way to see sibling rows. Pre-aggregate or use [Summarize](../summarize/impl.md) on a synthesized document instead.
 - **Do not chain a Batch Transform's `$vars.{nodeId}.output` directly into a Script expecting rows** — it is a file handle, not a row array.
