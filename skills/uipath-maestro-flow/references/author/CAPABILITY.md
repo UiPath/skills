@@ -31,7 +31,7 @@ Every node in a `.flow` file has exactly one author. The validator enforces this
 | Human-in-the-loop | `uipath.human-in-the-loop.quick-form` (inline form), `uipath.human-in-the-loop.coded-action-app` (app-based) |
 | Patterns | `uipath.pattern.batch-transform`, `uipath.pattern.deep-rag` |
 | Agents | `uipath.agent.autonomous` (inline; after `uip agent init --inline-in-flow`) |
-| Voice | `core.trigger.voice`, `uipath.agent.voice` (inline; after `uip agent init --inline-in-flow --conversational` + hand-added `settings.voice`), `uipath.conversational.voice.create-outgoing-call`, `uipath.conversational.voice.end-call` |
+| Voice | `core.trigger.voice`, `uipath.agent.voice` (inline; after `uip agent init --inline-in-flow --conversational`), `uipath.conversational.voice.create-outgoing-call`, `uipath.conversational.voice.end-call` |
 | Resource nodes | `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, `uipath.core.human-task.*` |
 | Queue | `core.action.queue.create`, `core.action.queue.create-and-wait` |
 
@@ -101,7 +101,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 | **Wire one node's output into another node's input** | [shared/node-output-wiring.md](../shared/node-output-wiring.md) |
 | **Orchestrate RPA, agents, apps** | Relevant resource plugin: [rpa](references/plugins/rpa/), [agent](references/plugins/agent/), [agentic-process](references/plugins/agentic-process/), [flow](references/plugins/flow/), [api-workflow](references/plugins/api-workflow/), [hitl](references/plugins/hitl/) |
 | **Embed an AI agent tightly coupled to this flow** | [plugins/inline-agent/](references/plugins/inline-agent/) |
-| **Build a voice agent flow (answer or place phone calls)** | [plugins/voice/](references/plugins/voice/) — `uipath.agent.voice` + call plumbing, inbound and outbound topologies |
+| **Build a voice agent flow (answer or place phone calls)** | [plugins/voice/](references/plugins/voice/) — `uipath.agent.voice` + call plumbing, requires conversational voice enabled on the tenant |
 | **Extract structured fields from documents** | [plugins/ixp/](references/plugins/ixp/) — IxP extraction models for PDFs, scanned forms, receipts, invoices, contracts |
 | **List IxP models / runtime projects available in flow** | [plugins/ixp/impl.md — Listing Published Models](references/plugins/ixp/impl.md#listing-published-models) — read-only registry search, no `.flow` scaffold or edits |
 | **Create a resource that doesn't exist yet** | Use `core.logic.mock` placeholder — see [Edit/Write: Replace a mock](references/editing-operations-json.md#replace-a-mock-with-a-real-resource-node) + relevant plugin's `impl.md` |

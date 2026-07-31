@@ -1,6 +1,6 @@
 # Voice Nodes — Planning
 
-Voice nodes let a flow hold a real-time AI voice conversation on a live phone call. The centerpiece is `uipath.agent.voice` — an **inline conversational agent** (a subdirectory of the flow project, same mechanics as [inline-agent](../inline-agent/planning.md)) whose `agent.json` carries a `settings.voice` block. Around it sit three plumbing nodes that create, identify, and end the call. There is no standalone voice agent — a voice agent only runs inside a Maestro Flow.
+Voice nodes let a flow hold a real-time AI voice conversation on a live phone call. The centerpiece is `uipath.agent.voice` — an **inline conversational agent** whose `agent.json` carries a `settings.voice` block. Around it sit three plumbing nodes that create, identify, and end the call. There is no standalone voice agent — a voice agent only runs inside a Maestro Flow.
 
 For inline-agent fundamentals (the agent subdirectory, `inputs.source` binding, resource nodes on artifact ports), see [inline-agent/planning.md](../inline-agent/planning.md) — everything there applies to the voice agent node too. This plugin covers what voice adds on top: the node set, the two call topologies, and the `callContext` wiring rule.
 
@@ -13,7 +13,7 @@ For inline-agent fundamentals (the agent subdirectory, `inputs.source` binding, 
 | `uipath.conversational.voice.create-outgoing-call` | Action | Dial an outbound call and wait until the media stream is open; emits the `callContext` (outbound topology) |
 | `uipath.conversational.voice.end-call` | Action | End the active call |
 
-All four are fixed OOTB node types. They appear in the registry on tenants with conversational voice enabled — run `uip login` + `uip maestro flow registry pull`, then `uip maestro flow registry get <node-type>` for definitions.
+All four are fixed OOTB node types, gated on a tenant with conversational voice enabled — if Phase 2's `registry get` doesn't find them, flag it as an Open Question. Commands: [impl.md § Registry Validation](impl.md#registry-validation).
 
 ## When to Use
 
@@ -32,7 +32,6 @@ Use voice nodes when the flow's job is a phone conversation — answering an inb
 
 - **No live call in the process** — use [inline-agent](../inline-agent/planning.md) or a published [agent](../agent/planning.md)
 - **The "conversation" is text chat, not audio** — voice nodes are call-media-specific
-- **You need the agent's answer as structured flow data** — voice agents stream the conversation; they do not return a typed output object
 
 ## Topologies
 
@@ -67,9 +66,8 @@ core.trigger.manual (output) → uipath.conversational.voice.create-outgoing-cal
 
 ## Output Variables
 
-- `$vars.{triggerNodeId}.output.callContext` — inbound: identifies the live call (`{ type: "phone"|"web", id, conversationId }`). Bind into the voice agent and end-call nodes.
-- `$vars.{createOutgoingCallNodeId}.output.callContext` — outbound: same shape, emitted once the outbound media stream is open.
-- `$vars.{voiceAgentNodeId}.output` — end-of-session data: `uipath__voice_session` (`callEnded`, `endedBy: "agent"|"user"|"system"|"error"`, `reason`), `uipath__voice_call_context`, `uipath__agent_response_messages`.
+- `$vars.{originNodeId}.output.callContext` — the live-call handle (`{ type: "phone"|"web", id, conversationId }`). Origin is the trigger (inbound) or the create-outgoing-call node (outbound); it must be bound into **both** the voice agent and the end-call node.
+- `$vars.{voiceAgentNodeId}.output` — end-of-session data (`uipath__voice_session`, `uipath__voice_call_context`, `uipath__agent_response_messages`), not a typed result object. Field shapes: [impl.md § Accessing Output](impl.md#accessing-output).
 - `$vars.{endCallNodeId}.output.ended` — whether the call was ended.
 - `$vars.{nodeId}.error` — error details on any of the four (`code`, `message`, `detail`, `category`, `status`).
 
