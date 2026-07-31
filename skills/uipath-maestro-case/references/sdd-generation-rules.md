@@ -24,7 +24,7 @@ Ask: *does this work belong at one fixed point (regular stage), or could it happ
 
 **Global-event normalization.** When an external status event (for example, a withdrawal received from a portal) or an SLA status change may happen at any point **and requires case work/routing**, define it once on the destination response, not once per primary stage. Use `wait-for-connector` for the external event and `sla-status-change` for a case/stage SLA response that enters a stage. Do **not** add the same task or exit rule to every primary stage: a true interrupting secondary-stage entry exits whichever stage is active. A recoverable lane returns with `return-to-origin`; a terminal lane uses `exit-only` plus a root case-exit rule.
 
-**SLA response model.** Two SLA scopes exist: **case** and **stage**. Separate the clock from the response, and pick the response from the source — not from the scope.
+**SLA response model.** Two SLA scopes exist: **case** and **stage**. Separate the clock from the response, and pick the response from the source — not from the scope. Emit-side contract (rule JSON, task-vs-stage entry, CLI-verified shapes): [sla-response-shapes.md](sla-response-shapes.md).
 
 | Response | Choose when the source says | Shape | Interrupting |
 |---|---|---|---|

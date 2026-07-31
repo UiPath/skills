@@ -34,6 +34,7 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields; `conditionExpression` optional |
 | `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. This controls task activation only; choose the task type separately from what the task does. | `conditionExpression` (optional) |
 | `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. The frontend toggle writes this rule as the task's entry condition. | `conditionExpression` (optional) |
+| `sla-status-change` | Fires when a referenced case/stage SLA changes status — the `start-task` SLA response ([sla-response-shapes.md](../../../sla-response-shapes.md)) | `sla-target`, `sla-display-name`, and (at-risk only) `escalation-display-name` |
 
 ### Frontend task-mode mapping
 

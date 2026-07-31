@@ -4,10 +4,13 @@ description: >
   takes the `start-task` shape: the breached stage carries the `sla-status-change` entry on
   its OWN SLA, non-interrupting, and the follow-up action task lives in that stage. Asserts
   the entry sits on Review (not a separate lane), its slaId resolves to Review's own
-  slaRules, `isInterrupting` is false, and the rule carries NO escalationId — an absent
-  escalationId is the persisted representation of Breached. Both shapes are CLI-verified on
-  uip 1.198.0-preview.102. Task activation semantics are deliberately unasserted; the skill
-  does not yet specify the task-entry rule for a re-entered stage.
+  slaRules and carries NO escalationId — an absent escalationId is the persisted
+  representation of Breached. Accepts either CLI-verified activation (uip
+  1.198.0-preview.102): the rule on the follow-up task's own entryConditions (direct — no
+  stage re-entry), or on Review's entryConditions with isInterrupting false (re-entry, and
+  the reviewer keeps working so it must not interrupt). Rejects the enter-stage answer —
+  putting the work in a separate lane — and a task with no entry condition, which validate
+  accepts but the runtime never triggers.
 tags: [uipath-maestro-case, smoke, mode:build, lifecycle:edit, shape:multi-node, feature:sla, feature:escalation, feature:approval-gate]
 max_iterations: 1
 

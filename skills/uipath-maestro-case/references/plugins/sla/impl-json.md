@@ -136,7 +136,7 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 This file writes the SLA **clock** and its escalation notifications. The **response** to an at-risk / breach event is a separate decision, read off the requirement and never off the SLA's scope:
 
 - **notify-only** — an escalation entry here, and nothing else. Absent a stated response, both at-risk and breached are notify-only. Do NOT mint a stage, task, or condition for a requirement that only asks to notify someone.
-- **start-task / enter-stage** — the escalation (if any) still lives here, but the graph change is an `sla-status-change` entry rule authored per [stage-entry-conditions/impl-json.md](../conditions/stage-entry-conditions/impl-json.md), which also carries the three shapes `validate` cannot catch (non-interrupting lanes stay `secondary`; a follow-up task needs an entry condition; repair `escalationId: "any"` by deleting the key, never by repointing it).
+- **start-task / enter-stage** — the escalation (if any) still lives here; the behavior change is an `sla-status-change` rule on the follow-up **task** (`start-task`) or on the destination **stage** (`enter-stage`). Shapes, interrupting semantics, and the three defects `validate` cannot see: [sla-response-shapes.md](../../sla-response-shapes.md).
 - **exit-stage / exit-case** — a stage-exit or `metadata.caseExitRules[]` row.
 
 A breach rule references the SLA alone (`slaId`, no `escalationId`), so a breach response does **not** require an escalation to exist here. An at-risk response does: it needs a concrete at-risk escalation on that same SLA.

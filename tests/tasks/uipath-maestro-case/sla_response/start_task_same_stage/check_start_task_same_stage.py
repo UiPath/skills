@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
-"""T2 — start-task: the breached stage carries the entry on its OWN SLA, non-interrupting."""
+"""T2 — start-task: the follow-up work lives in the breached stage, keyed off its OWN SLA.
+
+Two shapes are accepted, both CLI-verified on uip 1.198.0-preview.102:
+
+* **task entry (direct)** — the follow-up task's own `entryConditions` carry the
+  `sla-status-change` rule. No stage re-entry, so the stage's other tasks do not re-run.
+* **stage entry (re-entry)** — the breached stage carries the rule and the follow-up task
+  activates on stage entry. Then the condition must be non-interrupting: the reviewer keeps
+  working, so nothing may stop active work.
+
+Either way the rule must reference **Review's own** SLA and be a breach rule (`slaId`, no
+`escalationId`), and the follow-up task must be an `action` task in Review with a working
+activation. What is rejected is the `enter-stage` answer: putting the work in a separate lane.
+"""
 
 import os
 import sys
@@ -13,62 +26,81 @@ from _shared.sla_response_check import (  # noqa: E402
     assert_stage_count,
     fail,
     iter_sla_status_change,
+    iter_task_sla_status_change,
     label_of,
     read_plan,
     stage_by_label,
     tasks_of,
 )
 
+BASELINE_TASK = "Hold For 1 Hour"
+
 
 def main() -> None:
     plan = read_plan()
     assert_no_any_sentinel(plan)
 
-    hits = list(iter_sla_status_change(plan))
-    if not hits:
-        fail(
-            "no sla-status-change entry condition anywhere; the Review breach was supposed to "
-            "start a follow-up task inside Review"
-        )
-    if len(hits) > 1:
-        where = [(label_of(n), c.get("displayName")) for n, c, _ in hits]
-        fail(f"expected exactly 1 sla-status-change entry rule, found {len(hits)}: {where}")
-
-    node, cond, rule = hits[0]
-    if label_of(node) != "Review":
-        fail(
-            f"the sla-status-change entry sits on stage {label_of(node)!r}; a start-task response "
-            "belongs on the breached stage itself (Review)"
-        )
-
-    where = f"Review entry condition {cond.get('displayName')!r}"
-    assert_sla_resolves(plan, rule, where, owner="Review")
-    assert_breach_shape(rule, where)
-    assert_interrupting(cond, False, where)
-
-    # No separate escalation lane was minted.
+    # No separate escalation lane: the response is local to Review.
     assert_stage_count(plan, 3)
 
-    # The follow-up task lives in Review. Activation semantics are deliberately not
-    # asserted: the skill does not yet specify the task-entry rule for a re-entered
-    # stage, so any non-empty entry condition is accepted here.
+    task_hits = list(iter_task_sla_status_change(plan))
+    stage_hits = list(iter_sla_status_change(plan))
+    if not task_hits and not stage_hits:
+        fail(
+            "no sla-status-change rule anywhere; the Review breach was supposed to start a "
+            "follow-up task inside Review (on the task's own entry condition, or on Review's)"
+        )
+    if len(task_hits) + len(stage_hits) > 1:
+        where = [f"task:{t.get('displayName')}" for _n, t, _c, _r in task_hits]
+        where += [f"stage:{label_of(n)}" for n, _c, _r in stage_hits]
+        fail(f"expected exactly 1 sla-status-change rule, found {len(where)}: {where}")
+
+    if task_hits:
+        node, task, cond, rule = task_hits[0]
+        where = f"task {task.get('displayName')!r} entry condition"
+        if label_of(node) != "Review":
+            fail(f"the follow-up task sits in stage {label_of(node)!r}; it belongs in Review")
+        shape = f"task-entry on {task.get('displayName')!r}"
+        followups = [task]
+    else:
+        node, cond, rule = stage_hits[0]
+        where = f"{label_of(node)} entry condition {cond.get('displayName')!r}"
+        if label_of(node) != "Review":
+            fail(
+                f"the sla-status-change entry sits on stage {label_of(node)!r}. A start-task "
+                "response keeps the work in the breached stage (Review) — a separate lane is "
+                "the enter-stage response, which this requirement did not ask for."
+            )
+        # Stage re-entry while the reviewer keeps working must not interrupt.
+        assert_interrupting(cond, False, where)
+        shape = "stage-entry re-entry on Review"
+        followups = [t for t in tasks_of(node) if t.get("displayName") != BASELINE_TASK]
+
+    assert_sla_resolves(plan, rule, where, owner="Review")
+    assert_breach_shape(rule, where)
+
     review_tasks = tasks_of(stage_by_label(plan, "Review"))
-    added = [t for t in review_tasks if t.get("displayName") != "Hold For 1 Hour"]
+    added = [t for t in review_tasks if t.get("displayName") != BASELINE_TASK]
     if not added:
-        names = [t.get("displayName") for t in review_tasks]
-        fail(f"no follow-up task added to Review; tasks present: {names}")
+        fail(f"no follow-up task added to Review; tasks present: {[t.get('displayName') for t in review_tasks]}")
     actions = [t for t in added if t.get("type") == "action"]
     if not actions:
-        got = [(t.get("displayName"), t.get("type")) for t in added]
-        fail(f"the manager check should be an `action` (human) task; got {got}")
+        fail(
+            "the manager check should be an `action` (human) task; got "
+            f"{[(t.get('displayName'), t.get('type')) for t in added]}"
+        )
     for task in actions:
         if not (task.get("entryConditions") or []):
-            fail(f"task {task.get('displayName')!r} has no entry condition — it can never start")
+            fail(
+                f"task {task.get('displayName')!r} has no entry condition — it can never start. "
+                "validate accepts this (empty array and missing key both pass), so it is on the author."
+            )
+    if followups and not any(t.get("type") == "action" for t in followups):
+        fail(f"the sla-status-change rule is not wired to an action task; found {followups}")
 
     print(
-        f"PASS: Review carries a non-interrupting breach entry on its own SLA "
-        f"({rule['slaId']}, no escalationId); follow-up action task "
-        f"{[t.get('displayName') for t in actions]} in Review; 3 stages"
+        f"PASS: {shape} — breach rule on Review's own SLA ({rule['slaId']}, no escalationId); "
+        f"follow-up action task {[t.get('displayName') for t in actions]} in Review; 3 stages"
     )
 
 

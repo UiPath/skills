@@ -40,7 +40,7 @@ build the case in the Case Designer without guessing.
    - `adhoc` — ad-hoc / manually triggered task entry
    - `runs-sequentially` — runs sequentially
    - `user-selected-stage` - target of an upstream `wait-for-user` exit
-   - `sla-status-change` — a referenced case/stage SLA escalation changed status (stage entry only; 3 args — see the reference contract under Stage Entry Conditions)
+   - `sla-status-change` — a referenced case/stage SLA escalation changed status (stage entry for an `enter-stage` response, task entry for `start-task`; 3 args — see the reference contract under Stage Entry Conditions)
 
 4. **Exit conditions:** Every exit condition MUST specify:
    - **Exit Type:** `exit-only` | `return-to-origin` | `wait-for-user`

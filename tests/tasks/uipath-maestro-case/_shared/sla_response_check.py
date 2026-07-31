@@ -130,6 +130,22 @@ def iter_sla_status_change(plan: dict) -> Iterator[tuple[dict, dict, dict]]:
                         yield node, cond, rule
 
 
+def iter_task_sla_status_change(plan: dict) -> Iterator[tuple[dict, dict, dict, dict]]:
+    """Yield ``(stage_node, task, condition, rule)`` for every task-entry ``sla-status-change``.
+
+    This is the direct ``start-task`` shape: the follow-up task fires on the SLA event
+    itself, with no stage re-entry. CLI-verified valid on uip 1.198.0-preview.102 for both
+    a stage-owned SLA and the root SLA.
+    """
+    for node in stage_nodes(plan):
+        for task in tasks_of(node):
+            for cond in task.get("entryConditions") or []:
+                for group in cond.get("rules") or []:
+                    for rule in group:
+                        if rule.get("rule") == SLA_RULE:
+                            yield node, task, cond, rule
+
+
 def sla_status_change_anywhere(plan: dict) -> list[dict]:
     """Every ``sla-status-change`` rule in the file, wherever it sits.
 

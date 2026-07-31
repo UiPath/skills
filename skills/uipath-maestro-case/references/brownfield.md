@@ -80,20 +80,12 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 
 ## SLA responses in a brownfield edit
 
-An SLA clock and its **response** are separate edits. Read the response off the requirement, never off the SLA's scope, then author only that shape:
+An SLA clock and its **response** are separate edits. Pick the response, the status shape, and the interrupting value per [sla-response-shapes.md](sla-response-shapes.md) — that file is the contract; this section only says what it means for an edit.
 
-| Requirement says | Shape | Edit |
-|---|---|---|
-| notify / alert / email / page someone, nothing more | `notify-only` | add an escalation to the target's `slaRules[].escalationRule` ([plugins/sla/impl-json.md](plugins/sla/impl-json.md)). Add **no** stage, task, or condition. |
-| follow-up work inside the **same** breached stage | `start-task` | that stage gets an `sla-status-change` entry rule on **its own** SLA + the follow-up task in that stage |
-| ownership change, escalation lane, recovery, oversight | `enter-stage` | a separate stage carries the `sla-status-change` entry rule |
-| the stage or the case should end / route away | `exit-stage` / `exit-case` | a stage-exit or `metadata.caseExitRules[]` row |
-
-Three rules that `validate` cannot catch — it passes on all of these:
-
-1. **`isInterrupting` comes from the requirement, and a non-interrupting SLA lane is still `secondary`.** Set `true` when the response stops, pauses, takes over, or reroutes active work; `false` when it runs alongside work that continues. A lane whose entry is `isInterrupting: false` **keeps `data.stageType: "secondary"` and `isRequired: false`** — do NOT convert it to a regular stage to satisfy "every secondary entry is interrupting". A regular stage sits in the main flow and, if required, gates case completion; that is a different case, not a formatting choice.
-2. **A follow-up task with no entry condition never starts.** Any task added for a `start-task` response needs `entryConditions` — `current-stage-entered`, so it fires when the breached stage re-enters. Give the stage's pre-existing `current-stage-entered` tasks `shouldRunOnlyOnce: true` so re-entry does not restart them. `validate` accepts a task with no `entryConditions`; the runtime never triggers it.
-3. **Repairing `escalationId: "any"` means DELETING the key, not repointing it.** The Case Designer's `"any"` sentinel fails released `validate` ("The escalation referenced by rule … no longer exists"). Remove the key: a breach rule references the SLA alone. Substituting a concrete escalation also turns `validate` green but **silently converts a Breached rule into an at-risk rule** — a behavior change the user did not ask for. Only point `escalationId` at a real escalation when the requirement genuinely says *at-risk*, and then it must be an at-risk escalation declared on that same SLA.
+- **Do not widen the edit.** A requirement that only asks to notify someone is `notify-only`: add an escalation to the target's `slaRules[].escalationRule` ([plugins/sla/impl-json.md](plugins/sla/impl-json.md)) and stop. No stage, no task, no condition.
+- **`start-task` adds a task, not a lane** ([sla-response-shapes.md § 1](sla-response-shapes.md#1-pick-the-response)): the follow-up task goes in the breached stage with the `sla-status-change` rule as its **own** entry condition.
+- **Three defects `validate` accepts** — re-read [§ 5](sla-response-shapes.md#5-three-defects-validate-cannot-see) before you finish: a task with no entry condition, a non-interrupting lane demoted to a regular stage, and an `escalationId: "any"` "repaired" by repointing instead of deleting.
+- **`validate` passing is not evidence the response is right.** Every defect above validates clean.
 
 ## After edits
 
