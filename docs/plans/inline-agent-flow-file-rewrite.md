@@ -74,7 +74,7 @@ Legend: ☐ not started · ◐ in progress · ☑ done (date + PR). Update at se
 
 | # | Milestone | Docs scope | Tests (ported → new) | Status | Gate result |
 |---|---|---|---|---|---|
-| M0 | Foundations: gating experiment + baseline + branch + checker skeleton | — (findings → this doc) | — (baseline run of 18 existing tasks) | ☐ | — |
+| M0 | Foundations: gating experiment + baseline + branch + checker skeleton | — (findings → this doc) | — (baseline run of 18 existing tasks) | ◐ 2026-07-31 | validate ✅ / debug+pack ❌-no-synthesis → M1–M9 unblocked. Baseline table DEFERRED (owner call) — fill before M1 gate evaluation |
 | M1 | Agent core — clean slate | planning.md, impl.md, critical-rules.md, model-selection-guide.md, prompting/, supporting-ref flips, uipath-agents redirects | `inline_in_flow`→`inline_agent/base`; `smoke/inline_agent_robust`; `evaluate/inline_agent_eval` | ☐ | — |
 | M2 | Process-family tools | capabilities/process.md | 8 tasks: `inline_{solution,external}_{rpa,agent,apiworkflow,maestro}_tool` → `inline_agent/tool_{rpa,agent,api,maestro}_{solution,external}` | ☐ | — |
 | M3 | Built-in tools | capabilities/built-in-tools.md (+ per-tool files) | `inline_builtin_tool` → `inline_agent/tool_builtin` | ☐ | — |
@@ -119,6 +119,36 @@ No shipped docs. Deliverables:
 5. **Correspondence map** started: `docs/plans/inline-agent-mirror-map.md` — uipath-agents file ↔ plugin file ↔ delta class (authoring aid only, decision 8).
 
 Exit: experiment matrix + pinned shapes recorded here; baseline table filled; checker skeleton merged to branch.
+
+#### M0 results (2026-07-31, codereval tenant on alpha, uip 1.200.0)
+
+Branch ☑ (`bd8b2ff8c`). Checker skeleton ☑ (`flow_inline_wiring.py` + 33-test pytest). Correspondence map ☑ ([inline-agent-mirror-map.md](inline-agent-mirror-map.md)). Baseline table **DEFERRED** (owner call, no az tooling on dev machine) — must be filled before M1's exit gate is evaluated. Canvas capture NOT done (no flag-enabled editor this session) — see "still unpinned" below.
+
+**Experiment matrix** (flow-only = full embedded `inputs`, fresh lowercase UUID `source`, registry-verbatim `definitions[]`, root `"version": "1.9"`, error-only instance `outputs`, NO sidecar):
+
+| Probe | Result |
+|---|---|
+| `uip maestro flow validate` (bare flow-only agent) | ✅ Valid — the primary gate. Also enforces semantics: escalation `app`/`recipients` required (`ESCALATION_APP_REQUIRED`/`ESCALATION_RECIPIENT_REQUIRED`), missing `definitions[]` entry → actionable error with the exact `registry get` hint, undeclared source handle rejected, resource `input` max-connections 1 enforced |
+| `uip maestro flow format` | ✅ (repositions, sets canonical sizes, generates `variables` entries) |
+| `uip agent model list --output json` from flow project dir | ✅ works with no agent project on disk — safe to keep as the single `uip agent` verb in the plugin |
+| `uip solution pack` (flow-only) | ⚠️ **succeeds but does NOT synthesize** — nupkg lacks `content/<GUID>/agent.json`, the Agent entry point, and `.agent-builder/`; the emitted BPMN references `entryPoint: content/<GUID>/agent.json` → broken agent package |
+| `uip maestro flow debug` (flow-only) | ❌ Faulted — incident `170002` "Failure in the Orchestrator Job", errorDetails "Package resolution failed", dependentFaultCode `Serverless.PythonAgent.PrepareEnvironmentError`. Upload itself succeeded |
+| `uip maestro flow debug` (same flow + hand-derived sidecar `<GUID>/agent.json`) | ✅ Completed — control isolates the failure to missing synthesis. Typed output surfaced **flat** (`$vars.expAgent.output.answer`), confirming no `.content.` wrapper |
+| `uip solution pack` (sidecar present) | ✅ ships `content/<GUID>/agent.json` **verbatim from disk** + Agent entry point (uniqueId = GUID). Still no `.agent-builder/` in the nupkg — debug ran fine without it (server-side concern) |
+| `uip maestro flow eval evaluator add` (bare project) | ✅ needs no sidecar — writes project-root `evals/<flow-doc-id>/evaluators/` (keyed by the flow document id, not the agent GUID). `inline_agent_eval` drops its init gate at M1 |
+
+**Fallback-matrix row hit: "Validate OK but debug/pack don't"** → M1–M9 unblocked (validate is their grading ceiling); billing tasks keep current prompts at M11; impl.md § Validate gains the "known CLI gap — surface it; never hand-write sidecar/bindings" callout.
+
+**Pinned shapes (tenant registry get + validate-accepted flow):**
+
+- **Autonomous v1.3 manifest handles**: `escalation`/`context`/`tool` (artifact) + `input`/`success`/`error` only — **no `memory`, no `mcp` handle**; validator rejects a `memory`-port edge ("…rewire to one of: escalation, context, tool, success, error"). **M8 answer: memory is NOT autonomous-attachable today** — plan for the "document the limitation" path. Tenant registry also exposes **zero memory or MCP node types** (M7's no-run exemption reconfirmed at the type level). Conversational is `AvailableOnTenant: false` here.
+- **Escalation (M5)**: only variants exist on tenant — `…escalation.coded-action-app` v1.1 available, `…escalation.quick-form` v1.1 NOT (`AvailableOnTenant: false`); no bare type. `model: {source: true}`; required `[name]`; validated `app` sub-shape `{appName, resourceKey, folderName}` (values from `uip solution resources list --kind App`); `recipients: [{type: 3, value: "<email>"}]`; `_additionalProps {taskTitle, priority, labels}`, `_notifications` bool, `_appInputs`/`outcomeMapping` nullable.
+- **Context index (M4)**: flat inputs; `query`/`folderPathPrefix` are ValueSourceField objects `{mode: text-builder|variable|prompt, textValue, promptValue, argumentPath}`; `citations: "enabled"` (string, not bool); `webSearchGrounding: {value}`; tenant identity (indexId/indexName/folderKey/folderPath) baked into the manifest's `inputDefaults` — copy from there.
+- **Builtin summarize v1.1 (M3)**: `model: null` — confirms no source mint, identity = `inputs.id`; fields `description`, `source` (string; may hold `$vars` file expr), `query` (ValueSourceField), `fileExtension {value}`, `citationMode {value}`. Tenant builtins: `analyzefiles`/`batchtransform`/`summarize` (no `deeprag` — reconcile naming at M3).
+- **Process family (M2)**: remote tenant types are `tool.process.*` (RPA processes; serviceType `Orchestrator.StartJob`), `tool.flow.*` (`StartFlowProcess`), `tool.processorchestration.*`, `tool.agent.*`, `tool.api.*`, `tool.ixp.*`, `tool.connector.*` — **no `tool.rpa.*` on the remote registry; RPA surfaces as `process`** (the projection's rpa→process rename, upstream of storage). Remote `registry get` emits `model.bindings.values` as a proper **array** (the D.8 object-shape divergence is `--local`-specific — probe at M2 with an in-solution project). Manifest `inputDefinition` lists raw args (e.g. `RPAExpenseRequestIn: string`); `inputDefaults` carry `inputSchema`/`outputSchema`. Validate accepted per-argument ValueSourceField instance inputs + `properties {processName, folderPath}` + top-level `bindings[]` rows `{id, name, type, resource, resourceKey, propertyAttribute, default}` mirroring `model.bindings.values`.
+- **Misc**: lowercase UUID `source` authored end-to-end OK (validate → pack → debug); wired 4-node cluster (agent + escalation + context + process tool on their artifact ports) validates clean; `registry search` on this tenant returns 217 dynamic nodes (2 context, 6 external agents).
+
+**Still unpinned (needs a flag-enabled canvas capture; carry into M2/M5):** exact canvas-written per-arg nesting beyond validate acceptance, any extra keys the canvas writes into escalation `app`, brace-spacing tolerance of the `$vars` ref scanner, instance-`outputs` shape beyond the error-only entry (billing fixture + debug agree it's error-only).
 
 ### M1 — Agent core: clean slate
 
@@ -230,11 +260,11 @@ plugins/inline-agent/
 
 Each capability file keeps its twin's heading skeleton; "author the resource.json" sections are replaced by: node-type pattern + full `inputs` spec + `definitions[]` requirement + artifact edge + name-authority note + projection-derived fields not to author. Correspondence map: `docs/plans/inline-agent-mirror-map.md` (M0, authoring aid only).
 
-**Baseline table** (filled at M0; extended with branch results per milestone):
+**Baseline table** (fill DEFERRED at M0 by owner decision, 2026-07-31 — no az tooling on the dev machine; fill before evaluating M1's exit gate; extended with branch results per milestone):
 
 | Task (old id) | Baseline (claude-sonnet-5) | Baseline (codex) | Branch result (milestone) |
 |---|---|---|---|
-| _18 rows — fill at M0_ | | | |
+| _18 rows — DEFERRED; fill before M1 gate_ | | | |
 
 ## 8. Critical files
 
