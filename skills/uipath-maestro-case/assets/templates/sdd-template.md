@@ -191,7 +191,7 @@ The generated SDD must start with:
 
 | Scope | SLA | Status | Response | Target | Interrupting | Rationale |
 |-------|-----|--------|----------|--------|--------------|-----------|
-| {case \| stage: `<StageName>` \| task: `<TaskName>`} | {SLA Title} | {At-Risk \| Breached} | {notify-only \| start-task \| enter-stage \| exit-stage \| exit-case} | {`—` for notify-only; stage name for start-task/enter-stage; exit row ref for exit-stage/exit-case} | {`—` for notify-only; Yes \| No otherwise} | {why this response fits the source} |
+| {case \| stage: `<StageName>` \| task: `<TaskName>`} | {SLA Title} | {At-Risk \| Breached} | {notify-only \| start-task \| enter-stage \| exit-stage \| exit-case} | {`—` for notify-only; stage name for start-task/enter-stage; exit row ref for exit-stage/exit-case} | {`—` for notify-only and for a task-entry start-task; Yes \| No otherwise} | {why this response fits the source} |
 
 > **Choosing the `Response`** — read it off the source, never off the SLA's scope:
 >
@@ -207,7 +207,7 @@ The generated SDD must start with:
 >
 > **Default:** absent a stated response, both statuses are `notify-only` — `Target` and `Interrupting` are `—`. Do NOT invent a stage, task, or routing change for an SLA the source only asks to notify about.
 >
-> **`Interrupting` is a separate decision from scope.** `Yes` when the response stops, pauses, takes over, or reroutes the active work; `No` when the response runs alongside it (parallel oversight) or starts a task in the stage that keeps working. A case-scope SLA does not imply `Yes`. The value here MUST match the `Interrupting` cell of the Stage Entry Conditions row it produces.
+> **`Interrupting` is a separate decision from scope.** `Yes` when the response stops, pauses, takes over, or reroutes the active work; `No` when the response runs alongside it (parallel oversight). A case-scope SLA does not imply `Yes`. When the response produces a **Stage** Entry Conditions row (`enter-stage`), the value here MUST match that row's `Interrupting` cell. A **`start-task`** response is never `Yes` — it runs inside the breached stage: use `—` when the rule is the follow-up task's own entry condition (a Task Entry Condition table has no `Interrupting` column, because a task entry interrupts nothing), or `No` when it is authored as stage re-entry.
 >
 > **A row whose `Response` is not `notify-only` MUST have a matching rule elsewhere in this SDD** — a `sla-status-change` entry row, a stage-exit row, or a §1.4a case-exit row. A `start-task`/`enter-stage` row with no `sla-status-change` entry anywhere is a blocking render error, and so is an `sla-status-change` entry with no row here.
 

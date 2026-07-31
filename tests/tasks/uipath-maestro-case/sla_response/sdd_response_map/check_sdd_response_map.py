@@ -56,10 +56,13 @@ def main() -> None:
             f"the start-task row targets {row.get('target')!r}; a start-task response runs in the "
             "breached stage itself (Assess)"
         )
-    if row.get("interrupting", "").strip().casefold() != "no":
+    interrupting = row.get("interrupting", "").strip().casefold()
+    if interrupting not in {"no", "", "-", "\u2014", "\u2013", "n/a", "na"}:
         fail(
             f"the start-task row has Interrupting {row.get('interrupting')!r}; the assessor keeps "
-            "working, so the response does not interrupt"
+            "working, so the response cannot interrupt. `-` is correct when the rule is authored "
+            "as the task's own entry condition (a task entry interrupts nothing); `No` is correct "
+            "for stage re-entry."
         )
 
     # (c) The case breach hands the case to a lane that takes over.

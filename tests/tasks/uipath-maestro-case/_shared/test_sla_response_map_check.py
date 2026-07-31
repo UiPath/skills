@@ -81,6 +81,47 @@ def test_matching_interrupting_passes():
     assert check(text) == []
 
 
+def test_start_task_via_task_entry_needs_no_interrupting_cell():
+    """A Task Entry Condition table has no Interrupting column — a task entry interrupts nothing."""
+    text = sdd(
+        "| stage: Assess | Assess SLA | Breached | start-task | Assess | — | manager check, assessor keeps working |\n",
+        "**Entry Condition:**\n"
+        "| WHEN | IF | Display Name |\n|---|---|---|\n"
+        '| sla-status-change("Assess","Assess SLA","Assess SLA Breached") | — | Start Senior Assessor Check |\n',
+    )
+    assert check(text) == []
+
+
+def test_start_task_via_stage_re_entry_may_say_no():
+    text = sdd(
+        "| stage: Assess | Assess SLA | Breached | start-task | Assess | No | manager check, assessor keeps working |\n",
+        "#### Stage Entry Conditions\n"
+        "| WHEN | IF | Interrupting |\n|---|---|---|\n"
+        '| sla-status-change("Assess","Assess SLA","Assess SLA Breached") | - | No |\n',
+    )
+    assert check(text) == []
+
+
+def test_start_task_may_not_interrupt():
+    text = sdd(
+        "| stage: Assess | Assess SLA | Breached | start-task | Assess | Yes | wrong |\n",
+        "#### Stage Entry Conditions\n"
+        "| WHEN | IF | Interrupting |\n|---|---|---|\n"
+        '| sla-status-change("Assess","Assess SLA","Assess SLA Breached") | - | Yes |\n',
+    )
+    assert any("start-task with Interrupting Yes" in i for i in check(text))
+
+
+def test_enter_stage_without_interrupting_cell_is_still_reported():
+    text = sdd(
+        "| case | Case SLA | Breached | enter-stage | Case Escalation | Yes | lane takes over |\n",
+        "#### Stage Entry Conditions\n"
+        "| WHEN | IF | Display Name |\n|---|---|---|\n"
+        '| sla-status-change("root","Case SLA","Case SLA Breached") | — | Enter Lane |\n',
+    )
+    assert any("no Yes/No Interrupting cell" in i for i in check(text))
+
+
 def test_start_task_row_needs_a_target():
     text = sdd(
         "| stage: Review | Review SLA | Breached | start-task | — | No | manager check in Review |\n",

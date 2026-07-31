@@ -281,7 +281,7 @@ Required whenever **any** SLA is configured — case, stage, or `action` task. O
 | Status | yes | `At-Risk` or `Breached` — one row each |
 | Response | yes | `notify-only` \| `start-task` \| `enter-stage` \| `exit-stage` \| `exit-case` (§ SLA response model) |
 | Target | yes | `—` for `notify-only`; the stage name for `start-task` (the breached stage itself) / `enter-stage`; the exit row it produces for `exit-stage` / `exit-case` |
-| Interrupting | yes | `—` for `notify-only`; otherwise `Yes`/`No`, matching the `Interrupting` cell of the row it produces |
+| Interrupting | yes | `—` for `notify-only` and for a `start-task` authored as the task's own entry rule (a task entry interrupts nothing); `No` for a `start-task` authored as stage re-entry; otherwise `Yes`/`No`, matching the `Interrupting` cell of the stage-entry row it produces. `start-task` is never `Yes`. |
 | Rationale | yes | why this response fits the source |
 
 **Closure both ways (blocking):** every non-`notify-only` row has its matching rule elsewhere in the SDD (an `sla-status-change` stage-entry row, a stage-exit row, or a §1.4a case-exit row), and every `sla-status-change` entry row in the SDD has a row here. A mismatch between this map's `Interrupting` cell and the produced entry row's `Interrupting` cell is a blocking error.

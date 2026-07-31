@@ -136,7 +136,17 @@ def check(text: str) -> list[str]:
             continue
         if _is_dash(row.get("target", "")):
             issues.append(f"SLA Response Map row [{label}] is {response} but names no Target")
-        if row.get("interrupting", "").strip().casefold() not in {"yes", "no"}:
+        interrupting = row.get("interrupting", "").strip().casefold()
+        if response == "start-task":
+            # A start-task response authored as a task-entry rule interrupts nothing, so `—`
+            # is correct; `No` is correct when it is authored as stage re-entry. `Yes` never is.
+            if interrupting == "yes":
+                issues.append(
+                    f"SLA Response Map row [{label}] is start-task with Interrupting Yes; the "
+                    "follow-up work runs inside the breached stage, so it cannot interrupt it "
+                    "(use `—` for a task-entry rule, `No` for stage re-entry)"
+                )
+        elif interrupting not in {"yes", "no"}:
             issues.append(
                 f"SLA Response Map row [{label}] is {response} but Interrupting is "
                 f"{row.get('interrupting')!r}; it must be an explicit Yes or No"
@@ -168,10 +178,14 @@ def check(text: str) -> list[str]:
             )
             continue
         if not entry_interrupting:
-            issues.append(
-                f"the Stage Entry Conditions row for `sla-status-change({args})` has no "
-                "Yes/No Interrupting cell"
-            )
+            # A task-entry condition table has no Interrupting column at all — correct for a
+            # start-task response. Only a row that SHOULD carry one (a stage entry, i.e. an
+            # enter-stage response) is a defect.
+            if any(r.get("response", "").casefold() == "enter-stage" for r in candidates):
+                issues.append(
+                    f"the Stage Entry Conditions row for `sla-status-change({args})` has no "
+                    "Yes/No Interrupting cell"
+                )
             continue
         declared = {r.get("interrupting", "").strip().casefold() for r in candidates}
         if entry_interrupting not in declared:
