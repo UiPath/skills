@@ -246,6 +246,11 @@ def main() -> None:
         internal_input = variable_by_id(variables, attr(bridges[0], "var"))
         if local_name(internal_input) != "inputOutput":
             fail(f"{input_name!r} start bridge must target uipath:inputOutput")
+        if "elementId" in internal_input.attrib:
+            fail(
+                f"{input_name!r} mutable start-bridge uipath:inputOutput "
+                "must not declare elementId"
+            )
         if public_input.attrib.get("type") != internal_input.attrib.get("type"):
             fail(f"{input_name!r} public and mutable variable types must match")
         if input_name == "amount" and public_input.attrib.get("type") != "double":
@@ -271,6 +276,11 @@ def main() -> None:
     internal_output = variable_by_id(variables, internal_output_id)
     if local_name(internal_output) != "inputOutput":
         fail("'decision' end bridge must read from uipath:inputOutput")
+    if "elementId" in internal_output.attrib:
+        fail(
+            "'decision' mutable end-bridge uipath:inputOutput must not "
+            "declare elementId"
+        )
     if public_output.attrib.get("type") != internal_output.attrib.get("type"):
         fail("'decision' public and mutable variable types must match")
 

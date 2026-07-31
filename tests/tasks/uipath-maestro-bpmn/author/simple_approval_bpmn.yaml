@@ -14,23 +14,23 @@ run_limits:
   max_turns: 90
 initial_prompt: |
   Create a local BPMN project named "ExpenseApprovalBpmn" for this process:
-  - Manual start with input variable `expenseId` and `amount`, and output
-    variable `decision`.
+  - Manual start with caller inputs `expenseId` (string) and `amount` (double),
+    and returned output `decision` (string).
   - Service task that calls `Orchestrator.StartAgentJob` to triage the expense
     via a synthetic placeholder agent reference.
   - Exclusive gateway routes high-amount requests (`amount >= 1000`) to a
     `bpmn:sendTask` that creates a queue item via `Orchestrator.CreateQueueItem`,
     and routes the default branch to a `bpmn:scriptTask` that auto-approves the
     request and writes to the `decision` output variable.
-  - Both branches converge on a single end event.
+  - Both branches converge on a single completion end event, which returns
+    `decision`.
 
   Requirements:
   - Use synthetic placeholder resource names only. Do not include tenant URLs,
     folder keys, connection IDs, real queue names, real agent identifiers, or
     user names.
-  - Declare `expenseId` and `amount` as caller inputs and `decision` as the
-    returned output. Use the skill's documented mutable-state bridges at the
-    manual entry and completion events.
+  - Use the skill's documented mutable-state bridges at the manual entry and
+    single completion end event.
   - Include the current numeric serializer migration metadata.
   - Use a registry-derived JavaScript ScriptTask, map its result to the mutable
     decision variable, and keep its code compatible with the Jint runtime (no
