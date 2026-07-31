@@ -36,14 +36,14 @@ Those are the current Studio Web defaults; the realtime model and persona list a
 Field rules:
 
 1. **`settings.voice` is required** — the realtime speech model, its token budget, and the spoken `persona`. This is a *second* model, separate from `settings.model`: `settings.model` is the conversational engine's LLM (reasoning, tool calls); `settings.voice.model` is the realtime audio model.
-2. **Leave `settings.engine: "conversational-v1"` and `metadata.isConversational: true` exactly as scaffolded** — `flow validate` errors with `is not a conversational agent` when either is off. Never hand-flip `metadata.isConversational` to repair it; re-scaffold with `uip agent init --inline-in-flow --conversational` (`uipath-agents` critical rule 23).
+2. **Leave `settings.engine: "conversational-v1"` and `metadata.isConversational: true` exactly as scaffolded** — both are required at runtime. `flow validate` checks `metadata.isConversational` and errors with `is not a conversational agent` when it is off; a wrong `settings.engine` is *not* caught by validate and surfaces only as a failed call, so do not rely on validation to catch it. Never hand-flip `metadata.isConversational` to repair it; re-scaffold with `uip agent init --inline-in-flow --conversational` (`uipath-agents` critical rule 23).
 3. **`outputSchema` MUST stay empty** (`{ "type": "object", "properties": {} }`) — the runtime streams the conversation; a voice agent has no typed output object.
 4. Author the system prompt in `messages[0].content` (empty is valid — voice agents have no required prompt field — but a real persona/goal prompt is what makes the call useful). Prompt inputs follow the inline-agent triple: declare under `inputSchema.properties`, reference as `{{input.<key>}}`, rebuild `contentTokens` via `uip agent refresh --inline-in-flow` — see [inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](../inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
 5. `settings.model`, `maxTokens`, `temperature`, `maxIterations` tune the engine LLM as for any conversational agent (`uip agent model list` for the tenant's models).
 
 ## Registry Validation
 
-Validate the node types against the registry during Phase 2. The voice types ship on tenants with conversational voice enabled — they need an authenticated `uip maestro flow registry pull` first. Fetch only the three types your topology uses:
+Read the node definitions during Phase 2 to copy into `definitions[]`. All four voice types ship in the CLI's bundled node registry, so `registry get` answers locally — no `uip login` and no `registry pull` required. Fetch only the three types your topology uses:
 
 ```bash
 uip maestro flow registry get uipath.agent.voice --output json
@@ -54,7 +54,9 @@ uip maestro flow registry get core.trigger.voice --output json
 uip maestro flow registry get uipath.conversational.voice.create-outgoing-call --output json
 ```
 
-`uipath.agent.voice` confirms identically to the autonomous inline agent — ports, `model.source: true` hoisting onto `inputs.source`, and `model.serviceType` / `model.version` — see [inline-agent/impl.md § Registry Validation](../inline-agent/impl.md#registry-validation). Voice adds no port or model field to that set. On the plumbing nodes, confirm `ConversationalService.CreateOutgoingCall` / `ConversationalService.EndCall` as `model.serviceType`. If `registry get` reports a type as not found or not enabled, the tenant does not have conversational voice — surface it as an Open Question; do not hand-write definitions.
+`uipath.agent.voice` confirms identically to the autonomous inline agent — ports, `model.source: true` hoisting onto `inputs.source`, and `model.serviceType` / `model.version` — see [inline-agent/impl.md § Registry Validation](../inline-agent/impl.md#registry-validation). Voice adds no port or model field to that set. On the plumbing nodes, confirm `ConversationalService.CreateOutgoingCall` / `ConversationalService.EndCall` as `model.serviceType`. Never hand-write `definitions[]` entries — always copy them from `registry get`.
+
+**`registry get` succeeding does not mean the tenant supports voice.** It answers from the bundled registry, so it succeeds offline and on any tenant. Whether conversational voice is actually enabled (and a SIP trunk provisioned) can only be established at deploy/debug time — if the user hasn't confirmed it, raise it as an Open Question rather than treating a clean `registry get` as proof.
 
 ## Adding / Editing
 
@@ -178,12 +180,13 @@ Debugging (`uip maestro flow debug`) needs a tenant with conversational voice an
 | --- | --- | --- |
 | `flow validate`: `agent.json not found at <path>` | `inputs.source` UUID doesn't match any subdirectory, or the agent directory was never created | Run `uip agent init "<FlowProjectDir>" --inline-in-flow --conversational`, set `inputs.source` to the returned `ProjectId` |
 | `flow validate`: `` has no `settings.voice` `` | Scaffolded agent.json was not hand-edited | Add the `settings.voice` block (§ Configure `agent.json`) |
-| `flow validate`: `is not a conversational agent` | Agent was scaffolded without `--conversational`, so `metadata.isConversational` / `settings.engine` are wrong | Re-scaffold with `uip agent init --inline-in-flow --conversational` and repoint `inputs.source` — do not hand-flip `metadata.isConversational` (`uipath-agents` critical rule 23) |
+| `flow validate`: `is not a conversational agent` | `metadata.isConversational` is not `true` — usually the agent was scaffolded without `--conversational` | Re-scaffold with `uip agent init --inline-in-flow --conversational` and repoint `inputs.source` — do not hand-flip `metadata.isConversational` (`uipath-agents` critical rule 23) |
 | `flow validate`: `[CONVERSATIONAL_VOICE_CALL_CONTEXT_REQUIRED]` (rule `conversational-voice-call-context`) | Voice agent node lacks the `inputs.callContext` binding | Bind `$vars.<originNodeId>.output.callContext` as a `jsExpression` object with `fieldType: "object"` |
 | `flow validate` flags the end-call node's call context (rule `conversational-voice-end-call-context`) | End-call node lacks `inputs.callContext` | Same expression as the voice agent, `fieldType: "string"` |
 | `flow validate`: `requires a source UUID at inputs.source` | Voice agent node has no `inputs.source` | Set it to the agent directory's UUID |
 | `flow pack` / `flow debug`: `Missing agent definition for voice agent node …` | Agent directory deleted or moved after validate | Restore `<FlowProjectDir>/<projectId>/agent.json` or fix `inputs.source`; the BPMN is never written without the embedded definition |
-| `registry get` reports the voice type not found / not enabled | CLI predates voice support, tenant lacks conversational voice, or no authenticated `registry pull` was run | `uip login`, `uip tools update`, `uip maestro flow registry pull --force`; if still absent, the tenant isn't voice-enabled — Open Question |
+| `registry get` reports the voice type not found | The installed CLI predates voice support (the types ship in its bundled registry, so this is a CLI-version problem, not a tenant one) | `uip tools update`; re-run `registry get` |
+| Call never connects on a tenant that packs and deploys fine | Conversational voice not enabled on the tenant, or no SIP trunk provisioned — neither is detectable from the CLI | Confirm with the user / tenant admin; raise as an Open Question rather than re-authoring the flow |
 | Call connects but the agent is silent / call drops immediately | Package built without the embedded `agentDefinition` (hand-rolled pack pipeline), or `settings.voice` removed after pack | Re-pack with the CLI; verify the staged `.bpmn` has `name="agentDefinition"` on the voice serviceTask |
 | Outbound call never dials | `from` is not a SIP trunk number on the tenant, or `to` is malformed | Use a provisioned E.164 trunk number for `from`; `to` must be E.164 in a literal binding |
 
