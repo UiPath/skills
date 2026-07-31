@@ -122,7 +122,7 @@ Exit: experiment matrix + pinned shapes recorded here; baseline table filled; ch
 
 #### M0 results (2026-07-31, codereval tenant on alpha, uip 1.200.0)
 
-Branch ☑ (`bd8b2ff8c`). Checker skeleton ☑ (`flow_inline_wiring.py` + 33-test pytest). Correspondence map ☑ ([inline-agent-mirror-map.md](inline-agent-mirror-map.md)). Baseline table **DEFERRED** (owner call, no az tooling on dev machine) — must be filled before M1's exit gate is evaluated. Canvas capture NOT done (no flag-enabled editor this session) — see "still unpinned" below.
+Branch ☑ (`bd8b2ff8c`). Checker skeleton ☑ (`flow_inline_wiring.py` + 45-test pytest; hardened post-review with never-author guards — instance `model` block, `contentTokens`, `derivedInputDefinition` — and `assert_prompt_tokens` failing on derived `{{input.*}}`/`{{ $agent.* }}` namespaces, which validate cannot catch). Correspondence map ☑ ([inline-agent-mirror-map.md](inline-agent-mirror-map.md)). Baseline table **DEFERRED** (owner call, no az tooling on dev machine) — must be filled before M1's exit gate is evaluated. Canvas capture NOT done (no flag-enabled editor this session) — see "still unpinned" below.
 
 **Experiment matrix** (flow-only = full embedded `inputs`, fresh lowercase UUID `source`, registry-verbatim `definitions[]`, root `"version": "1.9"`, error-only instance `outputs`, NO sidecar):
 
