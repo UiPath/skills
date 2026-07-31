@@ -211,10 +211,12 @@ Procedure:
    - TaskUpdate marks each T-entry `in_progress` → `completed` as it goes — that is the per-T-entry audit trail, not the file diff.
 3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
 4. **`registry-resolved.json`.** Same section-batched discipline — one Read per section, N Edit-appends, no re-Read between siblings.
-5. **Verify once, at the end of the whole file, not per section.** A single `grep -n "^## T"` (or equivalent) pass after the last section confirms T-number order and absence of duplicates. Running it speculatively after every section that "might" have gone wrong is itself a symptom of not having planned the write order (see the bullet above) — fix the plan, not the symptom.
+5. **Verify once, at the end of the whole file, not per section.** A single `grep -nE '^## T[0-9]+|^\| *T[0-9]+' tasks.md` (or equivalent) pass after the last section confirms T-number order and absence of duplicates — §4.2.1 variable T-numbers appear as table rows (`| T05 |`), not `## T` headings, so the gap between the last trigger heading and the first stage heading is expected, not a defect. Running it speculatively after every section that "might" have gone wrong is itself a symptom of not having planned the write order (see the bullet above) — fix the plan, not the symptom.
 
 **T-entry heading contract.** Every declaration is its own level-two heading in
-the exact form `## T<n>: <action>`. Do not use level-three-or-deeper headings
+the exact form `## T<n>: <action>` — EXCEPT §4.2.1 variables/arguments, which
+serialize as rows of one table under a non-T heading (each row still owns its
+T-number; see §4.2.1). Do not use level-three-or-deeper headings
 for T-entries, and do not nest a task beneath a stage's T-entry. A task
 heading must quote its display name, for example
 `## T08: Add wait-for-timer task "First Step" to "Process"`. This keeps the
