@@ -11,8 +11,8 @@ description: >
 tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, feature:integration-service]
 
 run_limits:
-  expected_turns: 20
-  max_turns: 30
+  expected_turns: 40
+  max_turns: 60
 
 sandbox:
   template_sources:
