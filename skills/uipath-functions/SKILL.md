@@ -42,6 +42,15 @@ Use Python when the logic needs job semantics, platform SDK access, or is invoke
 
 ---
 
+## Critical Rules
+
+1. **Pass `-l py`.** `uip function new` defaults to TypeScript. Omitting the flag scaffolds the wrong project type.
+2. **Add `authors` to `pyproject.toml` right after scaffolding.** The scaffold omits it; `uip function pack` then fails with `Project authors cannot be empty`. Do this as part of scaffolding, not before packing — every project needs it, including ones you only run locally.
+3. **Never instantiate `UiPath()` at module level.** Use a lazy getter (Step 3 template).
+4. **Return errors, never raise them.** Populate `error_type`/`error_message` on the output model; an exception escaping the entrypoint faults the job.
+5. **No LLM calls.** LLM reasoning belongs in a coded agent → `uipath-agents`.
+6. **Run `uip function init` before `pack` or `push`.** It regenerates `entry-points.json` from the current Input/Output models.
+
 ## CLI Reference
 
 All Python Coded Function lifecycle commands use `uip function`:
@@ -161,6 +170,7 @@ The key is the entrypoint name — it can be any string and marks this as the ca
 name = "my-function"
 version = "0.1.0"
 description = "..."
+authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.11"
 dependencies = [
     "uipath",
@@ -168,6 +178,8 @@ dependencies = [
     "pydantic-settings>=2", # if using Settings for env/asset config
 ]
 ```
+
+`authors` is **required and the scaffold omits it** — add it immediately after `uip function new`, not later. Empty or missing: `uip function pack` fails with `Project authors cannot be empty`. Keep `name`, `version`, `description`, `authors` all present.
 
 No `[build-system]` section. The project is identified as a Coded Function by the `functions` map in `uipath.json` (Step 4).
 
