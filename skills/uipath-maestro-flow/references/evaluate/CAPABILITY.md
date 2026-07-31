@@ -15,7 +15,7 @@ Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval 
 - Start an eval run on Studio Web, poll its status, fetch detailed results
 - Compare two eval runs to verify a change improved scores without regressions
 
-For agent (`agent.json`) evaluations read the `uipath-agents` skill. For BPMN evaluations read the `uipath-maestro-bpmn` skill — this capability covers Flow only.
+For **standalone** agent-project evaluations read the `uipath-agents` skill. For BPMN evaluations read the `uipath-maestro-bpmn` skill — this capability covers Flow only. **Inline agents** (embedded in the `.flow`) are evaluated at flow level with the commands here — no sidecar or agent project is needed (`eval evaluator add` writes project-root `evals/<flow-doc-id>/`; a `<GUID>/evals/` tree is CLI-authored by these commands, never derived, and never hand-written).
 
 ## Critical rules
 

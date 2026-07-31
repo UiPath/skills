@@ -7,9 +7,11 @@ the correct evaluator is an LLM judge, NOT the `exact-match` the deterministic
 script-node eval tasks use. Beyond the `command_executed` matchers (which only
 prove the agent ran the right shell command), assert the side effects:
 
-  1. An inline agent.json exists under TriageEval/TriageEval/<uuid>/agent.json
-     (the inline agent dir is a UUID, so glob it; skip generated
-     .agent-builder/). Proves the eval target is a real inline agent.
+  1. The eval target is a real embedded inline agent: TriageEval.flow carries
+     a self-contained `uipath.agent.autonomous` node (string prompts, real
+     system prompt, overridden model, UUID source — graded on the `.flow`,
+     the source of truth; no sidecar is required or read) with typed
+     `category`/`priority` output variables.
   2. An evaluator JSON exists with evaluatorTypeId ==
      "uipath-llm-judge-output-semantic-similarity" (the `llm-judge-output`
      internal id) carrying a non-empty `model` — the right choice for a
@@ -23,13 +25,24 @@ without producing real files. Reads only source files — no tenant calls.
 """
 from __future__ import annotations
 
-import glob
 import json
+import os
 import sys
 from pathlib import Path
 
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+from _shared.flow_inline_wiring import (  # noqa: E402
+    load_json,
+    find_autonomous_agent_node,
+    assert_embedded_agent,
+    assert_prompt_tokens,
+    assert_agent_output_vars,
+)
+
 PROJECT = Path("TriageEval")
-INLINE_AGENT_GLOB = "TriageEval/TriageEval/*/agent.json"
+FLOW_PATH = PROJECT / "TriageEval" / "TriageEval.flow"
 LLM_JUDGE_TYPE_ID = "uipath-llm-judge-output-semantic-similarity"
 
 
@@ -49,11 +62,13 @@ def main() -> None:
     if not PROJECT.is_dir():
         sys.exit(f"FAIL: project directory {PROJECT} does not exist")
 
-    # 1. Inline agent target exists.
-    agent_paths = [p for p in glob.glob(INLINE_AGENT_GLOB) if "/.agent-builder/" not in p]
-    if not agent_paths:
-        sys.exit(f"FAIL: no inline agent.json matched {INLINE_AGENT_GLOB!r}")
-    print(f"OK: inline agent at {sorted(agent_paths)[0]}")
+    # 1. Inline agent target is embedded in the .flow (source of truth).
+    flow = load_json(FLOW_PATH)
+    node = find_autonomous_agent_node(flow)
+    assert_embedded_agent(node)
+    assert_prompt_tokens(node, require_vars_ref=True)
+    assert_agent_output_vars(node, {"category": "string", "priority": "string"})
+    print(f"OK: embedded inline agent node {node['id']!r} in {FLOW_PATH}")
 
     docs = _load_jsons(PROJECT)
     if not docs:

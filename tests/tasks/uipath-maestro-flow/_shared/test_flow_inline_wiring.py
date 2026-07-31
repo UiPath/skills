@@ -289,6 +289,12 @@ def test_input_vars_pass_on_authored_empty_list():
     assert_agent_input_vars(_agent_node())
 
 
+def test_input_vars_pass_when_key_absent():
+    node = _agent_node()
+    del node["inputs"]["agentInputVariables"]
+    assert_agent_input_vars(node)
+
+
 def test_input_vars_pass_on_derived_entries():
     node = _agent_node(agentInputVariables=[
         {"id": "start__output__topic", "type": "string",

@@ -1,82 +1,84 @@
 #!/usr/bin/env python3
-"""Smoke check: a scaffolded inline (uipath.agent.autonomous) agent was raised
-to a production bar, not left on the toy scaffold defaults.
+"""Smoke check: an inline (uipath.agent.autonomous) agent embedded in a .flow
+file meets the production bar — self-contained inputs, not toy defaults.
 
 Usage (from a task's run_command, cwd = sandbox root):
-    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_inline_agent.py <glob>
+    python3 $TASK_DIR/../_shared/check_inline_agent.py <flow-glob>
 
-  <glob>  Shell-style glob for the inline agent.json. The inline agent dir is a
-          UUID, so the path is not statically knowable — pass e.g.
-          "EmailTriage/EmailTriage/*/agent.json". Defaults to
-          "*/*/*/agent.json" if omitted.
+  <flow-glob>  Shell-style glob for the .flow file, e.g.
+               "EmailTriage/EmailTriage/EmailTriage.flow". Defaults to
+               "*/*/*.flow" if omitted.
 
-Asserts, on the first matching agent.json (excluding generated .agent-builder/):
-  1. settings.model is set and is NOT the stale scaffold default gpt-4o-2024-11-20.
-  2. The system message is a real prompt — not empty, not a known placeholder,
-     and at least 40 chars.
-  3. outputSchema declares at least one typed field beyond a bare `content` string.
+Grades the `.flow` file as the source of truth (self-contained-flow storage
+contract): the sidecar directory is derived and is neither read nor required.
+Asserts, on the first `uipath.agent.autonomous` node of the first matching
+flow:
 
-Exit 0 on pass; exit 1 with a "FAIL: ..." line naming every failing property.
-Reads only the source agent.json — no tenant calls, no agent self-reports.
+  1. Self-contained + real: string prompts (embed trigger), system prompt not
+     a placeholder, model set and not the stale scaffold default, lowercase
+     UUID `inputs.source`, no never-author artifacts (instance `model` block,
+     `contentTokens`, `derivedInputDefinition`).
+  2. Prompts use the canvas token namespace — never derived `{{input.*}}` /
+     `{{ $agent.* }}` forms.
+  3. `agentInputVariables` follows the authoring contract.
+  4. `agentOutputVariables` declares at least one typed field beyond a bare
+     `content` string.
+
+Exit 0 on pass; exit 1 with a "FAIL: ..." line naming the failing property.
+Reads only the .flow file — no tenant calls, no agent self-reports.
 """
 
 from __future__ import annotations
 
 import glob
-import json
+import os
 import sys
 
-SCAFFOLD_MODEL = "gpt-4o-2024-11-20"
-
-# Lowercased, stripped placeholder prompts shipped by scaffolds / docs examples.
-PLACEHOLDER_PROMPTS = {
-    "",
-    "you are an agentic assistant.",
-    "you are an assistant.",
-    "triage the inbound email.",
-    "you are a classifier.",
-    "what is the current date?",
-}
-MIN_PROMPT_LEN = 40
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from flow_inline_wiring import (  # noqa: E402
+    load_json,
+    find_autonomous_agent_node,
+    assert_embedded_agent,
+    assert_prompt_tokens,
+    assert_agent_input_vars,
+)
 
 
 def main() -> int:
-    pattern = sys.argv[1] if len(sys.argv) > 1 else "*/*/*/agent.json"
-    paths = [p for p in glob.glob(pattern) if "/.agent-builder/" not in p]
+    pattern = sys.argv[1] if len(sys.argv) > 1 else "*/*/*.flow"
+    paths = sorted(glob.glob(pattern))
     if not paths:
-        print(f"FAIL: no inline agent.json matched {pattern!r}")
+        print(f"FAIL: no .flow file matched {pattern!r}")
         return 1
 
-    path = sorted(paths)[0]
-    try:
-        agent = json.load(open(path))
-    except (OSError, json.JSONDecodeError) as e:
-        print(f"FAIL: could not read {path}: {e}")
+    path = paths[0]
+    flow = load_json(path)
+    node = find_autonomous_agent_node(flow)
+    inputs = assert_embedded_agent(node)
+    assert_prompt_tokens(node)
+    assert_agent_input_vars(node)
+
+    declared = inputs.get("agentOutputVariables")
+    if not isinstance(declared, list):
+        print(f"FAIL ({path}): inputs.agentOutputVariables is not a list")
         return 1
-
-    errs = []
-
-    model = (agent.get("settings") or {}).get("model", "")
-    if not model:
-        errs.append("settings.model is empty")
-    elif model == SCAFFOLD_MODEL:
-        errs.append(f"settings.model not overridden ({model})")
-
-    sys_msgs = [m.get("content", "") for m in agent.get("messages", []) if m.get("role") == "system"]
-    prompt = (sys_msgs[0] if sys_msgs else "").strip()
-    if prompt.lower() in PLACEHOLDER_PROMPTS or len(prompt) < MIN_PROMPT_LEN:
-        errs.append(f"system prompt looks like a placeholder: {prompt[:60]!r}")
-
-    props = ((agent.get("outputSchema") or {}).get("properties") or {})
-    typed = [k for k in props if k != "content"]
+    typed = [
+        v.get("id")
+        for v in declared
+        if isinstance(v, dict) and v.get("id") and v.get("id") != "content"
+    ]
     if not typed:
-        errs.append(f"outputSchema has no typed field beyond 'content': {list(props)}")
-
-    if errs:
-        print(f"FAIL ({path}): " + "; ".join(errs))
+        print(
+            f"FAIL ({path}): agentOutputVariables has no typed field beyond "
+            f"'content': {[v.get('id') for v in declared if isinstance(v, dict)]}"
+        )
         return 1
 
-    print(f"OK ({path}): model={model} promptlen={len(prompt)} fields={list(props)}")
+    prompt = (inputs.get("systemPrompt") or "").strip()
+    print(
+        f"OK ({path}): node={node['id']} model={inputs.get('model')} "
+        f"promptlen={len(prompt)} outputs={typed}"
+    )
     return 0
 
 
