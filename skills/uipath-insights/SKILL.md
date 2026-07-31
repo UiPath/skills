@@ -228,7 +228,7 @@ When the user specifies an exact date range instead of "last N hours", use `--st
 # Step 1 — resolve each boundary to epoch ms at UTC midnight (run this alone, read the output):
 date -u -d "2026-07-01 00:00:00" +%s000   # Linux  → 1782864000000
 date -u -d "2026-07-06 00:00:00" +%s000   # Linux  → 1783296000000
-date -u -j -f "%Y-%m-%d" "2026-07-01" +%s000   # macOS
+date -u -j -f "%Y-%m-%d %H:%M:%S" "2026-07-01 00:00:00" +%s000   # macOS → 1782864000000
 ```
 
 ```bash
