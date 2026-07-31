@@ -27,7 +27,7 @@ For RPA robot tasks specifically, prefer [rpa](../rpa/planning.md). For Coded wo
 
 ## Registry Resolution
 
-1. **Primary cache file:** `process-index.json` for `PROCESS`, `processOrchestration-index.json` for `AGENTIC_PROCESS`.
+1. **Primary cache file:** `processOrchestration-index.json` for both `PROCESS` and `AGENTIC_PROCESS`.
 2. **Identifier field:** `entityKey`.
 3. **Cross-type fallback — mandatory before unresolved fallback.** If the primary cache file has no exact match, query the *other* process cache with the same name and folder hint before recording `selected: null`, asking the empty-lookup question, or writing a placeholder. Therefore a `PROCESS` miss in `process-index.json` **MUST** be followed by a `processOrchestration-index.json` lookup; an `AGENTIC_PROCESS` miss does the reverse. The sdd.md label is not authoritative: a runnable process can be registered under either index. When the fallback matches, use that entry's `entityKey`, `name`, and full folder path, then continue to schema discovery — do not preserve the primary miss as an unresolved task.
 4. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > no match.

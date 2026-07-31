@@ -85,7 +85,7 @@ A placeholder-bound entry keeps every structural field and moves the lost wiring
 
 ````markdown
 ## T20: Add process task "Validate Submission Completeness" to "Submission Review"
-- taskTypeId: <UNRESOLVED: process-index.json empty in tenant>
+- taskTypeId: <UNRESOLVED: processOrchestration-index.json empty in tenant>
 - folder-path: <UNRESOLVED>
 - runOnlyOnce: false
 - isRequired: true
@@ -129,7 +129,7 @@ uip maestro case registry pull --force
 
 ### 2. Resolve the task-type-id
 
-Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `process-index.json` for processes, `action-apps-index.json` for action apps. For a **manually-built in-solution sibling** (agent or api-workflow), find it offline by name with `uip maestro case registry search "<name>" --type <agent|api> --local --output json` (`agent` for an agent sibling, `api` for an api-workflow sibling; select the exact-name `Data.Resources[].Resource` entry; use `search` — `get --local` matches only the opaque `entityKey`, not the name). Its `Resource.EntityKey` is an opaque derived key (not the `.uipx` `Projects[].Id`), audit-only; the node binds by name+folder. Read the sibling's I/O field names from its raw `entry-points.json` (the `--output json` keys are PascalCased). For an **api-workflow sibling**, read its I/O per the fallback chain in [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) — flat `entryPoints[0].input.properties` → `input.schema.document.properties` wrapper → `Workflow.json` root schemas when the entry-point I/O is `null`; note any fallback in the report.
+Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `processOrchestration-index.json` for processes, `action-apps-index.json` for action apps. For a **manually-built in-solution sibling** (agent or api-workflow), find it offline by name with `uip maestro case registry search "<name>" --type <agent|api> --local --output json` (`agent` for an agent sibling, `api` for an api-workflow sibling; select the exact-name `Data.Resources[].Resource` entry; use `search` — `get --local` matches only the opaque `entityKey`, not the name). Its `Resource.EntityKey` is an opaque derived key (not the `.uipx` `Projects[].Id`), audit-only; the node binds by name+folder. Read the sibling's I/O field names from its raw `entry-points.json` (the `--output json` keys are PascalCased). For an **api-workflow sibling**, read its I/O per the fallback chain in [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) — flat `entryPoints[0].input.properties` → `input.schema.document.properties` wrapper → `Workflow.json` root schemas when the entry-point I/O is `null`; note any fallback in the report.
 
 ### 3. Fetch the schema
 
@@ -175,7 +175,7 @@ When the build finishes with placeholders, the skill's completion report must li
 
 | Stage | Task | Type | TaskId | Attach |
 |-------|------|------|--------|--------|
-| Submission Review | Validate Submission Completeness | process | t8GQTYo8O | process-index.json — "Validate Submission Completeness" |
+| Submission Review | Validate Submission Completeness | process | t8GQTYo8O | processOrchestration-index.json — "Validate Submission Completeness" |
 | Submission Review | Review Submission | action | ty5UcykfU | action-apps-index.json — "Review Submission" |
 | … | … | … | … | … |
 
