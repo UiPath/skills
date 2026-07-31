@@ -17,18 +17,35 @@ REFERENCE = (
 )
 NS = {
     "bpmn": "http://www.omg.org/spec/BPMN/20100524/MODEL",
+    "bpmndi": "http://www.omg.org/spec/BPMN/20100524/DI",
     "uipath": "http://uipath.org/schema/bpmn",
 }
 
 
 def _minimal_example() -> ET.Element:
-    section = REFERENCE.read_text(encoding="utf-8").split(
-        "## A complete minimal file",
-        maxsplit=1,
-    )[1]
-    match = re.search(r"```xml\n(?P<xml>.*?)\n```", section, re.DOTALL)
-    assert match, "structural-bpmn.md is missing its complete minimal XML example"
-    return ET.fromstring(match.group("xml"))
+    content = REFERENCE.read_text(encoding="utf-8")
+    _, heading, remainder = content.partition("## A complete minimal file")
+    assert heading, "structural-bpmn.md is missing its complete minimal file section"
+    section = remainder.partition("\n## ")[0]
+
+    documents = []
+    for xml in re.findall(r"```xml\n(.*?)\n```", section, re.DOTALL):
+        try:
+            root = ET.fromstring(xml)
+        except ET.ParseError:
+            continue
+        if (
+            root.tag == f"{{{NS['bpmn']}}}definitions"
+            and root.find("bpmn:process", NS) is not None
+            and root.find("bpmndi:BPMNDiagram", NS) is not None
+        ):
+            documents.append(root)
+
+    assert len(documents) == 1, (
+        "expected exactly one parseable, complete BPMN definitions document "
+        f"in the minimal file section; found {len(documents)}"
+    )
+    return documents[0]
 
 
 def _variables(process: ET.Element) -> dict[str, ET.Element]:
