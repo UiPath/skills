@@ -185,6 +185,30 @@ The generated SDD must start with:
 
 > `Display Name` is what a `sla-status-change` entry references. `—` → `Escalation Rule {N}`, valid only when nothing references that escalation.
 
+### SLA Response Map
+
+> **Required whenever any SLA is configured** (case, stage, or `action` task) — one row per `(Scope, SLA, Status)`. This table is the single place breach and at-risk behavior is decided; never leave the response implied by SLA duration text or by an escalation's wording. Omit the whole section only when no SLA exists anywhere in the case.
+
+| Scope | SLA | Status | Response | Target | Interrupting | Rationale |
+|-------|-----|--------|----------|--------|--------------|-----------|
+| {case \| stage: `<StageName>` \| task: `<TaskName>`} | {SLA Title} | {At-Risk \| Breached} | {notify-only \| start-task \| enter-stage \| exit-stage \| exit-case} | {`—` for notify-only; stage name for start-task/enter-stage; exit row ref for exit-stage/exit-case} | {`—` for notify-only; Yes \| No otherwise} | {why this response fits the source} |
+
+> **Choosing the `Response`** — read it off the source, never off the SLA's scope:
+>
+> | Response | Source says | Where it lands |
+> |---|---|---|
+> | `notify-only` | notify / alert / email / page someone | escalation `Action` row above — no stage, no task, no entry condition |
+> | `start-task` | follow-up work inside the **same** breached stage (reminder, reassignment, manager check) | that stage's Stage Entry Conditions row referencing **its own** SLA + the follow-up task in that stage |
+> | `enter-stage` | ownership change, escalation lane, recovery, visible lifecycle step | the destination stage's Stage Entry Conditions row |
+> | `exit-stage` | the breached stage should end, fail, or route away | that stage's Stage Exit Conditions row |
+> | `exit-case` | the case should close, cancel, fail, or reach an alternate terminal outcome | a §1.4a Case Exit Conditions row |
+>
+> **Default:** absent a stated response, both statuses are `notify-only` — `Target` and `Interrupting` are `—`. Do NOT invent a stage, task, or routing change for an SLA the source only asks to notify about.
+>
+> **`Interrupting` is a separate decision from scope.** `Yes` when the response stops, pauses, takes over, or reroutes the active work; `No` when the response runs alongside it (parallel oversight) or starts a task in the stage that keeps working. A case-scope SLA does not imply `Yes`. The value here MUST match the `Interrupting` cell of the Stage Entry Conditions row it produces.
+>
+> **A row whose `Response` is not `notify-only` MUST have a matching rule elsewhere in this SDD** — a `sla-status-change` entry row, a stage-exit row, or a §1.4a case-exit row. A `start-task`/`enter-stage` row with no `sla-status-change` entry anywhere is a blocking render error, and so is an `sla-status-change` entry with no row here.
+
 ### Variable SLA Rules
 
 > Include this table only if SLA Type is `condition-based`. Each row defines an expression-keyed SLA override; the time-based default lives in the Case Metadata `Case-Level SLA` cell above. FE persists `slaRules[]` with non-empty `conditionExpression` per row (PO.Frontend `CaseManagementSlaProperties.tsx`).
@@ -335,7 +359,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (external/global event interrupt), `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")` (case/stage SLA at-risk or breach response that enters a stage — all three args required, see the reference contract below). Other rule types from Key Rule 3 are NOT valid here.
 >
-> **Interrupting column:** `Yes` lets the condition fire while another stage is active and interrupt it. Use `Yes` on every secondary-stage entry row. Use `No` only for normal entry on regular stages; if the work should not interrupt, it is not a secondary stage.
+> **Interrupting column:** `Yes` lets the condition fire while another stage is active and interrupt it. Use `Yes` on every secondary-stage entry row, with one carve-out: an `sla-status-change` row whose response is parallel oversight (the breached work keeps running) is `No`, and its lane still stays secondary with `Required for case completion: No`. Otherwise use `No` only for normal entry on regular stages; if the work should not interrupt and is not that SLA carve-out, it is not a secondary stage.
 >
 > Each row is a separate entry condition. List multiple rows when a stage can be entered through more than one path (e.g., normal completion of an upstream stage AND an interrupting connector event).
 

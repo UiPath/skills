@@ -1,0 +1,58 @@
+task_id: skill-case-sla-start-task-same-stage
+description: >
+  T2 of the SLA-response battery. A stage-SLA breach whose response is local follow-up work
+  takes the `start-task` shape: the breached stage carries the `sla-status-change` entry on
+  its OWN SLA, non-interrupting, and the follow-up action task lives in that stage. Asserts
+  the entry sits on Review (not a separate lane), its slaId resolves to Review's own
+  slaRules, `isInterrupting` is false, and the rule carries NO escalationId — an absent
+  escalationId is the persisted representation of Breached. Both shapes are CLI-verified on
+  uip 1.198.0-preview.102. Task activation semantics are deliberately unasserted; the skill
+  does not yet specify the task-entry rule for a re-entered stage.
+tags: [uipath-maestro-case, smoke, mode:build, lifecycle:edit, shape:multi-node, feature:sla, feature:escalation, feature:approval-gate]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 900
+  max_turns: 40
+  turn_timeout: 900
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates
+
+initial_prompt: |
+  The SlaResponse case solution already exists on disk under SlaResponse/. Its case
+  definition is SlaResponse/SlaResponse/caseplan.json: three stages (Intake → Review →
+  Decision), a 10-day case SLA, and a two-day SLA on Review.
+
+  Ops asked for one change: when a case blows past the Review SLA, an approval task called
+  "Manager Check" must be raised for the reviewer's manager as part of the review work.
+  The reviewer keeps working the case the whole time — nothing pauses, nothing is handed
+  over to another team, and the case does not move to a different part of the process.
+
+  No action app is resolvable on this tenant — leave the new task's identity unresolved as
+  a placeholder per the skill's rules. Do NOT query the tenant registry, connections, or
+  users.
+
+  Do NOT run `uip maestro case debug`, publish, or upload anything. Do NOT ask for
+  approval, confirmation, or feedback — make the change end-to-end in a single pass and
+  finish with `uip maestro case validate` passing on the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the edited caseplan.json"
+    command: "uip maestro case validate SlaResponse/SlaResponse/caseplan.json --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Review carries the sla-status-change entry on its own SLA with isInterrupting false and no escalationId (breach shape), the Manager Check action task lives in Review, and no extra stage was minted"
+    command: "python3 $TASK_DIR/check_start_task_same_stage.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

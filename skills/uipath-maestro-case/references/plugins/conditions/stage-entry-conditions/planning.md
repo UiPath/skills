@@ -18,7 +18,7 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 |-------|--------|-------|
 | `<stage-id>` | previously captured from the stages plugin | Target stage |
 | `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. e.g., "Pre-check", "Interrupt on Fraud" |
-| `is-interrupting` | sdd.md (default `false`) | `true` if the condition interrupts the current stage. Required for every secondary-stage entry row; `false` is for regular-stage entry only. |
+| `is-interrupting` | sdd.md (default `false`) | `true` if the condition interrupts the current stage. Required for every secondary-stage entry row, except an `sla-status-change` parallel-oversight row; otherwise `false` is for regular-stage entry only. Carry the sdd.md value — never override it from the rule type or the SLA's scope. |
 | `rationale` | sdd.md Design Rationale | Required reviewer context for why this rule/interrupt is used. Not emitted into caseplan JSON. |
 | `rule-type` | Pick from the catalog below | See §Rule-type catalog |
 | `selected-stage-id` | Required for `selected-stage-*` rule-types | ID of the referenced stage |
@@ -42,7 +42,7 @@ Allowed `ruleType` values and when to pick each:
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields (above); `conditionExpression` optional |
 | `sla-status-change` | Fires when the referenced case/stage SLA reaches the referenced at-risk or breached escalation. Read all three from the SDD cell `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")`. | `sla-target`, `sla-display-name`, `escalation-display-name` |
 
-`is-interrupting: true` means the condition can fire **while another stage is active** and will interrupt it. Use it on every secondary-stage entry row. If a candidate secondary stage would use `is-interrupting: false`, it is misclassified: use a regular stage/path or an `adhoc` task instead.
+`is-interrupting: true` means the condition can fire **while another stage is active** and will interrupt it. Use it on every secondary-stage entry row. If a candidate secondary stage would use `is-interrupting: false`, it is misclassified: use a regular stage/path or an `adhoc` task instead. **Carve-out:** an `sla-status-change` row whose response is parallel oversight — the breached work continues, nothing is paused, taken over, or rerouted — is legitimately `is-interrupting: false` on a secondary lane (`isRequired: false`, outside the completion set). `validate` accepts either value on an `sla-status-change` entry, so the sdd.md value is authoritative.
 
 > **Global-event rule.** A connector event that can happen during any primary stage and requires case work/routing is declared once on the destination secondary stage with `is-interrupting: true`. An SLA response that enters a stage uses `sla-status-change` on the target stage — which may be the breached stage itself (`start-task`) or another stage (`enter-stage`). Set `is-interrupting` from whether the response stops, pauses, or reroutes active work, not from the SLA's scope. A notify-only escalation needs no stage entry. Do not generate the same task or stage-exit rule on every primary stage.
 
