@@ -22,7 +22,7 @@ sys.path.insert(
         os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
     ),
 )
-from lowcode_scaffold import write_baseline_lowcode_agent  # noqa: E402
+from lowcode_scaffold import set_message, write_baseline_lowcode_agent  # noqa: E402
 
 SOLUTION = Path("ReviewSol")
 
@@ -62,11 +62,8 @@ def _patch_agent(agent_json: Path) -> None:
     data = json.loads(agent_json.read_text(encoding="utf-8"))
     data["inputSchema"] = json.loads(json.dumps(INPUT_SCHEMA))
     data["guardrails"] = [json.loads(json.dumps(GUARDRAIL))]
-    for msg in data.get("messages", []):
-        if msg.get("role") == "system":
-            msg["content"] = SYSTEM_MSG
-        elif msg.get("role") == "user":
-            msg["content"] = USER_MSG
+    set_message(data, "system", SYSTEM_MSG)
+    set_message(data, "user", USER_MSG)
     agent_json.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 

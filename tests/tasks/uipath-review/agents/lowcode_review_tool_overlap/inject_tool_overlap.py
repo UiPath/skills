@@ -19,7 +19,11 @@ sys.path.insert(
         os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
     ),
 )
-from lowcode_scaffold import write_baseline_lowcode_agent  # noqa: E402
+from lowcode_scaffold import (  # noqa: E402
+    process_binding,
+    write_baseline_lowcode_agent,
+    write_bindings,
+)
 
 SOLUTION = Path("ReviewSol")
 TOOLS = [
@@ -86,6 +90,7 @@ def main() -> None:
             ),
             encoding="utf-8",
         )
+    write_bindings(project, [process_binding(name) for name, _, _, _ in TOOLS])
     print("Injected two overlapping tools: lookup_customer / find_customer")
 
 
