@@ -26,11 +26,17 @@ GATE_KEYS = RULE_KEYS | {"if", "condition", "condition-expression", "conditionex
 
 
 def authored_rule_text(text: str) -> str:
-    """Concatenated authored rule and guard values, excluding rationale prose."""
+    """Concatenated authored rule and guard values, excluding rationale prose.
+
+    The compact no-build `tasks.md` shape writes plain `key: value` lines; the
+    full-build T-entry contract writes `- key: value`. The leading bullet is
+    therefore optional — requiring it made every rule scan read an empty string
+    against compact output, so the gate assertions passed vacuously.
+    """
     parts: list[str] = []
     for line in text.splitlines():
         stripped = line.strip()
-        field = re.match(r"(?i)^[-*]\s*([a-z][a-z0-9 _-]*):\s*(.*)$", stripped)
+        field = re.match(r"(?i)^[-*]?\s*([a-z][a-z0-9 _-]*):\s*(.*)$", stripped)
         if field:
             if field.group(1).strip().lower() in GATE_KEYS:
                 parts.append(field.group(2))
@@ -51,7 +57,7 @@ def selected_task_operands(text: str) -> list[str]:
     operands: list[str] = []
     for line in text.splitlines():
         stripped = line.strip()
-        field = re.match(r"(?i)^[-*]\s*([a-z][a-z0-9 _-]*):\s*(.*)$", stripped)
+        field = re.match(r"(?i)^[-*]?\s*([a-z][a-z0-9 _-]*):\s*(.*)$", stripped)
         if field:
             key = field.group(1).strip().lower()
             if key == "selected-tasks-ids":
@@ -93,7 +99,7 @@ def require_section(text: str, name: str) -> str:
 
 
 def lane(section: str, name: str) -> int:
-    match = re.search(r"(?im)^-\s*lane:\s*(\d+)\b", section)
+    match = re.search(r"(?im)^[-*]?\s*lane:\s*(\d+)\b", section)
     if not match:
         fail(f"missing lane/task-set index for {name!r}")
     return int(match.group(1))
