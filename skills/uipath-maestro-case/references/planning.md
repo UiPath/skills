@@ -97,7 +97,7 @@ If the plan-only / no-build exception is active, skip registry and schema discov
 - Task declarations use an H2 heading with a quoted display name: `## T{N}: task "{Task Name}"`. Do not use dotted task T-numbers (for example, `T12.1`) as the task entry heading; if you group entries by stage, the task's own T-entry still remains the H2.
 - Stage entries: `stage-kind`, `entry-rule`, `exit-rule`, `interrupting`, `required`, `sla`, `rationale`.
 - Task entries: `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, `rationale`.
-- Trigger/condition/SLA entries: `rule-type`, `source/status`, `target stage/task`, `return-or-close behavior`, `rationale`.
+- Trigger/condition/SLA entries: `rule-type`, `source/status`, `target stage/task`, `return-or-close behavior`, `rationale`. Every `selected-tasks-completed` entry carries `selected-tasks-ids`.
 
 Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json` in this mode; those require tenant evidence and belong to the later build run. End the response with suggested next steps: review the SDD and plan, then run a later build to resolve tenant resources and create `caseplan.json`.
 
@@ -310,8 +310,8 @@ Every task entry includes at least:
 
 - **taskTypeId** — resolved from the registry in Step 3
 - **rationale** — copied from the SDD; explains the task-type and activation/sequencing choice
-- **activation-mode** — required on every task. One of `sequential`, `parallel`, `event-triggered`, `adhoc`, `fan-in`, or `conditional-gate`. This is the user-visible task mode decision, not layout state.
-- **entry-rule** — required on every task; mirrors the planned task-entry condition rule. Sequential tasks MUST say `runs-sequentially`, event-triggered tasks normally say `wait-for-connector`, adhoc tasks say `adhoc`, parallel stage-start tasks say `current-stage-entered`, and fan-in / non-immediate gates say `selected-tasks-completed`.
+- **activation-mode** — required on every task. One of `sequential`, `parallel`, `parallel-after-predecessor`, `event-triggered`, `adhoc`, `fan-in`, or `conditional-gate`. This is the user-visible task mode decision, not layout state.
+- **entry-rule** — required on every task; mirrors the planned task-entry condition rule. Sequential tasks MUST say `runs-sequentially`, event-triggered tasks normally say `wait-for-connector`, adhoc tasks say `adhoc`, parallel stage-start tasks say `current-stage-entered`, parallel siblings after an immediate predecessor say `runs-sequentially`, and fan-in / non-immediate gates say `selected-tasks-completed`.
 - **inputs** / **outputs** — see [bindings-and-expressions.md](bindings-and-expressions.md) for the two input modes (literal/expression and cross-task reference)
 - **runOnlyOnce** — from sdd.md (default `false` if not specified). Phase 0-generated SDDs should always state `Run Only Once: Yes/No`; when a user-authored SDD omits it, use the frontend/default-new-task behavior (`false`) and do not infer `true` from task type.
 - **isRequired** — from sdd.md (default `true` if not specified)
