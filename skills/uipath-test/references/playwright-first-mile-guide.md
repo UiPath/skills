@@ -87,12 +87,23 @@ uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLD
 ```
 
 - Pick the folder from the **unflagged** `folders list` — `--all` returns every folder *visible* to you, including ones where you have no rights; choosing one of those fails later with `folderNotFoundOrNoAccess`.
-- **The folder must have a Cloud Robots – Serverless machine assigned** or the run's job creation 500s and the execution is instantly `Cancelled`. Check with `uip or machines list --folder-key <FOLDER_KEY> --output json`; if none, create and assign one (one serverless machine per folder):
+The folder needs **two** things, and missing either one fails the run differently:
+
+- **A Cloud Robots – Serverless machine** — without it job creation 500s and the execution is instantly `Cancelled`. Check with `uip or machines list --folder-key <FOLDER_KEY> --output json`; if none, create and assign one (one serverless machine per folder):
 
 ```bash
 uip or machines create -n <name> --serverless --testing-slots 2 --output json   # capture Data.Key
 uip or machines assign <MACHINE_KEY> --folder-key <FOLDER_KEY> --output json    # takes machine KEYS (GUIDs), not names
 ```
+
+- **A folder member who can run unattended** — the run executes as a robot user drawn from the folder, and `uip tm testsets run` has no flag to choose one (only `uip tm testcases run` does), so folder membership is the only lever:
+
+```bash
+uip or users list-in-folder --folder-key <FOLDER_KEY> --output json
+uip or users get <USER_KEY> --all-fields --output json      # needs MayHaveUnattendedSession: true
+```
+
+An ordinary interactive user usually has `MayHaveUnattendedSession: false`, and `uip or users update --allow-unattended` cannot fix that here — it requires a Windows unattended username and password, which serverless does not use. Assign an already-unattended-capable principal instead (a `DirectoryRobot` account is the reliable pick). Creating your own folder is a first-class option when no existing one qualifies: `uip or folders create <NAME> --output json` (name is positional), then attach a machine and such a user.
 
 ```bash
 uip tm testsets create --project-key <PROJECT_KEY> --name "PW Smoke" --output json
@@ -127,7 +138,7 @@ uip tm testsets run --test-set-key <TEST_SET_KEY> \
     --playwright-projects chromium firefox --wait --output json
 ```
 
-`--playwright-projects` semantics (all enforced with clear errors, nothing is silently ignored):
+`--playwright-projects` does not appear in `uip tm testsets run --help` — functional but unlisted, so treat this guide as its reference rather than concluding the build lacks it. Semantics (all enforced with clear errors, nothing silently ignored):
 
 - Space-separated, case-sensitive names from the package's `playwright.config`. Unknown names **fail fast, before anything is persisted**, listing the available projects.
 - Valid only when every test case in the set comes from one single Playwright package (see Step 4); fails for Studio/RPA test sets — run those without the flag.
@@ -155,7 +166,8 @@ Three shapes, one rule: diagnose with the two commands below, then stop — retr
 
 - **`Cancelled` within seconds**, logs pointing at `CreateTestAutomationJobs` / `InternalServerError` → the default folder has no serverless machine assigned (Step 4).
 - **`Finished` with `Passed: 0 / Failed: 0 / None: N`** → the run ended without per-test results reaching Test Manager; the test case log's `Info` carries the reason (results upload failed, or the job never started). Note `report get` counts `None` as **`Skipped`**, so 0% here means "results lost", not "tests skipped".
-- **Stuck `Pending`** → dispatch worked but nothing is executing. A faulted job may never sync back, so don't sit out the 30-minute wait; check after ~5 minutes.
+- **Stuck `Pending`** → dispatch worked but nothing is executing. A faulted job may never sync back, so don't sit out the 30-minute wait; check after ~5 minutes. Fixing the folder does **not** rescue an already-pending execution — start a new run after fixing.
+- **`Serverless.Runtime.CannotIssueUserTokenDueToUserNotPartOfOrg`** in a log's `Info` → the folder's robot-user pool is bad: the account Test Manager picked is still folder-assigned but no longer valid in the org. Unlike the shapes above this **is** fixable from the CLI — point the project at a folder whose members satisfy Step 4 (or create one), then re-run.
 
 ```bash
 uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json
@@ -178,4 +190,10 @@ The version **must** be new — the Orchestrator feed rejects one it already has
 - **A test set keeps its membership** when the test list is unchanged — nothing to re-add, no new test set, re-run the same `--test-set-key`. Only re-run `uip tm testcases add --labels` if new tests should join.
 - **A stored Playwright project selection survives** too, so the re-run stays scoped.
 
-**Verifying the update landed is the weak spot.** On a first upload you count new test cases; on an update nothing observably moves — the count and names are identical, and `uip tm testcases list-automations` reports a two-component `PackageVersion` (`1.0`), which cannot distinguish 1.0.1 from 1.0.0. There is no CLI confirmation today, so: wait ~60–90 s after the upload, then re-run and read the results. If the re-run reproduces the *previous* failure verbatim, suspect a stale package rather than a bad fix — re-check that the upload succeeded and that you bumped the version.
+**Confirming the new package actually ran:** the test case logs carry `TestCaseVersion`, so after the re-run
+
+```bash
+uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json
+```
+
+reports the version you just packed (`1.0.1`). That is the reliable check — `list-automations` shows a two-component `PackageVersion` (`1.0`) that cannot distinguish 1.0.1 from 1.0.0. Ingestion of an update is otherwise invisible (same count, same names), so allow ~60–90 s after the upload before re-running; an old `TestCaseVersion` in the results means a stale package, not a bad fix.
