@@ -62,6 +62,14 @@ success_criteria:
     weight: 4.0
     pass_threshold: 1.0
 
+  - type: run_command
+    description: "(advisory, non-gating) tasks/tasks.md follows the compact no-build T-entry shape per planning.md: `## T{N}: task \"{Name}\"` headings and numeric `lane` task-set indices"
+    command: "python3 $TASK_DIR/check_tasksmd_shape.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
+
   - type: llm_judge
     description: "The design reasons from case semantics instead of phrase-to-rule translation"
     files:

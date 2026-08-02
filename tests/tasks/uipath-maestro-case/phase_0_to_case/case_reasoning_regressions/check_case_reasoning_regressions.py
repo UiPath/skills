@@ -98,11 +98,32 @@ def require_section(text: str, name: str) -> str:
     return "\n".join(sections)
 
 
-def lane(section: str, name: str) -> int:
-    match = re.search(r"(?im)^[-*]?\s*lane:\s*(\d+)\b", section)
-    if not match:
-        fail(f"missing lane/task-set index for {name!r}")
-    return int(match.group(1))
+def lane(section: str) -> str | None:
+    """The task's declared task-set index, or None when the plan omits it.
+
+    Compared as an opaque token, not parsed as an int. A non-numeric lane is a
+    convention lapse the advisory format check reports; what *this* check grades
+    is whether siblings land in the SAME set, which reads the same either way.
+    """
+    match = re.search(r"(?im)^[-*]?\s*lane:\s*(.+?)\s*$", section)
+    return match.group(1).strip().lower() if match else None
+
+
+def sdd_task_block(sdd: str, name: str) -> str:
+    """The SDD's detail card for a task, else its summary-table row(s).
+
+    Activation Mode appears in either place depending on how the SDD renders —
+    `**Activation Mode:** x` in the per-task card, or a column in the stage's
+    task table. Read both; requiring one shape grades formatting, not design.
+    """
+    card = re.search(
+        rf"(?ims)^#{{3,6}}\s*Task\s[\d.]*:?\s*[^\n]*{re.escape(name)}[^\n]*\n.*?(?=^#{{1,6}}\s|\Z)",
+        sdd,
+    )
+    if card:
+        return card.group(0)
+    rows = [ln for ln in sdd.splitlines() if ln.lstrip().startswith("|") and name.lower() in ln.lower()]
+    return "\n".join(rows)
 
 
 def main() -> None:
@@ -111,24 +132,49 @@ def main() -> None:
     combined = f"{sdd}\n{plan}"
     lower = combined.lower()
 
-    payment_wait = require_section(plan, "Wait for Payment Confirmation")
-    payment_deadline = require_section(plan, "Payment Deadline")
-    if lane(payment_wait, "Wait for Payment Confirmation") != lane(
-        payment_deadline, "Payment Deadline"
-    ):
-        fail("payment confirmation and deadline are not in the same parallel task set")
-    for name, section in (
-        ("Wait for Payment Confirmation", payment_wait),
-        ("Payment Deadline", payment_deadline),
-    ):
-        if not re.search(r"(?i)parallel-after-predecessor|race\s*branch", section):
-            fail(f"{name!r} is not marked parallel-after-predecessor or race branch")
-        if "runs-sequentially" not in section.lower():
-            fail(f"{name!r} does not use runs-sequentially for prior-set completion")
-        if any("collect fees" in operand.lower() for operand in selected_task_operands(section)):
-            fail(f"{name!r} duplicates the Collect Fees selected-task gate")
+    SIBLINGS = ("Wait for Payment Confirmation", "Payment Deadline")
 
-    generate_permit = require_section(plan, "Generate Permit")
+    # --- Design (sdd.md) -----------------------------------------------------
+    # sdd.md is what Phase 0 produces and what Phase 1 reads as written, so the
+    # activation-mode decision is graded there. The compact tasks.md shape has
+    # proven unstable across agents/runs; grading design against it measures
+    # plan formatting instead of case reasoning.
+    for name in SIBLINGS:
+        block = sdd_task_block(sdd, name)
+        if not block:
+            fail(f"sdd.md has no task entry for {name!r}")
+        if not re.search(r"(?i)parallel-after-predecessor|race\s*branch", block):
+            fail(
+                f"sdd.md does not mark {name!r} parallel-after-predecessor or race "
+                f"branch; both payment branches start together after Collect Fees"
+            )
+        if any("collect fees" in op.lower() for op in selected_task_operands(block)):
+            fail(
+                f"sdd.md gates {name!r} on selected-tasks-completed(\"Collect Fees\") "
+                f"— siblings after one predecessor share a task set instead"
+            )
+
+    # --- Plan consistency (tasks.md), only where the plan expresses it -------
+    # A plan that omits T-entries entirely is a format lapse, reported by the
+    # advisory check rather than gated here; the design assertions above still
+    # gate, so a narrative plan cannot skip grading.
+    sections = {n: "\n".join(sections_for(plan, n)) for n in SIBLINGS}
+    if all(sections.values()):
+        lanes = {n: lane(s) for n, s in sections.items()}
+        if all(lanes.values()) and len(set(lanes.values())) != 1:
+            fail(
+                f"payment confirmation and deadline are not in the same parallel task "
+                f"set: lanes {lanes[SIBLINGS[0]]!r} vs {lanes[SIBLINGS[1]]!r}"
+            )
+        for name, section in sections.items():
+            if "runs-sequentially" not in section.lower():
+                fail(f"{name!r} does not use runs-sequentially for prior-set completion")
+            if any("collect fees" in op.lower() for op in selected_task_operands(section)):
+                fail(f"{name!r} duplicates the Collect Fees selected-task gate")
+
+    generate_permit = "\n".join(sections_for(plan, "Generate Permit")) or sdd_task_block(
+        sdd, "Generate Permit"
+    )
     if any(
         "payment deadline" in operand.lower()
         for operand in selected_task_operands(generate_permit)
@@ -137,7 +183,9 @@ def main() -> None:
     if "confirm" not in authored_rule_text(generate_permit).lower():
         fail("Generate Permit is not gated by successful payment confirmation")
 
-    internal_notes = "\n".join(sections_for(plan, "Internal Notes"))
+    internal_notes = "\n".join(sections_for(plan, "Internal Notes")) or sdd_task_block(
+        sdd, "Internal Notes"
+    )
     if "selected-tasks-completed" in authored_rule_text(internal_notes).lower():
         fail("Internal Notes adhoc task is gated on a selected-task dependency")
     for operand in selected_task_operands(combined):
@@ -150,7 +198,10 @@ def main() -> None:
     combined_rules = authored_rule_text(combined).lower()
     if "user-selected-stage" in combined_rules and "wait-for-user" not in combined_rules:
         fail("user-selected-stage appears without an upstream wait-for-user exit")
-    rejected = authored_rule_text("\n".join(sections_for(plan, "Application Rejected")))
+    rejected = authored_rule_text(
+        "\n".join(sections_for(plan, "Application Rejected"))
+        or sdd_task_block(sdd, "Application Rejected")
+    )
     if "user-selected-stage" in rejected.lower():
         fail("Application Rejected uses user-selected-stage for deterministic rejection")
 
