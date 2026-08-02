@@ -99,6 +99,8 @@ If the plan-only / no-build exception is active, skip registry and schema discov
 - Task entries: `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, `rationale`.
 - Trigger/condition/SLA entries: `rule-type`, `source/status`, `target stage/task`, `return-or-close behavior`, `rationale`. Every `selected-tasks-completed` entry carries `selected-tasks-ids`.
 
+**Rule-valued fields take canonical values, never prose.** `activation-mode`, `entry-rule`, `exit-rule`, and `rule-type` carry a value from their vocabulary exactly as spelled (`runs-sequentially`, `current-stage-entered`, `wait-for-connector`, `adhoc`, `selected-tasks-completed`, …) — review-oriented does not mean free text. Writing `entry-rule: <predecessor> completed` for a task that follows its predecessor is the compact-mode spelling of a duplicate `selected-tasks-completed` gate and reintroduces the defect the task-set grouping exists to prevent: siblings after one predecessor say `runs-sequentially`, and the ordering lives in `lane` / task-set position. Put the human phrasing in `rationale`.
+
 Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json` in this mode; those require tenant evidence and belong to the later build run. End the response with suggested next steps: review the SDD and plan, then run a later build to resolve tenant resources and create `caseplan.json`.
 
 When the plan-only / no-build exception is not active, continue with the normal build-planning path:
