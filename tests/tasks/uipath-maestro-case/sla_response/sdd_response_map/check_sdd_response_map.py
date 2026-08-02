@@ -51,18 +51,23 @@ def main() -> None:
             f"found {len(start_task)}: {[(r.get('scope'), r.get('target')) for r in start_task]}"
         )
     row = start_task[0]
-    if "assess" not in row.get("target", "").casefold():
+    # Target names the follow-up TASK, not the breached stage: the rule lives on that
+    # task's own entry condition. Reject a bare stage name.
+    target = row.get("target", "").strip()
+    if target.casefold() in {"assess", "stage: assess", ""}:
         fail(
-            f"the start-task row targets {row.get('target')!r}; a start-task response runs in the "
-            "breached stage itself (Assess)"
+            f"the start-task row targets {target!r} \u2014 that is the breached STAGE. A start-task "
+            "response names the follow-up task (the Senior Assessor Check), because the "
+            "sla-status-change rule lives on that task's own entry condition, not on Assess's "
+            "stage entry."
         )
     interrupting = row.get("interrupting", "").strip().casefold()
-    if interrupting not in {"no", "", "-", "\u2014", "\u2013", "n/a", "na"}:
+    if interrupting not in {"", "-", "\u2014", "\u2013", "n/a", "na"}:
         fail(
-            f"the start-task row has Interrupting {row.get('interrupting')!r}; the assessor keeps "
-            "working, so the response cannot interrupt. `-` is correct when the rule is authored "
-            "as the task's own entry condition (a task entry interrupts nothing); `No` is correct "
-            "for stage re-entry."
+            f"the start-task row has Interrupting {row.get('interrupting')!r}; a start-task "
+            "response is the follow-up task's own task-entry rule, which has no interrupting "
+            "cell \u2014 use `-`. (`No` would imply stage re-entry, which re-runs every task in "
+            "Assess whose shouldRunOnlyOnce is false.)"
         )
 
     # (c) The case breach hands the case to a lane that takes over.

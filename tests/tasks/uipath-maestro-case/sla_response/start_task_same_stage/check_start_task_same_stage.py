@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """T2 — start-task: the follow-up work lives in the breached stage, keyed off its OWN SLA.
 
-Two shapes are accepted, both CLI-verified on uip 1.198.0-preview.102:
+Exactly one shape is accepted — **task entry**: the follow-up task's own `entryConditions`
+carry the `sla-status-change` rule. The task fires on the SLA event itself, so the stage is
+not re-entered and its other tasks do not re-run.
 
-* **task entry (direct)** — the follow-up task's own `entryConditions` carry the
-  `sla-status-change` rule. No stage re-entry, so the stage's other tasks do not re-run.
-* **stage entry (re-entry)** — the breached stage carries the rule and the follow-up task
-  activates on stage entry. Then the condition must be non-interrupting: the reviewer keeps
-  working, so nothing may stop active work.
+**Stage entry on the breached stage is rejected**, even though `uip maestro case validate`
+accepts it (verified on uip 1.198.0-preview.102). Re-entering the stage restarts every task
+in it whose `shouldRunOnlyOnce` is `false` — the default for every task type — so a breach
+meant to add one manager check silently re-runs the whole stage. See
+`skills/uipath-maestro-case/references/sla-response-shapes.md` section 5, defect 4.
 
-Either way the rule must reference **Review's own** SLA and be a breach rule (`slaId`, no
+The rule must reference **Review's own** SLA and be a breach rule (`slaId`, no
 `escalationId`), and the follow-up task must be an `action` task in Review with a working
-activation. What is rejected is the `enter-stage` answer: putting the work in a separate lane.
+activation. Also rejected is the `enter-stage` answer: putting the work in a separate lane.
 """
 
 import os
@@ -20,7 +22,6 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.sla_response_check import (  # noqa: E402
     assert_breach_shape,
-    assert_interrupting,
     assert_no_any_sentinel,
     assert_sla_resolves,
     assert_stage_count,
@@ -48,33 +49,35 @@ def main() -> None:
     if not task_hits and not stage_hits:
         fail(
             "no sla-status-change rule anywhere; the Review breach was supposed to start a "
-            "follow-up task inside Review (on the task's own entry condition, or on Review's)"
+            "follow-up task inside Review, with the rule on that task's own entry condition"
         )
     if len(task_hits) + len(stage_hits) > 1:
         where = [f"task:{t.get('displayName')}" for _n, t, _c, _r in task_hits]
         where += [f"stage:{label_of(n)}" for n, _c, _r in stage_hits]
         fail(f"expected exactly 1 sla-status-change rule, found {len(where)}: {where}")
 
-    if task_hits:
-        node, task, cond, rule = task_hits[0]
-        where = f"task {task.get('displayName')!r} entry condition"
-        if label_of(node) != "Review":
-            fail(f"the follow-up task sits in stage {label_of(node)!r}; it belongs in Review")
-        shape = f"task-entry on {task.get('displayName')!r}"
-        followups = [task]
-    else:
+    if not task_hits:
         node, cond, rule = stage_hits[0]
-        where = f"{label_of(node)} entry condition {cond.get('displayName')!r}"
         if label_of(node) != "Review":
             fail(
                 f"the sla-status-change entry sits on stage {label_of(node)!r}. A start-task "
                 "response keeps the work in the breached stage (Review) — a separate lane is "
                 "the enter-stage response, which this requirement did not ask for."
             )
-        # Stage re-entry while the reviewer keeps working must not interrupt.
-        assert_interrupting(cond, False, where)
-        shape = "stage-entry re-entry on Review"
-        followups = [t for t in tasks_of(node) if t.get("displayName") != BASELINE_TASK]
+        fail(
+            "the sla-status-change rule is a Review STAGE-entry condition "
+            f"({cond.get('displayName')!r}). A start-task response belongs on the follow-up "
+            "TASK's own entryConditions. validate accepts stage re-entry, but re-entering "
+            "Review restarts every task whose shouldRunOnlyOnce is false (the default), not "
+            "just the manager check — see references/sla-response-shapes.md section 5, defect 4."
+        )
+
+    node, task, _cond, rule = task_hits[0]
+    where = f"task {task.get('displayName')!r} entry condition"
+    if label_of(node) != "Review":
+        fail(f"the follow-up task sits in stage {label_of(node)!r}; it belongs in Review")
+    shape = f"task-entry on {task.get('displayName')!r}"
+    followups = [task]
 
     assert_sla_resolves(plan, rule, where, owner="Review")
     assert_breach_shape(rule, where)
@@ -89,11 +92,13 @@ def main() -> None:
             "the manager check should be an `action` (human) task; got "
             f"{[(t.get('displayName'), t.get('type')) for t in added]}"
         )
-    for task in actions:
-        if not (task.get("entryConditions") or []):
+    for action in actions:
+        # A condition carrying no rules is as unstartable as no condition at all.
+        if not any((c.get("rules") or []) for c in (action.get("entryConditions") or [])):
             fail(
-                f"task {task.get('displayName')!r} has no entry condition — it can never start. "
-                "validate accepts this (empty array and missing key both pass), so it is on the author."
+                f"task {action.get('displayName')!r} has no usable entry condition — it can never "
+                "start. validate accepts an empty array, a missing key, and a condition with an "
+                "empty rules list, so it is on the author."
             )
     if followups and not any(t.get("type") == "action" for t in followups):
         fail(f"the sla-status-change rule is not wired to an action task; found {followups}")

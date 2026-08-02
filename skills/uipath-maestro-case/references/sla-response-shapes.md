@@ -16,7 +16,7 @@ An SLA **clock** ([plugins/sla/impl-json.md](plugins/sla/impl-json.md)) and its 
 
 **Default:** absent a stated response, at-risk and breached are both `notify-only`. Never invent a stage, task, or routing change for a requirement that only asks to notify someone.
 
-**`start-task` vs `enter-stage` turns on WHERE the work lives — not on whether it interrupts.** Both can be non-interrupting, so "the team keeps working" does not choose between them. A named **task** ("raise a Senior Assessor Check approval") never justifies a new stage: if the target you are about to write is a task name rather than a lane the source describes in its own right, the response is `start-task` on the breached stage.
+**`start-task` vs `enter-stage` turns on WHERE the work lives — not on whether it interrupts.** `enter-stage` can itself be non-interrupting, so "the team keeps working" does not choose between them. A named **task** ("raise a Senior Assessor Check approval") never justifies a new stage: if the target you are about to write is a task name rather than a lane the source describes in its own right, the response is `start-task`, and the task goes in the breached stage.
 
 ## 2. Status rides on the escalation reference
 
@@ -31,8 +31,10 @@ Never author the Case Designer's `"any"` escalation sentinel.
 
 `sla-status-change` is legal on **task entry** and on **stage entry** (both validate — see § Verified below):
 
-- **`start-task`** — put the rule on the follow-up **task's** `entryConditions`, referencing the breached stage's own SLA. This is the direct shape: the task fires on the SLA event itself, with no stage re-entry and no re-run of the stage's other tasks.
+- **`start-task`** — put the rule on the follow-up **task's** `entryConditions`, referencing the breached stage's own SLA. The task fires on the SLA event itself: no stage re-entry, no re-run of the stage's other tasks. It is the **only** authorable `start-task` shape.
 - **`enter-stage`** — put the rule on the destination **stage's** `entryConditions`.
+
+**Never author `start-task` as a stage-entry rule on the breached stage.** `validate` accepts it, but stage re-entry restarts every task in that stage whose `shouldRunOnlyOnce` is `false` — the default for every task type — so a breach meant to add one manager check silently re-runs the whole stage. This is defect 4 in §5.
 
 Rule JSON, per-scope emit details, and post-write checks: [plugins/conditions/stage-entry-conditions/impl-json.md § sla-status-change](plugins/conditions/stage-entry-conditions/impl-json.md) (stage scope) and [plugins/conditions/task-entry-conditions/impl-json.md](plugins/conditions/task-entry-conditions/impl-json.md) (task scope).
 
@@ -41,17 +43,20 @@ Rule JSON, per-scope emit details, and post-write checks: [plugins/conditions/st
 `isInterrupting` follows what the response does to **active work**, never the SLA's scope:
 
 - `true` — the response stops, pauses, takes over, or reroutes work in flight.
-- `false` — the response runs alongside work that continues (parallel oversight), or starts a task in a stage that keeps working.
+- `false` — the response runs alongside work that continues (parallel oversight).
+
+`isInterrupting` is a property of a **stage-entry** condition, so it applies to `enter-stage` only. A `start-task` response is a task-entry rule and has no interrupting cell at all — render `—`.
 
 **A non-interrupting SLA lane is still a secondary stage.** Keep `stageType: "secondary"` and `isRequired: false`; do NOT convert it to a regular stage to satisfy "every secondary-stage entry is interrupting" — a regular stage joins the main flow and, when required, gates case completion. In `sdd.md`, the stage-level `Interrupting` field and that entry row must agree; `Yes` on the stage with `No` on its only entry row is a blocking render error.
 
-## 5. Three defects `validate` cannot see
+## 5. Four defects `validate` cannot see
 
-It passes on all three, so they are on the author:
+It passes on all four, so they are on the author:
 
 1. **A task with no entry condition never starts.** `validate` accepts `entryConditions: []` and even a missing key. Every task added for a `start-task` response carries its own entry condition (§3).
 2. **A non-interrupting lane emitted as a regular stage** (§4) — silently changes the completion contract.
-3. **`escalationId: "any"` repaired by repointing.** Removing the key is the fix; substituting a concrete escalation also turns `validate` green but converts a Breached rule into an at-risk rule — a behavior change the user never asked for.
+3. **`escalationId: "any"` repaired by repointing.** Removing the key is the fix; substituting a concrete escalation also turns `validate` green but converts a Breached rule into an at-risk rule — a behavior change the user never asked for. The same conversion happens when a correct breach rule is "completed" by adding an escalation because a checklist looked like it required one: a breach rule carrying only `slaId` is finished, not missing a field.
+4. **`start-task` authored as stage re-entry** (§3) — re-runs every `shouldRunOnlyOnce: false` task in the breached stage, not just the follow-up.
 
 ## Verified
 
@@ -60,7 +65,7 @@ Probed with `uip maestro case validate` on **uip 1.198.0-preview.102** (2026-07-
 | Shape | Result |
 |---|---|
 | breach on a separate stage (`slaId` only), `isInterrupting` `true` / `false` | valid / valid |
-| breach on the **breached stage's own** SLA, `isInterrupting` `true` / `false` | valid / valid |
+| breach as a **stage-entry** rule on the breached stage's own SLA, `isInterrupting` `true` / `false` | valid / valid — but **never author this**: it is defect 4 (§5), invisible to the CLI |
 | breach / at-risk on a **task's** `entryConditions` (stage SLA and root SLA) | valid |
 | at-risk with an escalation declared on that SLA | valid |
 | at-risk borrowing another SLA's escalation | **invalid** — "The escalation referenced by rule … no longer exists" |

@@ -182,7 +182,7 @@
       "expected_output": "Skill models global withdrawal/SLA events as interrupting secondary-stage entries, preserves explicit sequential work with runs-sequentially, and carries durable design rationale into tasks.md",
       "expectations": [
         "Withdrawal is one interrupting secondary stage entered by the supplier-portal wait-for-connector event; the skill does not repeat withdrawal tasks or exits on every primary stage",
-        "The 70% at-risk warning is an SLA escalation notification; phase/case breach work uses sla-status-change entry rules on interrupting secondary stages that reference the intended SLA and escalation rules",
+        "The 70% at-risk warning is an SLA escalation notification; phase/case breach work uses sla-status-change entry rules on interrupting secondary stages that reference the intended SLA rules (a breach references the SLA alone; only an at-risk rule also names an escalation)",
         "The explicitly ordered Supplier Setup tasks each use runs-sequentially, are not emitted as parallel current-stage-entered tasks, and are laid out as consecutive single-task data.tasks sets rather than one parallel inner array",
         "The SDD stores design rationale for stage kind/routing, task type/activation/sequencing, and SLA behavior instead of leaving the reasons only in chat",
         "tasks.md preserves the SDD rationale on the matching stage, task, condition, and SLA T-entries"

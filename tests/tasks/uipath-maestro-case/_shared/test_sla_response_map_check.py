@@ -92,14 +92,21 @@ def test_start_task_via_task_entry_needs_no_interrupting_cell():
     assert check(text) == []
 
 
-def test_start_task_via_stage_re_entry_may_say_no():
+def test_start_task_via_stage_re_entry_is_rejected():
+    """`No` implies the stage-re-entry shape, which re-runs the breached stage's tasks.
+
+    A start-task response is the follow-up task's own task-entry rule, so `—` is the
+    only legal Interrupting value. See sla-response-shapes.md section 5, defect 4.
+    """
     text = sdd(
         "| stage: Assess | Assess SLA | Breached | start-task | Assess | No | manager check, assessor keeps working |\n",
         "#### Stage Entry Conditions\n"
         "| WHEN | IF | Interrupting |\n|---|---|---|\n"
         '| sla-status-change("Assess","Assess SLA","Assess SLA Breached") | - | No |\n',
     )
-    assert check(text) == []
+    issues = check(text)
+    assert issues, "start-task with Interrupting No must be rejected"
+    assert any("start-task with Interrupting" in i for i in issues), issues
 
 
 def test_start_task_may_not_interrupt():
@@ -109,7 +116,8 @@ def test_start_task_may_not_interrupt():
         "| WHEN | IF | Interrupting |\n|---|---|---|\n"
         '| sla-status-change("Assess","Assess SLA","Assess SLA Breached") | - | Yes |\n',
     )
-    assert any("start-task with Interrupting Yes" in i for i in check(text))
+    issues = check(text)
+    assert any("start-task with Interrupting" in i for i in issues), issues
 
 
 def test_enter_stage_without_interrupting_cell_is_still_reported():

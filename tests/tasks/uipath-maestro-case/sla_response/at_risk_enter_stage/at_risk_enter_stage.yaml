@@ -7,7 +7,7 @@ description: >
   escalation fails validate ("The escalation referenced by rule ... no longer exists",
   probed on uip 1.198.0-preview.102). Also asserts the lane is secondary, isRequired false,
   interrupting, and returns via return-to-origin.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:edit, shape:multi-node, feature:sla, feature:escalation]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
 max_iterations: 1
 
 run_limits:

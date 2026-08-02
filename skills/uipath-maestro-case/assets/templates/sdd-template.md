@@ -40,7 +40,7 @@ build the case in the Case Designer without guessing.
    - `adhoc` — ad-hoc / manually triggered task entry
    - `runs-sequentially` — runs sequentially
    - `user-selected-stage` - target of an upstream `wait-for-user` exit
-   - `sla-status-change` — a referenced case/stage SLA escalation changed status (stage entry for an `enter-stage` response, task entry for `start-task`; 3 args — see the reference contract under Stage Entry Conditions)
+   - `sla-status-change` — a referenced case/stage SLA changed status (stage entry for an `enter-stage` response, task entry for `start-task`; 2 args for a breach, 3 for at-risk — see the reference contract under Stage Entry Conditions)
 
 4. **Exit conditions:** Every exit condition MUST specify:
    - **Exit Type:** `exit-only` | `return-to-origin` | `wait-for-user`
@@ -191,25 +191,25 @@ The generated SDD must start with:
 
 | Scope | SLA | Status | Response | Target | Interrupting | Rationale |
 |-------|-----|--------|----------|--------|--------------|-----------|
-| {case \| stage: `<StageName>` \| task: `<TaskName>`} | {SLA Title} | {At-Risk \| Breached} | {notify-only \| start-task \| enter-stage \| exit-stage \| exit-case} | {`—` for notify-only; stage name for start-task/enter-stage; exit row ref for exit-stage/exit-case} | {`—` for notify-only and for a task-entry start-task; Yes \| No otherwise} | {why this response fits the source} |
+| {case \| stage: `<StageName>` \| task: `<TaskName>`} | {SLA Title} | {At-Risk \| Breached} | {notify-only \| start-task \| enter-stage \| exit-stage \| exit-case} | {`—` for notify-only; task name for start-task; stage name for enter-stage; exit row ref for exit-stage/exit-case} | {`—` for notify-only and for every start-task; Yes \| No otherwise} | {why this response fits the source} |
 
 > **Choosing the `Response`** — read it off the source, never off the SLA's scope:
 >
 > | Response | Source says | Where it lands |
 > |---|---|---|
 > | `notify-only` | notify / alert / email / page someone | escalation `Action` row above — no stage, no task, no entry condition |
-> | `start-task` | follow-up work inside the **same** breached stage (reminder, reassignment, manager check, extra approval) — "as part of the review", "the reviewer keeps working and also does X" | that stage's Stage Entry Conditions row referencing **its own** SLA + the follow-up task in that stage. **No new stage.** |
+> | `start-task` | follow-up work inside the **same** breached stage (reminder, reassignment, manager check, extra approval) — "as part of the review", "the reviewer keeps working and also does X" | the follow-up task in that stage, carrying `sla-status-change` in its own **`Entry Condition:`** block against that stage's own SLA. **No new stage, and no Stage Entry Conditions row** — a stage-entry rule re-enters the stage and re-runs its other tasks. |
 > | `enter-stage` | a separate lane owns it — ownership change, "hand it to", "escalate into `<Lane>`", recovery, visible lifecycle step | the destination stage's Stage Entry Conditions row |
->
-> **`start-task` vs `enter-stage` turns on WHERE the work lives, not on whether it interrupts** — both can be `Interrupting: No`, so "the team keeps working" does not choose between them. A named **task** ("raise a Senior Assessor Check approval") never justifies a new stage: if the `Target` you are about to write is a task name rather than a lane the source describes in its own right, the response is `start-task` and the target is the breached stage.
 > | `exit-stage` | the breached stage should end, fail, or route away | that stage's Stage Exit Conditions row |
 > | `exit-case` | the case should close, cancel, fail, or reach an alternate terminal outcome | a §1.4a Case Exit Conditions row |
 >
+> **`start-task` vs `enter-stage` turns on WHERE the work lives, not on whether it interrupts** — `enter-stage` can itself be `Interrupting: No`, so "the team keeps working" does not choose between them. A named **task** ("raise a Senior Assessor Check approval") never justifies a new stage: if the `Target` you are about to write is a task name rather than a lane the source describes in its own right, the response is `start-task`, and the task goes in the breached stage.
+>
 > **Default:** absent a stated response, both statuses are `notify-only` — `Target` and `Interrupting` are `—`. Do NOT invent a stage, task, or routing change for an SLA the source only asks to notify about.
 >
-> **`Interrupting` is a separate decision from scope.** `Yes` when the response stops, pauses, takes over, or reroutes the active work; `No` when the response runs alongside it (parallel oversight). A case-scope SLA does not imply `Yes`. When the response produces a **Stage** Entry Conditions row (`enter-stage`), the value here MUST match that row's `Interrupting` cell. A **`start-task`** response is never `Yes` — it runs inside the breached stage: use `—` when the rule is the follow-up task's own entry condition (a Task Entry Condition table has no `Interrupting` column, because a task entry interrupts nothing), or `No` when it is authored as stage re-entry.
+> **`Interrupting` is a separate decision from scope.** `Yes` when the response stops, pauses, takes over, or reroutes the active work; `No` when the response runs alongside it (parallel oversight). A case-scope SLA does not imply `Yes`. When the response produces a **Stage** Entry Conditions row (`enter-stage`), the value here MUST match that row's `Interrupting` cell. A **`start-task`** response is always `—`: the rule lives in the follow-up task's own `Entry Condition:` block, which has no `Interrupting` column because a task entry interrupts nothing.
 >
-> **A row whose `Response` is not `notify-only` MUST have a matching rule elsewhere in this SDD** — a `sla-status-change` entry row, a stage-exit row, or a §1.4a case-exit row. A `start-task`/`enter-stage` row with no `sla-status-change` entry anywhere is a blocking render error, and so is an `sla-status-change` entry with no row here.
+> **A row whose `Response` is not `notify-only` MUST have a matching rule elsewhere in this SDD** — a `sla-status-change` row in a task's **`Entry Condition:`** block for `start-task`, a `sla-status-change` **Stage Entry Conditions** row for `enter-stage`, a stage-exit row, or a §1.4a case-exit row. A `start-task`/`enter-stage` row with no `sla-status-change` entry anywhere is a blocking render error, and so is an `sla-status-change` entry — task or stage scope — with no row here.
 
 ### Variable SLA Rules
 
@@ -359,7 +359,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 #### Stage Entry Conditions
 
-> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (external/global event interrupt), `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")` (case/stage SLA at-risk or breach response that enters a stage — all three args required, see the reference contract below). Other rule types from Key Rule 3 are NOT valid here.
+> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (external/global event interrupt), `sla-status-change("<SLA target>","<SLA Title>")` for a breach / `sla-status-change("<SLA target>","<SLA Title>","<At-Risk Escalation Display Name>")` for at-risk (the **`enter-stage`** SLA response — see the reference contract below). Other rule types from Key Rule 3 are NOT valid here. A `start-task` response does NOT belong in this table: it is a Task Entry Condition on the follow-up task.
 >
 > **Interrupting column:** `Yes` lets the condition fire while another stage is active and interrupt it. Use `Yes` on every secondary-stage entry row, with one carve-out: an `sla-status-change` row whose response is parallel oversight (the breached work keeps running) is `No`, and its lane still stays secondary with `Required for case completion: No`. Otherwise use `No` only for normal entry on regular stages; if the work should not interrupt and is not that SLA carve-out, it is not a secondary stage.
 >
@@ -367,13 +367,13 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 | WHEN | IF | Interrupting | Display Name |
 |------|-----|-------------|--------------|
-| {one of: `case-entered` \| `selected-stage-completed("StageName")` \| `selected-stage-exited("StageName")` \| `user-selected-stage` \| `wait-for-connector` \| `sla-status-change("<SLA target>","<SLA Title>","<Escalation Display Name>")`} | {conditionExpression, or "—" if none} | {Yes \| No} | {optional label, or "—" → defaults to `Entry Rule {N}`} |
+| {one of: `case-entered` \| `selected-stage-completed("StageName")` \| `selected-stage-exited("StageName")` \| `user-selected-stage` \| `wait-for-connector` \| `sla-status-change("<SLA target>","<SLA Title>")` \| `sla-status-change("<SLA target>","<SLA Title>","<At-Risk Escalation Display Name>")`} | {conditionExpression, or "—" if none} | {Yes \| No} | {optional label, or "—" → defaults to `Entry Rule {N}`} |
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 >
-> A global `wait-for-connector` / graph-changing `sla-status-change` entry on an interrupting secondary stage applies regardless of which primary stage is active. Do not repeat the event as a task or exit rule on every primary stage. A stage-SLA response may target the breached stage itself (`start-task`) or another stage; a non-interrupting response uses `Interrupting: No`.
+> A global `wait-for-connector` / graph-changing `sla-status-change` entry on an interrupting secondary stage applies regardless of which primary stage is active. Do not repeat the event as a task or exit rule on every primary stage. An `sla-status-change` row here is always the `enter-stage` response — it routes the case to *this* stage; a non-interrupting (parallel oversight) response uses `Interrupting: No`. A `start-task` response never appears here.
 >
-> **`sla-status-change` reference contract.** All three args required, all three declared in this SDD — the rule has no duration of its own. `<SLA target>` is `root` (case-level SLA; reserved token) or the SLA-owning stage name, and scopes both lookups to that target's tables: `<SLA Title>` is its `SLA Title` cell (or a Variable SLA Rules `Display Name`), `<Escalation Display Name>` one of its escalation `Display Name`s — whose At-Risk/Breached status picks the interrupt status, so use one row per status. Phase 1 resolves the pair to `slaId` + `escalationId`; a reference that does not resolve is a blocking error. Example: `sla-status-change("root","Application SLA","Case SLA breached")`.
+> **`sla-status-change` reference contract.** Every arg used must be declared in this SDD — the rule has no duration of its own. `<SLA target>` is `root` (case-level SLA; reserved token) or the SLA-owning stage name, and scopes the lookups to that target's tables: `<SLA Title>` is its `SLA Title` cell (or a Variable SLA Rules `Display Name`). **Arg count carries the status:** two args is a **Breached** rule — a breach references the SLA alone and needs no escalation to exist; three args is an **At-Risk** rule, where `<At-Risk Escalation Display Name>` is one of that same SLA's escalation `Display Name`s with At-Risk status. Use one row per status. Phase 1 resolves the SLA to `slaId`, and the escalation (at-risk only) to `escalationId`; a reference that does not resolve is a blocking error. Adding an escalation to a breach row silently converts it to at-risk — never do it to make a reference "complete". Examples: `sla-status-change("root","Application SLA")` (breach), `sla-status-change("root","Application SLA","Application SLA at risk")` (at-risk).
 
 #### Stage Exit Conditions
 
@@ -392,7 +392,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > Stage SLA supports the same conditional + default `slaRules[]` model as the case root. For `condition-based`, keep the default row below and add one or more Stage Variable SLA Rules before it.
 
-**Design Rationale:** {Why this target, duration, at-risk threshold, recipients, and breach behavior fit the stage requirement; name any escalation stage entered through `sla-status-change`. If the response is local to this stage (`start-task`), say so and state why it interrupts or does not.}
+**Design Rationale:** {Why this target, duration, at-risk threshold, recipients, and breach behavior fit the stage requirement; name any escalation stage entered through `sla-status-change`. If the response is local to this stage (`start-task`), say so and name the follow-up task that carries the rule — a task entry has no interrupting decision.}
 **SLA Type:** {time-based | condition-based}
 **SLA Title:** {non-empty stage-unique title, no `:`}
 
@@ -430,7 +430,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 **Entry Condition:**
 
-> **Valid WHEN rule types for task entry (strict subset of Key Rule 3):** `current-stage-entered` (fires when the containing stage is entered; use for ungated event/condition-driven tasks, not for the first task in a sequential run), `selected-tasks-completed("TaskA", "TaskB")` (explicit sibling gate, fan-in, branch convergence, or non-immediate dependency), `wait-for-connector` (waits for a connector event), `adhoc` (user-triggered from the case app — task does not auto-start; task-entry only; set `Required: No`; does not determine task type), `runs-sequentially` (sequential ordering within the stage; parallel task sets remain allowed, and the entry rule—not lane placement—carries the sequencing intent). Other rule types from Key Rule 3 are NOT valid here.
+> **Valid WHEN rule types for task entry (strict subset of Key Rule 3):** `current-stage-entered` (fires when the containing stage is entered; use for ungated event/condition-driven tasks, not for the first task in a sequential run), `selected-tasks-completed("TaskA", "TaskB")` (explicit sibling gate, fan-in, branch convergence, or non-immediate dependency), `wait-for-connector` (waits for a connector event), `adhoc` (user-triggered from the case app — task does not auto-start; task-entry only; set `Required: No`; does not determine task type), `runs-sequentially` (sequential ordering within the stage; parallel task sets remain allowed, and the entry rule—not lane placement—carries the sequencing intent), `sla-status-change("<SLA target>","<SLA Title>")` for a breach / `sla-status-change("<SLA target>","<SLA Title>","<At-Risk Escalation Display Name>")` for at-risk (the **`start-task` SLA response** — this task fires on the SLA event itself; reference the containing stage's own SLA, or `root` for a case-scoped response). Other rule types from Key Rule 3 are NOT valid here.
 >
 > Each row is a separate entry condition. List multiple rows when a task can be entered through more than one path. Author a `current-stage-entered` row for any ungated task — including connector tasks (`execute-connector-activity`, `wait-for-connector`) — that should start when its stage is entered.
 >
@@ -438,7 +438,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| {one of: `current-stage-entered` \| `selected-tasks-completed("TaskA", "TaskB")` \| `wait-for-connector` \| `adhoc` \| `runs-sequentially`} | {conditionExpression, or "—" if none} | {optional label, or "—" → defaults to `Entry Rule {N}`} |
+| {one of: `current-stage-entered` \| `selected-tasks-completed("TaskA", "TaskB")` \| `wait-for-connector` \| `adhoc` \| `runs-sequentially` \| `sla-status-change("<SLA target>","<SLA Title>")` \| `sla-status-change("<SLA target>","<SLA Title>","<At-Risk Escalation Display Name>")`} | {conditionExpression, or "—" if none} | {optional label, or "—" → defaults to `Entry Rule {N}`} |
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 

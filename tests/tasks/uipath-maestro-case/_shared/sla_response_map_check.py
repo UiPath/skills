@@ -9,7 +9,9 @@ Rules enforced here:
 1. The section exists, with all seven columns, whenever any SLA is configured.
 2. Every `Response` comes from the closed set.
 3. `notify-only` rows carry no target and no interrupting decision (`—`).
-4. Non-`notify-only` rows name a target and an explicit `Yes`/`No`.
+4. Non-`notify-only` rows name a target. `enter-stage` / `exit-*` rows carry an explicit
+   `Yes`/`No`; `start-task` rows carry `—`, because they are task-entry rules and a task
+   entry interrupts nothing.
 5. Closure both ways — a `start-task` / `enter-stage` row has a matching `sla-status-change`
    entry in the SDD, and every `sla-status-change` entry has a map row.
 6. The map's `Interrupting` cell agrees with the `Interrupting` cell of the Stage Entry
@@ -138,13 +140,18 @@ def check(text: str) -> list[str]:
             issues.append(f"SLA Response Map row [{label}] is {response} but names no Target")
         interrupting = row.get("interrupting", "").strip().casefold()
         if response == "start-task":
-            # A start-task response authored as a task-entry rule interrupts nothing, so `—`
-            # is correct; `No` is correct when it is authored as stage re-entry. `Yes` never is.
-            if interrupting == "yes":
+            # A start-task response is a TASK-entry rule, and a task entry interrupts
+            # nothing — so `—` is the only legal value. `No` is not: it implies the
+            # stage-re-entry shape, which re-runs every task in the breached stage whose
+            # shouldRunOnlyOnce is false (the default). See skills/uipath-maestro-case/
+            # references/sla-response-shapes.md section 5, defect 4.
+            if not _is_dash(row.get("interrupting", "")):
                 issues.append(
-                    f"SLA Response Map row [{label}] is start-task with Interrupting Yes; the "
-                    "follow-up work runs inside the breached stage, so it cannot interrupt it "
-                    "(use `—` for a task-entry rule, `No` for stage re-entry)"
+                    f"SLA Response Map row [{label}] is start-task with Interrupting "
+                    f"{row.get('interrupting')!r}; a start-task response is the follow-up "
+                    "task's own task-entry rule, which has no interrupting cell — use `—`. "
+                    "(`No` would imply stage re-entry, which re-runs the breached stage's "
+                    "other tasks.)"
                 )
         elif interrupting not in {"yes", "no"}:
             issues.append(

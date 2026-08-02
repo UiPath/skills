@@ -3,8 +3,9 @@ description: >
   T6 of the SLA-response battery — the SDD-layer contract, graded on sdd.md with no build.
   Three SLA statements in one requirement must land as three different responses in the SLA
   Response Map: an email-only SLA stays notify-only on both statuses, a breach that raises
-  local follow-up work is start-task targeting the breached stage with Interrupting No, and
-  a case breach that hands the case over is enter-stage with Interrupting Yes. Also enforces
+  local follow-up work is start-task targeting the follow-up TASK with Interrupting `—`
+  (it is that task's own task-entry rule, so it interrupts nothing), and a case breach that
+  hands the case over is enter-stage with Interrupting Yes. Also enforces
   closure both ways (every graph response has an sla-status-change entry and vice versa) and
   that the map's Interrupting cell matches the Stage Entry Conditions row it produces —
   the guard against defaulting every SLA lane to interrupting.
@@ -51,7 +52,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The SLA Response Map is present, closed both ways, consistent with the Stage Entry Conditions Interrupting cells, and assigns notify-only / start-task (Assess, non-interrupting) / enter-stage (interrupting) to the three stated SLAs"
+    description: "The SLA Response Map is present, closed both ways, consistent with the Stage Entry Conditions Interrupting cells, and assigns notify-only / start-task (targets the follow-up task, Interrupting —) / enter-stage (interrupting) to the three stated SLAs"
     command: "python3 $TASK_DIR/check_sdd_response_map.py"
     timeout: 60
     expected_exit_code: 0

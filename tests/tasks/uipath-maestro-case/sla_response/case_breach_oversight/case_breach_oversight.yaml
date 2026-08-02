@@ -8,7 +8,7 @@ description: >
   would make it required for case completion. validate accepts either isInterrupting value
   on an sla-status-change entry (probed on uip 1.198.0-preview.102), so the requirement's
   wording is the only thing that decides it.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:edit, shape:multi-node, feature:sla, feature:escalation]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
 max_iterations: 1
 
 run_limits:

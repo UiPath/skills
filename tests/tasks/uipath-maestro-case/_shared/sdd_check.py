@@ -47,7 +47,11 @@ STAGE_ENTRY = {"case-entered", "selected-stage-completed", "selected-stage-exite
 STAGE_COMPLETION = {"required-tasks-completed", "wait-for-connector"}   # Marks: Yes
 STAGE_EXIT = {"selected-tasks-completed", "wait-for-connector"}          # Marks: No
 TASK_ENTRY = {"current-stage-entered", "selected-tasks-completed",
-              "wait-for-connector", "adhoc", "runs-sequentially"}
+              "wait-for-connector", "adhoc", "runs-sequentially",
+              # the `start-task` SLA response; CLI-verified valid on task entry
+              # (uip 1.198.0-preview.102). See skills/uipath-maestro-case/
+              # references/sla-response-shapes.md section 3.
+              "sla-status-change"}
 CASE_COMPLETION = {"required-stages-completed", "wait-for-connector"}    # Marks: Yes
 CASE_EXIT = {"selected-stage-completed", "selected-stage-exited",
              "wait-for-connector"}                                       # Marks: No

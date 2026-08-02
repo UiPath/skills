@@ -157,7 +157,7 @@ After re-entry:
 
 1. **Connector task detail** — for each connector task in `tasks.md`, run plugin's `impl-json.md` detail steps: `case spec --type {activity,trigger} --input-details`, then mint `data.context[]` / `data.inputs[]` / `data.outputs[]` from the populated `caseShape` (placeholder substitution + var/id minting).
 2. **Task I/O value binding (all task classes)** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Applies to both non-connector and connector tasks. For each task's inputs in `tasks.md` order, write literal, expression, or cross-task reference (resolved to `=vars.<outputReferenceId>` through the common `.id`-based resolver) into `task.data.inputs[i].value`. Connector tasks have `data.inputs[]` schema written in step 1; value binding happens here in step 2, same as non-connector tasks.
-3. **SLA/escalation ID preallocation** — Step 9.9 allocates every `sla_`/`esc_` ID in `id-map.json` before conditions. This lets `sla-status-change` stage-entry rules reference the exact SLA + escalation objects that Step 11 emits.
+3. **SLA/escalation ID preallocation** — Step 9.9 allocates every `sla_`/`esc_` ID in `id-map.json` before conditions. This lets `sla-status-change` rules — stage entry (`enter-stage`) or task entry (`start-task`) — reference the exact SLA object, plus the escalation object for an at-risk rule, that Step 11 emits.
 4. **Conditions** — per-scope plugin `impl-json.md`:
    - Stage entry conditions
    - Stage exit conditions

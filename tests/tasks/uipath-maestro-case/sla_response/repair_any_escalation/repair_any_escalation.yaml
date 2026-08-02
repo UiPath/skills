@@ -7,7 +7,7 @@ description: >
   uip 1.198.0-preview.102). The correct repair is to drop the key, because a breach rule
   references the SLA alone. The tempting wrong repair — inventing an escalation so the
   reference resolves — also turns validate green, so the checker fails it explicitly.
-tags: [uipath-maestro-case, smoke, mode:diagnose, lifecycle:edit, shape:multi-node, feature:sla, feature:escalation]
+tags: [uipath-maestro-case, smoke, mode:diagnose, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
 max_iterations: 1
 
 run_limits:

@@ -3,7 +3,10 @@
 The battery grades how an SLA requirement is *shaped* in ``caseplan.json``:
 
 - ``notify-only``  — escalation only; no stage, no task, no entry condition.
-- ``start-task``   — the breached stage carries an ``sla-status-change`` entry on **its own** SLA.
+- ``start-task``   — a follow-up task in the breached stage carries an ``sla-status-change``
+  rule on **its own** ``entryConditions``, against that stage's own SLA. Never a stage-entry
+  row on the breached stage: that re-enters the stage and re-runs every task whose
+  ``shouldRunOnlyOnce`` is false (the default).
 - ``enter-stage``  — a separate stage carries the entry.
 
 and the two persisted status shapes, both CLI-verified on ``uip 1.198.0-preview.102``:

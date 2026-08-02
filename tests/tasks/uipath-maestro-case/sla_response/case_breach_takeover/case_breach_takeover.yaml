@@ -8,7 +8,7 @@ description: >
   pre-PR guidance demanded both IDs resolve, which forced authors to invent a Breached
   escalation the requirement never asked for. Also asserts exit-only plus a root case-exit
   row with marksCaseComplete false, with normal completion left intact.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:edit, shape:multi-node, feature:sla, feature:escalation]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
 max_iterations: 1
 
 run_limits:

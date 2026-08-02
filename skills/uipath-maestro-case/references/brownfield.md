@@ -83,8 +83,8 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 An SLA clock and its **response** are separate edits. Pick the response, the status shape, and the interrupting value per [sla-response-shapes.md](sla-response-shapes.md) — that file is the contract; this section only says what it means for an edit.
 
 - **Do not widen the edit.** A requirement that only asks to notify someone is `notify-only`: add an escalation to the target's `slaRules[].escalationRule` ([plugins/sla/impl-json.md](plugins/sla/impl-json.md)) and stop. No stage, no task, no condition.
-- **`start-task` adds a task, not a lane** ([sla-response-shapes.md § 1](sla-response-shapes.md#1-pick-the-response)): the follow-up task goes in the breached stage with the `sla-status-change` rule as its **own** entry condition.
-- **Three defects `validate` accepts** — re-read [§ 5](sla-response-shapes.md#5-three-defects-validate-cannot-see) before you finish: a task with no entry condition, a non-interrupting lane demoted to a regular stage, and an `escalationId: "any"` "repaired" by repointing instead of deleting.
+- **`start-task` adds a task, not a lane** ([sla-response-shapes.md § 1](sla-response-shapes.md#1-pick-the-response)): the follow-up task goes in the breached stage with the `sla-status-change` rule as its **own task-entry** condition — never as a stage-entry row on the breached stage, which re-runs that stage's other tasks.
+- **Four defects `validate` accepts** — re-read [§ 5](sla-response-shapes.md#5-four-defects-validate-cannot-see) before you finish: a task with no entry condition, a non-interrupting lane demoted to a regular stage, an `escalationId: "any"` "repaired" by repointing instead of deleting, and a `start-task` authored as stage re-entry.
 - **`validate` passing is not evidence the response is right.** Every defect above validates clean.
 
 ## After edits

@@ -1,17 +1,16 @@
 task_id: skill-case-sla-start-task-same-stage
 description: >
   T2 of the SLA-response battery. A stage-SLA breach whose response is local follow-up work
-  takes the `start-task` shape: the breached stage carries the `sla-status-change` entry on
-  its OWN SLA, non-interrupting, and the follow-up action task lives in that stage. Asserts
-  the entry sits on Review (not a separate lane), its slaId resolves to Review's own
-  slaRules and carries NO escalationId — an absent escalationId is the persisted
-  representation of Breached. Accepts either CLI-verified activation (uip
-  1.198.0-preview.102): the rule on the follow-up task's own entryConditions (direct — no
-  stage re-entry), or on Review's entryConditions with isInterrupting false (re-entry, and
-  the reviewer keeps working so it must not interrupt). Rejects the enter-stage answer —
-  putting the work in a separate lane — and a task with no entry condition, which validate
-  accepts but the runtime never triggers.
-tags: [uipath-maestro-case, smoke, mode:build, lifecycle:edit, shape:multi-node, feature:sla, feature:escalation, feature:approval-gate]
+  takes the `start-task` shape: the follow-up action task lives in the breached stage and
+  carries the `sla-status-change` rule on its OWN task entryConditions, against that
+  stage's own SLA. Asserts the rule sits on a task in Review, its slaId resolves to
+  Review's own slaRules, and it carries NO escalationId — an absent escalationId is the
+  persisted representation of Breached. Rejects three wrong answers, two of which pass
+  `uip maestro case validate` (verified on uip 1.198.0-preview.102): the `enter-stage`
+  answer (work in a separate lane); the rule authored as a Review STAGE-entry row, which
+  re-enters Review and re-runs every task whose shouldRunOnlyOnce is false — the default;
+  and a task with no entry condition, which the runtime never triggers.
+tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:approval-gate]
 max_iterations: 1
 
 run_limits:
@@ -53,7 +52,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Review carries the sla-status-change entry on its own SLA with isInterrupting false and no escalationId (breach shape), the Manager Check action task lives in Review, and no extra stage was minted"
+    description: "The Manager Check action task lives in Review and carries the sla-status-change rule on its own task entry, against Review's own SLA with no escalationId (breach shape); no Review stage-entry row was added and no extra stage was minted"
     command: "python3 $TASK_DIR/check_start_task_same_stage.py"
     timeout: 60
     expected_exit_code: 0
