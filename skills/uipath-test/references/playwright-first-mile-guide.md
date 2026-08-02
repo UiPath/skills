@@ -24,14 +24,11 @@ The key difference from the RPA pipeline: there is **no link step**. Uploading t
 
 > **Do NOT run `uip tm testcases link-automation` on Playwright test cases.** They are linked by ingestion; manual linking is the RPA pipeline and will corrupt the association.
 
-> **Availability gate — check this first.** The external-package commands are newer than most installed CLIs. Run `uip tm pack --help --output json`: if it exposes no `--type` option, this pipeline is not available on this CLI — tell the user and stop rather than improvising. Step 5's probe is optional: if `testsets playwright-context` answers `unknown command`, skip it and carry on — its absence says nothing about project scoping. Only if `run --playwright-projects` itself is rejected (`unknown option`) is scoping unavailable in this build; then run the test set without it rather than retrying.
+> **If a command is missing.** The probe in Step 5 is optional — if `testsets playwright-context` answers `unknown command`, skip it and carry on; its absence says nothing about project scoping. Only if `run --playwright-projects` itself is rejected (`unknown option`) is scoping unavailable in that build; run the test set without it rather than retrying.
 
 ## Prerequisites
 
-- A recent `@uipath/cli` — this flow's commands (`tm pack --type playwright`, `testcases add --labels`, `testsets playwright-context`, `run --playwright-projects`) do not exist on older CLIs and have no pre-rename fallback. If `uip tm pack --help` does not show `--type`, upgrade the CLI before anything else.
-- Logged in: `uip login status --output json`. If not, `uip login`.
 - A Test Manager project to land the test cases in: `uip tm project list --filter <name> --output json`, or `uip tm project create --name <NAME> --project-key <PROJECT_KEY> --output json`. Capture the project key.
-- Trust `Status: "Logged in"` from `uip login status` — its `ExpirationDate` can read stale while calls succeed; if calls do 401, `uip login refresh`.
 - The tenant's Test Manager must have Playwright support enabled (a server-side feature flag). If ingestion never produces test cases (Step 3), this is the first thing to suspect — stop and ask the user.
 - The Playwright project directory must contain:
   - `package.json` with `@playwright/test` installed (discovery shells out to the project's own `playwright test --list`; no browsers needed),
@@ -57,7 +54,13 @@ uip tm pack --project-path <dir> --type playwright \
 uip or packages upload "<out-dir>/<PackageName>.1.0.0.nupkg" --output json
 ```
 
-Each re-upload needs a **new `--package-version`** at pack time — Orchestrator feeds reject an existing version.
+`--package-version` is a NuGet/SemVer-style version: three numeric parts with an optional prerelease suffix (`1.0.0`, `1.0.1-beta.1`) — `1.0` is rejected. Each upload needs a version the feed does not already have, so before re-packing check what is published and go above it:
+
+```bash
+uip or packages list --search <PackageName> --output json
+```
+
+`Version` plus `IsLatestVersion` on the returned rows tell you the highest one in the feed.
 
 ## Step 3 — Wait for ingestion
 
@@ -67,12 +70,12 @@ Ingestion is asynchronous and automatic. Poll until the auto-created test cases 
 uip tm testcases list --project-key <PROJECT_KEY> --output json
 ```
 
-- Poll **unfiltered** and count. Do NOT pass `--filter <PackageName>` — the auto-created test case *names* are `"<suite> > <test title>"`; the package name appears only in the description, which `--filter` does not search, so a package-name filter stays empty forever and reads as a false "ingestion never happened".
-- In a project that already holds test cases, take a **baseline count before Step 2** and wait for it to grow by `TestCount` — an absolute count can look satisfied by pre-existing rows (or time out on a large paginated list). New rows are also recognizable by their `"<suite> > <title>"` names and package description.
-- Expect exactly `TestCount` new test cases (from Step 1), typically within 1–2 minutes. `TestCount` is one per Playwright **test**, NOT multiplied by the number of Playwright projects (2 tests × 2 projects → 2 test cases).
-- Ingested test cases show `IsAutomated: false` in list output — that is normal and does not mean ingestion failed; the package linkage is real (their execution logs carry `HasLinkedAutomation: true` and Orchestrator job keys).
-- Poll every ~10 seconds, up to ~3 minutes. If nothing appears by then, STOP and report — the likely causes are the Playwright feature flag being off for the tenant or a wrong `--project-key`; both need the user, not retries.
-- Spot-check the labels landed: `uip tm objectlabel list --project-key <PROJECT_KEY> --object-type TestCase --filter PW_ --output json` (returns distinct label *names* only — enough to confirm ingestion labeled things, not which test case carries which label).
+- Poll **unfiltered**. Do NOT pass `--filter <PackageName>` — the auto-created test case *names* are `"<suite> > <test title>"` and the package name appears only in the description, which `--filter` does not search, so a package-name filter stays empty forever and reads as a false "ingestion never happened".
+- Ingestion is done when the project contains a test case for **each test in the package**. Get that list from the pack step's own output (`--dry-run` prints it, and the packaged `testCases.json` holds it) and match on the test case `Name`, which is exactly `"<suite> > <test title>"`. Matching by name works whether the project was empty or already held test cases, and whether this is a first upload or a re-upload.
+- `TestCount` from Step 1 is one test case per Playwright **test** — it is not multiplied by the number of Playwright projects (2 tests × 2 projects → 2 test cases).
+- Ingested test cases show `IsAutomated: false` in list output; that is normal and does not mean ingestion failed.
+- Poll every ~10 seconds for up to ~3 minutes. If the expected names never appear, STOP and report — the likely causes are the Playwright feature flag being off for the tenant or a wrong `--project-key`, and neither is fixed by retrying.
+- Spot-check the labels landed: `uip tm objectlabel list --project-key <PROJECT_KEY> --object-type TestCase --filter PW_ --output json` (returns distinct label *names* only).
 
 ## Step 4 — Set the default folder, create a test set, fill it by label
 

@@ -86,7 +86,7 @@ Common `uip tm` commands organized by resource type.
 | `uip tm testcases steps delete --project-key <PROJECT_KEY> --step-id <UUID> --yes` | Delete a step. |
 | `uip tm testcases list-result-history --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List test case log result history for a specific test case. Optional `--only-failed`, `--filter`, `--limit`, `--offset`. |
 | `uip tm testcases run --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID> --name <EXECUTION_NAME> --execution-type <manual\|automated\|none\|mixed>` | Start a new execution for one or more test cases. **Uses `--test-case-id <UUID>` (space-separated for multiple).** Optional `--async`, `--folder-key`, `--robot-user-key`, `--machine-key`. |
-| `uip tm testcases add --test-set-key <TEST_SET_KEY> (--test-case-keys <KEY...> \| --labels <name...>)` | Add test cases to a test set — by explicit keys, OR every test case carrying at least one of the given labels. Both selectors are variadic and space-separated (comma-separated keys still accepted; quote label names containing spaces). Label matching is OR, exact and case-sensitive. The two selectors are mutually exclusive. |
+| `uip tm testcases add --test-set-key <TEST_SET_KEY> (--test-case-keys <KEY...> \| --labels <name...>)` | Add test cases to a test set — by explicit keys, OR every test case carrying at least one of the given labels. Both selectors are variadic and space-separated — `--test-case-keys DEMO:1 DEMO:2` (comma-separated `DEMO:1,DEMO:2` still accepted), `--labels PW_Tag_smoke "PW_Suite_Checkout flow"` (quote names containing spaces). Label matching is OR, exact and case-sensitive. The two selectors are mutually exclusive. |
 | `uip tm testcases remove --test-set-key <TEST_SET_KEY> --test-case-keys <KEY1,KEY2,...>` | Remove test cases from a test set (comma-separated keys). |
 
 > **Flag shapes for test case and step identifiers — do not interchange:**
@@ -164,7 +164,7 @@ Common `uip tm` commands organized by resource type.
 
 | Command | Purpose |
 |---|---|
-| `uip tm pack --project-path <dir> --type playwright --project-key <PROJECT_KEY> --name <PackageName> --package-version <ver> -o <out-dir>` | Pack a Playwright suite into a `.nupkg` external test package. Requires a lockfile and `@playwright/test` in the project. `--project-key` targets the Test Manager project where ingestion auto-creates the test cases; `--no-create-test-cases` skips that; `--dry-run` previews. Upload with `uip or packages upload <nupkg>`. |
+| `uip tm pack --project-path <dir> --type playwright --project-key <PROJECT_KEY> --name <PackageName> --package-version <ver> -o <out-dir>` | Pack a Playwright suite into a `.nupkg` external test package. Requires a lockfile and `@playwright/test` in the project. `--package-version` takes a NuGet/SemVer-style version — three numeric parts, optional prerelease suffix (`1.0.0`, `1.0.1-beta.1`); `1.0` or a non-numeric string is rejected. `--project-key` targets the Test Manager project where ingestion auto-creates the test cases; `--no-create-test-cases` skips that; `--dry-run` previews. Upload with `uip or packages upload <nupkg>`. |
 
 > Packing is offline — no auth needed. The upload → ingestion → label-fill → run pipeline is in [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
 
