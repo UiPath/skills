@@ -24,6 +24,8 @@ The key difference from the RPA pipeline: there is **no link step**. Uploading t
 
 > **Do NOT run `uip tm testcases link-automation` on Playwright test cases.** They are linked by ingestion; manual linking is the RPA pipeline and will corrupt the association.
 
+> **Reading command output.** `--output json` prints a JSON envelope, but not on its own line: auto-updater chatter (including `Update completed with failures.`, which is unrelated to your command), `Resolved project …` progress lines and trailing telemetry warnings share the same stream. Judge a command by the `Result` field inside the envelope, never by surrounding text, and extract from the first `{` before parsing.
+
 > **If a command is missing.** Two commands in this pipeline are hidden from `--help`, so `--help` is not a reliable way to tell whether a build has them: `testsets playwright-context` (Step 5) and `run --playwright-projects` (Step 6). Older CLIs answer `unknown command` / `unknown option` for them. Treat them differently:
 >
 > - **Probe missing** → skip Step 5 and continue. The probe only *reports* whether a test set is Playwright; it does not enable anything, so losing it costs you the pre-check, not the capability. Project scoping still works.
@@ -74,6 +76,7 @@ uip tm testcases list --project-key <PROJECT_KEY> --output json
 ```
 
 - Poll **unfiltered**. Do NOT pass `--filter <PackageName>` — `--filter` matches a test case's name or key by **prefix** (see SKILL.md Rule 9), and an ingested test case is named `"<suite> > <test title>"`, so a package name never matches: the call stays empty forever and reads as a false "ingestion never happened".
+- The rows carry `TestCaseKey` (e.g. `SHIP:1`) plus `Id` (the UUID) and `Name` — count `TestCaseKey`, not `Id`, when polling.
 - Ingestion is done when `TestCount` new test cases from Step 1 are present, each named `"<suite> > <test title>"`. A plain `pack` prints only `Package`, `Output` and `TestCount` — if you want the exact expected names up front, run `--dry-run` first or read `testCases.json` inside the `.nupkg`; otherwise match on the count plus that name shape.
 - `TestCount` from Step 1 is one test case per Playwright **test** — it is not multiplied by the number of Playwright projects (2 tests × 2 projects → 2 test cases).
 - Ingested test cases show `IsAutomated: false` in list output; that is normal and does not mean ingestion failed.
@@ -160,10 +163,9 @@ Omit `--playwright-projects` entirely for a plain run (all config-default projec
 
 - `--wait` on the run blocks until terminal; without it, use `uip tm wait --execution-id <EXECUTION_ID> --output json`.
 - Summary: `uip tm report get --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json` (`--project-key` or `--test-set-key` is required — bare `--execution-id` exits with "Provide --project-key or --test-set-key").
-- Per-test detail: `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json`.
-- JUnit export: `uip tm result download --execution-id <EXECUTION_ID> --result-path <dir> --output json`.
-- When parsing any of these programmatically, extract the JSON object rather than piping raw stdout: progress lines (`Resolved project …`), auto-updater output and telemetry warnings can precede or follow the envelope.
-- **Proving the run was scoped as asked:** `uip tm executions get-stats --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json` returns a `PlaywrightExecutionSnapshot` whose `Projects` is the project list the run actually used (`["chromium"]`). Counting logs proves nothing here — there is one test case log per Playwright **test**, not per test × project, so a two-project run yields the same number of logs as a one-project run.
+- Per-test detail: `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json`. Judge pass/fail by `Result` (`Passed` / `Failed` / `None`) — a failed test still reports `HasError: false`, so that field is not the outcome.
+- JUnit export: `uip tm result download --execution-id <EXECUTION_ID> --result-path <dir> --output json` — counts only for Playwright: the XML names every case after the spec file, not the test title, so use `testcaselogs list` when you need to know *which* test failed.
+- **Proving the run was scoped as asked:** `uip tm executions get-stats --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json` returns a `PlaywrightExecutionSnapshot` whose `Projects` is the project list the run actually used (`["chromium"]`). Read only `Projects` from it — its `Version` is two-component (`1.0`), like `list-automations` and `playwright-context`, so none of the three can tell 1.0.1 from 1.0.0; `TestCaseVersion` on the logs is the only field that can. Counting logs proves nothing here — there is one test case log per Playwright **test**, not per test × project, so a two-project run yields the same number of logs as a one-project run.
 
 Execution happens on UiPath serverless cloud runtimes — no robot or package deployment into the folder is needed beyond the upload in Step 2, but the folder does need its serverless machine assignment (Step 4).
 
