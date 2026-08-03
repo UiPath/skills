@@ -152,6 +152,7 @@ Every row must have Category.
 **Purpose:** The case plan. Every stage has entry/exit conditions, optional SLA, and complete task detail blocks. Case has no BPMN-style edges; transitions are expressed by stage entry/exit conditions.
 
 **Authoring rules:**
+- Render every `<UNRESOLVED>` marker as plain text, exactly `<UNRESOLVED>` — never backtick-wrapped, never annotated inside the cell. Build-phase checkers and Phase 1 discovery match the plain marker.
 - Primary stages use `### Stage {N}: {Stage Name}` and omit `Stage Kind` when the default is primary.
 - Secondary stages use `### Secondary Stage: {Stage Name}`, set `Stage Kind: secondary`, and every entry row uses `Interrupting: Yes`.
 - Every stage and task must have a concrete `Design Rationale` and prose `Description`.
@@ -227,9 +228,9 @@ Every row must have Category.
 
 ###### Action Task Detail (type: `action`)
 
-**HITL Implementation:** Action App: <concrete intended deploymentTitle; never `<UNRESOLVED>`>
-**Action App ID:** <actionAppId or `<UNRESOLVED>`>
-**Deployment Folder:** <folder path or `<UNRESOLVED>`>
+**HITL Implementation:** Action App: <concrete intended deploymentTitle; never <UNRESOLVED>>
+**Action App ID:** <actionAppId or <UNRESOLVED>>
+**Deployment Folder:** <folder path or <UNRESOLVED>>
 **actionType:** <dispatch code or —>
 **Recipient:** <Role:name \| User:uuid \| UserGroup:uuid \| Email:addr \| Expression:=vars.id>
 **Priority:** <Low \| Medium \| High \| Critical> · **Task Title:** <one-line Action Center prompt> · **Labels:** <csv or —>
@@ -256,8 +257,8 @@ Every row must have Category.
 ###### Connector Task Detail (type: `wait-for-connector` or `execute-connector-activity`)
 
 **Connector:** <connector name> · **Connector Key:** <connectorKey>
-**Connection:** <connection instance name or Tenant default> · **Connection ID:** <connectionId or `<UNRESOLVED>`>
-**Activity Type ID:** <activityTypeId or `<UNRESOLVED>`> · **Service Type:** <Intsvc.WaitForEvent \| Intsvc.ExecuteActivity>
+**Connection:** <connection instance name or Tenant default> · **Connection ID:** <connectionId or <UNRESOLVED>>
+**Activity Type ID:** <activityTypeId or <UNRESOLVED>> · **Service Type:** <Intsvc.WaitForEvent \| Intsvc.ExecuteActivity>
 **Auth Method:** <OAuth2 \| API Key \| Basic \| Service Account \| ...>
 **Account / Endpoint:** <explicit endpoint or —>
 **Operation:** <display/operation name>
@@ -283,9 +284,9 @@ Every row must have Category.
 
 ###### Child Case Task Detail (type: `case-management`)
 
-**Child Case:** <concrete intended child-case resource name; never `<UNRESOLVED>`>
-**Folder Path:** <folder path or `<UNRESOLVED>`>
-**Resource Identity:** <entityKey or `<UNRESOLVED>`>
+**Child Case:** <concrete intended child-case resource name; never <UNRESOLVED>>
+**Folder Path:** <folder path or <UNRESOLVED>>
+**Resource Identity:** <entityKey or <UNRESOLVED>>
 **Data Passed (parent -> child):**
 
 | Parent Variable | Child Variable |
@@ -302,9 +303,9 @@ Every row must have Category.
 
 ###### Process / Agent / RPA / API Workflow Task Detail
 
-**Resolved Resource:** <concrete intended resource name; never `<UNRESOLVED>`>
-**Folder Path:** <resolved exact folder path or `<UNRESOLVED>`>
-**Resource Identity:** <apiWorkflowId / agentId / processOrchestrationId (+version) or `<UNRESOLVED>`>
+**Resolved Resource:** <concrete intended resource name; never <UNRESOLVED>>
+**Folder Path:** <resolved exact folder path or <UNRESOLVED>>
+**Resource Identity:** <apiWorkflowId / agentId / processOrchestrationId (+version) or <UNRESOLVED>>
 **Binding Sub-Type:** <Api \| Agent \| ProcessOrchestration \| —>
 **Dispatch / Operation:** <selector and value for shared facades, or —>
 
@@ -356,7 +357,7 @@ Every row must have Category.
 
 ## Section 4: Integrations
 
-**Purpose:** Complete inventory of intended or deployed resources and external systems the case binds. Portable names must be concrete; identifiers/folders are concrete when resolved and `<UNRESOLVED>` only when paired with a high review item.
+**Purpose:** Complete inventory of intended or deployed resources and external systems the case binds. Portable names must be concrete; identifiers/folders are concrete when resolved and <UNRESOLVED> only when paired with a high review item.
 
 ### Integration Service Connectors
 
@@ -370,31 +371,31 @@ Every row must have Category.
 
 | Operation | Activity Type ID | Method | Input Fields | Output Fields |
 |-----------|------------------|--------|-------------|---------------|
-| <operation name> | <activityTypeId or `<UNRESOLVED>`> | <GET \| POST \| PUT \| DELETE \| PATCH \| EVENT> | <field: type, ...> | <field: type, ...> |
+| <operation name> | <activityTypeId or <UNRESOLVED>> | <GET \| POST \| PUT \| DELETE \| PATCH \| EVENT> | <field: type, ...> | <field: type, ...> |
 
 ### API Workflows
 
 | Workflow | Folder | Resource ID (+version) | Inputs → Outputs | Used By Tasks |
 |----------|--------|------------------------|------------------|---------------|
-| <workflow name> | <folder path or `<UNRESOLVED>`> | <apiWorkflowId (+version) or `<UNRESOLVED>`> | <in fields → out fields> | <task names> |
+| <workflow name> | <folder path or <UNRESOLVED>> | <apiWorkflowId (+version) or <UNRESOLVED>> | <in fields → out fields> | <task names> |
 
 ### Agents
 
 | Agent | Folder | Resource ID (+version) | Inputs → Outputs (or shared contract) | Used By Tasks |
 |-------|--------|------------------------|----------------------------------------|---------------|
-| <agent name> | <folder path or `<UNRESOLVED>`> | <agentId (+version) or `<UNRESOLVED>`> | <contract> | <task names> |
+| <agent name> | <folder path or <UNRESOLVED>> | <agentId (+version) or <UNRESOLVED>> | <contract> | <task names> |
 
 ### Processes & RPA
 
 | Resource | Type | Folder | Resource ID (+version) | Used By Tasks |
 |----------|------|--------|------------------------|---------------|
-| <resource name> | <process \| rpa> | <folder path or `<UNRESOLVED>`> | <processOrchestrationId (+version) or `<UNRESOLVED>`> | <task names> |
+| <resource name> | <process \| rpa> | <folder path or <UNRESOLVED>> | <processOrchestrationId (+version) or <UNRESOLVED>> | <task names> |
 
 ### Child Cases
 
 | Child Case | Folder | Resource ID | Identifier Prefix | Wait for Completion | Used By Tasks |
 |------------|--------|-------------|-------------------|---------------------|---------------|
-| <child case name> | <folder path or `<UNRESOLVED>`> | <entityKey or `<UNRESOLVED>`> | <2-4 char prefix> | <Yes \| No> | <task names> |
+| <child case name> | <folder path or <UNRESOLVED>> | <entityKey or <UNRESOLVED>> | <2-4 char prefix> | <Yes \| No> | <task names> |
 
 ### External Agents
 

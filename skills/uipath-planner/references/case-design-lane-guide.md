@@ -6,7 +6,9 @@ Product-specific conversational design lane for **Case Management**. This lane m
 
 ## Read budget
 
-Read this file, [case-authoring-rules-guide.md](case-authoring-rules-guide.md) (the mental model + task-type reasoning the assumptions rely on), and [`case-sdd-template.md`](../assets/templates/case-sdd-template.md) to begin — in parallel. Do NOT read the generic Phase D references (pdd-analysis, product-selection levels beyond the Constraint Gate) for a conversational case request — scope is already decided. **Draft finalization budget:** read only the draft, this file's §Resumption + §Template conformance gate, and the template; write the final SDD directly after the gate — no subagents, no tenant discovery unless identities are needed and a session exists.
+Read this file, [case-authoring-rules-guide.md](case-authoring-rules-guide.md) (the mental model + task-type reasoning the assumptions rely on), and [`case-sdd-template.md`](../assets/templates/case-sdd-template.md) to begin — in parallel, each **at most once per session**. Do NOT read the generic Phase D references (pdd-analysis, product-selection levels beyond the Constraint Gate) for a conversational case request — scope is already decided. Reference paths resolve relative to this skill's base directory (given at invocation) — never hunt for them with `find` / global `ls`.
+
+**Draft finalization budget (hard):** read this file's finalize sections (§Resumption, §Terminal step, §Template conformance gate) plus `sdd.draft.md` and the template — once each; work from those reads. The normalization contract (numeric `Task S{K}.{M}` headings, `**Task envelope**` markers, plain `<UNRESOLVED>` markers) lives in those sections — skipping them ships the draft's defects into the final SDD. Do NOT open `case-authoring-rules-guide.md` or `case-sdd-examples.md`: finalization normalizes structure, it does not redesign. No subagents, no background tasks, no tenant discovery unless identities are needed and a session exists. Write via the §Terminal step write-early cadence.
 
 ## Entry modes — who called, who writes
 
@@ -151,7 +153,7 @@ Corrections (`Change something` or any free text) update the model, re-run affec
 
 ### Template conformance gate — before `sdd.md` is written
 
-The exact rendered SDD text must pass this gate before it leaves the lane — before the Write in direct mode, before the hand-back in delegated mode. This is a render check, not a second design review: run it against the in-memory text; if the harness makes that impossible, do one shallow post-write structural Read. Do not use the read to redesign the case.
+The exact rendered SDD text must pass this gate before it leaves the lane — in delegated mode against the hand-back text; in direct/finalize mode against the **on-disk file assembled by the write-early cadence, before the `Status: ready` flip** (one structural Read is the check). This is a render check, not a second design review. Do not use the read to redesign the case.
 
 Required shape:
 
@@ -162,6 +164,7 @@ Required shape:
 - Every modeled primary stage has `### Stage {N}: {Stage Name}`; every modeled secondary stage has `### Secondary Stage: {Stage Name}`.
 - Every stage block contains `**Type:**`, `**Design Rationale:**`, `#### Stage Entry Conditions`, `#### Stage Exit Conditions`, and `#### Tasks`.
 - Every modeled primary-stage task has `##### Task {N}.{M}: {Task Name}`; every modeled secondary-stage task has numeric secondary numbering `##### Task S{K}.{M}: {Task Name}` where `K` is the secondary-stage order. Do not preserve letter prefixes such as `R.1`, `W.1`, `CC.1`, or `ESC.1`. Each task block contains `**Type:**`, `**Activation Mode:**`, `**Design Rationale:**`, `**Entry Condition:**`, exact marker `**Task envelope**` (no colon), and the matching type-specific detail block.
+- Every `<UNRESOLVED>` marker renders as plain text, exactly `<UNRESOLVED>` — never backtick-wrapped, never annotated inside the cell (build-phase checkers and Phase 1 discovery match the plain marker).
 - Section 3 contains `### Personas` and `### Process App Views`.
 - Section 4 contains the integration/resource family headings needed by the modeled task types, or an explicit `> None.` for empty families.
 
@@ -180,11 +183,15 @@ On the confirmation's accept answer, execute the mode's terminal step (§Entry m
 3. Hand back to the caller, in-conversation: **(a)** the confirmed in-memory model, **(b)** the rendered SDD text, **(c)** the resolution ledger (§Resolution ledger). Write NOTHING. The caller batches its own write (its `sdd.md` + planning artifacts + solution init) — design artifacts and build artifacts land together, zero added latency.
 4. If an `sdd.md` appeared at the caller's path since the lane started, abort and surface it — never overwrite.
 
-**Direct design / draft / finalization:**
+**Direct design / draft / finalization — write early, section-batched (mandatory):**
 
-1. Render + gate as above (drafts keep `Status: draft`).
-2. Write the file per §Entry modes (direct Write, no draft intermediary, no rename). Report the path in one line. STOP — the SDD write is a turn boundary; task derivation (Lane A) or the build (`uipath-maestro-case`) continues on a later turn, opt-in.
-3. `## Next Steps` in the written SDD points at the build: load `uipath-maestro-case` with this file as `sdd.md` (its planning pass verifies the resolved identities instead of re-discovering them), or load `uipath-planner` Lane A for cross-product task derivation.
+Never compose the whole SDD in-head and Write once at the end: a long silent composition turn risks context compaction that destroys unwritten work, and the on-disk partial file is the only cheap recovery point. Cadence:
+
+1. **Seed Write immediately** after the accept answer: title + Table of Contents + Planner Handoff header with `Status: draft`, `Template validation: pending`.
+2. **Per-section Edit-appends**, in template order: Section 1 → Section 2 one stage block at a time → Section 3 → Section 4 → Next Steps. No re-Read between sibling appends. Compose each section just before its append — not the whole document up front.
+3. **Gate on the on-disk file:** run the §Template conformance gate against the assembled file (one structural Read is allowed here).
+4. **Ready flip is the LAST Edit:** `Status: ready`, `Template validation: passed` (drafts keep `Status: draft`). An interrupted run leaves a resumable `draft` on disk.
+5. Report the path in one line. STOP — the SDD write is a turn boundary; task derivation (Lane A) or the build (`uipath-maestro-case`) continues on a later turn, opt-in. `## Next Steps` in the written SDD points at the build: load `uipath-maestro-case` with this file as `sdd.md` (its planning pass verifies the resolved identities instead of re-discovering them), or load `uipath-planner` Lane A for cross-product task derivation.
 
 **Free-text corrections stay first-class after the terminal step:** treat one as a targeted edit to the affected artifact (model + file + downstream), narrate it in one line, continue.
 
@@ -204,7 +211,7 @@ A case `sdd.draft.md` at lane entry is a leftover from an on-request draft or an
 
 If the user explicitly asks to finalize the existing draft, choose `Use the draft — finalize and continue` by assumption and do not ask a redundant resumption question. If AskUserQuestion is unavailable, make the same assumption unless the user asked to discard or abort.
 
-**Direct finalize fast path:** for a request that says the draft design is settled and asks for the final SDD only, read the draft, this section + §Template conformance gate, and the template; do not read planning references, do not inspect tenant resources, and do not spawn subagents. Treat the draft's stages, tasks, variables, conditions, SLAs, personas, and integration intent as the design source. Normalize structure only: every existing task gets a full detail block, exact `**Task envelope**` marker followed by its Required/Run Only Once/Skip Condition table, and the matching type-specific detail block. Secondary-stage task headings must be normalized to `##### Task S{secondaryStageIndex}.{taskIndex}: {Task Name}`; never preserve draft letter prefixes like `R.1`, `W.1`, `CC.1`, or `ESC.1`. Preserve concrete intended resource names; leave intentionally unresolved identities `<UNRESOLVED>`. Then write the final SDD (basename per §Entry modes) and stop.
+**Direct finalize fast path:** for a request that says the draft design is settled and asks for the final SDD only, read this section + §Terminal step + §Template conformance gate, the draft, and the template — once each, nothing else (§Read budget: not the authoring rules guide, not the examples file); do not read planning references, do not inspect tenant resources, do not spawn subagents or background tasks. Start the seed Write as soon as the draft is read (§Terminal step cadence), then append section by section. Treat the draft's stages, tasks, variables, conditions, SLAs, personas, and integration intent as the design source. Normalize structure only: every existing task gets a full detail block, exact `**Task envelope**` marker followed by its Required/Run Only Once/Skip Condition table, and the matching type-specific detail block. Secondary-stage task headings must be normalized to `##### Task S{secondaryStageIndex}.{taskIndex}: {Task Name}`; never preserve draft letter prefixes like `R.1`, `W.1`, `CC.1`, or `ESC.1`. Preserve concrete intended resource names; leave intentionally unresolved identities `<UNRESOLVED>`. Then write the final SDD (basename per §Entry modes) and stop.
 
 ## What to say while working
 
@@ -237,6 +244,7 @@ If the user asks how something works, explain in their language (cases, stages, 
 | Registry pull fails (CLI error, no auth) | One plain-language line immediately. Keep concrete portable names; mark identities/folders `resolve at build` (`<UNRESOLVED>` in the file) with paired review items. The build's planning pass retries discovery. |
 | `sdd.md` already exists at the caller's resolved path | Delegated mode should never have been entered — surface to the caller; never overwrite. |
 | Caller context lost mid-delegation (compaction) | The rendered SDD text + Case Review live in the conversation; re-render from them on request. |
+| Context compaction mid-render (direct/finalize) | Resume from the on-disk partial SDD: re-read it + the design source (`sdd.draft.md` or the model summary in the Case Review), append the next missing section, continue the cadence. Do NOT re-invoke skills, do NOT re-read reference guides already applied, do NOT search the filesystem, do NOT spawn background tasks — the partial file + template are sufficient. |
 
 ## Output contract — what the consumer sees
 
