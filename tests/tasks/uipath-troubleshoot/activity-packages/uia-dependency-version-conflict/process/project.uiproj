@@ -1,0 +1,6 @@
+{
+  "Name": "AccountOnboardingBot",
+  "ProjectType": "Process",
+  "Description": "Signs in to the vendor portal and clicks through the new-account onboarding steps.",
+  "MainFile": "Main.xaml"
+}

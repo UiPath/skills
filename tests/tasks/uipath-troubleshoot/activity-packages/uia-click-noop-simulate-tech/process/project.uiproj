@@ -1,0 +1,6 @@
+{
+  "Name": "ClaimsSubmit",
+  "ProjectType": "Process",
+  "Description": "Submits a claim in the Java-based Claims Entry System.",
+  "MainFile": "Main.xaml"
+}

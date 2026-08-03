@@ -44,7 +44,9 @@ What can cause it:
 2. **Map the message to the failing step:** `Error initiating connection` → open failed (reachability/provider); `Error waiting for connection` → ready-timeout; `Terminal host process path not found` / `Error initializing EHLLL library` / `Error attaching to session` → provider runtime missing/misconfigured on the robot; `The specified existing connection is disconnected` → stale reused connection; `No connection specified` → no input.
 3. **Capture the connection config** from the connection string or workflow source: provider type, terminal type, host, port, and the configured `TimeoutMS`.
 4. **Check host reachability from the robot machine** (not the developer machine) — host/port open, and the emulator/provider runtime installed there.
-5. **For reused connections,** confirm the upstream `TerminalSession` that produced the `ExistingConnection` kept it alive (output connection / `CloseConnection` unchecked) and that it didn't already close.
+5. **For reused connections only,** confirm the upstream `TerminalSession` that produced the `ExistingConnection` kept it alive (output connection / `CloseConnection` unchecked) and that it didn't already close.
+
+The `ExistingConnection` branches apply **only** when the message is `The specified existing connection is disconnected` or `No connection specified`. A session that opens a new connection from a `ConnectionString` cannot fail this way — do not raise `ExistingConnection` as a candidate for it, and do not offer it as a "check this too" step. Likewise, once the message maps to a single failing step in step 2, name that cause; listing the full cause table back to the user as undifferentiated possibilities is not a diagnosis.
 
 ## Resolution
 
@@ -54,5 +56,7 @@ What can cause it:
 - **If `The specified existing connection is disconnected`:** open a fresh `TerminalSession` instead of reusing the stale connection, or keep the upstream connection alive (emit `OutputConnection` / leave `CloseConnection` unchecked) for the lifetime it is reused.
 - **If `No connection specified`:** provide a non-empty `ConnectionString` or a valid `ExistingConnection`.
 - **If `Service unavailable`:** restore/restart the terminal service the provider depends on, then re-run.
+
+When the fault arrived wrapped in `System.AggregateException`, say so explicitly in the answer: the aggregate is only the async wrapper around the connect task, and the inner `TerminalConnectionException` (with its `ResultCode` / `ConnectionStatus` trailer) is the root cause. An answer that stops at "one or more errors occurred" has not diagnosed anything.
 
 If the host is demonstrably reachable, the provider runtime is installed, and the connection string is correct yet the open still fails, the cause is outside the activity — escalate to the terminal host / emulator administrator.

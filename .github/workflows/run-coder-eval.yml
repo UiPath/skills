@@ -57,7 +57,7 @@ on:
         default: claude
       # Overrides the model for ANY agent. Blank keeps the per-agent default:
       # claude → experiment YAML's sonnet (override e.g. opus / haiku),
-      # codex → gpt-5.4, antigravity → gemini-3.1-pro-preview.
+      # codex → gpt-5.6-terra, antigravity → gemini-3.5-flash.
       agent_model:
         description: 'Model override (blank = default).'
         type: string
@@ -174,20 +174,32 @@ jobs:
       - uses: astral-sh/setup-uv@v4
 
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
-      # deps). No source checkout.
-      # codex is NOT installed on the host here: under the docker driver the
-      # agent runs inside skills-image, so the codex SDK belongs in that image
-      # (separate TODO), not on the host CLI.
+      # deps). The Linux docker driver still imports the selected agent class on
+      # the host before dispatching work, so agent-specific extras must be
+      # installed here as well as in the container image.
       - name: Install coder-eval
-        run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
+        env:
+          CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
+          AGENT: ${{ inputs.agent }}
+        run: |
+          if [ "$AGENT" = "codex" ]; then
+            uv pip install --system "coder-eval[codex]==${CE_VERSION}"
+          elif [ "$AGENT" = "antigravity" ]; then
+            uv pip install --system "coder-eval[antigravity]==${CE_VERSION}"
+          else
+            uv pip install --system "coder-eval==${CE_VERSION}"
+          fi
 
       # Pull the agent image from GHCR (never built from source); the skills
       # image extends it below. Tag defaults to the wheel version but can be
       # overridden (coder_eval_image_tag) for ad-hoc / unreleased images.
-      # GH_PAT needs read:packages.
+      # Needs read:packages only — GH_PACKAGES_TOKEN, never the repo-write PAT.
+      # This workflow is `workflow_dispatch`-triggered, so it is not exposed to
+      # the fork/branch-push reader that motivates the split in smoke-skills.yml
+      # and smoke-rpa-skills.yml; the narrower token is least-privilege here.
       - name: Pull coder-eval-agent image
         run: |
-          echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_image_tag }}
 
       # Build the skills extension image (`@uipath/cli` + `@uipath/admin-tool`
@@ -196,7 +208,7 @@ jobs:
         run: |
           docker build \
             --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_image_tag }} \
-            --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
+            --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
@@ -230,7 +242,6 @@ jobs:
           AWS_REGION:               ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
-          TRACES_SMOKE_PROCESS_KEY: ${{ secrets.TRACES_SMOKE_PROCESS_KEY }}
           E2E_PROCESS_KEY:          ${{ secrets.E2E_PROCESS_KEY }}
           E2E_LONG_PROCESS_KEY:     ${{ secrets.E2E_LONG_PROCESS_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
@@ -248,16 +259,16 @@ jobs:
           # `parallelism` input default (4) only applies on workflow_dispatch.
           j="${TASK_PARALLELISM:-4}"
           # Agent selection. claude (default) takes the experiment YAML's
-          # claude-code/sonnet config; codex overrides to gpt-5.4 (auth via
+          # claude-code/sonnet config; codex overrides to 5.6-terra (auth via
           # CODEX_API_KEY/CODEX_BASE_URL); antigravity overrides to
-          # gemini-3.1-pro-preview (auth via GEMINI_API_KEY; SDK baked into the
+          # gemini-3.5-flash (auth via GEMINI_API_KEY; SDK baked into the
           # agent image). AGENT_MODEL overrides the model for any agent (e.g.
           # opus / haiku for claude). Driver is unchanged (docker here).
           agent_flags=""
           if [ "$AGENT" = "codex" ]; then
-            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.4}"
+            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.6-terra}"
           elif [ "$AGENT" = "antigravity" ]; then
-            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.1-pro-preview}"
+            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.5-flash}"
           elif [ -n "$AGENT_MODEL" ]; then
             agent_flags="--model $AGENT_MODEL"
           fi
@@ -394,7 +405,7 @@ jobs:
         shell: bash
         env:
           CLI_VERSION:    ${{ inputs.cli_version }}
-          NPM_AUTH_TOKEN: ${{ secrets.GH_PAT }}
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
         run: |
           set -e
           install_dir="$(mktemp -d)"
@@ -533,15 +544,15 @@ jobs:
           # Create the tilde-free temp root pinned via TMP/TEMP above.
           mkdir -p /c/cetmp
           # Agent selection. claude (default) takes the experiment YAML config;
-          # codex overrides to gpt-5.4 (auth via CODEX_API_KEY/CODEX_BASE_URL);
-          # antigravity overrides to gemini-3.1-pro-preview (auth via
+          # codex overrides to gpt-5.6-terra (auth via CODEX_API_KEY/CODEX_BASE_URL);
+          # antigravity overrides to gemini-3.5-flash (auth via
           # GEMINI_API_KEY). AGENT_MODEL overrides the model for any agent (e.g.
           # opus / haiku for claude). Driver is unchanged (tempdir here).
           agent_flags=""
           if [ "$AGENT" = "codex" ]; then
-            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.4}"
+            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.6-terra}"
           elif [ "$AGENT" = "antigravity" ]; then
-            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.1-pro-preview}"
+            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.5-flash}"
           elif [ -n "$AGENT_MODEL" ]; then
             agent_flags="--model $AGENT_MODEL"
           fi

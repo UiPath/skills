@@ -13,6 +13,8 @@ What this looks like:
 - Error contains one or more of: `Could not start executor`, `Logon failed for user <DOMAIN>\<USER>`, `RDP connection failed`, Windows codes like `0x0000052E` (logon failure), `0x00000775` (account locked out), `0x00000532` (password expired), `Last error: 131092`
 - May be intermittent (some jobs on the same machine succeed) or persistent (every job on that machine/user fails)
 
+**Not this playbook if the error is a pure timeout.** `Could not start executor. Creating user session timed out.` with NO logon-failure/locked/RDP code is a session-creation *timeout*, not an LSA rejection → route to [job-faulted-session-timeout.md](./job-faulted-session-timeout.md).
+
 What can cause it (cause-branches — pick the right one from evidence):
 
 1. **Session configuration mismatch** — Process has `requiresUserInteraction: true` (needs a desktop session), but no user is logged in AND "Login to Console" is false. The Robot has no session to attach to and no permission to create one.

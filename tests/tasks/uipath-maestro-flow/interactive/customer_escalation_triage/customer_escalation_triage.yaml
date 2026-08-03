@@ -21,7 +21,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
 
 sandbox:
-  driver: tempdir
   python: {}
 
 pre_run:
@@ -51,18 +50,14 @@ simulation:
     businessImpact, and correlationId. The completed flow must validate. Do not
     ask the coding agent to run it; the grader supplies seeded cases and runs it.
   constraints:
-    - "In the opening request, state the goal and input/output names, but do not volunteer any severity, engineering-handoff, or acknowledgement policy."
-    - "Only reveal a policy after the agent asks a relevant follow-up question."
-    - "Sev1 means an Enterprise customer has production unavailable and no workaround."
-    - "Sev2 means production is degraded or unavailable but a viable workaround exists."
-    - "Sev3 means informational or routine follow-up with no production impact."
-    - "Engineering is needed for Sev1 and Sev2, but not Sev3."
-    - "Customer acknowledgements must always be drafted for human review, never sent automatically; responseMode must therefore be Draft."
-    - "caseKey must preserve the incoming correlationId so downstream systems can correlate the run."
+    - "In the opening request, state the goal, the input/output names, and that you need a UiPath Maestro Flow validated before sign-off. Also state, in business terms and in your own words, the policy it has to encode: an Enterprise customer with production unavailable and no workaround is Sev1; informational or routine follow-up with no production impact is Sev3; engineering gets pulled in for Sev1 but not for Sev3; customer acknowledgements are always drafted for a human to review and never sent automatically, so the response mode is Draft; and the incoming correlationId must be carried through as the case key so downstream systems can correlate the run. Close by inviting the coding agent to ask you anything it needs before it starts building."
+    - "Do NOT volunteer the Sev2 rules. Only if the agent asks about degraded production, partial impact, or what happens when a workaround exists: Sev2 means production is degraded or unavailable but a viable workaround exists, and engineering is needed for Sev2 as well."
     - "If asked a finite-choice question, choose the option matching these policies."
     - "Keep each reply concise and internally consistent."
     - "If asked for permission to run or debug the flow, decline and say the grader will execute it after validation."
-  max_turns: 10
+    - "If the coding agent asks you anything before it starts building, answer every outstanding question in ONE message and then let it build."
+    - "The moment the coding agent reports the flow is built and validated, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
+  max_turns: 8
 
 success_criteria:
   - type: skill_triggered
@@ -89,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "Generated customer-escalation Flow validates without errors"
-    command: "uip maestro flow validate CustomerEscalationTriage/CustomerEscalationTriage/CustomerEscalationTriage.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

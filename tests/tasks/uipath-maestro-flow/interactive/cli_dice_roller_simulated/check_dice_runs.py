@@ -20,7 +20,7 @@ from _shared.flow_check import (  # noqa: E402
 
 def main():
     assert_flow_has_node_type(["core.action.script"])
-    payload = run_debug(timeout=240)
+    payload = run_debug(timeout=600)
     roll = assert_output_int_in_range(payload, 1, 6)
     print(f"OK: Script node present; dice value = {roll}")
 

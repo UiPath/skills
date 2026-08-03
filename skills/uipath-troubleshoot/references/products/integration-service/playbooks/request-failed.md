@@ -23,6 +23,8 @@ The DAP code alone does not name the root cause — **the `ProviderErrorCode` (t
 | 429 | Rate limited | Quota exceeded — retries (max 2) already exhausted |
 | 5xx | Provider outage | Transient on the provider side; retries exhausted = sustained outage |
 
+Not this playbook: HTTP 429 with `Failed to apply` in the Maestro Autopilot designer (design-time, no `DAP-RT-1101`/`ProviderErrorCode`) is not a connector fault → [autopilot-429](../../maestro/playbooks/autopilot-429.md).
+
 What to look for:
 - `ProviderErrorCode` + `ProviderErrorMessage` in the customEvent — the decisive evidence
 - `RequestId` — correlates the IS call to the connector log

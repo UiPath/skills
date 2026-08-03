@@ -1,12 +1,15 @@
 task_id: skill-case-connector-wait-trigger
 description: >
-  Build a Case Management definition from an sdd.md whose stage contains a
+  Build a Case Management definition from an sdd.md whose first task is
+  event-triggered via a `wait-for-connector` task-entry rule, followed by a
   `wait-for-connector` task (the 2nd previously-untested task type) that
   suspends until an external Integration Service connector event arrives.
   Exercises the connector-trigger plugin: `case spec --type trigger
-  --input-details`, and direct caseplan.json write of a resolved
+  --input-details`, direct caseplan.json write of a resolved
   `type: "wait-for-connector"` node (`data.serviceType:
-  "Intsvc.WaitForEvent"`, real `data.typeId` + `data.connectionId`). Stops at
+  "Intsvc.WaitForEvent"`, real `data.typeId` + `data.connectionId`), and the
+  frontend event-triggered task mode where a first task keeps only
+  `wait-for-connector` and does not also get `current-stage-entered`. Stops at
   validate + resolution assertions — NOT debug: a wait-for-connector suspends
   waiting for a real event and validate cannot catch a mis-bound connector rule
   (the skill's documented silent-failure surface). Requires cloud auth + a
@@ -27,7 +30,8 @@ initial_prompt: |
   ```
   # SDD — ConnectorWaitCase
 
-  Single-stage case that suspends on an external connector event.
+  Single-stage case whose first task is event-triggered by an external connector
+  event and whose second task suspends on the same external connector event.
 
   ## Section 1: Case Definition
 
@@ -36,7 +40,7 @@ initial_prompt: |
   | Property | Value |
   |----------|-------|
   | Case Name | ConnectorWaitCase |
-  | Case Description | Case that waits for an inbound Outlook 365 email before completing. |
+  | Case Description | Case whose first task is event-triggered by an inbound Outlook 365 email before the case waits for the same event. |
   | Case Identifier | Type: constant. Prefix: CWC |
   | Priority | Choiceset: Low, Medium, High — Default: Medium |
   | Case-Level SLA | — |
@@ -84,11 +88,39 @@ initial_prompt: |
 
   | # | Task Name | Type | Required | Run Only Once | Persona | SLA |
   |---|-----------|------|----------|---------------|---------|-----|
-  | 1 | Wait for reply email | wait-for-connector | Yes | No | system | — |
+  | 1 | Process reply event | process | No | No | system | — |
+  | 2 | Wait for reply email | wait-for-connector | Yes | No | system | — |
 
   ---
 
-  ##### Task 1.1: Wait for reply email
+  ##### Task 1.1: Process reply event
+
+  **Type:** process
+  **Description:** Placeholder process that is started by the inbound email event. This is the first task in the stage and is event-triggered, so its only task-entry rule is `wait-for-connector`; do not add `current-stage-entered`.
+
+  **Entry Condition:**
+
+  | WHEN | IF | Display Name |
+  |------|-----|--------------|
+  | wait-for-connector ("Email received") | — | Email Received |
+
+  ###### Connector Rule Detail (task-entry condition)
+
+  **Connector:** Microsoft Outlook 365
+  **Connector Key:** uipath-microsoft-outlook365
+  **Event:** Email Received
+  **Type ID:** d76ca053-6e7e-3472-b98c-3094b802d83c
+  **Connection ID:** dd657127-91f5-4568-a3a3-c024bc03fb0f
+  **Mode:** polling
+
+  | Field | Value |
+  |---|---|
+  | Component Type | PROCESS (UiPath process reference) |
+  | Process Reference (Name) | Process Reply Event |
+  | Folder | Shared |
+  | taskTypeId | `<UNRESOLVED: ...>` (do NOT fabricate) |
+
+  ##### Task 1.2: Wait for reply email
 
   **Type:** wait-for-connector
   **Description:** Suspend until an email is received on the Outlook 365 mailbox.
@@ -144,7 +176,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan has a RESOLVED wait-for-connector task (serviceType Intsvc.WaitForEvent, real typeId + connectionId, not a skeleton)"
+    description: "Caseplan has a first event-triggered task with wait-for-connector-only entry semantics and a RESOLVED wait-for-connector task (serviceType Intsvc.WaitForEvent, real typeId + connectionId, not a skeleton)"
     command: "python3 $TASK_DIR/check_connector_wait.py"
     timeout: 60
     expected_exit_code: 0

@@ -81,7 +81,7 @@ Optional top-level `runtime`: a CLI-managed object that appears on some flows (e
     "error": {
       "type": "object",
       "description": "Error information if the script fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
@@ -127,7 +127,7 @@ Example — manual start trigger:
     "entryPointId": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5"
   },
   "outputs": {
-    "output": { "type": "object", "description": "The return value of the trigger.", "source": "=result.response", "var": "output" }
+    "output": { "type": "object", "description": "Data passed when manually triggering the process.", "source": "null", "var": "output" }
   }
 }
 ```
@@ -148,10 +148,12 @@ When you DO author the instance `outputs` block (for documentation / parity with
 
 - `type` — data type (usually `"object"`)
 - `description` — human-readable description
-- `source` — runtime binding expression (e.g., `"=result.response"` for the primary output, `"=result.Error"` for errors)
+- `source` — runtime binding expression, copied from the manifest `outputDefinition`. `"=Error"` for errors, always.
 - `var` — the variable name (matches the output ID, e.g., `"output"`, `"error"`)
 
-The standard `outputs` block for most action nodes (script, HTTP, transform, connector, agent):
+**Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, function): declare `error` only — `output` is derived.** They are the one family whose instance block the converter reads: it copies an authored `source` verbatim, and injects `{output, jsonSchema, "=this"}` when a non-empty `outputs` omits `output`. So `"=result.response"` there — the connector/script source — leaves `$vars.<nodeId>.output` null at runtime while `flow validate` passes. Studio Web serializes `error`-only instances too (verified on api-workflow, published-flow, and inline-agent nodes). Subflow and published-flow (`uipath.core.flow.*`) instance blocks are never read — still declare `error` only.
+
+The standard `outputs` block for most action nodes (script, HTTP, transform, connector):
 
 ```json
 "outputs": {
@@ -164,20 +166,20 @@ The standard `outputs` block for most action nodes (script, HTTP, transform, con
   "error": {
     "type": "object",
     "description": "Error information if the <node type> fails",
-    "source": "=result.Error",
+    "source": "=Error",
     "var": "error"
   }
 }
 ```
 
-Trigger nodes (manual, scheduled, connector triggers) have a single output — no error port:
+Trigger nodes (manual, scheduled, connector triggers) have a single output — no error port. A manual trigger carries the literal string `"null"` as its `source`, matching what Studio Web writes:
 
 ```json
 "outputs": {
   "output": {
     "type": "object",
-    "description": "The return value of the trigger.",
-    "source": "=result.response",
+    "description": "Data passed when manually triggering the process.",
+    "source": "null",
     "var": "output"
   }
 }
@@ -236,6 +238,8 @@ Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for ev
 > **Gotcha**: `targetPort` is required. Omitting it produces `[error] [edges[N].targetPort] Invalid input: expected string, received undefined` at validate time.
 >
 > **Gotcha**: the source field is `sourcePort`, not `sourceHandle`. If you write `sourceHandle`, validation fails with `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` — the path identifies the offending edge entry exactly.
+>
+> **Gotcha — edge `id` MUST start with a letter (XML NCName).** Never use a bare UUID or any id with a leading digit (`"12bd09dd-…"`, `"1edge-start"`). Edge ids become BPMN `<bpmn:incoming>/<bpmn:outgoing>` IDREFs; a leading digit makes the converter silently drop those references while still emitting the `sequenceFlow`, so `flow validate` passes and upload succeeds — but the engine cannot traverse: the run reports **Completed having executed only the start node**, every output null. Use descriptive ids (`e-<source>-<target>`, e.g. `e-start-agent`); prefixing a letter (`e12bd09dd-…`) also works. Same rule applies to node ids.
 
 ## Definition entry
 
@@ -353,7 +357,7 @@ Building a flow is a two-step process: write the nodes/edges structure, then pop
 
 ### Step 1 — Write nodes and edges
 
-Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js, or any UUID v4 generator). The same UUID must appear in `entry-points.json` as `uniqueId`. Set top-level `version` to the value `uip maestro flow init` scaffolds — never hand-pick it (see [Top-level structure](#top-level-structure)).
+Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js, or any UUID v4 generator) — this applies ONLY to the top-level flow `id` and `entryPointId` (the same UUID must appear in `entry-points.json` as `uniqueId`). **Node and edge ids are NOT UUIDs** — they must start with a letter (see the Edge gotcha above). Set top-level `version` to the value `uip maestro flow init` scaffolds — never hand-pick it (see [Top-level structure](#top-level-structure)).
 
 ```json
 {
@@ -372,8 +376,8 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
       "outputs": {
         "output": {
           "type": "object",
-          "description": "The return value of the trigger.",
-          "source": "=result.response",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
           "var": "output"
         }
       }
@@ -396,7 +400,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
         "error": {
           "type": "object",
           "description": "Error information if the script fails",
-          "source": "=result.Error",
+          "source": "=Error",
           "var": "error"
         }
       }

@@ -17,6 +17,8 @@ No field-name heuristic, no silent `string` default. The case vocabulary (`strin
 
 **Deduped builds** ([registry-discovery.md § 1c](../../registry-discovery.md#1c--dedup-the-selected-builds-one-resource-per-name-and-type)): when § 1c merged several create-selected tasks into ONE resource, their wirings are identical by construction (§ 1c merges only on matching I/O) — compute the contract from any one of them.
 
+> **Projection is not normalization.** The pinned builder contract contains resource field names/types only; it does not replace the case binding rows. After the sibling is built, copy each original SDD Outputs row into `tasks.md` with its operator and destination unchanged. In particular, a pinned output named `greeting` from `greeting -> greeting` must remain `greeting -> greeting`, not collapse to bare `greeting` merely because the resource field and case variable share a name.
+
 ## Step 1b — Compose the Purpose from the SDD
 
 The Purpose is the resource's design brief. Build it ONLY from the SDD sections below — never invent domain or capability detail the SDD does not state. Assemble in order:

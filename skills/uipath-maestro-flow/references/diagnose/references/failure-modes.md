@@ -189,7 +189,7 @@ uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_
 
 ### Fix
 
-Delete the partial scaffold. Restart in the correct order — `flow init` from inside the solution directory will auto-register the project with the `.uipx`, so the explicit `uip solution project add` step is no longer needed.
+Delete the partial scaffold. Restart in the correct order — `flow init` from inside the solution directory will auto-register the project with the `.uipx`, so the explicit `uip solution projects add` step is no longer needed.
 
 ```bash
 uip solution init "<SolutionName>" --output json
@@ -197,7 +197,7 @@ cd <SolutionName>
 uip maestro flow init <ProjectName> --output json
 # Confirm Data.SolutionRegistration.Status is "Registered" in the JSON response.
 # Only if Status is "NotInSolution" / "Skipped" / "Failed" do you need:
-#   uip solution project add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
+#   uip solution projects add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
 ```
 
 After running, verify the file exists at the double-nested path. The `cd <SolutionName>` above persists across Bash calls, so anchor the check with `$(pwd)` instead of repeating `<SolutionName>/`:

@@ -1,0 +1,54 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44",
+      "State": "Successful",
+      "ProcessName": "ClaimsSubmit",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-07-15T08:12:03.101Z",
+      "EndTime": "2026-07-15T08:12:41.552Z",
+      "CreationTime": "2026-07-15T08:12:02.400Z"
+    },
+    {
+      "Key": "5aa17f60-9c31-4d02-8e4a-71b0c2d3e4f5",
+      "State": "Successful",
+      "ProcessName": "ClaimsSubmit",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-07-14T08:10:55.700Z",
+      "EndTime": "2026-07-14T08:11:34.210Z",
+      "CreationTime": "2026-07-14T08:10:55.100Z"
+    },
+    {
+      "Key": "9d2b44e1-6f80-4c73-a15e-2b3c4d5e6f70",
+      "State": "Successful",
+      "ProcessName": "InvoiceExport",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-07-13T15:02:11.000Z",
+      "EndTime": "2026-07-13T15:03:48.900Z",
+      "CreationTime": "2026-07-13T15:02:10.400Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 3,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

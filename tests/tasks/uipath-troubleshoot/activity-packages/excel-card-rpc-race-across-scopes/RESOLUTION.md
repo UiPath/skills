@@ -88,7 +88,7 @@ log line explicitly names "No outer Excel Process Scope detected"),
 scope 2 tries to reuse the gone apartment and hits RPC_E_DISCONNECTED.
 
 ### Cross-check — what this is NOT
-- Not branch 1 (Excel not installed): UseExcelFile_1 succeeded
+- Not the `excel-not-installed.md` failure mode: UseExcelFile_1 succeeded
   in launching EXCEL.EXE PID 8472 — Excel IS installed. The
   failure is the apartment race AFTER the first scope teardown.
 - Not branch 2 (empty / illegal WorkbookPath): both paths

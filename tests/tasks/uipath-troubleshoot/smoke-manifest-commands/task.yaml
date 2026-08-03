@@ -42,6 +42,16 @@ pre_run:
   # Errors are tolerated (fail_on_error: false) because a tool that fails
   # to install will surface as a BAD entry in the validator below, which
   # has a clearer message.
+  #
+  # rpa-tool is the exception: `uip tools search` doesn't list it (it lists
+  # rpa-legacy-tool), so the CI smoke image never bakes it, and on the CI
+  # `-dev` CLI `uip tools install @uipath/rpa-tool` fails ("No compatible
+  # version for the 1.199.x line" — install resolves the stable channel,
+  # which has no prerelease build). Fall back to a raw `npm install -g
+  # ...@dev`: the dev build exists on npm and the CLI discovers it on disk
+  # (toolLoader scans $(npm root -g)/@uipath/*), so `uip rpa --help`
+  # resolves for the validator. On a local stable CLI the `uip tools
+  # install` succeeds first and the fallback never runs.
   - command: >-
       uip tools install @uipath/orchestrator-tool;
       uip tools install @uipath/integrationservice-tool;
@@ -51,7 +61,7 @@ pre_run:
       uip tools install @uipath/agent-tool;
       uip tools install @uipath/solution-tool;
       uip tools install @uipath/context-grounding-tool;
-      uip tools install @uipath/rpa-tool
+      uip tools install @uipath/rpa-tool || npm install -g @uipath/rpa-tool@dev
     timeout: 300
     fail_on_error: false
 

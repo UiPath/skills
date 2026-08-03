@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "c0e1024460.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "3dd609b65e.json"
+    },
+    {
+      "match": "or jobs get 7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44",
+      "file": "d4fa9befad.json"
+    },
+    {
+      "match": "or jobs logs 7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44 --level Error",
+      "file": "c5eda10ee1.json"
+    },
+    {
+      "match": "or jobs logs 7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44",
+      "file": "636b8bd298.json"
+    },
+    {
+      "match": "or jobs healing-data 7c4e1a9b-2d6f-4a81-b3e0-9f5c1d8a2e44",
+      "file": "b7a0b7b0c0.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0
+  }
+}

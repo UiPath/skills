@@ -1,0 +1,13 @@
+{
+  "displayName": "Smoke Employees",
+  "description": "Temporary employee directory for the complex-field smoke test.",
+  "fields": [
+    {
+      "fieldName": "Name",
+      "displayName": "Name",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": true
+    }
+  ]
+}

@@ -51,7 +51,11 @@ Append (or prepend) this object to `nodes` — both orderings are valid for the 
 
 **Do not initialize `entryConditions` or `exitConditions` on a primary Stage at creation time.** Primary stages acquire those keys later when the condition plugins (stage-entry-conditions / stage-exit-conditions) write them — do not create the keys here.
 
+> **Do NOT author edges (Rule 20) — adding a stage node NEVER adds an edge.** Model an SDD "A → B" arrow as B's `entryConditions` (plus A's `exitConditions` when A diverges), never as an edge. See [stages/planning.md § Wiring constraints](planning.md).
+
 ## Recipe — Secondary Stage
+
+> **A non-interrupting SLA lane is still a secondary stage.** When the lane's only entry is an `sla-status-change` response the requirement describes as parallel oversight (`is-interrupting: false`), keep `stageType: "secondary"` with `isRequired: false`. Do NOT emit it as a regular stage instead: a regular stage joins the main flow and, when required, gates case completion. `validate` accepts either shape, so this one is on you.
 
 Same as a primary Stage, with `data.stageType: "secondary"` and two additional `data` fields initialized empty:
 
@@ -89,6 +93,7 @@ After writing, confirm:
 - NO `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18). Only `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` remain
 - For a secondary stage: `data.stageType == "secondary"`, and `data.entryConditions: []` and `data.exitConditions: []` are present (initialized as empty arrays at creation time)
 - For a primary Stage at creation time: `data.entryConditions` / `data.exitConditions` are absent — the conditions plugins will create and populate them later if the sdd.md calls for it
+- **`schema.edges` is still `[]`** (Rule 20). If non-empty, an edge was authored in error: remove it per [case-editing-operations.md § Delete an edge](../../case-editing-operations.md#delete-an-edge--defensive-only) before proceeding.
 
 Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added.
 

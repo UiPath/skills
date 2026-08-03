@@ -70,7 +70,7 @@ Each stage has a reference file with detailed instructions. Read **only** the re
 Two top-level build paths. Pick one before starting — the lifecycle and publish mechanism differ.
 
 - **Scenario 1 — Standalone Coded Agent** — the agent is its own tenant resource, published via `uip codedagent deploy`. Use when the agent runs on its own, is called from multiple flows, or needs independent versioning.
-- **Scenario 2 — In-Solution Coded Agent in a Flow** — the agent lives as a **sibling folder** to a flow project, registered into the solution via `uip solution project add`. The flow references it as an in-solution `uipath.core.agent.<resourceKey>` node, where `<resourceKey>` is the local UUID minted by `uip solution project add` and discoverable via `uip maestro flow registry list --local`. Use when the agent is tightly coupled to one flow.
+- **Scenario 2 — In-Solution Coded Agent in a Flow** — the agent lives as a **sibling folder** to a flow project, registered into the solution via `uip solution projects add`. The flow references it as an in-solution `uipath.core.agent.<resourceKey>` node, where `<resourceKey>` is the local UUID minted by `uip solution projects add` and discoverable via `uip maestro flow registry list --local`. Use when the agent is tightly coupled to one flow.
 
 ## Quick Start: Scenario 1 — Standalone Coded Agent
 
@@ -198,7 +198,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
        ```bash
        uip solution init "<SOLUTION_NAME>"
        cd "<SOLUTION_NAME>"
-       uip solution project import --source "../<AGENT_PROJECT_DIR>" --output json
+       uip solution projects import --source "../<AGENT_PROJECT_DIR>" --output json
        rm -rf "<AGENT_PROJECT_DIR>/.venv" "<AGENT_PROJECT_DIR>/__pycache__" \
               "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
        uip solution upload . --output json
@@ -277,7 +277,7 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 
    ```bash
    cd ..
-   uip solution project add "<AgentName>" "<SolutionName>.uipx" --output json
+   uip solution projects add "<AgentName>" "<SolutionName>.uipx" --output json
    ```
 
    After this command, `resources/solution_folder/process/agent/<AgentName>.json` holds the `resource.key`. Read that file (or the `--output json` response) to capture the UUID — it is what the flow node's `type` (`uipath.core.agent.<resourceKey>`) and `model.bindings.resourceKey` will reference.

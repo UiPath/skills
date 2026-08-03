@@ -55,7 +55,7 @@ Connector body sinks (`bodyParameters`, `queryParameters`, `pathParameters`) req
 | `"=metadata.X"` | `"=js:(metadata.X)"` |
 | `"=bindings.X"` | `"=js:(bindings.X)"` |
 | `"=<other-prefix>.X"` (e.g. `=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments[0]`) | `"=js:(<other-prefix>.X)"` — strip leading `=`, wrap in `=js:(...)` |
-| `"<- "Stage"."Task".out"` | resolve to `"=vars.<outputVar>"` → `"=js:(vars.<outputVar>)"` |
+| `"<- "Stage"."Task".out"` | resolve through the common [output-reference-ID algorithm](../../variables/io-binding/impl-json.md#output-reference-id-authoritative) to `"=vars.<outputReferenceId>"` → `"=js:(vars.<outputReferenceId>)"` |
 | `"=js:(<expr>)"` (pre-wrapped operator expression) | pass-through unchanged |
 | `"<literal value>"` (no leading `=`) | pass-through unchanged |
 
@@ -205,7 +205,7 @@ Generate the task skeleton:
 }
 ```
 
-Append the task to the target stage's `tasks[]` array. Default: own task set (one task per lane). **Exception:** if this task is a parallel member of a `runs-sequentially` group, push into the shared lane of that group (shared lane = parallel siblings inside the sequence, semantic).
+Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. If the task is `sequential` or its entry rule is `runs-sequentially`, append it as a new single-task inner array in planned order. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks also get their own single-task inner array. Only `activation-mode: parallel` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle is selected; if `lane` conflicts with mode, mode wins.
 
 ### Step 9 — Append root-level bindings
 

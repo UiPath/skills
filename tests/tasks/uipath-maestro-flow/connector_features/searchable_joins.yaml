@@ -15,6 +15,7 @@ initial_prompt: |
   Build a flow that pulls Salesforce accounts and, for each account, also brings 
   back its related opportunities in the same query. Then branch on whether the account 
   has any opportunities and end the flow on each path. Validate the flow.
+  Use the connection present in Shared/uipath-maestro-flow.
 
 success_criteria:
   - type: run_command

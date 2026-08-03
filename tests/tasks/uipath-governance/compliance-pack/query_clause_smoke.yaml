@@ -20,16 +20,27 @@ post_run:
 initial_prompt: |
   What does ISO 42001 clause A.6.2.8 recommend for my UiPath tenant?
 
+  Retrieve the recommendation from the compliance standard's catalog on the
+  tenant — do not answer from your own knowledge or by reading local files.
+
   Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - uip CLI not connected - auth errors expected. Use --output json.
+  - uip CLI not connected - auth errors expected. Run the catalog lookup once,
+    capture the result, and report it. Use --output json.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-governance skill"
+    skill_name: "uipath-governance"
+    expected_skill: "uipath-governance"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent called catalog get to retrieve clause recommendations"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+(?:iso-42001|\$\S+)'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

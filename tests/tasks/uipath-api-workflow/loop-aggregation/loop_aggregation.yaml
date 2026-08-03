@@ -7,7 +7,8 @@ description: >
 tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, node:loop]
 
 initial_prompt: |
-  Make a UiPath API Workflow JSON file at Workflow.json that:
+  Author a UiPath API Workflow — in a project named `SumNumbers` (its workflow
+  file will be `SumNumbers/Workflow.json`) — that:
   - Takes a `numbers` input (an array of integers)
   - Sums them with a ForEach loop
   - Returns { "total": <sum> }  (e.g. [10,20,30] → 60, [5,5] → 10)
@@ -16,32 +17,33 @@ initial_prompt: |
   designer roundtrip.
 
 success_criteria:
-  - type: file_exists
-    description: "Workflow.json was created"
-    path: "Workflow.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Workflow.json is valid JSON"
-    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "Uses a ForEach loop with a #Body element (rule 8)"
-    path: "Workflow.json"
-    includes:
-      - "ForEach"
-      - "#Body"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "ForEach" "$WF" && grep -q "#Body" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Sums [10,20,30] to 60 via the loop (field-qualified, not a bare number match)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"numbers":[10,20,30]}'' --output json | grep -qiE ''"total"[ :]+60'''
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"numbers":[10,20,30]}'' --output json | grep -qiE ''"total"[ :]+60'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -49,7 +51,7 @@ success_criteria:
 
   - type: run_command
     description: "Sums [5,5] to 10 (proves generality, not a hardcoded total)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"numbers":[5,5]}'' --output json | grep -qiE ''"total"[ :]+10'''
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"numbers":[5,5]}'' --output json | grep -qiE ''"total"[ :]+10'''
     timeout: 60
     expected_exit_code: 0
     weight: 2.0

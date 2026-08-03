@@ -133,7 +133,7 @@ This maps to branch 1 (COM registration corruption) of
 If the workflow doesn't actually need Excel COM features (formula
 recalc, macros, formatting interaction), migrate off the Classic scope
 to Workbook activities or a Modern OpenXML `Use Excel File` card (see
-`excel-application-card-failures.md` branch 1 resolution). This
+`excel-not-installed.md` missing-install resolution). This
 sidesteps the COM-registration surface entirely. (Note: this ledger
 workflow recalculates the ledger, which may need Excel's formula
 engine — confirm before choosing this path.)

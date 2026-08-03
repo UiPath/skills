@@ -73,6 +73,14 @@
     {
       "match": "or triggers list --folder-key f0011111-2222-3333-4444-555566667777 --output json",
       "file": "e2c7d9aa71.json"
+    },
+    {
+      "match": "or triggers list --folder-path \"ExcelImports\" --output json",
+      "file": "e2c7d9aa71.json"
+    },
+    {
+      "match": "or triggers list --folder-path ExcelImports --output json",
+      "file": "e2c7d9aa71.json"
     }
   ]
 }

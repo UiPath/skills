@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+      "Name": "Onboarding Dev",
+      "Path": "Onboarding Dev",
+      "Description": "Development folder for onboarding automations.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "c1d2e3f4-a5b6-4c78-9d0e-1f2a3b4c5d6f",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

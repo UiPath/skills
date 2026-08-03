@@ -71,15 +71,15 @@
 /tests/tasks/activation/uipath-functions.jsonl @AlexBizon @UiPath/team-coded-agents
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
-/skills/uipath-planner/ @RaduAna-Maria
-/tests/tasks/uipath-planner/ @RaduAna-Maria
+/skills/uipath-planner/ @RaduAna-Maria @abhiram-vad
+/tests/tasks/uipath-planner/ @RaduAna-Maria @abhiram-vad
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 
 # Flow skill
-/skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
+/skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo @chandusailella @mukundbayyaram
 # Flow test tasks (general) — more specific subfolder rules below override this
 /tests/tasks/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
 
@@ -105,8 +105,8 @@
 /tests/tasks/uipath-maestro-case/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
 # Coded Apps skill
-/skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
-/tests/tasks/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
+/skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
+/tests/tasks/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354 @ninja-shreyash
 
 # Connector Builder skill
 /skills/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
@@ -118,7 +118,7 @@
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden @DevMomo
 /skills/uipath-maestro-flow/references/plugins/connector-trigger/ @baishalighosh @chandusailella @bai-uipath @rockymadden @DevMomo
 /skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
-/tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh
+/tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh @chandusailella @mukundbayyaram
 
 # IXP
 /skills/uipath-maestro-flow/references/author/references/plugins/ixp/ @jcalero @constantinmuraru @scallaway-uipath @tommilligan @joe-prosser @vlad-crisan @richsilv @AWilcke
@@ -137,6 +137,8 @@
 /tests/tasks/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /tests/tasks/activation/uipath-troubleshoot.jsonl @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /skills/uipath-troubleshoot/references/products/agents/ @UiPath/llmops-team @andreibalas-uipath
+# Assistant desktop diagnostics domain (diagnostic archives — combined.log / Robot.log)
+/skills/uipath-troubleshoot/references/products/assistant/ @vasyop @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 
 # Governance skill
 /skills/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
@@ -159,8 +161,8 @@
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath @alexandrujircan
 /tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath @alexandrujircan
 # MCP skill (UiPath AgentHub MCP server registration + tool authoring)
-/skills/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents
-/tests/tasks/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents
+/skills/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
+/tests/tasks/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
 
 # Insights skill (job monitoring and analytics)
 /skills/uipath-insights/ @suranabhavya @rliuup

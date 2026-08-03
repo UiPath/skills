@@ -81,7 +81,10 @@ After write:
    .venv/bin/coder-eval run tasks/uipath-troubleshoot/<group>/<scenario>/task.yaml -e experiments/default.yaml -v
    ```
 2. The first run should score 1.0 — the test was generated from a known-good resolution.
-3. Open `m/.calls.jsonl` from the run artifact to confirm every expected call was hit.
+3. Confirm every expected call was hit from the run artifact's call log (sealed runs encode each record):
+   ```bash
+   python tests/tasks/uipath-troubleshoot/_shared/scripts/coverage_report.py --dump <artifact>/m/.log
+   ```
 
 ## Mandatory scrub list
 
@@ -143,11 +146,11 @@ A single scenario (leaf) under its group folder:
 ```
 tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
 ├── task.yaml                    # tags, mock_path_dirs, llm_judge criteria
-├── README.md                    # what the original session uncovered
 ├── RESOLUTION.md                # ground truth for the LLM judge
 ├── data/                        # short dir names keep Windows paths under MAX_PATH (260)
 │   └── m/
 │       └── r/
+│           ├── README.md        # what the original session uncovered — deleted by `m/seal`
 │           ├── manifest.json    # rules (canned + passthrough) + unmocked_default
 │           └── *.json           # canned stdout per rule with `file:` (name = sha1[:10] of args)
 └── process/                     # snapshot of the failing UiPath project (optional)
@@ -158,7 +161,7 @@ tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
 
 ## Mock dispatch precedence
 
-The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wins). Matching is token-aware (order-independent, quotes stripped, `--flag=value` split, `--output <v>` ignored) with a substring fallback — see the module docstring in `_shared/mock_template/m/uip`. Authoring consequences: list specific rules before generic ones (a rule with fewer tokens matches a superset of invocations), and prefer dropping volatile flags (e.g. `-f` vs `--folder-key`) from match strings when the remaining tokens are unique. Shadow audit: for rules i < j in one manifest, if tokens(match_i) ⊆ tokens(match_j) and they serve different files/exit codes, rule j is unreachable for its canonical invocation.
+The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wins). Matching is token-aware (order-independent, quotes stripped, `--flag=value` split, `--output <v>` ignored) with a substring fallback — see the module docstring in `_shared/mock_src/uip.py` (the dispatcher's source; the template ships it as a compressed docstring-stripped blob). Authoring consequences: list specific rules before generic ones (a rule with fewer tokens matches a superset of invocations), and prefer dropping volatile flags (e.g. `-f` vs `--folder-key`) from match strings when the remaining tokens are unique. Shadow audit: for rules i < j in one manifest, if tokens(match_i) ⊆ tokens(match_j) and they serve different files/exit codes, rule j is unreachable for its canonical invocation.
 
 Each rule has one of:
 
@@ -233,6 +236,29 @@ Rules:
 
 The skill writes investigation artifacts to `.local/investigations/` — NOT `.investigations/`. Every `file_exists` criterion path and every post-run script path MUST use `.local/investigations/...`.
 
+### `pre_run` — seal the mock store
+
+Every scenario MUST seal its fixtures before the agent starts:
+
+```yaml
+pre_run:
+  - command: "python m/seal"
+    timeout: 60
+    fail_on_error: true
+```
+
+`data/m/r/` is staged into the agent's working directory so the `m/uip` shim can resolve it — which also lets the agent `cat ./m/r/*.json` and read the recorded `uip` outputs, reaching the root cause without invoking `uip` or the skill at all. `m/seal` packs the manifest + every fixture into an opaque `m/.store` (zlib+base64) and deletes `r/`; the shim reads `.store` transparently. After sealing there is no readable fixture in the sandbox.
+
+The mock machinery itself is never readable in the sandbox — its source would otherwise tell the agent how the test evidence is kept (the dispatcher's docstring documents the manifest schema, the `.store` format, and the annotation-stripping pass). The sources live in `_shared/mock_src/` (`uip.py`, `seal.py`) and are NOT staged; the template ships them as compressed docstring-stripped blobs (`m/.uip.bin`, `m/.seal.bin` — AST-stripped source, zlib+base64, packed by `_shared/scripts/compile_mocks.py`) plus thin loaders at `m/uip` and `m/seal` that decode and exec the blob in memory. A blob shows a single base64 run to `cat`/`strings` (unlike bytecode, which keeps every string literal readable) and runs on ANY host CPython >= 3.10 — no version matrix, no PATH setup for local runs (the sandbox resolves `python` from the host PATH). After editing a source, repack with `uv run --python 3.13 tests/tasks/uipath-troubleshoot/_shared/scripts/compile_mocks.py` (3.13 keeps the output byte-stable) and commit the regenerated blobs. The dispatcher's call log (`m/.log`) is written zlib+base64-encoded on sealed runs — plain records name the matched rule and fixture file, proof the CLI is mocked. Decode it with `coverage_report.py --dump`.
+
+`fail_on_error: true` is deliberate — a silent seal failure restores the leak. `m/seal` is idempotent and no-ops when there is no `r/manifest.json`, so a re-run in a reused sandbox still exits 0.
+
+The passthrough cache moves to `m/_cache` (beside the shim) so `docsai` proxying keeps working after `r/` is gone.
+
+`_build_task_yaml` in `generate_scenario.py` emits this block, so generated scenarios get it automatically. Hand-written scenarios MUST add it.
+
+Sealing also removes the scenario's `README.md`, which lives at `data/m/r/README.md` for exactly that reason — `seal` deletes the whole `r/` directory, so the write-up describing the root cause never reaches the agent even though `data/` is staged. Keep it there; a README at the task root sits in the task dir that coder-eval bind-mounts read-only into the container (`$TASK_DIR`), and one at `data/` root lands in the agent's working directory unsealed.
+
 ### `docsai` mocking
 
 Any rule matching `uip docsai ask ...` in `manifest.json` MUST be `passthrough: true`. Query strings vary between runs and canned responses go stale immediately; the dispatcher caches passthrough responses per query for in-run reuse.
@@ -273,6 +299,7 @@ Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prom
   weight: 3.0
   pass_threshold: 0.7
   include_reference: true
+  include_dialog: true
   include_agent_output: true
   prompt: |
     Grade the agent's final answer against the attached RESOLUTION.md.
@@ -289,12 +316,15 @@ Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prom
     Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 ```
 
-**What the judge sees** (both flags MUST be `true`):
+**What the judge sees** (all three flags MUST be `true`):
 
 - `include_reference: true` — passes `RESOLUTION.md` (the file named under `reference:` at the task root)
+- `include_dialog: true` — passes the full user<->agent dialog, every turn
 - `include_agent_output: true` — passes the agent's final user-facing response
 
-That is **all** the context the judge gets. The contract: agent's final answer vs. RESOLUTION.md → score. Tool calls are deliberately excluded — the judge grades the presented diagnosis, not how it was reached.
+That is **all** the context the judge gets. The contract: agent's diagnosis (wherever it appears in the dialog) vs. RESOLUTION.md → score. Tool calls are deliberately excluded — the judge grades the presented diagnosis, not how it was reached.
+
+`include_dialog` is what makes "wherever it appears in the dialog" true. Without it the judge receives only the final turn, and the simulator keeps talking past the diagnosis — so the graded turn is an acknowledgement ("Will do.", "You're welcome.") and a correct investigation scores `0.00`. Six scenarios failed this way in the 2026-07-28 nightly. `scripts/check-judge-dialog.py` (CI: `judge-dialog-gate.yml`) blocks a PR that reintroduces it.
 
 **Forbidden on `llm_judge`:**
 
@@ -321,6 +351,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
+    include_dialog: true
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.

@@ -6,7 +6,17 @@ Targeted changes to an existing `caseplan.json`. Skips the Phase 0–6 build pip
 
 ## When this journey applies
 
-`caseplan.json` already exists AND the user wants a targeted edit ("add a stage", "remove task X", "change this condition", "swap the trigger"). No `sdd.md`, no `tasks.md`, no planning approval, no prototyping hard stop. Routing lives in [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
+`caseplan.json` already exists AND the user wants a targeted edit ("add a stage", "remove task X", "change this condition", "swap the trigger"). No `sdd.md`, no `tasks.md`, no planning phase, no prototyping hard stop. Routing lives in [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
+
+## Kickoff — set dev expectations first
+
+Before the first edit, present the flow once so the dev knows the steps and where they'll be asked to decide. Emit verbatim in tone (adjust wording to fit; keep the checkpoint markers). Present ONCE at entry; do not repeat. Allow-listed standalone text block (see [case-editing-operations.md § Hard token cap](case-editing-operations.md)).
+
+> This is a targeted edit to an existing case (no full rebuild). Here's the flow:
+> - I confirm where the case lives and **pull the latest** if it's in Studio Web (so a re-publish can't clobber server changes).
+> - I make the edit, then **validate** and fix errors.
+> - **Debug** (optional) — **you choose** whether to run the case for real (live emails / API calls).
+> - **Publish** (optional) — **you choose** whether to upload to Studio Web.
 
 ## Pull latest first (before editing)
 
@@ -15,7 +25,7 @@ Most "edit an existing case" requests mean a case **deployed in Studio Web**, no
 1. **Determine where the case lives.** If not already known, AskUserQuestion: `Edit my Studio Web case (pull latest first)` (default) / `Edit a local-only project (no pull)`.
 2. **Lives in Studio Web (has a SolutionId)** → pull current server state into the working dir before editing:
    - Standalone export: `uip solution download <SolutionId> -d <WorkingDir> --extract --output json` — exports the `.uis` archive and unpacks it; edit the extracted project.
-   - Already-linked local solution project: `uip solution project resync --project-name <ProjectName> --sync-option Sync --output json`.
+   - Already-linked local solution project: `uip solution projects resync --project-name <ProjectName> --sync-option Sync --output json`.
    - SolutionId unknown → ask the user for it; never guess.
    - `--extract` / `resync` **overwrite the destination**. Run before any edit. If you have already edited the local copy this session, pulling discards those edits — confirm with the user first.
 3. **Local-only project (no SolutionId)** → proceed as today, no pull.
@@ -33,7 +43,7 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 
 ## Read this first
 
-- **All mutations via Read/Write/Edit only** (Rule 13). CLI never mutates the case file in place: metadata fetches (`uip maestro case tasks describe`, `uip maestro case spec`, `is resources/triggers describe`), `uip maestro case validate`, the pre-edit pull (`uip solution download` / `solution project resync` — see [§ Pull latest first](#pull-latest-first-before-editing)), and (on handoff) `uip solution resources refresh` / `uip solution upload` / `uip maestro case debug`. No `python`/`node`/`jq`/`sed`/`awk`/helper scripts touching the file.
+- **All mutations via Read/Write/Edit only** (Rule 13). CLI never mutates the case file in place: metadata fetches (`uip maestro case tasks describe`, `uip maestro case spec`, `is resources/triggers describe`), `uip maestro case validate`, the pre-edit pull (`uip solution download` / `solution projects resync` — see [§ Pull latest first](#pull-latest-first-before-editing)), and (on handoff) `uip solution resources refresh` / `uip solution upload` / `uip maestro case debug`. No `python`/`node`/`jq`/`sed`/`awk`/helper scripts touching the file.
 - **`id-map.json` may be absent.** When editing a `caseplan.json` not built in this session, the `id-map.json` sidecar may not exist. Read node IDs directly from `caseplan.json`; do not assume the sidecar is present. If absent, do not synthesize one.
 - **Connector edits need a metadata fetch first.** Adding/altering a connector-activity task or connector-bound rule requires `uip maestro case spec --type ...` (or `tasks describe`) before authoring the shape — never hand-author connector schemas. See [connector-integration.md](connector-integration.md).
 - **Cross-cutting mechanics** (ID generation, Pre-flight Checklist, expression prefixes, per-section batch contract) live in [case-editing-operations.md](case-editing-operations.md). This doc routes; that doc supplies the recipe.
@@ -66,6 +76,16 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 | Add a global variable / argument | [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
 | Rename / delete a global variable or argument | [case-editing-operations.md § Rename or delete a global variable or argument](case-editing-operations.md#rename-or-delete-a-global-variable-or-argument) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
 | Change a variable's type or default | [case-editing-operations.md § Change a variable's type or default](case-editing-operations.md#change-a-variables-type-or-default) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
+| Add or repair a response to an SLA at-risk / breach event | [§ SLA responses in a brownfield edit](#sla-responses-in-a-brownfield-edit) below, then [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md) |
+
+## SLA responses in a brownfield edit
+
+An SLA clock and its **response** are separate edits. Pick the response, the status shape, and the interrupting value per [sla-response-shapes.md](sla-response-shapes.md) — that file is the contract; this section only says what it means for an edit.
+
+- **Do not widen the edit.** A requirement that only asks to notify someone is `notify-only`: add an escalation to the target's `slaRules[].escalationRule` ([plugins/sla/impl-json.md](plugins/sla/impl-json.md)) and stop. No stage, no task, no condition.
+- **`start-task` adds a task, not a lane** ([sla-response-shapes.md § 1](sla-response-shapes.md#1-pick-the-response)): the follow-up task goes in the breached stage with the `sla-status-change` rule as its **own task-entry** condition — never as a stage-entry row on the breached stage, which re-runs that stage's other tasks.
+- **Four defects `validate` accepts** — re-read [§ 5](sla-response-shapes.md#5-four-defects-validate-cannot-see) before you finish: a task with no entry condition, a non-interrupting lane demoted to a regular stage, an `escalationId: "any"` "repaired" by repointing instead of deleting, and a `start-task` authored as stage re-entry.
+- **`validate` passing is not evidence the response is right.** Every defect above validates clean.
 
 ## After edits
 
@@ -74,7 +94,7 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 
 ## Completion Output
 
-Report: file path edited, what changed (nodes/tasks/conditions added/removed/modified), validation status, any placeholder tasks still unresolved, any connector connections the user must create, and a **freshness note** — whether the local copy was pulled from Studio Web first (so re-publish reflects current server state) or is a local-only project not synced from SW (re-publish overwrites whatever is on the server). Then AskUserQuestion "What's next":
+Report: file path edited, what changed (nodes/tasks/conditions added/removed/modified), validation status, any placeholder tasks still unresolved, any connector connections the user must create, and a **freshness note** — whether the local copy was pulled from Studio Web first (so re-publish reflects current server state) or is a local-only project not synced from SW (re-publish overwrites whatever is on the server). Then include `Suggested next steps` in one short line before AskUserQuestion "What's next": run debug if the edit changes runtime behavior, publish when ready to update Studio Web, or stop and inspect the local diff.
 
 | Option | What it does |
 |---|---|

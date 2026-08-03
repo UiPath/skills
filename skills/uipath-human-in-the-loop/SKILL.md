@@ -32,7 +32,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 
 ## Critical Rules
 
-1. **Confirm schema with the user before writing anything for quickform type.** Show the designed schema and wait for explicit confirmation.
+1. **Confirm schema with the user before writing anything for quickform type.** Show the designed schema and wait for explicit confirmation. **Running non-interactively (CI/headless — no user available to answer):** do not block — design the schema from the prompt and any upstream `.flow` data, write the node, and record the chosen schema prominently in the final report. Only stop and report the open decision if the request is too ambiguous to pick a sensible default. (A prompt that already specifies the fields, outcomes, and output shape is never too ambiguous.)
 2. **Always wire the `completed` handle.** A HITL node with no outgoing edge on `completed` blocks the flow forever. Only `completed` is available as an output handle — **not** `output`, `success`, or any other name. This is true even when inserting into an existing flow whose other nodes use `"sourcePort": "output"`.
 3. **Always add the definition entry when inserting into an existing flow.** Before writing the node, check `workflow.definitions[]` for the correct `nodeType` for the selected path (`"uipath.human-in-the-loop.quick-form"` for QuickForm, `"uipath.human-in-the-loop.coded-action-app"` for app-based). If absent, append the full definition entry (with `handleConfiguration` including the `completed` handle). Skipping the definition means the `completed` handle is invisible to the runtime and the wiring check fails.
 4. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
@@ -83,7 +83,7 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 |---|---|---|
 | `.flow` file | **Flow** | Write node JSON directly — see reference docs |
 | `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
-| `.bpmn` (Maestro) | **Maestro** | Not yet — guide user manually |
+| `.bpmn` (Maestro) | **Maestro** | Write the `UserTask` XML directly — see Step 5 Surface: Maestro |
 
 **If the user mentioned a specific file path**, use that directly.
 
@@ -131,7 +131,7 @@ Read the existing `.flow` file to understand current nodes and edges. Use the Re
 
 > "I noticed that [quote the specific part of their description]. This is a [pattern name] — a point where [brief consequence if no human reviews]. I recommend inserting a Human-in-the-Loop step here so that [human role] can [action] before the automation [continues/writes/sends]. Should I add it?"
 
-Wait for confirmation. Do not proceed to schema design until the user confirms.
+Wait for confirmation. Do not proceed to schema design until the user confirms. **Running non-interactively (CI/headless — no user available to answer):** treat the recommendation as accepted when the signal is clear-cut (an explicit approval / review / sign-off requirement), add the HITL step, and record that you did so in the final report; only skip it and report the open decision when the signal is ambiguous.
 
 **Example:**
 > User: "Build an automation that reads support tickets, uses AI to generate an RCA, and updates the ticket in ServiceNow."
@@ -296,7 +296,9 @@ response = interrupt(CreateTask(
 
 ### Surface: Maestro
 
-The Maestro HITL CLI is not yet available. Guide the user to add the HITL node manually in the Maestro process designer using the schema from Step 5. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
+QuickForm and coded-action-app HITL nodes are both supported on Maestro BPMN processes — `uipath.human-in-the-loop.quick-form` and `uipath.human-in-the-loop.coded-action-app` are registered element types in the BPMN validator ([bpmn-spec.json](../uipath-maestro-bpmn/validator/bpmn-spec.json)), same node-type strings as the Flow surface. Write the node directly into the `.bpmn` XML as a `bpmn:UserTask` with a `uipath:activity` extension element (see the `Actions.HITL` extension type in the validator spec for the app-based/coded-action-app XML shape and context fields — `appId`, `appVersion`, `actions`, `key`, `taskTitle`).
+
+Design the schema per Step 4b, confirm it with the user, then validate frequently (`uip maestro bpmn validate <file>.bpmn --output json`) while wiring the node so any shape mistakes surface immediately rather than at deploy time. In Maestro, field names in `outputs`/`inOuts` must exactly match declared process variable names and types.
 
 ---
 

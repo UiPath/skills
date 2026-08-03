@@ -241,3 +241,111 @@ def test_install_all_tools_skips_already_installed_pascalcase(monkeypatch):
     build.install_all_tools()
     specs = [c[3] for c in installs if c[:3] == ["npm", "install", "-g"]]
     assert specs == ["@uipath/df-tool@dev"]            # solution-tool skipped
+
+
+# --- subtree-loss guard (unwalkable regression) ------------------------------
+#
+# Added after 2026-07-30, where a build lost the whole `rpa debug` subtree
+# (16 verbs) plus `rpa analyzer-rules list` and `rpa files diff`. The group
+# nodes survived, so the loss was only 0.5% of a 1384-verb catalog and sailed
+# past --max-drop-frac 0.2 into a PR that would have auto-merged.
+
+def test_lost_subtree_is_rejected():
+    """A group that was walked before and is unwalkable now trips the guard."""
+    err = build.unwalkable_regression_error(
+        new_unwalkable={"rpa debug"},
+        prev_unwalkable=[],
+        prev_verbs=["rpa debug", "rpa debug start", "rpa debug step-over", "rpa run"],
+    )
+    assert err is not None
+    assert "rpa debug" in err
+    assert "-2" in err                      # start + step-over, not the group node
+
+
+def test_leaf_command_does_not_trip_the_guard():
+    """Leaves legitimately fail to walk — no children before, so not a regression."""
+    err = build.unwalkable_regression_error(
+        new_unwalkable={"rpa pack", "rpa validate"},
+        prev_unwalkable=[],
+        prev_verbs=["rpa pack", "rpa validate", "rpa run"],
+    )
+    assert err is None
+
+
+def test_already_unwalkable_group_does_not_trip_the_guard():
+    """A group unwalkable in both builds is the status quo, not a regression."""
+    err = build.unwalkable_regression_error(
+        new_unwalkable={"coder", "context-grounding"},
+        prev_unwalkable=["coder", "context-grounding"],
+        prev_verbs=["coder", "coder foo", "context-grounding", "context-grounding bar"],
+    )
+    assert err is None
+
+
+def test_genuinely_deleted_group_does_not_trip_the_guard():
+    """A group removed from the CLI never enters the walk, so never lands here."""
+    err = build.unwalkable_regression_error(
+        new_unwalkable=set(),
+        prev_unwalkable=[],
+        prev_verbs=["agenthub mcp-tools create-is-activity", "agenthub mcp-tools list"],
+    )
+    assert err is None
+
+
+def test_new_group_appearing_unwalkable_does_not_trip_the_guard():
+    """A group absent from the previous snapshot has no children to lose."""
+    err = build.unwalkable_regression_error(
+        new_unwalkable={"brand-new-tool"},
+        prev_unwalkable=[],
+        prev_verbs=["rpa run"],
+    )
+    assert err is None
+
+
+def test_multiple_regressions_are_all_reported():
+    """Every regressed group is named, with a total verb count."""
+    err = build.unwalkable_regression_error(
+        new_unwalkable={"rpa debug", "rpa files"},
+        prev_unwalkable=[],
+        prev_verbs=["rpa debug start", "rpa debug resume", "rpa files diff"],
+    )
+    assert err is not None
+    assert "2 group(s)" in err and "3 verb(s)" in err
+    assert "rpa debug" in err and "rpa files" in err
+
+
+def test_no_previous_snapshot_is_not_a_regression():
+    """First build (no committed snapshot) cannot regress."""
+    assert build.unwalkable_regression_error({"rpa debug"}, [], []) is None
+    assert build.unwalkable_regression_error({"rpa debug"}, None, None) is None
+
+
+def test_group_help_retries_before_marking_unwalkable(monkeypatch):
+    """A transient help failure is retried and does not lose the subtree."""
+    build.UNWALKABLE.clear()
+    monkeypatch.setattr(build.time, "sleep", lambda _s: None)
+    calls = []
+
+    def flaky_run_uip(argv):
+        calls.append(argv)
+        if len(calls) == 1:
+            return None                     # transient failure
+        return {"Data": {"Subcommands": [{"Name": "start"}]}}
+
+    monkeypatch.setattr(build, "run_uip", flaky_run_uip)
+    found = build.collect_group("rpa debug")
+    assert found == {"rpa debug start"}
+    assert "rpa debug" not in build.UNWALKABLE
+    assert len(calls) == 2                  # failed once, succeeded on retry
+
+
+def test_group_help_gives_up_after_max_attempts(monkeypatch):
+    """A persistent failure is marked unwalkable after the retry budget."""
+    build.UNWALKABLE.clear()
+    monkeypatch.setattr(build.time, "sleep", lambda _s: None)
+    calls = []
+    monkeypatch.setattr(build, "run_uip", lambda argv: calls.append(argv) or None)
+    found = build.collect_group("rpa debug")
+    assert found == set()
+    assert "rpa debug" in build.UNWALKABLE
+    assert len(calls) == build.GROUP_HELP_ATTEMPTS

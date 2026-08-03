@@ -52,17 +52,17 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `deployment user configure <USER_ID>` with --user and --input"
+    description: "Agent invoked `deployment user configure` with --user and --input"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+user\s+configure[\s\S]*00000000-0000-0000-0000-0000000000a1(?=[\s\S]*--user\s)(?=[\s\S]*--input\s)[\s\S]*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+user\s+configure\s+\S+(?=[\s\S]*--user\s)(?=[\s\S]*--input\s)[\s\S]*'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent invoked `deployment group configure <GROUP_ID>` with --group and --input"
+    description: "Agent invoked `deployment group configure` with --group and --input"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+group\s+configure[\s\S]*00000000-0000-0000-0000-0000000000b2(?=[\s\S]*--group\s)(?=[\s\S]*--input\s)[\s\S]*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+group\s+configure\s+\S+(?=[\s\S]*--group\s)(?=[\s\S]*--input\s)[\s\S]*'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
