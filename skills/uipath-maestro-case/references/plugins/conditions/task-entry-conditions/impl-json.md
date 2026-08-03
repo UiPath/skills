@@ -87,6 +87,18 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 
 **Frontend toggle semantics:** The sequential toggle writes this rule as the task's only entry condition. Preserve the task's order in the stage's `data.tasks` structure. A strict chain uses consecutive single-task inner arrays (`[[A], [B], [C]]`); only explicitly parallel siblings share an inner array (`[[A, B], [C]]`). On the first task in the chain, `runs-sequentially` means the current stage was entered; on subsequent tasks, it means the preceding task set completed. Do not use lane-sharing, `selected-tasks-completed`, or an additional `current-stage-entered` rule to express this sequence.
 
+### sla-status-change — the `start-task` SLA response
+
+```json
+"rules": [[ { "id": "rxxxxxxxx", "rule": "sla-status-change", "slaId": "sla_aB3kL9Qx" } ]]
+```
+
+The task fires when the referenced SLA changes status — the direct shape for a `start-task` response ([sla-response-shapes.md](../../../sla-response-shapes.md)): the follow-up task lives in the breached stage and activates on the SLA event itself, so no stage re-entry is involved and the stage's other tasks do not re-run. Reference the stage's **own** SLA for a stage-scoped response, or `root`'s for a case-scoped one.
+
+`slaId` alone is a **breach** rule; add a concrete at-risk `escalationId` declared on that same SLA for an at-risk rule. Never the `"any"` sentinel. Verified valid on uip 1.198.0-preview.102 for both stage-owned and root SLAs.
+
+When a *stage* should take the case instead, the rule goes on the stage's `entryConditions` ([stage-entry-conditions/impl-json.md](../stage-entry-conditions/impl-json.md)) — that is `enter-stage`, not `start-task`.
+
 ## Rule-Type Catalog
 
 | `rule` | Required extra field |
@@ -96,6 +108,7 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 | `wait-for-connector` | `uipath` connector configuration (see [common](../../../connector-trigger-common.md#target-connector-bound-condition-rule)) |
 | `adhoc` | — |
 | `runs-sequentially` | — |
+| `sla-status-change` | `slaId`; optional at-risk `escalationId` on that same SLA |
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires.
 

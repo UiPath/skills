@@ -159,18 +159,23 @@ def check_sla_reference_closure(sdd: str) -> None:
     """
     references = sla_references(sdd)
     if not references:
-        fail("no sla-status-change entry condition names its SLA and escalation")
+        fail("no sla-status-change entry condition names its SLA")
 
     sections = sections_by_target(sdd)
     targets: list[str] = []
     for line_no, args in references:
-        if len(args) != 3:
+        # Arg count carries the status: 2 args is a Breached rule (it references the
+        # SLA alone — an absent escalation IS the persisted Breached shape), 3 args is
+        # an At-Risk rule naming a concrete at-risk escalation on that same SLA.
+        if len(args) not in (2, 3):
             fail(
-                f"sdd.md:{line_no}: sla-status-change takes exactly three args "
-                '("<SLA target>","<SLA Title>","<Escalation Display Name>"); '
-                f"got {args!r}"
+                f"sdd.md:{line_no}: sla-status-change takes two args "
+                '("<SLA target>","<SLA Title>") for a breach, or three '
+                '("<SLA target>","<SLA Title>","<At-Risk Escalation Display Name>") '
+                f"for at-risk; got {args!r}"
             )
-        target, sla_title, escalation_title = args[0], args[1], args[2]
+        target, sla_title = args[0], args[1]
+        escalation_title = args[2] if len(args) == 3 else None
         if target.casefold() not in sections:
             fail(
                 f"sdd.md:{line_no}: sla-status-change target {target!r} is neither "
@@ -181,7 +186,7 @@ def check_sla_reference_closure(sdd: str) -> None:
         # Scoped to the named target: an escalation declared on a different SLA
         # cannot be borrowed, because Phase 1 resolves the id within the target.
         declared = declared_sla_titles(sections[target.casefold()])
-        for title in (sla_title, escalation_title):
+        for title in (t for t in (sla_title, escalation_title) if t is not None):
             if title.casefold() not in declared:
                 fail(
                     f"sdd.md:{line_no}: sla-status-change references {title!r}, which "
@@ -223,7 +228,8 @@ def check_plan_carries_sla_references(sdd: str, plan: str) -> None:
 
     The compact no-build plan contract (phase-0-interview.md § Compact
     tasks/tasks.md contract) requires the global-event entry to name its rule
-    type and, for `sla-status-change`, the SLA and escalation it fires off.
+    type and, for `sla-status-change`, the SLA it fires off (plus the at-risk
+    escalation when the row is at-risk; a breach row names the SLA alone).
     Grading only sdd.md would let a plan that drops the interrupt entirely pass.
     """
     lowered_plan = plan.casefold()

@@ -131,6 +131,16 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 `tasks.md` entries carry natural-language conditions. Translate at execution using the expression prefixes documented in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). SLA rule `expression` is a boolean-condition sink — use bare `=js:<expr>` (no outer parens) per [§ Canonical form per sink](../../bindings-and-expressions.md#canonical-form-per-sink). Common patterns: `=js:vars.<id> === "<literal>"` for a case-variable comparison — this covers any SDD-declared field, including ones the SDD's "Case Metadata" table lists for readability (e.g. `Priority`: `=js:vars.priority === 'Urgent'`); `=js:true` for the default rule; `=js:(vars.X === 'foo') && (vars.Y > 5)` for combined boolean (each sub-clause parenthesized for operator precedence). Reserve `=js:metadata.<field>` for the closed set of structural fields in [case-schema.md § 1](../../case-schema.md#1-top-level--metadata) (e.g. `metadata.caseAppEnabled`) — it is NOT a namespace for arbitrary business data. If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md Rule 2.
 
+## The clock is not the response
+
+This file writes the SLA **clock** and its escalation notifications. The **response** to an at-risk / breach event is a separate decision, read off the requirement and never off the SLA's scope:
+
+- **notify-only** — an escalation entry here, and nothing else. Absent a stated response, both at-risk and breached are notify-only. Do NOT mint a stage, task, or condition for a requirement that only asks to notify someone.
+- **start-task / enter-stage** — the escalation (if any) still lives here; the behavior change is an `sla-status-change` rule on the follow-up **task** (`start-task`) or on the destination **stage** (`enter-stage`). Shapes, interrupting semantics, and the four defects `validate` cannot see: [sla-response-shapes.md](../../sla-response-shapes.md).
+- **exit-stage / exit-case** — a stage-exit or `metadata.caseExitRules[]` row.
+
+A breach rule references the SLA alone (`slaId`, no `escalationId`), so a breach response does **not** require an escalation to exist here. An at-risk response does: it needs a concrete at-risk escalation on that same SLA.
+
 ## Post-write validation
 
 - Confirm `metadata.slaRules` (root) or `node.data.slaRules` (stage) exists with the expected entries. Verify the root-target uses `metadata` — not `root.data` (which doesn't exist on disk).

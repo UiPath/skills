@@ -238,7 +238,7 @@ One validate at section end.
 
 ## Step 9.9 — Preallocate SLA and escalation IDs
 
-Before writing conditions, read `tasks.md §4.8`, `caseplan.json`, and `id-map.json`. Preallocate stable IDs for every SLA rule and escalation so a Step 10 `sla-status-change` stage-entry condition can reference objects that Step 11 writes later:
+Before writing conditions, read `tasks.md §4.8`, `caseplan.json`, and `id-map.json`. Preallocate stable IDs for every SLA rule and escalation so a Step 10 `sla-status-change` condition — stage entry for an `enter-stage` response, task entry for `start-task` — can reference objects that Step 11 writes later:
 
 1. Resolve each SLA target: `root`, or the stage ID for the named stage.
 2. Allocate `sla_` + 8 chars for every default/conditional SLA T-entry not already in `id-map.json`.
@@ -247,7 +247,7 @@ Before writing conditions, read `tasks.md §4.8`, `caseplan.json`, and `id-map.j
 5. Record target, display name, parent SLA T-number/default, and ID using the shapes in [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Reject duplicate display names within a target.
 6. Check all new IDs against existing caseplan IDs and `id-map.json`; regenerate collisions before continuing.
 
-This step changes only `id-map.json`; Step 11 emits the objects and MUST reuse these IDs. A condition T-entry resolves its `sla-display-name` and `escalation-display-name` within the declared target, never by array index.
+This step changes only `id-map.json`; Step 11 emits the objects and MUST reuse these IDs. A condition T-entry resolves its `sla-display-name` — and, for an at-risk row only, its `escalation-display-name` — within the declared target, never by array index. A breach T-entry carries no escalation name and needs none.
 
 ## Step 10 — Add conditions (per (scope, target) Edit batch)
 
