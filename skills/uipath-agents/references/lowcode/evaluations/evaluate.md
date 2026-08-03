@@ -31,7 +31,12 @@ Local operations (managing evaluators, eval sets, test cases) do **not** require
 - [Evaluators](evaluators.md) — evaluator types, adding/removing, default prompts
 - [Evaluation Sets and Test Cases](evaluation-sets.md) — creating sets, adding test cases, simulation options
 - [Running Evaluations](running-evaluations.md) — start, status, results, compare
-- [Orchestrator Package Offline Evals](orchestrator-eval-run.md) — run evals against published Orchestrator packages (use when agent is deployed, not local)
+- [Creating Eval Sets](creating-eval-sets.md) — create and manage eval sets (local and runtime), coverage patterns
+- [Creating Evaluators for Runtime Evals](creating-evaluators.md) — evaluator config JSON for `--evaluators` in runtime evals
+- [Creating Eval Items for Runtime Evals](creating-eval-items.md) — item JSON for `--items` in runtime evals
+- [Writing Simulations](writing-simulations.md) — simulate agent tools and flow components during eval runs
+- [Orchestrator Runtime Evals](orchestrator-eval-run.md) — run evals against published Orchestrator packages (use when agent is deployed, not local)
+- [Orchestrator Eval Schedules](orchestrator-eval-schedule.md) — create, manage, and replace scheduled recurring eval runs by process key
 
 Read Evaluators before choosing an evaluator type, and Evaluation Sets before writing test cases.
 

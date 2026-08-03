@@ -1,19 +1,29 @@
-# Orchestrator Package Offline Eval Run
+# Orchestrator Runtime Eval Run
 
-Submit offline evaluation runs for low-code agents published as Orchestrator packages.
+Submit runtime evaluation runs and view results for low-code agents published as Orchestrator packages.
 
-Use this when the agent has been published to Orchestrator (via `uip solution deploy` or Studio) and you want to trigger an eval run against the published package rather than using the Agent Runtime.
+Use this when the agent has been published to Orchestrator (via `uip solution deploy` or Studio) and you want to trigger an eval run against the published package.
 
-## Command
+## Command Structure
+
+```
+uip or eval
+  ├── run-offline-evals          Submit a new eval run
+  ├── run list                   List all runs for a process
+  ├── run get <evalSetRunId>     Get details of a specific run
+  └── run results <evalSetRunId> View per-item results for a run
+```
+
+`run-offline-evals` submits the run. `run list/get/results` query results afterward.
+
+## Submit a Run — run-offline-evals
 
 ```bash
 uip or eval run-offline-evals \
-  --package-name <processKey> \
-  --package-version <version> \
+  --process-key <guid> \
+  --items <json> \
+  --evaluators <json> \
   [--eval-set-id <guid>] \
-  [--items <json>] \
-  [--evaluators <json>] \
-  [--is-low-code-agent] \
   [--batch-size <n>] \
   [--folder-key <folder-guid>] \
   [--tenant <tenant-name>] \
@@ -22,93 +32,167 @@ uip or eval run-offline-evals \
 
 The folder resolves from your personal workspace automatically. Pass `--folder-key` to target a specific folder instead.
 
-`--eval-set-id` defaults to `00000000-0000-0000-0000-000000000000` when `--items` and `--evaluators` are provided inline.
+`--eval-set-id` defaults to `00000000-0000-0000-0000-000000000000` when not provided.
 
-## Options
+### Options
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--package-name` | Yes | Orchestrator package name (processKey, e.g. `MyAutomation.Agent.agent`) |
-| `--package-version` | Yes | Package version (e.g. `1.0.2`) |
-| `--eval-set-id` | No | Eval set ID to run; mutually exclusive with `--items`/`--evaluators` |
-| `--items` | No | JSON array of eval items to override those from the package |
-| `--evaluators` | No | JSON array of evaluator configs to override those from the package |
-| `--is-low-code-agent` | No | Auto-transform items/evaluators from the raw package format (flat JSON with `type`/`category` fields) to the API wire format. Use this when pasting directly from the package or portal. |
+| `--process-key` | Yes | Process key (GUID). Use `uip or processes list` to find available keys. |
+| `--items` | Yes | JSON array of eval items. See [creating-eval-items.md](creating-eval-items.md) for format. |
+| `--evaluators` | Yes | JSON array of evaluator configs. See [creating-evaluators.md](creating-evaluators.md) for format. |
+| `--eval-set-id` | No | Eval set ID; defaults to a zero GUID when not provided |
 | `--batch-size` | No | Max concurrent evaluation pipelines (default: `5`) |
 | `--folder-key` | No | Folder key GUID; defaults to personal workspace. Use `uip or folders list` to find available keys. |
 | `--tenant` | No | UiPath tenant name |
 
-## Examples
+### Example
 
 ```bash
-# Minimal — items/evaluators loaded from the published package
 uip or eval run-offline-evals \
-  --package-name "MyAutomation.Agent.agent" \
-  --package-version "1.0.2" \
-  --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
-  --output json
-
-# Inline override — paste evaluator and item JSON directly from the package/portal.
-# Use --is-low-code-agent to auto-transform: wraps evaluator as { evaluatorTypeId, evaluatorConfig }
-# and renames expectedAgentBehavior → expectedBehavior on items.
-# Replace "model" with the actual model ID used by the agent (not "same-as-agent").
-uip or eval run-offline-evals \
-  --package-name "MyAutomation.Agent.agent" \
-  --package-version "1.0.2" \
-  --is-low-code-agent \
-  --output json \
-  --evaluators '[{
-    "id": "8f3a1c72-bd4e-4f91-a832-9e5d2b7c04f6",
-    "name": "Default Evaluator",
-    "type": 5,
-    "category": 1,
-    "prompt": "As an expert evaluator, analyze the semantic similarity...",
-    "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
-    "targetOutputKey": "*",
-    "createdAt": "2026-05-31T19:36:35.382Z",
-    "updatedAt": "2026-05-31T19:36:35.382Z"
-  }]' \
-  --items '[{
-    "id": "7b2e9f48-c3a1-4d85-b6f2-1e8c5a9d3b70",
-    "name": "Test Case 1",
-    "inputs": {},
-    "expectedOutput": { "content": "The current date is 2026-05-31." },
-    "expectedAgentBehavior": ""
-  }]'
-
-# Explicit folder key instead of personal workspace
-uip or eval run-offline-evals \
-  --package-name "MyAutomation.Agent.agent" \
-  --package-version "1.0.2" \
-  --eval-set-id "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
-  --folder-key "a9f3b2c1-7d4e-4a8b-9c2f-5e1d3b6a8f7e" \
+  --process-key "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
+  --items '[{"id": "i1", "name": "Test", "inputs": {"input": "hello"}, "expectedOutput": {}, "expectedBehavior": ""}]' \
+  --evaluators '[{"id": "ev-1", "version": "", "evaluatorTypeId": "5", "evaluatorConfig": {"name": "Semantic", "category": 1, "type": 5, "prompt": "Score 0-100...", "model": "gpt-4.1-2025-04-14", "targetOutputKey": "*"}}]' \
   --output json
 ```
 
-## Output
+### Output
 
 ```json
 {
   "Result": "Success",
   "Code": "EvalRunSubmitted",
   "Data": {
-    "Package": "MyAutomation.Agent.agent v1.0.2",
+    "ProcessKey": "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09",
     "Folder": "user@uipath.com's workspace",
-    "EvalSetId": "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09",
+    "EvalSetId": "00000000-0000-0000-0000-000000000000",
     "EvalSetRunId": "f3a7d219-8b4c-4e62-a951-7d3f6e2c8b04"
   }
 }
 ```
 
-Use the `EvalSetRunId` to track results in the UiPath portal.
+Use the `EvalSetRunId` to track results with `run list`, `run get`, and `run results` below.
+
+## List Runs — run list
+
+List all eval set runs for a process.
+
+```bash
+uip or eval run list \
+  --process-key <guid> \
+  [--limit <n>] \
+  [--tenant <tenant-name>] \
+  --output json
+```
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--process-key` | Yes | Process key (GUID) |
+| `--limit` | No | Max runs to return (default: `50`) |
+| `--tenant` | No | UiPath tenant name |
+
+### Output
+
+```json
+{
+  "Result": "Success",
+  "Code": "EvalSetRunList",
+  "Data": [
+    {
+      "EvalSetRunId": "a1b2c3d4-0000-0000-0000-000000000101",
+      "EvalSetId": "f3a7d219-8b4c-4e62-a951-7d3f6e2c8b04",
+      "Status": "completed",
+      "Score": 0.86,
+      "EvalsExecuted": 5,
+      "Duration": "42.5s",
+      "CreatedAt": "2026-08-01T10:00:00Z"
+    }
+  ]
+}
+```
+
+`Score` is `"-"` when no score is available yet. `Duration` is `"-"` when the run is still in progress.
+
+## Get Run Details — run get
+
+Get details of a specific eval set run.
+
+```bash
+uip or eval run get <evalSetRunId> \
+  --process-key <guid> \
+  [--tenant <tenant-name>] \
+  --output json
+```
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `<evalSetRunId>` | Yes | Eval set run ID (GUID) — positional argument |
+| `--process-key` | Yes | Process key (GUID) |
+| `--tenant` | No | UiPath tenant name |
+
+### Output
+
+```json
+{
+  "Result": "Success",
+  "Code": "EvalSetRunDetails",
+  "Data": {
+    "EvalSetRunId": "a1b2c3d4-0000-0000-0000-000000000101",
+    "EvalSetId": "f3a7d219-8b4c-4e62-a951-7d3f6e2c8b04",
+    "Status": "completed",
+    "Score": 0.86,
+    "EvalsExecuted": 5,
+    "Duration": "42.5s",
+    "CreatedAt": "2026-08-01T10:00:00Z"
+  }
+}
+```
+
+## View Per-Item Results — run results
+
+View per-item eval run results for an eval set run.
+
+```bash
+uip or eval run results <evalSetRunId> \
+  --process-key <guid> \
+  [--tenant <tenant-name>] \
+  --output json
+```
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `<evalSetRunId>` | Yes | Eval set run ID (GUID) — positional argument |
+| `--process-key` | Yes | Process key (GUID) |
+| `--tenant` | No | UiPath tenant name |
+
+### Output
+
+```json
+{
+  "Result": "Success",
+  "Code": "EvalRunResults",
+  "Data": [
+    {
+      "EvalRunId": "c3d4e5f6-0000-0000-0000-000000000201",
+      "DataPoint": "Test Case 1",
+      "Status": "completed",
+      "Result": { "score": 0.92 },
+      "CreatedAt": "2026-08-01T10:01:00Z"
+    }
+  ]
+}
+```
+
+`DataPoint` is the test case name (from `evalSnapshot.name`).
 
 ## Items and Evaluators Format
 
-### Without `--is-low-code-agent` (API wire format)
+For full details on building these JSON arrays, see:
+- [Creating Evaluators for Runtime Evals](creating-evaluators.md) — evaluator types, templates, model requirements
+- [Creating Eval Items for Runtime Evals](creating-eval-items.md) — item schema, examples per evaluator type
+- [Creating Eval Sets](creating-eval-sets.md) — combining evaluators and items together
 
-Pass the data already in the format the API expects:
-
-**Evaluators** — each item must have `id`, `evaluatorTypeId` (string), and `evaluatorConfig`:
+**Evaluators** — each must have `id`, `evaluatorTypeId` (string), and `evaluatorConfig`:
 
 ```json
 [
@@ -117,69 +201,39 @@ Pass the data already in the format the API expects:
     "version": "",
     "evaluatorTypeId": "5",
     "evaluatorConfig": {
-      "id": "8f3a1c72-bd4e-4f91-a832-9e5d2b7c04f6",
       "name": "Default Evaluator",
-      "type": 5,
       "category": 1,
+      "type": 5,
       "prompt": "As an expert evaluator...",
-      "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
-      "targetOutputKey": "*",
-      "createdAt": "2026-05-31T19:36:35.382Z",
-      "updatedAt": "2026-05-31T19:36:35.382Z"
+      "model": "gpt-4.1-2025-04-14",
+      "targetOutputKey": "*"
     }
   }
 ]
 ```
 
-**Items** — each item must include `id`, `name`, `inputs`, and `expectedOutput`:
+**Items** — each must include `id`, `name`, `inputs`:
 
 ```json
 [
   {
     "id": "7b2e9f48-c3a1-4d85-b6f2-1e8c5a9d3b70",
     "name": "Test Case 1",
-    "inputs": {},
+    "inputs": { "input": "hello" },
     "expectedOutput": { "content": "Expected agent response here." },
     "expectedBehavior": ""
   }
 ]
 ```
 
-### With `--is-low-code-agent` (raw package format)
+## Validation Rules
 
-Paste the evaluator JSON directly from the package file (flat, with `type` and `category` at the top level). The CLI will auto-transform to the wire format.
+The CLI enforces these rules before making any network calls:
 
-> **Note:** Replace `"model": "same-as-agent"` with the actual model ID (e.g. `"anthropic.claude-3-5-sonnet-20240620-v1:0"`). The `same-as-agent` value requires loading `agent.json` from the package, which is not available in inline mode.
-
-```json
-[
-  {
-    "id": "8f3a1c72-bd4e-4f91-a832-9e5d2b7c04f6",
-    "name": "Default Evaluator",
-    "type": 5,
-    "category": 1,
-    "prompt": "As an expert evaluator...",
-    "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
-    "targetOutputKey": "*",
-    "createdAt": "2026-05-31T19:36:35.382Z",
-    "updatedAt": "2026-05-31T19:36:35.382Z"
-  }
-]
-```
-
-Items use `expectedAgentBehavior` (renamed to `expectedBehavior` automatically):
-
-```json
-[
-  {
-    "id": "7b2e9f48-c3a1-4d85-b6f2-1e8c5a9d3b70",
-    "name": "Test Case 1",
-    "inputs": {},
-    "expectedOutput": { "content": "Expected agent response here." },
-    "expectedAgentBehavior": ""
-  }
-]
-```
+1. **`--items` and `--evaluators` are required.** Both must be provided.
+2. **`--items` must be a valid JSON array of objects.** Non-array values or arrays with non-object elements are rejected.
+3. **`--evaluators` must be a valid JSON array of objects.** Same validation as `--items`.
+4. **`--batch-size` must be a positive integer.** Non-numeric values are rejected.
 
 ## Troubleshooting
 
@@ -187,24 +241,14 @@ Items use `expectedAgentBehavior` (renamed to `expectedBehavior` automatically):
 |-------|-------|-----|
 | `401 Unauthorized` | Auth expired or not configured | Run `uip login` |
 | `Authentication failed` | No active session | Run `uip login` first |
-| `Package not found` | Package not published or wrong name/version | Verify with `uip or packages list`; re-publish with `uip solution deploy` |
-| `Eval set not found` | Invalid `--eval-set-id` GUID | Verify the eval set exists in the portal; use `--items` and `--evaluators` inline instead |
-| `'same-as-agent' model option requires agent settings` | Inline evaluator has `"model": "same-as-agent"` — agent.json not available in inline mode | Replace with explicit model ID (e.g. `anthropic.claude-3-5-sonnet-20240620-v1:0`) |
+| `Process not found` | Invalid process key | Verify with `uip or processes list` |
+| `Eval set not found` | Invalid `--eval-set-id` GUID | Verify the eval set exists in the portal |
 | `personal workspace not found` | Account has no personal workspace | Pass `--folder-key` explicitly |
 | `Folder not found` | `--folder-key` GUID invalid or inaccessible | Run `uip or folders list` to find valid keys |
-
-## Validation Rules
-
-The CLI enforces these rules before making any network calls:
-
-1. **Must provide `--eval-set-id` OR both `--items` and `--evaluators`.** Omitting all three is an error.
-2. **`--eval-set-id` and `--items`/`--evaluators` are mutually exclusive.** Providing both is an error.
-3. **`--items` and `--evaluators` must be provided together.** Providing one without the other is an error.
-4. **`--batch-size` must be a positive integer.** Non-numeric values are rejected with an error.
+| `--items is not a valid JSON array` | Malformed JSON or not an array | Check JSON syntax; must be an array of objects |
+| `--evaluators is not a valid JSON array` | Malformed JSON or not an array | Check JSON syntax; must be an array of objects |
+| `Invalid --batch-size` | Non-numeric value | Pass a positive integer (e.g. `--batch-size 10`) |
 
 ## Anti-patterns
 
-- **Don't run against an unpublished package version.** The command targets the package already in Orchestrator. Bump `--package-version` after each publish; stale versions return results from old agent logic.
-- **Don't mix `--eval-set-id` with `--items`/`--evaluators`.** They are mutually exclusive. Use `--eval-set-id` to load from a saved eval set, or `--items`/`--evaluators` to provide inline. Not both.
-- **Don't pass `--items`/`--evaluators` in the wrong schema for your mode.** Field names differ: legacy format (from package/portal) uses `expectedAgentBehavior`; wire format uses `expectedBehavior`. Add `--is-low-code-agent` when pasting directly from the package or portal; omit it when you've already transformed to wire format.
-- **Don't pass `"model": "same-as-agent"` with inline `--evaluators`.** Inline mode has no access to `agent.json`; the CLI cannot resolve `same-as-agent` and will error at runtime.
+- **Don't pass `"model": "same-as-agent"` with inline `--evaluators`.** Runtime evals have no access to `agent.json`; the API cannot resolve `same-as-agent` and will error.
