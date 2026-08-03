@@ -193,6 +193,117 @@ Flagging, not fixing — it is the same conclusion the audit already reached (ob
 layer, detection is what holds), and no agent in this run went near it. If it is worth closing, the cheap
 version is to have `seal` blank both launchers after sealing, as #2334 did.
 
+Follow-up asked and answered: **only `seal` can be blanked.** `uip` must stay executable for the whole run,
+and any loader must name its own decode, so the recipe cannot leave a readable `uip` without returning to
+#2334's version-locked `.pyc`. Blanking `seal` + deleting `.seal.bin` removes the store's *structure*
+(the `{"manifest":…, "files":{name: base64(bytes)}}` shape) but leaves the two-line encoding. Must run
+strictly after `rmtree`, or a crash between blob-delete and store-commit turns the `pre_run` retry into a
+silent no-op that seals nothing and still exits 0. Decision: **ignore for now.**
+
+## 2026-08-03 — Leak rate for the last codex nightly, measured uniformly
+
+Re-swept **all 435 executed tasks** of `2026-08-03_04-43-50` (384 SUCCESS, 51 FAILURE) with one rule
+instead of merging two agents' summaries. Classification: a hit counts as a READ when the graded path
+appears in a command whose leading utility prints content (`cat`/`sed`/`python -c`/…) or in a `Read`/`Edit`
+tool call; a `find`/`ls` that merely prints the path does not.
+
+**5 tasks read graded material. All 5 scored SUCCESS at 1.0. Zero of the 51 failures did.**
+
+| task | read | class |
+|---|---|---|
+| `skill-agent-coded-hitl-create-task-with-app` | own `check_*.py` + task YAML, then ran the grader 3x | answer key |
+| `skill-functions-deploy-tenant` | own task YAML + `check_deploy_tenant.py` | answer key |
+| `skill-agent-inline-is-connector-tool` | another task's golden solution under `_fixtures/` | answer key |
+| `skill-agent-coded-push-resource-not-found` | `mocks/responses/manifest.json` + the shim | fixture source |
+| `skill-ixp-integration-versions-and-metrics` | `mocks/calls.log` — the oracle 3 of its criteria grade on | oracle inspection |
+
+So 3 clean answer-key leaks out of 384 passes (0.8%), or 5 counting the softer two (1.3%). All in **build
+suites**; troubleshoot was 0 of 52. Note the graders outnumber reference answers 360 to 297, so the softer
+target is also the larger one.
+
+Two honest limits on that number:
+
+- **The instrument's coverage equals its path list.** My first pass covered the troubleshoot mock layout
+  (`data/m/r`) but not the agents/ixp one; adding `mocks/responses`, `mocks/uip`, `_fixtures/` found the
+  fourth case. A suite inventing a fifth convention would slip through the same way — an argument for
+  deriving paths from task config rather than hardcoded globs.
+- **571 of 1006 tasks were `mature_skipped`** — never executed, auto-SUCCESS at 1.0. A clean verdict says
+  nothing about them. Plus 5 codex tasks spawn subagents whose inner tool calls appear in no artifact.
+
+One false positive worth recording so the next reader doesn't chase it: `skill-agent-local-escalation-tool`
+tripped the decode pattern on a legitimate `uip solution resources get … --decode` flag.
+
+## 2026-08-03 — Part 3 landed: coder_eval `feat/integrity-checks`, 10 commits, not pushed
+
+Worktree `coder_eval-integrity`, branch off `origin/main` @ `cc2cfc78`. The original `coder_eval` checkout
+was left on its own branch untouched — it backs the editable install the local test venv uses, so switching
+it would silently change which harness code local runs execute.
+
+| sha | commit |
+|---|---|
+| `9e2a200c` | Abort sandbox setup when a declared mock_path_dirs entry does not resolve |
+| `648ba912` | Abort the task when a declared local plugin path does not resolve |
+| `d78ed1bf` | Add IntegrityInfo telemetry with run.json wiring and an INTEGRITY_MODE switch |
+| `6ed036a0` | Count sub-agents whose inner tool calls could not be recovered |
+| `f28343d3` | Add a graded-material read detector for finished transcripts |
+| `119f7d39` | Void a passing row whose transcript read graded material |
+| `be671907` | Taint a run whose declared mock was never invoked |
+| `23a9b818` | Document the run-integrity gate in the report schema and env example |
+| `3f303f35` | Bind-mount a declared file as a file instead of its parent directory |
+| `fef1e2bb` | Stop staging the raw task YAML into the container |
+
+Tests: baseline `origin/main` = 2 failed / 3563 passed; final = 2 failed / 3738 passed, 87.22% coverage
+(`integrity.py` 95.83%). The 2 failures are the same pre-existing Windows symlink-privilege tests
+(`WinError 1314`) that fail on the untouched baseline. Independently verified here: `FinalStatus` still has
+its original 8 members, the three `integrity_*` keys are in `eval_result_to_task_dict`, `INTEGRITY_MODE`
+defaults to `DETECT`, and `pytest tests/test_integrity_scan.py tests/test_integrity_gate.py` = **132
+passed**. A real run (`INTEGRITY_MODE=void … agentless_smoke_test.yaml`) produced the `integrity` object in
+`task.json` and the keys in `run.json`.
+
+Two side effects worth knowing: `TestRowKeySet` now pins the entire `run.json` row key set (nothing did
+before — the gap that would silently drop a new field), and there is a test pinning `FinalStatus` as a
+closed set so the decision not to add a member is visible to the next reader.
+
+### Deferred, with reasons
+
+Plan commits 8-10 (ship reference *content* via `/work/input`, consume-and-unlink the input dir, mask
+`reference.file` inside the task-dir mount) are **not done**. Docker is not installed on this machine and
+the entire existing docker-mount suite is `skipif(win32)`, so none of it is observable here. Commit 8
+changes what judge criteria can read at grading time — get it subtly wrong and every docker task with a
+reference silently loses it, which is precisely the silent-invalidity class this work exists to kill.
+Commit 10 depends on 8 (a relative `reference.file` is read *through* the task-dir mount). Do these on a
+POSIX host with Docker.
+
+**Consequence for scope:** troubleshoot's answer-key route (`RESOLUTION.md`) is only closed by commits 8+10,
+so it remains open for now. The build-suite route (`check_*.py`, task YAMLs, `_fixtures/`) stays open by
+design even after them — those files must be readable at grading time and the container runs as root — so
+detection is the compensating control there. Net today: leaking is **detected and score-voiding**, not
+prevented.
+
+### Do not enable `void` yet
+
+`INTEGRITY_MODE` ships defaulting to `detect`. The mock-never-invoked check cannot distinguish "the mock
+never reached PATH" from "this scenario legitimately never needed it", and this worklog already names 4
+troubleshoot tasks in the 07-30 run with no call log by construction. Run one nightly in `detect`, read the
+findings, then decide.
+
+### Behaviour change on merge
+
+Commits 1-7 change no score **except** the two fail-closed ones: a missing mock dir or unresolved plugin
+path now ends as `ERROR` instead of being graded. Some rows that currently read as `FAILURE` will become
+`ERROR` — they were never valid measurements. That is the intended correction, but it will move the numbers.
+
+### Issues flagged, not fixed
+
+- **Agent-endpoint fail-closed needs per-agent work.** Codex resolves its endpoint via bare `os.getenv`,
+  while Claude legitimately falls back to cached CLI auth, so a generic "endpoint must resolve" rule would
+  break Claude. Wants a per-agent `validate_environment()` preflight — separate issue.
+- `config.py`'s `load_dotenv(override=True)` with no arguments still loads nothing (confirms the diagnosis
+  above). Left alone: fixing it changes how every local run reads `.env`.
+- `_build_argv` is one statement under ruff's `PLR0915` limit; it wants splitting.
+- ~60 docker tests skip on Windows. The new `test_docker_stage_inputs.py` demonstrates `_build_argv` /
+  `_stage_inputs` are pure enough to test platform-neutrally; more existing assertions could move.
+
 ### Root cause of three discarded runs: `.env` does not reach the agent's environment
 
 Attempts v1-v3 all produced the same result — five `FAILURE` rows at score 0.000, `skill_triggered=no`,
