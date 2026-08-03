@@ -8,7 +8,7 @@ description: >
   lane is unreachable. Finalization must supply the missing half of the pair.
   Finalization-only (no interview, no build) so the run stays inside a handful
   of turns; graded on authored condition tables, never on rationale prose.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node]
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-node]
 
 run_limits:
   task_timeout: 1800
@@ -31,9 +31,10 @@ initial_prompt: |
   finalized design; nothing built yet.
 
   This is a Maestro case-management SDD finalization. Keep it inside the Case
-  Management SDD template; do not route it through cross-product planning.
-  Use the direct finalization path: read the draft and SDD template, write the
-  finalized `sdd.md`, and do not spawn subagents or inspect planning/plugin docs.
+  Management SDD template shape; finalize the draft into `sdd.md` in this
+  folder. Use the direct draft-finalization fast path: read the draft and the
+  case SDD template, write the finalized `sdd.md`, and do not spawn subagents,
+  run tenant discovery, or derive implementation tasks.
 
 success_criteria:
   - type: file_exists
@@ -71,6 +72,6 @@ simulation:
     - "Approve the finalized sdd.md on the first pass. Approve anyway if it warns about the unresolved api-workflow identity or raises review items."
     - "Confirm that the Compliance Officer launches Compliance Hold by hand from the stage picker; there is no event, SLA, or decision button that routes there."
     - "Do not request design changes or add requirements."
-    - "Keep the agent in Phase 0. If it offers to plan tasks.md or build a caseplan, tell it to stop at the approved sdd.md."
+    - "Keep the agent at design/finalization only. If it offers to plan tasks.md or build a caseplan, tell it to stop at the approved sdd.md."
     - "Keep replies to one sentence."
   max_turns: 8

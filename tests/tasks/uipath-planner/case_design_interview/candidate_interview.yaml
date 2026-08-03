@@ -1,8 +1,7 @@
 task_id: skill-case-phase-0-candidate-interview
 description: >
-  Phase 0 INTERVIEW ONLY — simulated interview → sdd.draft.md for a
-  candidate-interview process at a software company. Tests whether the Phase 0
-  interview captures a logically coherent design: 7 primary stages in order
+  CASE DESIGN ONLY (planner Case Design Lane) — simulated interview → sdd.draft.md for a
+  candidate-interview process at a software company. Tests whether the design conversation captures a logically coherent design: 7 primary stages in order
   (Application Received → Recruiter Screen → Technical Screen → Onsite Loop →
   Debrief → Offer → Hired), 3 exception lanes (Rejected, Withdrawn, On Hold),
   the conditional Onsite-Loop gate (engineering L4+), and Debrief scorecard
@@ -10,7 +9,7 @@ description: >
   rates the draft's design coherence. Mechanical validity is covered separately
   by the finalize-from-draft task.
 tags:
-  - uipath-maestro-case
+  - uipath-planner
   - integration
   - lifecycle:generate
   - mode:build
@@ -46,13 +45,13 @@ initial_prompt: |
   polish or validate it yet, just capture the design.
 
 success_criteria:
-  # The interview grades the captured DESIGN, in whichever file Phase 0 leaves it:
+  # The run grades the captured DESIGN, in whichever file the design lane leaves it:
   # sdd.draft.md if it stopped at the draft, or sdd.md if it finalized. All
   # content criteria read whichever exists, so the test does not hinge on the
   # agent stopping at exactly the draft step.
   - type: run_command
-    description: "Phase 0 interview produced a design document (draft or finalized)"
-    command: "test -f sdd.draft.md || test -f sdd.md"
+    description: "design lane produced a design document (draft or finalized)"
+    command: "ls *sdd*.md 2>/dev/null | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -65,8 +64,8 @@ success_criteria:
       from pathlib import Path
       text = " ".join(
           path.read_text(encoding="utf-8", errors="ignore")
-          for path in (Path("sdd.draft.md"), Path("sdd.md"))
-          if path.exists()
+          for path in sorted(Path(".").glob("*sdd*.md"))
+          if path.is_file()
       ).lower()
       has_onsite = "onsite" in text or "loop" in text
       has_gate = (
@@ -83,7 +82,7 @@ success_criteria:
 
   - type: run_command
     description: "design declares all 3 exception lanes"
-    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'rejected' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'withdrawn' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'on hold'"
+    command: "cat *sdd*.md 2>/dev/null | grep -Eiq 'rejected' && cat *sdd*.md 2>/dev/null | grep -Eiq 'withdrawn' && cat *sdd*.md 2>/dev/null | grep -Eiq 'on hold'"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -91,14 +90,14 @@ success_criteria:
 
   - type: run_command
     description: "design captures all 7 primary stages (not truncated)"
-    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 7 ]"
+    command: "f=$(ls *sdd*.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 7 ]"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "stayed in Phase 0 — did not run ahead into a caseplan build"
+    description: "stayed at design — did not run ahead into a caseplan build"
     command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
     timeout: 10
     expected_exit_code: 0
@@ -113,7 +112,7 @@ success_criteria:
     max_file_chars: 150000
     include_agent_output: false
     prompt: |
-      You are reviewing a Phase-0 design document for a CANDIDATE-INTERVIEW
+      You are reviewing a design-lane draft document for a CANDIDATE-INTERVIEW
       (hiring) case. The design is in whichever file is attached — `sdd.draft.md`
       (a pre-finalization draft) or `sdd.md` (the finalized version); grade
       whichever is present. Do NOT penalize unresolved connector IDs, placeholder
@@ -158,7 +157,7 @@ simulation:
     for the HRIS handoff). A solution designer is interviewing you to map this
     process into a compact case definition.
   goal: |
-    Get a complete Phase-0 sdd.draft.md for the CandidateInterview case. Answer
+    Get a complete design draft (sdd.draft.md) for the CandidateInterview case. Answer
     the designer's interview questions so the design reaches full depth. When the
     designer has written the draft and asks whether to finalize, produce sdd.md,
     or proceed, tell them to STOP at the draft — the draft is all you need.

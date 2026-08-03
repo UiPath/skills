@@ -1,6 +1,6 @@
 task_id: skill-case-phase-0-procurement-sla-interrupts
 description: >
-  Phase 0 through planning for a supplier application with global withdrawn and
+  Delegated design (uipath-planner Case Design Lane) through maestro-case planning for a supplier application with global withdrawn and
   SLA events, explicit sequential work, and design-rationale requirements.
   Verifies that global events enter interrupting secondary stages instead of
   being duplicated across every primary stage.
@@ -61,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "Global-event, SLA-reference-closure, sequential-activation, and rationale contract is present"
-    command: "python3 \"$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/phase_0_to_case/procurement_sla_interrupts/check_procurement_sla_interrupts.py\""
+    command: "python3 \"$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/design_delegation_procurement/check_procurement_sla_interrupts.py\""
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

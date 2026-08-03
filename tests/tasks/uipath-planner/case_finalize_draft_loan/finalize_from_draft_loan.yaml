@@ -1,14 +1,14 @@
 task_id: skill-case-phase-0-finalize-draft-loan
 description: >
-  Phase 0 FINALIZATION ONLY — a LoanOrigination interview draft (sdd.draft.md)
-  is staged into the sandbox; the skill resumes Phase 0, runs the Finalization
+  CASE DRAFT FINALIZATION ONLY (planner Case Design Lane) — a LoanOrigination interview draft (sdd.draft.md)
+  is staged into the sandbox; the planner's Case Design Lane resumes from the draft, runs the Finalization
   checks (normalizing rule syntax / gate legality / interrupting flags as
   needed), and renames it to an approved sdd.md. Decoupled from the interview
   (covered by loan_origination) so the heavy finalization step runs in one
   bounded turn. Grades mechanical validity of the produced sdd.md (sdd_check)
   plus domain coherence. Loan-domain counterpart to finalize_from_draft.
 tags:
-  - uipath-maestro-case
+  - uipath-planner
   - integration
   - lifecycle:generate
   - mode:build
@@ -23,7 +23,7 @@ run_limits:
   turn_timeout: 2400
 
 # Stage the ready-made interview draft into the sandbox root as sdd.draft.md.
-# The skill's resumption path (sdd.draft.md present, no sdd.md) picks it up.
+# The planner's draft-finalization path (sdd.draft.md present, no sdd.md) picks it up.
 sandbox:
   template_sources:
     - type: template_dir
@@ -39,9 +39,10 @@ initial_prompt: |
   they are. I just need the finalized design for now, nothing built yet.
 
   This is a Maestro case-management SDD finalization. Keep it inside the Case
-  Management SDD template; do not route it through cross-product planning.
-  Use the direct finalization path: read the draft and SDD template, write the
-  finalized `sdd.md`, and do not spawn subagents or inspect planning/plugin docs.
+  Management SDD template shape; finalize the draft into `sdd.md` in this
+  folder. Use the direct draft-finalization fast path: read the draft and the
+  case SDD template, write the finalized `sdd.md`, and do not spawn subagents,
+  run tenant discovery, or derive implementation tasks.
 
 success_criteria:
   - type: file_exists
@@ -97,7 +98,7 @@ success_criteria:
     max_file_chars: 150000
     include_agent_output: false
     prompt: |
-      You are reviewing a finalized Phase-0 Solution Design Document (the attached
+      You are reviewing a finalized Solution Design Document (the attached
       sdd.md) for a COMMERCIAL LOAN ORIGINATION case. A separate mechanical check
       already verifies variable mappings, lineage, per-gate rule legality, task
       types, and entry/exit conditions — focus on DOMAIN COHERENCE.
@@ -134,13 +135,13 @@ simulation:
     confirming its finalization into an approved sdd.md.
   goal: |
     Get the existing sdd.draft.md finalized into an approved sdd.md. Resume from
-    the draft, use it as-is, and approve. Keep the agent in Phase 0 only.
+    the draft, use it as-is, and approve. Keep the agent at design/finalization only.
   constraints:
     - "If it asks how you want to proceed with the existing draft, tell it to use the draft as-is and finalize it — you don't want to be re-interviewed or redo the design."
     - "When the agent presents the finalized sdd.md for approval, approve it on the first pass ('looks good — approved'). If it warns about high-severity review items or unresolved/tenant-default connector IDs, approve anyway — the placeholders are intentional for this design spec."
     - "Do not request design changes or add new requirements — the draft is settled. Do not ask the agent to re-run the interview."
     - "Decline or skip any optional HTML-preview offer."
-    - "Keep the agent in Phase 0 only. If it offers to plan tasks.md, build a caseplan, or move to a later phase, tell it to stop at the approved sdd.md."
+    - "Keep the agent at design/finalization only. If it offers to plan tasks.md, build a caseplan, or move to a later phase, tell it to stop at the approved sdd.md."
     - "Once sdd.md is approved, the task is done — end the conversation; do not open new topics."
     - "Keep replies short — one sentence or a single option pick."
   max_turns: 10

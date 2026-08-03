@@ -22,8 +22,9 @@ import unittest
 from pathlib import Path
 
 CASE_ROOT = Path(__file__).resolve().parents[1]
-PICKER_CHECK = CASE_ROOT / "phase_0_finalize_draft_picker" / "check_picker_pairing.py"
-REJECT_CHECK = CASE_ROOT / "phase_0_finalize_draft_reject" / "check_reject_route.py"
+PLANNER_ROOT = CASE_ROOT.parent / "uipath-planner"
+PICKER_CHECK = PLANNER_ROOT / "case_finalize_draft_picker" / "check_picker_pairing.py"
+REJECT_CHECK = PLANNER_ROOT / "case_finalize_draft_reject" / "check_reject_route.py"
 ADD_TASK_YAML = CASE_ROOT / "edit" / "add_task_run_once_default" / "add_task_run_once_default.yaml"
 ENVELOPE_YAML = CASE_ROOT / "single_node" / "run_once_envelope" / "run_once_envelope.yaml"
 LINEAR_FIXTURE = (
