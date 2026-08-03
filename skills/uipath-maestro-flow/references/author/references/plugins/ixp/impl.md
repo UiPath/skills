@@ -134,7 +134,7 @@ Then assemble the instance by copying these paths verbatim:
 | `inputs.folderName` | `Data.Node.inputDefaults.folderName` | YES |
 | `inputs.versionTag` | `""` (empty string unless pinning a version) | YES |
 | `inputs.pageRange` | `""` (empty string for full document) | YES |
-| `inputs.fileRef` | `"=js:$vars.<upstream>.output.<field>"` (author this) | YES |
+| `inputs.fileRef` | `"=js:$vars.<upstream>.output.<field>"` — the file/attachment OBJECT itself, never its `.ID` (author this) | YES |
 | `outputs.output` | the four-field literal below (no `registry get` lookup needed) | **YES** — missing → `flow validate` fails |
 | `outputs.error` | the four-field literal below (no `registry get` lookup needed) | **YES** — missing → `flow validate` fails |
 
@@ -142,7 +142,7 @@ Then assemble the instance by copying these paths verbatim:
 
 - `digitizationMode` — serializer defaults to `fileUpload` internally
 - `documentTaxonomy` — replaced by `inputs.model` blob
-- `attachmentId` — use `inputs.attachment` for Orchestrator job attachments instead
+- `attachmentId` — attachments bind through `inputs.fileRef` as the whole object. Never route the object into `inputs.attachment` and its `.ID` into `fileRef`: a bare ID in `fileRef` passes `flow validate` but faults debug with `[430002] Invalid input on document extraction`
 - `fileName` — derived from `fileRef` upstream
 - `mimeType` — derived from `fileRef` upstream
 
@@ -219,7 +219,7 @@ The `definitions[]` entry is copied verbatim from `registry get` (`Data.Node`) �
 
 ### Optional `attachment` input (Orchestrator job attachments)
 
-`inputDefinition.properties.attachment` accepts `{ ID, FullName, MimeType, Metadata }` for flows that consume Orchestrator job attachments. There is no form UI for this path on the standalone node today — set it programmatically in `inputs.attachment` if needed. `ID` is the only required field. Validate end-to-end on your tenant before relying on this path.
+`inputDefinition.properties.attachment` accepts `{ ID, FullName, MimeType, Metadata }` for flows that consume Orchestrator job attachments. There is no form UI for this path on the standalone node today — set it programmatically in `inputs.attachment` if needed. `ID` is the only required field. Validate end-to-end on your tenant before relying on this path. This input does NOT replace `fileRef` — extraction reads `fileRef` regardless, and `fileRef` must carry the attachment object itself, never `<attachment>.ID`.
 
 ## Accessing Output
 
@@ -337,6 +337,7 @@ IxP also exposes classifier models (type `Classifier`) that label documents rath
 | `model.context` rejected by runtime | `folderKey` or `modelName` missing from `inputs` (the context array is built from these) | Confirm `inputs.modelName` and `inputs.folderKey` are populated. |
 | Empty `$vars.{nodeId}.output` | Model's taxonomy doesn't match the document, or extraction silently returned no fields | Inspect the raw API response via `$vars.{nodeId}.error` first; if no error, run the extraction against the same document on the IxP product UI to compare |
 | `fileRef` not resolving | Expression references an upstream variable that isn't wired, or the upstream node didn't produce a file output | Verify the upstream node exports a file reference and that the `=js:$vars.{upstreamId}.output.<field>` expression matches |
+| `[430002] Invalid input on document extraction operation` at debug | `fileRef` bound to the attachment's `.ID` (or another scalar) instead of the attachment object — `flow validate` does not catch this | Bind the whole object: `=js:$vars.<upstream>.output.<attachment>` — drop the `.ID` |
 | Extraction failed | Underlying IxP model errored (unsupported MIME type, corrupted file, service-side failure) | Check `$vars.{nodeId}.error.detail` for the IxP service response |
 | `uip maestro flow node configure` rejects with "not a connector type node" | Expected — IxP is not a connector. | Edit `inputs.*` in the `.flow` JSON directly. |
 | Studio Web: "Cannot destructure property 'modelName' of 't' as it is undefined" when clicking the node | `inputs.model` blob is missing or undefined. The `schema-definition` form section binds `inputs.model` to the `ixp-model-taxonomy` component, which destructures `modelName` and `folderKey` out of it. When `inputs.model` is missing, the destructure throws. | Copy `definition.inputDefaults.model` verbatim into the node instance's `inputs.model`. The blob carries `id`, `modelName`, `modelDisplayName`, `folderKey`, `folderName`, `folderPath`, `description`. See [JSON Structure](#json-structure). |
