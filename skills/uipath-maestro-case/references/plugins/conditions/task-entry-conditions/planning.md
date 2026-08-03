@@ -33,7 +33,7 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
 | `current-stage-entered` | Fires when the containing stage is entered | — |
-| `selected-tasks-completed` | Fires when specific sibling tasks in the same stage complete | `selectedTasksIds` |
+| `selected-tasks-completed` | Fires when specific non-adhoc sibling tasks in the same stage complete | `selectedTasksIds` |
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields; `conditionExpression` optional |
 | `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. This controls task activation only; choose the task type separately from what the task does. | `conditionExpression` (optional) |
 | `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. The frontend toggle writes this rule as the task's entry condition. | `conditionExpression` (optional) |
@@ -45,9 +45,11 @@ The Case App selector has three distinct modes:
 
 | UI mode | JSON/task-entry meaning | Required behavior |
 |---|---|---|
-| Sequential | `runs-sequentially` only | Preserve the frontend's ordered `data.tasks` structure. A strict chain is consecutive single-task sets (`[[A], [B], [C]]`); only explicit parallel siblings share an inner set (`[[A, B], [C]]`). The first sequential task starts when the stage is entered, and later sequential tasks use the upstream-task-set completion trigger represented by the preserved task-set/order structure. |
+| Sequential | `runs-sequentially` only | Preserve the frontend's ordered `data.tasks` structure. A strict chain is consecutive single-task sets (`[[A], [B], [C]]`); explicit parallel siblings after the same predecessor share one later set (`[[A], [B, C], [D]]`) and each member of that set also uses `runs-sequentially` so it starts when the previous task set completes. The first sequential task starts when the stage is entered, and later sequential tasks use the upstream-task-set completion trigger represented by the preserved task-set/order structure. |
 | Event-triggered | An authored event/condition, normally `wait-for-connector` for an external event | Do not add `runs-sequentially`. A stage-entered task is not automatically an event-triggered task; retain the explicit event rule and its connector configuration. |
 | Manually-triggered (adhoc) | `adhoc` only | Set `isRequired: false`; the user launches it from the Case App. Do not add another entry event or treat it as sequential. Do not change the task type merely because it is manual. |
+
+> **`event-triggered` classifies the entry rule, not the task type.** `wait-for-connector` is both a task type and a rule type. A task whose **entry rule** is the connector event is `event-triggered` and must not carry `runs-sequentially`. A task **typed** `wait-for-connector` (or `execute-connector-activity`) whose entry is positional keeps its connector event in its own `data`, and its entry rule follows its activation mode: `current-stage-entered` when it arms on stage entry, or `runs-sequentially` when it must arm only after a predecessor creates the obligation (`activation-mode: parallel-after-predecessor`). Arm listeners and clocks when the obligation is created, not after the response is expected.
 
 `adhoc` is task-entry-only. It is never a stage entry rule, never a case trigger, never a substitute for `wait-for-connector`, and never the way to model a user-selected interrupting lane. Use a secondary stage with `user-selected-stage` for that.
 
