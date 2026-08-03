@@ -63,7 +63,7 @@ uip or packages upload "<out-dir>/<PackageName>.1.0.0.nupkg" --output json
 uip or packages list --search <PackageName> --output json
 ```
 
-`Version` plus `IsLatestVersion` on the returned rows tell you the highest one in the feed.
+The match returns the feed's **latest** version only (one row, `IsLatestVersion: true`) — enough to pick the next version, but it is not a version history.
 
 ## Step 3 — Wait for ingestion
 
@@ -74,7 +74,7 @@ uip tm testcases list --project-key <PROJECT_KEY> --output json
 ```
 
 - Poll **unfiltered**. Do NOT pass `--filter <PackageName>` — `--filter` matches a test case's name or key by **prefix** (see SKILL.md Rule 9), and an ingested test case is named `"<suite> > <test title>"`, so a package name never matches: the call stays empty forever and reads as a false "ingestion never happened".
-- Ingestion is done when the project contains a test case for **each test in the package**. Get that list from the pack step's own output (`--dry-run` prints it, and the packaged `testCases.json` holds it) and match on the test case `Name`, which is exactly `"<suite> > <test title>"`. Matching by name works whether the project was empty or already held test cases, and whether this is a first upload or a re-upload.
+- Ingestion is done when `TestCount` new test cases from Step 1 are present, each named `"<suite> > <test title>"`. A plain `pack` prints only `Package`, `Output` and `TestCount` — if you want the exact expected names up front, run `--dry-run` first or read `testCases.json` inside the `.nupkg`; otherwise match on the count plus that name shape.
 - `TestCount` from Step 1 is one test case per Playwright **test** — it is not multiplied by the number of Playwright projects (2 tests × 2 projects → 2 test cases).
 - Ingested test cases show `IsAutomated: false` in list output; that is normal and does not mean ingestion failed.
 - Poll every ~10 seconds for up to ~3 minutes. If the expected names never appear, STOP and report — the likely causes are the Playwright feature flag being off for the tenant or a wrong `--project-key`, and neither is fixed by retrying.
@@ -110,7 +110,7 @@ Folder, machine and robot-user management is the platform skill's domain — see
 
 ```bash
 uip tm testsets create --project-key <PROJECT_KEY> --name "PW Smoke" --output json
-uip tm testcases add --test-set-key <TEST_SET_KEY> --labels "PW_Suite_<name>" --output json
+uip tm testcases add --test-set-key <TEST_SET_KEY> --labels "PW_File_<path>" --output json
 ```
 
 - Capture `TestSetKey` from the create output (e.g. `DEMO:10`).
@@ -140,12 +140,12 @@ Read the fields off the JSON response rather than relying on the names below sta
 
 ```bash
 uip tm testsets run --test-set-key <TEST_SET_KEY> \
-    --playwright-projects chromium firefox --wait --output json
+    --playwright-projects chromium --output json
 ```
 
 `--playwright-projects` does not appear in `uip tm testsets run --help` — functional but unlisted, so treat this guide as its reference rather than concluding the build lacks it. Semantics (all enforced with clear errors, nothing silently ignored):
 
-- Space-separated, case-sensitive names from the package's `playwright.config`. Unknown names **fail fast, before anything is persisted**, listing the available projects.
+- Space-separated, case-sensitive names from the package's `playwright.config`. Passing several (`chromium firefox`) runs all of them, but results stay one log per test case — not per browser — so a per-browser breakdown is not available from Test Manager; scope to one project when you need attributable results. Unknown names **fail fast, before anything is persisted**, listing the available projects.
 - Valid only when every test case in the set comes from one single Playwright package (see Step 4); fails for Studio/RPA test sets — run those without the flag.
 - The selection **persists on the test set** and applies to later runs until changed; omit the flag to reuse the stored selection (or the config's defaults if none was ever stored).
 - On a Test Manager without Playwright support the command fails with instructions rather than running incorrectly.
@@ -154,7 +154,7 @@ Omit `--playwright-projects` entirely for a plain run (all config-default projec
 
 **Getting the execution id.** Start the run **without** `--wait`: it returns a complete JSON envelope immediately, carrying `ExecutionId` and `Status: Pending` — the cleanest handle for automation. With `--wait` the envelope only arrives at terminal state, so take the id from the `Execution started: <id> (Pending)` progress line — not from `Starting execution for test set …`, whose UUID is the *test set*.
 
-**Agent-friendly waiting:** a single `--wait` call can sit silent for many minutes, which trips agent-harness watchdogs and shell timeouts. When running as an agent, prefer starting the run **without** `--wait`, then poll in bounded chunks: `uip tm wait --execution-id <EXECUTION_ID> --timeout 120 --output json` in a loop (or `uip tm executions get-stats` every 30–60 s), so every call returns quickly and progress stays visible. A `wait` that hits its `--timeout` returns a Failure envelope with `Retry: "RetryWillNotFix"` — for a non-terminal execution that just means "still running"; keep polling, don't treat it as fatal.
+**Agent-friendly waiting:** a single `--wait` call can sit silent for many minutes, which trips agent-harness watchdogs and shell timeouts. When running as an agent, prefer starting the run **without** `--wait`, then poll in bounded chunks: `uip tm wait --execution-id <EXECUTION_ID> --timeout 120 --output json` in a loop (or `uip tm executions get-stats` every 30–60 s), so every call returns quickly and progress stays visible. `wait` polls on a fixed 60 s interval, so keep `--timeout` a multiple of that — a shorter timeout can report a timeout for a run that already finished. A `wait` that hits its `--timeout` returns a Failure envelope with `Retry: "RetryWillNotFix"` — for a non-terminal execution that just means "still running"; keep polling, don't treat it as fatal.
 
 ## Step 7 — Results
 
@@ -162,6 +162,8 @@ Omit `--playwright-projects` entirely for a plain run (all config-default projec
 - Summary: `uip tm report get --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json` (`--project-key` or `--test-set-key` is required — bare `--execution-id` exits with "Provide --project-key or --test-set-key").
 - Per-test detail: `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json`.
 - JUnit export: `uip tm result download --execution-id <EXECUTION_ID> --result-path <dir> --output json`.
+- When parsing any of these programmatically, extract the JSON object rather than piping raw stdout: progress lines (`Resolved project …`), auto-updater output and telemetry warnings can precede or follow the envelope.
+- **Proving the run was scoped as asked:** `uip tm executions get-stats --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json` returns a `PlaywrightExecutionSnapshot` whose `Projects` is the project list the run actually used (`["chromium"]`). Counting logs proves nothing here — there is one test case log per Playwright **test**, not per test × project, so a two-project run yields the same number of logs as a one-project run.
 
 Execution happens on UiPath serverless cloud runtimes — no robot or package deployment into the folder is needed beyond the upload in Step 2, but the folder does need its serverless machine assignment (Step 4).
 
