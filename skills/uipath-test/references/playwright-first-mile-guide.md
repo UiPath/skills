@@ -24,7 +24,10 @@ The key difference from the RPA pipeline: there is **no link step**. Uploading t
 
 > **Do NOT run `uip tm testcases link-automation` on Playwright test cases.** They are linked by ingestion; manual linking is the RPA pipeline and will corrupt the association.
 
-> **If a command is missing.** The probe in Step 5 is optional — if `testsets playwright-context` answers `unknown command`, skip it and carry on; its absence says nothing about project scoping. Only if `run --playwright-projects` itself is rejected (`unknown option`) is scoping unavailable in that build; run the test set without it rather than retrying.
+> **If a command is missing.** Two commands in this pipeline are hidden from `--help`, so `--help` is not a reliable way to tell whether a build has them: `testsets playwright-context` (Step 5) and `run --playwright-projects` (Step 6). Older CLIs answer `unknown command` / `unknown option` for them. Treat them differently:
+>
+> - **Probe missing** → skip Step 5 and continue. The probe only *reports* whether a test set is Playwright; it does not enable anything, so losing it costs you the pre-check, not the capability. Project scoping still works.
+> - **`--playwright-projects` rejected** → this build cannot scope a run to selected projects. Run the test set without the flag (every project in the package's config runs) rather than retrying.
 
 ## Prerequisites
 
@@ -103,7 +106,7 @@ uip or users list-in-folder --folder-key <FOLDER_KEY> --output json
 uip or users get <USER_KEY> --all-fields --output json      # needs MayHaveUnattendedSession: true
 ```
 
-An ordinary interactive user usually has `MayHaveUnattendedSession: false`, and `uip or users update --allow-unattended` cannot fix that here — it requires a Windows unattended username and password, which serverless does not use. Assign an already-unattended-capable principal instead (a `DirectoryRobot` account is the reliable pick). Creating your own folder is a first-class option when no existing one qualifies: `uip or folders create <NAME> --output json` (name is positional), then attach a machine and such a user.
+Folder, machine and robot-user management is the platform skill's domain — see [/uipath:uipath-platform § orchestrator/setup-environment.md](../../uipath-platform/references/orchestrator/setup-environment.md) for the authoritative flags and the one-serverless-machine-per-folder rule. An ordinary interactive user usually has `MayHaveUnattendedSession: false`, and `uip or users update --allow-unattended` cannot fix that here — it requires a Windows unattended username and password, which serverless does not use. Assign an already-unattended-capable principal instead (a `DirectoryRobot` account is the reliable pick). Creating your own folder is a first-class option when no existing one qualifies: `uip or folders create <NAME> --output json` (name is positional), then attach a machine and such a user.
 
 ```bash
 uip tm testsets create --project-key <PROJECT_KEY> --name "PW Smoke" --output json
@@ -125,6 +128,8 @@ Before deciding whether `--playwright-projects` applies, ask the server:
 ```bash
 uip tm testsets playwright-context --test-set-key <TEST_SET_KEY> --output json
 ```
+
+Read the fields off the JSON response rather than relying on the names below staying current — this list describes today's shape, and `--output json` always carries whatever the API returns.
 
 - `Data.IsPlaywright: true` → the set resolves to one Playwright package; `AvailablePlaywrightProjects` holds the only valid `--playwright-projects` values, and `SelectedPlaywrightProjects` shows any selection already stored on the test set. Both are **comma-joined strings** (`"chromium, firefox"`), not arrays — split on `", "` when scripting; no stored selection is `""`.
 - `Data.IsPlaywright: false` → RPA, mixed, manual, or multi-package test set — run it **without** `--playwright-projects`.
@@ -174,7 +179,7 @@ uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key 
 uip or jobs list --folder-key <FOLDER_KEY> --output json
 ```
 
-A `Duration` of `00:00:00` and an empty `StartTime` on an already-finished execution are normal — not evidence of a broken run. `JobKey` values on the logs prove Test Manager dispatched; jobs `Faulted` with no host machine mean the tenant can't run them. Either way it needs the platform team — report it rather than re-running (there is no CLI verb to cancel a Test Manager execution).
+Everything past the Test Manager boundary — job states, machines, folder membership — belongs to [/uipath:uipath-platform § orchestrator/run-jobs.md](../../uipath-platform/references/orchestrator/run-jobs.md) and [§ orchestrator/setup-environment.md](../../uipath-platform/references/orchestrator/setup-environment.md); use those for the job-side detail. A `Duration` of `00:00:00` and an empty `StartTime` on an already-finished execution are normal — not evidence of a broken run. `JobKey` values on the logs prove Test Manager dispatched; jobs `Faulted` with no host machine mean the tenant can't run them. Either way it needs the platform team — report it rather than re-running (there is no CLI verb to cancel a Test Manager execution).
 
 ## Iterating on the suite (and getting a fix back in)
 
