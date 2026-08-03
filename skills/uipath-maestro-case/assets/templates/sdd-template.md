@@ -12,7 +12,7 @@ Designer actually consumes. A developer reading this document should be able to
 build the case in the Case Designer without guessing.
 
 **Inputs:**
-- Phase 0 interview answers (free-text + AskUserQuestion picks) — primary source
+- The delegated design conversation (free-text + AskUserQuestion picks, via `uipath-planner`) — primary source
 - This template — defines the output structure
 - See [references/case-schema.md](../../references/case-schema.md) for the JSON schema reference (types, rules, SLA model)
 
@@ -410,7 +410,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 #### Tasks
 
-> Tasks are listed in the order provided by the source spec / interview answers. Do not add, split, merge, or rename tasks; do not infer new tasks from context.
+> Tasks are listed in the order provided by the source spec / design conversation. Do not add, split, merge, or rename tasks; do not infer new tasks from context.
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|

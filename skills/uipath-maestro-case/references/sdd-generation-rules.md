@@ -1,6 +1,6 @@
 # SDD Generation Rules
 
-Content-quality contract for Phase 0's `sdd.md`. The interview in [phase-0-interview.md](phase-0-interview.md) owns the **conversation flow** (Listen / Sketch / Confirm / Build start). This file owns the **content rules** the in-memory case model must satisfy before the confirmation is presented — and therefore before `sdd.md` renders from it. Where older wording says "Approve" or "the Approve summary", read the §Confirm checkpoint and its `Decisions I made` block.
+Content-quality contract for `sdd.md`. **Authoring moved to `uipath-planner`** (SKILL.md Rule 15): the planner's Case Design Lane owns the conversation flow (Listen / Sketch / Confirm) and enforces these same content rules at design time. This copy is the **build-side contract** — what Phase 1+ may assume about a conformant case SDD, and the reference the plugins and validators cite. Where wording says "Phase 0", read the delegated design lane; where it says "Approve" or "the Approve summary", read the Case Review checkpoint and its `Decisions I made` block.
 
 Phase 1 trusts `sdd.md` as written (SKILL.md Rule 2). These rules make that trust safe.
 
@@ -144,7 +144,7 @@ When signals conflict, apply this priority — top wins:
 3. **Tenant evidence** from the registry cache — a deployed Action App, process, agent, API workflow, connector activity/trigger, or enabled connection that already matches work the user described. Prefer that resource's type/identity, but never add stages/tasks or rename business work merely because the tenant has a resource.
 4. **User-stated preference** in chat (verbatim "set the task to agent", "trigger = portal event").
 5. **Doc-extracted values** from user-shared docs.
-6. **Inferred defaults** per the assumption playbook in [phase-0-interview.md § Sketch](phase-0-interview.md#sketch--best-assumption-every-field).
+6. **Inferred defaults** per the design lane's assumption playbook (`uipath-planner`).
 7. **General-practice fallback.**
 
 When a higher tier overrides a lower one, apply it and surface it in the confirmation's `Decisions I made` block with provenance `(source: <higher-tier>-override)`.
@@ -165,7 +165,7 @@ The `type` says **how the work gets done**, not what it's about. Read the verb +
 | `wait-for-timer` | the case **pauses for a duration or until a datetime** | Is the case just waiting on time? |
 | `case-management` | the step **launches / coordinates a child case** | Does this spin up a sub-case? |
 
-**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. "Approve / review / decide" verbs are ambiguous between `action` (human) and `agent` (AI) — decide per the assumption playbook in [phase-0-interview.md § Sketch](phase-0-interview.md#sketch--best-assumption-every-field) and disclose the decision in the confirmation. A compliance trigger phrase forces `action` regardless of the pick above (see below).
+**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. "Approve / review / decide" verbs are ambiguous between `action` (human) and `agent` (AI) — decide per the design lane's assumption playbook (`uipath-planner`) and disclose the decision in the confirmation. A compliance trigger phrase forces `action` regardless of the pick above (see below).
 
 ## Task-type override priority
 
@@ -186,7 +186,7 @@ Extends the assumption playbook. Apply in this order when picking task `type`:
 
 3. **Tenant evidence** — if the registry cache resolves a deployed Action App / process / agent / api-workflow / RPA that fits, prefer that resource's type and surface the match.
 4. **Connector availability** — when an IS connector matches the integration, choose `execute-connector-activity` over `api-workflow`.
-5. **Verb signal** — fall through to the assumption playbook in [phase-0-interview.md § Sketch](phase-0-interview.md#sketch--best-assumption-every-field).
+5. **Verb signal** — fall through to the design lane's assumption playbook (`uipath-planner`).
 6. **Fallback** — keep the user's stated value if any; otherwise emit a placeholder per SKILL.md Rule 8 and pair it with a high-severity review item (§Review items).
 
 **Worked examples:**
@@ -915,7 +915,7 @@ Phase 0's job is to surface execution-readiness gaps, not just schema validity. 
 When Phase 0 defaults or infers a value, record provenance so Phase 1 and downstream auditors can trace it. The ledger has two surfaces:
 
 1. **Inline in `sdd.md`** — italic source attribution after the value: `Manual _(source: user-stated)_`. Omit attribution when the kind is `user-stated`.
-2. **Confirmation `Decisions I made` block** — see [phase-0-interview.md § Confirm](phase-0-interview.md#confirm--the-single-checkpoint).
+2. **Confirmation `Decisions I made` block** — see the design lane's Case Review (`uipath-planner`).
 
 **Design rationale is durable, not chat-only.** Provenance says *where a value came from*; rationale says *why the design choice fits*. Persist the latter in each stage/task `Design Rationale` field and in each case/stage SLA rationale field. The confirmation may summarize those reasons, but it is not their sole storage. Phase 1 copies the rationale to each matching `tasks.md` T-entry so an implementer can review the choice without the original conversation.
 
@@ -936,13 +936,13 @@ A non-`user-stated` and non-`verbatim` field without provenance is a validation 
 
 ## Finalization
 
-Phase 0 runs these checks **once, against the in-memory case model, before presenting the §Confirm checkpoint** ([phase-0-interview.md § Confirm](phase-0-interview.md#confirm--the-single-checkpoint)). Failures are the agent's defects: fix them in the model silently and re-check; a genuinely unfixable item becomes a ⚠ flagged line in the confirmation. After a user correction, re-run only the affected checks. **Steps 16 and 19 require resolved I/O contracts, which Phase 0's light pass does not pull — they are enforced at build time instead (Phase 1 discovery + Phase 3 io-binding Check 5); run them in Phase 0 only when a contract happens to be in memory.** The rendered `sdd.md` must match the confirmed model exactly; passing checks make the model eligible for rendering, they do not create the file.
+Phase 0 runs these checks **once, against the in-memory case model, before presenting the §Confirm checkpoint** (the design lane's Case Review (`uipath-planner`)). Failures are the agent's defects: fix them in the model silently and re-check; a genuinely unfixable item becomes a ⚠ flagged line in the confirmation. After a user correction, re-run only the affected checks. **Steps 16 and 19 require resolved I/O contracts, which the design lane (identity-level resolution only) does not pull — they are enforced at build time instead (Phase 1 discovery + Phase 3 io-binding Check 5); run them in Phase 0 only when a contract happens to be in memory.** The rendered `sdd.md` must match the confirmed model exactly; passing checks make the model eligible for rendering, they do not create the file.
 
 1. **Schema check.** Every task `type` ∈ 9-value enum (Rule 16). Every WHEN ↔ Marks-complete pair valid per sdd-template Key Rule 4:
    - Case-exit `Yes` + `selected-stage-*` → error
    - Stage-exit `Yes` + `selected-tasks-completed` → error
 2. **Render-contract check.** Every required cell in §Case content rules, §Stage content rules, §Task content rules has a concrete value (no banned `—` / `<UNRESOLVED>`).
-2a. **Template-shape check.** The exact rendered `sdd.md` text must pass [phase-0-interview.md § Template conformance gate](phase-0-interview.md#template-conformance-gate--before-sddmd-is-written): `# SDD — {Case Name}`, `## Table of Contents`, `## Section 1: Case Definition`, `## Section 2: Stages & Tasks`, `## Section 3: Personas & App Views`, `## Section 4: Integrations`, required Section 1 subsections, one complete stage block per stage, one complete task block per task, personas/app views, and integrations. Each task block must contain the exact marker `**Task envelope**` before the Required / Run Only Once / Skip Condition table; `**Task envelope:**` with a colon is a render failure. Secondary-stage task headings must use numeric `Task S{K}.{M}` form, never lettered prefixes such as `Task R.1`, `Task W.1`, `Task CC.1`, or `Task ESC.1`. Missing headings, missing full detail blocks, or top-level summary replacements (`## Source`, `## Case Objective`, `## Stages`, `## Task Plan`, etc.) are blocking render failures. This check runs before Write; if it fails after Write is observed, stop and repair before Phase 1.
+2a. **Template-shape check.** The exact rendered `sdd.md` text must pass the design lane's template conformance gate (`uipath-planner`; same required shape as [sdd-template.md](../assets/templates/sdd-template.md)): `# SDD — {Case Name}`, `## Table of Contents`, `## Section 1: Case Definition`, `## Section 2: Stages & Tasks`, `## Section 3: Personas & App Views`, `## Section 4: Integrations`, required Section 1 subsections, one complete stage block per stage, one complete task block per task, personas/app views, and integrations. Each task block must contain the exact marker `**Task envelope**` before the Required / Run Only Once / Skip Condition table; `**Task envelope:**` with a colon is a render failure. Secondary-stage task headings must use numeric `Task S{K}.{M}` form, never lettered prefixes such as `Task R.1`, `Task W.1`, `Task CC.1`, or `Task ESC.1`. Missing headings, missing full detail blocks, or top-level summary replacements (`## Source`, `## Case Objective`, `## Stages`, `## Task Plan`, etc.) are blocking render failures. This check runs before Write; if it fails after Write is observed, stop and repair before Phase 1.
 2b. **Safe display-name check.** Every generated or carried Case Designer display/title field for stages, tasks, rule names, SLA rules, and escalation rules uses only letters, numbers, spaces, hyphen, and underscore. Repair unsafe punctuation mechanically and disclose changed names in the Case Review. Do not normalize external resource lookup names.
 3. **Decision-task button check.** Every `action` task with `is_decision: Yes` has ≥ 2 buttons; every button's `Maps To` LHS references a declared §1.5 variable (by `Name`) or `taskOutcome`.
 4. **Recipient encoding check.** Every `action` task recipient uses one of the five typed prefixes (`Email:` / `User:` / `UserGroup:` / `Role:` / `Expression:`) — no bare strings.
@@ -978,7 +978,7 @@ Phase 0 runs these checks **once, against the in-memory case model, before prese
 19. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness; audit-checklist item 9). For every task resolved to a live resource (contract in `tasks/registry-resolved.json`): every **required** declared input is bound (any §Binding cell form, incl. an upstream-output ref — which needs NO §1.5 row) OR `<UNRESOLVED>` + a paired `high` review item (`rev_unbound_input_<task>_<field>`); every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract (a phantom field → `high` `rev_phantom_output_<task>_<field>`). Unbound required input with no review item → blocking error. Step 16 is the `action`-app instance of the output-fidelity direction; this step extends both directions to all runnable/connector types. Tasks whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` (no contract) are skipped.
 20. **Re-entry attempt check.** For each `return-to-origin`, rework, correction, or resubmission loop, classify the loop as new attempt, re-evaluate existing fact, or optional repeat work. New-attempt loops must leave request/review/decision producer tasks rerunnable (`Run Only Once: No`) and reset or attempt-scope the routing variables they produce. Re-evaluate-only loops must document which existing fact the origin re-reads.
 
-On pass: present the §Confirm checkpoint (SDD-shaped Case Review with a stages list that marks primary vs secondary, task classification rationale, activation modes, complete `Decisions I made` block, Caller obligation block when applicable, and ⚠ flags). A Build answer is the consent — `sdd.md` renders from the confirmed model batched with the first build actions ([phase-0-interview.md § Build start](phase-0-interview.md#build-start--sdd-written-alongside-the-build)); an explicit sign-off request adds one approval prompt before any file is created; design-only/draft requests save and stop. Corrections update the model and re-run only the affected checks.
+On pass: present the §Confirm checkpoint (SDD-shaped Case Review with a stages list that marks primary vs secondary, task classification rationale, activation modes, complete `Decisions I made` block, Caller obligation block when applicable, and ⚠ flags). A Build answer is the consent — `sdd.md` renders from the confirmed model batched with the first build actions (the single batched write, SKILL.md Rule 1); an explicit sign-off request adds one approval prompt before any file is created; design-only/draft requests save and stop. Corrections update the model and re-run only the affected checks.
 
 On fail: fix the model and re-run the failed checks (plus any whose inputs changed) — not the full suite. Do not present the confirmation, and never render `sdd.md`, while a fixable check is failing; surface only the unfixable as ⚠ flags.
 
