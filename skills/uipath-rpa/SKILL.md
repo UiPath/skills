@@ -171,6 +171,8 @@ First heavy `uip rpa` call pays a ~22s Studio host cold-start (shared across `va
 uip rpa activities find --query log --output json > /dev/null 2>&1 &
 ```
 
+On Windows PowerShell, `&` doesn't background — use `Start-Process powershell.exe -ArgumentList ...` (not `pwsh`). Never `Start-Process -FilePath "uip"` (or any `.ps1`): Windows opens it in Notepad, not PowerShell.
+
 **Skip** when 0 or 1 heavy `uip rpa` calls are expected (read-only Q&A, single-file inspection) — the warm-up doesn't reclaim its cost.
 
 ## Critical Rules
