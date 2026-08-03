@@ -64,6 +64,7 @@ CLI output is **PascalCase**. Field names below are exactly as returned by `stat
 - `ProductIdentifier` — owning product
 - `Key` — the policy formData key to set
 - `Expected` — the value the standard requires, as a predicate object with a **PascalCase** operator key (`{Eq}` / `{Gte}` / `{Lte}` / `{Contains}`); render human-readable (`{Gte: 30}` → "at least 30", `{Eq: true}` → "Enabled")
+  - **Only the operator key is really PascalCase.** Keys *inside* a `{Contains: [...]}` entry are policy formData keys, which the CLI has also PascalCased on the way out — the real ones are kebab-case (`CodeEmbeddedRulesConfigRules` is really `code-embedded-rules-config-rules`). Read them for display only. When writing a value back, take the key from `Key` and the shape from the policy's own `aops-policy get` output — never from these.
 - `Actual` — the value currently deployed on the tenant (absent / `null` when unset)
 
 `Data.DeploymentPolicies[].DriftedControls[]` — settings that WERE applied by the standard and have since been changed away from it. This is the only field that separates drift from never-applied: a drifted control shows up in `Clauses[].Controls[]` as `Status: "not-deployed"`, identical to one that was never deployed. Join by `ControlId`; when `ControlId` is absent (packs authored before bundle schema 2.1.0 omit it), fall back to `ControlDisplayName` — the server dedups drift rows by the same key.
@@ -114,6 +115,7 @@ Evaluate IN THIS ORDER (first match wins):
    - **3a. If `Summary.DriftedControlCount > 0` OR any product is `unverifiable`:** offer `'Reset the changed ISO 42001 settings back to the standard'` — the ⟳ items ARE that list, and restore also RECREATES the missing policy behind any Cannot-Be-Checked product (it resets every live pack policy to the bundle's suggested values and recreates deleted ones). Hand off to [`../restore/impl.md`](../restore/impl.md), which owns the confirmation gate — including the warning that restore also resets any ⚙ manual values an admin has already configured. Do NOT tell the user to hand-edit a ⟳ setting, and do NOT route ⟳ items into the AOps handoff below — that is the remedy for ⚙, not for drift.
    - If any ⚙ `manual` controls exist: `'Configure the manual ISO 42001 settings'` — the ⚙ items with expected/actual in DETAILS ARE the to-do list. When the user accepts, hand off to the AOps plugin to update the existing pack policy — see [Configuring manual settings (AOps handoff)](#configuring-manual-settings--aops-handoff). When 3a also applies, sequence restore FIRST, then the manual values — restore would overwrite manual values configured before it.
    - On an active pack there is no third remedy: a plain ✗ (not-deployed, not drifted) only occurs under a Cannot-Be-Checked product whose policy is missing — restore recreates it (3a). Never tell the user to configure an active pack's settings in the product's own UI. (Exception: an older server that doesn't return drift fields at all — then ✗ under an active pack is indistinguishable drift, and restore is still the remedy.)
+   - Fallback, if that ever fails to hold — ✗ settings on an active pack with no drift and no Cannot-Be-Checked product: do NOT leave them unexplained. Offer restore anyway (it re-asserts the standard's values on every live policy) and say the settings are not in place for a reason the posture data doesn't explain.
 
    These are not exclusive — a tenant can have ⟳, ⚙, and ✗ at once. Offer each that applies, drift first.
 
@@ -129,8 +131,9 @@ Progress bar: 5 cells scaled to the deployed ratio — filled = `round(DeployedC
 
 A setting is a **gap** when its `Status != "deployed"` — i.e. `not-deployed` (✗), drifted (⟳) and `manual` (⚙) all count as gaps in the impact tallies and per-clause counts (a manual setting is not yet applied).
 
-**Biggest risk area:** clause with the most High-impact gap controls (`Impact == "High" && Status != "deployed"`).
-**Quickest win:** clause with the fewest gap controls (`Status != "deployed"`) AND at least one is High impact. Ties: the clause with the higher deployed ratio (`DeployedControlCount / CheckableControlCount` — closest to done); still tied, the first by clause id.
+**Biggest risk area:** clause with the most High-impact gap controls (`Impact == "High" && Status != "deployed"`). Ties: the clause with the LOWER deployed ratio (`DeployedControlCount / CheckableControlCount` — furthest from done); still tied, the first in the order the API returned.
+**Quickest win:** clause with the fewest gap controls (`Status != "deployed"`) AND at least one is High impact. Ties: the clause with the HIGHER deployed ratio (closest to done); still tied, the first in the order the API returned.
+The two tie-breaks pull opposite ways on purpose — a single-clause tie must not name the same clause in both rows. If it still does (one clause is genuinely both), leave Quickest win blank rather than repeat it.
 
 Terminology rules:
 - Use "settings" NOT "controls" in output
@@ -187,15 +190,21 @@ Needs Configuration  (<N> of <total>)
     ⚙ <ControlDisplayName> — set to <Expected>; currently <Actual, or "not set">
   For each ⟳ row, add a sub-line from `DriftedControls[].UnmetSettings[]`:
     ⟳ <ControlDisplayName> — standard expects <PackValueDisplay>; currently <Actual>
-  Rendering `Actual`: raw formData tokens (`yes`/`no`/`true`/`false`/`null`) are machine
-  values — never print them verbatim. Translate into the vocabulary of the displayed
-  recommendation (e.g. expected `{Eq: "yes"}` with actual `"no"` under "Display EDR
-  Status: Enabled" → "currently Disabled"). When the display vocabulary can't be
-  inferred, write "currently not set to the recommended value" rather than the raw token.
-  The Recommendation column and the ⟳ expected side always show the editorial value
-  (`RecommendedSetting` / `PackValueDisplay`), never the raw predicate — the predicate
-  is for machine comparison; the two can differ in units (e.g. "Development only" vs
-  `{Eq: true}`).
+  Rendering `Actual` — never print it verbatim, whatever its type:
+  - Scalar tokens (`yes`/`no`/`true`/`false`/`null`): translate into the vocabulary of
+    the displayed recommendation (expected `{Eq: "yes"}`, actual `"no"`, under "Display
+    EDR Status: Enabled" → "currently Disabled").
+  - Arrays and objects (common — an `Expected` of `{Contains: [...]}` has an `Actual`
+    that is the whole live array, often hundreds of characters): NEVER print the
+    structure. Say whether the required entry is present: "currently not configured"
+    when the array has no matching entry, or "configured, but not with the value the
+    standard requires" when other entries exist. Dumping the array violates the
+    no-raw-output rule.
+  - Can't tell: "currently not set to the recommended value". Never the raw token.
+  The Recommendation column, and the expected side of BOTH ⚙ and ⟳ sub-lines, always
+  show the editorial value (`RecommendedSetting` / `PackValueDisplay`), never the raw
+  predicate — the predicate is for machine comparison; the two can differ in units
+  (e.g. "Development only" vs `{Eq: true}`).
 
   [repeat per clause with gaps]
 
@@ -244,7 +253,7 @@ Each ⚙ setting is a `Data.Clauses[].ManualConfigChecks[]` entry: `{ ProductIde
 
 Per product:
 1. **Resolve the pack's policy id for the product.** `uip gov aops-policy deployment tenant get <TENANT_ID> --output json` → the `TenantPolicies[]` entry whose `ProductIdentifier` matches → its `PolicyIdentifier`. Cross-check it belongs to the pack against `state get tenant <TENANT_ID> <packId>` `Policies[].ExternalPolicyId`.
-2. **Collect the org-specific value(s).** `Expected` is a predicate (`{Eq}`/`{Gte}`/`{Lte}`/`{Contains}`); `manual` means the concrete value is org-specific (an allowlist, a package set, a threshold). Ask the user, and confirm the value satisfies `Expected`.
+2. **Collect the org-specific value(s).** `Expected` is a predicate (`{Eq}`/`{Gte}`/`{Lte}`/`{Contains}`); `manual` means the concrete value is org-specific (an allowlist, a package set, a threshold). Ask the user, and confirm the value satisfies `Expected`. For a `{Contains: [...]}` predicate, compare against the live policy's own formData from step 3's `aops-policy get` — the keys inside the predicate entry are CLI-PascalCased formData keys, not the real ones (see the `Expected` note above), so building an entry from them writes keys the policy does not have.
 3. **Update via the AOps plugin.** Follow [`../../aops-policy/aops-policy-manage-guide.md`](../../aops-policy/aops-policy-manage-guide.md): `aops-policy get <PolicyIdentifier>` → set each `Key` in the returned formData to the collected value (build `--input` per [`../../aops-policy/configure-aops-policy-data-guide.md`](../../aops-policy/configure-aops-policy-data-guide.md)) → `aops-policy update` (**full replacement** — pass `--identifier <PolicyIdentifier>` plus every existing field back: `--name`, `--product-name`, `--description`, `--priority`, `--availability`, `--input` — omitting any clears it, per [`../../aops-policy/aops-policy-commands.md`](../../aops-policy/aops-policy-commands.md)). Never call `state enable`.
 4. **Receipt + confirm.** Show a post-update receipt (Critical Rule 6), then re-run coverage; each fixed ⚙ setting should flip to ✓ (`Controls[].Status == "deployed"`).
 
