@@ -59,7 +59,7 @@ CLI output is **PascalCase**. Field names below are exactly as returned by `stat
 - `RecommendedSetting` — the recommended value
 - `Status` — `"deployed"` (✓ Applied) / `"not-deployed"` (✗ Not Applied) / `"manual"` (⚙ Needs Manual Configuration — admin must set a value)
 
-`Data.Clauses[].ManualConfigChecks[]` (the actionable "what to set" detail behind every `Status == "manual"` control) — join to a `Controls[]` entry by `ControlId`:
+`Data.Clauses[].ManualConfigChecks[]` (the actionable "what to set" detail behind every `Status == "manual"` control) — join to a `Controls[]` entry by `ControlId`, falling back to `ControlDisplayName` when `ControlId` is absent (pre-2.1.0 bundles omit it; the display name is always present):
 - `ControlDisplayName` / `ControlId` — the setting
 - `ProductIdentifier` — owning product
 - `Key` — the policy formData key to set
@@ -92,7 +92,7 @@ The ⟳ split matters: ✗ and ⟳ look identical in `Status`, but they have dif
 
 Per-clause counts come from the clause's own `Controls[]` (or `DeployedControlCount` / `CheckableControlCount`). The SUMMARY clause counts come from `Data.Summary.ClauseSummary.*` directly.
 
-For each ⚙ `manual` control, look up its `Data.Clauses[].ManualConfigChecks[]` entry (match on `ControlId`) and show what to change: **`Expected`** value vs **`Actual`** deployed value. This is the actionable detail — surface it, don't stop at the ⚙ marker.
+For each ⚙ `manual` control, look up its `Data.Clauses[].ManualConfigChecks[]` entry (match on `ControlId`, else `ControlDisplayName`) and show what to change: **`Expected`** value vs **`Actual`** deployed value. This is the actionable detail — surface it, don't stop at the ⚙ marker.
 
 For each ⟳ drifted control, show the same expected-vs-actual line from its `UnmetSettings[]` (or `PackValueDisplay` when you only need the expected side).
 

@@ -59,4 +59,3 @@ What restore does and does not fix, per the server's own semantics (it resets ev
 - ⟳ drifted settings — fixed.
 - Cannot-Be-Checked products (policy deleted out-of-band) — fixed: the policy is recreated with the bundle's values.
 - ⚙ manual settings — NOT fixed, and worse: any value an admin had already configured for them is wiped back to the bundle default. After a restore, expect the ⚙ list to be back in full; say so, and point at the manual-settings flow to (re)configure them AFTER the restore, never before.
-- Custom (Rego) policies — untouched.
