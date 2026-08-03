@@ -16,7 +16,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "uipath-maestro-case"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from _shared.entry_rule_check import (  # noqa: E402
     column,

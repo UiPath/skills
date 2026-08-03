@@ -58,7 +58,7 @@ success_criteria:
 
   - type: run_command
     description: "sdd.md is mechanically sound: variable mappings + lineage, per-gate rule legality, task types, entry/completion/exit conditions"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/sdd_check.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/sdd_check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

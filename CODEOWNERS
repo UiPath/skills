@@ -74,6 +74,7 @@
 /skills/uipath-planner/ @RaduAna-Maria @abhiram-vad
 /tests/tasks/uipath-planner/ @RaduAna-Maria @abhiram-vad
 # Case-design evals migrated from uipath-maestro-case (planner-sole-SDD-author) — case owners stay reviewers
+/tests/tasks/uipath-planner/_shared/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
 /tests/tasks/uipath-planner/case_design_interview/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
 /tests/tasks/uipath-planner/case_design_loan/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
 /tests/tasks/uipath-planner/case_finalize_draft/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
