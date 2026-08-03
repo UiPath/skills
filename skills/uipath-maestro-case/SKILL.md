@@ -12,7 +12,7 @@ Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` pl
 
 When `sdd.md` is absent, the case design is **delegated at runtime to `uipath-planner`** — the sole author of case SDDs. The planner's Case Design Lane runs in this same conversation (Listen → full design-time tenant resolution → Sketch → ONE SDD-shaped Case Review confirmation) and hands back the confirmed in-memory model, the rendered template-complete SDD text, and a resolution ledger — no file handoff, no extra latency. This skill then lands everything in ONE batched write (`sdd.md` + first build actions) and builds. If the planner skill is unavailable, degrade gracefully: ask the user for an `sdd.md` and stop (Rule 15). Case draft finalization (`sdd.draft.md` → `sdd.md`) is also the planner's job — delegate it the same way.
 
-**Scope:** two journeys — **greenfield** (build a new case from `sdd.md`, user-provided or Phase 0-generated) and **brownfield** (targeted edits to an existing `caseplan.json` — see [references/brownfield.md](references/brownfield.md)). Editing a case that also lives in Studio Web? Brownfield pulls the current server state first (`uip solution download` / `solution projects resync`) so re-publish can't silently clobber server-side changes — see [brownfield.md § Pull latest first](references/brownfield.md#pull-latest-first-before-editing).
+**Scope:** two journeys — **greenfield** (build a new case from `sdd.md`, user-provided or planner-designed) and **brownfield** (targeted edits to an existing `caseplan.json` — see [references/brownfield.md](references/brownfield.md)). Editing a case that also lives in Studio Web? Brownfield pulls the current server state first (`uip solution download` / `solution projects resync`) so re-publish can't silently clobber server-side changes — see [brownfield.md § Pull latest first](references/brownfield.md#pull-latest-first-before-editing).
 
 ## When to Use This Skill
 
@@ -56,8 +56,8 @@ When `sdd.md` is absent, the case design is **delegated at runtime to `uipath-pl
 
 | Condition | Journey |
 |---|---|
-| New case, or `sdd.md` provided, or no `caseplan.json` yet, or user asks to (re)build from a spec | **Greenfield** — Phase 0→6 below |
-| `caseplan.json` exists AND intent is a targeted edit ("add a stage", "remove task X", "change a condition", "swap the trigger") | **Brownfield** — skip Phase 0→6, go to [references/brownfield.md](references/brownfield.md) |
+| New case, or `sdd.md` provided, or no `caseplan.json` yet, or user asks to (re)build from a spec | **Greenfield** — design delegation + Phases 1→6 below |
+| `caseplan.json` exists AND intent is a targeted edit ("add a stage", "remove task X", "change a condition", "swap the trigger") | **Brownfield** — skip delegation and Phases 1→6, go to [references/brownfield.md](references/brownfield.md) |
 
 Brownfield bypasses planning, prototyping, and their hard stops; it still honors the debug-consent gate (Rule 12) and reuses the Phase 5 / Phase 6 contracts.
 
@@ -75,11 +75,11 @@ Keep the roadmap to five lines or fewer. Print it once per invocation; do not re
 
 ## Workflow
 
-Decisions are front-loaded; the build runs unattended to the debug gate. **Phase 0** (design delegated to `uipath-planner` → one Case Review confirmation, only when sdd.md absent; the Build answer is the consent — `sdd.md` lands in the single batched write alongside the first build actions, and an extra approval prompt exists only for explicit sign-off requests) → **Phase 1 Planning** (auto-proceed from the in-memory model; stop for review only when the request asks) → **Phase 2 Prototyping** (placeholder; Phase 2 → 3 pauses only when the up-front build-review preference chose the preview — Rule 11) → **Phase 3 Implementation** (no stop) → **Phase 4 Validate** (retry-cap stop on 3rd failure) → **Phase 5 Debug** (Run vs Skip-to-Publish stop — never bypassed) → **Phase 6 Publish** (Publish vs Done stop — never bypassed).
+Decisions are front-loaded; the build runs unattended to the debug gate. **Design delegation** (to `uipath-planner` → one Case Review confirmation, only when sdd.md absent; the Build answer is the consent — `sdd.md` lands in the single batched write alongside the first build actions, and an extra approval prompt exists only for explicit sign-off requests) → **Phase 1 Planning** (auto-proceed from the in-memory model; stop for review only when the request asks) → **Phase 2 Prototyping** (placeholder; Phase 2 → 3 pauses only when the up-front build-review preference chose the preview — Rule 11) → **Phase 3 Implementation** (no stop) → **Phase 4 Validate** (retry-cap stop on 3rd failure) → **Phase 5 Debug** (Run vs Skip-to-Publish stop — never bypassed) → **Phase 6 Publish** (Publish vs Done stop — never bypassed).
 
 ### Kickoff — set dev expectations first
 
-Before any planning or build work, present the flow once so the dev knows the steps and where they'll be asked to decide. Emit the matching block below verbatim in tone (adjust wording to fit context; keep the checkpoint markers). Present ONCE per run — at Phase 0 start if the design delegation runs, else at Phase 1 start. Allow-listed standalone text block (Anti-patterns token cap); do not repeat it at later phases.
+Before any planning or build work, present the flow once so the dev knows the steps and where they'll be asked to decide. Emit the matching block below verbatim in tone (adjust wording to fit context; keep the checkpoint markers). Present ONCE per run — at delegation start if the design delegation runs, else at Phase 1 start. Allow-listed standalone text block (Anti-patterns token cap); do not repeat it at later phases.
 
 **Greenfield** (building a new case):
 
@@ -91,15 +91,15 @@ Before any planning or build work, present the flow once so the dev knows the st
 > - **Debug** (optional) — **you choose** whether to run the case for real (live emails / API calls).
 > - **Publish** (optional) — **you choose** whether to upload to Studio Web.
 
-When Phase 0 runs, prefix one line: "First I'll design the case from what you've given me — checking your UiPath tenant along the way — and show one review packet with the case snapshot, data, primary and secondary stages, task classification rationale, other paths, rules/resources, and every decision made — one confirmation, then I build; the full design doc (`sdd.md`) is saved alongside for reference." (The design itself runs through the planner lane per Rule 15 — user-facing language never mentions the delegation.)
+When the design delegation runs, prefix one line: "First I'll design the case from what you've given me — checking your UiPath tenant along the way — and show one review packet with the case snapshot, data, primary and secondary stages, task classification rationale, other paths, rules/resources, and every decision made — one confirmation, then I build; the full design doc (`sdd.md`) is saved alongside for reference." (The design itself runs through the planner lane per Rule 15 — user-facing language never mentions the delegation.)
 
 **Brownfield** (editing an existing case): present the short version at entry — see [references/brownfield.md](references/brownfield.md).
 
-### Phase 0 — Design delegation (conditional)
+### Design delegation (conditional)
 
-Triggered when `sdd.md` absent at resolved path (strict binary trigger: an `.md` at the resolved path whose basename contains `sdd` counts — a non-`sdd.md` basename is copied to `./sdd.md` and Phase 0 is skipped; if the prompt names no `.md`, the default candidate is `./sdd.md`). Delegate the design to `uipath-planner`'s Case Design Lane per Rule 15 — the planner runs Listen → full design-time tenant resolution (background login + `registry pull`, per-resource cache lookups, connections, ONE batched ambiguity/empty gate) → best-assumption Sketch with the mandatory other-path sweep → the single SDD-shaped Case Review (Build options folded in per Rule 11) — then hands back the confirmed model + rendered SDD text + resolution ledger without writing.
+Triggered when `sdd.md` absent at resolved path (strict binary trigger: an `.md` at the resolved path whose basename contains `sdd` counts — a non-`sdd.md` basename is copied to `./sdd.md` and delegation is skipped; if the prompt names no `.md`, the default candidate is `./sdd.md`). Delegate the design to `uipath-planner`'s Case Design Lane per Rule 15 — the planner runs Listen → full design-time tenant resolution (background login + `registry pull`, per-resource cache lookups, connections, ONE batched ambiguity/empty gate) → best-assumption Sketch with the mandatory other-path sweep → the single SDD-shaped Case Review (Build options folded in per Rule 11) — then hands back the confirmed model + rendered SDD text + resolution ledger without writing.
 
-> **Read budget for Phase 0.** Do NOT read `references/planning.md`, `references/sdd-generation-rules.md`, or plugin planning/implementation references before the Case Review is approved, even when the user also requested `tasks.md`; planning starts after approval. Do NOT preload plugin `impl-json.md` files — those are needed only in Phase 2/3 and pulled in just-in-time per T-entry. **No-build design+plan budget:** when the request explicitly asks for `sdd.md` plus `tasks/tasks.md` and says to stop before `caseplan.json`, write both right after the approved Case Review without a second approval prompt (compact no-build shape — [references/planning.md § Step 3](references/planning.md)); do not open plugin planning docs, schemas, registry, connections, or user lookup in that run.
+> **Read budget for the delegation window.** Do NOT read `references/planning.md`, `references/sdd-generation-rules.md`, or plugin planning/implementation references before the Case Review is approved, even when the user also requested `tasks.md`; planning starts after approval. Do NOT preload plugin `impl-json.md` files — those are needed only in Phase 2/3 and pulled in just-in-time per T-entry. **No-build design+plan budget:** when the request explicitly asks for `sdd.md` plus `tasks/tasks.md` and says to stop before `caseplan.json`, write both right after the approved Case Review without a second approval prompt (compact no-build shape — [references/planning.md § Step 3](references/planning.md)); do not open plugin planning docs, schemas, registry, connections, or user lookup in that run.
 
 Produces (via Rule 1's single batched write on a Build answer):
 
@@ -107,7 +107,7 @@ Produces (via Rule 1's single batched write on a Build answer):
 - `sdd-viewer.html` — optional, on explicit request only; Phase 1 ignores it. Generation: Read `assets/templates/sdd-viewer.html`, replace the `__SDD_DATA__` token in its `<script id="sdd-data">` block with JSON serialized from the confirmed model (schema in the template's header comment — do NOT re-parse `sdd.md`), Write `./sdd-viewer.html` (Rule 13). Failure → one-line notice, continue
 - `tasks/registry-resolved.json` — written by Phase 1 (seeded verbatim from the planner's resolution ledger, Rule 9)
 
-If `sdd.md` already exists: skip Phase 0, hand to Phase 1 unchanged. If `uipath-planner` is unavailable: degraded path per Rule 15 — ask for an `sdd.md` and stop.
+If `sdd.md` already exists: skip delegation, hand to Phase 1 unchanged. If `uipath-planner` is unavailable: degraded path per Rule 15 — ask for an `sdd.md` and stop.
 
 ### Phase 1 — Planning
 
@@ -166,7 +166,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 
 | I need to... | Read |
 |---|---|
-| Design a case when no sdd.md exists | Delegate to `uipath-planner` (Rule 15 + § Phase 0 — Design delegation) |
+| Design a case when no sdd.md exists | Delegate to `uipath-planner` (Rule 15 + § Design delegation) |
 | Plan tasks from sdd.md | [references/planning.md](references/planning.md) |
 | Execute tasks.md into a case | [references/implementation.md](references/implementation.md) |
 | Edit an existing caseplan.json (targeted edits) | [references/brownfield.md](references/brownfield.md) |
@@ -234,7 +234,8 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 ## Anti-patterns
 
 - **Do NOT leave a regular stage without an entry condition.** With edges retired (Rule 20), stage entry conditions are the sole reachability contract. Every regular stage needs ≥1 `stage-entry-conditions` rule naming a reachable predecessor; the first stage carries `case-entered`. A stage with no entry condition is orphaned and unreachable.
-- **Do NOT substitute a generic build plan for Phase 0 confirmation.** For a new case without an SDD, project/workspace "plan first" rules are satisfied by the SDD-shaped Case Review: case snapshot, data contract, one stages list showing primary and secondary stages, activation modes (`sequential`, `parallel`, `event-driven`, `adhoc`, `fan-in`, `conditional-gate`), task classification rationale, **Other Paths Considered**, rules/tiers, resources, decisions, and review flags. A "Build Plan" / "Approve this plan" list of stages, artifact names, registry steps, output folders, validation commands, or placeholder caveats must not be used as the approval gate, and a user "Yes" to it must not create files.
+- **Do NOT substitute a generic build plan for the design confirmation.** For a new case without an SDD, project/workspace "plan first" rules are satisfied by the planner's SDD-shaped Case Review (section list in Rule 1). A "Build Plan" / "Approve this plan" list of stages, artifact names, registry steps, output folders, validation commands, or placeholder caveats must not be used as the approval gate, and a user "Yes" to it must not create files.
+
 - **Do NOT start Phase 1 planning before the Case Review is approved.** If the user asks for both a new design and `tasks.md`, the first stop is still the delegated design's SDD-shaped Case Review. Read planning/plugin references and write `tasks.md` only after the Case Review is approved.
 - **Do NOT ship a summary `sdd.md`.** The written SDD must preserve the template's title, table of contents, Section 1/2/3/4 headings, case metadata/triggers/variables, one full stage block per stage, one full task block per task, personas/app views, and integrations. A valid `caseplan.json` does not prove the SDD followed the template.
 - **Do NOT plan only the primary flow.** The delegated design must sweep for **Other Paths Considered** before confirmation: rework, rejection, withdrawal/cancellation, SLA escalation, external-system failure, manual override, optional side work, and alternate terminal outcomes. A hand-back without that sweep is incomplete — send it back through the lane, do not patch it silently.

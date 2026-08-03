@@ -6,6 +6,15 @@ The downstream build skill (`uipath-maestro-case`) trusts the SDD as written. Th
 
 > **Phase terminology legend.** This contract predates the planner becoming the sole case-SDD author, and its build-pipeline phase names are kept because the downstream build skill still uses them: **Phase 0** = this design lane (now owned by `uipath-planner`); **Phase 1** = the build skill's planning pass (verify-only when this lane already resolved resources); **Phase 2/3** = the build skill's prototyping/implementation passes; `tasks/registry-resolved.json` = the build skill's resolution audit file, seeded from this lane's resolution ledger. Checks marked "enforced at build" run in `uipath-maestro-case`, not here.
 
+## Read map — load only what the activity needs
+
+| Activity | Read |
+|---|---|
+| Sketch (greenfield design) | §Mental model (incl. lifecycle rules, SLA response model, other-path sweep), §Content authority hierarchy, §Choosing the task type + §Task-type override priority, §1.5 declare-vs-xref |
+| Case Review / render checks | §Render contract + content rules, §Variable lineage closure, §Review items, §Logical integrity, §Architect's lens, §Finalization |
+| Draft finalization | **None of this file** — the lane guide's finalize sections + the template carry the whole normalization contract |
+| Worked I/O patterns | [`case-sdd-examples.md`](../assets/templates/case-sdd-examples.md), on demand only |
+
 ## Mental model: stages, secondary stages, tasks
 
 Reason the case shape from the process the user describes — **do not reach for the template first.** The template renders a shape you already decided; it does not decide it for you. Build the model in this order: stages → tasks → types → sweep other paths. Each concept below is a question to ask of the user's process, not a slot to fill.
@@ -944,7 +953,8 @@ Phase 0 runs these checks **once, against the in-memory case model, before prese
    - Case-exit `Yes` + `selected-stage-*` → error
    - Stage-exit `Yes` + `selected-tasks-completed` → error
 2. **Render-contract check.** Every required cell in §Case content rules, §Stage content rules, §Task content rules has a concrete value (no banned `—` / `<UNRESOLVED>`).
-2a. **Template-shape check.** The exact rendered `sdd.md` text must pass [case-design-lane-guide.md § Template conformance gate](case-design-lane-guide.md#template-conformance-gate--before-sddmd-is-written): `# SDD — {Case Name}`, `## Table of Contents`, `## Section 1: Case Definition`, `## Section 2: Stages & Tasks`, `## Section 3: Personas & App Views`, `## Section 4: Integrations`, required Section 1 subsections, one complete stage block per stage, one complete task block per task, personas/app views, and integrations. Each task block must contain the exact marker `**Task envelope**` before the Required / Run Only Once / Skip Condition table; `**Task envelope:**` with a colon is a render failure. Secondary-stage task headings must use numeric `Task S{K}.{M}` form, never lettered prefixes such as `Task R.1`, `Task W.1`, `Task CC.1`, or `Task ESC.1`. Missing headings, missing full detail blocks, or top-level summary replacements (`## Source`, `## Case Objective`, `## Stages`, `## Task Plan`, etc.) are blocking render failures. Under the lane's write-early cadence this check runs against the assembled on-disk file BEFORE the `Status: ready` flip; on failure, repair the file and re-check before flipping ready.
+2a. **Template-shape check.** The exact rendered `sdd.md` text must pass [case-design-lane-guide.md § Template conformance gate](case-design-lane-guide.md#template-conformance-gate--before-sddmd-is-written) — the single source for the required heading set, per-stage/per-task block shape, `**Task envelope**` marker, numeric `Task S{K}.{M}` secondary headings, plain `<UNRESOLVED>` markers, and the forbidden summary-only sections. Under the lane's write-early cadence it runs against the assembled on-disk file BEFORE the `Status: ready` flip; on failure, repair the file and re-check before flipping ready.
+
 2b. **Safe display-name check.** Every generated or carried Case Designer display/title field for stages, tasks, rule names, SLA rules, and escalation rules uses only letters, numbers, spaces, hyphen, and underscore. Repair unsafe punctuation mechanically and disclose changed names in the Case Review. Do not normalize external resource lookup names.
 3. **Decision-task button check.** Every `action` task with `is_decision: Yes` has ≥ 2 buttons; every button's `Maps To` LHS references a declared §1.5 variable (by `Name`) or `taskOutcome`.
 4. **Recipient encoding check.** Every `action` task recipient uses one of the five typed prefixes (`Email:` / `User:` / `UserGroup:` / `Role:` / `Expression:`) — no bare strings.

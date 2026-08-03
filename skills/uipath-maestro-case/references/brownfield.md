@@ -1,6 +1,6 @@
 # Brownfield — Edit an Existing Case
 
-Targeted changes to an existing `caseplan.json`. Skips the Phase 0–6 build pipeline. Terminates at `validate`, then hands off to Phase 5 (debug) / Phase 6 (publish).
+Targeted changes to an existing `caseplan.json`. Skips the design delegation and the Phase 1–6 build pipeline. Terminates at `validate`, then hands off to Phase 5 (debug) / Phase 6 (publish).
 
 > **Greenfield (new case from `sdd.md`) uses a different journey.** If `caseplan.json` does not yet exist, or the user wants to (re)build from a spec, see [planning.md](planning.md) → [implementation.md](implementation.md) → [phased-execution.md](phased-execution.md) instead.
 

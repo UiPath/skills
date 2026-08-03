@@ -72,7 +72,7 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 
 ## Identity Resolution
 
-When sdd gives an escalation recipient as an email (`User: manager@corp.com`) or group name (`UserGroup: "Order Management Team"`), resolve to a directory UUID via `uip admin` while authoring the T-entry. Resolved UUIDs land inline in `tasks.md`; [`impl-json.md`](impl-json.md) writes them straight into `escalationRule[].action.recipients[].target` — no sentinel needed. Resolution runs **Phase 1 only** — Phase 0 still records email / group name as a string in sdd.md.
+When sdd gives an escalation recipient as an email (`User: manager@corp.com`) or group name (`UserGroup: "Order Management Team"`), resolve to a directory UUID via `uip admin` while authoring the T-entry. Resolved UUIDs land inline in `tasks.md`; [`impl-json.md`](impl-json.md) writes them straight into `escalationRule[].action.recipients[].target` — no sentinel needed. Resolution runs **Phase 1 only** — the design lane records email / group name as a string in sdd.md.
 
 ### Skip — UUID pass-through
 
