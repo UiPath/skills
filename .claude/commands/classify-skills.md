@@ -23,6 +23,8 @@ The output path is `$2`.
 
 For each skill, read its SKILL.md and optional files to find out any deterministic, repeatable thing the SKILL.md makes the agent do. If no such procedure exists, the skill is not script-ify-able. Don't include the skill's own scripts (CLI commands count as well) as part of the codifiable procedures. If a skill has been fully scripted by itself, then the skill should be classified as None.
 
+Also check the skill's existing scripts. If the skill directs the agent to run two or more of those scripts in a fixed sequence with no AI judgment required between them, that sequence is itself an unscripted TRANSFORM-PIPELINE (orchestration opportunity) — record it as a codifiable procedure even though the individual steps are already scripted.
+
 Some examples (not limited to these) of codifiable procedures are as follows:
 
 - **PARSE** — read a file/format into structured data (binary formats, XML/JSON/CSV, domain files, source → AST). Deterministic reader, one correct output.
@@ -48,11 +50,79 @@ Compare the procedures you found with things the skill teaches:
 - Partial: If the procedures take up part of the skill
 - None: the skill doesn't have any codifiable procedures
 
-## Step 3: Write you classification
-The final output should contain 2 files: classification.json and classification-details.md.
+## Step 3: Write your classification
 
-- classification.json: the keys are the class label, and the values are list of skills
-- classification-details.md: for each skill, you need to include the justifications for making the classification decision and where the justifications are derived. Also write down the things a skill teaches the agent and which of these things can be scripted, and add an estimate of turn-savings by script-ifing procedures.
+Output two files. When classifying a single skill, append `-<skill-name>` to each filename (e.g., `classification-details-uipath-maestro-bpmn.md`).
 
-If there is only one skill, then the skill's name should be attached to the files' name.
+### classification.json
 
+Keys are the class labels (`Strong`, `Partial`, `None`); values are arrays of skill names.
+
+```json
+{
+  "Strong": ["uipath-foo"],
+  "Partial": ["uipath-bar"],
+  "None": ["uipath-baz"]
+}
+```
+
+### classification-details.md
+
+Use **exactly** this structure for every skill (one skill = one file):
+
+```
+# Classification Details — <skill-name>
+
+**Classification: <Strong|Partial|None>**
+
+---
+
+## What the Skill Teaches
+
+<one sentence summary of the skill's scope>
+
+| # | Area | Codifiable? | Notes |
+|---|------|-------------|-------|
+| 1 | <area description> | No | <reason> |
+| 2 | **<area description>** | **Yes — <TYPE>** | <reason> |
+…
+
+---
+
+## Codifiable Procedures (not yet scripted)
+
+### 1. <Procedure name> — <TYPE>
+
+**Source:** `<path/to/reference.md>` §<Section name>
+
+**What it does:** <2–4 sentences: inputs → outputs, what is parsed/computed/validated>
+
+**Why it's mechanical:** <1–2 sentences: why no judgment is required>
+
+**Turn savings:** <1 sentence: what the agent currently does without the script and how many turns it takes>
+
+---
+
+### 2. …
+
+---
+
+## Justification for Classification
+
+**<Label>** — not <other label>, not <other label>.
+
+**Why not Strong:** <reason the codifiable procedures don't dominate the skill>
+
+**Why not None:** <reason at least one codifiable procedure exists>
+
+**Evidence locations:**
+- <finding>: `<file>` §<section>
+- …
+```
+
+Formatting rules:
+- In the "What the Skill Teaches" table, **bold** the entire row (Area cell and Codifiable? cell) for every Yes row.
+- `Codifiable?` values: `No`, `**Yes — <TYPE>**`, or `Marginal` (use Marginal when a procedure is theoretically scriptable but too small or low-value to warrant a standalone script).
+- List only procedures that are **not yet scripted** under "Codifiable Procedures". If a procedure is already scripted, note it as "Already scripted" in the table Notes column and omit it from the procedures section.
+- `TYPE` must be one of the taxonomy labels from Step 1 (PARSE, COMPUTE/FORMULA, TRANSFORM-PIPELINE, LOOKUP/REFERENCE-TABLE, VALIDATE/CHECK, FORMAT-CONVERT, BUILD-MODEL/MATRIX, EXTRACT, AGGREGATE/STATS, DETECT).
+- "Justification for Classification" must always have all three subsections (Why not Strong, Why not None, Evidence locations), even for Strong or None classifications — adapt the language accordingly (e.g., for None: "Why not Strong: no codifiable procedures exist"; "Why not None: N/A — this skill is classified None").

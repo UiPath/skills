@@ -21,6 +21,8 @@ The skills path is `$1`. The path is either a parent path that contains multiple
 
 For each skill, read its SKILL.md and optional files to find out any deterministic, repeatable thing the SKILL.md makes the agent do. Write your findings to a `findings.md` file next to the SKILL.md. Your findings should include what the procedure is, where the procedure is derived in the SKILL.md, and how it can be turned into scripts. If no such procedure exists, the skill is not script-ify-able. You should leave the skill as-is.
 
+Also check the skill's existing scripts. If the skill directs the agent to run two or more of those scripts in a fixed sequence with no AI judgment required between them, that sequence is itself an unscripted TRANSFORM-PIPELINE (orchestration opportunity) — record it as a codifiable procedure even though the individual steps are already scripted.
+
 Some examples (not limited to these) of codifiable procedures are as follows:
 
 - **PARSE** — read a file/format into structured data (binary formats, XML/JSON/CSV, domain files, source → AST). Deterministic reader, one correct output.
@@ -36,7 +38,7 @@ Some examples (not limited to these) of codifiable procedures are as follows:
 
 ## Step 2: Write scripts
 
-Based on your findings, write scripts that complete the procedures in one call. If one procedure pipeline other procedures, you should write an orchestrator script that chains other scripts. Scripts live under `scripts/`.
+Based on your findings, write scripts that complete the procedures in one call. If one procedure pipelines/chains other procedures, you should write an orchestrator script that chains other scripts. Scripts live under `scripts/`.
 
 Criteria are as follows:
 
