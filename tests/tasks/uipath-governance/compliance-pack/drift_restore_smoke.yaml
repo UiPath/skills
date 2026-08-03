@@ -63,11 +63,10 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
-    description: "Posture check does NOT re-apply the standard (pack is already enabled)"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable'
-    weight: 3.0
-    pass_threshold: 1.0
+  # Deliberately NOT asserting that `state enable` is absent. Every gov task
+  # shares one pack and each cleanup disables it globally, so a sibling can
+  # flip Active mid-run — and with Active false the skill is RIGHT to offer
+  # the apply. The assertion would fail correct behavior at random.
 
   - type: command_not_executed
     description: "Drifted settings are NOT routed to aops-policy update (that is the manual-setting remedy)"
