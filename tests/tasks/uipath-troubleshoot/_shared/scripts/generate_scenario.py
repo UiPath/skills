@@ -204,7 +204,7 @@ agent reached a verified resolution. The fixtures are the verbatim
 
 | Layer | Source |
 |---|---|
-| `m/uip` + `m/uip.cmd` | shared from the suite `_shared/mock_template/` (manifest-driven Python dispatcher) |
+| `m/uip` + `m/uip.cmd` | shared from the suite `_shared/mock_template/` (manifest-driven dispatcher, shipped as a compressed blob; source in `_shared/mock_src/uip.py`) |
 | `process/` | frozen snapshot of the failing UiPath project |
 | `data/m/r/*.json` | real stdout extracted verbatim from the session transcript (filename = sha1[:10] of args; short to keep Windows paths under MAX_PATH) |
 | `data/m/r/manifest.json` | dispatch table mapping each command pattern to its recorded fixture |
