@@ -1,0 +1,6 @@
+{
+  "Name": "SharedInboxArchiver",
+  "ProjectType": "Process",
+  "Description": "Reads a shared mailbox and deletes processed messages.",
+  "MainFile": "Main.xaml"
+}

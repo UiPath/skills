@@ -93,16 +93,17 @@ When a package is installed, its activity docs land under `{PROJECT_DIR}/.local/
 
 `uip rpa run` runs a workflow with no debugging; the `debug` group drives breakpoints, stepping, and exception handling (see [debugging.md](debugging.md)). For UI automation, prefer `debug start` over `run` so the app is preserved for selector repair on error. Cancel an active run or session with `uip rpa execution cancel`. Pass workflow inputs as repeatable `--input-arguments key=value` pairs (see [Passing structured inputs](#passing-structured-inputs)); discover the remaining flags (log level, skip-build, profiling) via `--help`.
 
-Both `run` and `debug start` return the same envelope: `{Result, Code, Data: {runResult: "<json-string>"}, ...}`. `Data.runResult` is a **JSON string** — parse it separately. It has three fields (plus optional `Profiling`):
+Both `run` and `debug start` return the same envelope: `{Result, Code, Data: {runResult: "<json-string>"}, ...}`. `Data.runResult` is a **JSON string** — parse it separately:
 
-- `Output` — the workflow's own serialized output arguments JSON (`""` for non-`Start*` commands). **Carries the workflow's data, not a verdict.**
-- `HasErrors` — `true` iff execution did not complete successfully (compile/validation failure, unhandled exception, cancellation, or timeout); `false` otherwise.
-- `ErrorMessage` — formatted error chain when `HasErrors: true`; `null` otherwise.
+- `Output` — the workflow's own serialized output arguments JSON, populated when the run completes. **Carries the workflow's data, not a verdict.**
+- `HasErrors` — `true` iff execution finished unsuccessfully (compile/validation failure, unhandled exception that ended the run, cancellation, or timeout); `false` otherwise — including while a debug session is `Suspended` on an exception, since the outcome is not decided yet.
+- `ErrorMessage` — formatted error chain when `HasErrors: true`; on debug responses it may instead carry guidance with `HasErrors: false`; `null` otherwise.
+- `DebugState` / `DebugDetails` — debug sessions only (`null` on plain `run`). Every debug command returns at the next stable state — `Paused` (activity + locals in `DebugDetails`), `Suspended` (exception + locals), `Running` (wait timed out), or `Completed`. See [debugging.md § The stable-state debug loop](debugging.md#the-stable-state-debug-loop-headless).
 - `Profiling.OutputDirectory` — present only when `--profiling` was passed on a start verb and collection succeeded; absolute path to the per-run `*.uistat` files and runtime screenshots. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance).
 
-Workflow log output (`Log Message`, system traces) does **not** appear in `runResult` — logs stream in real time on a separate channel; the envelope carries only the verdict and output data.
+Workflow log output (`Log Message`, system traces) does **not** appear in `runResult` — logs stream in real time on a separate channel; the envelope carries only the verdict, debug state, and output data.
 
-> **Single source of truth for success/failure: outer `Result` (equivalently `HasErrors` inside `runResult`).** `Result: "Success"` already accounts for compile failures, validation failures, and unhandled exceptions — the CLI propagates them. **DO NOT infer failure from a streamed log entry's `Level`.** A successful workflow may emit `Log Message` at `Error`/`Warning` level as observability — that is workflow data, not a CLI failure. Treating log levels as a verdict flips green runs to "failed" and burns retries.
+> **Single source of truth for success/failure of a completed run: outer `Result` (equivalently `HasErrors` inside `runResult`).** `Result: "Success"` already accounts for compile failures, validation failures, and unhandled exceptions — the CLI propagates them. **DO NOT infer failure from a streamed log entry's `Level`.** A successful workflow may emit `Log Message` at `Error`/`Warning` level as observability — that is workflow data, not a CLI failure. Treating log levels as a verdict flips green runs to "failed" and burns retries. In a debug session, check `DebugState` before `HasErrors` — `Suspended` means an exception awaits your decision while `HasErrors` is still `false`.
 
 ---
 
@@ -146,6 +147,8 @@ Rules:
 
 `uip rpa analyzer-rules list` reports the Workflow Analyzer rules **enabled** for the project — the best-practice rules `validate` and `build` enforce. Reports rules, not violations. Each rule returns `severity` (`error`/`warning`/`info`), rule ID, scope, title, and (when available) `recommendation` and `docs` URL. Prefix convention: `ST-*` = built-in Studio rule, `MA-*` = package-shipped rule.
 
+Rules with scope `Coded Workflow` run as Roslyn analyzers over the project's `.cs` files during `analyze`, `build`, and `pack` — same enforcement as the XAML-scoped rules. The four built-in ones are all Error severity; triggers and fixes: [coded/coding-guidelines.md § Coded Workflow Analyzer Rules](coded/coding-guidelines.md#coded-workflow-analyzer-rules).
+
 > **Performance:** the unscoped call enumerates every rule across every package and can take a minute or more. Narrow with `--scope` (`Activity`, `Workflow`, `Project`, or `Coded Workflow`) — scoped calls return in seconds. See `--help` for accepted scope values.
 
 ---
@@ -157,6 +160,34 @@ Rules:
 - **Omit the version** to resolve the latest compatible automatically (preferred). Pin only for a known compatibility constraint.
 - **Discover available versions** with `uip rpa packages versions --package-id <Id> --include-prerelease`. **Default to `--include-prerelease`** — activity packages frequently ship `-preview` between stable releases, carrying the freshest activity surface and `.local/docs`. When a newer stable or preview exists over the installed version, inform the user and offer the upgrade — never force.
 - **Package not found** → verify the exact ID (use `activities find` or the package's `.local/docs`). **Feed/network error** → check NuGet feed config in Studio settings.
+
+---
+
+## object-repository
+
+Read the project's UI **Object Repository** — the saved hierarchy of applications, screens, and elements (selectors/targets) that UI Automation activities bind to. Two read commands cover the project's own entries and those exposed by referenced libraries; both require an open project.
+
+- **Project Object Repository** — `uip rpa object-repository get` returns the project's *own* Object Repository as a JSON tree of applications → screens → elements. Entries inherited from referenced libraries are **excluded** (use the library command below for those). Takes no arguments beyond the standard `--project-dir`.
+
+  ```bash
+  uip rpa object-repository get --project-dir "<PROJECT_DIR>" --output json
+  ```
+
+- **Library Object Repository** — `uip rpa object-repository get-library` reads the Object Repository out of one or more library `.nupkg` files and returns the applications, screens, and elements grouped by library. Pass the absolute path(s) to the library packages; packages without an Object Repository are omitted from the result.
+
+  | Parameter | Required | Description |
+  |-----------|----------|-------------|
+  | `--library-paths` | yes | Absolute path(s) to the library `.nupkg` file(s) to read. Pass a single flag with the paths **comma-separated** (e.g. `"a.nupkg,b.nupkg"`) — it is not a repeatable flag. Avoid paths containing commas. |
+
+  ```bash
+  # multiple libraries: one --library-paths flag, comma-separated
+  uip rpa object-repository get-library \
+    --project-dir "<PROJECT_DIR>" \
+    --library-paths "C:\libs\Acme.UiLib.1.2.0.nupkg,C:\libs\Other.UiLib.2.0.0.nupkg" \
+    --output json
+  ```
+
+Read the project repository before authoring UI Automation activities to discover existing screens/elements to reuse instead of re-indicating them; read the library repository to discover targets a referenced UI library already exposes. Confirm the live verb names and flags with `uip rpa object-repository --help`.
 
 ---
 
@@ -181,9 +212,35 @@ The verbs you'll reach for: list/describe **connectors** and their **activities*
 
 ---
 
-## Test Manager (`uip tm`)
+## Test Manager
 
-Test Manager integration lives in the dedicated `uip tm` tool — `uip tm --help`. Do not document or invoke Test Manager verbs from `uip rpa`.
+Two distinct surfaces — pick by intent:
+
+- **`uip tm` (dedicated tool)** — *runtime* Test Manager operations: browsing manual test cases, runs, results. `uip tm --help`. Do **not** invoke these runtime verbs from `uip rpa`.
+- **`uip rpa tm` (project configuration)** — *authoring/setup*: wire an RPA project to Test Manager by editing its `.tmh/config.json`. Pure file I/O — no Studio or Helm process is needed, so it works with everything closed.
+
+### `uip rpa tm` verbs
+
+| Verb | Purpose |
+|---|---|
+| `uip rpa tm connect --url <url>` | Set the Test Manager **server URL** (`testManagerBasePath`). Switching to a **different** server (different host/org/tenant) also **clears the default project**, since it belonged to the old server. |
+| `uip rpa tm set-default-project --id <guid> [--name <name>] [--key <key>]` | Link the **default Test Manager project** (`defaultProject`). **Requires a connected server** — run `connect` first or it is rejected. |
+| `uip rpa tm clear-default-project` | Unlink the default project; the server URL is kept. |
+| `uip rpa tm status` | Show the current configuration — server URL and linked default project. |
+
+Typical setup flow (all verbs take the standard `--project-dir` and `--output json`):
+
+```
+uip rpa tm connect --url "https://cloud.uipath.com/<org>/<tenant>/testmanager_" --project-dir "<PROJECT_DIR>" --output json
+uip rpa tm set-default-project --id <project-guid> --name "<project-name>" --key "<KEY>" --project-dir "<PROJECT_DIR>" --output json
+uip rpa tm status --project-dir "<PROJECT_DIR>" --output json
+```
+
+`set-default-project` does **not** call the server to validate the id (there is no server round-trip) — pass a real Test Manager project id (and optional name/key). Listing projects from the server is not available here; obtain the id from Test Manager itself. Confirm exact flags via `uip rpa tm --help`.
+
+#### Acting on `reloadHint` in the output
+
+A `connect` / `set-default-project` / `clear-default-project` response may include a **`reloadHint`** field. It appears only when the project is currently **open in a Studio older than 26.0.197**, which reads `.tmh/config.json` *only on project open*. When you see it, tell the user to **close and reopen the project in Studio** for the change to take effect — the CLI cannot do this for them. No `reloadHint` means nothing to do: either the project isn't open in Studio, or it's open in Studio 26.0.197+, which applies the change live.
 
 ---
 
@@ -210,7 +267,7 @@ Diagnose by error category, apply the recovery, retry **once** — do not loop t
 |--------|-----|
 | **Explore project files** | `Glob` `**/*.xaml` |
 | **Search XAML content** | `Grep` regex across `.xaml` |
-| **Explore Object Repository** | `Glob` `**/*` under `{PROJECT_DIR}/.objects/` + `Read` metadata |
+| **Explore Object Repository** | `uip rpa object-repository get` for the project's apps/screens/elements as JSON, `uip rpa object-repository get-library` for a referenced library's (see [object-repository](#object-repository)); or `Glob` `**/*` under `{PROJECT_DIR}/.objects/` + `Read` metadata for raw files |
 | **Get JIT type definitions** | `Read` `{PROJECT_DIR}/.project/JitCustomTypesSchema.json` |
 | **Activity docs** | See [Installed package activity documentation](#installed-package-activity-documentation) above |
 | **Inspect a NuGet package's API** | `uip rpa packages inspect` — see [coded/inspect-package-guide.md](coded/inspect-package-guide.md) |
@@ -219,4 +276,4 @@ Diagnose by error category, apply the recovery, retry **once** — do not loop t
 
 ## UI Automation (`uip rpa uia ...`)
 
-`uip rpa uia --help` deliberately exposes no standard subcommands — the UIA CLI surface is owned and co-versioned by the `UiPath.UIAutomation.Activities` package. Subcommands, flags, accepted values, and artifact filenames live in `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`. Read that file rather than improvising from `--help`.
+`uip rpa uia --help` deliberately exposes no standard subcommands — the UIA CLI surface is owned and co-versioned by the `UiPath.UIAutomation.Activities` package. Start from `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md` (Rule 7): its CLI-discovery section routes to the package's task guides and command inventory. Per-command flags: `<discovered command> --help`.

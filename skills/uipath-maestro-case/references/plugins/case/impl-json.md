@@ -13,7 +13,7 @@ Create the full project on disk in a single plugin invocation — 5 scaffold fil
 1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
-Solution setup (`uip solution init`) and project registration (`uip solution project add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
+Solution setup (`uip solution init`) and project registration (`uip solution projects add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
 
 **No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
 
@@ -38,12 +38,13 @@ Runs before § Write caseplan.json. Writes 5 static JSON files directly. All sub
 ### Pre-flight
 
 1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution init` — Step 6.0).
-2. **Target dir is clean.** None of the 5 scaffold files may already exist in `<SolutionDir>/<ProjectName>/`. If any is present, **hard-fail** with:
+2. **Project dir is a distinct child of the solution dir.** The target is always `<SolutionDir>/<ProjectName>/`, never `<SolutionDir>/` itself. `<ProjectName>` equal to `<SolutionName>` is normal and still nests — `Foo/Foo/`. Never collapse the two because the names match.
+3. **Target dir is clean.** None of the 5 scaffold files may already exist in `<SolutionDir>/<ProjectName>/`. If any is present, **hard-fail** with:
    ```
    <SolutionDir>/<ProjectName>/<file> already exists. Remove <SolutionDir>/<ProjectName>/ before re-scaffolding. No --force equivalent in the JSON path.
    ```
    Do not overwrite. Do not merge.
-3. **Create directory.** `mkdir -p <SolutionDir>/<ProjectName>` via Bash.
+4. **Create directory.** `mkdir -p <SolutionDir>/<ProjectName>` via Bash.
 
 ### Generate one UUID for `operate.json.projectId`
 
@@ -132,6 +133,8 @@ Hard-fail on the first write error — no rollback, no staging directory. Partia
 - `<SolutionDir>/<ProjectName>/project.uiproj` exists and parses as JSON.
 - `<SolutionDir>/<ProjectName>/operate.json` contains a non-empty `projectId` string.
 - `<SolutionDir>/<ProjectName>/entry-points.json` parses as JSON and its `entryPoints` field is `[]`.
+- **No `content/` dir on disk.** Case file is flat at `<SolutionDir>/<ProjectName>/caseplan.json`; if nested under `content/`, layout is wrong — halt. `validate`/`debug` resolve only the flat root path (an ad-hoc validate against the nested path passes, but real project-dir resolution fails).
+- **Project dir is not the solution dir.** `<SolutionName>.uipx` and `caseplan.json` must NOT be siblings — `<SolutionDir>/<ProjectName>/<SolutionName>.uipx` must not exist. Nothing downstream catches this: `validate` passes on any path given, and `uip solution projects add <SolutionDir> …` registers the solution directory as its own project without error. But `debug` walks up from the project dir for the enclosing `.uipx`, so a collapsed layout overshoots it and fails with `no .uipx file was found in <workingRoot>`. Halt; move the 6 project files into `<SolutionDir>/<ProjectName>/`.
 
 If any check fails, halt and report.
 

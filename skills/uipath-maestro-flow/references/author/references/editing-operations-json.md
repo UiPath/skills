@@ -109,25 +109,21 @@ Reach for `jq` / `python3` only when JMESPath cannot express the operation (mult
   "display": { "label": "<LABEL>" },
   "inputs": {},
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the <node type>",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the <node type> fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
 }
 ```
 
-> **`display` is required on every node** — including control-flow nodes (`core.control.end`, `core.logic.terminate`) where it may feel optional. Omitting it produces a vague `[(root)] Schema validation failed: Invalid input: expected object, received undefined` from `uip maestro flow validate`, which does NOT pinpoint the missing field. Always include `"display": { "label": "<label>" }` on every node, even bare end nodes. See [file-format.md — Node instance](../../shared/file-format.md#node-instance) and [MST-9368](https://uipath.atlassian.net/browse/MST-9368) for the validator-error-clarity follow-up.
+**Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, function): declare `error` only (`source: "=Error"`) — `output` is derived.** The converter copies an authored `source` verbatim there, and injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` only when a non-empty `outputs` omits `output`. So authoring `output` with `"=result.response"` on one of those leaves `$vars.{nodeId}.output` null at runtime while `flow validate` passes. Every other node type ignores the instance `outputs` block (DAP nodes — connector, HTTP, triggers — `Intsvc.*` — and script/transform take outputs from the manifest; inline agents have theirs overwritten; queue nodes never read it), so `error`-only stays a safe default everywhere and a manifest-matching `output` entry is harmless documentation. Downstream reads `$vars.{nodeId}.output` in every case.
 
-> **What actually makes `$vars.<sourceNodeId>.output` resolve is `variables.nodes[]` (step 4 below), not the instance `outputs` block.** The BPMN emitter ignores the action-node instance `outputs` block at serialization — it reads the manifest's `outputDefinition` for the activity-side mapping and reads `variables.nodes[]` for the process-level `<uipath:inputOutput>` declarations downstream nodes depend on. Authoring an `outputs` block matching the manifest is fine (the canonical examples include it for documentation), but you can skip it on action and trigger nodes. End / terminate nodes are different — see [end/impl.md](plugins/end/impl.md). The standard patterns are in [file-format.md — Node outputs](../../shared/file-format.md#node-outputs). **Always run `uip maestro flow format` after structural edits — it regenerates `variables.nodes[]` from the current node graph (MST-9972).**
+> **`display` is required on every node** — including control-flow nodes (`core.control.end`, `core.logic.terminate`) where it may feel optional. Omitting it produces a vague `[(root)] Schema validation failed: Invalid input: expected object, received undefined` from `uip maestro flow validate`, which does NOT pinpoint the missing field. Always include `"display": { "label": "<label>" }` on every node, even bare end nodes. See [file-format.md — Node instance](../../shared/file-format.md#node-instance).
+
+> **What actually makes `$vars.<sourceNodeId>.output` resolve is `variables.nodes[]` (step 4 below), not the instance `outputs` block.** The BPMN emitter ignores the action-node instance `outputs` block at serialization — it reads the manifest's `outputDefinition` for the activity-side mapping and reads `variables.nodes[]` for the process-level `<uipath:inputOutput>` declarations downstream nodes depend on. Authoring an `outputs` block matching the manifest is fine (the canonical examples include it for documentation), but you can skip it on action and trigger nodes. **Exception — Orchestrator-job nodes** (api-workflow, rpa-workflow, agent, agentic-process, function): the converter DOES read their instance `outputs` and copies each `source` verbatim into `model.outputDefinition`, so a wrong `source` there (e.g. `=result.response`) breaks the downstream variable. Declare `error` only and let `output` be injected. End / terminate nodes are different — see [end/impl.md](plugins/end/impl.md). The standard patterns are in [file-format.md — Node outputs](../../shared/file-format.md#node-outputs). **Always run `uip maestro flow format` after structural edits — it regenerates `variables.nodes[]` from the current node graph (MST-9972).**
 
 > **No instance `model` block.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Instance-specific identity fields live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers, `color`/`content` for sticky notes, and `source` for every inline-agent-related node — `uipath.agent.autonomous` plus every attached `uipath.agent.resource.*` node (tool, escalation, context) writes the inline agent's `projectId` (autonomous) or resource UUID (resource nodes) at `inputs.source`. Their definitions declare `model.source: true`; flow-core hoists source identity onto the instance — no `"model": { "source": ... }` block is written. See [file-format.md — Instance-specific identity fields](../../shared/file-format.md#instance-specific-identity-fields).
 
@@ -204,7 +200,7 @@ Use `Edit` to add an edge object to the `edges` array:
 
 ```json
 {
-  "id": "<UNIQUE_EDGE_ID>",
+  "id": "edge_<SOURCE_NODE_ID>_<SOURCE_PORT>_<TARGET_NODE_ID>_<TARGET_PORT>",
   "sourceNodeId": "<SOURCE_NODE_ID>",
   "sourcePort": "<SOURCE_PORT>",
   "targetNodeId": "<TARGET_NODE_ID>",
@@ -212,13 +208,15 @@ Use `Edit` to add an edge object to the `edges` array:
 }
 ```
 
+**Critical:** the edge `id` MUST match the pattern above — never a bare UUID or any id starting with a digit.
+
 **Critical:** `targetPort` is required on every edge. Omitting it produces a validation error.
 
 **Critical:** the outgoing port field is named `sourcePort`, not `sourceHandle`. `sourceHandle` is a UI/runtime term, not valid `.flow` JSON.
 
 **Critical:** for `sourcePort: "error"`, also set `inputs.errorHandlingEnabled: true` on the source node. Without the flag, Studio Web hides the source handle and `uip maestro flow validate` fails.
 
-**Edge ID:** generate a UUID (matches CLI behavior) or use `e-<sourceNodeId>-<targetNodeId>` if uniqueness across the flow is guaranteed. Short, hand-picked names risk collision when the same source/target pair gets a second edge later.
+**Edge ID:** `edge_<SOURCE_NODE_ID>_<SOURCE_PORT>_<TARGET_NODE_ID>_<TARGET_PORT>`.
 
 See each plugin's `planning.md` or [file-format.md — Standard ports](../../shared/file-format.md) for port names by node type.
 
@@ -415,16 +413,10 @@ Use `Edit` to modify the start node in-place (no delete/re-add needed):
        "<IN_VAR>": "=js:<EXPRESSION>"
      },
      "outputs": {
-       "output": {
-         "type": "object",
-         "description": "The return value of the subflow",
-         "source": "=result.response",
-         "var": "output"
-       },
        "error": {
          "type": "object",
          "description": "Error information if the subflow fails",
-         "source": "=result.Error",
+         "source": "=Error",
          "var": "error"
        }
      }

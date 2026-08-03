@@ -31,7 +31,7 @@ What to look for:
 
 1. **Get the stack trace** — for local execution, list `%localappdata%\UiPath\logs\` and open the log for today's date (if not found, ask for the error date); for Orchestrator, get job traces. Confirm the fault originates from the user's workflow code
 2. Extract the parameter name from the error message (`Parameter 'paramName'`) — this is the key troubleshooting signal
-3. Locate the faulted activity in source code and match the parameter name to the activity's input properties or the method being called
+3. Locate the faulted activity in source code and match the parameter name to the activity's input properties or the method being called. The stack trace names the workflow file (e.g. `Main.xaml` at the faulting activity) — check the working directory top level for the project (`project.json` + that file) and read it before presenting; tracing WHY the argument was null requires source. If absent, ask for the project path and present the parameter-level finding as **unconfirmed** — do not enumerate candidate null sources as findings
 4. Trace the argument source: find where the null value originates (variable assignment, activity output, config lookup, argument binding). Check if the assignment is conditional or depends on external data
 5. Check for missing defaults — does the variable have a default value? Is there a fallback for null?
 6. If intermittent: compare input data between successful and failed executions

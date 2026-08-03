@@ -171,7 +171,7 @@ Pass `--target-framework` and `--expression-language` here too (Rule 2a) — a t
 2. **Read the scaffolded files** — the command generates starter files. Read them before making changes so you build on valid defaults
 3. Proceed with the skill workflow using the new project root
 
-> **Batch the post-`init` prerequisites.** Step 2 here, the analyzer-rules list (SKILL.md Rule 3), `packages install` for known-needed packages, and the first `activities find` all depend only on the project existing — emit them as parallel tool calls in one message, not one per turn. They share the warmed Studio host. See SKILL.md § Call Batching.
+> **Batch the post-`init` prerequisites.** Step 2 here, `packages install` for known-needed packages, and the first `activities find` all depend only on the project existing — emit them as parallel tool calls in one message, not one per turn. They share the warmed Studio host. See SKILL.md § Call Batching.
 
 ## Edge case: requiring Studio Desktop
 
@@ -180,7 +180,7 @@ Two `uip rpa` commands need a running Studio Desktop instance — they have UI s
 | Command | Why it needs Studio |
 |---------|---------------------|
 | `uip rpa files diff` | Opens an interactive diff window in Studio's UI; finishes when the user closes the window. |
-| `uip rpa focus-activity` | Selects/highlights an activity in Studio's active workflow designer. |
+| `uip rpa focus-activity` | Selects/highlights an activity in Studio's active workflow designer. ⚠️ Against headless it **silently succeeds without doing anything** (there is no designer) — a `success: true` from a headless session does NOT mean anything was focused. |
 
 When (and only when) you need to run one of these, ensure Studio Desktop is up:
 

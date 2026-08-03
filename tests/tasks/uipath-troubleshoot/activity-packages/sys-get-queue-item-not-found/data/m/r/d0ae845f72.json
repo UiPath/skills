@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-24T12:45:11.660Z",
+      "Message": "Get Queue Item: Status code: 404 (Not Found). Orchestrator response: \r\nOrdersToProcess does not exist. Error code: 1002"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-24T12:45:11.690Z",
+      "Message": "Status code: 404 (Not Found). Orchestrator response: \r\nOrdersToProcess does not exist. Error code: 1002\r\nin Main.xaml\r\n    at GetQueueItem \"Get Queue Item\"\r\n    at Sequence \"Main Sequence\"\r\n    at OrderProcessor \"OrderProcessor\"\r\n"
+    }
+  ]
+}

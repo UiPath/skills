@@ -1,0 +1,122 @@
+task_id: skill-coded-apps-debug-external-app-redirect-cli-smoke
+description: >
+  Smoke (mode:diagnose): a coded web app fails login with
+  `redirect_uri_mismatch` because the External Application is missing the
+  dev redirect URI. The fix must register it via the
+  `uip admin external-apps update` CLI — NOT by writing/driving a Playwright
+  browser-automation script. Guards the PLT-106013 change: coded-apps OAuth
+  external-app management moved from Playwright to the CLI. This path (remediate
+  an existing app's redirect URI) is exercised by no other test — the dashboard
+  e2e only *creates* apps, it never fixes one.
+tags: [uipath-coded-apps, smoke, mode:diagnose]
+
+pre_run:
+  # Seed a minimal coded-web-app config so the client ID is concrete and the
+  # scenario is a real misconfiguration, not a hypothetical.
+  - command: |
+      cat > uipath.json <<'JSON'
+      {
+        "clientId": "11111111-1111-1111-1111-111111111111",
+        "scope": "OR.Assets OR.Execution",
+        "orgName": "acme",
+        "tenantName": "DefaultTenant",
+        "baseUrl": "https://api.uipath.com",
+        "redirectUri": "http://localhost:3000"
+      }
+      JSON
+    timeout: 15
+    fail_on_error: true
+
+initial_prompt: |
+  A UiPath coded web app fails to log in. The browser lands on an error page
+  reading `redirect_uri_mismatch`. The dev server actually serves the app at
+  `http://localhost:5173`, but the External Application (client ID
+  `11111111-1111-1111-1111-111111111111`, org `acme`) only has
+  `http://localhost:3000` registered as a redirect URI.
+
+  Fix the root cause so login works: register the correct dev redirect URI(s)
+  on the External Application, and make the local config consistent.
+
+  This is a non-interactive automated test — do NOT ask for confirmation or
+  pause for input. Before starting, load the uipath-coded-apps skill and follow
+  its guidance.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: >
+      THE FIX — agent registered the redirect URI on an External App via the
+      CLI, with `--redirect-uri`. Accepts both `update` (seeded app exists) and
+      `create` (seeded/placeholder app not found on the tenant → agent mints a
+      fresh app) — both are the PLT-106013 behavior (CLI, not browser automation).
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+(create|update)\s+.*--redirect-uri'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: >
+      Did NOT fall back to Playwright browser automation to change the app
+      (no running of the old uipath-oauth.mjs / --op script or any playwright/
+      chromium invocation).
+    tool_name: "Bash"
+    command_pattern: 'playwright|chromium|uipath-oauth|--op\s+(add-redirects|create)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: >
+      Did NOT author a Playwright automation script to drive the admin portal.
+    tool_name: "Write"
+    command_pattern: "uipath-oauth\\.mjs|from 'playwright'|launchPersistentContext"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      Local-config half of the fix — uipath.json redirectUri now includes the
+      real dev URL (http://localhost:5173). Deterministic, offline, not
+      self-reported.
+    command: "python3 -c \"import json,sys; r=str(json.load(open('uipath.json')).get('redirectUri','')); sys.exit(0 if 'localhost:5173' in r else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: >
+      Advisory (convention): parsed CLI output as JSON via --output json. Not
+      gating — grading the outcome, not the flag.
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps.*--output\s+json'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0
+
+post_run:
+  # In an authenticated tenant the agent may CREATE a real external app (the
+  # seeded placeholder client ID doesn't resolve). Bridge its client ID from
+  # uipath.json into report.json — but only when it differs from the seeded
+  # placeholder — so the shared helper can delete it and not orphan the app.
+  # Unauthenticated runs never create one; the placeholder stays and cleanup
+  # is a no-op.
+  - command: |
+      python3 - <<'PY'
+      import json
+      try:
+          cid = str(json.load(open("uipath.json")).get("clientId", "")).strip()
+      except Exception:
+          cid = ""
+      if cid and cid != "11111111-1111-1111-1111-111111111111":
+          json.dump({"clientId": cid}, open("report.json", "w"))
+      PY
+    timeout: 15
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_external_app.py"
+    timeout: 60

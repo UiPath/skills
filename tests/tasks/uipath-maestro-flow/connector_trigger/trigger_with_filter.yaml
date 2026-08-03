@@ -8,70 +8,26 @@ run_limits:
   expected_turns: 7
 
 initial_prompt: |
-  You are authoring a UiPath Flow that is triggered by an Outlook email with subject containing "good day" and sent from
+  You are authoring a UiPath Flow triggered by an Outlook email whose subject contains "good day" and sent from
   abc@xyz.com.
-  Use the `uipath-maestro-flow` skill. Do NOT run `uip flow node configure`
-  or any command that requires a live connection — this sandbox has no UiPath
-  tenant. Instead, plan the exact `--detail` JSON you would pass to
-  `uip flow node configure` for the trigger.
-  Write the planned trigger `--detail` JSON to `trigger_detail.json`. It must
-  contain, at minimum:
-    - connectionId, folderKey, eventMode (placeholder values are fine)
-    - a `filter` object (the structured filter tree)
+  Do NOT run any command that requires a live connection — this sandbox has no UiPath tenant, so you cannot configure
+  the trigger against a live connection.
+  Instead, write to `trigger_detail.json` the exact JSON object you would pass to
+  `uip maestro flow node configure <flow> <triggerId> --detail '<JSON>'` to configure that trigger.
+  Use placeholders for any connection/folder/event ids you cannot resolve offline.
 
-  Also save a short summary to report.json:
-    {
-      "scenario": "outlook-subject-and-from-filter",
-      "uses_filter_tree": true,
-      "used_filter_expression_string": false,
-      "notes": "<one sentence explaining why the tree is the correct input>"
-    }
 
 success_criteria:
-  - type: file_exists
-    description: "trigger_detail.json exists"
-    path: "trigger_detail.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
+  # `check_trigger_filter.py` locates trigger_detail.json (root or nested in the
+  # flow project dir) and asserts it is the --detail object: valid JSON, no
+  # top-level filterExpression (MST-8802 guard), and a `filter` tree as a
+  # TOP-LEVEL key (numeric groupOperator + non-empty filters) with at least one
+  # leaf referencing `subject` via the PascalCase `Contains` operator. A filter
+  # wrapped under detail/inputs fails — that is not the --detail object.
   - type: run_command
-    description: "trigger_detail.json is valid JSON"
-    command: "python3 -c \"import json; json.load(open('trigger_detail.json'))\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "trigger detail uses the structured filter tree, not filterExpression"
-    path: "trigger_detail.json"
-    assertions:
-      # Must include the filter tree — SW reads this to render the filter UI.
-      - expression: "type(filter)"
-        operator: equals
-        expected: "object"
-      # Numeric group operator (0 = And, 1 = Or). Matches Studio Web's persisted shape.
-      - expression: "filter.groupOperator"
-        operator: type
-        expected: "number"
-      - expression: "type(filter.filters)"
-        operator: equals
-        expected: "array"
-      - expression: "length(filter.filters)"
-        operator: gte
-        expected: 1
-      # MST-8802 regression guard: the CLI now rejects filterExpression as an
-      # input field. The agent must NOT emit it at the top level.
-      - expression: "type(filterExpression)"
-        operator: equals
-        expected: "null"
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "filter tree references `subject` and uses `Contains` operator"
+    description: "trigger_detail.json is the --detail object with a top-level `filter` tree on `subject` Contains, no top-level filterExpression"
     command: "python3 $TASK_DIR/check_trigger_filter.py"
     timeout: 10
     expected_exit_code: 0
-    weight: 2.0
+    weight: 3.0
     pass_threshold: 1.0

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:uwana="clr-namespace:UiPath.WorkflowEvents.Activities.NetCore.Activities;assembly=UiPath.WorkflowEvents.Activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="29">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Runtime.Serialization</x:String>
+      <x:String>System.Reflection</x:String>
+      <x:String>UiPath.WorkflowEvents.Activities.NetCore.Activities</x:String>
+      <x:String>action</x:String>
+      <x:String>__Action_ActionSchema</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>Newtonsoft.Json</x:String>
+      <x:String>Newtonsoft.Json.Linq</x:String>
+      <x:String>UiPath.WorkflowEvents.Activities.Extensions</x:String>
+      <x:String>Functions.Util</x:String>
+      <x:String>Functions.Extensions</x:String>
+      <x:String>Controls</x:String>
+      <x:String>Controls.Containers</x:String>
+      <x:String>Controls.core</x:String>
+      <x:String>Controls.Input</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="16">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>System.Net.Primitives</AssemblyReference>
+      <AssemblyReference>System.Runtime.InteropServices</AssemblyReference>
+      <AssemblyReference>Newtonsoft.Json</AssemblyReference>
+      <AssemblyReference>UiPath.WorkflowEvents.Activities</AssemblyReference>
+      <AssemblyReference>Apps.action.gdc005Xk3Qg</AssemblyReference>
+      <AssemblyReference>UiPath.Apps.Expressions.Integrations</AssemblyReference>
+      <AssemblyReference>Apps.form.SimpleApproval.gNneTWgEI3gg</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>UiPath.Workflow</AssemblyReference>
+    </scg:List>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence sap:VirtualizedContainerService.HintSize="356,732" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <uwana:SubmitAction Result="{x:Null}" DisplayName="Submit Action" sap2010:WorkflowViewState.IdRef="SubmitAction_1" Outcome="approve">
+      <uwana:SubmitAction.OutcomeExpression>
+        <x:String x:Key="expressionId">id7d2ee778b21446c084c0e4e6ee5c7cc7</x:String>
+        <x:String x:Key="formId">id3f8a5782a09247da949e81fc65ef98e7</x:String>
+      </uwana:SubmitAction.OutcomeExpression>
+      <uwana:SubmitAction.PropertyOverrides>
+        <InArgument x:TypeArguments="x:String" x:Key="Comment">[Controls.SimpleApproval.CommentBox.Value]</InArgument>
+      </uwana:SubmitAction.PropertyOverrides>
+    </uwana:SubmitAction>
+  </Sequence>
+</Activity>

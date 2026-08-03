@@ -46,7 +46,7 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 | `inputSchema` / `outputSchema` | Fixed per tool — copy from walkthrough |
 | `referenceKey` | Always `null` (no Orchestrator binding) |
 | `guardrail.policies` | Always `[]` — required for backward compatibility |
-| `id` | Fresh UUID per resource — see [../../critical-rules.md](../../critical-rules.md) Anti-pattern 9 |
+| `id` | Fresh UUID per resource — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 9 |
 
 ## Lifecycle
 
@@ -65,7 +65,7 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 
 ## Gotchas
 
-- See [../../critical-rules.md](../../critical-rules.md) Critical Rules 18–21 and Anti-patterns 21–22 for the canonical rule list.
+- See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules 17–20 and Anti-patterns 20–21 for the canonical rule list.
 - Pairing with file inputs: a `job-attachment` field renders metadata only in `{{input.<field>}}`. The agent reads contents only by calling a file-handling built-in tool. See [../../agent-definition.md](../../agent-definition.md) § File Attachments.
 - Runtime test path: built-in tools cannot be exercised end-to-end through the `uip` CLI. Test from Studio Web or via Orchestrator job invocation.
 
@@ -73,4 +73,4 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 
 - [analyze-attachments.md](analyze-attachments.md) — Analyze Files walkthrough
 - [../../agent-definition.md](../../agent-definition.md) § File Attachments — `job-attachment` schema
-- [../../critical-rules.md](../../critical-rules.md) — canonical rules
+- [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) — canonical rules

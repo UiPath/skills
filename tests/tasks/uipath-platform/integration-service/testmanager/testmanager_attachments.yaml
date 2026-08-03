@@ -1,0 +1,59 @@
+task_id: skill-platform-is-testmanager-attachments
+description: >
+  Coverage test: agent uses the uipath-platform skill to exercise every UiPath
+  Test Manager connector attachment activity through the `uip is` surface —
+  upload, get (list), download, and delete attachments. Offline (command-shape)
+  grading; runs in CI without a live connection.
+tags: [uipath-platform, integration, integration-service, test-manager, resources, execute]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 35
+
+sandbox:
+  python: {}
+  node: {}
+
+initial_prompt: |
+  Using the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
+
+  - Upload an attachment
+  - Get attachments
+  - Download an attachment
+  - Delete an attachment
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Upload Attachment (`... run create uipath-uipath-testmanager UploadAttachment`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?UploadAttachment'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Attachments (`... run list uipath-uipath-testmanager GetAttachments`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetAttachments'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Download Attachment (`... run get uipath-uipath-testmanager DownloadAttachment`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?DownloadAttachment'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Delete Attachment (`... run delete uipath-uipath-testmanager DeleteAttachment`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?DeleteAttachment'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

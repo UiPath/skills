@@ -1,0 +1,5 @@
+<Activity x:Class="Wf_ParseResponse" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:njl="clr-namespace:Newtonsoft.Json.Linq;assembly=Newtonsoft.Json" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Sequence DisplayName="Parse Response">
+    <ui:DeserializeJson x:TypeArguments="njl:JObject" JsonString="&lt;html&gt;&lt;body&gt;503 Service Unavailable&lt;/body&gt;&lt;/html&gt;" DisplayName="Deserialize JSON" />
+  </Sequence>
+</Activity>

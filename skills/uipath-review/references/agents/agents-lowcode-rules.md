@@ -6,10 +6,6 @@ Judgment rules for **low-code** agents (`agent.json`). Each rule requires the ag
 
 Read [`../rule-format.md`](../rule-format.md) and [`../rule-catalog-workflow.md`](../rule-catalog-workflow.md) first.
 
-Companion file:
-
-- [`agents-common-rules.md`](agents-common-rules.md) — judgment rule shared with coded agents (schema-description informativeness)
-
 ## Layouts
 
 Low-code agents exist in two layouts. Detect first, then apply the right `Read` path in each rule.
@@ -17,7 +13,7 @@ Low-code agents exist in two layouts. Detect first, then apply the right `Read` 
 | Layout | Identifier | Key files |
 |---|---|---|
 | **Normalized** | A single JSON file with snake_case top-level keys (`system_prompt`, `tools`, `datasets`, `input_schema`, `output_schema`, `user_prompt`) | The single JSON file |
-| **Agent-builder** | `agent.json` at project root with camelCase keys + sibling `entry-points.json`, `project.uiproj`, `resources/<Name>/resource.json` | `agent.json`, `entry-points.json`, `resources/*/resource.json`, `evals/eval-sets/*.json`, `evals/evaluators/*.json` |
+| **Agent-builder** | `agent.json` at project root with camelCase keys + sibling `project.uiproj` and `resources/<Name>/resource.json` | `agent.json`, `resources/*/resource.json`, `evals/eval-sets/*.json`, `evals/evaluators/*.json` |
 
 Rules tagged `(agent-builder only)` skip silently on the normalized layout; `(normalized only)` skip on agent-builder. Untagged rules apply to both with layout-aware `detection_method`.
 
@@ -40,6 +36,7 @@ One H2 section per checker class (`EvalsChecker`, `SchemaChecker`, `ToolsChecker
 
 | rule_id | severity | category | trigger | detection_method | suggested_fix |
 |---|---|---|---|---|---|
+| `SCHEMA_NO_DESCRIPTIONS` | judgment | schema | Input/output schema properties lack **informative** descriptions | Read `.input_schema` / `.output_schema` in normalized JSON, or `agent.json.inputSchema` / `outputSchema` in Agent Builder. Judge property descriptions for useful semantic guidance, not mere presence; assess input and output separately. | Add a useful description to each property. |
 | `LC_OUTPUT_FORMAT_PROMPT_DRIFT` | warning | schema | System prompt instructs an output shape that conflicts with `outputSchema` | Read system prompt + `outputSchema`. Assess: does the prompt instruct a shape (`"respond with a single sentence"`, `"answer in markdown"`) that conflicts with the schema's structure (structured JSON, flat string, etc.)? Emit when prompt-vs-schema drift is present. file = system prompt source. | Align the prompt's output-format instructions with `outputSchema` — pick one source of truth and have the other reference it. |
 | `LC_INPUT_SCHEMA_OVERLAP` | warning | schema | Input schema has ≥2 fields with semantically overlapping names or descriptions | Read `inputSchema.properties`. Assess: are there fields with semantically overlapping names (`query` vs `question` vs `text` vs `prompt` vs `input`) or descriptions? Emit when ≥2 fields could reasonably hold the same content and the LLM would have to disambiguate at runtime. file = schema source, element = `<field_a>,<field_b>`. | Merge overlapping fields, or differentiate them with clear names + descriptions that scope each one. |
 | `LC_OUTPUT_ENUM_VS_PROMPT_DRIFT` | warning | schema | Output enum disagrees with the prompt's category list (either side has extras) | Read `outputSchema.properties.<X>.enum` and the system prompt's classification list (`"Classify into: A, B, C"`). Assess: do the two sets agree? Emit when either has extras: prompt names a class the schema doesn't accept (runtime validation rejects), OR schema accepts a class the prompt never mentions (LLM never produces it). file = schema or prompt source. | Reconcile the prompt's class list with `outputSchema.enum`. |
@@ -81,13 +78,22 @@ One H2 section per checker class (`EvalsChecker`, `SchemaChecker`, `ToolsChecker
 > | `intellectual_property` | Agent generates code or text | Agent, Llm only | PostExecution only |
 > | `user_prompt_attacks` | User-facing agent, jailbreak risk | Llm only | PreExecution only |
 >
-> When recommending the three "platform-documented" types, do NOT cite them by name unless the specific validator is already present in the project's `guardrails` array or agent-builder schema. Instead say: *"Add an appropriate content-safety guardrail supported by this agent layout."*
+> When recommending the three "platform-documented" types, do NOT cite them by name unless the specific validator is already present in the project's `guardrails` array or agent-builder schema. Instead say: *"Add an appropriate content-safety guardrail supported by this agent layout."* This applies to `LC_GUARDRAIL_RECOMMENDED` below.
+
+> **Apply these via the structured workflow.** The guardrail rules below are applied through
+> [`guardrails/guardrails-review.md`](guardrails/guardrails-review.md) — Step 0 (fetch the live
+> `uip agent guardrails catalog` + `list`, 30-min cache) → **Audit Mode** (effectiveness/relevance of existing
+> guardrails) + **Recommend Mode** (missing-guardrail recommendations) — modeled on the `uipath-agents` recommend
+> capability and driven by the same live catalog. **Boundary:** the review CLI (Step 2.5a) owns all
+> FORMAT/SCHEMA/SET-MEMBERSHIP checks (`GUARDRAIL_*` / `GUARDRAIL_CUSTOM_*` / `LOWCODE_*GUARDRAIL*`); the rules
+> below fire only on format-valid guardrails and never re-flag a CLI format finding. If the catalog is
+> unavailable, defer the Audit-Mode rows (Rules Skipped) — see the workflow's Step 0.
 
 | rule_id | severity | category | trigger | detection_method | suggested_fix |
 |---|---|---|---|---|---|
-| `LC_GUARDRAIL_PII_MISSING` | warning | guardrails | Agent processes personal data but has no `pii_detection` guardrail | Read `inputSchema`, `outputSchema`, system prompt. Assess: does the agent process personal data? Infer from field names + descriptions (names, emails, addresses, IDs, health info, financial info). When yes, check `.guardrails[]` for `pii_detection`. Emit when absent. file = `agent.json` (or normalized JSON). | Add a `pii_detection` guardrail (SDK-confirmed; cite by name). |
-| `LC_GUARDRAIL_INJECTION_MISSING` | warning | guardrails | User-facing free-text input but no `prompt_injection` guardrail | Read `inputSchema`. Assess: does it have free-text string fields users can fill with arbitrary content? When yes, check guardrails for `prompt_injection`. Emit when absent. Do NOT recommend `user_prompt_attacks` by name unless already present in the project's config — see validator authority note above. file = `agent.json`. | Add a `prompt_injection` guardrail (SDK-confirmed) or an appropriate injection-protection guardrail supported by this agent layout. |
-| `LC_GUARDRAIL_EVALS_CONSISTENCY` | judgment | guardrails | `enabledForEvals: true` may interfere with the eval set's intent | Read guardrails. For each with `enabledForEvals: true`, read the eval set. Assess: is the eval set testing guardrail behavior (intentional) or testing agent behavior (where guardrails may interfere)? Emit when intent unclear; reason in the description. file = guardrail source, element = guardrail name. | Set `enabledForEvals: false` for agent-behavior tests, or document that the eval set is specifically testing guardrail behavior. |
+| `LC_GUARDRAIL_RECOMMENDED` | info | guardrails | A guardrail is recommended for a use case the agent matches but doesn't cover (one finding per missing guardrail; specifics in the message) | Apply `guardrails/guardrails-review.md` **Recommend Mode**: fetch the live catalog (Step 0); for each catalog entry whose `when_to_use` / `use_cases` / `security_risk_addressed` match the agent (system prompt, schemas, tools) and which is absent from `.guardrails[]`, emit one finding. The message names the guardrail / `security_category`, the matched use case, the recommended scope, and the recommended **action** — **block/escalate** when protection is really needed (PII that must not enter, injection, harmful content) or **log** for audit only (a tool legitimately handles sensitive data). It also preserves a source-evidence clause in the form `<source path>: <exact matching identifier(s)>`; copy schema properties, tool names, and resource names verbatim instead of paraphrasing them (for example, `agent.json inputSchema.properties: customer_email, full_name, ssn`). De-dup by `security_category`. Do NOT name a platform-documented validator unless already present (see note above). file = `agent.json` (or normalized JSON). | Add the named guardrail at the catalog-recommended scope/action (cite `examples[].config`): block/escalate for protection, log for audit. |
+| `LC_GUARDRAIL_ACTION_INEFFECTIVE` | judgment | guardrails | A format-valid guardrail's action is ineffective or counterproductive for its scope | Apply `guardrails/guardrails-review.md` **Audit Mode → Actionability**: for each format-valid guardrail (skip ones the review CLI flagged), compare `validator` + `selector.scopes` + action `$actionType` against the catalog entry's `when_not_to_use` / `examples[].config` action for that scope. Emit when counterproductive — a security-critical guardrail at `log` where the example uses `block`; `pii_detection` `Block`/`Filter` at Tool on a tool that needs the PII; `pii_detection` `Log` at Agent/Llm. Name the recommended action. file = `agent.json`, element = guardrail name. | Set the action the catalog recommends for that scope, or move the guardrail to a scope where the action is effective. |
+| `LC_GUARDRAIL_MISAPPLIED` | judgment | guardrails | A guardrail is present but the agent matches the validator's `when_not_to_use` | Apply `guardrails/guardrails-review.md` **Audit Mode → Relevance**: establish the agent's context (system prompt, schemas, tools); for each format-valid guardrail read the catalog entry's `when_not_to_use` / `NOT_recommended_for`. Emit when the agent matches a disqualifying condition (e.g. a generate-only agent with no user input carrying a PII guardrail). Cite the matched clause. file = `agent.json`, element = guardrail name. | Remove the misapplied guardrail, or document why the agent's context differs from the `when_not_to_use` condition. |
 
 ---
 

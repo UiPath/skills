@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "6a3d9f1c-2e5b-4d8a-9c7f-1b4e0a6d3c8f",
+      "Name": "Finance Automation",
+      "Path": "Finance Automation",
+      "Description": "Folder hosting the customer ledger and reconciliation processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "c4f1a983-6b2d-4e57-9a1c-3d8e0f5b7a26",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

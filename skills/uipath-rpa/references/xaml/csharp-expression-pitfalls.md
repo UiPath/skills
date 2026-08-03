@@ -23,9 +23,9 @@ ExpressionToCompile { Code = "logMessage" ... } should have been compiled by the
 
 `<uix:NGetText TextString="statusText"/>` raises `Failed to create a 'TextString' from the text 'statusText'` — `TextString` is `OutArgument<String>`, not a plain property, so the XAML parser has no converter for it. Always use the `<OutArgument>` + `<CSharpReference>` child form for output bindings.
 
-## `ThrowIfNotInTree` — variable declared outside the `ActivityAction` scope
+## `ThrowIfNotInTree` at runtime — two causes
 
-`OutArgument<T>` + `<CSharpReference>` bound to a variable declared on a `Sequence` **outside** the `ActivityAction` body passes validation but throws at runtime:
+Same runtime stack, two distinct root causes:
 
 ```
 System.InvalidOperationException: The argument of type 'System.String' cannot be used.
@@ -33,6 +33,11 @@ Make sure that it is declared on an activity.
   at System.Activities.Argument.ThrowIfNotInTree()
 ```
 
-**Typical case:** a UI activity inside `<uix:NApplicationCard.Body><ActivityAction><Sequence>` writes an output to a variable declared on the *outer* `Sequence` rather than the inner one.
+**Cause 1 — variable declared outside the `ActivityAction` scope.** `OutArgument<T>` + `<CSharpReference>` bound to a variable declared on a `Sequence` **outside** the `ActivityAction` body passes validation but throws at runtime.
 
-**Fix:** declare the variable on the `Sequence.Variables` immediately inside the `ActivityAction`, not on a parent `Sequence` outside it.
+- **Typical case:** a UI activity inside `<uix:NApplicationCard.Body><ActivityAction><Sequence>` writes an output to a variable declared on the *outer* `Sequence` rather than the inner one.
+- **Fix:** declare the variable on the `Sequence.Variables` immediately inside the `ActivityAction`, not on a parent `Sequence` outside it.
+
+**Cause 2 — UIA activity authored without its `Version` attribute.** A UIA activity missing the `Version` its `activities get-default-xaml` starter emits (e.g. `NGetText` without `Version="V5"`) throws `ThrowIfNotInTree` at runtime on its argument bindings even when variable scoping is correct. This passes BOTH `validate` AND `build` clean — it surfaces only at run.
+
+- **Diagnosis rule:** when scoping is verified correct, diff the authored activity against its `uip rpa activities get-default-xaml` starter and restore any missing attributes — the starter's `Version` in particular. Never strip an attribute the starter emits.

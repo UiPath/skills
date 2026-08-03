@@ -1,0 +1,6 @@
+{
+  "Name": "DailyPriceSync",
+  "ProjectType": "Process",
+  "Description": "Looks up a SKU's published price in the prices workbook with Lookup Range during the daily price sync.",
+  "MainFile": "Main.xaml"
+}

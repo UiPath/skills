@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-30T02:10:01.402Z",
+      "Message": "BatchLedgerPost execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-30T02:10:02.118Z",
+      "Message": "Start Transaction: opening connection with ProviderName 'Microsoft.Data.SqlClient' and beginning a database transaction on 'Server=sqlfin01;Database=Ledger;Integrated Security=true;Encrypt=true'"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-30T02:10:02.704Z",
+      "Message": "Execute Non Query: inserted header row for batch 'B-20260530-0210' into LedgerBatchHeader (1 row affected)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-30T02:10:03.221Z",
+      "Message": "Execute Non Query: A database error occurred.\r\nMicrosoft.Data.SqlClient.SqlException (0x80131904): The INSERT statement conflicted with the FOREIGN KEY constraint \"FK_LedgerBatchDetail_Account\". The conflict occurred in database \"Ledger\", table \"dbo.Account\", column 'AccountId'.\r\n   at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection)\r\n   at UiPath.Database.DatabaseConnection.ExecuteNonQuery(String sql, Dictionary`2 parameters, Int32 timeout)"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-30T02:10:03.405Z",
+      "Message": "Detail insert failed, caught and continuing: The INSERT statement conflicted with the FOREIGN KEY constraint \"FK_LedgerBatchDetail_Account\"."
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-30T02:10:05.880Z",
+      "Message": "Start Transaction: scope exited normally; committing database transaction"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-30T02:10:06.291Z",
+      "Message": "BatchLedgerPost execution ended"
+    }
+  ]
+}

@@ -63,12 +63,24 @@ if not key:
     )
 if key:
     seed["process_key"] = key
-    # `or processes get` doesn't populate FolderPath — use list and match by Key.
-    items = (uip_json("or", "processes", "list", "--all-folders").get("Data") or [])
-    if isinstance(items, dict):
-        items = items.get("Value") or items.get("Items") or items.get("Results") or []
-    match = next((p for p in items if (p.get("Key") or "").lower() == key.lower()), None)
-    fp = (match or {}).get("FolderPath") or (match or {}).get("FolderName") or ""
+    # `or processes get` doesn't populate FolderPath, so derive the folder from
+    # `processes list` matched by Key. The list paginates (default page size),
+    # sorted Id desc — under a busy parallel run, processes created by other
+    # tasks can push the seeded stub off page 1, so page through every folder
+    # until we find it instead of trusting the first page.
+    fp, offset = "", 0
+    while True:
+        page = (uip_json("or", "processes", "list", "--all-folders",
+                         "--limit", "200", "--offset", str(offset)).get("Data") or [])
+        if isinstance(page, dict):
+            page = page.get("Value") or page.get("Items") or page.get("Results") or []
+        match = next((p for p in page if (p.get("Key") or "").lower() == key.lower()), None)
+        if match:
+            fp = match.get("FolderPath") or match.get("FolderName") or ""
+            break
+        if len(page) < 200:  # last page reached, key not found anywhere
+            break
+        offset += 200
     if not fp:
         print(f"seed.py: could not resolve folder for E2E_PROCESS_KEY={key} via 'or processes list' — check the key is correct and the process exists.", file=sys.stderr)
         sys.exit(1)

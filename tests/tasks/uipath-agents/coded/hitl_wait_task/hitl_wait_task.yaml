@@ -11,33 +11,18 @@ tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framew
 max_iterations: 1
 
 initial_prompt: |
-  Build a UiPath agent named `purchase-gate` that closes the loop
-  on purchase requests already opened for human review elsewhere.
-  An Action Center task has already been filed by someone else and
-  is handed to the agent as input. The agent must pause until the
-  reviewer completes that existing task, then read the decision
-  and produce a short, structured outcome.
+  Scaffold a fresh UiPath coded agent (LangGraph) named `purchase-gate` in
+  a `purchase-gate/` directory at the working-directory root. It closes the
+  loop on a purchase request that's already been opened for human review
+  somewhere else. The open Action Center task is handed to the agent as
+  input: it should wait until the reviewer finishes that existing task, then
+  read their decision and produce a short, structured outcome, whether it
+  was approved and whatever note the reviewer left.
 
-  Inputs:
-    - `task` — the Action Center task object that's already open
-      and waiting for a human (treat it as the action the agent
-      should monitor).
-    - `request_summary` — a one-line description of the purchase,
-      useful for context.
+  It also gets a one-line summary of the purchase for context.
 
-  Outputs:
-    - `approved` (bool) — true if the reviewer marked the task
-      approved, false otherwise.
-    - `reviewer_note` (string) — whatever free-form note the
-      reviewer left.
-
-  Scaffold the agent project inside a `purchase-gate/` directory at
-  the working-directory root.
-
-  Take the agent through scaffold → schema sync. Do NOT run,
-  publish, upload, or deploy. Do NOT call `uip login`. Do NOT pause
-  between planning and implementation. Complete end-to-end in a
-  single pass.
+  I just need it built, no need to run it, sign in, or deploy. Take it
+  through in one pass.
 
 success_criteria:
   - type: command_executed

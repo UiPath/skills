@@ -1,0 +1,18 @@
+{
+  "instanceId": "debug-run-042",
+  "elements": [
+    {
+      "elementId": "ScriptTask_Classify",
+      "variables": [
+        { "name": "amount", "value": 1875 },
+        { "name": "approvalDecision", "value": "AutoApproved" }
+      ]
+    }
+  ],
+  "variables": [
+    { "name": "orderId", "value": "ORD-9001" },
+    { "name": "amount", "value": 1875 },
+    { "name": "approvalDecision", "value": "AutoApproved" },
+    { "name": "reviewerTier", "value": "Tier2" }
+  ]
+}

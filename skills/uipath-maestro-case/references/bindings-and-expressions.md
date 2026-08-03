@@ -9,7 +9,7 @@ Every task input is wired using one of two modes. Pick based on the source of th
 | Mode | Tasks.md syntax | Implementation |
 |------|-----------------|----------------|
 | **Literal or expression** | `input = "<value>"` | Write `"<value>"` to `task.data.inputs[i].value` in caseplan.json |
-| **Cross-task reference** | `input <- "Stage"."Task".output` | Resolve source output's `var` → write `"=vars.<var>"` to target input's `value` |
+| **Cross-task reference** | `input <- "Stage"."Task".output` | Resolve the source's output reference ID → write `"=vars.<outputReferenceId>"` to target input's `value` |
 
 For the full JSON shapes and binding procedure, see [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md).
 
@@ -21,7 +21,7 @@ When using the literal/expression mode, the `--value` string can start with one 
 
 | Prefix | Meaning | Example |
 |--------|---------|---------|
-| `=metadata.` | Case metadata field | `=metadata.amount` |
+| `=metadata.` | Case metadata field — closed schema, see [case-schema.md § 1](case-schema.md#1-top-level--metadata). NOT for arbitrary SDD "Case Metadata" business fields (e.g. Priority) — those are case variables, use `=vars.<id>` | `=metadata.ExternalId` |
 | `=js:` | Inline JavaScript expression | `=js:new Date().toISOString()` |
 | `=vars.` | Case-level variable | `=vars.inbox_config` |
 | `=bindings.` | Resource binding (connection, queue, trigger) | `=bindings.slackConnection` |
@@ -35,6 +35,8 @@ When using the literal/expression mode, the `--value` string can start with one 
 > Plain strings (no prefix) are literal values. `"hello"` is literally the string `hello`, not an expression.
 
 > The prefix tells you WHAT the value refers to. The **sink** tells you HOW to wrap it — see [§ Canonical form per sink](#canonical-form-per-sink) below.
+
+> **Variable / binding ids are always letter-leading.** Formal-arg slots use a `v` prefix, bindings use `b`, and companion ids inherit the (letter-leading) variable name — so `<id>` in `=vars.<id>` / `=bindings.<id>` is always a valid C# identifier. Dot notation is always safe; bracket notation (`vars["…"]`) is never needed. A digit-leading id would fail the case BPMN with `illegal ID` — see [global-vars § Formal-arg slot ID format](plugins/variables/global-vars/impl-json.md#formal-arg-slot-id-format).
 
 ## Canonical form per sink
 
@@ -73,6 +75,8 @@ SDD IF columns and `tasks.md` conditions use natural shorthand — `approved == 
 ### Conservative rule for `=metadata.X`
 
 The lookup-path resolver has NO `=metadata.` branch — plain `=metadata.X` is NOT resolved at runtime. **Always wrap as `=js:metadata.X`** (or `=js:(metadata.X)` if the sink requires parens). The FE design-time picker may classify `=metadata.X` as "variable" type, but that's a UI hint, not a runtime contract.
+
+`metadata.X` is a **closed field set** — see [case-schema.md § 1](case-schema.md#1-top-level--metadata) for the full list (`caseIdentifier`, `slaRules`, `caseExitRules`, …) plus the platform-only runtime field `metadata.ExternalId`. It is NOT a namespace for arbitrary business data. A field the SDD's "Case Metadata" table lists for human-readability (e.g. `Priority`) is authored as a **case variable**, not a `metadata` key — reference it as `=js:vars.priority`, never `=js:metadata.priority` (which resolves to `undefined`).
 
 ### Planner-emit form
 
@@ -121,11 +125,12 @@ The execution phase resolves names to IDs by reading caseplan.json:
 src_stage = find_node_by_label(nodes, "Stage Name")
 src_task  = find_task_by_name(src_stage, "Task Name")
 src_output = find_output_by_name(src_task, "output_name")
-target_input.value = f"=vars.{src_output['var']}"
+output_reference_id = resolve_output_reference_id(caseplan, src_output)
+target_input.value = f"=vars.{output_reference_id}"
 # Write updated caseplan.json back to disk
 ```
 
-See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md) for the full procedure.
+See [plugins/variables/io-binding/impl-json.md § Output reference ID](plugins/variables/io-binding/impl-json.md#output-reference-id-authoritative) for the authoritative resolver. It reads a normal / bare / reassigned output's `.id`; only a custom `=` output, which has no `.id`, resolves through its verified root companion's `.id`.
 
 ### In-expression references (`vars.$xref(...)`)
 
@@ -139,7 +144,7 @@ vars.$xref('Stage Name','Task Name','output_name')
 
 - Three args = the same name-triple as whole-value `<-`: source stage `data.label`, source task `displayName`, source output `name`.
 - Single quotes ONLY — double quotes break the enclosing JSON string. Names containing a literal `'` are unsupported (re-author the name).
-- Drop it anywhere a bare `vars.X` is legal inside an `=js:` expression. It resolves to bare `vars.<var>` (NOT `=vars.` — it is already inside `=js:`).
+- Drop it anywhere a bare `vars.X` is legal inside an `=js:` expression. It resolves to bare `vars.<outputReferenceId>` (NOT `=vars.` — it is already inside `=js:`).
 
 **Example** — composite input payload, no middle variables:
 
@@ -147,9 +152,9 @@ vars.$xref('Stage Name','Task Name','output_name')
 "value": "=js:({ approvalDecision: vars.$xref('AP Review','AP lead approval','outcome'), urgentPaymentDecision: vars.$xref('AP Review','Urgent payment','outcome') })"
 ```
 
-**Resolution** — a single post-pass near the end of Phase 3 (Step 11.5, after conditions and SLA are written) walks every string value in `caseplan.json`, resolves each marker to the source output's **post-dedup** `var`, and substitutes `vars.<var>` in place. Because it runs after all outputs are minted and deduped, it reads the real suffixed id (`outcome2`, `data6`) — strictly more stable than hand-authoring `=js:vars.outcome2`. An unresolved marker is a build-time ERROR surfaced via **AskUserQuestion** (Check 4), not a silent fail — and `vars.$xref` would throw at runtime too (a method call on `vars`). See [plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115).
+**Resolution** — a single post-pass near the end of Phase 3 (Step 11.5, after conditions and SLA are written) walks every string value in `caseplan.json`, resolves each marker through the common output-reference-ID algorithm, and substitutes `vars.<outputReferenceId>` in place. Because it runs after all outputs are minted and deduped, it reads the real suffixed `.id` (`outcome2`, `data6`) rather than a reassigned output's Case-variable `.var` pointer. An unresolved marker is a build-time ERROR surfaced via **AskUserQuestion** (Check 4), not a silent fail — and `vars.$xref` would throw at runtime too (a method call on `vars`). See [plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115).
 
-> **Additive, not a replacement.** Whole-value `input <- "Stage"."Task".out` keeps resolving to `=vars.<var>` via the binding procedure. The `vars.$xref(...)` marker is only for the in-expression case. Use whole-value `<-` when the output IS the input; use the marker when the output is one term inside a larger `=js:` expression.
+> **Additive, not a replacement.** Whole-value `input <- "Stage"."Task".out` resolves to `=vars.<outputReferenceId>` through the same algorithm. The `vars.$xref(...)` marker is only for the in-expression case. Use whole-value `<-` when the output IS the input; use the marker when the output is one term inside a larger `=js:` expression.
 
 ## Examples
 
@@ -171,7 +176,9 @@ vars.$xref('Stage Name','Task Name','output_name')
 - inputs:
   - emails <- "Triage"."Fetch Inbox".emails
   - customer_id <- "Triage"."Fetch Inbox".customer_id
-- outputs: category, priority_score
+- outputs:
+  - category
+  - priority_score
 ```
 
 ### Mixed inputs (HITL/action)
@@ -184,7 +191,9 @@ vars.$xref('Stage Name','Task Name','output_name')
   - classification <- "Triage"."Classify Emails".category
   - priority       <- "Triage"."Classify Emails".priority_score
   - deadline       = "=js:new Date(Date.now() + 86400000).toISOString()"
-- outputs: decision, comments
+- outputs:
+  - decision
+  - comments
 ```
 
 ## Anti-Patterns

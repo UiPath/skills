@@ -162,7 +162,7 @@ Build coverage is almost always the strong mode; `operate` and `diagnose` are wh
 | D11 | **Read-only discovery for triage** | `login status`, `list --state Faulted`, `get` before mutating — inspecting state to scope a fault |
 
 **Two recurring meta-findings to always check (emit as gaps when present):**
-- **Tag-drift on operate/diagnose:** a skill's only operate/diagnose tests are tagged `mode:build` (or carry no `mode:*` at all) — fires the Phase 4f-mode tag cross-check. Common on catalog skills (`uipath-tasks`, `uipath-data-fabric`, `uipath-ixp`) where every task inherited `mode:build`.
+- **Tag-drift on operate/diagnose:** a skill's only operate/diagnose tests are tagged `mode:build` (or carry no `mode:*` at all) — fires the Phase 4f-mode tag cross-check. Common on catalog skills (`uipath-tasks`, `uipath-platform/data-fabric`, `uipath-ixp`) where every task inherited `mode:build`.
 - **Surface-without-test:** SKILL.md/references document an operate/diagnose command (e.g. `maestro case instance`, `rpa debug start`, `solution deploy activate`) that has zero covering tests — the most common source of `operate`/`diagnose` `None`s.
 
 ## Phase 3 — Extract test coverage
@@ -176,7 +176,7 @@ task_id         — unique test identifier (e.g., "skill-flow-calculator")
 description     — what the test validates
 tags            — array carrying values from the Tag Taxonomy dimensions
                   documented in tests/README.md. Form:
-                  [skill, tier, mode:X, shape:X, node:..., resource, connector, windows, feature:...]
+                  [skill, tier, mode:X, shape:X, node:..., resource, connector, windows, feature:..., path-to-ga]
                     skill      — uipath-<name>                                (required, flat)
                     tier       — smoke | integration | e2e                    (required, flat)
                     mode       — mode:{build|operate|diagnose}                  (required; see Phase 2f for mode definitions)
@@ -185,6 +185,7 @@ tags            — array carrying values from the Tag Taxonomy dimensions
                     resource   — flat boolean marker (present iff task uses a resource node) (0..1)
                     connector  — flat boolean marker (present iff task uses any connector)   (0..1)
                     windows    — flat boolean marker (present iff task requires a Windows host) (0..1)
+                    path-to-ga  — flat boolean marker for exhaustive / critical GA-path tasks (0..1)
                     feature    — feature:{http|trigger|registry|transform|approval-gate|
                                  write-back|escalation|…}                     (0..n)
                   Record every dimension; Phase 4f keys off all of them, not just tier.
@@ -288,7 +289,7 @@ Weights reflect what tests actually catch:
 |---|---|---|
 | Workflow-heavy, multi-path (e.g. `uipath-rpa`, `uipath-agents`, `uipath-maestro-flow`) | — | Comp 45% / Steps 25% / Rules 15% / Path 15% |
 | Workflow-heavy, single-path (e.g. `uipath-maestro-case`, `uipath-human-in-the-loop`) | Path | Comp 55% / Steps 30% / Rules 15% |
-| Command-catalog skills (e.g. `uipath-platform`, `uipath-servo`, `uipath-test`, `uipath-feedback`, `uipath-data-fabric`) | Rules, Path, Steps (often) | Comp 100% (or Comp 65% / Steps 35% if the skill has explicit workflow steps) |
+| Command-catalog skills (e.g. `uipath-platform` (incl. its `data-fabric` sub-area), `uipath-servo`, `uipath-test`, `uipath-feedback`) | Rules, Path, Steps (often) | Comp 100% (or Comp 65% / Steps 35% if the skill has explicit workflow steps) |
 | Planning skills (e.g. `uipath-planner`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
 | Agent-orchestration skills (e.g. `uipath-troubleshoot`) | Path, sometimes Components | Components 55% (sub-agents + phases) / Steps 30% / Rules 15% |
 | Cross-cutting capability (e.g. `uipath-context-grounding`) | Path, Steps (usually) | Comp 70% (modes×surfaces) / Rules 30% (invariants) |
@@ -336,7 +337,7 @@ For each skill that has at least one test, compute which values from the Tag Tax
 - **Mode** — now a **scored slice** (Phase 4f-mode), not a sidecar tick. Report it in the Per-Mode Coverage table, not here.
 - **Shape** — tick each of `shape:single-node`, `shape:multi-node` (applies to flow-building skills only).
 - **Node** — list values present under `node:*` for skills where that axis applies.
-- **Resource / Connector / Windows** — flat boolean markers; report count of tasks carrying each (`resource`, `connector`, `windows`) for skills where they apply.
+- **Resource / Connector / Windows / Path-to-GA** — flat boolean markers; report count of tasks carrying each (`resource`, `connector`, `windows`, `path-to-ga`) for skills where they apply.
 - **Feature** — list `feature:*` tags present vs a reasonable "expected" set for this skill (derived from SKILL.md — e.g. `uipath-human-in-the-loop` should exercise `feature:approval-gate`, `feature:write-back`, `feature:escalation`; `uipath-maestro-flow` should exercise `feature:registry`, `feature:transform`, `feature:http`, …). If the skill's vocabulary is open, list what's present without the ✗ column.
 
 This is structured data for the per-skill report (see template below). It is NOT folded into the weighted overall score — adding it on top of Components/Steps would double-count (a missing edit-scenario test already shows up as a workflow-step gap).
@@ -767,7 +768,7 @@ The table also surfaces the **tier gap** signal from Phase 4i: a skill with test
 |-------|-------|-------------|-----|--------|
 | uipath-maestro-flow | 2 | 5 | 8 | Meets minimum |
 | uipath-rpa | 0 | 0 | 0 | Below minimum (missing smoke + e2e) |
-| uipath-data-fabric | 2 | 0 | 1 | Tier gap (no integration tier) |
+| uipath-platform/data-fabric | 2 | 0 | 1 | Tier gap (no integration tier) |
 
 ## Top 10 Recommended Tests
 

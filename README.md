@@ -1,5 +1,7 @@
 # UiPath Agent Skills
 
+[![skills.sh](https://www.skills.sh/b/uipath/skills)](https://www.skills.sh/uipath/skills)
+
 > [!NOTE]
 > **Work in Progress** — This repository is under active development. Skills are being added and refined. Contributions, feedback, and ideas are welcome! See [Contributing](#contributing) below.
 
@@ -39,6 +41,18 @@ See [Installing Node.js via package manager](https://nodejs.org/en/download/pack
 After installing, verify with `node -v` and then run the quick start command above.
 
 </details>
+
+### Try a skill without installing anything
+
+To evaluate a single skill before adopting the whole set, use the [`skills` CLI](https://www.skills.sh) — no UiPath CLI and no project changes required:
+
+```bash
+npx skills add UiPath/skills --list              # browse the catalog
+npx skills use UiPath/skills@uipath-rpa | claude # run one skill; nothing is written to your project
+npx skills add UiPath/skills --skill uipath-rpa  # install just that one skill
+```
+
+> **For ongoing use, prefer `uip skills install` above.** It detects every coding agent on your machine and keeps skills updated as they change; `npx skills add` installs a point-in-time copy that you must update yourself with `npx skills update`.
 
 ## Skill Catalog
 
@@ -93,10 +107,12 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-api-workflow` | In-development |
 | `uipath-automation-discovery` | Preview |
 | `uipath-coded-apps` | Preview |
-| `uipath-data-fabric` | In-development |
+| `uipath-connector-builder` | In-development |
 | `uipath-feedback` | Stable |
+| `uipath-functions` | Preview |
 | `uipath-governance` | In-development |
 | `uipath-human-in-the-loop` | In-development |
+| `uipath-insights` | Preview |
 | `uipath-ixp` | In-development |
 | `uipath-maestro-bpmn` | In-development |
 | `uipath-maestro-case` | In-development |
@@ -152,6 +168,17 @@ Gemini CLI is supported by `uip skills install`. If the Gemini CLI is on your PA
 ### OpenAI Codex CLI
 
 This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
+
+This repository also includes Codex plugin metadata under `.codex-plugin/`. The Codex plugin manifest exposes the same `skills/` directory and shared session hooks.
+
+Install with Codex CLI:
+
+```bash
+codex plugin marketplace add UiPath/skills --ref main
+codex plugin add uipath@uipath-marketplace
+```
+
+The marketplace entry currently uses a `plugins/uipath` symlink so Codex can load the repository root as the plugin root; remove it once [openai/codex#17066](https://github.com/openai/codex/issues/17066) is resolved.
 
 > **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
 > ```bash

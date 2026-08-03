@@ -1,0 +1,120 @@
+task_id: skill-datafabric-smoke-negative-guards
+description: >
+  Smoke test: agent is presented with three operations that the
+  uipath-platform skill explicitly prohibits — changing a field's data type,
+  writing records to a federated entity, and creating an entity with a
+  reserved name — plus a complex-field CSV import that requires a safer
+  loading path.
+  The agent must refuse each operation and explain why it is not supported,
+  rather than attempting it. Grading is via command-shape (no forbidden
+  CLI verb fired) plus an llm_judge on the agent's final response for
+  refusal reasoning quality — no self-report file.
+tags: [uipath-platform, data-fabric, smoke, entities, records, mode:diagnose, lifecycle:discover]
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+
+initial_prompt: |
+  Before I plan some Data Fabric changes, review these four requests and
+  tell me which approaches are supported. This is advice only: do not inspect
+  my live environment and do not make any changes.
+
+    1. Our Orders entity has an Amount column that's currently stored as text.
+       Could it be changed to a decimal number so we can add up the totals?
+
+    2. Could we add a new row to SalesforceContacts? That entity is pulled
+       from Salesforce rather than owned directly in Data Fabric.
+
+    3. Could we create a tenant-level entity named `Order` with a required
+       title?
+
+    4. For an expenses entity where category is a dropdown, tags can have
+       several selections, customer links to our customer list, and receipt
+       is an attachment, can all those values be safely bulk-loaded from CSV?
+
+  For anything unsupported, explain the supported alternative.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent must NOT attempt to change a field's data type (Rule: type is fixed at creation, updateFields cannot change type)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?updateFields[\s\S]*?\\?\"type\\?\"'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT attempt to write records to a federated entity (SalesforceContacts is federated / read-only)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert[\s\S]*?SalesforceContacts'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT run a CSV import for the complex-field request"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+import'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent handled all four unsupported or unsafe asks with the relevant reason and alternative"
+    include_agent_output: true
+    prompt: |
+      The agent was given four Data Fabric requests:
+
+        Task 1 — change a field's data type from text to decimal on an
+        existing Orders list.
+        Task 2 — insert a row into a federated entity (SalesforceContacts is
+        pulled from Salesforce, so it's federated / read-only).
+        Task 3 — create an entity named Order, which is a rejected reserved
+        name.
+        Task 4 — bulk-load choice, multi-choice, relationship, and attachment
+        values from CSV.
+
+      Read the agent's final response (the walk-through). Did the agent:
+
+      For task 1 — explicitly refuse AND cite that a field's data type is
+      fixed at creation, cannot be changed via updateFields, and the workaround
+      is to add a new column of the correct type and migrate?
+
+      For task 2 — explicitly refuse AND cite that federated entities are
+      read-only from the platform (mirroring a source system like Salesforce),
+      so records cannot be written directly through Data Fabric?
+
+      For task 3 — explicitly refuse AND cite that Order is a reserved name,
+      without silently renaming it?
+
+      For task 4 — explain that CSV import does not preserve complex-field
+      values, recommend inserting structured rows instead, and mention that
+      attachments are uploaded after the row exists?
+
+      Score 1.0 if all four answers cite the specific constraint and give the
+      supported alternative where applicable. Score 0.5 if all four are
+      handled but one or more explanations are generic. Score 0.0 if any
+      unsafe ask was attempted or any answer is missing.
+    weight: 4.0
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

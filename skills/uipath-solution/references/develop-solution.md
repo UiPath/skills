@@ -2,7 +2,7 @@
 
 Create a solution, add automation projects, and sync resource declarations.
 
-> For full option details on any command, use `--help` (e.g., `uip solution project add --help`).
+> For full option details on any command, use `--help` (e.g., `uip solution projects add --help`).
 
 ## When to Use
 
@@ -44,15 +44,15 @@ Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live insid
 
 ## Step 2: Add Existing Projects
 
-> **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution project add`, run `uip functions init` (Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. Registration without it creates an incomplete solution entry.
+> **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution projects add`, run `uip function init` (Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. Registration without it creates an incomplete solution entry.
 
 Register a project that already lives inside the solution directory.
 
 ```bash
-uip solution project add ./InvoiceAutomation/Processor --output json
+uip solution projects add ./InvoiceAutomation/Processor --output json
 
 # With explicit solution file
-uip solution project add ./InvoiceAutomation/Reporter ./InvoiceAutomation/InvoiceAutomation.uipx --output json
+uip solution projects add ./InvoiceAutomation/Reporter ./InvoiceAutomation/InvoiceAutomation.uipx --output json
 ```
 
 The `.uipx` is auto-discovered by walking up from the project path if not specified. `Type` is auto-detected from `project.uiproj` / `project.json` — do not pass it.
@@ -64,7 +64,7 @@ The `.uipx` is auto-discovered by walking up from the project path if not specif
 Copy a project from outside the solution tree into the solution directory and register it.
 
 ```bash
-uip solution project import --source /path/to/ExternalProject --output json
+uip solution projects import --source /path/to/ExternalProject --output json
 ```
 
 Unlike `add`, `import` copies source files into the solution directory first, then registers the copy.
@@ -76,7 +76,7 @@ Unlike `add`, `import` copies source files into the solution directory first, th
 Unregister a project from the `.uipx` manifest. Does NOT delete files from disk.
 
 ```bash
-uip solution project remove ./InvoiceAutomation/OldProject --output json
+uip solution projects remove ./InvoiceAutomation/OldProject --output json
 ```
 
 ## Step 5: List Projects
@@ -87,10 +87,10 @@ When the user asks to show or list registered projects, run this command. Readin
 
 ```bash
 # from inside the solution dir
-uip solution project list --output json
+uip solution projects list --output json
 
 # or with an explicit solution folder
-uip solution project list --solution-folder ./InvoiceAutomation --output json
+uip solution projects list --solution-folder ./InvoiceAutomation --output json
 ```
 
 `Name` is read from each project's `project.uiproj`, falling back to the directory basename if the manifest is missing or unreadable. Empty solutions return `Data: []`.
@@ -198,7 +198,7 @@ uip solution resources get <resource-key> --solution-folder ./InvoiceAutomation 
 
 ### Local vs remote spec — they're not identical
 
-The local file is what `refresh` (and `solution project add`) wrote to disk: a declarative subset of the cloud entity. The remote (FPS) spec includes server-resolved fields the local can't have:
+The local file is what `refresh` (and `solution projects add`) wrote to disk: a declarative subset of the cloud entity. The remote (FPS) spec includes server-resolved fields the local can't have:
 
 | Field | Local | Remote (FPS) |
 |-------|-------|--------------|
@@ -243,7 +243,7 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 | `--source <source>` | `local`, `remote` | **required** |
 | `--kind <kind>` | Any kind RCS indexes (e.g. Queue, Asset, Bucket, Process, Connection, App, Index, Trigger). Case-insensitive lookup; trimmed and lowerFirstChar-applied before persistence | **required** |
 | `--name <name>` | Resource name (max 256 chars; path separators, control chars, and `: * ? " < > |` are rejected). Per-kind Orchestrator limits are stricter — queues cap at 50 | **required** |
-| `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection) | None |
+| `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection). On `--source remote` it is inferred from the matched resource when omitted; pass it only to override | None |
 | `--folder-path <path>` | Orchestrator folder for remote lookup. **Not valid with `--source local`** — virtual stubs live under the solution folder | None |
 | `--cloud-key <guid>` | Skip RCS search, import this exact resource key. Only valid with `--source remote`; must be a GUID | None |
 | `--solution-folder <path>` | Path to solution root (must directly contain a `.uipx`) | Current working directory |
@@ -272,17 +272,36 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 
 ### Ambiguous remote match
 
-When `--source remote` is given without `--cloud-key` and the RCS search returns multiple resources with the same `(kind, name)` across different folders, `add` does **not** guess — it emits a structured error with every candidate inline so an agent can re-call without a separate `resource list`:
+When `--source remote` is given without `--cloud-key` and the RCS search returns multiple resources with the same `(kind, name)`, `add` does **not** guess — it emits a structured error listing every candidate (with its folder, subtype, and key) inline so an agent can re-call without a separate `resources list`:
 
 ```json
 {
   "Result": "Failure",
-  "Message": "Ambiguous match: 3 remote resources matching kind=queue name=InvoiceQueue",
-  "Instructions": "Candidates (use one folder via --folder-path, or pass --cloud-key directly):\n  - Folder=Sales/CRM  Key=8f3a1b2c-...\n  - Folder=Operations/Reporting  Key=21a07d4e-...\n  - Folder=Shared  Key=c0e9f7a3-..."
+  "Message": "Ambiguous match: 2 remote resources matching kind=connection name=orders@example.com",
+  "Instructions": "Candidates (disambiguate with --cloud-key <key>; --folder-path only helps when they are in different folders):\n  - Folder=Shared  Type=uipath-google-gmail  Key=8f3a1b2c-...\n  - Folder=Shared  Type=uipath-google-drive  Key=21a07d4e-..."
 }
 ```
 
-Resolve by re-running with `--folder-path <one-of-the-candidates>` or `--cloud-key <one-of-the-keys>`.
+Two cases produce this:
+
+- **Same name across different folders** — resolve with `--folder-path <one-of-the-candidates>` *or* `--cloud-key <one-of-the-keys>`.
+- **Same name *and* folder, different subtype** (e.g. a `uipath-google-gmail` and a `uipath-google-drive` connection both named `orders@example.com` in the same folder). `--folder-path` can't separate these — only `--cloud-key` will. The `Type` column in each candidate tells them apart.
+
+### `--cloud-key` that can't be resolved
+
+`--cloud-key` skips the name search and looks the resource up by key to recover its source folder (the folder context is required — without it the deploy-time FPS export of connection/app resources fails). If the key resolves to nothing — wrong key, a resource not visible to your user, or (when `--folder-path` is also given) a resource that isn't in that folder — `add` fails clearly instead of importing a folderless resource:
+
+```json
+{
+  "Result": "Failure",
+  "Message": "No remote resource found with key 8f3a1b2c-... in folder \"Sales/CRM\"",
+  "Instructions": "Verify the key via 'uip solution resources list --source remote' (and that --folder-path, if given, matches the resource's folder)."
+}
+```
+
+Distinguish this from a **transient lookup failure**: if the Orchestrator search itself errors (RCS/API outage), `add` reports a separate `"Failed to look up the resource in Orchestrator by key"` instead of the not-found message above. Treat that one as retry-able; treat `"No remote resource found with key …"` as a key/folder to fix.
+
+An *already-imported* key is not an error — the idempotency check runs first, so re-adding it returns `Status: "Unchanged"`. On a successful by-key import the resource's subtype is taken from the match automatically (same as the name-search path), so `--type` is only needed to override it.
 
 ### How it relates to `refresh`
 
@@ -412,8 +431,8 @@ Create a solution with two projects, sync resources, and verify:
 uip solution init "InvoiceAutomation" --output json
 
 # 2. Add projects (already inside the solution directory)
-uip solution project add ./InvoiceAutomation/Processor --output json
-uip solution project add ./InvoiceAutomation/Reporter --output json
+uip solution projects add ./InvoiceAutomation/Processor --output json
+uip solution projects add ./InvoiceAutomation/Reporter --output json
 
 # 3. Move into the solution dir so subsequent commands default --solution-folder
 cd ./InvoiceAutomation
@@ -553,9 +572,9 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 | Want to... | Command | Watch for |
 |---|---|---|
 | Create a fresh solution | `uip solution init <name>` | Accepts an existing empty directory; drops `.uipx` inside |
-| Add a project already in the solution dir | `uip solution project add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
-| Pull in an external project | `uip solution project import --source <path>` | Rename source folder first to avoid 3-name divergence |
-| Remove a project | `uip solution project remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
+| Add a project already in the solution dir | `uip solution projects add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
+| Pull in an external project | `uip solution projects import --source <path>` | Rename source folder first to avoid 3-name divergence |
+| Remove a project | `uip solution projects remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
 | Sync resource bindings | `uip solution resources refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
 | Add a virtual queue / asset / bucket | `uip solution resources add --source local --kind <kind> --name <name>` | Offline-friendly; idempotent (re-run returns `Status: "Unchanged"`) |
 | Import an existing remote resource | `uip solution resources add --source remote --kind <kind> --name <name> --folder-path <folder>` | On ambiguous match, the error lists every candidate with its key — pick one and re-call |

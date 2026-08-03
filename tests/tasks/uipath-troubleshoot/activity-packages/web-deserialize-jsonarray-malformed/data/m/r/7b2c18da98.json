@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-23T17:37:06.345Z",
+      "Message": "ParseList execution ended"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-23T17:37:05.110Z",
+      "Message": "Deserialize JSON Array: Unexpected character encountered while parsing value: n. Path '', line 0, position 0.\r\nin Wf_ParseList.xaml\r\n    at DeserializeJsonArray \"Deserialize JSON Array\"\r\n    at Sequence \"Parse List\"\r\n    at Wf_ParseList \"Wf_ParseList\"\r\n\r\n--- .NET stack trace ---\r\nNewtonsoft.Json.JsonReaderException\r\n   at Newtonsoft.Json.JsonTextReader.ParseValue()\r\n   at Newtonsoft.Json.Linq.JArray.Load(JsonReader reader, JsonLoadSettings settings)\r\n   at Newtonsoft.Json.Linq.JArray.Parse(String json, JsonLoadSettings settings)\r\n   at UiPath.Web.Activities.DeserializeJsonArray.Execute(CodeActivityContext context)\r\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-23T17:37:05.045Z",
+      "Message": "ParseList execution started"
+    }
+  ]
+}
+

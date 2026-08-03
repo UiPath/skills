@@ -1,10 +1,5 @@
 # SDD — CandidateInterview
 
-> **⚠️ Generated lightweight; complexity exceeded thresholds.**
-> Counts at generation time: 7 primary stages (within), 31 tasks (exceeds 14), 4 integrations (exceeds 3),
-> 5 personas (exceeds 3), 0 child cases.
-> Review carefully before approving. Consider splitting into smaller cases or trimming scope.
-
 A Case Definition Blueprint for the Helix end-to-end candidate hiring process — from initial application receipt through recruiter screen, technical evaluation, onsite loop, debrief, offer, and final HRIS handoff to Workday.
 
 ---
@@ -20,9 +15,9 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
    - [Stage 5: Debrief](#stage-5-debrief-stage-debrief) — 3 tasks
    - [Stage 6: Offer](#stage-6-offer-stage-offer) — 5 tasks
    - [Stage 7: Hired](#stage-7-hired-stage-hired) — 3 tasks
-   - [Exception Stage: Rejected](#exception-stage-rejected-stage-rejected) — 2 tasks
-   - [Exception Stage: Withdrawn](#exception-stage-withdrawn-stage-withdrawn) — 2 tasks
-   - [Exception Stage: On Hold](#exception-stage-on-hold-stage-on-hold) — 2 tasks
+   - [Secondary Stage: Rejected](#secondary-stage-rejected-stage-rejected) — 2 tasks
+   - [Secondary Stage: Withdrawn](#secondary-stage-withdrawn-stage-withdrawn) — 2 tasks
+   - [Secondary Stage: On Hold](#secondary-stage-on-hold-stage-on-hold) — 2 tasks
 3. [Personas & App Views](#section-3-personas--app-views) — 5 Personas, Process App Views
 4. [Integrations](#section-4-integrations) — Integration Service Connectors
 
@@ -182,6 +177,14 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 | WHEN | IF |
 |------|-----|
 | `selected-tasks-completed("Sync Application from Greenhouse")` | — |
+
+###### Process / Agent / RPA / API Workflow Task Detail
+
+**Resolved Resource:** CandidateResumeScreeningPhase0ProbeQ91
+**Folder Path:** <UNRESOLVED>
+**Resource Identity:** <UNRESOLVED>
+**Binding Sub-Type:** Agent
+**Dispatch / Operation:** —
 
 **Inputs:**
 
@@ -786,6 +789,14 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 |------|-----|
 | `current-stage-entered` | — |
 
+###### Process / Agent / RPA / API Workflow Task Detail
+
+**Resolved Resource:** CandidateDebriefSummaryPhase0ProbeQ91
+**Folder Path:** <UNRESOLVED>
+**Resource Identity:** <UNRESOLVED>
+**Binding Sub-Type:** Agent
+**Dispatch / Operation:** —
+
 **Inputs:**
 
 | Field | Type | Binding |
@@ -845,7 +856,7 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 ##### Task 5.3: Record Debrief Decision (`t17`)
 
 **Type:** action
-**Description:** The Hiring Manager submits the final hire/no-hire decision following the debrief discussion, which routes the case to either the Offer stage or the Rejected exception stage.
+**Description:** The Hiring Manager submits the final hire/no-hire decision following the debrief discussion, which routes the case to either the Offer stage or the Rejected secondary stage.
 
 **Entry Condition:**
 
@@ -874,7 +885,7 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 | Button | Maps To | Behavior |
 |--------|---------|----------|
 | Advance to Offer | applicationStatus = "Advance" | Hire decision made; route to Offer stage |
-| Reject | applicationStatus = "Reject" | No-hire decision made; route to Rejected exception |
+| Reject | applicationStatus = "Reject" | No-hire decision made; route to Rejected secondary stage |
 
 ---
 
@@ -1236,9 +1247,10 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 
 ---
 
-### Exception Stage: Rejected (`stage-rejected`)
+### Secondary Stage: Rejected (`stage-rejected`)
 
-**Type:** ExceptionStage
+**Type:** Stage
+**Stage Kind:** secondary
 **Description:** Handles the rejection path for candidates eliminated at any stage of the hiring process. Sends a rejection notification and updates Greenhouse.
 **Required for Case Completion:** No
 **Interrupting:** No
@@ -1337,9 +1349,10 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 
 ---
 
-### Exception Stage: Withdrawn (`stage-withdrawn`)
+### Secondary Stage: Withdrawn (`stage-withdrawn`)
 
-**Type:** ExceptionStage
+**Type:** Stage
+**Stage Kind:** secondary
 **Description:** Handles cases where the candidate voluntarily withdraws from the interview process at any stage. Records the withdrawal reason and updates Greenhouse.
 **Required for Case Completion:** No
 **Interrupting:** No
@@ -1440,9 +1453,10 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 
 ---
 
-### Exception Stage: On Hold (`stage-on-hold`)
+### Secondary Stage: On Hold (`stage-on-hold`)
 
-**Type:** ExceptionStage
+**Type:** Stage
+**Stage Kind:** secondary
 **Description:** Temporarily pauses the hiring process when the Recruiter determines the case should be held (e.g., budget freeze, role re-scoping). Resumes to the origin stage after the hold review date passes.
 **Required for Case Completion:** No
 **Interrupting:** Yes
@@ -1582,3 +1596,10 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process �
 | Operation | Method | Input Fields | Output Fields |
 |-----------|--------|-------------|---------------|
 | Hire Employee | POST | firstName, email, jobTitle, department | employeeId |
+
+### Agents
+
+| Agent | Folder | Resource ID (+version) | Inputs → Outputs (or shared contract) | Used By Tasks |
+|-------|--------|------------------------|----------------------------------------|---------------|
+| CandidateResumeScreeningPhase0ProbeQ91 | <UNRESOLVED> | <UNRESOLVED> | candidateName, roleTitle, roleDepartment, roleLevel, applicationId → screeningResult, screeningNotes | Screen Resume |
+| CandidateDebriefSummaryPhase0ProbeQ91 | <UNRESOLVED> | <UNRESOLVED> | candidateName, roleTitle, resumeScreeningResult, technicalScreenScore, technicalScreenNotes, scorecard1Rating, scorecard2Rating, scorecard3Rating → debriefSummary | Prepare Debrief Summary |

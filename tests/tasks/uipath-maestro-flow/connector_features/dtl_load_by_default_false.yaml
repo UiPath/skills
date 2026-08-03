@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-dtl-load-by-default-false
 description: >
   Tests the DTL loadByDefault=false IS feature — configures a connector node
   where dropdown values load only on user interaction on the WooCommerce connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-automaticc-woocommerce, ipe]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-automaticc-woocommerce, ipe, mode:build]
 
 run_limits:
   expected_turns: 51
@@ -14,11 +14,7 @@ initial_prompt: |
   Create a new Flow project called "DTLLoadByDefaultFalseTest" with a manual trigger.
   You need a flow that lists WooCommerce products filtered by an attribute term
   the caller picks from a dropdown that loads on demand. Discover the
-  list-products operation and configure its attribute-term field — a DTL field
-  whose values are loaded only on user interaction (loadByDefault=false).
-  Add a Decision node to check whether the call succeeded.
-  Route failure to a Terminate node with error message "DTLLoadByDefaultFalse test failed".
-  Route success to a final action that logs "DTLLoadByDefaultFalse test passed".
+  list-products operation and configure its attribute-term field.
   Validate the final flow file.
 
 success_criteria:
@@ -36,14 +32,6 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Flow has Decision and Terminate nodes"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/DTLLoadByDefaultFalseTest*.flow',recursive=True); assert flows; f=json.load(open(flows[0])); types=[n.get('type','') for n in f['nodes']]; assert any('decision' in t.lower() for t in types), 'No Decision node'; assert any('terminate' in t.lower() for t in types), 'No Terminate node'; print('OK: Decision and Terminate nodes present')\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed

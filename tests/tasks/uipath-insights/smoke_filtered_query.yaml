@@ -1,0 +1,54 @@
+task_id: skill-insights-smoke-filtered-query
+description: >
+  Smoke test: agent uses the uipath-insights skill to query job data with
+  filters. Given a specific process name and folder, the agent should apply
+  --process-name and --folder-key filters. Tests that the agent correctly
+  uses repeatable filter options. Auth errors are expected (no live tenant).
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  I need to check the job health for a specific process called "Invoice_Processing"
+  in folder key "a1b2c3d4-e5f6-7890-abcd-ef1234567890" over the last 30 days.
+
+  Please:
+  1. Get the summary for this process in this folder
+  2. Check the failure reasons for this process
+
+  Use --output json on every command. The CLI is not connected to a live tenant,
+  so commands will fail with auth errors — that's expected. Run each command
+  once and move on. Do NOT retry or attempt to login.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --process-name filter"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s+.*--process-name\s+.?Invoice_Processing'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --folder-key filter"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s+.*--folder-key\s+.?a1b2c3d4'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --time-range 43200 for 30 days"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s+.*--time-range\s+43200'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

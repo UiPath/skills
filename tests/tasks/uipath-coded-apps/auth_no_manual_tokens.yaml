@@ -2,14 +2,11 @@ task_id: skill-coded-apps-auth-no-manual-tokens
 description: >
   Smoke test: agent uses the uipath-coded-apps skill to avoid manual access-token
   handling and prefer CLI-managed authentication for coded app sync/deploy.
-tags: [uipath-coded-apps, smoke, "lifecycle:validate"]
-
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:discover]
 run_limits:
   expected_turns: 4
 
 initial_prompt: |
-  Before starting, load the uipath-coded-apps skill and follow its workflow.
-
   A teammate suggested we source ~/.uipath/.auth, export UIPATH_ACCESS_TOKEN,
   or pass a JWT to uip codedapp push/publish so a coded app can sync and
   deploy. I need a safe command plan that avoids manual token handling.

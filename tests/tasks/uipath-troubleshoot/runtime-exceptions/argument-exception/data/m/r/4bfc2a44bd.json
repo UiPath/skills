@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-23T13:02:40.330Z",
+      "Message": "Parse Day Of Week: Requested value 'Funday' was not found.\r\nin Main.xaml\r\n    at Assign \"Parse Day Of Week\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.ArgumentException\r\n   at System.Enum.Parse(Type enumType, String value, Boolean ignoreCase)\r\n   at System.Enum.Parse(Type enumType, String value)\r\n   at Namespace_b2d3f4a5sp.Main_Expressions.Main_Expressions_TypedDataContext2_ForReadOnly.__Expr2Get()\r\n   at Namespace_b2d3f4a5sp.Main_Expressions.Main_Expressions_TypedDataContext2_ForReadOnly.ValueType___Expr2Get()\r\n   at Namespace_b2d3f4a5sp.Main_Expressions.InvokeExpression(Int32 expressionId, IList`1 locations, ActivityContext activityContext)\r\n   at Microsoft.CSharp.Activities.CSharpValue`1.Execute(CodeActivityContext context)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteInResolutionContext[T](ActivityInstance parentInstance, Activity`1 expressionActivity)\r\n   at System.Activities.InArgument`1.TryPopulateValue(LocationEnvironment targetEnvironment, ActivityInstance activityInstance, ActivityExecutor executor)\r\n   at System.Activities.ActivityInstance.InternalTryPopulateArgumentValueOrScheduleExpression(RuntimeArgument argument, Int32 nextArgumentIndex, ActivityExecutor executor, IDictionary`2 argumentValueOverrides, Location resultLocation, Boolean isDynamicUpdate)\r\n   at System.Activities.ActivityInstance.ResolveArguments(ActivityExecutor executor, IDictionary`2 argumentValueOverrides, Location resultLocation, Int32 startIndex)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)"
+    }
+  ]
+}

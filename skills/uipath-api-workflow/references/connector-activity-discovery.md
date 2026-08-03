@@ -18,6 +18,8 @@ Without both, the designer renders the activity as a "block / forbidden" card an
 ```
 1. uip api-workflow registry resolve "<keyword>" --output json     → candidate GUIDs
 2. (IntSvc kind only) uip is connections list <connector-key>           → connection UUID
+     empty? → uip is connections list                              → fallback: unfiltered
+     still empty? → uip is connections list --all-folders          → fallback: other folders
    uip is connections ping <uuid>                                  → REQUIRED — verify it works
 3. uip api-workflow registry stub <activity-type-id> \             → ready-to-paste activity
      [--connection-id <uuid>] [--inputs '<json>'] --output json
@@ -92,7 +94,7 @@ Skip this step if `connectorKey === "uipath-uipath-http"` — the HTTP connector
 uip is connections list <connector-key> --output json
 ```
 
-Returns connections for that connector. Pick the `Id` of an `Enabled` connection (prefer `IsDefault: "Yes"` if multiple). If none exist, the user must create one in Integration Service before authoring can complete.
+Returns connections for that connector. Pick the `Id` of an `Enabled` connection (prefer `IsDefault: "Yes"` if multiple). If this returns empty, do NOT conclude none exist — the listing is folder-scoped; run the unfiltered and `--all-folders` fallbacks below first.
 
 ```bash
 uip is connections ping <connection-uuid> --output json
@@ -103,7 +105,7 @@ This is **not optional**. A connection that exists in the listing can still be i
 - `Code: "ConnectionPing"` (success) → connection is healthy, proceed to Step 3.
 - `Code: "ConnectionNotEnabled"` or 404 `"Connection [<uuid>] is invalid or you do not have access to it"` → **DO NOT proceed**. The connection is broken. Run the fallback below before aborting.
 
-**Fallback — unfiltered listing.** Filtered `uip is connections list <connector-key>` can return orphaned records that don't appear in the unfiltered list (and vice versa). When the filtered listing's UUID fails to ping, run:
+**Fallback 1 — unfiltered listing.** Filtered `uip is connections list <connector-key>` can return orphaned records that don't appear in the unfiltered list (and vice versa). When the filtered listing's UUID fails to ping, run:
 
 ```bash
 uip is connections list --output json
@@ -111,7 +113,15 @@ uip is connections list --output json
 
 (no connector argument) and search the result for entries whose `ConnectorKey` matches the one you need. If a different UUID exists for the same connector, ping that one. Often the working connection is only visible in the unfiltered listing.
 
-Only after both the filtered AND unfiltered listings have been exhausted (no UUID for that `ConnectorKey` pings cleanly) should you abort and tell the user to either re-authenticate (`uip is connections edit <connection-uuid>` opens a browser for OAuth) or create a fresh connection in the StudioWeb UI. **Do NOT author a workflow against a connection that hasn't pinged successfully** — it will 401 in cloud regardless of how correct the workflow JSON is.
+**Fallback 2 — all folders.** Both listings above are scoped to the current folder. A connection living in a *different* folder returns **empty from both** — `"No connections found"` does NOT mean the tenant has no connection. Before concluding none exists, search across every folder:
+
+```bash
+uip is connections list --all-folders --output json
+```
+
+Returns connections from all folders (each row carries a `Folder` / `FolderKey`). Pick an `Enabled` row whose `ConnectorKey` matches and ping its `Id`. `--all-folders` cannot be combined with `--folder`/`--folder-key`. This is the single most common reason a working connection appears "missing" — always run it before aborting.
+
+Only after the filtered, unfiltered, AND `--all-folders` listings have been exhausted (no UUID for that `ConnectorKey` pings cleanly) should you abort and tell the user to either re-authenticate (`uip is connections edit <connection-uuid>` opens a browser for OAuth) or create a fresh connection in the StudioWeb UI. **Do NOT author a workflow against a connection that hasn't pinged successfully** — it will 401 in cloud regardless of how correct the workflow JSON is.
 
 ### Step 3 — Stub the activity
 
@@ -237,7 +247,7 @@ Sample for Outlook `getNewestEmail`:
 
 **Heuristic:** when the stub returns empty `queryParameters`, `pathParameters`, or `bodyParameters` for a non-trivial vendor operation, it's almost certainly the bug — verified-real endpoints (CRUD operations on real objects) very rarely have zero required inputs.
 
-Well-known folder-name shortcuts (e.g. MS Graph's `"inbox"`, `"sentitems"`, `"drafts"`) work for `parentFolderId`-style fields at runtime, but the StudioWeb FolderPicker only displays the friendly name if the value matches a real folder ID from the lookup cache. For exact UI fidelity, fetch the real ID once via `uip is resources execute <connector-key> list <object-name> --connection-id <uuid>` against the `lookup.path` (e.g. `/MailFolders`).
+Well-known folder-name shortcuts (e.g. MS Graph's `"inbox"`, `"sentitems"`, `"drafts"`) work for `parentFolderId`-style fields at runtime, but the StudioWeb FolderPicker only displays the friendly name if the value matches a real folder ID from the lookup cache. For exact UI fidelity, fetch the real ID once via `uip is resources run list <connector-key> <object-name> --connection-id <uuid>` against the `lookup.path` (e.g. `/MailFolders`).
 
 ### Step 4 — Drop into the workflow, replace placeholders, validate
 
@@ -279,7 +289,7 @@ uip api-workflow bindings sync --workflow Solution/<ProjectName>/Workflow.json -
 uip solution resources refresh --solution-folder Solution --output json
 ```
 
-`bindings sync` is pure-local (no auth, no API calls) — it walks `Workflow.json`, extracts IntSvc connector activities, and writes the canonical `bindings_v2.json` next to the workflow (one binding per unique connection UUID — two activities sharing a connection collapse to one entry). This file is what StudioWeb computes in-memory on workflow open; emitting it offline avoids the "open in StudioWeb once first" detour.
+`bindings sync` walks `Workflow.json` and extracts IntSvc connector activities into the canonical `bindings_v2.json` next to the workflow. **Connection** bindings are derived locally (one binding per unique connection UUID — two activities sharing a connection collapse to one entry). **Solution-resource** bindings (process/queue/asset picker fields like Run Job's `ReleaseName`) are derived by querying IS metadata for each activity's object, so this step reaches the network when such fields are present; when IS is unreachable, resource-binding generation is skipped and any pre-existing entries of those kinds are preserved rather than dropped. This mirrors what StudioWeb computes in-memory on workflow open; emitting it offline avoids the "open in StudioWeb once first" detour.
 
 `solution resources refresh` then reads every project's `bindings_v2.json`, calls `@uipath/resource-builder-sdk`'s `addOrUpdateResourceToSolutionAsync` to write the catalogue files, and `editOverwritesAsync` to write the per-user debug overwrites. Requires `uip login` (the SDK looks up folder keys via Resource Catalog Service). Idempotent — re-runs only import new resources.
 
@@ -425,6 +435,35 @@ Generic-specific behavior to know:
 - **Slot key carries the operation; export bucket does not**: slot `ListUserRepos_1`, export bucket `user_repos_1` (objectName-based, like every Curated example). The bucket intentionally matches the platform's own derivation — solution reconcile (`resource refresh`) regenerates `Workflow.json` and recomputes export buckets from the object name, so a divergent bucket would be renamed on regeneration. As always, copy `Data.ExportBucketKey` verbatim; and after ANY external rewrite of `Workflow.json` (reconcile, designer save), re-check that downstream `$context.outputs.<X>` reads still match the on-disk `export.as` keys — `validate` cannot catch dangling output references; they surface only at run time as `undefined`.
 - **Path-parameter value formats are connector-specific.** `Retrieve`/`Update`/`Delete` endpoints take an id path param (e.g. `/repos/{repo}`) and the expected value format (name vs full name vs numeric id) varies and is sometimes wrong in the connector's own metadata — `uip is resources describe` shows the parameter's description and lookup hints. If the run 404s, cross-check by executing the same operation via `uip is resources run get <connector-key> <object-name> --connection-id <uuid> --query <param>=<value>`; if that also 404s, the connector's auto-generated metadata is broken upstream — pick a Curated activity or the Http kind instead.
 - **Quality varies by connector.** Generic operations are auto-generated from vendor API specs and are not hand-verified the way Curated ones are. Prefer a Curated activity when one exists for the job.
+
+### Solution resources as activity fields (Run Job, Add Queue Item, …)
+
+Some activity fields don't take free text — their value names another **Solution resource** (a process, queue, asset…). Orchestrator's Run Job is the canonical case: its `ReleaseName` field is the process to start. The stub flags these in `Data.SolutionResourceFields` (`{ name, kind, location }`). Authoring recipe:
+
+```bash
+# 1. Get the resource's NAME and KEY from the solution tree (no API call):
+#    resources/solution_folder/process/process/<Name>.json → spec.name + key
+# 2. Stub: name as the value, key as the picker binding
+uip api-workflow registry stub <run-job-guid> \
+  --connection-id <orchestrator-conn-uuid> \
+  --inputs '{"ReleaseName":"RPA Workflow"}' \
+  --resource-key 'ReleaseName=87ec3255-8ea6-446e-8237-8ff429d86032' \
+  --output json
+```
+
+What each layer gets, and from where:
+
+| Layer | Carried by | Authored via |
+|--|--|--|
+| Runtime (which process starts) | `bodyParameters.ReleaseName` = resource **name** | `--inputs` |
+| Job-result waiting | `with.executionType: "async"` + callback header | automatic (mirrored from IS metadata) |
+| Deployment rewiring | `bindings_v2.json` process entry (`NameFieldPath`) | automatic (`bindings sync`) |
+| StudioWeb picker display | `savedResourceSelections` in `metadata.configuration` | `--resource-key` |
+
+Notes:
+- The activity only starts successfully once a process with that name is deployed and visible to the connection (pack/publish/deploy first, or pre-existing).
+- The picker display requires a StudioWeb build with `savedResourceSelections` support; on older builds the entry is ignored — the picker shows empty until selected once manually, while runtime and deployment remain correct.
+- Do NOT put the resource **key** in `--inputs` (runtime would send a GUID where the API expects a name) and do NOT put the **name** in `--resource-key` (the picker resolves by key).
 
 ## Vendor curated activity response shape — `content.X`, not `X`
 
@@ -778,7 +817,7 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 
 2. **Stub doesn't validate `--inputs` against the IS schema.** Field names not in `requestFields` / `parameters` are silently dropped on the way through `pickFields`. Check `Data.ResponseFields` and the IS schema if a value goes missing.
 
-3. **Subsequent designer saves can re-introduce mangling** of the Response activity (issue **SW-28452** / [UiPath/cli#1537](https://github.com/UiPath/cli/issues/1537)). See [troubleshooting.md](troubleshooting.md#object-valued-response-gets-corrupted-fields-evaluate-to-literal-expression-text-sw-28452--cli1537) — defending against the Response corruption is independent of the connector-activity discovery flow.
+3. **Subsequent designer saves can re-introduce mangling** of the Response activity. See [troubleshooting.md](troubleshooting.md#object-valued-response-gets-corrupted-fields-evaluate-to-literal-expression-text) — defending against the Response corruption is independent of the connector-activity discovery flow.
 
 4. **Login is required for `resolve` and `stub`.** Both hit live tenant endpoints (TypeCache and IS Elements). `uip api-workflow run --no-auth` still works for the resulting workflow if it only uses Http kind with `ImplicitConnection`; IntSvc kind always needs auth at run time.
 

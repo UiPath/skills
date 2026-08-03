@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "b7c8d9e0-1f2a-4b3c-8d4e-5f6a7b8c9d0e",
+      "Name": "RPA Production",
+      "Path": "RPA Production",
+      "Description": "Production folder for the mailbox triage RPA portfolio.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "d0e1f2a3-b4c5-4d6e-8f70-1a2b3c4d5e6f",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

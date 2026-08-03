@@ -184,3 +184,5 @@ Expected shape, for review only:
 | `Invalid metadata JSON` | Metadata is malformed or not an object | Pass a valid JSON object, e.g. `'{"source":"seed"}'` |
 | `Memory space "<name>" matches by memory space name` | More than one feature references the same memory space name | Pass `--folder-path`, use the feature name, or use the feature ID |
 | No `memorySpace` binding after refresh | Refresh was not run after the memory edit | Run `uip agent refresh "<AGENT_PROJECT_DIR>" --output json` |
+| Inline agent memory exists but `uip solution resource refresh` misses it | Binding was not propagated to the parent flow project | Re-run inline refresh with `--bindings-target "<FLOW_PROJECT_DIR>/bindings_v2.json"` — see [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md) |
+| User expects this command to create a new memory space | `uip agent memory add` only attaches an existing space | Stop and ask for an existing memory space name and folder |

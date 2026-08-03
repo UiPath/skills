@@ -5,7 +5,7 @@ Case-level data lives in the top-level `variables` block. Three categories:
 | Category | Arrays touched | When |
 |---|---|---|
 | **Variable** | `inputOutputs[]` (declaration) + `triggerNode.outputs[]` (when populated by trigger payload) | Case-internal state, including trigger-payload-sourced state |
-| **In** | `inputs[]` + companion `inputOutputs[]` + `triggerNode.outputs[]` bridge | Formal argument supplied by external caller. Any trigger type (manual, timer, or event). |
+| **In** | `inputs[]` + companion `inputOutputs[]` + `triggerNode.outputs[]` bridge | Formal argument supplied by external caller. Binds to the trigger named by `sourceTriggers` (single `T<N>`; blank → primary trigger T02). Any trigger type (manual, timer, or event). |
 | **Out** | `outputs[]` + companion `inputOutputs[]` (ALWAYS — see [`impl-json.md` § Out argument](impl-json.md)) | Formal argument returned to caller at case end |
 
 > **Canonical definition:** [`impl-json.md` § Pattern shapes by category](impl-json.md) is the source of truth for emission shapes (which arrays get written, exact JSON shape, runtime resolution semantics). This table is the Phase 1 routing summary.
@@ -43,7 +43,9 @@ Validate at planning time (before tasks.md is finalized). All checks operate on 
 | `Category=In` or `Out` row has missing `Type` | ERROR | Reject — type is required for formal arguments. |
 | Two rows share the same `Name` (regardless of which other columns differ) | ERROR | Reject — name collision. Variable names MUST be globally unique. AskUserQuestion to resolve (rename one, or merge into one row). |
 | `Category=Variable` row has `sourceTriggers` but no matching `sourceFields` entry per trigger | ERROR | Reject — multi-trigger requires per-trigger sourceField. |
-| `sourceTriggers` references a T-number that doesn't exist in tasks.md | ERROR | Reject — orphan reference. |
+| `Category=In` row has CSV `sourceTriggers` (more than one T-number) | ERROR | Reject — an In-arg binds to exactly one trigger; CSV is the multi-trigger `Variable` form. |
+| `Category=In` row has non-empty `sourceFields` | ERROR | Reject — In-args select a trigger but extract no payload field; use `Category=Variable` for extraction. |
+| `sourceTriggers` references a T-number that doesn't exist in tasks.md (any category) | ERROR | Reject — orphan reference. |
 
 Phase 3 (implementation) catches spec-dependent issues — see [`impl-json.md`](impl-json.md) § Phase 3 Validation.
 
@@ -55,9 +57,9 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 ## T05: Declare In-argument "applicantName"
 - category: In
 - type: string
-- triggerRef: T02
+- sourceTriggers: T03            # single T-number; omit to bind the primary trigger (T02)
 - default: ""
-- verify: inputs[] formal slot + inputOutputs[] companion (elementId=<triggerId>) + triggerNode.outputs[] bridge written.
+- verify: inputs[] formal slot + inputOutputs[] companion (elementId = id-map[T03].id) + that trigger node's outputs[] bridge written.
 
 ## T06: Declare Variable "subject"
 - category: Variable
@@ -92,16 +94,15 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 
 - `category` — required, one of `In`, `Out`, `Variable`
 - `type` — required, one of `string`, `integer`, `float`, `double`, `boolean`, `datetime`, `date`, `jsonSchema`, `file`
-- `triggerRef` — T-number of the trigger this In-arg is attached to (single-trigger). For In-args only.
 - `sourceTrigger` — T-number when the value comes from a single trigger's payload (Variable category)
-- `sourceTriggers` — CSV of T-numbers when multiple triggers populate this Variable
-- `sourceFields` — per-trigger payload paths. Single-trigger form is `<path>`; multi-trigger form is a YAML-style sub-block with one `T<N>: <path>` per line
+- `sourceTriggers` — for a `Variable`: CSV of T-numbers when multiple triggers populate it. For an `In`-arg: a single `T<N>` selecting the trigger it binds to (blank → primary trigger T02; never a CSV). Replaces the legacy `triggerRef` field.
+- `sourceFields` — per-trigger payload paths (Variable only). Single-trigger form is `<path>`; multi-trigger form is a YAML-style sub-block with one `T<N>: <path>` per line. Empty on `In` rows.
 - `default` — initial value (string-encoded for non-string types). Drives the `default` field on the companion `inputOutputs[]` entry.
 - `producedBy` — informational only (for Out-args). The io-binding validator confirms the named task actually exists with a matching output.
 
 **`verify` text — use exact terms from [`impl-json.md` § Pattern shapes](impl-json.md):**
 
-- "Bridge" = In-arg formal-arg → companion forwarding (any trigger type; 3-entry shape). NEVER use for Variable rows.
+- "Bridge" = In-arg formal-arg → companion forwarding (any trigger type; 3-entry shape) on the trigger named by the In row's `sourceTriggers` (blank → primary). NEVER use for Variable rows.
 - Variable-row trigger.outputs[] entries are "Pattern C wires" (direct payload extraction, 2-entry shape).
 - `sourceField`'s right side IS the connector's spec path (e.g., `response.subject` is the literal field path in `caseShape.outputs[]`), not an alias. SDD-name on the LEFT becomes `var`/`id`; spec path on the RIGHT becomes `source`.
 - Spec-vs-SDD drift validation runs in the variables plugin's Phase 3 dispatcher, not in io-binding.

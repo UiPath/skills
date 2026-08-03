@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T15:18:43.870Z",
+      "Message": "[Write CSV] 'utf8-bom' is not a supported encoding name. (Parameter 'name')"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T15:18:43.940Z",
+      "Message": "Write CSV: 'utf8-bom' is not a supported encoding name.\r\nin Main.xaml\r\n    at WriteCsvFile \"Write CSV\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

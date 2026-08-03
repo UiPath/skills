@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T09:25:00.190Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T09:25:01.004Z",
+      "Message": "[Get Outlook Mail Messages] Attached to running Outlook application via COM"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T09:25:01.512Z",
+      "Message": "[Get Outlook Mail Messages] Resolved mail folder 'Inbox' on the default profile"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T09:25:02.118Z",
+      "Message": "[Get Outlook Mail Messages] applying Filter: [Subject] = VarSubject"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T09:25:02.281Z",
+      "Message": "[Get Outlook Mail Messages] Cannot parse condition. Error at \"VarSubject\"."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T09:25:02.310Z",
+      "Message": "Cannot parse condition. Error at \"VarSubject\". (Exception from HRESULT: 0x80020009 (DISP_E_EXCEPTION))\r\nin Main.xaml\r\n    at GetOutlookMailMessages \"Get Outlook Mail Messages\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T09:25:02.325Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

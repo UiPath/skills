@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-06-16T15:40:02.300Z",
+      "Message": "JiraTicketCloser execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-16T15:40:03.050Z",
+      "Message": "Jira Scope: session opened to https://acme.atlassian.net (Authentication Type: Api Token)"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-16T15:40:03.520Z",
+      "Message": "Transition Issue: transitioning issue OPS-1530 to 'Done'"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T15:40:03.730Z",
+      "Message": "[Transition Issue] Response status code does not indicate success: 400 (Bad Request). {\"errorMessages\":[],\"errors\":{\"resolution\":\"Field 'resolution' is required\"}}"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T15:40:03.810Z",
+      "Message": "UiPath.Jira.Activities.JiraException: Field 'resolution' is required\r\nin Main.xaml\r\n    at JiraApplicationScope \"Jira Scope\"\r\n    at TransitionIssue \"Transition Issue\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Information",
+      "TimeStamp": "2026-06-16T15:40:03.860Z",
+      "Message": "JiraTicketCloser execution ended"
+    }
+  ]
+}

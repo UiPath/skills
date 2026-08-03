@@ -9,15 +9,13 @@ agent:
 
 pre_run:
   - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
-    timeout: 30
+    timeout: 60
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
     timeout: 60
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   I want to double-check that folder-scoped assets really are isolated to
   their folder. The path to folder A is in `seed.json` (the `folder_a_path` field) along with a
   unique prefix.

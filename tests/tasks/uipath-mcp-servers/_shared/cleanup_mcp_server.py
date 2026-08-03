@@ -7,7 +7,7 @@ Reads report.json (CWD), written by the agent:
 
 Deletes via the authed CLI: `uip agenthub mcp delete <slug> --folder-path|--folder-key ...`.
 Idempotent — a missing server counts as already-clean. Exit 0 ALWAYS: cleanup failures never
-fail the test (matches uipath-data-fabric/_shared/cleanup_entities.py). Locally without a tenant
+fail the test (matches uipath-platform/data-fabric/_shared/cleanup_entities.py). Locally without a tenant
 this is a no-op.
 """
 

@@ -1,0 +1,82 @@
+task_id: skill-bpmn-safety-sanitize
+description: >
+  Public-safety negative eval: a fixture .bpmn is seeded with fake-but-realistic
+  private values (a tenant URL, a folder key, a connection id, and person names).
+  The agent must use the uipath-maestro-bpmn skill's public-safety rules to scrub
+  every private value to synthetic placeholders before the file could be shared or
+  committed, while keeping the graph valid. Grades removal of every seeded string
+  and adoption of synthetic placeholders. Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill, and apply its public-safety
+  rules (references/public-safety.md).
+
+  A Maestro BPMN file `CustomerExport.bpmn` is in the working directory. It was
+  exported from a customer environment and still contains PRIVATE data that must
+  never be shared or committed to a public repository:
+  - a real tenant URL,
+  - a folder key,
+  - a connection id,
+  - real person names.
+
+  Sanitize the file IN PLACE so it is safe to publish, WITHOUT changing the
+  process structure (keep every element id, node, sequence flow, and diagram
+  intact):
+  - Replace the tenant URL, folder key, and connection id with the skill's
+    synthetic angle-bracket placeholders — use `<TENANT_URL>`, `<FOLDER_KEY>`,
+    and `<CONNECTION_NAME>`.
+  - Replace the person names with synthetic, non-identifying labels.
+  - The file must remain well-formed BPMN after your edit.
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything, and do NOT pause
+  for approval — sanitize the file end to end in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "The sanitized BPMN file is still present"
+    path: "CustomerExport.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Every seeded private value was removed while the process structure survived"
+    path: "CustomerExport.bpmn"
+    includes:
+      - "Orchestrator.ExecuteApiWorkflowAsync"
+    excludes:
+      - "acme-corp.example.uipath.com"
+      - "folder-key-11111111-2222-3333-4444-555555555555"
+      - "connection-id-99999999-8888-7777-6666-000000000000"
+      - "Jane Doe (Contoso)"
+      - "John Smith (Fabrikam)"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Synthetic angle-bracket placeholders adopted for folder key and connection"
+    path: "CustomerExport.bpmn"
+    includes:
+      - '&lt;FOLDER_KEY&gt;'
+      - '&lt;CONNECTION_NAME&gt;'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No seeded private data remains, no real tenant host, placeholders adopted, graph intact"
+    command: "python3 $TASK_DIR/check_sanitize.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

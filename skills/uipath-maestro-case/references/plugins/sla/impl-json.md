@@ -16,23 +16,25 @@ Compose the `slaRules[]` array for each target (root or stage) in one write. Gro
 
 | T-entry kind | Required fields | Notes |
 |---|---|---|
-| Default SLA | `target`, `count`, `unit` | One per target. Emitted as the `=js:true` entry, always last. |
-| Conditional rule | `target: "root"`, `condition` (natural-language), `count`, `unit` | Root-only. Translated to `=js:<expr>` at execution; see Expression Translation below. |
-| Escalation | `target`, `attach-to: T<m>` \| `default`, `trigger-type`, `at-risk-percentage?`, `recipients[]`, `display-name?` | `attach-to` points to the T-number of the parent rule (or the default). |
+| Default SLA | `target`, `count`, `unit`, `display-name` | One per target. Emitted as the `=js:true` entry, always last. |
+| Conditional rule | `target: "root"` \| `"<stage-name>"`, `condition` (natural-language), `count`, `unit`, `display-name` | Translated to `=js:<expr>` at execution and prepended to the target's default; see Expression Translation below. |
+| Escalation | `target`, `attach-to: T<m>` \| `default`, `trigger-type`, `at-risk-percentage?`, `recipients[]`, `display-name` | `attach-to` points to the T-number of the parent rule (or the default). |
 
 ## ID generation
 
+- SLA rule (default and conditional): `sla_` + 8 chars.
 - Escalation: `esc_` + 6 chars. Per [`case-editing-operations.md § ID Generation`](../../case-editing-operations.md#id-generation).
-- Conditional SlaRuleEntry: **no `id` field**. Removal is by array index.
 
-Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", ruleExpression: "<parent rule expression>", target: "root" | "<stageId>"}`.
+Step 9.9 preallocates these IDs before conditions so `sla-status-change` rules can reference them. Record every SLA T-entry under `{kind: "sla-rule", displayName: "<title>", target: "root" | "<stageId>"}` and every escalation T-entry under `{kind: "escalation", displayName: "<title>", parentSlaTask: "T<m>", target: "root" | "<stageId>"}`. Step 11 MUST reuse the preallocated IDs; never regenerate them while composing `slaRules[]`.
 
 ## Target resolution
 
 - `target: "root"` → **`metadata.slaRules`** (top-level `metadata` block — there is no `root` key on disk)
 - `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules`
-- Accepted node types: `case-management:Stage` and `case-management:ExceptionStage`.
+- Accepted node types: `case-management:Stage` (a secondary/exception stage is the same node with `data.stageType === "secondary"`).
 - If the stage node isn't found, halt and AskUserQuestion with candidate stage labels + "Something else".
+
+> **Stage conditional rules are direct JSON only.** `uip maestro case sla rules add` exposes a root-only CLI surface; do not use it for a stage target. Compose the stage's complete conditional + default array here and write `node.data.slaRules`.
 
 ## Recipe — one target
 
@@ -43,12 +45,16 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
 ```json
 [
   {
+    "id": "sla_aB3kL9Qx",
+    "displayName": "SLA Rule 1",
     "expression": "=js:<translated-condition-1>",
     "count": <n>, "unit": "<min|h|d|w|m>",
     "escalationRule": [ <escalations with attach-to == conditional-1-T-number> ]
   },
   { "...additional conditional rules in sdd order..." },
   {
+    "id": "sla_Np4rT7Vz",
+    "displayName": "SLA Rule 2",
     "expression": "=js:true",
     "count": <default.count>, "unit": "<default.unit>",
     "escalationRule": [ <escalations with attach-to == default> ]
@@ -82,7 +88,7 @@ Emission rules:
 
 1. **Conditional rules first, in T-entry order.** Priority = sdd order (top-most wins).
 2. **Default rule (`=js:true`) last.** Always emitted when any SLA T-entry targets this node — even escalation-only cases.
-3. **Bare default rule is legal.** If a target has escalations but no default SLA T-entry, emit `{expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
+3. **Escalation-only default rule is legal, but it still needs an ID and title.** If a target has escalations but no default SLA T-entry, Step 9.9 preallocates a synthetic default SLA ID and Step 11 emits `{id:"sla_...", displayName:"SLA Rule 1", expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
 4. **Always emit `escalationRule` on every rule.** Use `"escalationRule": []` when a rule has no attached escalations. Never omit the key.
 5. **Omit `slaRules` key entirely** on targets with no SLA T-entries.
 
@@ -91,7 +97,7 @@ Emission rules:
 ```json
 {
   "id": "esc_xxxxxx",
-  "displayName": "<from T-entry, optional>",
+  "displayName": "<from T-entry or deterministic fallback>",
   "action": {
     "type": "notification",
     "recipients": [
@@ -105,7 +111,9 @@ Emission rules:
 }
 ```
 
-- `displayName` omitted entirely when T-entry doesn't supply one (don't emit `undefined`).
+- `displayName` is required for every SLA rule and escalation in the current Case App contract. Use the authored value or deterministic fallback; never emit blank/undefined. It must be unique within the target and MUST NOT contain `:`; reject the T-entry before writing JSON if it does.
+- Reject a non-positive `count`; for `unit: "min"`, reject values below 15 or above 1000.
+- Reject a non-default rule with an empty expression, an escalation with no recipients, or an `at-risk` escalation without `atRiskPercentage`.
 - `atRiskPercentage` included only when `triggerInfo.type === "at-risk"`.
 - `recipients` is an array — **one entry per sdd-declared recipient**.
 
@@ -121,12 +129,21 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 ## Expression translation
 
-`tasks.md` entries carry natural-language conditions. Translate at execution using the expression prefixes documented in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). SLA rule `expression` is a boolean-condition sink — use bare `=js:<expr>` (no outer parens) per [§ Canonical form per sink](../../bindings-and-expressions.md#canonical-form-per-sink). Common patterns: `=js:vars.<id> === "<literal>"` for variable comparison, `=js:metadata.<field> === "<literal>"` for case metadata comparison, `=js:true` for the default rule, `=js:(vars.X === 'foo') && (vars.Y > 5)` for combined boolean (each sub-clause parenthesized for operator precedence). If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md Rule 2.
+`tasks.md` entries carry natural-language conditions. Translate at execution using the expression prefixes documented in [`bindings-and-expressions.md`](../../bindings-and-expressions.md). SLA rule `expression` is a boolean-condition sink — use bare `=js:<expr>` (no outer parens) per [§ Canonical form per sink](../../bindings-and-expressions.md#canonical-form-per-sink). Common patterns: `=js:vars.<id> === "<literal>"` for a case-variable comparison — this covers any SDD-declared field, including ones the SDD's "Case Metadata" table lists for readability (e.g. `Priority`: `=js:vars.priority === 'Urgent'`); `=js:true` for the default rule; `=js:(vars.X === 'foo') && (vars.Y > 5)` for combined boolean (each sub-clause parenthesized for operator precedence). Reserve `=js:metadata.<field>` for the closed set of structural fields in [case-schema.md § 1](../../case-schema.md#1-top-level--metadata) (e.g. `metadata.caseAppEnabled`) — it is NOT a namespace for arbitrary business data. If ambiguous, AskUserQuestion with 2–3 candidates + "Something else" per SKILL.md Rule 2.
+
+## The clock is not the response
+
+This file writes the SLA **clock** and its escalation notifications. The **response** to an at-risk / breach event is a separate decision, read off the requirement and never off the SLA's scope:
+
+- **notify-only** — an escalation entry here, and nothing else. Absent a stated response, both at-risk and breached are notify-only. Do NOT mint a stage, task, or condition for a requirement that only asks to notify someone.
+- **start-task / enter-stage** — the escalation (if any) still lives here; the behavior change is an `sla-status-change` rule on the follow-up **task** (`start-task`) or on the destination **stage** (`enter-stage`). Shapes, interrupting semantics, and the four defects `validate` cannot see: [sla-response-shapes.md](../../sla-response-shapes.md).
+- **exit-stage / exit-case** — a stage-exit or `metadata.caseExitRules[]` row.
+
+A breach rule references the SLA alone (`slaId`, no `escalationId`), so a breach response does **not** require an escalation to exist here. An at-risk response does: it needs a concrete at-risk escalation on that same SLA.
 
 ## Post-write validation
 
 - Confirm `metadata.slaRules` (root) or `node.data.slaRules` (stage) exists with the expected entries. Verify the root-target uses `metadata` — not `root.data` (which doesn't exist on disk).
 - Confirm the trailing entry's `expression === "=js:true"` when any SLA T-entry targeted this node.
-- Confirm every generated `esc_` ID appears in `id-map.json`.
+- Confirm every emitted `sla_` and `esc_` ID appears in `id-map.json`, and every `sla-status-change` rule references IDs emitted on the declared target.
 - Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target).
-

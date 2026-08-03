@@ -99,8 +99,33 @@ def check_eval_set(evaluator_id: str) -> int:
     return len(cases)
 
 
+def _find_results_file() -> Path:
+    """Locate the eval-results JSON by content, not a dictated filename.
+
+    `uip codedagent eval --output-file <name>` lets the caller pick the
+    name (the skill's examples use `results.json`); accept any project
+    JSON carrying the documented `evaluationSetResults` shape so the
+    prompt doesn't have to dictate the filename.
+    """
+    skip = {".venv", "node_modules", "__pycache__", ".git"}
+    for p in sorted(ROOT.rglob("*.json")):
+        if any(part in skip for part in p.parts):
+            continue
+        try:
+            doc = json.loads(p.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if isinstance(doc, dict) and isinstance(doc.get("evaluationSetResults"), list):
+            return p
+    sys.exit(
+        "FAIL: no eval-results JSON with a top-level `evaluationSetResults` "
+        "list found in the project — `uip codedagent eval --output-file` "
+        "likely never produced results"
+    )
+
+
 def check_results(evaluator_id: str, expected_case_count: int) -> None:
-    path = ROOT / "eval-results.json"
+    path = _find_results_file()
     doc = _load_json(path)
     if not isinstance(doc, dict):
         sys.exit(f"FAIL: {path.name} top-level should be an object, got {type(doc).__name__}")

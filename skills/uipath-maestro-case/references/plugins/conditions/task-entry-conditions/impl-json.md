@@ -57,7 +57,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 ]]
 ```
 
-`selectedTasksIds` is a JSON string array.
+`selectedTasksIds` is a JSON string array. Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required downstream flow cannot depend on optional user-launched work.
 
 ### adhoc — expression gate
 
@@ -79,13 +79,25 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 
 **Rule output binding.** If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) **as the last step — after rule write, before root bindings**. `elementId` stays `<stageId>-<ruleId>` on every output entry. Skip when the rule has no `uipath.outputs[]` (stub placeholder).
 
-### runs-sequentially — sequential group with optional parallel siblings
+### runs-sequentially — sequential task chain
 
 ```json
 "rules": [[ { "id": "rxxxxxxxx", "rule": "runs-sequentially" } ]]
 ```
 
-**Lane semantics for this rule type:** Among tasks sharing a `runs-sequentially` task-entry condition, group members meant to run in **parallel** with each other MUST share the same `lane` in `stageNode.data.tasks[lane][index]` (shared lane = parallel siblings inside the sequential group, semantic — not just FE layout). Solo members of the group get their own lane. Tasks outside any `runs-sequentially` group still follow the default one-task-per-lane rule with layout-only semantics.
+**Frontend toggle semantics:** The sequential/ordered-task-set rule is the task's only entry condition for strict sequences and for parallel siblings that start after an immediate predecessor. Preserve the task's order in the stage's `data.tasks` structure. A strict chain uses consecutive single-task inner arrays (`[[A], [B], [C]]`); explicitly parallel siblings after the same predecessor share one later inner array (`[[A], [B, C], [D]]`) and each sibling carries `runs-sequentially`. On the first task set, `runs-sequentially` means the current stage was entered; on subsequent task sets, it means the preceding task set completed. Do not use `selected-tasks-completed` or an additional `current-stage-entered` rule to express immediate-predecessor sequencing.
+
+### sla-status-change — the `start-task` SLA response
+
+```json
+"rules": [[ { "id": "rxxxxxxxx", "rule": "sla-status-change", "slaId": "sla_aB3kL9Qx" } ]]
+```
+
+The task fires when the referenced SLA changes status — the direct shape for a `start-task` response ([sla-response-shapes.md](../../../sla-response-shapes.md)): the follow-up task lives in the breached stage and activates on the SLA event itself, so no stage re-entry is involved and the stage's other tasks do not re-run. Reference the stage's **own** SLA for a stage-scoped response, or `root`'s for a case-scoped one.
+
+`slaId` alone is a **breach** rule; add a concrete at-risk `escalationId` declared on that same SLA for an at-risk rule. Never the `"any"` sentinel. Verified valid on uip 1.198.0-preview.102 for both stage-owned and root SLAs.
+
+When a *stage* should take the case instead, the rule goes on the stage's `entryConditions` ([stage-entry-conditions/impl-json.md](../stage-entry-conditions/impl-json.md)) — that is `enter-stage`, not `start-task`.
 
 ## Rule-Type Catalog
 
@@ -96,6 +108,7 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 | `wait-for-connector` | `uipath` connector configuration (see [common](../../../connector-trigger-common.md#target-connector-bound-condition-rule)) |
 | `adhoc` | — |
 | `runs-sequentially` | — |
+| `sla-status-change` | `slaId`; optional at-risk `escalationId` on that same SLA |
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires.
 

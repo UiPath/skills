@@ -17,22 +17,17 @@ pre_run:
     timeout: 30
 
 initial_prompt: |
-  The broken UiPath coded agent project already exists under
-  `triage-broken/`. Fix it in place.
+  There's a UiPath coded agent under `triage-broken/` that isn't
+  working. It's meant to read a customer's message and hand off to
+  either a billing or a technical specialist, but as it stands it won't
+  run.
 
-  This is an OpenAI Agents project, not a LangGraph project. OpenAI
-  Agents does not support `interrupt(...)` HITL. Do not research or
-  add a replacement HITL API. The correct fix is to remove the
-  `langgraph.types` import, remove the `interrupt(...)` call path, and
-  keep the existing triage behavior: return an OpenAI Agents `Agent`
-  factory that routes customer messages to billing or technical
-  handoffs.
+  Take a look, work out what's wrong, and fix it in place so it does
+  what it's supposed to — keep the triage-and-handoff behavior it was
+  going for.
 
-  The project must still expose a top-level `main` factory that returns
-  an `Agent`, and `openai_agents.json` must keep pointing at it.
-
-  Do NOT publish, upload, or deploy. Do NOT pause between planning
-  and implementation. Complete end-to-end in a single pass.
+  It's all local, so there's nothing to deploy or publish. Just dig in
+  and fix it in one go — no need to run anything by me first.
 
 success_criteria:
   - type: file_exists

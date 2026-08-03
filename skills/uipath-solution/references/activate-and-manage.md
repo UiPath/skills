@@ -7,6 +7,7 @@ Activate deployed solutions, uninstall deployments, and manage published solutio
 ## When to Use
 
 - Activating a deployment that was not auto-activated
+- Upgrading an existing deployment to a newer package version in place (when a redeploy is blocked because the deployment already exists)
 - Cleaning up old or failed deployments
 - Managing published package versions in the solution feed
 - Removing solutions from Studio Web
@@ -62,6 +63,27 @@ uip solution deploy status <pipeline-deployment-id> --output json
 uip solution deploy list --output json
 ```
 
+## Upgrade a Deployment In Place
+
+> **Preview command.** Available only on prerelease (preview/alpha) CLI builds.
+
+`deploy run` fails with HTTP 400 when a deployment for the solution **already exists** — you can't redeploy over it, you have to upgrade it in place (the same as the Orchestrator UI's "Upgrade" button). `deploy upgrade` does that from the CLI, so you don't have to open the UI:
+
+```bash
+# Upgrade to the newest published version (default)
+uip solution deploy upgrade <deployment-key> --output json
+
+# A deployment in your Personal Workspace feed
+uip solution deploy upgrade <deployment-key> --personal-workspace --output json
+```
+
+Find `<deployment-key>` with `uip solution deploy list`. On success the output is `Code: SolutionDeployUpgrade`, `Data: { Status: "UpgradeInitiated", DeploymentName, FromVersion, ToVersion }`.
+
+**Behavior and limits:**
+- It **initiates** the upgrade — the deployment's version moves to the target, but the operation lands in a `Draft`/in-progress state. Track completion with `uip solution deploy list` (the deployment shows the new version and its operation state).
+- Only the **latest** published version is a valid target today. Omit `--version` to take the newest; passing an older `--version` is rejected.
+- The deployment must be a healthy, successfully-installed one. A deployment that never installed cleanly is rejected by the server.
+
 ## Step 3: Uninstall a Deployment
 
 Remove a deployment, including all provisioned resources and the Orchestrator folder:
@@ -90,16 +112,21 @@ uip solution packages list --output json
 
 # Paginate and sort
 uip solution packages list --limit 20 --sort-by "Name" --sort-order "Ascending" --output json
+uip solution packages list --limit 50 --offset 50 --output json   # page 2
 
-# Filter by name (server-side substring match on the package name)
+# Filter by name (server-side substring match on the package name, case-insensitive)
 uip solution packages list --name "Invoice" --output json
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--limit <n>` | Number of results to return | 50 |
+| `--offset <n>` | Number of results to skip (page start) | 0 |
+| `--name <pattern>` | Server-side substring match on the package name | -- |
 | `--sort-by <field>` | Sort field | -- |
 | `--sort-order <dir>` | `Ascending` or `Descending` | -- |
+
+The response's `Pagination` block reports `Total` (all matches on the server) and `HasMore`. If `HasMore` is `true`, re-run with `--offset <previous offset + Returned>` to fetch the next page — a package missing from the first page is not necessarily absent. The list is tenant-scoped: packages published on another tenant of the same organization do not appear; check the active tenant with `uip login status`.
 
 ## Step 5: Download a Package Version
 

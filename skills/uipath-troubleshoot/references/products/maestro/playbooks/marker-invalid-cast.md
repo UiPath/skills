@@ -10,7 +10,11 @@ What this looks like:
 - HTTP 400, Maestro error code `400008` (`BpmnMarkerInputEvaluationFailure`)
 - Error message: `Failed to evaluate the input collection variable for the marker element`
 - Inner exception: `InvalidCastException: System.Object[] to ExpressionList`
-- Sibling: see [marker-input-null](marker-input-null.md) when the collection is null (error `400007`)
+
+Not this playbook:
+- Code `400007` / `Input collection for the marker element must not be null` (collection null, not miscast) → [marker-input-null](marker-input-null.md)
+- Same `400008` message but no `InvalidCastException`/`ExpressionList` inner exception (collection size limit, null item properties, non-array type) → [multi-instance-parallel](multi-instance-parallel.md)
+- Codes `400300`/`400301`/`400302` or `Property 'X' not found` (non-marker expression) → [expression-evaluation-errors](expression-evaluation-errors.md)
 
 What can cause it:
 - Bug in `JavaScriptEvaluator.cs` — JS expression returns `Object[]` which cannot be cast to the internal `ExpressionList` type the BPMN engine expects on a multi-instance marker

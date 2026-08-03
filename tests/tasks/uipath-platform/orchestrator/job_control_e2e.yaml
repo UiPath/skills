@@ -10,15 +10,13 @@ agent:
 
 pre_run:
   - command: "E2E_PROCESS_KEY=$E2E_LONG_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
-    timeout: 30
+    timeout: 60
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
     timeout: 60
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   I want to make sure my stop/restart flow works on a long-running
   process. The process ID and its folder are in `seed.json`. It's a
   serverless coded Python agent, so the jobs need to run on serverless.

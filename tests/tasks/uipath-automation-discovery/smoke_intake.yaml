@@ -7,12 +7,10 @@ description: >
 tags: [uipath-automation-discovery, smoke, mode:build, lifecycle:discover]
 
 sandbox:
-  driver: tempdir
   python: {}
 
 initial_prompt: |
-  I want to discover automation opportunities at my company using the
-  uipath-automation-discovery skill.
+  I want to discover automation opportunities at my company.
 
   Here is the context for Phase 0 intake:
 

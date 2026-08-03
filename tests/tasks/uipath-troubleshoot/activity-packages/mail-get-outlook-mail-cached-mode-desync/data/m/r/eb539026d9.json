@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T05:30:00.180Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T05:30:01.640Z",
+      "Message": "[Get Outlook Mail Messages] Outlook desktop application attached; default profile for UIPATH\\ROBOTUSER1"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T05:30:02.110Z",
+      "Message": "[Get Outlook Mail Messages] resolved folder 'Inbox' on the default account"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T05:30:05.870Z",
+      "Message": "[Get Outlook Mail Messages] retrieved 142 messages from 'Inbox' (Top=500, no filter); oldest item dated 2026-03-03"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T05:30:06.020Z",
+      "Message": "[ComplianceMailExport] retrieved messages from Inbox"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T05:30:06.410Z",
+      "Message": "Execution ended in: 00:00:06"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{"id": "uipath-ixp-001", "prompt": "Review the predictions on my IXP project and confirm the correct fields", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-002", "prompt": "Improve the field instructions on my IXP project to boost extraction accuracy", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-003", "prompt": "Publish my IXP model", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-004", "prompt": "What's the F1 score on my IXP project?", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-005", "prompt": "List my IXP projects", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-006", "prompt": "Import this taxonomy into my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-007", "prompt": "Label the documents in my IXP project by confirming the right predictions", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-008", "prompt": "My IXP project's Urgency field has low F1 — improve the prompt", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-009", "prompt": "Roll back my IXP model to version 3", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-010", "prompt": "Show me the extraction metrics per field for my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-011", "prompt": "Upload these invoices to my existing IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-012", "prompt": "Add a new field group to my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-013", "prompt": "Configure the extraction model on my IXP project to use Gemini 2.5 Flash", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-014", "prompt": "Confirm the predicted fields on document 58515faa in my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-015", "prompt": "The IXP prediction put the deduction amount into the payment amount field — leave it unconfirmed and fix the prompt", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-016", "prompt": "Update the overall extraction instructions on my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-017", "prompt": "Add a money data type to my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-018", "prompt": "Rename a field in my IXP taxonomy", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-019", "prompt": "Delete a document from my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-020", "prompt": "Mark a field as missing on a document in my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-021", "prompt": "Describe my IXP project — what's in it?", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-022", "prompt": "Show me the taxonomy of my IXP project at the live model version", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-023", "prompt": "Unconfirm a field I confirmed by mistake on an IXP document", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-024", "prompt": "My IXP F1 didn't change after updating the prompt — why?", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-025", "prompt": "Improve the extraction scores on my certificate-of-analysis IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-026", "prompt": "Fix an OCR-mangled value on a confirmed IXP prediction", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-027", "prompt": "Change the type of a field in my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-028", "prompt": "Add a choice data type with instructions to my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-029", "prompt": "Re-publish an earlier version of my IXP model as live", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-030", "prompt": "Get the taxonomy that was live when version 5 of my IXP project was published", "expected_skill": "uipath-ixp"}

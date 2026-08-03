@@ -1,0 +1,10 @@
+[project]
+name = "legacy-classifier"
+version = "0.0.1"
+description = "Ported classifier"
+authors = [{ name = "Test" }]
+requires-python = ">=3.11"
+dependencies = ["uipath", "uipath-langchain"]
+
+[dependency-groups]
+dev = ["uipath-dev"]

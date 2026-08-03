@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceMailReader",
+  "ProjectType": "Process",
+  "Description": "Reads incoming invoice emails from the Inbox\\Invoices Outlook folder with Get Outlook Mail Messages for downstream processing.",
+  "MainFile": "Main.xaml"
+}

@@ -66,7 +66,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 ]]
 ```
 
-`selectedTasksIds` is a JSON string array, not a comma-separated string.
+`selectedTasksIds` is a JSON string array, not a comma-separated string. Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required routing cannot depend on optional user-launched work.
 
 ### wait-for-connector — bind a connector event
 
@@ -93,6 +93,29 @@ The case pauses after the rule fires; the user picks the next stage from candida
 ```
 
 Routes the case back to the originating stage.
+
+Write this object directly. Do not rely on `uip maestro case stage-exit-conditions add --type return-to-origin` defaults: without the explicit completion rule and `marksStageComplete: true`, the CLI can persist an empty or non-rendering return shape.
+
+### Divert into an exception lane (gated routing exit)
+
+To route the **origin** stage into a decision/signal-routed exception lane (the lane then returns via `return-to-origin`), the origin carries TWO mutually-exclusive exits: a gated divert (`marksStageComplete: false`) into the lane, and a completion gated by the inverse `IF`.
+
+```json
+// origin divert → exception lane (escalate path)
+{ "id": "Condition_xxxxxx", "displayName": "Escalate", "type": "exit-only",
+  "marksStageComplete": false, "exitToStageId": "Stage_<exceptionLane>",
+  "rules": [[ { "id": "Rule_xxxxxx", "rule": "selected-tasks-completed",
+    "selectedTasksIds": ["t_<deciderTask>"],
+    "conditionExpression": "=js:(vars.<signal> === <exception-value>)" } ]] }
+
+// origin completion (normal path) — gated by the inverse IF
+{ "id": "Condition_yyyyyy", "displayName": "Complete Rule 1", "type": "exit-only",
+  "marksStageComplete": true,
+  "rules": [[ { "id": "Rule_yyyyyy", "rule": "required-tasks-completed",
+    "conditionExpression": "=js:(vars.<signal> !== <exception-value>)" } ]] }
+```
+
+The exception lane's entry is `selected-stage-exited("<origin>") + IF =js:(vars.<signal> === <exception-value>)`, `Interrupting: Yes`, exiting via `return-to-origin`. The two origin exits MUST be mutually exclusive: an ungated completion → dual-fire (next stage + lane both enter); a gated completion with no divert → deadlock (escalate path has no exit). `<signal>` is read directly from the producing task's output (no §1.5 relay var). See [`sdd-generation-rules.md` § Logical integrity step 5](../../../sdd-generation-rules.md#logical-integrity--stage-graph).
 
 ## Rule-Type × marksStageComplete Matrix
 

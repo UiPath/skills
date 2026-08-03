@@ -1,0 +1,6 @@
+{
+  "Name": "ExpenseValidation",
+  "ProjectType": "Process",
+  "Description": "Performs non-UI compute work and logs start and end messages.",
+  "MainFile": "Main.xaml"
+}

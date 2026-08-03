@@ -1,6 +1,6 @@
 # HITL AppTask Node — Direct JSON Reference
 
-The AppTask variant uses a deployed coded app (Studio Web) as the task form. Same node type as QuickForm (`uipath.human-in-the-loop`), same three output handles. Difference: `inputs.type = "custom"` and `inputs.app` points to the deployed app.
+The AppTask variant uses a deployed coded app (Studio Web) as the task form. Node type: `uipath.human-in-the-loop.coded-action-app`. Same three handles (`input`, `completed`) as QuickForm. Difference from QuickForm: `inputs.app` points to the deployed app (no inline schema).
 
 ---
 
@@ -16,7 +16,7 @@ Before writing the node JSON, resolve the app and register it with the solution.
 source "$HOME/.uipath/.auth"
 # Variables now available:
 # UIPATH_ACCESS_TOKEN       — bearer token
-# UIPATH_URL                — e.g. https://alpha.uipath.com
+# UIPATH_URL                — e.g. https://cloud.uipath.com
 # UIPATH_ORGANIZATION_NAME  — org name (slug)
 # UIPATH_ORGANIZATION_ID    — org UUID
 # UIPATH_TENANT_NAME
@@ -52,7 +52,7 @@ Parse it as JSON:
 
 Extract `SolutionId` → `SOLUTION_ID`. Find the entry in `Projects[]` whose directory matches the flow file's directory → its `Id` is `PROJECT_KEY`.
 
-> If no project entry matches, the project is not registered. Run `uip solution project add` first.
+> If no project entry matches, the project is not registered. Run `uip solution projects add` first.
 
 ### Step 2 — Search for apps
 
@@ -281,11 +281,10 @@ Merge rules:
 ```json
 {
   "id": "invoiceReview1",
-  "type": "uipath.human-in-the-loop",
+  "type": "uipath.human-in-the-loop.coded-action-app",
   "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
-    "type": "custom",
     "recipient": {
       "channels": ["ActionCenter"],
       "connections": {},
@@ -382,7 +381,42 @@ Maps app parameter names to binding expressions. Format: `"=vars.<path>"` (with 
 
 ## Definition Entry
 
-Same definition as QuickForm — see [hitl-node-quickform.md](hitl-node-quickform.md) for the full definition block. Add it once to `workflow.definitions`, deduplicated by `nodeType`.
+AppTask uses a **separate** definition entry — `nodeType` is `"uipath.human-in-the-loop.coded-action-app"`, not `"uipath.human-in-the-loop.quick-form"`. Add it once to `workflow.definitions`, deduplicated by `nodeType`.
+
+```json
+{
+  "nodeType": "uipath.human-in-the-loop.coded-action-app",
+  "version": "1.0",
+  "category": "human-task",
+  "description": "App-based human task using a deployed coded action app",
+  "tags": ["human-task", "hitl", "human-in-the-loop", "coded-action-app", "approval"],
+  "sortOrder": 28,
+  "display": {
+    "label": "App Task",
+    "icon": "users",
+    "shape": "square"
+  },
+  "handleConfiguration": [
+    {
+      "position": "left",
+      "handles": [{ "id": "input", "type": "target", "handleType": "input" }],
+      "visible": true
+    },
+    {
+      "position": "right",
+      "handles": [
+        { "id": "completed", "type": "source", "handleType": "output", "showButton": true, "constraints": { "forbiddenTargetCategories": ["trigger"] } }
+      ],
+      "visible": true
+    }
+  ],
+  "model": { "type": "bpmn:UserTask", "serviceType": "Actions.HITL" },
+  "outputDefinition": {
+    "output": { "type": "object", "description": "Task result data", "source": "=result", "var": "output" },
+    "status": { "type": "string", "description": "Task completion status", "source": "=result.Action", "var": "status" }
+  }
+}
+```
 
 ---
 

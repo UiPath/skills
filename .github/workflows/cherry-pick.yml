@@ -1,0 +1,292 @@
+name: Cherry-pick triggered from comment
+
+# Comment `/cherrypick <target-branch> <JIRA-ID>` on a MERGED PR to open a
+# cherry-pick PR against <target-branch>. JIRA-ID is optional.
+#   e.g. /cherrypick release/1.4 PILOT-1234
+#        /cherry-pick release/1.4
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  cherry-pick-init:
+    name: Cherry-pick Init
+    # Only on PR comments (not plain issues) starting with the command.
+    if: >-
+      github.event.issue.pull_request &&
+      (startsWith(github.event.comment.body, '/cherrypick') ||
+       startsWith(github.event.comment.body, '/cherry-pick'))
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    outputs:
+      branch: ${{ steps.set-branch.outputs.branch }}
+      jira_issue_id: ${{ steps.set-branch.outputs.jira_issue_id }}
+    steps:
+      - name: Parse command arguments
+        id: set-branch
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          read -r _cmd branch jira_issue_id _rest <<< "$COMMENT_BODY"
+          if [ -z "$branch" ]; then
+            echo "::error::Usage: /cherrypick <target-branch> [JIRA-ID]"
+            exit 1
+          fi
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "jira_issue_id=$jira_issue_id" >> "$GITHUB_OUTPUT"
+
+      - name: Message start
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          BRANCH: ${{ steps.set-branch.outputs.branch }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          gh pr comment "$PR_NUMBER" --repo "$REPOSITORY" --body "A cherry pick from this PR targeting \`$BRANCH\` was triggered."
+
+  run-cherry-pick:
+    name: Run cherry-pick
+    if: >-
+      github.event.issue.pull_request &&
+      (startsWith(github.event.comment.body, '/cherrypick') ||
+       startsWith(github.event.comment.body, '/cherry-pick'))
+    needs: cherry-pick-init
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      had_conflicts: ${{ steps.cherry-pick.outputs.had_conflicts }}
+      pr_url: ${{ steps.create-pr.outputs.pr_url }}
+    steps:
+      - name: Validate source PR and target branch
+        id: validate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          TARGET_BRANCH: ${{ needs.cherry-pick-init.outputs.branch }}
+          JIRA_ID: ${{ needs.cherry-pick-init.outputs.jira_issue_id }}
+        run: |
+          if [ -n "$JIRA_ID" ] && [[ ! "$JIRA_ID" =~ ^[A-Z]+-[0-9]+$ ]]; then
+            echo "::error::Invalid Jira issue ID '$JIRA_ID'. Expected format: [A-Z]+-[0-9]+ (e.g. PILOT-1234)."
+            exit 1
+          fi
+
+          if ! gh api "repos/$REPO/branches/$TARGET_BRANCH" --silent >/dev/null 2>&1; then
+            echo "::error::Target branch '$TARGET_BRANCH' does not exist in $REPO."
+            exit 1
+          fi
+
+          source_pr=$(gh api "repos/$REPO/pulls/$PR_NUMBER")
+          merged=$(printf '%s' "$source_pr" | jq -r '.merged')
+          merge_commit_sha=$(printf '%s' "$source_pr" | jq -r '.merge_commit_sha')
+          head_ref=$(printf '%s' "$source_pr" | jq -r '.head.ref')
+
+          if [ "$merged" != "true" ]; then
+            echo "::error::Source PR #$PR_NUMBER is not merged; refusing to cherry-pick."
+            exit 1
+          fi
+
+          # Sanitize refs for the new branch name (slashes/dots → dashes).
+          target_sanitized="${TARGET_BRANCH//\//-}"
+          target_sanitized="${target_sanitized//./-}"
+          head_sanitized="${head_ref//\//-}"
+          head_sanitized="${head_sanitized//./-}"
+          new_branch="${head_sanitized}-CP-to-${target_sanitized}"
+
+          # Stash source PR JSON for later steps to avoid re-fetching.
+          source_pr_file="$(mktemp)"
+          printf '%s' "$source_pr" > "$source_pr_file"
+
+          {
+            echo "merge_commit_sha=$merge_commit_sha"
+            echo "new_branch=$new_branch"
+            echo "source_pr_file=$source_pr_file"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.cherry-pick-init.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Cherry-pick
+        id: cherry-pick
+        env:
+          MERGE_COMMIT_SHA: ${{ steps.validate.outputs.merge_commit_sha }}
+          NEW_BRANCH: ${{ steps.validate.outputs.new_branch }}
+        run: |
+          git checkout -b "$NEW_BRANCH"
+          git fetch origin "$MERGE_COMMIT_SHA"
+
+          # `-m 1` is required for merge commits (2+ parents) and rejected for
+          # squash/rebase merges (1 parent). Detect parent count to stay correct
+          # for both merge styles.
+          parent_count=$(($(git rev-list --parents -n 1 "$MERGE_COMMIT_SHA" | wc -w) - 1))
+          cherry_args=(--empty=keep --allow-empty)
+          if [ "$parent_count" -gt 1 ]; then
+            cherry_args+=(-m 1)
+          fi
+
+          set +e
+          git cherry-pick "${cherry_args[@]}" "$MERGE_COMMIT_SHA"
+          cherry_exit=$?
+          set -e
+
+          if [ "$cherry_exit" -eq 0 ]; then
+            echo "had_conflicts=false" >> "$GITHUB_OUTPUT"
+            echo "conflicted_files=" >> "$GITHUB_OUTPUT"
+          elif [ "$cherry_exit" -eq 1 ] && git rev-parse --verify CHERRY_PICK_HEAD >/dev/null 2>&1; then
+            echo "::warning::Cherry-pick produced conflicts; committing markers for manual resolution."
+            conflicted_files="$(git diff --name-only --diff-filter=U)"
+            git add --all
+            GIT_EDITOR=true git cherry-pick --continue
+            echo "had_conflicts=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "conflicted_files<<__EOF__"
+              echo "$conflicted_files"
+              echo "__EOF__"
+            } >> "$GITHUB_OUTPUT"
+          else
+            # Unexpected error (SHA missing, sequencer left in bad state, etc.).
+            # Fail loud — engineer redoes the cherry-pick by hand.
+            echo "::error::Unexpected cherry-pick failure (exit $cherry_exit). Aborting."
+            exit 1
+          fi
+
+          git push --force --set-upstream origin "$NEW_BRANCH"
+
+      - name: Create cherry-pick PR
+        id: create-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          TARGET_BRANCH: ${{ needs.cherry-pick-init.outputs.branch }}
+          JIRA_ID: ${{ needs.cherry-pick-init.outputs.jira_issue_id }}
+          NEW_BRANCH: ${{ steps.validate.outputs.new_branch }}
+          HAD_CONFLICTS: ${{ steps.cherry-pick.outputs.had_conflicts }}
+          CONFLICTED_FILES: ${{ steps.cherry-pick.outputs.conflicted_files }}
+          SOURCE_PR_FILE: ${{ steps.validate.outputs.source_pr_file }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          source_pr_title=$(jq -r '.title' "$SOURCE_PR_FILE")
+          source_pr_body=$(jq -r '.body // ""' "$SOURCE_PR_FILE")
+          original_author=$(jq -r '.user.login' "$SOURCE_PR_FILE")
+          labels=$(jq -r '[.labels[].name] | join(",")' "$SOURCE_PR_FILE")
+          requested_reviewers=$(jq -r '[.requested_reviewers[].login] | join(",")' "$SOURCE_PR_FILE")
+          source_assignees=$(jq -r '[.assignees[].login] | join(",")' "$SOURCE_PR_FILE")
+
+          title_prefix=""
+          [ "$HAD_CONFLICTS" = "true" ] && title_prefix="[CONFLICTS]"
+          jira_suffix=""
+          [ -n "$JIRA_ID" ] && jira_suffix=" (${JIRA_ID})"
+          # Strip the branch prefix (e.g. release/v1.197 → v1.197), like Studio.
+          version="${TARGET_BRANCH##*/}"
+          pr_title="🍒 ${title_prefix}[${version}] ${source_pr_title}${jira_suffix}"
+
+          body_file="$(mktemp)"
+          {
+            if [ -n "$source_pr_body" ]; then
+              printf '%s\n\n' "$source_pr_body"
+              printf -- '---\n\n'
+            fi
+            printf 'Automatically cherry-picked from #%s to `%s` by @%s.\n' "$PR_NUMBER" "$TARGET_BRANCH" "$ACTOR"
+            if [ -n "$JIRA_ID" ]; then
+              printf '\n**Jira issue:** %s\n' "$JIRA_ID"
+            fi
+            if [ "$HAD_CONFLICTS" = "true" ]; then
+              printf '\n⚠️ **This cherry-pick has merge conflicts.** Conflict markers were committed as-is. Resolve them locally and push to this branch before merging.\n'
+              if [ -n "$CONFLICTED_FILES" ]; then
+                printf '\nConflicted files:\n'
+                printf '%s\n' "$CONFLICTED_FILES" | while IFS= read -r f; do
+                  [ -n "$f" ] && printf -- '- `%s`\n' "$f"
+                done
+              fi
+            fi
+          } > "$body_file"
+
+          gh_args=(
+            --base "$TARGET_BRANCH"
+            --head "$NEW_BRANCH"
+            --title "$pr_title"
+            --body-file "$body_file"
+            --repo "$REPO"
+          )
+          [ -n "$labels" ] && gh_args+=(--label "$labels")
+          pr_url=$(gh pr create "${gh_args[@]}")
+          echo "Created cherry-pick PR: $pr_url"
+          echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
+
+          # Reviewers: original PR author + reviewers requested on the source PR.
+          # Non-fatal: GH rejects self-review, duplicates, etc.
+          reviewers="$original_author"
+          [ -n "$requested_reviewers" ] && reviewers="${requested_reviewers},${original_author}"
+          if [ -n "$reviewers" ]; then
+            if ! gh pr edit "$pr_url" --add-reviewer "$reviewers" --repo "$REPO"; then
+              echo "::warning::Failed to add some reviewers: $reviewers"
+            fi
+          fi
+
+          # Assignees: whoever ran /cherrypick + source PR's assignees.
+          assignees="$ACTOR"
+          [ -n "$source_assignees" ] && assignees="${assignees},${source_assignees}"
+          if ! gh pr edit "$pr_url" --add-assignee "$assignees" --repo "$REPO"; then
+            echo "::warning::Failed to add some assignees: $assignees"
+          fi
+
+  comment-status:
+    name: Comment cherry-pick status
+    if: >-
+      always() &&
+      github.event.issue.pull_request &&
+      (startsWith(github.event.comment.body, '/cherrypick') ||
+       startsWith(github.event.comment.body, '/cherry-pick'))
+    needs: [run-cherry-pick, cherry-pick-init]
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Message success (clean)
+        if: ${{ !contains(join(needs.*.result, ','), 'failure') && needs.run-cherry-pick.outputs.had_conflicts != 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          BRANCH: ${{ needs.cherry-pick-init.outputs.branch }}
+          JIRA_ID: ${{ needs.cherry-pick-init.outputs.jira_issue_id }}
+          PR_URL: ${{ needs.run-cherry-pick.outputs.pr_url }}
+        run: |
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body "✅ Cherry-pick to \`$BRANCH\`${JIRA_ID:+ for **$JIRA_ID**} succeeded: $PR_URL"
+
+      - name: Message success (with conflicts)
+        if: ${{ !contains(join(needs.*.result, ','), 'failure') && needs.run-cherry-pick.outputs.had_conflicts == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          BRANCH: ${{ needs.cherry-pick-init.outputs.branch }}
+          JIRA_ID: ${{ needs.cherry-pick-init.outputs.jira_issue_id }}
+          PR_URL: ${{ needs.run-cherry-pick.outputs.pr_url }}
+        run: |
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body "⚠️ Cherry-pick to \`$BRANCH\`${JIRA_ID:+ for **$JIRA_ID**} opened with **conflicts**: $PR_URL — resolve them on the branch before merging."
+
+      - name: Message failure
+        if: ${{ contains(join(needs.*.result, ','), 'failure') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          BRANCH: ${{ needs.cherry-pick-init.outputs.branch }}
+          JIRA_ID: ${{ needs.cherry-pick-init.outputs.jira_issue_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body "❌ Cherry-pick to \`$BRANCH\`${JIRA_ID:+ for **$JIRA_ID**} failed. Check [workflow run]($RUN_URL)."

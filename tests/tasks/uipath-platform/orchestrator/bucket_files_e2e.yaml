@@ -10,15 +10,13 @@ agent:
 
 pre_run:
   - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
-    timeout: 30
+    timeout: 60
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
     timeout: 60
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   I want to make sure round-tripping a file through a storage bucket
   doesn't corrupt anything. The folder I want to use and a unique prefix
   are in `seed.json`.

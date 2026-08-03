@@ -53,5 +53,5 @@ If the connector or connection cannot be resolved:
 - Omit `input-values:` and `filter:` from the T-entry — there is no schema to wire against.
 - **Execution creates a placeholder trigger node** with `serviceType: "Intsvc.EventTrigger"` as the only `data.uipath` field (no `context[]`, `metadata`, `inputs`, `outputs`, or `bindings`). The node carries `id`, `label`, `description`, `parentElement`, and standard render fields so the FE renders it as an event trigger awaiting attachment. See [`impl-json.md` § Placeholder fallback](impl-json.md#placeholder-fallback-unresolved-connector--connection).
 - The matching `entry-points.json` entry **is still appended** — entry-points are structural BPMN references and do not depend on connector resolution.
-- **No trigger-edge is created** (edges are retired). The first stage's `case-entered` entry condition starts the case regardless of whether this trigger is resolved or a placeholder.
+- **No trigger-edge is created** (Rule 20). The first stage's `case-entered` entry condition starts the case regardless of whether this trigger is resolved or a placeholder.
 - Document the missing trigger and its `<UNRESOLVED>` fields in the completion report so the user knows what to attach after registering the IS connection.

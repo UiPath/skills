@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "LogList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 100,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-25T13:02:42.098Z",
+      "Message": "OrderRouter execution error: Expression Activity type 'VisualBasicValue`1' requires compilation in order to run. (faulting activity: Assign 'Build Route Key' in Main.xaml)",
+      "RobotName": "MOCK-HOST",
+      "HostMachineName": "MOCK-HOST",
+      "ProcessName": "OrderRouter",
+      "JobKey": "bb22cc33-dd44-ee55-ff66-778899001122",
+      "RawMessage": "System.NotSupportedException: Expression Activity type 'VisualBasicValue`1' requires compilation in order to run."
+    }
+  ]
+}

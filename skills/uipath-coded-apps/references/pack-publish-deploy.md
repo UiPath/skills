@@ -123,12 +123,16 @@ uip codedapp publish -n my-webapp --version 1.0.0
 | `Web` | Standard web app accessible via browser URL (default) |
 | `Action` | Action app triggered by UiPath automation workflows |
 
+> **Action apps — always pass `--type Action`.** `publish` defaults to `--type Web`. An action app published without `--type Action` registers as a Web app and will **not** bind to Action Center tasks. Pass `--type Action` on **every** publish of an action app — first deploy and every version update. Never omit it, never rely on the default.
+
 ### What Happens Internally
 
 1. Selects the `.nupkg` file (auto-select, by name, or interactive)
-2. Uploads the package to Orchestrator via the OData API
-3. Registers the coded app with the UiPath Apps service
+2. Uploads the package to Orchestrator via the OData API — needs Orchestrator scopes (`OR.Folders`, `OR.Execution`, `OR.Administration`, or `OR.Default`)
+3. Registers the coded app with the UiPath Apps service — needs `Apps.Read Apps.Write`
 4. Creates `.uipath/app.config.json` with registration metadata
+
+> **Steps 2 and 3 hit different services with different scope requirements.** The `uip login` session `--scope` must cover **both**. If it has only Orchestrator scopes, step 2 succeeds and step 3 silently 401s ("Registering coded app" fails). Interactive `uip login` grants a broad default that includes both; client-credentials logins must list `Apps.Read Apps.Write` explicitly. These are the *CLI session* scopes — separate from the runtime OAuth scopes in `uipath.json`.
 
 ### App Config File
 
@@ -182,7 +186,7 @@ uip codedapp deploy -n my-webapp
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-n, --name <name>` | App name | From `app.config.json` or prompted |
-| `-v, --version <version>` | Target a **specific published version** to deploy (different semantic from `pack`/`publish`'s `-v`, which is the package version) | Latest |
+| `-v, --version <version>` | Target a **specific published version** (different semantic from `pack`/`publish`'s `-v`). **Prefer omitting it** — let it default to Latest. Passing a version that the catalog hasn't finished indexing yields a misleading `"...has not been published yet"` error. | Latest |
 | `--folder-key <key>` | UiPath folder **key** (GUID, not the name). **Always pass explicitly** — see below. | From `UIPATH_FOLDER_KEY` env var, else interactive (avoid) |
 | `--org-name <name>` | Organization name (for app URL) | From `.env` |
 
@@ -306,8 +310,11 @@ uip codedapp deploy
 ### CI/CD Pipeline
 
 ```bash
-# Non-interactive flow with explicit options — every flag passed, no prompts
-uip login --client-id $CLIENT_ID --client-secret $CLIENT_SECRET
+# Non-interactive flow with explicit options — every flag passed, no prompts.
+# --scope MUST include Apps.Read Apps.Write, or publish's "Registering coded app"
+# step 401s even though the package upload succeeds (see publish internals above).
+uip login --client-id $CLIENT_ID --client-secret $CLIENT_SECRET \
+  --scope "OR.Folders OR.Execution OR.Administration Apps.Read Apps.Write"
 npm run build
 uip codedapp pack dist -n my-webapp --version $VERSION
 uip codedapp publish -n my-webapp --version $VERSION

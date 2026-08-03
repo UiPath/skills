@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelClientReportProcess",
+  "ProjectType": "Process",
+  "Description": "Computes client metrics and writes them to the 'Metrics' sheet of the client report workbook at C:\\Robot\\Data\\client-report.xlsx via Write Range inside a Use Excel File scope.",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T06:41:36.640Z",
+      "Message": "Workday: New Invoice (sample): Could not obtain access token. (invalid_grant)\r\nin InvoiceTrigger.xaml\r\n    at ConnectorTriggerActivity \"Workday: New Invoice (sample)\"\r\n    at Sequence \"InvoiceTrigger\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.Ipc.RemoteException: Could not obtain access token. (invalid_grant)\r\n   at UiPath.IntegrationService.Activities.Runtime.Services.ExecutionService.SendAsync(String requestUri, ExecutionParameters executionParameters, CancellationToken token)\r\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity.DebugExecuteAsync(IExecutionService executionService, ExecutionParameters executionParameters, CancellationToken token)\r\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)"
+    }
+  ]
+}

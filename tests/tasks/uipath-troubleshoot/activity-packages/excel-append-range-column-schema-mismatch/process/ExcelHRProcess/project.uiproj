@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelHRProcess",
+  "ProjectType": "Process",
+  "Description": "Fetches new-hire records and appends them as rows to the employees workbook via Append Range inside a Use Excel File scope.",
+  "MainFile": "Main.xaml"
+}

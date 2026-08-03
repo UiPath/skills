@@ -1,0 +1,15 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "9c1d3e5f-7a8b-4c2d-90e1-f2a3b4c5d6e7",
+    "StartTime": "2026-07-08T05:30:04.220Z",
+    "EndTime": "2026-07-08T05:30:11.610Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "ResourceOverwrites": "{\"Connection.5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4\": {\"EntityDisplayName\": \"crm.admin@acmecorp.test\", \"Level\": 0, \"Properties\": {\"connectionId\": \"5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4\", \"folderKey\": \"2e4c6a80-1b3d-4f5e-8a90-c1d2e3f4a5b6\", \"ConnectionId\": \"5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4\"}}}",
+    "Source": "Trigger",
+    "SourceType": "Schedule",
+    "Info": "Job faulted at activity 'Create Contact': failed to retrieve connection (DAP-GE-3000)."
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-21T09:14:31.305Z",
+      "Message": "StoredProcWriteBack execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-21T09:14:32.610Z",
+      "Message": "Execute Non Query - usp_FinalizeOrder executing stored procedure 'usp_FinalizeOrder' (CommandType=StoredProcedure) over provider 'System.Data.Odbc'"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T09:14:32.840Z",
+      "Message": "[Execute Non Query - usp_FinalizeOrder] A database error occurred. The Size property has an invalid size of 0."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T09:14:32.855Z",
+      "Message": "A database error occurred. The Size property has an invalid size of 0.\r\nin Main.xaml\r\n    at ExecuteNonQuery \"Execute Non Query - usp_FinalizeOrder\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

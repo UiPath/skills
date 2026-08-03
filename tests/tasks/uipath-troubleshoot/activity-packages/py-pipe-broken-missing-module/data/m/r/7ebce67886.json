@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "JobHistory",
+  "Data": [
+    {
+      "JobKey": "aa111111-7777-bbbb-cccc-ddddeeeeffff",
+      "State": "Pending",
+      "Timestamp": "2026-06-18T09:15:01.900Z"
+    },
+    {
+      "JobKey": "aa111111-7777-bbbb-cccc-ddddeeeeffff",
+      "State": "Running",
+      "Timestamp": "2026-06-18T09:15:02.110Z"
+    },
+    {
+      "JobKey": "aa111111-7777-bbbb-cccc-ddddeeeeffff",
+      "State": "Faulted",
+      "Timestamp": "2026-06-18T09:15:08.640Z",
+      "Info": "UiPath.Python.RemoteException wrapping System.IO.IOException: Pipe is broken: \"Invoke Python Method: extract_total\""
+    }
+  ]
+}

@@ -17,6 +17,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -47,6 +48,53 @@ def verb_count_error(new_count, prev_count, min_verbs, max_drop_frac):
     return None
 
 
+def unwalkable_regression_error(new_unwalkable, prev_unwalkable, prev_verbs):
+    """Return an error string if a previously-walked group is now unwalkable, else None.
+
+    A group whose `--help` walk fails contributes ZERO children to the
+    catalog while the group node itself survives, so the loss is invisible to
+    verb_count_error: on 2026-07-30 a build lost the entire `rpa debug`
+    subtree (16 verbs) plus `rpa analyzer-rules list` and `rpa files diff`,
+    a 0.5% drop that sailed past --max-drop-frac 0.2 and produced a PR that
+    would have auto-merged.
+
+    A group is a regression when all three hold:
+      1. it is unwalkable in THIS build,
+      2. it was NOT unwalkable in the committed snapshot, and
+      3. the committed snapshot enumerated at least one child under it.
+
+    Condition 3 is what keeps this quiet. Leaf commands legitimately land in
+    UNWALKABLE — `uip rpa pack --help` emits no `Subcommands` — and they have
+    no children in the previous snapshot, so they never trip the guard. A
+    group genuinely deleted from the CLI is also silent: it never enters the
+    walk frontier, so collect_group is never called and it cannot appear in
+    `new_unwalkable`. That leaves exactly the flaky/broken case.
+
+    Pure function — no I/O — so it is unit-testable without the CLI.
+    """
+    prev_unwalkable = set(prev_unwalkable or ())
+    regressed = []
+    for group in sorted(set(new_unwalkable or ())):
+        if group in prev_unwalkable:
+            continue
+        prefix = f"{group} "
+        lost = sorted(v for v in (prev_verbs or ()) if v.startswith(prefix))
+        if lost:
+            regressed.append((group, lost))
+    if not regressed:
+        return None
+    total = sum(len(lost) for _, lost in regressed)
+    detail = "; ".join(
+        f"{group!r} (-{len(lost)}: {', '.join(lost[:3])}"
+        f"{', …' if len(lost) > 3 else ''})"
+        for group, lost in regressed
+    )
+    return (
+        f"{len(regressed)} group(s) walked in the committed snapshot are "
+        f"unwalkable in this build, dropping {total} verb(s): {detail}"
+    )
+
+
 _DECODER = json.JSONDecoder()
 
 # Top-level groups whose JSON help could not be enumerated. Populated by
@@ -63,6 +111,13 @@ UNWALKABLE = set()
 # top-level subcommand in the current catalog build — that way a catalog
 # built on Windows still resolves `uip rpa …` verbs concretely.
 PLATFORM_SPECIFIC_PREFIXES = {"rpa"}
+
+# How many times to attempt a group's `--help` walk before marking it
+# unwalkable, and the base backoff between attempts (multiplied by the
+# attempt number). A failed walk drops the group's entire subtree from the
+# catalog, so a transient failure is expensive — see collect_group.
+GROUP_HELP_ATTEMPTS = 3
+GROUP_HELP_BACKOFF_SECONDS = 1.0
 
 
 def _ci(d, key):
@@ -117,21 +172,42 @@ def strip_args(name):
     return ARG_SIG.sub("", name).strip().split("|", 1)[0].strip()
 
 
+def tool_dist_tag():
+    """
+    Derive the npm dist-tag to install tools under from the running CLI's own
+    prerelease tag, so tools always match the CLI's line:
+      1.199.0-dev.7923   -> "dev"     (GitHub Packages prerelease train)
+      1.198.0-preview.84 -> "preview" (npmjs prerelease train)
+      1.197.1            -> None      (stable; install the plain `latest`)
+    """
+    version = get_cli_version()
+    dash = version.find("-")
+    if dash == -1:
+        return None
+    return version[dash + 1:].split(".")[0] or None
+
+
 def install_all_tools():
     """
-    Install every plugin uip knows about via `uip tools list` and `uip tools
-    search`. Plugin groups (solution, maestro, tm, df, ...) only contribute
-    verbs to the catalog when installed.
+    Install every plugin uip knows about (discovered via `uip tools search`)
+    with npm, at the dist-tag matching the running CLI (see tool_dist_tag).
+    Plugin groups (solution, maestro, tm, df, ...) only contribute verbs to the
+    catalog when installed.
 
-    Tools must be installed from the SAME feed as the CLI. The nightly tracks
-    cli/main, so it installs the CLI and the tools from GitHub Packages under
-    the `@alpha` dist-tag (`npm config set @uipath:registry
-    https://npm.pkg.github.com/` + auth token, done by the workflow). Stable
-    public-npm tools install but fail to register their command tree against
-    an alpha CLI (e.g. the `rpa` group never loads), collapsing coverage.
-    Locally, install the CLI and tools from whichever feed you intend the
-    catalog to reflect — keep both on the same one.
+    Install with npm directly — NOT `uip tools install`. cli PR #2650 made `dev`
+    a publish dist-tag but NOT a release channel (channels are just
+    {stable, preview}), so on a `-dev` CLI `uip tools install` resolves to the
+    `stable` channel and can't find a matching `-dev` tool ("No compatible
+    version"). npm resolves `@dev`/`@preview` straight to the latest prerelease;
+    the CLI then discovers the plugin on disk under `$(npm root -g)/@uipath/*`.
+
+    Tools must come from the SAME feed as the CLI. The nightly tracks cli/main
+    and installs both from GitHub Packages under `@dev` (the workflow sets
+    `@uipath:registry=https://npm.pkg.github.com/` + auth). Locally, install the
+    CLI and tools from whichever feed you intend the catalog to reflect — keep
+    both on the same one.
     """
+    tag = tool_dist_tag()
     listed = run_uip(["tools", "list"]) or {}
     # `uip tools list` returns short names like "solution-tool".
     # `uip tools search` returns scoped names like "@uipath/solution-tool".
@@ -149,15 +225,15 @@ def install_all_tools():
         name = _ci(tool, "name") or ""
         if not name or short(name) in installed:
             continue
+        spec = f"{name}@{tag}" if tag else name
         attempted += 1
-        print(f"installing missing tool {name}", file=sys.stderr)
+        print(f"installing missing tool {spec}", file=sys.stderr)
         proc = subprocess.run(
-            ["uip", "tools", "install", name, "--output", "json"],
+            ["npm", "install", "-g", spec],
             capture_output=True, text=True, check=False,
         )
         if proc.returncode != 0:
-            # npm prints errors to stderr; stdout (JSON success channel) is
-            # usually empty on failure.
+            # npm prints errors to stderr; stdout is usually empty on failure.
             err = (proc.stderr or proc.stdout or "").strip()[:200]
             print(f"  failed: {err}", file=sys.stderr)
         else:
@@ -165,14 +241,14 @@ def install_all_tools():
 
     # Fail loud if we tried to install tools and every one failed. The plugins
     # contribute the bulk of the catalog; a silent all-fail collapses it to the
-    # ~31 base-CLI verbs (see #1203). Usual cause: the `@uipath` npm scope is
-    # mapped to GitHub Packages (CLI alpha feed) instead of public npm, where
-    # the tool packages live.
+    # ~31 base-CLI verbs (see #1203). Usual cause: the `@uipath` npm scope isn't
+    # pointed at the feed that carries the CLI's line (GitHub Packages for
+    # -dev/-alpha, npmjs for stable).
     if attempted and succeeded == 0:
         sys.exit(
             f"All {attempted} tool installs failed — refusing to build a "
-            "base-CLI-only catalog. Is the @uipath npm scope pointed at public "
-            "npm (https://registry.npmjs.org/)?"
+            "base-CLI-only catalog. Is the @uipath npm scope pointed at the "
+            "feed for this CLI line (GitHub Packages for -dev, npmjs for stable)?"
         )
 
 
@@ -229,13 +305,30 @@ def collect_top_level():
 
 
 def collect_group(group_path):
-    data = run_uip([*group_path.split(), "--help"])
+    # Retry before giving up: a single failed `--help` silently deletes the
+    # group's whole subtree from the catalog, and the failures are not always
+    # deterministic (the unwalkable set churns between builds minutes apart —
+    # `rpa debug` walked at 05:35 UTC on 2026-07-30 and did not at 21:39).
+    # Cost is bounded: only failing groups retry, and a healthy build has few.
+    data = None
+    for attempt in range(1, GROUP_HELP_ATTEMPTS + 1):
+        data = run_uip([*group_path.split(), "--help"])
+        if data is not None and data.get("Result") != "Failure":
+            break
+        if attempt < GROUP_HELP_ATTEMPTS:
+            print(f"group {group_path!r}: help walk failed "
+                  f"(attempt {attempt}/{GROUP_HELP_ATTEMPTS}) — retrying",
+                  file=sys.stderr)
+            time.sleep(GROUP_HELP_BACKOFF_SECONDS * attempt)
     if data is None or data.get("Result") == "Failure":
         # Tool errored, doesn't support `--output json`, or failed to load
         # (common for Click/Python plugins and tools with broken npm deps).
-        # Mark so the scanner can downgrade findings under this prefix from
-        # "stale" to "uncertain".
+        # Also the normal outcome for a leaf command, which emits no
+        # Subcommands. Mark so the scanner can downgrade findings under this
+        # prefix from "stale" to "uncertain".
         UNWALKABLE.add(group_path)
+        print(f"group {group_path!r}: unwalkable after "
+              f"{GROUP_HELP_ATTEMPTS} attempt(s)", file=sys.stderr)
         return set()
     subs = data.get("Data", {}).get("Subcommands", []) or []
     found = set()
@@ -304,6 +397,14 @@ def main():
         help="Refuse to write if the verb count drops more than this fraction "
              "(0-1) vs the existing --output snapshot. E.g. 0.2 = abort on a >20%% drop.",
     )
+    parser.add_argument(
+        "--allow-unwalkable-regression",
+        action="store_true",
+        help="Write the catalog even if a group that was walked in the existing "
+             "--output snapshot is unwalkable in this build. Escape hatch for a "
+             "genuine, permanent loss of JSON help; without it such a build is "
+             "refused because the cause is usually transient.",
+    )
     args = parser.parse_args()
 
     # Validate before any work: a fraction outside [0, 1] silently breaks the
@@ -318,15 +419,34 @@ def main():
     verbs = expand(verbs, groups)
 
     # Integrity guards — never overwrite a good snapshot with a collapsed one.
-    prev_count = None
+    prev = None
     if not args.stdout and args.output.exists():
         try:
-            prev_count = len(json.loads(args.output.read_text()).get("verbs", []))
+            prev = json.loads(args.output.read_text())
         except (json.JSONDecodeError, OSError):
-            prev_count = None
+            prev = None
+    prev_verbs = (prev or {}).get("verbs") or []
+    prev_unwalkable = (prev or {}).get("unwalkable_groups") or []
+    prev_count = len(prev_verbs) if prev else None
+
     err = verb_count_error(len(verbs), prev_count, args.min_verbs, args.max_drop_frac)
     if err:
         sys.exit(f"Refusing to write catalog: {err}. Aborting suspected bad build.")
+
+    # Subtree-loss guard. verb_count_error cannot see this: losing a whole
+    # command group is a small fraction of a ~1380-verb catalog.
+    regression = unwalkable_regression_error(UNWALKABLE, prev_unwalkable, prev_verbs)
+    if regression and not args.allow_unwalkable_regression:
+        sys.exit(
+            f"Refusing to write catalog: {regression}. Re-run the build first — "
+            "these walks are often transient. Use --allow-unwalkable-regression "
+            "only if the loss is real: either the CLI genuinely stopped exposing "
+            "JSON help for these groups, or the committed snapshot is itself a "
+            "flaky build whose extra groups this good build cannot match."
+        )
+    if regression:
+        print(f"warning: accepting unwalkable regression ({regression})",
+              file=sys.stderr)
 
     snapshot = {
         "generated_at": dt.datetime.now(dt.timezone.utc)

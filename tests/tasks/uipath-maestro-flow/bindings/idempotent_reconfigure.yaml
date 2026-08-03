@@ -15,8 +15,6 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Load the uipath-maestro-flow skill and follow its workflow exactly.
-
   Build a flow named "BindingsIdempotent" — Manual Trigger → IS connector
   node → End — saved as `BindingsIdempotent/flow_files/BindingsIdempotent.flow`
   with `BindingsIdempotent/project.uiproj`.

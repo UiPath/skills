@@ -11,22 +11,22 @@ description: >
 tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector, feature:registry]
 
 initial_prompt: |
-  Author — but do NOT run — a UiPath API Workflow at Workflow.json that sends
-  an email via the Outlook Integration Service connector. Build the connector
-  activity through the skill's discovery flow against a working Outlook
-  connection, then validate the workflow offline.
+  Author — but do NOT run — a UiPath API Workflow that sends an email via the
+  Outlook Integration Service connector. Create the project named `OutlookSend`
+  (its workflow file will be OutlookSend/Workflow.json), wire the activity to a
+  working Outlook connection, then validate the workflow offline.
 
   Do NOT run the workflow with auth and do NOT send a real email — stop once it
   validates. The activity must come from the registry (not hand-authored) wired
   to a real connection, leaving no <REPLACE_WITH_*> placeholders.
   Do NOT ask for approval, confirmation, or feedback.
-  Before starting, load the uipath-api-workflow skill and follow its
-  connector-activity discovery flow.
 
 success_criteria:
-  - type: file_exists
-    description: "Workflow.json was created"
-    path: "Workflow.json"
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -46,17 +46,17 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Uses the IntSvc kind (call: UiPath.IntSvc)"
-    path: "Workflow.json"
-    includes:
-      - "UiPath.IntSvc"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "UiPath.IntSvc" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "No unresolved connection placeholder survived (rule 16 — sentinel must be replaced)"
-    command: "! grep -q 'REPLACE_WITH' Workflow.json"
+    description: "Workflow exists AND no unresolved connection placeholder survived (rule 16 — sentinel must be replaced)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF" && ! grep -q ''REPLACE_WITH'' "$WF"'
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -64,7 +64,7 @@ success_criteria:
 
   - type: run_command
     description: "Workflow passes offline validation"
-    command: 'uip api-workflow validate ./Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow validate "$WF" --output json | grep -q ''"Status": "Valid"'''
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

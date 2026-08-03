@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-29T14:22:12.090Z",
+      "Message": "Broadcast Order Ready: Timeout of 3000 ms has passed and no channel was found to send the message to.\r\nin Main.xaml\r\n    at Broadcast Message \"Broadcast Order Ready\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.TimeoutException: Timeout of 3000 ms has passed and no channel was found to send the message to.\r\n   at UiPath.IPC.Activities.BroadcastMessage.<ExecuteAsync>d__24.MoveNext()\r\n--- End of stack trace from previous location ---\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.System.Activities.IAsyncCodeActivity.FinishExecution(AsyncCodeActivityContext context, IAsyncResult result)"
+    }
+  ]
+}

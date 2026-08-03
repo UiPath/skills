@@ -1,0 +1,69 @@
+task_id: skill-datafabric-smoke-csv-type-confirm
+description: >
+  Smoke test for data-fabric.md Rule 14 (CSV / sample-data inference clause): when the user
+  asks to create an entity FROM a CSV file, the agent MUST flag every field type as inferred,
+  surface ambiguous columns (date-shaped strings, 0/1 flags, decimal precision), and wait for
+  explicit user confirmation before invoking `entities create`. Silent inference + immediate
+  CLI invocation is a Rule 14 violation.
+tags: [uipath-platform, smoke, data-fabric, entities, bulk-import, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 15
+
+initial_prompt: |
+  Consider this CSV content (header + 3 sample rows):
+
+      orderId,placedAt,totalAmount,isPaid,customerUuid
+      ORD-001,2026-04-12T09:15:00Z,142.50,1,3f8d2a1e-9e0c-4b88-b9a5-2d8a5e1f0a11
+      ORD-002,2026-04-13T14:02:30Z,89.00,0,12c6c4a2-3f5b-4d2e-b6c7-22ab9f0d3e88
+      ORD-003,2026-04-14T18:47:11Z,1024.99,1,3f8d2a1e-9e0c-4b88-b9a5-2d8a5e1f0a11
+
+  Goal: create a Data Fabric entity named "OrderImport" from this CSV so the
+  columns map to fields.
+
+  Before creating anything, show me the proposed field type for every
+  column, call out anything ambiguous with the alternatives, and wait for
+  my confirmation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent must NOT invoke a real `entities create` before user confirmation (--help lookups OK)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create\s+(?!--help)\S+.*--body'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent proposed a field type for every CSV column"
+    include_agent_output: true
+    prompt: |
+      The user supplied five CSV columns: orderId, placedAt, totalAmount,
+      isPaid, and customerUuid. Score 1.0 if the response proposes a Data
+      Fabric field type for all five columns, 0.5 if four are covered, and
+      0.0 otherwise.
+    weight: 2.0
+    pass_threshold: 0.5
+
+  - type: llm_judge
+    description: "Agent surfaced the ambiguous CSV inferences"
+    include_agent_output: true
+    prompt: |
+      Check whether the response surfaces plausible alternatives for the
+      timestamp-shaped placedAt value, decimal precision for totalAmount,
+      the 0/1 representation of isPaid, and whether customerUuid is plain
+      text or a relationship. Score 1.0 if all four are discussed, 0.5 if
+      three are discussed, and 0.0 otherwise.
+    weight: 2.0
+    pass_threshold: 0.5
+
+  - type: llm_judge
+    description: "Agent paused for confirmation before creating anything"
+    include_agent_output: true
+    prompt: |
+      Score 1.0 if the response clearly asks the user to confirm the proposed
+      schema and does not claim the entity was created. Score 0.0 otherwise.
+    weight: 2.0
+    pass_threshold: 1.0

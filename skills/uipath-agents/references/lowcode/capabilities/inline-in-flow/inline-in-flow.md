@@ -1,6 +1,6 @@
 # Inline Agent in a Flow
 
-Walkthrough for embedding a low-code agent directly inside a flow project. The agent lives as a UUID-named subdirectory inside the flow project and is published with the parent flow.
+Walkthrough for embedding a low-code autonomous agent directly inside a flow project. The agent lives as a UUID-named subdirectory inside the flow project and is published with the parent flow.
 
 Flow authoring itself is the responsibility of the `uipath-maestro-flow` skill — this file covers only the inline-agent side (creating the agent subdirectory, configuring it, and the shape of the `uipath.agent.autonomous` flow node that references it).
 
@@ -57,7 +57,7 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 
 This generates a UUID for the `projectId`, creates the subdirectory `<FlowProjectDir>/<uuid>/`, and scaffolds `agent.json`, `flow-layout.json`, and empty directories.
 
-> The scaffold sets `settings.model: "gpt-4o-2024-11-20"` (stale) and empty prompts. **Override the model** (`uip agent model list` → [model-selection-guide.md](../../model-selection-guide.md)) and write robust prompts ([agent-prompting-guide.md](../../agent-prompting-guide.md)) before validating.
+> The scaffold sets `settings.model: "gpt-4o-2024-11-20"` (stale) and empty prompts. **Override the model** (`uip agent model list` → [model-selection-guide.md](../../model-selection-guide.md)) and write robust prompts ([prompting/agent-prompting-guide.md](../../prompting/agent-prompting-guide.md)) before validating.
 
 ### Option B: Manual creation
 
@@ -73,8 +73,8 @@ Generate a unique UUID (e.g., `5029c8a8-799b-426a-803f-c4ec75255439`). Create a 
 
 Same schema as a standalone agent (see [../../agent-definition.md](../../agent-definition.md)), with these conventions:
 - `projectId` matches the folder name UUID
-- `inputSchema.properties` stays empty `{}` for prompt-only flow-data references. Prompts reference upstream flow nodes directly via `{{ $vars.<flowNodeId>.output[.<field>] }}` in `messages[].content`, mirrored in `contentTokens[]` as `{ "type": "variable", "rawString": " $vars.<flowNodeId>.output[.<field>] " }` (leading and trailing space inside `rawString`). See the `uipath-maestro-flow` skill's [inline-agent prompt-wiring guide](../../../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
-- `messages` have empty `content` and `contentTokens` initially. Set prompts in `messages[].content`, then build `messages[].contentTokens[]` as a parallel list: one `{ "type": "simpleText", "rawString": "..." }` per literal text segment, one `{ "type": "variable", "rawString": " $vars.<flowNodeId>.output[.<field>] " }` per `{{ ... }}` reference.
+- `inputSchema.properties`: one `<triggerNodeId>__output__<global>` key per flow input — **mandatory**. See [§ Wiring Flow Inputs Into an Inline Agent](#wiring-flow-inputs-into-an-inline-agent-required).
+- `messages[].content`: reference inputs as `{{input.<triggerNodeId>__output__<global>}}` (the `input.` form). Then run `uip agent refresh` to regenerate `contentTokens` from `content` — don't hand-author them. See [§ Wiring Flow Inputs Into an Inline Agent](#wiring-flow-inputs-into-an-inline-agent-required).
 - `guardrails: []` at root level — can be populated with guardrail objects. See [../guardrails/guardrails.md](../guardrails/guardrails.md)
 - No `metadata.targetRuntime` field
 
@@ -126,6 +126,24 @@ features/
 resources/
 ```
 
+## Wiring Flow Inputs Into an Inline Agent (required)
+
+**The CLI does not derive the input wiring** — you author it; `refresh` only regenerates `contentTokens` from `content` (it does not fill `inputSchema` or `agentInputVariables`). `flow validate` *does* catch a prompt↔schema mismatch (a `{{input.K}}` that's malformed or names a key not in `inputSchema`), but **not** a missing/wrong node `agentInputVariables` binding — that delivery gap surfaces only at `flow debug`.
+
+This skill authors the **`agent.json` side** (flatten rule: `$vars.<trigger>.output.<var>` → `<trigger>__output__<var>`):
+- `inputSchema.properties` — one `<trigger>__output__<var>` key per input (mandatory; binds the delivered `JobArguments` into the agent's `input`). Empty schema → the agent sees the literal `input.<key>` token even when the value arrived.
+- `messages[].content` — reference each input as `{{input.<trigger>__output__<var>}}` (the `input.` form, **not** `$vars`), plus a real system prompt. `content` is the source of truth; run `uip agent refresh` to generate the matching `contentTokens` from it (don't hand-author them).
+
+```json
+"inputSchema": { "properties": {
+  "start__output__disputeSummary": { "type": "string", "description": "Bound from $vars.start.output.disputeSummary" }
+} },
+"messages": [{ "role": "user",
+  "content": "Write a billing resolution email for this dispute:\n{{input.start__output__disputeSummary}}" }]
+```
+
+The **flow side** — the trigger global and the node `agentInputVariables[]` binding (the only thing the converter turns into `JobArguments`) — is authored through the `uipath-maestro-flow` skill (Critical Rule 15). The full four-piece contract, the converter behavior, and the `content`↔`contentTokens` invariant + validator errors all live there: [inline-agent prompt-wiring guide § Wiring Flow Variables into Agent Prompts](../../../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
+
 ## Refresh and Validate Inline Agent
 
 ```bash
@@ -133,7 +151,9 @@ uip agent refresh "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 ```
 
-`--inline-in-flow` skips `entry-points.json` and `project.uiproj` checks. Refresh regenerates `entry-points.json` and `bindings_v2.json`; validate is read-only.
+`--inline-in-flow` skips the `entry-points.json` / `project.uiproj` checks. In inline mode `refresh` regenerates `messages[].contentTokens` (from `content`) and `bindings_v2.json` — **not** `entry-points.json` (standalone only). `validate` is read-only (it flags `contentTokens` drift but doesn't repair it — fix by re-running `refresh`).
+
+**Verify at `flow debug`, not after refresh:** `refresh` never fills `inputSchema` — it is non-empty only because you authored it (`DerivedFiles: 0` is normal and does **not** mean input is missing). The end-to-end check (run `uip maestro flow debug` and confirm the agent resolves the input rather than echoing the literal `input.<key>` token) is owned by the `uipath-maestro-flow` skill — see its [inline-agent guide § Debug](../../../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#debug).
 
 For inline agents with external capabilities (tools, contexts, memory spaces, or escalations), pass `--bindings-target` to **`refresh`** after all flow graph edits:
 
@@ -150,7 +170,7 @@ uip agent refresh "<FlowProjectDir>/<projectId>" --inline-in-flow \
 
 After creating the inline agent, the flow needs a `uipath.agent.autonomous` node whose `inputs.source` is the inline agent's `projectId` UUID, plus edges connecting it to the rest of the flow.
 
-**Hand off to the `uipath-maestro-flow` skill for the actual node and edge authoring.** Per Critical Rule 16, this skill does not invoke flow operations directly. Tell the user:
+**Hand off to the `uipath-maestro-flow` skill for the actual node and edge authoring.** Per Critical Rule 15, this skill does not invoke flow operations directly. Tell the user:
 
 > The inline agent has been scaffolded at `<FlowProjectDir>/<projectId>/`. To wire it into the flow, use the `uipath-maestro-flow` skill — pass it `projectId = <uuid>` so it can add a `uipath.agent.autonomous` node with `inputs.source = <uuid>` and connect the input/success edges via direct `.flow` authoring. **After all flow graph edits are complete**, run `uip agent refresh --inline-in-flow`, then `uip agent validate --inline-in-flow`; for inline agents with external capabilities, include `--bindings-target <FlowProjectDir>/bindings_v2.json` on the refresh call.
 
@@ -171,7 +191,7 @@ Resource body shape is identical to the standalone-agent docs — only the folde
 
 ### Tool-specific notes
 
-- **`location`**: Follows the same rule as standalone agents — set `"solution"` when the row from `uip solution resources list` has `Source: "Local"`, set `"external"` when `Source: "Remote"`. See [../process/process.md](../process/process.md) and [../../critical-rules.md](../../critical-rules.md) Rule 12.
+- **`location`**: Follows the same rule as standalone agents — set `"solution"` when the row from `uip solution resources list` has `Source: "Local"`, set `"external"` when `Source: "Remote"`. See [../process/process.md](../process/process.md) and [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Rule 12.
 - **`properties.folderPath`**: Must be the **literal folder path from discovery** (e.g., `"Shared/Sales"`) — do **not** leave it empty. An empty `folderPath` prevents `uip solution resources refresh` from resolving the tool at runtime.
 - **`inputSchema.properties`**: Must include `"guardrails": { "type": "array" }` alongside the tool arguments — the runtime expects it.
 - **All fields from the template in [../process/process.md](../process/process.md) are required** — especially `$resourceType: "tool"`, `guardrail`, `properties.processName`, `properties.exampleCalls`, `isEnabled`, and `argumentProperties`. A `resource.json` missing `$resourceType` will not be recognized by `uip agent validate` (the tool reports `"resources": 0`); `uip agent refresh` will then write an empty `bindings_v2.json`.
@@ -238,13 +258,13 @@ Resource nodes use the same `inputs.source` pattern as the autonomous agent — 
 }
 ```
 
-The definition declares `model.source: true`; flow-core hoists that identity field onto the node instance as `inputs.source` (same hoisting rule as `uipath.agent.autonomous`). The same shape applies to `uipath.agent.resource.escalation` and `uipath.agent.resource.context.*` nodes.
+The definition declares `model.source: true`; flow-core hoists that identity field onto the node instance as `inputs.source` (same hoisting rule as `uipath.agent.autonomous`). The same shape applies to `uipath.agent.resource.escalation.*` and `uipath.agent.resource.context.*` nodes.
 
 ### Handles
 
 | Handle | Position | Allowed connections |
 |--------|----------|---------------------|
-| `escalation` | top | `uipath.agent.resource.escalation` |
+| `escalation` | top | `uipath.agent.resource.escalation.*` |
 | `context` | bottom | `uipath.agent.resource.context.*` |
 | `tool` | bottom | `uipath.agent.resource.tool.*` |
 | `input` | left | Previous flow node |
@@ -270,7 +290,7 @@ Resources are separate canvas nodes wired to the agent via artifact handle edges
 | Built-in tool | `uipath.agent.resource.tool.builtin.<tool-name>` |
 | IS connector | `uipath.agent.resource.tool.connector` |
 | Semantic index | `uipath.agent.resource.context.index.<index-name>.<index-id>` |
-| Escalation | `uipath.agent.resource.escalation` |
+| Escalation | `uipath.agent.resource.escalation.<variant>` (e.g. `.coded-action-app`; discover with `uip maestro flow registry search "escalation"`) |
 | Memory space | `uipath.agent.resource.memory.*` canvas node, backed by `features/<FeatureName>/feature.json` from `uip agent memory` |
 
 `<release-key>` is the resource's release-key GUID from `uip solution resources list` (the row's `Key` field). The four process-tool kinds share the same registry-discovery flow and the same `resource.json` shape — only the prefix in front of `<release-key>` and the `type` field in `resource.json` differ. See [../process/process.md](../process/process.md) § Subtypes.
@@ -297,7 +317,7 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 #    uipath.agent.autonomous node (inputs.source = <projectId>),
 #    tool resource nodes, and wire all edges (input/success/tool).
 #    Do NOT run uip maestro flow commands from this skill —
-#    Critical Rule 16.
+#    Critical Rule 15.
 
 # 6. Refresh — regenerates entry-points.json and bindings_v2.json,
 #    and (with --bindings-target) propagates capability bindings into the flow
@@ -348,7 +368,7 @@ uipath.agent.resource.tool.processorchestration.<release-key>  ← Tool: process
 uipath.agent.resource.tool.connector                           ← Tool: IS connector
 uipath.agent.resource.tool.builtin.<tool-name>                 ← Tool: built-in
 uipath.agent.resource.context.index.<index-name>.<index-id>    ← Context: semantic index
-uipath.agent.resource.escalation                               ← Escalation: HITL
+uipath.agent.resource.escalation.<variant>                     ← Escalation: HITL (e.g. .coded-action-app)
 uipath.agent.resource.memory.*                                 ← Memory space canvas node; feature file lives under features/
 ```
 
@@ -360,7 +380,7 @@ The execution is asynchronous. The flow pauses at the agent node and resumes whe
 
 ## Gotchas
 
-See [../../critical-rules.md](../../critical-rules.md) Critical Rule 15. The skill explicitly defers flow authoring to `uipath-maestro-flow` — it does not invoke that skill automatically (Critical Rule 16).
+See [../../critical-rules/autonomous-critical-rules.md](../../critical-rules/autonomous-critical-rules.md) Critical Rule 1. The skill explicitly defers flow authoring to `uipath-maestro-flow` — it does not invoke that skill automatically ([../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rule 15).
 
 **Capability bindings must be propagated to the flow project's `bindings_v2.json`.** Only project-level bindings are scanned by `uip solution resources refresh`. Pass `--bindings-target <FlowProjectDir>/bindings_v2.json` to `uip agent refresh --inline-in-flow` — refresh is the command that writes the bindings. Without project-level propagation, Studio Web debug can fail because no solution-level resource file is created for the external capability.
 
@@ -369,4 +389,4 @@ Run the final `uip agent refresh --inline-in-flow --bindings-target …` as the 
 ## References
 
 - [../../agent-definition.md](../../agent-definition.md) — agent.json schema (same as standalone, with the inline-specific differences listed above)
-- [../../critical-rules.md](../../critical-rules.md) Critical Rule 15
+- [../../critical-rules/autonomous-critical-rules.md](../../critical-rules/autonomous-critical-rules.md) Critical Rule 1

@@ -1,0 +1,91 @@
+task_id: skill-flow-webhook-waitfor-parallel
+description: >
+  E2E self-testing flow: a manual start trigger fans out into two parallel
+  branches. Branch 1 is a mid-flow Wait-for-event node bound to the HTTP Webhook
+  connector (`uipath.connector.event.uipath-http-webhook.http-webhook`). Branch 2
+  is a Managed HTTP Request (`core.action.http.v2`, manual GET) whose URL is the
+  webhook URL of that same HTTP Webhook connection, with nothing in headers or
+  query. The GET self-delivers the event that completes the wait at runtime.
+  Exercises the connector-trigger plugin's "Wait for events" variant, parallel
+  branch fan-out from the start trigger, manual-mode HTTP, and the CLI
+  webhook-URL retrieval path. Validates the static two-branch shape.
+tags:
+  [
+    uipath-maestro-flow,
+    integration,
+    mode:build,
+    lifecycle:generate,
+    shape:multi-node,
+    connector,
+    feature:trigger,
+    feature:http,
+    wait-for-event,
+    uipath-http-webhook,
+    ipe,
+  ]
+
+run_limits:
+  expected_turns: 35
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow named "WebhookSelfTest" with a manual trigger.
+
+  The start trigger must fan out into TWO parallel branches:
+
+    - Branch 1: a mid-flow node that waits for an HTTP Webhook
+      event (the HTTP Webhook connector). For its connection, use the HTTP
+      Webhook connection in the `Shared/uipath-maestro-flow` folder. Then End
+      this branch.
+
+    - Branch 2: an HTTP Request node configured as a GET request
+      whose URL is the webhook URL of that same HTTP Webhook connection. 
+      Do NOT put anything in the headers or the query parameters — just the GET to 
+      the webhook URL. Then End this branch.
+
+  After building, validate the flow.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and 
+  implementation. Build the complete flow end-to-end in a single pass. 
+  Use `--output json` on `uip` commands.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created a solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized a Flow project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved the webhook URL"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+webhooks\s+config'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Two-branch structure: wait-for-event + manual-GET-to-webhook-URL (no headers/query), both reaching End"
+    command: "python3 $TASK_DIR/check_webhook_waitfor_parallel.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

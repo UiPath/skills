@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Scaffold a lowcode agent and inject LC_GUARDRAIL_PII_MISSING.
+"""Scaffold a lowcode agent and set up the PII flavor of LC_GUARDRAIL_RECOMMENDED.
 
 Rewrites the input schema so the agent clearly processes personal data
 (customer_email, full_name, ssn) and leaves the guardrails array absent.
-The judgment rule fires when the agent processes personal data (inferred
+The recommendation rule fires when the agent processes personal data (inferred
 from field names/descriptions) but has no pii_detection guardrail — an
-inference a regex cannot make reliably.
+inference a regex cannot make reliably; the reviewer recommends adding one.
 """
 
 import json

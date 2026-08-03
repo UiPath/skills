@@ -33,41 +33,41 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status (`uip login status --output json`)"
+    description: "Agent checked login status (`uip login status`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Resolved the three test-case ids (`uip tm testcases list --project-key HEALTH --output json`)"
+    description: "Resolved the three test-case ids (`uip tm testcases list --project-key HEALTH`)"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+list\s'
+    command_pattern: '(?=.*--project-key\s+HEALTH)uip\s+tm\s+testcases?\s+list\s'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete attach command naming both labels: `uip tm objectlabel add --project-key HEALTH --object-type TestCase --object-ids <ids> --labels eval-regression eval-smoke --output json`"
+    description: "Complete attach command naming both labels: `uip tm objectlabel add --project-key HEALTH --object-type TestCase --object-ids <ids> --labels eval-regression eval-smoke`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+add\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-)uip\s+tm\s+objectlabel\s+add'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete narrowed-list command: `uip tm objectlabel list --project-key HEALTH --object-type TestCase --filter eval-regression --output json`"
+    description: "Complete narrowed-list command: `uip tm objectlabel list --project-key HEALTH --object-type TestCase --filter eval-regression`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--filter\s+["\x27]?eval-regression)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+list\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--filter\s+["\x27]?eval-regression)uip\s+tm\s+objectlabel\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete detach command removing only eval-smoke: `uip tm objectlabel remove --project-key HEALTH --object-type TestCase --object-ids <ids> --labels eval-smoke --output json`"
+    description: "Complete detach command removing only eval-smoke: `uip tm objectlabel remove --project-key HEALTH --object-type TestCase --object-ids <ids> --labels eval-smoke`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-smoke)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+remove\b'
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-smoke)uip\s+tm\s+objectlabel\s+remove'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

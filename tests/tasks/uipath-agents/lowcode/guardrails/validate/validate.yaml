@@ -3,7 +3,7 @@ description: >
   Guardrail validation: a pre-built Web Research Briefing Agent is pre-seeded with a deliberately misconfigured harmful_content guardrail (harmfulContentEntityThresholds
   has an extra key "Sexual" not in harmfulContentEntities). The agent must detect and fix it. Verifies that the catalog is fetched, the misconfiguration is detected
   and corrected, and the agent validates successfully after the fix.
-tags: [uipath-agents, e2e, mode:build, low-code, guardrail]
+tags: [uipath-agents, e2e, mode:build, lifecycle:edit, low-code, guardrail]
 max_iterations: 1
 
 sandbox:

@@ -1,0 +1,6 @@
+{
+  "Name": "WordReportImage",
+  "ProjectType": "Process",
+  "Description": "Builds a monthly report by capturing a dashboard chart screenshot and inserting it into the report document via Word activities.",
+  "MainFile": "Main.xaml"
+}

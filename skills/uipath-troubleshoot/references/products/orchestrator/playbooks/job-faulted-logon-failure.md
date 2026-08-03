@@ -13,6 +13,8 @@ What this looks like:
 - Error contains one or more of: `Could not start executor`, `Logon failed for user <DOMAIN>\<USER>`, `RDP connection failed`, Windows codes like `0x0000052E` (logon failure), `0x00000775` (account locked out), `0x00000532` (password expired), `Last error: 131092`
 - May be intermittent (some jobs on the same machine succeed) or persistent (every job on that machine/user fails)
 
+**Not this playbook if the error is a pure timeout.** `Could not start executor. Creating user session timed out.` with NO logon-failure/locked/RDP code is a session-creation *timeout*, not an LSA rejection → route to [job-faulted-session-timeout.md](./job-faulted-session-timeout.md).
+
 What can cause it (cause-branches — pick the right one from evidence):
 
 1. **Session configuration mismatch** — Process has `requiresUserInteraction: true` (needs a desktop session), but no user is logged in AND "Login to Console" is false. The Robot has no session to attach to and no permission to create one.
@@ -66,7 +68,7 @@ Map the branch identified in Investigation to the fix:
 
 - **Branch 1 — Session configuration mismatch:**
   - Option A: Set "Login to Console" to true on the robot user (Orchestrator → Tenant → Users → user → Access Rules → Advanced Robot Options), so the Robot creates its own console session when no one is logged in.
-  - Option B: Ensure a user is logged into the machine before jobs run.
+  - Option B: Ensure a robot is logged into the machine before jobs run.
   - Prevention: For processes with `requiresUserInteraction: true`, default Login to Console to true.
 - **Branch 2 — Account locked:**
   - Have a domain admin unlock the account in Active Directory (AD Users & Computers → user → Account → "Unlock account", or `Unlock-ADAccount -Identity <user>`).

@@ -12,9 +12,15 @@ Validates:
 """
 
 import ast
-import re
+import os
 import sys
 from pathlib import Path
+
+sys.path.insert(
+    0,
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+)
+from _shared.guardrail_middleware import spread_middleware_calls  # noqa: E402
 
 GRAPH = Path("graph.py")
 TARGET_TOOL = "lookup_account_info"
@@ -66,18 +72,13 @@ def attr_chain(node: ast.expr) -> str | None:
 def find_middleware_with_target_tool(tree: ast.AST) -> list[str]:
     """Find *<X>Middleware(...) spread calls whose kwargs include
     scopes containing GuardrailScope.TOOL and tools containing the bare identifier
-    TARGET_TOOL.
+    TARGET_TOOL. Accepts inline (`[*Foo(...)]`) and variable
+    (`m = Foo(...); middleware=[*m]`) spreads.
 
     Returns matching middleware class names (or [] if none).
     """
     hits: list[str] = []
-    for node in ast.walk(tree):
-        # `*Foo(...)` inside a list/call appears as ast.Starred(value=ast.Call(...))
-        if not isinstance(node, ast.Starred):
-            continue
-        call = node.value
-        if not isinstance(call, ast.Call):
-            continue
+    for call in spread_middleware_calls(tree):
         name = deco_name(call)
         if not name or not name.endswith("Middleware"):
             continue
@@ -111,22 +112,42 @@ def main() -> None:
         sys.exit(f"FAIL: graph.py no longer parses as Python: {e}")
     print("OK: graph.py parses as valid Python")
 
-    # 1b. Adapter-registration import: guardrail symbols must come from
-    #     uipath_langchain.guardrails (registers the LangChain adapter as an import
-    #     side effect). Importing from uipath.platform.guardrails makes guardrails no-op.
+    # 1b. Adapter-registration import. The guardrail WRAPPING symbols — the
+    #     `guardrail` decorator and the *Middleware classes — must come from
+    #     uipath_langchain.guardrails, whose import registers the LangChain adapter as a
+    #     side effect. A wrapping symbol imported from uipath.platform.guardrails bypasses
+    #     that registration and the guardrail silently no-ops. Bare validators
+    #     (CustomValidator, PIIValidator, …), action classes, entity enums, and
+    #     GuardrailScope carry no adapter dependency and are re-exports of the same
+    #     objects, so they may be imported from either module.
     if "uipath_langchain.guardrails" not in src:
         sys.exit(
             "FAIL: graph.py never imports from uipath_langchain.guardrails. Without it the "
-            "LangChain guardrail adapter is not registered and the guardrail silently "
-            "no-ops. Import guardrail/validators from uipath_langchain.guardrails."
+            "LangChain guardrail adapter is not registered and every guardrail silently "
+            "no-ops. Import the guardrail decorator / middleware from uipath_langchain.guardrails."
         )
-    if re.search(r"from\s+uipath\.platform\.guardrails\s+import", src):
+    platform_wrapping = sorted(
+        {
+            alias.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom)
+            and node.module == "uipath.platform.guardrails"
+            for alias in node.names
+            if alias.name == "guardrail"
+            or alias.name.endswith("Middleware")
+            or alias.name == "*"
+        }
+    )
+    if platform_wrapping:
         sys.exit(
-            "FAIL: graph.py imports guardrail symbols from uipath.platform.guardrails. Use "
-            "uipath_langchain.guardrails instead — the platform module exposes identical "
-            "names but does not register the adapter, so the guardrail silently no-ops."
+            f"FAIL: graph.py imports guardrail wrapping symbol(s) {platform_wrapping} from "
+            "uipath.platform.guardrails. The `guardrail` decorator and *Middleware classes "
+            "must come from uipath_langchain.guardrails — only that import registers the "
+            "LangChain adapter, without which the decorator/middleware never wraps the "
+            "LLM/tool/agent and the guardrail silently no-ops. (Validators, actions, and "
+            "enums may be imported from either module.)"
         )
-    print("OK: guardrail symbols imported from uipath_langchain.guardrails (adapter registers)")
+    print("OK: guardrail wrapping symbols imported from uipath_langchain.guardrails (adapter registers)")
 
     # 2. lookup_account_info must still be the tool (sanity — the fixture defines it).
     has_target = any(

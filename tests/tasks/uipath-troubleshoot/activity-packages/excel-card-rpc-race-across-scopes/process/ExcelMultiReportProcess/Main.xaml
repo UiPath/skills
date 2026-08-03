@@ -1,0 +1,57 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" VisualBasic.Settings="{x:Null}" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uix="http://schemas.uipath.com/workflow/activities/excel" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Excel</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="sd:DataTable" Name="dtQ1Sales" />
+      <Variable x:TypeArguments="sd:DataTable" Name="dtQ2Sales" />
+    </Sequence.Variables>
+    <ui:LogMessage DisplayName="Log: starting multi-report" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[ExcelMultiReportProcess] Reading Q1 and Q2 sales workbooks for the quarterly comparison report&quot;]" />
+    <uix:UseExcelFile DisplayName="Use Excel File: sales-q1.xlsm" WorkbookPath="C:\Robot\Data\sales-q1.xlsm" ReadFormatting="True" ReferenceName="Q1Scope" sap2010:WorkflowViewState.IdRef="UseExcelFile_1">
+      <uix:UseExcelFile.Body>
+        <ActivityAction x:TypeArguments="uix:IExcelWorkbookActivities">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="uix:IExcelWorkbookActivities" Name="Q1Scope" />
+          </ActivityAction.Argument>
+          <uix:ExcelReadRange DisplayName="Read Range: Q1 sales" SheetName="Sales" Range="A1:Z10000" sap2010:WorkflowViewState.IdRef="ExcelReadRange_1">
+            <uix:ExcelReadRange.DataTable>[dtQ1Sales]</uix:ExcelReadRange.DataTable>
+          </uix:ExcelReadRange>
+        </ActivityAction>
+      </uix:UseExcelFile.Body>
+    </uix:UseExcelFile>
+    <uix:UseExcelFile DisplayName="Use Excel File: sales-q2.xlsm" WorkbookPath="C:\Robot\Data\sales-q2.xlsm" ReadFormatting="True" ReferenceName="Q2Scope" sap2010:WorkflowViewState.IdRef="UseExcelFile_2">
+      <uix:UseExcelFile.Body>
+        <ActivityAction x:TypeArguments="uix:IExcelWorkbookActivities">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="uix:IExcelWorkbookActivities" Name="Q2Scope" />
+          </ActivityAction.Argument>
+          <uix:ExcelReadRange DisplayName="Read Range: Q2 sales" SheetName="Sales" Range="A1:Z10000" sap2010:WorkflowViewState.IdRef="ExcelReadRange_2">
+            <uix:ExcelReadRange.DataTable>[dtQ2Sales]</uix:ExcelReadRange.DataTable>
+          </uix:ExcelReadRange>
+        </ActivityAction>
+      </uix:UseExcelFile.Body>
+    </uix:UseExcelFile>
+    <ui:LogMessage DisplayName="Log: reports loaded" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[ExcelMultiReportProcess] Both reports loaded; computing quarterly comparison.&quot;]" />
+  </Sequence>
+</Activity>

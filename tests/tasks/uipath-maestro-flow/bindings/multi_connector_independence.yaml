@@ -19,8 +19,6 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Load the uipath-maestro-flow skill and follow its workflow exactly.
-
   Build a flow named "BindingsMulti" with TWO IS connector nodes backed
   by DIFFERENT connector keys, saved as
   `BindingsMulti/flow_files/BindingsMulti.flow` with

@@ -1,0 +1,56 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-aa111111-001",
+      "JobKey": "aa111111-7777-bbbb-cccc-ddddeeeeffff",
+      "Level": "Info",
+      "Timestamp": "2026-06-18T09:15:02.180Z",
+      "Message": "Execution started.",
+      "ProcessName": "PythonInvoiceParser",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111111-002",
+      "JobKey": "aa111111-7777-bbbb-cccc-ddddeeeeffff",
+      "Level": "Info",
+      "Timestamp": "2026-06-18T09:15:02.260Z",
+      "Message": "[PythonInvoiceParser] Invoking parse_invoice.extract_total via Python Scope",
+      "ProcessName": "PythonInvoiceParser",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111111-003",
+      "JobKey": "aa111111-7777-bbbb-cccc-ddddeeeeffff",
+      "Level": "Trace",
+      "Timestamp": "2026-06-18T09:15:04.020Z",
+      "Message": "Python Scope — resolved interpreter at 'C:\\Program Files\\Python311' (Version=Python_311, Target=x64); host process started.",
+      "ProcessName": "PythonInvoiceParser",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111111-004",
+      "JobKey": "aa111111-7777-bbbb-cccc-ddddeeeeffff",
+      "Level": "Trace",
+      "Timestamp": "2026-06-18T09:15:05.500Z",
+      "Message": "Load Python Script: parse_invoice.py — loaded.",
+      "ProcessName": "PythonInvoiceParser",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111111-005",
+      "JobKey": "aa111111-7777-bbbb-cccc-ddddeeeeffff",
+      "Level": "Error",
+      "Timestamp": "2026-06-18T09:15:08.610Z",
+      "Message": "Invoke Python Method: extract_total — UiPath.Python.RemoteException wrapping System.IO.IOException: Pipe is broken: \"Invoke Python Method: extract_total\". The Python host process exited before returning a result.",
+      "ProcessName": "PythonInvoiceParser",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

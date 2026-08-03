@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T09:22:01.380Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T09:22:03.140Z",
+      "Message": "[Word Application Scope] Starting Microsoft Word"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T09:22:04.560Z",
+      "Message": "[Word Application Scope] Document 'data\\BrandedLetter.docx' opened"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T09:22:05.880Z",
+      "Message": "[Replace Text] Executed. Replaced 1 occurrence(s) of '[CompanyName]' in the document body."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T09:22:07.880Z",
+      "Message": "Execution ended in: 00:00:06"
+    }
+  ]
+}

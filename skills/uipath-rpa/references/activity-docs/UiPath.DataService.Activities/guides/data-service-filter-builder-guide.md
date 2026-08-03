@@ -60,7 +60,7 @@ xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"
 The `x:` prefix covers: `x:String`, `x:Int32`, `x:Int64`, `x:Double`, `x:Boolean`, `x:Decimal`.
 The `s:` prefix is required for: `s:DateTimeOffset`, `s:Guid`, `s:String[]`, `s:DateTime`.
 
-See [xaml-basics-and-rules.md § x: and s: namespace aliases](uipath-rpa/references/xaml/xaml-basics-and-rules.md) for the full type mapping.
+See [xaml-basics-and-rules.md § x: and s: namespace aliases](../../../xaml/xaml-basics-and-rules.md) for the full type mapping.
 
 ## Operator Reference by Field Type
 

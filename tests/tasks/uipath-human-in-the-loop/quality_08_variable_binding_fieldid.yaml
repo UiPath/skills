@@ -45,7 +45,7 @@ success_criteria:
     path: "ContractReview/ContractReview/ContractReview.flow"
     includes:
       - '"id": "approved"'
-      - '"variable": "legalApproval"'
+      - '"variable": "vars.legalApproval"'
     weight: 2.0
     pass_threshold: 1.0
 

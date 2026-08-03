@@ -41,7 +41,7 @@ Position is not a user input. It is computed statefully (see below).
   node -e "console.log(crypto.randomUUID())"
   ```
 
-Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference (e.g., In-argument companions whose `elementId` is this trigger's id).
+Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference — e.g., the global-vars plugin resolves this trigger's node id for an In-argument whose `sourceTriggers` names this trigger's T-number (or when it is the primary trigger and the In-arg leaves `sourceTriggers` blank).
 
 ## Default-name fallback
 
@@ -89,6 +89,8 @@ Read the file, parse, append:
 
 Where `basename(caseplanFile)` is the schema file's base name including extension (typically `caseplan.json`), yielding a `filePath` fragment like `/content/caseplan.json.bpmn#trigger_xY2mNp`.
 
+Leave this entry's `input`/`output` schemas (the `entry-points.json` fields above — not the trigger node's I/O) empty here — Step 6.3 back-fills them from the case's In/Out args ([entry-points-sync.md](../../../entry-points-sync.md)).
+
 Write back with **4-space indent** (`JSON.stringify(obj, null, 4)`).
 
 ## Write order
@@ -110,6 +112,7 @@ After writing, confirm:
 - `nodes[].data.description` is present and non-empty (direct-JSON-write divergence — always emitted).
 - `nodes[].data.parentElement` always present. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18).
 - `nodes[].data.uipath` is **absent** (manual triggers have no `uipath` key).
+- **`schema.edges` is still `[]`** (Rule 20) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
 
 Run `uip maestro case validate <caseplan.json> --output json` after all triggers for this plugin's batch are added.

@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "f0088888-3333-4444-5555-666677778888",
+      "DisplayName": "PayrollOps",
+      "FullyQualifiedName": "PayrollOps",
+      "Description": "Folder for weekly payroll-ledger automations.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6080001,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}

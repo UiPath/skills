@@ -296,11 +296,11 @@ The CLI emits a `Code` field on every JSON response. Useful when filtering or sc
 | `eval set add` / `list` / `remove` | `FlowEvalSetAdd` / `FlowEvalSetList` / `FlowEvalSetRemove` |
 | `eval evaluator add` / `list` / `remove` | `FlowEvalEvaluatorAdd` / `FlowEvalEvaluatorList` / `FlowEvalEvaluatorRemove` |
 | `eval simulation add` / `list` / `remove` | `FlowEvalSimulationAdd` / `FlowEvalSimulationList` / `FlowEvalSimulationRemove` |
-| `eval run start` (no `--wait`) | `MaestroFlowEvalRunStarted` |
-| `eval run start --wait` (summary) | `MaestroFlowEvalRunCompleted` |
-| `eval run status` | `MaestroFlowEvalRunStatus` |
-| `eval run results` | `MaestroFlowEvalRunResults` |
-| `eval run list` | `MaestroFlowEvalRunList` |
-| `eval run compare` | `MaestroFlowEvalRunComparison` |
+| `eval run start` (no `--wait`) | `FlowEvalRunStarted` |
+| `eval run start --wait` (summary) | `FlowEvalRunCompleted` |
+| `eval run status` | `FlowEvalRunStatus` |
+| `eval run results` | `FlowEvalRunResults` |
+| `eval run list` | `FlowEvalRunList` |
+| `eval run compare` | `FlowEvalRunComparison` |
 
-If actual emitted codes diverge from the table above, trust the JSON output — file an issue.
+The `eval run *` codes dropped their `Maestro` prefix (e.g. `MaestroFlowEvalRunResults` → `FlowEvalRunResults`) to match the rest of the `eval` family. Older CLI versions emit the `Maestro`-prefixed names. If actual emitted codes diverge from the table above, trust the JSON output — file an issue.

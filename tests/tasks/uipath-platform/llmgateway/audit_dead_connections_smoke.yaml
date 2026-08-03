@@ -10,8 +10,6 @@ run_limits:
   expected_turns: 8
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Audit our tenant's BYO LLM configurations. I want to know which configs are
   pointing at Integration Service connections that are no longer in `Enabled`
   state — those are the silent failures.

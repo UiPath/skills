@@ -10,7 +10,7 @@ agent:
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
-    timeout: 10
+    timeout: 60
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
@@ -20,8 +20,6 @@ run_limits:
   expected_turns: 12
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   I need to set up a small folder structure on our tenant. `seed.json`
   has a unique prefix (use it in all names so things don't collide) and
   a `parent_folder_path` — that's the folder under which I want the

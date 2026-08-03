@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T09:10:02.190Z",
+      "Message": "[Move Email] Cannot convert type 'System.String' to 'UiPath.MicrosoftOffice365.Models.Office365Message'."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T09:10:02.241Z",
+      "Message": "Cannot convert type 'System.String' to 'UiPath.MicrosoftOffice365.Models.Office365Message'.\r\nin Main.xaml\r\n    at MoveEmailConnections \"Move Email\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

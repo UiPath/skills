@@ -1,7 +1,0 @@
-{
-  "projectVersion": "1.0.0",
-  "ProjectType": "ProcessOrchestration",
-  "Name": "WrapperFamilyContract",
-  "description": "Synthetic wrapper-family contract validation fixture.",
-  "main": "wrapper-family-contract.bpmn"
-}

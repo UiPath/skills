@@ -33,7 +33,7 @@ A reused reference ID:
 
 ## Reference Fields (CRITICAL)
 
-Some fields in the describe `requestFields` have a `reference` section — their value must be looked up from another resource before executing.
+Entries in the describe `requestFields` AND `parameters` (query/path parameters) can have a `reference` section — their value must be looked up from another resource before executing. Scan both arrays: on some connectors the activity's primary input is a path parameter with a reference, and scanning only `requestFields` misses it.
 
 ### Reference structure
 
@@ -54,17 +54,19 @@ Some fields in the describe `requestFields` have a `reference` section — their
 
 | Property | Meaning |
 |---|---|
-| **`reference.objectName`** | The resource to list (use as `<object>` in `execute list`). May include query params. |
+| **`reference.objectName`** | The resource to list (use as `<object>` in `run list`). May include query params. |
 | **`reference.lookupNames`** | Fields to match the user's input against (e.g., match "general" against `name`) |
 | **`reference.lookupValue`** | The field to extract as the resolved value (e.g., `id`) |
 | **`reference.path`** | The API path — use `reference.objectName` for the list call |
 | **`reference.filterPattern`** | Search endpoint pattern — substitute the user's input into `{filter}` and pass as `--query`. See [Search References](#search-references-filterpattern). |
 | **`reference.childPath`** | Scoped child path — used for drill-down references (e.g., folder subfolders) |
 
+> **`objectName` fallback.** If `run list <reference.objectName>` returns 404, the connector uses a symbolic objectName the runner can't resolve (e.g. Data Service `system` → "Entity system does not exist"). Retry with the resource segment of `reference.path`: `/standard-objects` → `run list "<connector-key>" "standard-objects"`.
+
 ### Resolution workflow
 
 ```bash
-# 1. Describe → find fields with "reference" in requestFields
+# 1. Describe → find entries with "reference" in requestFields AND parameters
 uip is resources describe "<connector-key>" "<resource>" \
   --connection-id "<id>" --operation Create --output json
 
@@ -96,6 +98,8 @@ User says: "Send a message to #general"
 4. **Use** the `lookupValue` (`id`) → `"C02CAP3LAAG"` in the `--body`
 
 **Present options to the user** when multiple matches exist. Always use the resolved `lookupValue` (not display names) in `--body` or `--query`.
+
+**Zero matches:** if the completed lookup (`Data.Pagination.HasMore` is `"false"`) finds no entry matching the user's value, do not execute with it — ask the user, presenting the closest candidates as options. Proceed with the unverified value only if the user confirms it.
 
 ---
 

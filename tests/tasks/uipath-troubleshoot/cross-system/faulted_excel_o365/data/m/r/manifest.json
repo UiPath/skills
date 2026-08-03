@@ -1,0 +1,104 @@
+{
+  "version": 2,
+  "_doc": "Real responses captured from the original session's .local/investigations/raw/. First-match-wins: list specific patterns before generic ones. `expected_calls` declares the minimum-coverage patterns the test expects the agent to exercise (compared against .calls.jsonl by tmp/coverage_report.py after the run).",
+  "rules": [
+    {
+      "match": "or jobs get 3033bce6-5585-4455-aaec-db7a9f791126",
+      "file": "c7561f8057.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs history 3033bce6-5585-4455-aaec-db7a9f791126",
+      "file": "e8b9ddec9e.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs logs 3033bce6-5585-4455-aaec-db7a9f791126",
+      "file": "eaedd498c0.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs traces 3033bce6-5585-4455-aaec-db7a9f791126",
+      "file": "2c9858ab16.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs get dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1",
+      "file": "4dd6cfc7a1.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs history dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1",
+      "file": "4e1d1a97c8.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs logs dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1",
+      "file": "b43879949a.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs traces dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1",
+      "file": "ac5c9ac7fa.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs list --folder-key 7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0 --state Faulted",
+      "file": "34f3fc150f.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or jobs list --folder-key 7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0",
+      "file": "34f3fc150f.json",
+      "exit_code": 0
+    },
+    {
+      "match": "or folders list",
+      "file": "bfe87a0aa9.json",
+      "exit_code": 0
+    },
+    {
+      "match": "is connections ping e62228b7-ffc2-49dc-a779-29207b0d2b6f",
+      "file": "feeae28cca.json",
+      "exit_code": 1
+    },
+    {
+      "match": "is connections list --folder-key 7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0",
+      "file": "1a2cb9d8be.json",
+      "exit_code": 0
+    },
+    {
+      "match": "is connections list",
+      "file": "1a2cb9d8be.json",
+      "exit_code": 0
+    },
+    {
+      "match": "docsai ask",
+      "file": "63754e8d91.json",
+      "exit_code": 0,
+      "_doc": "Catch-all: every `docsai ask` (regardless of topic) returns the same Orchestrator-focused retry guidance, mirroring the single docsai call observed in the original session. If the agent asks docsai about Integration Service it receives non-blocking but off-topic content — relying on docsai for IS guidance is not part of the success path."
+    }
+  ],
+  "expected_calls": [
+    {
+      "pattern": "or folders list-current-user",
+      "min": 1,
+      "description": "Agent looks up the runner's personal folder via the documented Personal-friendly endpoint."
+    },
+    {
+      "pattern": "or jobs get 3033bce6-5585-4455-aaec-db7a9f791126",
+      "min": 1,
+      "description": "Agent fetches the pinned faulted job's details to read the error message and failing activity."
+    },
+    {
+      "pattern": "is connections list uipath-microsoft-onedrive",
+      "min": 1,
+      "description": "Agent lists OneDrive connections in the runner's workspace to compare against the workflow's connection ID."
+    },
+    {
+      "pattern": "is connections ping e62228b7-ffc2-49dc-a779-29207b0d2b6f",
+      "min": 0,
+      "description": "OPTIONAL — Agent may ping the failing connection ID to confirm the runtime error verbatim, but a more efficient path confirms cross-workspace ownership directly from the project's connection resource file + Main.xaml. Both paths are valid; the source-file path is optimal. min:0 means tracked-but-not-required."
+    }
+  ]
+}

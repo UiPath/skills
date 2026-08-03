@@ -1,0 +1,24 @@
+{
+  "Result": "Success",
+  "Code": "ResourceMetadata",
+  "Data": {
+    "name": "tickets",
+    "displayName": "Tickets",
+    "availableOperations": [
+      "List",
+      "Retrieve",
+      "Create",
+      "Replace",
+      "Delete"
+    ],
+    "files": {
+      "List": "~/.uipath/cache/integrationservice/uipath-freshworks-freshdesk/_static/tickets.List.json",
+      "Retrieve": "~/.uipath/cache/integrationservice/uipath-freshworks-freshdesk/_static/tickets.Retrieve.json",
+      "Create": "~/.uipath/cache/integrationservice/uipath-freshworks-freshdesk/_static/tickets.Create.json",
+      "Replace": "~/.uipath/cache/integrationservice/uipath-freshworks-freshdesk/_static/tickets.Replace.json",
+      "Delete": "~/.uipath/cache/integrationservice/uipath-freshworks-freshdesk/_static/tickets.Delete.json"
+    },
+    "hint": "Use --operation <Create|List|Retrieve|Update|Delete|Replace> to see fields, or read the files directly for full details.",
+    "Warning": "Results may not include custom fields. Use --connection-id <id> for connection-specific metadata including custom objects and fields. Run 'is connections list <connector-key>' to get available connection IDs."
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d4e5f6a7-b8c9-4304-b5c6-d7e8f9012345",
+      "State": "Faulted",
+      "ProcessName": "PyRecordCleaner",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT",
+      "MachineKey": "",
+      "StartTime": "2026-06-11T08:21:40.110Z",
+      "EndTime": "2026-06-11T08:21:42.880Z",
+      "CreationTime": "2026-06-11T08:21:39.700Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "SupportTriageReader",
+  "ProjectType": "Process",
+  "Description": "Reads Outlook Inbox messages with Get Outlook Mail Messages using a subject-based filter to pull matching items for support triage.",
+  "MainFile": "Main.xaml"
+}

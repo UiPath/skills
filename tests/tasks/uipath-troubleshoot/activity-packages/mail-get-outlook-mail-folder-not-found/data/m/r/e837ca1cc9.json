@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T07:10:02.201Z",
+      "Message": "[Get Outlook Mail Messages] could not resolve folder 'Inbox\\Invoices' under the default profile"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T07:10:02.244Z",
+      "Message": "[Get Outlook Mail Messages] The specified folder does not exist."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T07:10:02.252Z",
+      "Message": "The specified folder does not exist.\r\nin Main.xaml\r\n    at GetOutlookMailMessages \"Get Outlook Mail Messages\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

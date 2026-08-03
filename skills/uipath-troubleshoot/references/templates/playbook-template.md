@@ -7,7 +7,7 @@ confidence: high | medium | low
 ## Context
 
 What this looks like:
-- <observable symptom 1>
+- <observable symptom 1 — quote verbatim error strings (exception FQN, message fragment, error code); routing greps for them>
 - <observable symptom 2>
 
 What can cause it:

@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4",
+      "Name": "Salesforce - CRM",
+      "ConnectorKey": "uipath-salesforce-sfdc",
+      "ConnectorName": "Salesforce",
+      "State": "Failed",
+      "Owner": "crm.admin@acmecorp.test",
+      "IsDefault": "Yes",
+      "Folder": "CRM",
+      "FolderKey": "2e4c6a80-1b3d-4f5e-8a90-c1d2e3f4a5b6",
+      "Created": "2026-05-12T09:14:02.950Z",
+      "Updated": "2026-07-06T07:50:51.870Z"
+    }
+  ]
+}

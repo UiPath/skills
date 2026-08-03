@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "ProcessList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "BC928F9D-34FB-45AB-8823-90654F2F4BB0",
+      "Name": "RPA Workflow",
+      "ProcessKey": "RequestFailed_DAPRuntime.process.RPA.Workflow",
+      "ProcessVersion": "1.0.0",
+      "Description": "",
+      "IsLatestVersion": true,
+      "RetentionPeriod": 30,
+      "RetentionAction": "Delete"
+    }
+  ]
+}

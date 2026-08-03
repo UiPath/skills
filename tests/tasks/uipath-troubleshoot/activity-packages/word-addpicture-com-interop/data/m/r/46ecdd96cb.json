@@ -1,0 +1,46 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-bb222299-001",
+      "JobKey": "bb222222-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Info",
+      "Timestamp": "2026-05-21T11:05:02.180Z",
+      "Message": "Execution started.",
+      "ProcessName": "WordContractStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb222299-002",
+      "JobKey": "bb222222-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Info",
+      "Timestamp": "2026-05-21T11:05:02.402Z",
+      "Message": "[WordContractStamp] Stamping company logo into the contract draft.",
+      "ProcessName": "WordContractStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb222299-003",
+      "JobKey": "bb222222-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Trace",
+      "Timestamp": "2026-05-21T11:05:04.640Z",
+      "Message": "Use Word File: contract-draft.docx — launching Word via Office Interop (Visible=False) for document 'C:\\Robot\\Contracts\\contract-draft.docx'.",
+      "ProcessName": "WordContractStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb222299-004",
+      "JobKey": "bb222222-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Error",
+      "Timestamp": "2026-05-21T11:05:05.090Z",
+      "Message": "Add Picture: System.InvalidCastException: Unable to cast COM object of type 'Microsoft.Office.Interop.Word.ApplicationClass' to interface type 'Microsoft.Office.Interop.Word._Application'. ... (Exception from HRESULT: 0x8002801D (TYPE_E_LIBNOTREGISTERED)).",
+      "ProcessName": "WordContractStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

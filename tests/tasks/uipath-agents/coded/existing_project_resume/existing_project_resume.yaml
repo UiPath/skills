@@ -10,78 +10,26 @@ description: >
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:edit, feature:framework-langgraph, feature:schema-sync]
 max_iterations: 1
 
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/existing_project_resume/_fixtures/mood-meter ."
+    timeout: 10
+  - command: "bash -c 'cd mood-meter && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 180
+
 initial_prompt: |
-  Recreate the half-finished coded agent project under
-  `mood-meter/` exactly as below, then pick it up from this
-  state and add one small feature.
+  I've got a half-built UiPath coded agent under `mood-meter/` that
+  I started a while ago. Can you pick it up where I left off and
+  add one thing: besides the `mood` it already returns, I want a
+  `confidence` score between 0.0 and 1.0 saying how sure it is.
+  Nothing fancy for the scoring is fine.
 
-  **mood-meter/pyproject.toml**:
-  ```toml
-  [project]
-  name = "mood-meter"
-  version = "0.0.1"
-  description = "Half-finished mood detector"
-  authors = [{ name = "Test" }]
-  requires-python = ">=3.11"
-  dependencies = ["uipath", "uipath-langchain"]
+  Once it's working, run it locally on `{"text": "I really love how
+  great this is"}` and drop the output in `mood-meter/run_result.json`
+  so I can sanity-check it.
 
-  [dependency-groups]
-  dev = ["uipath-dev"]
-  ```
-
-  **mood-meter/main.py**:
-  ```python
-  from typing_extensions import TypedDict
-  from langgraph.graph import StateGraph, START, END
-  from pydantic import BaseModel
-
-  class GraphInput(BaseModel):
-      text: str
-
-  class GraphOutput(BaseModel):
-      mood: str
-
-  class GraphState(TypedDict):
-      text: str
-      mood: str
-
-  async def classify_mood(state: GraphState):
-      lower = state["text"].lower()
-      if "great" in lower or "love" in lower:
-          mood = "happy"
-      elif "bad" in lower or "hate" in lower:
-          mood = "sad"
-      else:
-          mood = "neutral"
-      return {"mood": mood}
-
-  builder = StateGraph(GraphState, input_schema=GraphInput, output_schema=GraphOutput)
-  builder.add_node("classify_mood", classify_mood)
-  builder.add_edge(START, "classify_mood")
-  builder.add_edge("classify_mood", END)
-  graph = builder.compile()
-  ```
-
-  **mood-meter/langgraph.json**:
-  ```json
-  {"graphs": {"agent": "./main.py:graph"}}
-  ```
-
-  Do NOT create any other files in the seed. Specifically, there
-  is NO `.venv/` and NO `entry-points.json` — that is part of the
-  starting state.
-
-  The feature to add: alongside the existing `mood`, the output
-  must also include a `confidence` field — a float between `0.0`
-  and `1.0` indicating how sure the agent is about the mood label.
-  A simple heuristic (e.g. number of matching keywords / something
-  bounded) is fine. After the change, run the agent locally with
-  `{"text": "I really love how great this is"}` and write the
-  result to `mood-meter/run_result.json`.
-
-  Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do
-  NOT pause between planning and implementation. Complete
-  end-to-end in a single pass.
+  Just keep my existing project as-is — don't start it over from
+  scratch. No need to publish or deploy. Please take it all the way
+  through in one go.
 
 success_criteria:
   - type: command_executed

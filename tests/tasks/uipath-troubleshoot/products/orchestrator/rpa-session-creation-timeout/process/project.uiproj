@@ -1,0 +1,6 @@
+{
+  "Name": "NightlyReconciler",
+  "ProjectType": "Process",
+  "Description": "Background unattended worker; logs activity and exits.",
+  "MainFile": "Main.xaml"
+}

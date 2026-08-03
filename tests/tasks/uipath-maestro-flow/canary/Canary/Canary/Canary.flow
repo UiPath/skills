@@ -108,11 +108,11 @@
         "bindings": {
           "resource": "process",
           "resourceSubType": "Agent",
-          "resourceKey": "Shared/CountLetters CodedAgent.CountLetters",
+          "resourceKey": "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters",
           "orchestratorType": "agent",
           "values": {
             "name": "CountLetters",
-            "folderPath": "Shared/CountLetters CodedAgent"
+            "folderPath": "Shared/uipath-maestro-flow/CountLetters CodedAgent"
           }
         },
         "context": [
@@ -126,7 +126,7 @@
             "name": "folderPath",
             "type": "string",
             "value": "=bindings.brY0Dg9jP",
-            "default": "Shared/CountLetters CodedAgent"
+            "default": "Shared/uipath-maestro-flow/CountLetters CodedAgent"
           },
           {
             "name": "_label",
@@ -218,11 +218,11 @@
         "bindings": {
           "resource": "process",
           "resourceSubType": "Agent",
-          "resourceKey": "Shared/CountLetters LowCode.CountLetters LowCode Agent",
+          "resourceKey": "Shared/uipath-maestro-flow/CountLetters LowCode.CountLetters LowCode Agent",
           "orchestratorType": "agent",
           "values": {
             "name": "CountLetters LowCode Agent",
-            "folderPath": "Shared/CountLetters LowCode"
+            "folderPath": "Shared/uipath-maestro-flow/CountLetters LowCode"
           }
         },
         "context": [
@@ -236,7 +236,7 @@
             "name": "folderPath",
             "type": "string",
             "value": "=bindings.b3ISI5IcY",
-            "default": "Shared/CountLetters LowCode"
+            "default": "Shared/uipath-maestro-flow/CountLetters LowCode"
           },
           {
             "name": "_label",
@@ -323,11 +323,11 @@
         "bindings": {
           "resource": "process",
           "resourceSubType": "Process",
-          "resourceKey": "Shared/ProjectEuler RPA.RPA Workflow",
+          "resourceKey": "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow",
           "orchestratorType": "process",
           "values": {
             "name": "RPA Workflow",
-            "folderPath": "Shared/ProjectEuler RPA"
+            "folderPath": "Shared/uipath-maestro-flow/ProjectEuler RPA"
           }
         },
         "context": [
@@ -341,7 +341,7 @@
             "name": "folderPath",
             "type": "string",
             "value": "=bindings.bo8eQhykP",
-            "default": "Shared/ProjectEuler RPA"
+            "default": "Shared/uipath-maestro-flow/ProjectEuler RPA"
           },
           {
             "name": "_label",
@@ -429,11 +429,11 @@
         "bindings": {
           "resource": "process",
           "resourceSubType": "Api",
-          "resourceKey": "Shared/NameToAge APIWF.API Workflow",
+          "resourceKey": "Shared/uipath-maestro-flow/NameToAge APIWF.API Workflow",
           "orchestratorType": "api",
           "values": {
             "name": "API Workflow",
-            "folderPath": "Shared/NameToAge APIWF"
+            "folderPath": "Shared/uipath-maestro-flow/NameToAge APIWF"
           }
         },
         "context": [
@@ -447,7 +447,7 @@
             "name": "folderPath",
             "type": "string",
             "value": "=bindings.blZLMpJTj",
-            "default": "Shared/NameToAge APIWF"
+            "default": "Shared/uipath-maestro-flow/NameToAge APIWF"
           },
           {
             "name": "_label",
@@ -781,7 +781,7 @@
           "api-function"
         ]
       },
-      "description": "(Shared/CountLetters CodedAgent) Converted from low code project CountLetters LowCode Agent",
+      "description": "(Shared/uipath-maestro-flow/CountLetters CodedAgent) Converted from low code project CountLetters LowCode Agent",
       "tags": [],
       "sortOrder": 505,
       "supportsErrorHandling": true,
@@ -831,11 +831,11 @@
         "bindings": {
           "resource": "process",
           "resourceSubType": "Agent",
-          "resourceKey": "Shared/CountLetters CodedAgent.CountLetters",
+          "resourceKey": "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters",
           "orchestratorType": "agent",
           "values": {
             "name": "CountLetters",
-            "folderPath": "Shared/CountLetters CodedAgent"
+            "folderPath": "Shared/uipath-maestro-flow/CountLetters CodedAgent"
           }
         },
         "context": [
@@ -959,7 +959,7 @@
           "api-function"
         ]
       },
-      "description": "(Shared/CountLetters LowCode)",
+      "description": "(Shared/uipath-maestro-flow/CountLetters LowCode)",
       "tags": [],
       "sortOrder": 505,
       "supportsErrorHandling": true,
@@ -1009,11 +1009,11 @@
         "bindings": {
           "resource": "process",
           "resourceSubType": "Agent",
-          "resourceKey": "Shared/CountLetters LowCode.CountLetters LowCode Agent",
+          "resourceKey": "Shared/uipath-maestro-flow/CountLetters LowCode.CountLetters LowCode Agent",
           "orchestratorType": "agent",
           "values": {
             "name": "CountLetters LowCode Agent",
-            "folderPath": "Shared/CountLetters LowCode"
+            "folderPath": "Shared/uipath-maestro-flow/CountLetters LowCode"
           }
         },
         "context": [
@@ -1137,7 +1137,7 @@
           "api-function"
         ]
       },
-      "description": "(Shared/ProjectEuler RPA)",
+      "description": "(Shared/uipath-maestro-flow/ProjectEuler RPA)",
       "tags": [],
       "sortOrder": 530,
       "supportsErrorHandling": true,
@@ -1187,11 +1187,11 @@
         "bindings": {
           "resource": "process",
           "resourceSubType": "Process",
-          "resourceKey": "Shared/ProjectEuler RPA.RPA Workflow",
+          "resourceKey": "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow",
           "orchestratorType": "process",
           "values": {
             "name": "RPA Workflow",
-            "folderPath": "Shared/ProjectEuler RPA"
+            "folderPath": "Shared/uipath-maestro-flow/ProjectEuler RPA"
           }
         },
         "context": [
@@ -1310,7 +1310,7 @@
           "api-function"
         ]
       },
-      "description": "(Shared/NameToAge APIWF)",
+      "description": "(Shared/uipath-maestro-flow/NameToAge APIWF)",
       "tags": [],
       "sortOrder": 510,
       "supportsErrorHandling": true,
@@ -1360,11 +1360,11 @@
         "bindings": {
           "resource": "process",
           "resourceSubType": "Api",
-          "resourceKey": "Shared/NameToAge APIWF.API Workflow",
+          "resourceKey": "Shared/uipath-maestro-flow/NameToAge APIWF.API Workflow",
           "orchestratorType": "api",
           "values": {
             "name": "API Workflow",
-            "folderPath": "Shared/NameToAge APIWF"
+            "folderPath": "Shared/uipath-maestro-flow/NameToAge APIWF"
           }
         },
         "context": [
@@ -1772,7 +1772,7 @@
       "name": "name",
       "type": "string",
       "resource": "process",
-      "resourceKey": "Shared/CountLetters CodedAgent.CountLetters",
+      "resourceKey": "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters",
       "default": "CountLetters",
       "propertyAttribute": "name",
       "resourceSubType": "Agent"
@@ -1782,8 +1782,8 @@
       "name": "folderPath",
       "type": "string",
       "resource": "process",
-      "resourceKey": "Shared/CountLetters CodedAgent.CountLetters",
-      "default": "Shared/CountLetters CodedAgent",
+      "resourceKey": "Shared/uipath-maestro-flow/CountLetters CodedAgent.CountLetters",
+      "default": "Shared/uipath-maestro-flow/CountLetters CodedAgent",
       "propertyAttribute": "folderPath",
       "resourceSubType": "Agent"
     },
@@ -1792,7 +1792,7 @@
       "name": "name",
       "type": "string",
       "resource": "process",
-      "resourceKey": "Shared/CountLetters LowCode.CountLetters LowCode Agent",
+      "resourceKey": "Shared/uipath-maestro-flow/CountLetters LowCode.CountLetters LowCode Agent",
       "default": "CountLetters LowCode Agent",
       "propertyAttribute": "name",
       "resourceSubType": "Agent"
@@ -1802,8 +1802,8 @@
       "name": "folderPath",
       "type": "string",
       "resource": "process",
-      "resourceKey": "Shared/CountLetters LowCode.CountLetters LowCode Agent",
-      "default": "Shared/CountLetters LowCode",
+      "resourceKey": "Shared/uipath-maestro-flow/CountLetters LowCode.CountLetters LowCode Agent",
+      "default": "Shared/uipath-maestro-flow/CountLetters LowCode",
       "propertyAttribute": "folderPath",
       "resourceSubType": "Agent"
     },
@@ -1812,7 +1812,7 @@
       "name": "name",
       "type": "string",
       "resource": "process",
-      "resourceKey": "Shared/ProjectEuler RPA.RPA Workflow",
+      "resourceKey": "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow",
       "default": "RPA Workflow",
       "propertyAttribute": "name",
       "resourceSubType": "Process"
@@ -1822,8 +1822,8 @@
       "name": "folderPath",
       "type": "string",
       "resource": "process",
-      "resourceKey": "Shared/ProjectEuler RPA.RPA Workflow",
-      "default": "Shared/ProjectEuler RPA",
+      "resourceKey": "Shared/uipath-maestro-flow/ProjectEuler RPA.RPA Workflow",
+      "default": "Shared/uipath-maestro-flow/ProjectEuler RPA",
       "propertyAttribute": "folderPath",
       "resourceSubType": "Process"
     },
@@ -1832,7 +1832,7 @@
       "name": "name",
       "type": "string",
       "resource": "process",
-      "resourceKey": "Shared/NameToAge APIWF.API Workflow",
+      "resourceKey": "Shared/uipath-maestro-flow/NameToAge APIWF.API Workflow",
       "default": "API Workflow",
       "propertyAttribute": "name",
       "resourceSubType": "Api"
@@ -1842,8 +1842,8 @@
       "name": "folderPath",
       "type": "string",
       "resource": "process",
-      "resourceKey": "Shared/NameToAge APIWF.API Workflow",
-      "default": "Shared/NameToAge APIWF",
+      "resourceKey": "Shared/uipath-maestro-flow/NameToAge APIWF.API Workflow",
+      "default": "Shared/uipath-maestro-flow/NameToAge APIWF",
       "propertyAttribute": "folderPath",
       "resourceSubType": "Api"
     },

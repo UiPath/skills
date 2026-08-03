@@ -1,6 +1,6 @@
 ---
 name: uipath-automation-discovery
-description: "UiPath automation discovery — mines Slack/email/wikis/CRM/HRIS/ERP for repetitive work, SPOFs, and replicable models; produces a 4-tier prioritized opportunity report with UiPath implementation paths. Use to discover automation opportunities, find what to automate, or run an internal automation audit across an organization. For building a specific automation→uipath-rpa, authoring a Flow→uipath-maestro-flow, working with agents→uipath-agents."
+description: "UiPath automation discovery — mines Slack/email/wikis/CRM/HRIS/ERP for repetitive work, SPOFs, and replicable models; produces a 4-tier prioritized opportunity report with UiPath implementation paths, then sizes build effort (complexity band → pack-hours → contingency). Use to discover automation opportunities, find what to automate, estimate/size a delivery, or run an internal automation audit across an organization. For building a specific automation→uipath-rpa, authoring a Flow→uipath-maestro-flow, working with agents→uipath-agents."
 ---
 
 # Automation Discovery
@@ -15,6 +15,7 @@ UiPath-ready backlog with recommended implementation paths.
 - User wants to **find manual work to automate** and build a UiPath implementation backlog
 - User asks "what should we automate?" while working with UiPath tools
 - User wants an **internal automation audit** to feed into UiPath Automation Hub or a UiPath pipeline
+- User asks to **estimate / size / cost** discovered opportunities — pack-hours, delivery effort, complexity bands, contingency
 - User explicitly invokes `/uipath-automation-discovery`
 
 ## Critical Rules
@@ -24,6 +25,7 @@ UiPath-ready backlog with recommended implementation paths.
 3. **Verify access before mining.** Test each data source with a minimal read-only operation. If access fails, note it and move on — don't block discovery.
 4. **Evidence over opinion.** Every opportunity (Tiers 1-3) must cite a specific source, quantitative metric, and affected role or team. No unsupported claims. If a source yields fewer than 5 signals, mark all findings from that source as low-confidence. Do not promote low-confidence findings above Tier 3, except per Rule 5.
 5. **Replication is always Tier 1.** A proven model backed by a working automation that could replicate elsewhere is the highest-value finding — this overrides Rule 4's Tier 3 cap. If the replicable model's source has fewer than 5 signals, classify as Tier 1 with a low-confidence flag until corroborated by a second source. Always lead with replicable models. Never skip the replicable-model search (Phase 2C).
+6. **Never invent pack-hours or complexity thresholds (Phase 4.5).** When estimating build effort, the band→hours numbers and matrix thresholds come from the user-supplied Core RPA / Agentic complexity matrices and Pack-Hours catalogue. Do NOT recall or fabricate them — if they are not supplied, STOP and ask. Adjustment-factor and contingency percentages are `[CALIBRATE]` defaults the user confirms against actuals. Fabricated numbers recreate the estimation error this phase exists to prevent.
 
 ## Workflow Overview
 
@@ -33,6 +35,7 @@ Phase 1: MINE      → Gather raw data from all verified sources
 Phase 2: ANALYZE   → Extract patterns, SPOFs, replicable models, gaps
 Phase 3: REFLECT   → Layer on business strategy for strategic gaps
 Phase 4: REPORT    → Produce prioritized report with 4 tiers
+Phase 4.5: ESTIMATE→ Size build effort (band → pack-hours → contingency) — on request
 Phase 5: HANDOFF   → Map opportunities to UiPath implementation skills
 ```
 
@@ -189,6 +192,25 @@ tier definitions, evidence standards, and platform-specific guidance.
 - ROI benchmarks from existing projects included
 - Strategic analysis ties to real financials
 
+## Phase 4.5: ESTIMATE (optional — on request)
+
+Run only when the user wants build-effort sizing (pack-hours, delivery
+estimate, complexity bands, contingency). Sizes each prioritized opportunity:
+opportunity → complexity band → pack-hours → adjustment factors → contingency →
+total. This is delivery/pre-sales sizing — distinct from the ROI/hours-saved
+impact already in the report.
+
+The band→hours numbers and matrix thresholds are **authoritative references the
+user supplies** (Core RPA + Agentic complexity matrices, Pack-Hours catalogue) —
+never invented (Critical Rule 6). Ask for them if absent. The method adds the
+pieces that were missing: an above-ceiling/decompose rule (>7 apps / >8
+variations), a multi-entity redeploy factor, an existing-automation rebuild
+discount, confidence-tiered contingency, and one unified band→hours mapping that
+resolves the Tool vs Process-Automation grain.
+
+See [references/estimation-guide.md](references/estimation-guide.md) and
+[assets/templates/estimation-worksheet-template.md](assets/templates/estimation-worksheet-template.md).
+
 ## Phase 5: HANDOFF
 
 Map each Tier 1-2 opportunity to a UiPath implementation path. Add a
@@ -223,6 +245,7 @@ each phase with a brief summary and ask if the user wants to adjust scope.
 - [references/intake-guide.md](references/intake-guide.md) — Phase 0 detailed steps (company context, tool inventory, access verification, privacy)
 - [references/mining-guide.md](references/mining-guide.md) — Per-source search guidance (load during Phase 1)
 - [references/report-template.md](references/report-template.md) — Output structure, tier definitions, and evidence standards (load during Phase 4)
+- [references/estimation-guide.md](references/estimation-guide.md) — Estimation accelerator: opportunity → band → pack-hours → contingency (load during Phase 4.5, on request)
 
 ## Anti-patterns
 
@@ -232,3 +255,5 @@ each phase with a brief summary and ask if the user wants to adjust scope.
 - **Promising ROI without source citations.** Every ROI estimate must reference an existing project benchmark or explicit data point.
 - **Skipping the replicable-model search.** The highest-value findings are always proven models that can replicate. Never skip Phase 2C.
 - **Speculating from insufficient evidence.** Below signal threshold → mark low confidence. Insufficient evidence → don't promote to Tier 1-3.
+- **Fabricating pack-hours or matrix thresholds (Phase 4.5).** The band→hours numbers are authoritative user-supplied references. Guessing them recreates the estimation error the accelerator exists to prevent — stop and ask for the catalogue and matrices.
+- **Clamping oversized opportunities at "High".** A cluster over the matrix ceiling (>7 apps / >8 variations) must be decomposed and summed, not sized as a single "High" unit — this was the largest source of under-estimation.

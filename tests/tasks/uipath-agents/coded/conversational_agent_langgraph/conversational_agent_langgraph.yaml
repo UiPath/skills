@@ -25,6 +25,9 @@ initial_prompt: |
   TaskCreate/TaskUpdate planning. just bang it out end-to-end and stop
   after the second turn.
 
+  this agent will only be run locally so use LangGraph - 
+  do not use a low-code conversational agent.
+
 success_criteria:
   - type: command_executed
     description: "Agent scaffolded the project with uip codedagent new"

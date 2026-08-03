@@ -23,7 +23,10 @@ initial_prompt: |
 
   no publishing, no deploys, no evals — and please don't burn time on
   TaskCreate/TaskUpdate planning. just bang it out end-to-end and stop
-  after the second turn.
+  after the second turn. 
+  
+  this agent will only be run locally so use LlamaIndex - 
+  do not use a low-code conversational agent.
 
 success_criteria:
   - type: command_executed

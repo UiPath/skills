@@ -23,11 +23,14 @@ uip agent init "<AGENT_NAME>" --output json
 
 The `<path>` argument is relative or absolute; the command can run from any directory. Creates agent.json, entry-points.json, project.uiproj, and default eval directories inside the target path. Run `uip agent refresh` after editing to regenerate `entry-points.json` and `bindings_v2.json`.
 
+**Solution placement** (standalone mode): inside a solution directory the project auto-registers with the parent `.uipx`; **outside any solution it auto-scaffolds one** — creates `<Name>Solution/<Name>Solution.uipx` and nests the project at `<Name>Solution/<Name>/` (response adds `Data.AutoCreatedSolution`). Pass `--skip-solution-registration` to opt out of both — the project then lands at the bare path with `SolutionRegistration.Status: OptedOut`. See [§ Register Project with Solution](#register-project-with-solution).
+
 **Options:**
-- `--model <model>` — LLM model to use (default: `gpt-4o-2024-11-20`). This default is stale; override it post-init — discover current tenant models with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md). Pass `--model` at init or edit `settings.model` after.
+- `--conversational` - Pass to initialize a conversational agent. When not passed, an autonomous agent is initialized.
+- `--model <model>` — LLM model to use (default: `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational). This default is stale; override it post-init — discover current tenant models with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md). Pass `--model` at init or edit `settings.model` after.
 - `--system-prompt <prompt>` — Initial system prompt for the agent
 - `--force` — Overwrite existing directory if non-empty
-- `--inline-in-flow` — Scaffold an inline agent inside a flow project (see below)
+- `--inline-in-flow` — Scaffold an inline agent inside a flow project (see below). Only applicable for autonomous agents, since adding inline conversational-agents within a flow project is currently not an enabled feature.
 
 #### Inline mode: `--inline-in-flow`
 
@@ -114,6 +117,15 @@ uip agent refresh [path] --output json
 
 **Workflow:** run `uip agent refresh` to apply writes and regenerate derived files, then `uip agent validate` to verify the project is clean. For routine edits with no schema migration pending, refresh is still needed to keep `entry-points.json` and `bindings_v2.json` in sync.
 
+### Common refresh / validate errors
+
+`refresh` and `validate` share the same static checks. Two errors are easy to misread — resolve at the source, do not spelunk the CLI schema:
+
+| Error (in `Data.Errors[]`) | Cause | Fix |
+|---|---|---|
+| `resources/<Folder>/resource.json: folder must be named after the resource name "<Name>" (found "<Folder>")` | Resource folder name must exactly equal the resource's `name` field — case- and whitespace-sensitive (`Count Sources`, not `CountSources`). | Rename the folder to match `name` verbatim, spaces included. |
+| `resources/<Name>/resource.json: Invalid input` (no field path) | A required field on that tool resource is missing or malformed. The path-less message does not name it. Most common cause: the required `guardrail` object is absent (every tool resource requires it, schema V21+). | Add `"guardrail": { "policies": [] }` to the resource. If already present, diff the resource against a CLI-generated one (`uip agent tool add`) for the missing/mistyped field. |
+
 ### `uip agent memory`
 
 Manage low-code agent memory space features and seed items. These commands write `features/{FeatureName}/feature.json`; run refresh and validate afterwards to regenerate bindings.
@@ -142,13 +154,15 @@ For discovery, retrieval settings, memory item types, and troubleshooting, see [
 
 ### `uip agent debug`
 
-Run the agent end-to-end on Studio Web and stream the result. **Uploads the enclosing solution** to Studio Web, then runs it — one step, no separate `uip solution upload`, so the debugged copy always matches local. **Executes the agent for real** — confirm with the user first (per [critical-rules.md](critical-rules.md) Rule 8: consent before upload/publish/deploy).
+Run the autonomous agent end-to-end on Studio Web and stream the result. **Uploads the enclosing solution** to Studio Web, then runs it — one step, no separate `uip solution upload`, so the debugged copy always matches local. **Executes the agent for real** — confirm with the user first (per [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Rule 8: consent before upload/publish/deploy).
 
 ```bash
 uip agent debug <AGENT_PROJECT_DIR> --inputs '{"input":"..."}' --output json
 ```
 
 Returns `Code: "AgentDebug"` with `Data.State`, `Data.Output`, and `Data.TraceId`. A `Faulted` run returns `Result: "Failure"` (exit 1); inspect it with `uip traces spans get <TraceId> --output json`. Full options and reporting in [debug.md](debug.md).
+
+> The debug command is currently not supported for conversational agents, so only attempt to debug autonomous agents.
 
 ## Solution Commands
 
@@ -160,17 +174,23 @@ uip solution init "<SOLUTION_NAME>" --output json
 
 ### Register Project with Solution
 
-`uip agent init` **auto-registers** the project with the parent `.uipx` when run from inside a solution directory (pass `--skip-solution-registration` to skip auto-registration). Verify via `Data.SolutionRegistration.Status` in the `agent init` response. The full set of statuses:
+`uip agent init` always lands the project inside a solution — no manual `solution init` needed:
+
+- **Inside a solution directory** — auto-registers the project with the parent `.uipx`.
+- **Outside any solution** — auto-scaffolds a parent solution: creates `<Name>Solution/<Name>Solution.uipx` and nests the project at `<Name>Solution/<Name>/`. The response adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`) and reports `SolutionRegistration.Status: Registered`. Idempotent — re-running reuses the existing `.uipx` (`AlreadyRegistered`). If a **non-empty** directory already exists at the path you typed, init warns and leaves it untouched — the project still lands in `<Name>Solution/<Name>/`, not the existing directory.
+- **`--skip-solution-registration`** — opts out of **both** auto-scaffold and registration. No discovery, no sibling solution dir; the project lands at the bare path with `Status: OptedOut`.
+
+Verify via `Data.SolutionRegistration.Status` in the `agent init` response. The full set of statuses:
 
 - `Registered` / `AlreadyRegistered` — registered (added now / already present). **You are done.**
-- `OptedOut` — `--skip-solution-registration` was passed; registration was intentionally skipped. No action needed (register later with the fallback if you change your mind).
-- `NotInSolution` — no parent `.uipx` was found (`init` ran outside a solution). Use the fallback if you want it in a solution.
+- `OptedOut` — `--skip-solution-registration` was passed; auto-scaffold and registration were intentionally skipped. No action needed (register later with the fallback if you change your mind).
 - `Skipped` — a candidate solution was found but registration wasn't safe (e.g. multiple `.uipx`, or project outside the solution dir). Resolve, then use the fallback.
 - `Failed` — registration was attempted but errored (`.uipx` read/parse/write). Use the fallback.
+- `NotInSolution` — no parent `.uipx` and auto-scaffold did not run (rare outside `--skip-solution-registration`). Use the fallback if you want it in a solution.
 
 ```bash
-# Fallback — when Status is NotInSolution / Skipped / Failed (not needed for OptedOut).
-uip solution project add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
+# Fallback — when Status is Skipped / Failed / NotInSolution (not needed for OptedOut or Registered).
+uip solution projects add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
 ```
 
 Run from the solution directory. The first argument is the path to the agent project folder (positional, not `--project-path`). The optional second argument is the path to the `.uipx` solution file — if omitted, the CLI searches up from the project path to find the nearest `.uipx` automatically.
@@ -317,23 +337,25 @@ uip solution init "<SOLUTION_NAME>" --output json
 uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 # (fallback only — run if Data.SolutionRegistration.Status is `NotInSolution` / `Skipped` / `Failed`;
 #  `OptedOut` means `--skip-solution-registration` was passed and registration was skipped on purpose)
-# uip solution project add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
+# uip solution projects add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 ```
 
-When the fallback is needed, `uip solution project add` automatically finds the nearest `.uipx` by searching up from the agent path.
+The explicit `uip solution init` is optional: running `uip agent init "<AGENT_NAME>"` alone outside any solution auto-scaffolds `<AGENT_NAME>Solution/<AGENT_NAME>/` and registers the project (response carries `Data.AutoCreatedSolution`). Keep the explicit `solution init` when you want a solution name distinct from the agent name.
+
+When the fallback is needed, `uip solution projects add` automatically finds the nearest `.uipx` by searching up from the agent path.
 
 ### Step 3 — Configure agent.json
 
-Read [agent-definition.md](agent-definition.md) for the full schema.
+Read [agent-definition.md](agent-definition.md) for the full schema, which differs between autonomous and conversational agents.
 
-1. Set `settings.model` — discover with `uip agent model list`, select per [model-selection-guide.md](model-selection-guide.md) (override the scaffold default `gpt-4o-2024-11-20`)
+1. Set `settings.model` — discover with `uip agent model list`, select per [model-selection-guide.md](model-selection-guide.md) (override the scaffold default `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational)
 2. Set `settings.temperature` (0 for deterministic)
-3. Write system prompt in `messages[0].content` + rebuild `contentTokens` — structure it per [agent-prompting-guide.md](agent-prompting-guide.md) (skeleton, tool-call criteria, output contract), not a placeholder
-4. Write user message template in `messages[1].content` using `{{input.fieldName}}` + rebuild `contentTokens`
+3. Write system prompt in `messages[0].content` + rebuild `contentTokens` — structure it per [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) (skeleton, tool-call criteria, output contract), not a placeholder
+4. For autonomous agents, write user message template in `messages[1].content` using `{{input.fieldName}}` + rebuild `contentTokens`. Conversational agents should always have the user message template left blank since each user message is received during the actual conversation.
 
 ### Step 4 — Define input/output schemas
 
-1. Add fields to `agent.json` → `inputSchema` and `outputSchema`
+1. Add fields to `agent.json` → `inputSchema` and `outputSchema`. Note that modifying `outputSchema` only applies for autonomous agents.
 2. Mirror in `entry-points.json`
 3. Refresh (writes migrated files + regenerates `entry-points.json` and `bindings_v2.json`): `uip agent refresh "<SOLUTION_NAME>/<AGENT_NAME>" --output json`
 4. Validate: `uip agent validate "<SOLUTION_NAME>/<AGENT_NAME>" --output json`
@@ -403,10 +425,10 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 |------|---------|----------|-----------------|
 | Login check | `uip login status --output json` | Any directory | — |
 | Create solution | `uip solution init "<NAME>" --output json` | Any directory | — |
-| Scaffold agent | `uip agent init "<NAME>" --output json` | Solution directory | — |
+| Scaffold agent | `uip agent init "<NAME>" --output json` | Any directory (auto-scaffolds `<NAME>Solution/` if outside a solution) | — |
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
 | Verify project registration | Check `Data.SolutionRegistration.Status` from `agent init` response (`Registered` / `AlreadyRegistered` = done; `OptedOut` = `--skip-solution-registration` passed) | Solution directory | — |
-| Register project (fallback) | `uip solution project add "<PATH>" --output json` — when `agent init` returned `NotInSolution` / `Skipped` / `Failed` | Solution directory | — |
+| Register project (fallback) | `uip solution projects add "<PATH>" --output json` — when `agent init` returned `Skipped` / `Failed` / `NotInSolution` | Solution directory | — |
 | Refresh + regenerate derived files | `uip agent refresh [path] --output json` | Agent dir or any with path | — |
 | Validate (strict read-only) | `uip agent validate [path] --output json` | Agent dir or any with path | — |
 | Debug / run end-to-end on Studio Web | `uip agent debug <AgentDir> --inputs '{...}' --output json` | Agent dir | `Successful`, `Faulted`, `Stopped` |

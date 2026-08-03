@@ -1,0 +1,382 @@
+{
+    "id": "case-Lx7Rq2mPnK",
+    "version": "23.0.0",
+    "name": "LinearThreeStages",
+    "description": "Three regular stages chained linearly behind a manual trigger; exercises stage-entry conditions, parallel wait-for-timer tasks, and the full Variable / In / Out argument trio.",
+    "metadata": {
+        "caseIdentifier": "LTS",
+        "caseIdentifierType": "constant",
+        "caseAppEnabled": false,
+        "publishVersion": 2,
+        "caseUnifiedSchemaEnabled": true,
+        "caseDirectlyPassTaskOutputs": true,
+        "intsvcActivityConfig": "v2",
+        "caseExitRules": [
+            {
+                "id": "Condition_Zt3mKb",
+                "displayName": "Complete Rule 1",
+                "marksCaseComplete": true,
+                "rules": [
+                    [
+                        {
+                            "id": "Rule_Np5wGx",
+                            "rule": "required-stages-completed"
+                        }
+                    ]
+                ]
+            }
+        ]
+    },
+    "bindings": [],
+    "variables": {
+        "inputs": [
+            {
+                "id": "pQr7Ks2Wm",
+                "name": "caseRef",
+                "type": "string",
+                "default": "",
+                "elementId": "trigger_1"
+            }
+        ],
+        "outputs": [
+            {
+                "id": "nBt4Xh9Vc",
+                "name": "finalDecision",
+                "type": "string",
+                "var": "finalDecision"
+            }
+        ],
+        "inputOutputs": [
+            {
+                "id": "skipReview",
+                "name": "skipReview",
+                "type": "boolean",
+                "default": false,
+                "custom": true,
+                "elementId": "root"
+            },
+            {
+                "id": "caseRef",
+                "name": "caseRef",
+                "type": "string",
+                "elementId": "trigger_1"
+            },
+            {
+                "id": "finalDecision",
+                "name": "finalDecision",
+                "type": "string",
+                "default": "",
+                "elementId": "root"
+            },
+            {
+                "id": "dueDate",
+                "name": "dueDate",
+                "type": "date",
+                "custom": true,
+                "elementId": "root"
+            },
+            {
+                "id": "caseMetadata",
+                "name": "caseMetadata",
+                "type": "jsonSchema",
+                "body": { "type": "object" },
+                "_jsonSchema": { "type": "object" },
+                "custom": true,
+                "elementId": "root"
+            },
+            {
+                "id": "attachments",
+                "name": "attachments",
+                "type": "jsonSchema",
+                "body": { "type": "array", "items": {} },
+                "_jsonSchema": { "type": "array", "items": {} },
+                "custom": true,
+                "elementId": "root"
+            },
+            {
+                "id": "caseSchema",
+                "name": "caseSchema",
+                "type": "jsonSchema",
+                "body": { "type": "object", "properties": { "caseId": { "type": "string" } } },
+                "_jsonSchema": { "type": "object", "properties": { "caseId": { "type": "string" } } },
+                "custom": true,
+                "elementId": "root"
+            }
+        ]
+    },
+    "nodes": [
+        {
+            "id": "Stage_Kp3mRx",
+            "type": "case-management:Stage",
+            "data": {
+                "label": "Intake",
+                "description": "Receives the case after the manual trigger.",
+                "isRequired": true,
+                "parentElement": { "id": "root", "type": "case-management:root" },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "entryConditions": [
+                    {
+                        "id": "Condition_En8kPr",
+                        "displayName": "On case entered",
+                        "isInterrupting": false,
+                        "rules": [
+                            [
+                                {
+                                    "id": "Rule_Lm4nQx",
+                                    "rule": "case-entered"
+                                }
+                            ]
+                        ]
+                    }
+                ],
+                "exitConditions": [
+                    {
+                        "id": "Condition_Fy9pWb",
+                        "displayName": "Complete Rule 1",
+                        "type": "exit-only",
+                        "marksStageComplete": true,
+                        "rules": [
+                            [
+                                {
+                                    "id": "Rule_Jv7kLt",
+                                    "rule": "required-tasks-completed"
+                                }
+                            ]
+                        ]
+                    }
+                ],
+                "tasks": [
+                    [
+                        {
+                            "id": "t8Kp3mRxN2",
+                            "type": "wait-for-event",
+                            "displayName": "Intake Placeholder",
+                            "elementId": "Stage_Kp3mRx-t8Kp3mRxN2",
+                            "isRequired": true,
+                            "shouldRunOnlyOnce": false,
+                            "entryConditions": [
+                                {
+                                    "id": "cFm3Rp7Kn2",
+                                    "displayName": "Entry Rule 1",
+                                    "rules": [
+                                        [
+                                            {
+                                                "id": "rBx4Qz8Lm1",
+                                                "rule": "current-stage-entered"
+                                            }
+                                        ]
+                                    ]
+                                }
+                            ],
+                            "data": {
+                                "timerType": "timeDuration",
+                                "timeDuration": "PT5S"
+                            }
+                        }
+                    ]
+                ]
+            }
+        },
+        {
+            "id": "Stage_Qn7tBz",
+            "type": "case-management:Stage",
+            "data": {
+                "label": "Review",
+                "description": "Follows Intake; runs two parallel wait-for-timer tasks sharing the same current-stage-entered task-entry condition.",
+                "isRequired": true,
+                "parentElement": { "id": "root", "type": "case-management:root" },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "entryConditions": [
+                    {
+                        "id": "Condition_Bx5rNm",
+                        "displayName": "Entry Rule 1",
+                        "isInterrupting": false,
+                        "rules": [
+                            [
+                                {
+                                    "id": "Rule_Gw3kPj",
+                                    "rule": "selected-stage-completed",
+                                    "selectedStageId": "Stage_Kp3mRx"
+                                }
+                            ]
+                        ]
+                    }
+                ],
+                "exitConditions": [
+                    {
+                        "id": "Condition_Hc6xTq",
+                        "displayName": "Complete Rule 1",
+                        "type": "exit-only",
+                        "marksStageComplete": true,
+                        "rules": [
+                            [
+                                {
+                                    "id": "Rule_Dm8nVf",
+                                    "rule": "required-tasks-completed"
+                                }
+                            ]
+                        ]
+                    }
+                ],
+                "tasks": [
+                    [
+                        {
+                            "id": "tQn7tBz4Wm",
+                            "type": "wait-for-timer",
+                            "displayName": "Hold For 1 Hour",
+                            "elementId": "Stage_Qn7tBz-tQn7tBz4Wm",
+                            "isRequired": true,
+                            "shouldRunOnlyOnce": true,
+                            "skipCondition": "=vars.skipReview",
+                            "entryConditions": [
+                                {
+                                    "id": "cNv6Wk3Tp8",
+                                    "displayName": "Entry Rule 1",
+                                    "rules": [
+                                        [
+                                            {
+                                                "id": "rJm9Yz4Bn5",
+                                                "rule": "current-stage-entered"
+                                            }
+                                        ]
+                                    ]
+                                }
+                            ],
+                            "data": {
+                                "timerType": "timeDuration",
+                                "timeDuration": "PT10S"
+                            }
+                        }
+                    ],
+                    [
+                        {
+                            "id": "tVw2hJcR5b",
+                            "type": "wait-for-timer",
+                            "displayName": "Notify Reviewer",
+                            "elementId": "Stage_Qn7tBz-tVw2hJcR5b",
+                            "isRequired": false,
+                            "shouldRunOnlyOnce": false,
+                            "entryConditions": [
+                                {
+                                    "id": "cPk2Xh8Qr4",
+                                    "displayName": "Entry Rule 1",
+                                    "rules": [
+                                        [
+                                            {
+                                                "id": "rDw7Mb3Vn6",
+                                                "rule": "current-stage-entered"
+                                            }
+                                        ]
+                                    ]
+                                }
+                            ],
+                            "data": {
+                                "timerType": "timeDuration",
+                                "timeDuration": "PT5S"
+                            }
+                        }
+                    ]
+                ]
+            }
+        },
+        {
+            "id": "Stage_Vw2hJc",
+            "type": "case-management:Stage",
+            "data": {
+                "label": "Decision",
+                "description": "Follows Review and ends the linear flow.",
+                "isRequired": true,
+                "parentElement": { "id": "root", "type": "case-management:root" },
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "entryConditions": [
+                    {
+                        "id": "Condition_Rk2mTs",
+                        "displayName": "Entry Rule 1",
+                        "isInterrupting": false,
+                        "rules": [
+                            [
+                                {
+                                    "id": "Rule_Xz4pQw",
+                                    "rule": "selected-stage-completed",
+                                    "selectedStageId": "Stage_Ghost404"
+                                }
+                            ]
+                        ]
+                    }
+                ],
+                "exitConditions": [
+                    {
+                        "id": "Condition_Mv8nBj",
+                        "displayName": "Complete Rule 1",
+                        "type": "exit-only",
+                        "marksStageComplete": true,
+                        "rules": [
+                            [
+                                {
+                                    "id": "Rule_Yw6kHp",
+                                    "rule": "required-tasks-completed"
+                                }
+                            ]
+                        ]
+                    }
+                ],
+                "tasks": [
+                    [
+                        {
+                            "id": "tXp9Kq3Lsm",
+                            "type": "wait-for-timer",
+                            "displayName": "Decision Placeholder",
+                            "elementId": "Stage_Vw2hJc-tXp9Kq3Lsm",
+                            "isRequired": true,
+                            "shouldRunOnlyOnce": false,
+                            "entryConditions": [
+                                {
+                                    "id": "cHs5Tn7Wq9",
+                                    "displayName": "Entry Rule 1",
+                                    "rules": [
+                                        [
+                                            {
+                                                "id": "rLg4Uf8Kp2",
+                                                "rule": "current-stage-entered"
+                                            }
+                                        ]
+                                    ]
+                                }
+                            ],
+                            "data": {
+                                "timerType": "timeDuration",
+                                "timeDuration": "PT5S"
+                            }
+                        }
+                    ]
+                ]
+            }
+        },
+        {
+            "id": "trigger_1",
+            "type": "case-management:Trigger",
+            "data": {
+                "parentElement": { "id": "root", "type": "case-management:root" },
+                "label": "Start Manually",
+                "description": "User-initiated trigger that starts the LinearThreeStages case from the portal",
+                "isInvalidDropTarget": false,
+                "isPendingParent": false,
+                "uipath": {
+                    "outputs": [
+                        {
+                            "name": "caseRef",
+                            "type": "string",
+                            "source": "=vars.pQr7Ks2Wm",
+                            "var": "caseRef"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "edges": [],
+    "layout": {}
+}

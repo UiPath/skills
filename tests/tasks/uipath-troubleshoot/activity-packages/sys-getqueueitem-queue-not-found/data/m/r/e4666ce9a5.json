@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-07-01T14:31:27.143Z",
+      "Message": "Fetch order queue item: Status code: 404 (Not Found). Orchestrator response: \r\nOrderIntakeQueue_EU does not exist. Error code: 1002\r\nin OrderQueueFetch.xaml\r\n    at Throw \"Fetch order queue item\"\r\n    at Sequence \"Sequence\"\r\n    at TryCatch \"TryCatch\"\r\n    at GetQueueItem \"Fetch order queue item\"\r\n    at Sequence \"Fetch order queue item\"\r\n    at OrderQueueFetch \"OrderQueueFetch\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.Core.Activities.OrchestratorHttpException\r\n   at System.Activities.Statements.Throw.Execute(CodeActivityContext context)\r\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)"
+    }
+  ]
+}

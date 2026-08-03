@@ -129,7 +129,7 @@ def _has_mockito_with_return(case: dict) -> bool:
     strategy = case.get("mockingStrategy") or {}
     if strategy.get("type") != "mockito":
         return False
-    for b in strategy.get("behaviors") or []:
+    for b in strategy.get("behaviors") or strategy.get("config") or []:
         if not isinstance(b, dict):
             continue
         for step in b.get("then") or []:

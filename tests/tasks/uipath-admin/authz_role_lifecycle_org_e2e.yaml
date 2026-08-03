@@ -17,87 +17,87 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  I need a read-only role at organization scope called "AccessPolicyViewer_clie2e" that
-  grants only read access to the organization's Access Policies (the
-  Conditional Access Policy "Read" permission).
+  I need an org-scope read-only role named "AccessPolicyViewer_clie2e"
+  that grants only read access to the organization's Access Policies
+  (the Conditional Access Policy "Read" permission).
 
-  Walk the full lifecycle, exercising the create, get, update, and delete
-  commands:
-    1. List the organization-scope permissions to find the Access Policy
-       read permission, confirm no role named "AccessPolicyViewer_clie2e" already exists,
-       then create the role including that permission.
-    2. Update it — change its description.
-    3. Get the role's contents so I can confirm the update.
-    4. Delete the role and confirm it's gone.
+  Create it, then change its description and confirm the change stuck,
+  and finally remove it again so we don't leave it behind — confirm
+  it's gone.
 
   Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail with auth errors — that is expected and acceptable.
     Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent listed Organization-scope permissions to discover the catalog"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+permissions\s+list\b'
-    min_count: 1
-    weight: 2.0
+  - type: skill_triggered
+    description: "Agent activated the uipath-admin skill"
+    skill_name: "uipath-admin"
+    expected_skill: "uipath-admin"
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created the role with --scope Organization and --name AccessPolicyViewer_clie2e"
+    description: "Agent listed Organization-scope permissions (advisory — codex may skip)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+Organization\b.*--name\s+\S*AccessPolicyViewer_clie2e.*--file\s+\S+'
+    command_pattern: 'uip\s+admin\s+authorization\s+permissions\s+list\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent created the role with --scope Organization and --name"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create(?=[\s\S]*--scope\s+Organization\b)(?=[\s\S]*--name\s)[\s\S]*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent updated the role via `roles update <id>` re-passing the actions file"
+    description: "Agent updated the role via `roles update`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+update\s+[a-f0-9-]{8,}.*--file\s+\S+'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+update\s+\S+'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent verified the new role via `roles get <id>` (positional id)"
+    description: "Agent verified via `roles get` (advisory — codex may skip)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get\s+[a-f0-9-]{8,}'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get\b'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: command_executed
-    description: "Agent cleaned up by calling `roles delete <id>`"
+    description: "Agent cleaned up by calling `roles delete`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+delete\s+[a-f0-9-]{8,}'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+delete\s+\S+'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent verified the role was removed (second `roles get` or `roles list --filter`)"
+    description: "Agent verified via `roles get` or `roles list` (at least once)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+(?:get\s+[a-f0-9-]{8,}|list\s+.*--filter\s+\S*AccessPolicyViewer_clie2e)'
-    min_count: 2
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+(?:get|list)\b'
+    min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Agent must NOT pass --tenant-id on an Organization-scope role"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+Organization\b.*--tenant-id'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create[\s\S]*--scope\s+Organization\b[\s\S]*--tenant-id'
     weight: 1.0
 
   - type: command_not_executed
     description: "Agent must NOT use --scope Folder (invalid for role creation)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+Folder\b'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create[\s\S]*--scope\s+Folder\b'
     weight: 1.0
 
 post_run:

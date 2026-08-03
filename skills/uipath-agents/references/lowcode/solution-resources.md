@@ -27,7 +27,7 @@ The `resources/solution_folder/` directory contains JSON resource definitions. W
 
 **Path:** `resources/solution_folder/package/{AgentName}.json`
 
-Links an agent project to its deployable NuGet package. Auto-generated when the agent project is registered with its solution — by `uip agent init` (auto-registration when run from inside a solution directory) or by the `uip solution project add` fallback.
+Links an agent project to its deployable NuGet package. Auto-generated when the agent project is registered with its solution — by `uip agent init` (registers with the parent `.uipx` inside a solution, or auto-scaffolds `<Name>Solution/` and registers when run outside one) or by the `uip solution projects add` fallback.
 
 ```jsonc
 {
@@ -55,7 +55,7 @@ The package `name` becomes part of the package identifier: `{SolutionName}.agent
 
 **Path:** `resources/solution_folder/process/agent/{AgentName}.json`
 
-Makes the agent available as a runnable process in Orchestrator. One file per agent project. Auto-generated when the agent project is registered with its solution — by `uip agent init` (auto-registration when run from inside a solution directory) or by the `uip solution project add` fallback.
+Makes the agent available as a runnable process in Orchestrator. One file per agent project. Auto-generated when the agent project is registered with its solution — by `uip agent init` (registers with the parent `.uipx` inside a solution, or auto-scaffolds `<Name>Solution/` and registers when run outside one) or by the `uip solution projects add` fallback.
 
 ```jsonc
 {
@@ -222,7 +222,7 @@ The `solutionsSupport: "true"` metadata flag signals to the deployment engine th
 
 > **Note 1: `solutionsSupport` is a stringified boolean** (`"true"`, not `true`). `uip agent refresh` and `uip solution resources refresh` emit the string form — preserve it verbatim when round-tripping. Re-typing it as a JSON boolean breaks downstream parsing.
 >
-> **Note 2: do not hand-edit `bindings_v2.json`.** The binding's `folderPath` is generated from the agent-level `resource.json` or memory feature file. Edit the resource.json, or use `uip agent memory` for memory features, then re-run `uip agent refresh`; never patch the binding directly. See [critical-rules.md](critical-rules.md) Anti-pattern 20 and 24.
+> **Note 2: do not hand-edit `bindings_v2.json`.** The binding's `folderPath` is generated from the agent-level `resource.json` or memory feature file. Edit the resource.json, or use `uip agent memory` for memory features, then re-run `uip agent refresh`; never patch the binding directly. See [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Anti-pattern 19 and [critical-rules/autonomous-critical-rules.md](critical-rules/autonomous-critical-rules.md) Anti-pattern 2.
 
 ## Debug Overwrites
 

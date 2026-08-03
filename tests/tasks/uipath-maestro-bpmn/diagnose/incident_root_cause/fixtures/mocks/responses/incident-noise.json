@@ -1,0 +1,9 @@
+{
+  "id": "inc-noise-002",
+  "instanceId": "inst-triage-001",
+  "elementId": "ServiceTask_PostToLedger",
+  "category": "UpstreamDependencyFailed",
+  "message": "Element was cancelled because an upstream element (inc-root-001) never completed.",
+  "occurredAt": "2026-05-01T12:00:07Z",
+  "causedBy": "inc-root-001"
+}

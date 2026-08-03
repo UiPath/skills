@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "c4d8f0a2-6b1e-4d93-a7c5-8f201b3e9d40",
+      "Name": "Salesforce - Production",
+      "ConnectorKey": "uipath-salesforce",
+      "ConnectorName": "Salesforce",
+      "IsActive": false,
+      "State": "Disabled",
+      "FolderKey": "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "Owner": "original_email@test.com"
+    }
+  ]
+}

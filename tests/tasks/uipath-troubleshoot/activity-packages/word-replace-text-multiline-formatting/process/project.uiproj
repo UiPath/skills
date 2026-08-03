@@ -1,0 +1,6 @@
+{
+  "Name": "AddressBlockFill",
+  "ProjectType": "Process",
+  "Description": "Fills the recipient address block into the address template to produce an addressed document.",
+  "MainFile": "Main.xaml"
+}

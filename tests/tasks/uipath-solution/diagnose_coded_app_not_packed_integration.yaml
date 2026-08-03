@@ -1,0 +1,56 @@
+task_id: skill-solution-diagnose-coded-app-not-packed
+description: >
+  Integration test (diagnose mode): agent root-causes why a coded-app
+  project in a solution folder isn't registered/packed, and prescribes the
+  independent coded-app deploy path. Covers Critical Rule "coded apps are
+  NOT in .uipx — deploy independently". Local reasoning — no tenant.
+
+  Ground truth verified against SKILL.md Critical Rules + Anti-Patterns:
+  coded-app projects (Coded Web Apps / Coded Action Apps) have no
+  project.uiproj / project.json, are NOT registered via
+  `uip solution project add`, and are NOT packed by `uip solution pack`;
+  each is published/deployed independently via `uip codedapp publish` /
+  `uip codedapp deploy`.
+tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  My UiPath solution has a coded app project sitting in its folder, but it
+  is not showing up in the solution manifest, and `uip solution pack`
+  doesn't seem to bundle it. `uip solution project add` on it didn't behave
+  like my other projects either.
+
+  Why isn't the coded app part of the solution, and how am I supposed to
+  ship it?
+
+success_criteria:
+  - type: skill_triggered
+    skill_name: "uipath-solution"
+    expected_skill: "uipath-solution"
+    description: "Agent invoked the uipath-solution Skill to diagnose"
+    weight: 1.5
+
+  - type: llm_judge
+    description: "Agent explains coded apps are out-of-band and prescribes uip codedapp publish/deploy"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. Ground truth: coded-app
+      projects (Coded Web Apps / Coded Action Apps) have no project.uiproj /
+      project.json, so they are NOT registered into the `.uipx` via
+      `uip solution project add` and are NOT packed by `uip solution pack`.
+      They must be shipped independently with `uip codedapp publish` /
+      `uip codedapp deploy` (the rest of the solution still goes through the
+      normal pack/publish/deploy flow).
+
+      Score 1.0 if the reply explains that coded apps are not part of the
+      .uipx / not packed by solution pack (by design) AND prescribes
+      deploying the coded app independently via `uip codedapp publish` /
+      `uip codedapp deploy`. English or Romanian both fine.
+
+      Score 0.0 if it blames a bug, tells the user to force-add it into the
+      .uipx, hand-edit the manifest, or otherwise treats the coded app as a
+      normal solution project.
+    weight: 3.0
+    pass_threshold: 0.7

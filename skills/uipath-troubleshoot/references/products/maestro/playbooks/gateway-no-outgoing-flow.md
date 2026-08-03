@@ -11,6 +11,9 @@ What this looks like:
 - Error message: `No condition for an outgoing flow was met. At least one outgoing flow condition needs to evaluate to true or have a default flow.`
 - Always raised by an Exclusive or Inclusive Gateway
 
+Not this playbook:
+- Gateway condition evaluates without `400001` but takes the wrong branch (case mismatch, emoji in expressions) → [variable-expression-errors](variable-expression-errors.md)
+
 What can cause it:
 - All outgoing sequence flow conditions evaluated to `false` and no default flow was configured
 - Variable ID mismatch — designer-side bug where renaming a variable leaves expressions bound to the old variable ID, so they read the wrong value
@@ -28,7 +31,7 @@ What to look for:
 
 
 1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
-2. **If `IncludeGatewayDebugInfoInIncidents` is enabled** ([PO.BpmnEngine PR #3092](https://github.com/UiPath/PO.BpmnEngine/pull/3092)): `errorDetails` already lists each outgoing flow's condition expression, the default flow config, and variable values at evaluation time — no further data gathering needed
+2. **If `IncludeGatewayDebugInfoInIncidents` is enabled:** `errorDetails` already lists each outgoing flow's condition expression, the default flow config, and variable values at evaluation time — no further data gathering needed
 3. **If the flag is not enabled:** pull the BPMN XML to read gateway conditions: `uip maestro <type> instance asset <instance-id> -f <folder-key> --output json`
 4. Pull the variables snapshot just before the gateway element: `uip maestro <type> instance variables <instance-id> -f <folder-key> --parent-element-id <gateway-id> --output json`
 5. Walk element executions to confirm which gateway: `uip maestro <type> instance element-executions <instance-id> -f <folder-key> --output json`
@@ -43,12 +46,11 @@ What to look for:
 
 ## Notes
 
-- Pre-PR #3092: this error is **Not Troubleshootable** from PIMS API alone — agents had to ask the user for the `.bpmn` and walk variables manually
-- Post-PR #3092 with the targeted feature flag enabled: this error is **Fully Troubleshootable** — incident `errorDetails` contains everything needed
+- Without the gateway-debug-info enrichment: this error is **Not Troubleshootable** from PIMS API alone — agents had to ask the user for the `.bpmn` and walk variables manually
+- With the enrichment and the targeted feature flag enabled: this error is **Fully Troubleshootable** — incident `errorDetails` contains everything needed
 - Variable values in enriched `errorDetails` are truncated to 200 chars per variable
 
 ## References
 
-- [PR #3092 — Enrich NoOutgoingFlow incident with gateway debug info](https://github.com/UiPath/PO.BpmnEngine/pull/3092)
 - [Docs: Gateways and Flow Logic](https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/gateways-flow-logic)
 - [Docs: Gateways](https://docs.uipath.com/maestro/automation-cloud/latest/user-guide/gateways)

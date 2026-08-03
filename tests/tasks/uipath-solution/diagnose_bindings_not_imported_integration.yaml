@@ -1,0 +1,51 @@
+task_id: skill-solution-diagnose-bindings-not-imported
+description: >
+  Integration test (diagnose mode): agent root-causes a refresh that reports
+  success but imports 0 bindings — caused by bindings_v2.json sitting at the
+  wrong path. Local reasoning task — no tenant interaction.
+
+  Ground truth verified against references/scenarios/failure-modes.md row
+  "Refresh imports 0 of N bindings, no warnings" → bindings_v2.json not at
+  expected path (project root, not nested) → move it to
+  <ProjectName>/bindings_v2.json (agent validate regenerates it for agent
+  projects).
+tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  I ran `uip solution resources refresh` on my solution. It reported
+  success, but it imported 0 of my project's bindings — and there were no
+  warnings or errors. The bindings clearly exist in my project.
+
+  Why did refresh import nothing, and how do I fix it?
+
+success_criteria:
+  - type: skill_triggered
+    skill_name: "uipath-solution"
+    expected_skill: "uipath-solution"
+    description: "Agent invoked the uipath-solution Skill to diagnose"
+    weight: 1.5
+
+  - type: llm_judge
+    description: "Agent identifies wrong bindings_v2.json path and prescribes moving it to the project root"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. Ground truth: refresh imports
+      0 bindings with no warnings when `bindings_v2.json` is not at the
+      expected location — it must live at the PROJECT ROOT
+      (`<ProjectName>/bindings_v2.json`), not nested in a subfolder. The
+      fix is to move the file to the project root (for agent projects,
+      `agent validate` / `uipath agent validate` regenerates it there),
+      then re-run refresh.
+
+      Score 1.0 if the reply identifies that `bindings_v2.json` is in the
+      wrong place / not at the project root as the cause AND prescribes
+      moving it to the project root (or regenerating it there) and
+      re-running refresh. English or Romanian both fine.
+
+      Score 0.0 if it blames a CLI bug, auth, an empty solution, or fails
+      to point at the bindings_v2.json location as the cause.
+    weight: 3.0
+    pass_threshold: 0.7

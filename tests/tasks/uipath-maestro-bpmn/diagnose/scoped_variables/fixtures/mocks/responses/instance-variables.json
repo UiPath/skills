@@ -1,0 +1,8 @@
+{
+  "instanceId": "inst-triage-001",
+  "scope": "process",
+  "variables": [
+    { "name": "runStatus", "value": "Completed" },
+    { "name": "invoiceTotal", "value": "1200.00" }
+  ]
+}

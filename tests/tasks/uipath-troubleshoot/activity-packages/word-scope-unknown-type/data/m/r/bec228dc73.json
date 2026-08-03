@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-09T14:03:01.260Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-09T14:03:01.980Z",
+      "Message": "Cannot create unknown type '{clr-namespace:UiPath.Word.Activities;assembly=UiPath.Word.Activities}WordApplicationScope'.\r\nin Main.xaml\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-09T14:03:02.040Z",
+      "Message": "Execution ended in: 00:00:00"
+    }
+  ]
+}

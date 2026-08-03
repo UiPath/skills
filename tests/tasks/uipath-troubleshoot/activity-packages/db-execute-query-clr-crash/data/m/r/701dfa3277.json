@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b",
+      "State": "Faulted",
+      "ProcessName": "TransactionExport",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-22T02:05:11.402Z",
+      "EndTime": "2026-05-22T02:06:48.913Z",
+      "CreationTime": "2026-05-22T02:05:10.870Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

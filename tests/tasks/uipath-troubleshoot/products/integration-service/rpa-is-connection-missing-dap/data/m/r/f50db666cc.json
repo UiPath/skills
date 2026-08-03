@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "29aae689-111d-459f-9a4a-d1ad1d9d2761",
+      "Name": "uipath",
+      "ConnectorKey": "uipath-freshworks-freshdesk",
+      "ConnectorName": "Freshdesk",
+      "State": "Enabled",
+      "Owner": "replacement_email@test.com",
+      "IsDefault": "No",
+      "Folder": "uipath-rpa-isActivities",
+      "FolderKey": "b262689d-e2a9-4c1a-8e68-04382a7fff76",
+      "Created": "2026-06-18T13:24:02.950Z",
+      "Updated": "2026-06-19T11:50:51.870Z"
+    }
+  ]
+}

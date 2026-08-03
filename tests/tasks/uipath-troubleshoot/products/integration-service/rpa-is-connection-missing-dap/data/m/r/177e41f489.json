@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "JobTraces",
+  "Data": [
+    {
+      "PermissionStatus": 0,
+      "Id": "00000000-0000-0000-1745-5e1c1bc6c1ba",
+      "TraceId": "c3a00022-67c7-4b04-8faa-35a726d641cc",
+      "ParentId": null,
+      "Name": "Robot Job c3a00022-67c7-4b04-8faa-35a726d641cc",
+      "StartTime": "2026-06-19T13:00:29.1938336Z",
+      "EndTime": "2026-06-19T13:00:31.2040699Z",
+      "Attributes": "{\"Exception\":\"UiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException: Failed to retrieve connection. Consider using a different connection. - Connection [989fd9d2-4b07-443e-86e3-ed6f1b00079b] is invalid or you do not have access to it Error code: DAP-GE-3000.\\n ---> UiPath.ConnectionClient.Contracts.ConnectionHttpException: Connection [989fd9d2-4b07-443e-86e3-ed6f1b00079b] is invalid or you do not have access to it\\n   at UiPath.ConnectionClient.Helpers.HttpResponseMessageExtensions.EnsureConnectionStatusCodeAsync(HttpResponseMessage response, CancellationToken ct)\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestAsync(Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestAsync[T](Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestWithRetryAsync[T](Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestWithRetryAsync[T](Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\n   at UiPath.ConnectionClient.ConnectionClient.<>c__DisplayClass12_0.<<GetConnectionAsync>b__0>d.MoveNext()\\n--- End of stack trace from previous location ---\\n   at UiPath.ConnectionClient.Helpers.CacheHelpers`1.GetValueFromCache(MemoryCache cache, String key, Func`1 refreshValueFunc, DateTimeOffset expiry, SemaphoreSlim cacheSemaphore, Boolean forceRefresh)\\n   at UiPath.ConnectionClient.ConnectionClient.GetConnectionAsync(String connectionId, CancellationToken ct, Boolean forceRefresh, Boolean includeConfig)\\n   at UiPath.ConnectionClient.ConnectionClient.GetConnectionAsync(String connectionId, CancellationToken ct, Boolean forceRefresh)\\n   at UiPath.ConnectionClient.ConnectionClient.GetConnectionAsync(String connectionId, CancellationToken ct)\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken token)\\n   --- End of inner exception stack trace ---\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken token)\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivityBase.BuildExecutionParametersAsync(AsyncCodeActivityContext context, RequestParameters requestParameters, CancellationToken token)\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"}",
+      "Status": 2,
+      "OrganizationId": "311c6049-4966-4ef2-a6f3-8ceccaf38d54",
+      "TenantId": "69d43765-6ede-4575-88b7-9db601a2c056",
+      "ExpiryTimeUtc": null,
+      "FolderKey": "eba26f86-ea3a-4955-a029-28c6e5006dab",
+      "Source": 4,
+      "SpanType": "RobotJob",
+      "ProcessKey": "f9ecba5f-8dd8-4505-aeee-76ec5777d954",
+      "JobKey": "c3a00022-67c7-4b04-8faa-35a726d641cc",
+      "ReferenceId": null,
+      "VerbosityLevel": 2,
+      "ExecutionType": null,
+      "UpdatedAt": "2026-06-19T13:00:31.5124967Z",
+      "AgentVersion": null,
+      "Context": null,
+      "Attachments": null
+    }
+  ]
+}

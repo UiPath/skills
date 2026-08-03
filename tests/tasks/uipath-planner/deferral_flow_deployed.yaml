@@ -1,0 +1,55 @@
+task_id: skill-planner-smoke-deferral-flow-deployed
+description: >
+  Negative / boundary coverage: a single Maestro Flow that orchestrates only
+  ALREADY-DEPLOYED Orchestrator processes (it builds none of them) must route
+  to uipath-maestro-flow, NOT the planner. Guards the explicit SKILL.md
+  carve-out "Flow calling only existing/deployed processes→uipath-maestro-flow"
+  — a Flow over pre-built processes is one project, not a multi-project build.
+tags: [uipath-planner, smoke, mode:build, lifecycle:discover]
+
+initial_prompt: |
+  I want to build ONE UiPath Maestro Flow that orchestrates three processes
+  that are ALREADY built and deployed to Orchestrator — it just invokes them in
+  sequence with a decision node between them. I am NOT building those
+  processes; they already exist and run today. The only thing I'm building is
+  the one Flow that calls them.
+
+  Load the appropriate UiPath skill to decide how this work should be routed.
+  Do NOT build anything. Do NOT generate a plan, an SDD, or a task list.
+
+  Write exactly one line to `routing.txt`: the name of the single skill that
+  should own this work end-to-end (for example `uipath-maestro-flow`). Output
+  only the skill name — no explanation, no punctuation, no quotes. Write
+  `uipath-planner` ONLY if the work genuinely spans multiple separately-built
+  projects that each need their own specialist.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent produced routing.txt"
+    path: "routing.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Routed to the single owning specialist (uipath-maestro-flow)"
+    path: "routing.txt"
+    includes:
+      - "uipath-maestro-flow"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Did NOT route a Flow-over-deployed-processes request to the multi-project planner"
+    command: "! grep -qi planner routing.txt"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Did not over-plan — no planner plan/tasks/SDD artifact was produced"
+    command: "! find . \\( -name '*-tasks.md' -o -name '*-plan.md' -o -name '*-sdd.md' \\) -not -path '*/.venv/*' -not -path '*/node_modules/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-enhanced-enum
 description: >
   Tests the enhanced enum IS feature — configures a connector node with an
   enhanced enum field with display labels on the WooCommerce connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-automaticc-woocommerce, ipe]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-automaticc-woocommerce, ipe, mode:build]
 
 run_limits:
   expected_turns: 35
@@ -11,20 +11,14 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a new Flow project called "EnhancedEnumTest" with a manual trigger.
-  You need a flow that retrieves WooCommerce product reviews sorted either
-  ascending or descending by the caller's choice. Discover the
-  get-product-reviews operation and pick the sort value from the enhanced-enum
-  order field (which exposes display labels alongside raw values).
-  Add a Decision node to check whether the call succeeded.
-  Route failure to a Terminate node with error message "EnhancedEnum test failed".
-  Route success to a final action that logs "EnhancedEnum test passed".
-  Validate the final flow file.
+  Create a new Flow project called "EnhancedEnumTest" with a manual trigger. 
+  Build a flow that retrieves WooCommerce product reviews and lets the caller 
+  choose whether they come back oldest-first or newest-first, picking from friendly 
+  labels rather than raw codes. Discover the get-product-reviews operation and set 
+  its sort-order field. Validate the final flow file.
   If the WooCommerce operation exists in the registry but the tenant has no
-  live connection, use planned connector-node mode: keep the real connector
-  node type, leave its inputs empty, validate that shape, and stop. Do not
-  keep hand-authoring connection detail after the empty-input connector node
-  validates.
+  live connection, keep the real WooCommerce operation node with its inputs left unset, 
+  confirm that shape validates, and stop there.
 
 success_criteria:
   - type: run_command
@@ -41,14 +35,6 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Flow has Decision and Terminate nodes"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/EnhancedEnumTest*.flow',recursive=True); assert flows; f=json.load(open(flows[0])); types=[n.get('type','') for n in f['nodes']]; assert any('decision' in t.lower() for t in types), 'No Decision node'; assert any('terminate' in t.lower() for t in types), 'No Terminate node'; print('OK: Decision and Terminate nodes present')\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed

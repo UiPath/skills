@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-17T11:05:02.460Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-17T11:05:03.980Z",
+      "Message": "[Word Application Scope] Starting Microsoft Word"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-17T11:05:05.190Z",
+      "Message": "Error opening document 'C:\\UiPath\\Report Build\\data\\Notes.docx'. Archive file cannot be size zero.\r\nin Main.xaml\r\n    at WordApplicationScope \"Word Application Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-17T11:05:05.240Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+task_id: skill-bpmn-edit-remove-node
+description: >
+  Brownfield edit: delete a middle task from an existing, valid Maestro BPMN and
+  heal the sequence flow (source connects directly to the former successor),
+  removing orphaned diagram interchange and preserving untouched content.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  A valid Maestro BPMN file `ShipmentReview.bpmn` is in the working directory.
+  Its flow is: "Fetch Shipment" (Task_Fetch) -> "Enrich Shipment" (Task_Enrich)
+  -> "Route Shipment" (Task_Route).
+
+  Remove the "Enrich Shipment" task and heal the flow so "Fetch Shipment"
+  connects directly to "Route Shipment". Remove the orphaned sequence flows and
+  the diagram shape/edges for the deleted node.
+
+  Make a SURGICAL edit: preserve everything you did not author — the remaining
+  element ids, the uipath:* extension payloads, uipath:migrationVersion, and the
+  process variables must round-trip untouched.
+
+  Validate the edited file locally before finishing. Do not upload, publish,
+  deploy, debug, run, or pack anything, and do not pause for approval — make the
+  edit end to end in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "The edited BPMN file is still present"
+    path: "ShipmentReview.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Preserve-only payload round-tripped untouched"
+    path: "ShipmentReview.bpmn"
+    includes:
+      - "preserve-only-do-not-touch"
+      - 'uipath:migrationVersion'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Task removed, flow healed, DI clean, untouched content preserved, file still structurally sound"
+    command: "python3 $TASK_DIR/check_remove_node.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

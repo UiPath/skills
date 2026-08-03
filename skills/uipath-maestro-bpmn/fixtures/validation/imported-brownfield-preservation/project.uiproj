@@ -1,7 +1,0 @@
-{
-  "projectVersion": "1.0.0",
-  "ProjectType": "ProcessOrchestration",
-  "Name": "ImportedBrownfieldPreservation",
-  "description": "Synthetic imported brownfield preservation fixture.",
-  "main": "imported-brownfield-preservation.bpmn"
-}

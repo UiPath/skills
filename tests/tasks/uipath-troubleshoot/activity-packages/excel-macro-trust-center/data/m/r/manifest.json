@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Excel Execute Macro scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "858738168e.json"},
+    {"match": "or folders list --output json", "file": "858738168e.json"},
+    {"match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json", "file": "c146d364e7.json"},
+    {"match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json", "file": "c146d364e7.json"},
+    {"match": "or jobs get \"cc333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "96db710dff.json"},
+    {"match": "or jobs get cc333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "96db710dff.json"},
+    {"match": "or jobs history \"cc333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "dc4905c809.json"},
+    {"match": "or jobs history cc333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "dc4905c809.json"},
+    {"match": "or jobs logs \"cc333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "50c35db7bb.json"},
+    {"match": "or jobs logs cc333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "50c35db7bb.json"}
+  ]
+}

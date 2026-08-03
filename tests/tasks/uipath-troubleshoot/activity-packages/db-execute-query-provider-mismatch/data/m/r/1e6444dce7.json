@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "5e2c9a7b-1d4f-4a6c-b3e8-7f0a2c5d9b1e",
+      "Name": "Finance Automation",
+      "Path": "Finance Automation",
+      "Description": "Folder hosting the invoice reconciliation and reporting processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "c4f1a983-6b2d-4e57-9a1c-3d8e0f5b7a26",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

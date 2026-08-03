@@ -1,0 +1,61 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#" sap2010:WorkflowViewState.IdRef="Main_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap:VirtualizedContainerService.HintSize="898,760" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="sd:DataTable" Name="dt_Orders" />
+      <Variable x:TypeArguments="sd:DataTable" Name="dt_Prices" />
+    </Sequence.Variables>
+    <ui:Delay DisplayName="Wait for pricing system" Duration="00:00:30" sap:VirtualizedContainerService.HintSize="450,100" sap2010:WorkflowViewState.IdRef="Delay_1" />
+    <ui:ForEachRow DisplayName="For each order" sap:VirtualizedContainerService.HintSize="700,500" sap2010:WorkflowViewState.IdRef="ForEachRow_1">
+      <ui:ForEachRow.Values>
+        <InArgument x:TypeArguments="sd:DataTable">
+          <CSharpValue x:TypeArguments="sd:DataTable">dt_Orders</CSharpValue>
+        </InArgument>
+      </ui:ForEachRow.Values>
+      <ui:ForEachRow.Body>
+        <ActivityAction x:TypeArguments="sd:DataRow">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="sd:DataRow" Name="orderRow" />
+          </ActivityAction.Argument>
+          <ui:ForEachRow DisplayName="For each price (nested)" sap:VirtualizedContainerService.HintSize="450,350" sap2010:WorkflowViewState.IdRef="ForEachRow_2">
+            <ui:ForEachRow.Values>
+              <InArgument x:TypeArguments="sd:DataTable">
+                <CSharpValue x:TypeArguments="sd:DataTable">dt_Prices</CSharpValue>
+              </InArgument>
+            </ui:ForEachRow.Values>
+            <ui:ForEachRow.Body>
+              <ActivityAction x:TypeArguments="sd:DataRow">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="sd:DataRow" Name="priceRow" />
+                </ActivityAction.Argument>
+                <ui:LogMessage DisplayName="Log comparison" Level="Info" sap:VirtualizedContainerService.HintSize="400,100" sap2010:WorkflowViewState.IdRef="LogMessage_1">
+                  <ui:LogMessage.Message>
+                    <InArgument x:TypeArguments="x:String">
+                      <CSharpValue x:TypeArguments="x:String">"Comparing order " + orderRow["Sku"].ToString() + " to price " + priceRow["Sku"].ToString()</CSharpValue>
+                    </InArgument>
+                  </ui:LogMessage.Message>
+                </ui:LogMessage>
+              </ActivityAction>
+            </ui:ForEachRow.Body>
+          </ui:ForEachRow>
+        </ActivityAction>
+      </ui:ForEachRow.Body>
+    </ui:ForEachRow>
+  </Sequence>
+</Activity>

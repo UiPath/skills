@@ -1,0 +1,10 @@
+[project]
+name = "slack-triage"
+version = "0.0.1"
+description = "Slack triage coded IS agent fixture"
+authors = [{ name = "Test" }]
+requires-python = ">=3.11"
+dependencies = ["uipath"]
+
+[dependency-groups]
+dev = ["uipath-dev"]

@@ -1,4 +1,4 @@
-﻿# HTTP Request Upgrade — Legacy to Modern Migration
+# HTTP Request Upgrade — Legacy to Modern Migration
 
 An agent skill for migrating workflows from the legacy HTTP Request activity (RestSharp-based) to the modern NetHttpRequest activity (.NET HttpClient-based).
 
@@ -680,7 +680,7 @@ Rules:
 
 ## See Also
 
-- [NetHttpRequest Activity](../../UiPath.Web.Activities.Package.Design/docs/activities/NetHttpRequest.md) — modern HTTP activity behavior spec, inputs, outputs, and defaults
-- [HttpClient Activity (Legacy)](../../UiPath.Web.Activities.Package.Design/docs/activities/HttpClient.md) — legacy HTTP activity reference
+- [NetHttpRequest Activity](../activities/NetHttpRequest.md) — modern HTTP activity behavior spec, inputs, outputs, and defaults
+- [HttpClient Activity (Legacy)](../activities/HttpClient.md) — legacy HTTP activity reference
 - [cURL Import Skills](curl-import.md) — converting raw cURL commands to HttpRequestOptions
 - [Service Discovery](service-discovery.md) — discovering unknown service endpoints and generating working requests
