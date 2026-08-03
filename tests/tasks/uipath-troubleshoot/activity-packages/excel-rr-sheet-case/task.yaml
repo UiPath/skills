@@ -49,8 +49,8 @@ initial_prompt: |
   `UiPath.Excel.BusinessException: The sheet with the name 'data' does not exist.`
   Pinned job key: bb222222-7777-8888-9999-000011112222. The sheet
   DOES exist — I just opened the workbook and it's right there. The
-  same workflow worked yesterday on my dev machine. Why is the
-  Robot saying the sheet is missing?
+  same workflow worked on my dev machine. Why is the Robot saying
+  the sheet is missing?
 
 success_criteria:
   - type: skill_triggered

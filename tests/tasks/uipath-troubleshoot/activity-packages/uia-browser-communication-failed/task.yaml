@@ -38,9 +38,10 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My nightly CustomerHubSync job from folder Shared faulted last night on the
-  Use Browser step. It has run on the same schedule and the same machine for
-  weeks and I haven't touched the automation. Can you investigate why?
+  My nightly CustomerHubSync job from folder Shared faulted on its most
+  recent scheduled run, on the Use Browser step. It has run on the same
+  schedule and the same machine for weeks and I haven't touched the
+  automation. Can you investigate why?
 
 success_criteria:
   - type: skill_triggered

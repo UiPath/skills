@@ -39,7 +39,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My ItemsQueue has 4 failed items today, please investigate.
+  My ItemsQueue has 4 failed items, please investigate.
 
 success_criteria:
   - type: skill_triggered

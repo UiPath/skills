@@ -50,7 +50,7 @@ initial_prompt: |
   My Orchestrator job just faulted with
   `UiPath.Excel.BusinessException: Failed opening the Excel file. Possible reasons: file is corrupt, already used by another process or password protected.`
   Pinned job key: aa555555-cccc-dddd-eeee-ffffaaaabbbb. The file isn't
-  corrupt — it opened fine yesterday and there's no password on it.
+  corrupt — it opened fine on the previous run and there's no password on it.
   Why can't the robot open it now?
 
 success_criteria:

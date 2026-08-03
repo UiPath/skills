@@ -41,9 +41,10 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My VendorOnboarding job in folder Finance finished Successful last night, but
-  the bank account number it wrote to the vendor record is wrong — it does not
-  match the value we gave it, and there was no error at all. Why?
+  My VendorOnboarding job in folder Finance finished Successful on its most
+  recent run, but the bank account number it wrote to the vendor record is
+  wrong — it does not match the value we gave it, and there was no error at
+  all. Why?
 
 success_criteria:
   - type: skill_triggered
