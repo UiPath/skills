@@ -70,7 +70,7 @@ Ingestion is asynchronous and automatic. Poll until the auto-created test cases 
 uip tm testcases list --project-key <PROJECT_KEY> --output json
 ```
 
-- Poll **unfiltered**. Do NOT pass `--filter <PackageName>` — the auto-created test case *names* are `"<suite> > <test title>"` and the package name appears only in the description, which `--filter` does not search, so a package-name filter stays empty forever and reads as a false "ingestion never happened".
+- Poll **unfiltered**. Do NOT pass `--filter <PackageName>` — `--filter` matches a test case's name or key by **prefix** (see SKILL.md Rule 9), and an ingested test case is named `"<suite> > <test title>"`, so a package name never matches: the call stays empty forever and reads as a false "ingestion never happened".
 - Ingestion is done when the project contains a test case for **each test in the package**. Get that list from the pack step's own output (`--dry-run` prints it, and the packaged `testCases.json` holds it) and match on the test case `Name`, which is exactly `"<suite> > <test title>"`. Matching by name works whether the project was empty or already held test cases, and whether this is a first upload or a re-upload.
 - `TestCount` from Step 1 is one test case per Playwright **test** — it is not multiplied by the number of Playwright projects (2 tests × 2 projects → 2 test cases).
 - Ingested test cases show `IsAutomated: false` in list output; that is normal and does not mean ingestion failed.
