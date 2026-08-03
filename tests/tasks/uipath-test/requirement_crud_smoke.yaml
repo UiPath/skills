@@ -8,7 +8,9 @@ description: >
   status`), then the four-verb CRUD chain on `uip tm requirements` against
   the HEALTH project, validating the complete command (project key, the
   exact name, the requirement identifier flag, and `--output json`) at
-  each step.
+  each step. The prompt pre-authorizes the delete — the uipath-test skill
+  mandates user confirmation before any `delete`, and a single-turn run
+  has no second turn to grant it.
 tags: [uipath-test, smoke, mode:operate, lifecycle:manage, feature:requirement]
 
 run_limits:
@@ -21,13 +23,14 @@ initial_prompt: |
   access is audited"? Once it's in, pull it back up by its key so I can
   check the details, then rename it to "Eval CRUD - PHI access audit (v2)".
   When that's done, delete it again — no point leaving test data lying
-  around.
+  around. You have my confirmation to delete it, so go ahead without
+  asking again.
 
 success_criteria:
   - type: command_executed
     description: "Agent checked login status (`uip login status`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
+    command_pattern: '(uip|\$UIP)\s+login\s+status'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -35,7 +38,7 @@ success_criteria:
   - type: command_executed
     description: "Complete create command: `uip tm requirements create --project-key HEALTH --name \"Eval CRUD - PHI access audit\" --description ... --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval CRUD - PHI access audit)uip\s+tm\s+requirements?\s+create'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+["\x27]?Eval CRUD - PHI access audit)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--description\s+\S)(uip|\$UIP)\s+tm\s+requirements?\s+create\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -43,7 +46,7 @@ success_criteria:
   - type: command_executed
     description: "Complete get command: `uip tm requirements get --project-key HEALTH --requirement-key <key>`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-(key|id)\s+\S+)uip\s+tm\s+requirements?\s+get'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--requirement-(key|id)\s+\S+)(uip|\$UIP)\s+tm\s+requirements?\s+get\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -51,7 +54,7 @@ success_criteria:
   - type: command_executed
     description: "Complete update command: `uip tm requirements update --project-key HEALTH --requirement-id <uuid> --name \"Eval CRUD - PHI access audit (v2)\" --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-id\s+\S+)(?=.*--name\s+["\x27]?Eval CRUD - PHI access audit \(v2\))uip\s+tm\s+requirements?\s+update'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--requirement-id\s+\S+)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+["\x27]?Eval CRUD - PHI access audit \(v2\))(uip|\$UIP)\s+tm\s+requirements?\s+update\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -59,7 +62,18 @@ success_criteria:
   - type: command_executed
     description: "Complete delete command: `uip tm requirements delete --project-key HEALTH --requirement-ids <uuid>`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-ids\s+\S+)uip\s+tm\s+requirements?\s+delete'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--requirement-ids\s+\S+)(uip|\$UIP)\s+tm\s+requirements?\s+delete\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
+
+  # Advisory (non-gating): records --output json convention adherence per
+  # .claude/rules/test-writing.md — the flag is outcome-invisible, so it
+  # must not gate substantive criteria.
+  - type: command_executed
+    description: "Advisory: agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0

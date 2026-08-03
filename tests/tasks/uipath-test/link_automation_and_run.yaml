@@ -3,29 +3,44 @@ description: >
   Integration test: agent uses the uipath-testcloud skill to link a published
   automation to a Test Manager testcase and trigger an automated execution.
   Asserts that the agent (a) checks login status with --output json, (b) discovers
-  the folder key via `uip or folders list -n <folder-name> --all`,
+  the folder key via `uip or folders list -n/--name <folder-name> --all`,
   (c) probes available test entry points with `uip tm testcases list-automations`
   before linking, (d) links via `uip tm testcases link-automation` with the required
   flags, and (e) runs the testcase with `uip tm testcases run` using --test-case-id
   (UUID, not --test-case-key) and --execution-type automated. The skill -- not the
-  prompt -- must teach the discover-before-link pattern, the `folders list -n <folder-name> --all`
-  folder lookup, and the UUID vs ObjKey distinction for the run command.
+  prompt -- must teach the discover-before-link pattern, the `folders list -n/--name <folder-name> --all`
+  folder lookup, and the UUID vs ObjKey distinction for the run command. The
+  prompt anchors the execution name — `testcases run --name` is required by
+  the CLI, and an unnamed run makes the agent stop to ask (no second turn
+  in an eval).
 tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:link-automation]
 
 run_limits:
-  expected_turns: 36
+  expected_turns: 24
   max_turns: 35
 
 initial_prompt: |
   Link the testcase "TestCase1" from the orchestrator package "Testcases.with.parameters" published to the Orchestrator folder "uipath-test-folder-feed" to the Test Manager testcase
   "Claim Approval - Manager Escalation" in the project CLAIM. Then trigger an automated execution of
-  that testcase.
+  that testcase — name the execution "Eval Link Run - Manager Escalation".
+
+# Safety net: `testcases run --name <X>` creates a test set named X per run —
+# sweep this task's "Eval Link Run"-prefixed sets so they don't accumulate on
+# the shared CLAIM project across runs.
+post_run:
+  - command: |
+      uip tm testsets list --project-key CLAIM --filter "Eval Link Run" --output json 2>/dev/null \
+        | python3 -c "import json,sys; s=sys.stdin.read(); d=json.loads(s[s.index('{'):]); print('\n'.join(t['TestSetKey'] for t in d.get('Data',[])))" \
+        | while read -r key; do
+            [ -n "$key" ] && uip tm testsets delete --test-set-key "$key" --yes --output json || true
+          done
+    timeout: 120
 
 success_criteria:
   - type: command_executed
     description: "Agent checked login status"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
+    command_pattern: '(uip|\$UIP)\s+login\s+status'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -33,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Agent discovered folder key with `folders list -n <folder-name> --all`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+list\s+-n\s+\S+'
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+folders\s+list\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*(-n|--name)\s+\S+'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -41,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Agent probed available test entry points via list-automations before linking (Critical Rule #8)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+list-automations'
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases?\s+list-automations'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -49,15 +64,16 @@ success_criteria:
   - type: command_executed
     description: "Agent linked automation using link-automation with --project-key"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+link-automation\s+.*--project-key'
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases?\s+link-automation\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran testcase with --test-case-id (UUID) and --execution-type automated (not --test-case-key)"
+    description: "Agent ran the testcase successfully with --test-case-id (UUID), --execution-type automated, and the required --name (not --test-case-key)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+run\s+.*--test-case-id.*--execution-type\s+automated|uip\s+tm\s+testcases?\s+run\s+.*--execution-type\s+automated.*--test-case-id|uip\s+tm\s+testcase\s+execute\s+.*--test-case-id.*--execution-type\s+automated'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S+)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-type\s+automated)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+\S)(uip|\$UIP)\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
+    require_success: true
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

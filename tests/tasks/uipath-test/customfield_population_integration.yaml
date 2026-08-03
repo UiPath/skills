@@ -14,7 +14,9 @@ description: >
   The "Eval Reviewer"/"Eval Risk" field definitions are deleted in `pre_run`
   (clean slate so the `customfield create` step always runs) and again in
   `post_run` (leaves no state), keeping the task deterministic on the shared
-  HEALTH project across runs.
+  HEALTH project across runs. Serialize across workflow dispatches — fixed
+  fixture names + name-scoped pre/post_run sweeps race between concurrent
+  dispatches of this task.
 tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:customfield]
 
 run_limits:
@@ -59,7 +61,7 @@ success_criteria:
   - type: command_executed
     description: "Agent checked login status (`uip login status`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
+    command_pattern: '(uip|\$UIP)\s+login\s+status'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -67,23 +69,31 @@ success_criteria:
   - type: command_executed
     description: "Resolved HEALTH:11's id (`uip tm testcases list --project-key HEALTH`)"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)uip\s+tm\s+testcases?\s+list\s'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(uip|\$UIP)\s+tm\s+testcases?\s+list\s'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete create commands defining fields scoped TestCase: `uip tm customfield create --project-key HEALTH --name <name> --data-type <Text|Label> --object-type TestCase` (x2)"
+    description: "Complete create command for the Text field: `uip tm customfield create --project-key HEALTH --name \"Eval Reviewer\" --data-type Text --object-type TestCase`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--data-type\s+(Text|Label))uip\s+tm\s+customfield\s+create'
-    min_count: 2
-    weight: 2.0
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--object-type\s+TestCase)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+["\x27]?Eval Reviewer)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--data-type\s+Text)(uip|\$UIP)\s+tm\s+customfield\s+create'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete create command for the Label field: `uip tm customfield create --project-key HEALTH --name \"Eval Risk\" --data-type Label --object-type TestCase`"
+    tool_name: "Bash"
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--object-type\s+TestCase)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+["\x27]?Eval Risk)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--data-type\s+Label)(uip|\$UIP)\s+tm\s+customfield\s+create'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Complete value row command on the Text field: `uip tm customfield value (create|update) --project-key HEALTH --object-type TestCase ...`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)uip\s+tm\s+customfield\s+value\s+(create|update)'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--object-type\s+TestCase)(uip|\$UIP)\s+tm\s+customfield\s+value\s+(create|update)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -91,7 +101,7 @@ success_criteria:
   - type: command_executed
     description: "Complete label tag command — either form: `uip tm customfield label add --project-key HEALTH --object-type TestCase --custom-field-name \"Eval Risk\" --object-ids <uuid> --values high regression --output json`, or `label create ... --values '{\"Eval Risk\":[\"high\",\"regression\"]}'`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*Eval Risk)(?=.*--values)uip\s+tm\s+customfield\s+label\s+(add|create)'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--object-type\s+TestCase)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*Eval Risk)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--values)(uip|\$UIP)\s+tm\s+customfield\s+label\s+(add|create)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -99,7 +109,7 @@ success_criteria:
   - type: command_executed
     description: "Complete read-back command: `uip tm customfield label list --project-key HEALTH --object-type TestCase`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)uip\s+tm\s+customfield\s+label\s+list'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-key\s+HEALTH)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--object-type\s+TestCase)(uip|\$UIP)\s+tm\s+customfield\s+label\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

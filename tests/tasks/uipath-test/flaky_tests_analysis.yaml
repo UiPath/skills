@@ -9,11 +9,46 @@ description: >
   --output json. The
   skill — not the prompt — must teach the multi-execution analysis pattern
   and the --output json flag.
+  Fixture dependency: CLAIM's 'UAT Smoke Suite' (CLAIM:23) must hold >=3
+  FINISHED executions with intermittent per-testcase results — verified
+  and reseeded automatically by pre_run (manual executions via `testsets
+  run --execution-type manual` + `testcaselog finish`, with CLAIM:13 and
+  CLAIM:19 flipping results across runs to guarantee flakiness).
 tags: [uipath-test, integration, mode:operate, lifecycle:triage, feature:execution]
 
 run_limits:
   expected_turns: 17
   max_turns: 35
+
+# Self-healing fixture: ensure >=3 FINISHED executions with flaky results on
+# 'UAT Smoke Suite' before the agent starts. No-ops when the fixture is
+# intact; reseeds a full fresh trio otherwise (so the newest 3 are guaranteed flaky) (CLAIM:13 and
+# CLAIM:19 flip pass/fail by execution parity so flakiness is guaranteed).
+pre_run:
+  - command: |
+      TSID=$(uip tm testsets list --project-key CLAIM --filter "UAT Smoke Suite" --output json 2>/dev/null | python3 -c "import json,sys;s=sys.stdin.read();d=json.loads(s[s.index('{'):]);print([t['Id'] for t in d['Data'] if t['Name']=='UAT Smoke Suite'][0])" 2>/dev/null) || exit 0
+      count_finished() {
+        uip tm executions list --project-key CLAIM --test-set-id "$TSID" --status finished --output json 2>/dev/null | python3 -c "import json,sys;s=sys.stdin.read();d=json.loads(s[s.index('{'):]);print(len(d['Data']))" 2>/dev/null || echo 0
+      }
+      N=$(count_finished)
+      if [ "$N" -lt 3 ]; then
+      for i in 1 2 3; do
+        EXEC=$(uip tm testsets run --test-set-key CLAIM:23 --execution-type manual --output json 2>/dev/null | python3 -c "import json,sys;s=sys.stdin.read();print(json.loads(s[s.index('{'):])['Data']['ExecutionId'])" 2>/dev/null) || break
+        uip tm executions testcaselogs list --project-key CLAIM --execution-id "$EXEC" --output json 2>/dev/null \
+          | python3 -c "import json,sys;s=sys.stdin.read();d=json.loads(s[s.index('{'):]);print('\n'.join(l['TestCaseId']+' '+l['TestCase']['ObjKey'] for l in d['Data']))" 2>/dev/null \
+          | while read -r TCID KEY; do
+              R=Passed
+              case "$KEY" in
+                CLAIM:13) [ $((i % 2)) -eq 0 ] && R=Failed ;;
+                CLAIM:19) [ $((i % 2)) -eq 1 ] && R=Failed ;;
+              esac
+              HE=false; [ "$R" = "Failed" ] && HE=true
+              uip tm testcaselog finish --project-key CLAIM --execution-id "$EXEC" --test-case-id "$TCID" --result "$R" --has-error "$HE" --executed-by eval-fixture@uipath.com --output json >/dev/null 2>&1 || true
+            done
+      done
+      fi
+      exit 0
+    timeout: 300
 
 initial_prompt: |
   Analyse the top 3 executions with a finished executionStatus of a test
@@ -24,7 +59,7 @@ success_criteria:
   - type: command_executed
     description: "Agent checked login status"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
+    command_pattern: '(uip|\$UIP)\s+login\s+status'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -32,7 +67,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed executions for a test set with --test-set-id"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+list\s+.*--test-set-id'
+    command_pattern: '(uip|\$UIP)\s+tm\s+executions?\s+list\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-set-id'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -40,7 +75,7 @@ success_criteria:
   - type: command_executed
     description: "Agent retrieved testcase logs for at least one execution (--execution-id)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+(executions?\s+testcaselogs\s+list|execution\s+list-testcaselogs)\s+.*--execution-id'
+    command_pattern: '(uip|\$UIP)\s+tm\s+(executions?\s+testcaselogs\s+list|execution\s+list-testcaselogs)\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-id'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -48,7 +83,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched assertions for a failing testcase log (--test-case-log-id)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcaselog\s+list-assertions\s+.*--test-case-log-id'
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcaselog\s+list-assertions\s+(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-log-id'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
