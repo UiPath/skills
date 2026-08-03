@@ -1,6 +1,6 @@
 # SDD Generation Rules
 
-Content-quality contract for Phase 0's `sdd.md`. The interview in [phase-0-interview.md](phase-0-interview.md) owns the **conversation flow** (Listen / Sketch / Confirm / Build start). This file owns the **content rules** the in-memory case model must satisfy before the confirmation is presented — and therefore before `sdd.md` renders from it. Where older wording says "Approve" or "the Approve summary", read the §Confirm checkpoint and its `Decisions I made` block.
+Content-quality contract for Phase 0's `sdd.md`. The interview in [phase-0-interview.md](phase-0-interview.md) owns the **conversation flow** (Listen / Sketch / Confirm / Build start). This file owns the **content rules** the in-memory case model must satisfy before the confirmation is presented — and therefore before `sdd.md` renders from it. Where older wording says "Approve" or "the Approve summary", read the §Confirm checkpoint and its `Decisions I Made` table.
 
 Phase 1 trusts `sdd.md` as written (SKILL.md Rule 2). These rules make that trust safe.
 
@@ -158,7 +158,7 @@ When signals conflict, apply this priority — top wins:
 6. **Inferred defaults** per the assumption playbook in [phase-0-interview.md § Sketch](phase-0-interview.md#sketch--best-assumption-every-field).
 7. **General-practice fallback.**
 
-When a higher tier overrides a lower one, apply it and surface it in the confirmation's `Decisions I made` block with provenance `(source: <higher-tier>-override)`.
+When a higher tier overrides a lower one, apply it and surface it in the confirmation's `Decisions I Made` table with provenance `(source: <higher-tier>-override)`.
 
 ## Choosing the task type
 
@@ -828,11 +828,11 @@ Pattern X1 is preferred unless an actual connector emits the close event. When t
 8. **Forbidden body vocabulary.** No occurrence in any narrative cell of: `Pattern C`, `bridge`, `companion`, `inputOutputs[]`, `=jsonString:` (outside connector `Operation Configuration` cells), `groupOperator`, `essentialConfiguration` (as prose), `savedFilterTrees`, `dispatcher`, `Phase 2 validator`, `Phase 3 dispatcher`, `Q10 II`, `Finding #N`, `io-binding`, `aliased into / from / back into`, `reassign`, `originalVar`, `auto-mint`. These are skill-internal terms — see [sdd-template.md § Output Rules](../assets/templates/sdd-template.md).
 9. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness). For each task resolved to a live resource (contract present in `tasks/registry-resolved.json`): every **required** declared input has a non-empty `Binding` row OR `<UNRESOLVED>` + a paired `high` review item; every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract. An upstream-output-fed input (whole-value `<-` or `vars.$xref(...)`) satisfies coverage with NO §1.5 row — do not flag it as a missing variable. Skip tasks whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` (no contract).
 
-Any failure → fix in the model before presenting the confirmation (lineage defects are the agent's, not the user's); a genuinely unfixable item becomes a ⚠ flagged line in the confirmation's `Decisions I made` block.
+Any failure → fix in the model before presenting the confirmation (lineage defects are the agent's, not the user's); a genuinely unfixable item becomes a row in the confirmation's `Review Flags` table.
 
 ## Review items
 
-A review item is a structured gap escalation. Phase 0 emits one whenever a field could not be fully resolved but Phase 1 needs the context. In Phase 0 they live in the in-memory model and surface as ⚠ lines in the confirmation's `Decisions I made` block — never in the `sdd.md` body (per [sdd-template.md § Output Rules](../assets/templates/sdd-template.md)); Phase 1 persists them into `tasks/registry-resolved.json` under the matching task's `review_items[]` array when it writes that file.
+A review item is a structured gap escalation. Phase 0 emits one whenever a field could not be fully resolved but Phase 1 needs the context. In Phase 0 they live in the in-memory model and surface as rows in the confirmation's `Review Flags` table — never in the `sdd.md` body (per [sdd-template.md § Output Rules](../assets/templates/sdd-template.md)); Phase 1 persists them into `tasks/registry-resolved.json` under the matching task's `review_items[]` array when it writes that file.
 
 Shape:
 
@@ -854,7 +854,7 @@ Severity:
 | **medium** | Phase 1 can default with a prompt. | Missing SLA escalation recipient (default = owner group); missing variable default; ambiguous recipient (persona name without group resolution). |
 | **low** | Cosmetic. | Missing case-level description; missing secondary-stage description; stylistic placeholder. |
 
-**Confirmation gate behavior.** When any `high` review items exist, they appear as ⚠ lines in the confirmation's `Decisions I made` block and the Build option is relabeled `Build despite N flagged items` (count populated). User must pick it — silently building past `high` items is forbidden. Medium and low items surface as advisory lines and need no acknowledgment.
+**Confirmation gate behavior.** When any `high` review items exist, they appear in the confirmation's `Review Flags` table and the Build option is relabeled `Build despite N flagged items` (count populated). User must pick it — silently building past `high` items is forbidden. Medium and low items surface in the same table as advisory rows and need no acknowledgment.
 
 ## Domain fidelity
 
@@ -928,7 +928,7 @@ Phase 0's job is to surface execution-readiness gaps, not just schema validity. 
 When Phase 0 defaults or infers a value, record provenance so Phase 1 and downstream auditors can trace it. The ledger has two surfaces:
 
 1. **Inline in `sdd.md`** — italic source attribution after the value: `Manual _(source: user-stated)_`. Omit attribution when the kind is `user-stated`.
-2. **Confirmation `Decisions I made` block** — see [phase-0-interview.md § Confirm](phase-0-interview.md#confirm--the-single-checkpoint).
+2. **Confirmation `Decisions I Made` table** — see [phase-0-interview.md § Confirm](phase-0-interview.md#confirm--the-single-checkpoint).
 
 **Design rationale is durable, not chat-only.** Provenance says *where a value came from*; rationale says *why the design choice fits*. Persist the latter in each stage/task `Design Rationale` field and in each case/stage SLA rationale field. The confirmation may summarize those reasons, but it is not their sole storage. Phase 1 copies the rationale to each matching `tasks.md` T-entry so an implementer can review the choice without the original conversation.
 
@@ -991,7 +991,7 @@ Phase 0 runs these checks **once, against the in-memory case model, before prese
 19. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness; audit-checklist item 9). For every task resolved to a live resource (contract in `tasks/registry-resolved.json`): every **required** declared input is bound (any §Binding cell form, incl. an upstream-output ref — which needs NO §1.5 row) OR `<UNRESOLVED>` + a paired `high` review item (`rev_unbound_input_<task>_<field>`); every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract (a phantom field → `high` `rev_phantom_output_<task>_<field>`). Unbound required input with no review item → blocking error. Step 16 is the `action`-app instance of the output-fidelity direction; this step extends both directions to all runnable/connector types. Tasks whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` (no contract) are skipped.
 20. **Re-entry attempt check.** For each `return-to-origin`, rework, correction, or resubmission loop, classify the loop as new attempt, re-evaluate existing fact, or optional repeat work. New-attempt loops must leave request/review/decision producer tasks rerunnable (`Run Only Once: No`) and reset or attempt-scope the routing variables they produce. Re-evaluate-only loops must document which existing fact the origin re-reads.
 
-On pass: present the §Confirm checkpoint (SDD-shaped Case Review with a stages list that marks primary vs secondary, task classification rationale, activation modes, complete `Decisions I made` block, Caller obligation block when applicable, and ⚠ flags). A Build answer is the consent — `sdd.md` renders from the confirmed model batched with the first build actions ([phase-0-interview.md § Build start](phase-0-interview.md#build-start--sdd-written-alongside-the-build)); an explicit sign-off request adds one approval prompt before any file is created; design-only/draft requests save and stop. Corrections update the model and re-run only the affected checks.
+On pass: present the §Confirm checkpoint (decision-first Case Review with Case Snapshot, Primary Journey, Other Paths Considered, SLA and Escalations, Rules and Outcomes, Resources and Integrations, a complete `Decisions I Made` table, Review Flags, and Caller obligation when applicable). The review names every stage and task but omits data, variables, and task inputs/outputs. A Build answer is the consent — `sdd.md` renders from the confirmed model batched with the first build actions ([phase-0-interview.md § Build start](phase-0-interview.md#build-start--sdd-written-alongside-the-build)); an explicit sign-off request adds one approval prompt before any file is created; design-only/draft requests save and stop. Corrections update the model and re-run only the affected checks.
 
 On fail: fix the model and re-run the failed checks (plus any whose inputs changed) — not the full suite. Do not present the confirmation, and never render `sdd.md`, while a fixable check is failing; surface only the unfixable as ⚠ flags.
 
@@ -999,7 +999,7 @@ On fail: fix the model and re-run the failed checks (plus any whose inputs chang
 
 - **Do NOT silently accept a user-proposed type when a compliance trigger phrase is in the transcript.** Tier 2 of the authority hierarchy overrides user preference; Ask before recording.
 - **Do NOT create `sdd.md` before the confirmation's Build (or save) answer.** Finalization validates the in-memory model before the confirmation; the file renders only after consent — batched with the first build actions, or alone for design-only/draft requests. Never render with a failing fixable check or an undisclosed decision, and never build past a `high` item without the `Build despite N flagged items` pick.
-- **Do NOT leave design rationale only in chat.** The confirmation's `Decisions I made` block is transient; stage kind/routing, task type/activation/sequencing, and SLA/escalation reasons must also live in the SDD's `Design Rationale` fields so Phase 1 can preserve them.
+- **Do NOT leave design rationale only in chat.** The confirmation's `Decisions I Made` table is transient; stage kind/routing, task type/activation/sequencing, and SLA/escalation reasons must also live in the SDD's `Design Rationale` fields so Phase 1 can preserve them.
 - **Do NOT treat a validating case as proof the SDD followed the template.** `caseplan.json` validation checks executable JSON, not whether `sdd.md` preserved the template. A summary-style `sdd.md` with top-level `Source`, `Case Objective`, `Task Plan`, or `Acceptance Scenarios` sections is a render defect even when the built case validates.
 - **Do NOT repeat a global event on every primary stage.** External withdrawn/cancel events belong on one interrupting secondary-stage entry rule. An SLA response that enters a stage belongs on one scoped `sla-status-change` entry, with interrupting set by whether it diverts active work. Per-stage task/exit duplication is a modeling defect.
 - **Do NOT invent a stage, task, or routing change for an SLA the source only asks to notify about.** Absent a stated response, at-risk and breached are `notify-only` (§ SLA response model).
