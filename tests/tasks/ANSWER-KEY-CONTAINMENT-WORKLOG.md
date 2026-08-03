@@ -145,6 +145,52 @@ resolve, fail the task rather than grade it. Worth adding to the coder_eval item
 
 Checks to run against the baseline run once it finishes, and their results, will be appended below.
 
+### Root cause of three discarded runs: `.env` does not reach the agent's environment
+
+Attempts v1-v3 all produced the same result — five `FAILURE` rows at score 0.000, `skill_triggered=no`,
+`llm_judge=0.000`, `actual_commands: 0`, 122-210 s per task, **and not one error line in any log**. Three
+separate causes, all the same shape:
+
+| # | Missing | Symptom | Why |
+|---|---|---|---|
+| v1 | `SKILLS_REPO_PATH` | `Plugin skills path did not resolve … no skills linked` (WARNING only) | not a declared `Settings` field |
+| v2 | same, still | identical | `.env` cannot deliver it |
+| v3 | `CODEX_BASE_URL`, `CODEX_API_KEY` | `environment_info` has **no** `codex_*` keys at all | never reached `os.environ` |
+
+The mechanism, from `coder_eval/src/coder_eval/config.py`:
+
+- `:38 load_dotenv(override=True)` is called **with no arguments**. python-dotenv then resolves the file with
+  `find_dotenv(usecwd=False)`, which walks up from the **calling module's directory** — i.e. inside the
+  coder_eval checkout — not from the CWD. There is no `.env` in the coder_eval checkout, so this call loads
+  nothing.
+- `:147 model_config = SettingsConfigDict(env_file=".env", …, extra="ignore")` does read `tests/.env`
+  relative to the CWD, but only **declared** `Settings` fields are then re-exported to `os.environ`
+  (`:203-212`). `extra="ignore"` drops everything else.
+- `CODEX_BASE_URL`, `CODEX_API_KEY`, `CODEX_API_VERSION` and `SKILLS_REPO_PATH` are consumed via
+  `os.getenv` / `os.path.expandvars` (`codex_agent.py:1049`, `:1313`; the skills path via `expandvars`), so
+  for those the `.env` file is **inert**. They only work if exported in the shell.
+
+This explains why an earlier local codex run on this machine succeeded: its shell had the `CODEX_*` vars
+exported. `tests/.env` documents them but does not deliver them.
+
+Confirmation of the diagnosis: `codex_agent.get_environment_info()` (`:917-935`) returns `{}` when
+`_resolve_base_url()` is falsy, and the v3 `task.json` recorded no `codex_*` keys — while the known-good run
+recorded `codex_api_version: 2025-04-01-preview`, `codex_wire_api: responses`,
+`codex_model_is_deployment: true`. That is a clean before/after.
+
+Working invocation (v4) exports the `CODEX_*` / `AWS_*` / `API_BACKEND` / `BEDROCK_*` block out of
+`tests/.env` into the process environment first, then adds `SKILLS_REPO_PATH` and `CODEX_API_VERSION`.
+
+**Issue worth flagging (harness):** a codex run with no endpoint configured produces zero tool calls, no
+error, and five well-formed `FAILURE` rows at 0.000 with `skill_triggered=no`. Combined with the same
+property for an unresolved plugin path, that is three distinct ways for a *misconfigured* local run to be
+indistinguishable from *a bad skill*. This is the identical failure shape the audit found on the delegate arm
+(mock not on PATH → 102 graded-but-meaningless passes). It strengthens the fail-closed item in the
+coder_eval spec, and suggests widening it: when a declared input (plugin path, mock dir, agent endpoint)
+does not resolve, the task should ERROR rather than be graded. Also worth considering: `CODEX_API_VERSION`
+belongs in `tests/.env.example` with a note that the `CODEX_*` vars must be **exported**, not merely present
+in `.env`.
+
 ## 2026-08-03 — Part 1 verdict: `_cache` is self-authored, not a leak. Claim retracted.
 
 Swept every `m/_cache` in nightly `2026-07-30_04-38-11`: **33 cache files across 27 of 154 tasks. All 33
