@@ -46,8 +46,9 @@ launcher still names the encoding, and `.store` is `base64(zlib(...))` with no k
 - `tests/tasks/**` (`RESOLUTION.md`, `task.yaml`, `check_*.py`) sits in the same checkout the agent
   legitimately reads the skill from, with `ignore_patterns: []`.
 - `/work/input/task.yaml` and `context.json` expose the success criteria.
-- `m/_cache/*.json` escaped the seal — plaintext in 27 tasks of the 07-30 run, and one entry embeds an
-  authoring question naming the root cause and asking for the fixed version.
+- `m/_cache/*.json` escapes the seal — plaintext in 27 tasks of the 07-30 run. **Verified NOT a leak** (see
+  the worklog): all 33 entries are the agent's own `docsai ask` queries from that same run. Hygiene, not an
+  answer key — but it is the only clear-text content the seal leaves behind.
 - Only troubleshoot seals anything. Other suites stage fixtures in plaintext: bpmn 54 tasks, ixp 50,
   agents 20, case 15, review 12, platform 9, flow 7, planner 6, mcp-servers 3.
 - `uipath-ixp`: `mocks/calls.log` is the sole grading oracle for 3 criteria per integration task, plaintext
