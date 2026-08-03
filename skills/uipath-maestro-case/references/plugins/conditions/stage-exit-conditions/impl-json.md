@@ -66,7 +66,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 ]]
 ```
 
-`selectedTasksIds` is a JSON string array, not a comma-separated string.
+`selectedTasksIds` is a JSON string array, not a comma-separated string. Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required routing cannot depend on optional user-launched work.
 
 ### wait-for-connector — bind a connector event
 
