@@ -44,6 +44,8 @@ uip solution resources list --source remote --kind Process --search "<NAME>" --o
 
 > **`--kind` and `--search` only work with `--source remote`.** With `--source local` or `--source all` (default), omit both — list everything and filter `.Data[]` client-side by `Kind` and `Name`.
 
+> **`--kind Process` covers all four families.** Agents, API workflows, and agentic processes list as `Kind: "Process"` too — the family is in the `Type` field, not `Kind`. `--kind Agent` returns an empty list.
+
 Response wrapper: `{Result, Code: "ResourceList", Data: [...]}` — parse `.Data[]`. Per entry:
 
 | Field | Use as |
@@ -206,6 +208,7 @@ uip maestro flow validate "<FILE>.flow" --output json
 3. **Do not compute in the agent what the tool provides** — the system prompt must direct the agent to call the tool and use its result.
 4. **The prompt names the tool by `inputs.name`** — renaming the tool means updating the prompt (and any `guardrails[].selector.matchNames` on the agent node).
 5. **Tool nodes carry no prompts** — a `systemPrompt` on a resource node is meaningless; prompts live on the agent node only.
+6. **Never wire a conversational agent as a tool** — conversational agents run through the UiPath Conversational Service per exchange with a threaded `messages` input; they do not match the input→output contract agent-tools require. Only autonomous agents can be tool targets (`agent` family). Applies to both in-solution and deployed targets.
 
 ## References
 
