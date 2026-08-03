@@ -87,9 +87,10 @@ success_criteria:
         Lead task and supplier status note; the 15-day case breach creates the
         Procurement Director review task.
       - The three Supplier Setup tasks are explicitly `runs-sequentially`.
-        Their list order alone is not treated as execution semantics, and they
-        are consecutive single-task data.tasks sets rather than one parallel
-        inner array.
+        Their list order alone is not treated as execution semantics. A compact
+        no-build plan may express this as an explicit ordered/sequential run
+        instead of final `data.tasks` JSON, but it must still make each task a
+        separate task declaration and preserve the one-task-at-a-time order.
       - The SDD explains the stage-kind, task-type, activation, sequencing,
         SLA, and exception-routing choices, and tasks.md preserves those
         rationales for implementation.
