@@ -1,0 +1,10 @@
+{
+  "instanceId": "inst-triage-001",
+  "processKey": "process-invoice-triage",
+  "status": "Faulted",
+  "folderKey": "folder-public",
+  "currentVersion": "1.0.0",
+  "startedAt": "2026-05-01T12:00:00Z",
+  "endedAt": "2026-05-01T12:01:12Z",
+  "faultedElementId": "Task_InvokeLegacyRpa"
+}

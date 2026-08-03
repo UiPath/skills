@@ -1,0 +1,20 @@
+[
+  {
+    "instanceId": "inst-run-002",
+    "processKey": "process-invoice-triage",
+    "status": "Running",
+    "folderKey": "folder-public"
+  },
+  {
+    "instanceId": "inst-run-777",
+    "processKey": "process-invoice-triage",
+    "status": "Running",
+    "folderKey": "folder-public"
+  },
+  {
+    "instanceId": "inst-triage-001",
+    "processKey": "process-invoice-triage",
+    "status": "Faulted",
+    "folderKey": "folder-public"
+  }
+]

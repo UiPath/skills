@@ -1,0 +1,8 @@
+{
+  "instanceId": "inst-triage-001",
+  "folderKey": "folder-public",
+  "status": "Retrying",
+  "operation": "retry",
+  "retriedFromElementId": "Task_InvokeLegacyRpa",
+  "succeeded": true
+}
