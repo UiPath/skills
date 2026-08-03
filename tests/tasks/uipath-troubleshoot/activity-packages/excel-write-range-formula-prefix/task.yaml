@@ -51,7 +51,7 @@ initial_prompt: |
   `System.Runtime.InteropServices.COMException (0x800A03EC): Application-defined or object-defined error.`
   Pinned job key: ee333333-cccc-dddd-eeee-ffffaaaabbbb. It's a Write
   Range writing 312 scraped HR records to a directory workbook.
-  Yesterday's run with the same workflow and same workbook
+  The previous run with the same workflow and same workbook
   succeeded. What changed?
 
 success_criteria:
