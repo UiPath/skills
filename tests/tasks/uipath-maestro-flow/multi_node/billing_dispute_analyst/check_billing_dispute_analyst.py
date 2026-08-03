@@ -45,10 +45,19 @@ def main():
     # confirm whether the context index was actually retrieved.
     raw = get_last_debug_raw()
     if raw:
-        trace_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "last_debug_trace.json")
-        with open(trace_path, "w") as fh:
-            fh.write(raw)
-        print(f"trace: wrote debug payload to {trace_path}")
+        # Diagnostics only — never fail the check over persistence. The task dir
+        # is read-only on CI checkouts (OSError 30); fall back to the sandbox cwd.
+        for trace_dir in (os.path.dirname(os.path.abspath(__file__)), os.getcwd()):
+            trace_path = os.path.join(trace_dir, "last_debug_trace.json")
+            try:
+                with open(trace_path, "w") as fh:
+                    fh.write(raw)
+                print(f"trace: wrote debug payload to {trace_path}")
+                break
+            except OSError:
+                continue
+        else:
+            print("trace: debug payload not persisted (no writable location)")
     # Assert the flow produced a non-empty `determination` output. We do NOT
     # assert grounding here: the dispute facts (290/300/contracted) are present
     # in the prompt, so any keyword match is satisfiable by restatement and

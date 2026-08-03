@@ -51,3 +51,11 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: Data Service query filters server-side (whole-entity fetch + client-side filter breaks silently past the page limit)"
+    command: "python3 $TASK_DIR/check_server_side_filter.py"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0
