@@ -36,6 +36,7 @@
 | Priority | Choiceset: Low, Medium, High, Critical — Default: High |
 | Case-Level SLA | 30 m |
 | SLA Type | time-based |
+| SLA Title | Case Resolution SLA |
 | Case App | Disabled |
 | Task-output passing | Direct |
 | Case Identifier source | `=metadata.ExternalId` |
@@ -98,6 +99,8 @@
 | required-tasks-completed | — | exit-only | Yes | Complete Rule 1 |
 
 #### Stage SLA
+
+**SLA Title:** Intake SLA
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
@@ -211,6 +214,8 @@
 
 #### Stage SLA
 
+**SLA Title:** AP Review SLA
+
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
 | 15 | m | 70% | Notify: UserGroup: AP Clerk | Notify: UserGroup: AP Team Lead |
@@ -293,6 +298,8 @@
 | required-tasks-completed | — | exit-only | Yes | Complete Rule 1 |
 
 #### Stage SLA
+
+**SLA Title:** Closure SLA
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
@@ -447,6 +454,8 @@
 
 #### Stage SLA
 
+**SLA Title:** SLA Escalation Reminder SLA
+
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
 | 15 | m | 70% | Notify: UserGroup: AP Team Lead | Notify: UserGroup: Finance Operations |
@@ -505,6 +514,8 @@
 | required-tasks-completed | — | return-to-origin | Yes | Return After Incident |
 
 #### Stage SLA
+
+**SLA Title:** Automation Incident SLA
 
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
