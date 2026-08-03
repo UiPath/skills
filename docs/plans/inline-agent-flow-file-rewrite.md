@@ -97,7 +97,7 @@ Legend: ☐ not started · ◐ in progress · ☑ done (date + PR). Update at se
 
 **Session resumption.** A fresh session: (1) read this doc + the research record; (2) check the status board, pick the first ☐/◐ milestone; (3) execute its runbook; (4) update board + notes, close with the milestone PR. Every milestone body below is self-contained given the two docs.
 
-**Standing runbook (every milestone).** `git fetch && git rebase origin/main` → docs edits → `/lint-task` over changed task YAMLs → `bash hooks/validate-skill-descriptions.sh` + `python3 scripts/check-skill-status.py` (expect clean — no frontmatter/status changes) → relative-link check over the plugin → `coder-eval` run of the milestone's tasks + a 1-replicate regression pass over previously-migrated tasks → record gate results in the board → PR to the feature branch with the run evidence.
+**Standing runbook (every milestone).** `git fetch && git rebase origin/main` → docs edits → `/lint-task` over changed task YAMLs → `bash hooks/validate-skill-descriptions.sh` + `python3 scripts/check-skill-status.py` (expect clean — no frontmatter/status changes) → relative-link check over the plugin → **with explicit owner approval** (coder-eval runs need an interactive `uip login` against alpha.uipath.com / codereval / DefaultTenant and are time-consuming — never auto-initiate; owner directive 2026-08-03): `coder-eval` run of the milestone's tasks + a 1-replicate regression pass over previously-migrated tasks → record gate results in the board → PR to the feature branch with the run evidence.
 
 ## 6. Milestones
 
