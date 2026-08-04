@@ -14,26 +14,36 @@ run_limits:
 
 initial_prompt: |
   I need a place to store full documents in UiPath Data Fabric — tenant level,
-  no folder. Do NOT ask for approval, confirmation, or feedback.
+  no folder. I explicitly approve creating `CE_MultilineMaxTest` and
+  inserting its one test record in this run. Proceed without another
+  confirmation and do not mutate any other Data Fabric resource.
 
   1. Create an entity CE_MultilineMaxTest with a required short-text Title
      (up to 100 chars) and a Body column that must hold very large text —
      around 20,000 characters have to fit in one value.
   2. Generate a local text file of roughly 20,000 characters, then insert one
      record with Title "doc-1" and that text as the Body.
-  3. Show me what `records list` returns for that record's Body, then retrieve
-     and show the actual full Body content, and explain how the two outputs
-     differ and why.
-  4. Try to find records whose Body contains the word "lorem" using a
-     server-side filter, and report exactly what happens — do not retry with
-     different operators and do not work around it unless I say so.
+  3. Show me the Body while browsing the saved record, then retrieve and show
+     the actual full Body content, and explain how the two outputs differ and
+     why.
+  4. Try to find records whose Body contains the word "lorem", and report
+     exactly what happens — do not retry with different searches and do not
+     work around it unless I say so.
 
 success_criteria:
   - type: command_executed
-    description: "Agent created the entity with a MULTILINE_MAX Body field (not MULTILINE_TEXT)"
+    description: "Agent issued the CE_MultilineMaxTest entity creation"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_MultilineMaxTest)(?=.*MULTILINE_MAX)'
+    command_pattern: 'uip\s+df\s+entities\s+create\s+"?CE_MultilineMaxTest'
     min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: Body is actually a MULTILINE_MAX field (not a substituted text type)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_MultilineMaxTest --assertions Body.Name=MULTILINE_MAX"
+    timeout: 180
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
@@ -56,7 +66,7 @@ success_criteria:
   - type: run_command
     description: "End state: CE_MultilineMaxTest holds exactly one record"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_MultilineMaxTest --min 1 --max 1"
-    timeout: 60
+    timeout: 240
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

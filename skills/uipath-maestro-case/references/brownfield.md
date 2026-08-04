@@ -76,6 +76,16 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 | Add a global variable / argument | [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
 | Rename / delete a global variable or argument | [case-editing-operations.md § Rename or delete a global variable or argument](case-editing-operations.md#rename-or-delete-a-global-variable-or-argument) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
 | Change a variable's type or default | [case-editing-operations.md § Change a variable's type or default](case-editing-operations.md#change-a-variables-type-or-default) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
+| Add or repair a response to an SLA at-risk / breach event | [§ SLA responses in a brownfield edit](#sla-responses-in-a-brownfield-edit) below, then [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md) |
+
+## SLA responses in a brownfield edit
+
+An SLA clock and its **response** are separate edits. Pick the response, the status shape, and the interrupting value per [sla-response-shapes.md](sla-response-shapes.md) — that file is the contract; this section only says what it means for an edit.
+
+- **Do not widen the edit.** A requirement that only asks to notify someone is `notify-only`: add an escalation to the target's `slaRules[].escalationRule` ([plugins/sla/impl-json.md](plugins/sla/impl-json.md)) and stop. No stage, no task, no condition.
+- **`start-task` adds a task, not a lane** ([sla-response-shapes.md § 1](sla-response-shapes.md#1-pick-the-response)): the follow-up task goes in the breached stage with the `sla-status-change` rule as its **own task-entry** condition — never as a stage-entry row on the breached stage, which re-runs that stage's other tasks.
+- **Four defects `validate` accepts** — re-read [§ 5](sla-response-shapes.md#5-four-defects-validate-cannot-see) before you finish: a task with no entry condition, a non-interrupting lane demoted to a regular stage, an `escalationId: "any"` "repaired" by repointing instead of deleting, and a `start-task` authored as stage re-entry.
+- **`validate` passing is not evidence the response is right.** Every defect above validates clean.
 
 ## After edits
 
@@ -84,7 +94,7 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 
 ## Completion Output
 
-Report: file path edited, what changed (nodes/tasks/conditions added/removed/modified), validation status, any placeholder tasks still unresolved, any connector connections the user must create, and a **freshness note** — whether the local copy was pulled from Studio Web first (so re-publish reflects current server state) or is a local-only project not synced from SW (re-publish overwrites whatever is on the server). Then AskUserQuestion "What's next":
+Report: file path edited, what changed (nodes/tasks/conditions added/removed/modified), validation status, any placeholder tasks still unresolved, any connector connections the user must create, and a **freshness note** — whether the local copy was pulled from Studio Web first (so re-publish reflects current server state) or is a local-only project not synced from SW (re-publish overwrites whatever is on the server). Then include `Suggested next steps` in one short line before AskUserQuestion "What's next": run debug if the edit changes runtime behavior, publish when ready to update Studio Web, or stop and inspect the local diff.
 
 | Option | What it does |
 |---|---|

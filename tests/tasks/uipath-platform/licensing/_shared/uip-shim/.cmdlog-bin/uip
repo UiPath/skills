@@ -1,0 +1,26 @@
+#!/bin/sh
+# uip PATH shim — appends every invocation (argv, quote-stripped, space-joined)
+# to <sandbox>/.uip-cmdlog, then execs the real CLI. Criteria grep the log via
+# run_command. Filesystem telemetry survives agent backends (Antigravity) that
+# run commands through background tasks invisible to tool-call telemetry, where
+# command_executed criteria see zero commands. Wired into a task via:
+#   sandbox.template_sources: [{type: template_dir, path: _shared/uip-shim}]
+#   sandbox.mock_path_dirs: [.cmdlog-bin]
+here="$(cd "$(dirname "$0")" && pwd)"
+printf 'uip %s\n' "$*" >> "${here%/.cmdlog-bin}/.uip-cmdlog"
+real=""
+old_ifs="$IFS"
+IFS=:
+for d in $PATH; do
+  case "$d" in "$here" | "") continue ;; esac
+  if [ -x "$d/uip" ]; then
+    real="$d/uip"
+    break
+  fi
+done
+IFS="$old_ifs"
+if [ -z "$real" ]; then
+  echo "uip cmdlog shim: real uip not found on PATH" >&2
+  exit 127
+fi
+exec "$real" "$@"

@@ -77,7 +77,7 @@ forms against existing deterministic tenant resources.
 
 | WHEN | IF |
 |---|---|
-| current-stage-entered | - |
+| runs-sequentially | - |
 
 | Field | Value |
 |---|---|
@@ -101,7 +101,7 @@ forms against existing deterministic tenant resources.
 
 | WHEN | IF |
 |---|---|
-| selected-tasks-completed ("After Echo literal") | selected-tasks: Echo literal |
+| runs-sequentially | - |
 
 | Field | Value |
 |---|---|
@@ -131,7 +131,7 @@ forms against existing deterministic tenant resources.
 
 | WHEN | IF |
 |---|---|
-| selected-tasks-completed ("After Echo case variable") | selected-tasks: Echo case variable |
+| runs-sequentially | - |
 
 | Field | Value |
 |---|---|
@@ -162,7 +162,7 @@ forms against existing deterministic tenant resources.
 
 | WHEN | IF |
 |---|---|
-| selected-tasks-completed ("After Echo prior output") | selected-tasks: Echo prior output |
+| runs-sequentially | - |
 
 | Field | Value |
 |---|---|
@@ -191,7 +191,7 @@ forms against existing deterministic tenant resources.
 
 | WHEN | IF |
 |---|---|
-| selected-tasks-completed ("After Echo expression") | selected-tasks: Echo expression |
+| runs-sequentially | - |
 
 | Field | Value |
 |---|---|
@@ -220,7 +220,7 @@ forms against existing deterministic tenant resources.
 
 | WHEN | IF |
 |---|---|
-| selected-tasks-completed ("After Lookup exact same name") | selected-tasks: Lookup exact same name |
+| runs-sequentially | - |
 
 | Field | Value |
 |---|---|
@@ -249,7 +249,7 @@ forms against existing deterministic tenant resources.
 
 | WHEN | IF |
 |---|---|
-| selected-tasks-completed ("After Lookup colliding same name") | selected-tasks: Lookup colliding same name |
+| runs-sequentially | - |
 
 | Field | Value |
 |---|---|
@@ -278,7 +278,7 @@ forms against existing deterministic tenant resources.
 
 | WHEN | IF |
 |---|---|
-| selected-tasks-completed ("After Consume colliding output") | selected-tasks: Consume colliding output |
+| runs-sequentially | - |
 
 | Field | Value |
 |---|---|

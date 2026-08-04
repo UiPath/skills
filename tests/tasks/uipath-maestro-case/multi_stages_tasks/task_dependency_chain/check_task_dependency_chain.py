@@ -158,16 +158,31 @@ def main():
             f"'current-stage-entered' (or default); got {rc_rule!r}"
         )
 
-    # The frontend keeps tasks in an ordered structural set. The rule and
-    # declaration order, not the set/lane alone, express sequential behavior.
+    # A strict sequential chain uses consecutive single-task structural sets.
+    # Same-set grouping is reserved for explicitly parallel siblings.
     first_step_lane = _stage_task_lane(process, "First Step")
     second_step_lane = _stage_task_lane(process, "Second Step")
-    if first_step_lane != second_step_lane:
+    if first_step_lane == second_step_lane:
         sys.exit(
-            f"FAIL: 'First Step' and 'Second Step' must share the ordered task "
-            f"set in Process data.tasks; got set {first_step_lane} and set "
-            f"{second_step_lane}"
+            f"FAIL: strict sequential tasks 'First Step' and 'Second Step' must "
+            f"not share a parallel task set; both are in set {first_step_lane}"
         )
+    if first_step_lane >= second_step_lane:
+        sys.exit(
+            f"FAIL: strict sequential task sets must preserve declaration order; "
+            f"First Step set={first_step_lane}, Second Step set={second_step_lane}"
+        )
+    process_sets = (process.get("data") or {}).get("tasks") or []
+    for task_name, set_idx in (("First Step", first_step_lane), ("Second Step", second_step_lane)):
+        if len(process_sets[set_idx] or []) != 1:
+            labels = [
+                (t or {}).get("displayName") or (t or {}).get("label")
+                for t in (process_sets[set_idx] or [])
+            ]
+            sys.exit(
+                f"FAIL: strict sequential task {task_name!r} must be alone in "
+                f"its task set; set {set_idx} contains {labels!r}"
+            )
 
     if optional_audit.get("type") != "process":
         sys.exit(

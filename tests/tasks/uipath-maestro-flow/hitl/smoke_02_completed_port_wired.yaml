@@ -8,7 +8,11 @@ tags: [uipath-maestro-flow, uipath-human-in-the-loop, smoke, mode:build, lifecyc
 run_limits:
   expected_turns: 24
   max_turns: 105
-  turn_timeout: 600
+  # 600s was too tight for this multi-node HITL build on Bedrock: one
+  # over-exploring turn hit 604s (commands ~38s; the rest was model latency)
+  # and ERRORed before criteria ran. 900 matches sibling
+  # smoke_03_multi_outcome_routing and the experiment default.
+  turn_timeout: 900
 
 initial_prompt: |
   Build a UiPath Flow named "PurchaseApproval" with this structure:
@@ -24,17 +28,19 @@ initial_prompt: |
   Validate the flow after building.
 
 success_criteria:
-  - type: file_exists
+  - type: run_command
     description: "Flow file was created"
-    path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow wires the HITL completed output port"
-    path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
-    includes:
-      - 'completed'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'completed'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 

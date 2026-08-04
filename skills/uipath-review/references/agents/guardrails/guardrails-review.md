@@ -24,6 +24,54 @@ Like the recommend capability, this is **live-catalog driven** — the catalog's
 `use_cases`, `security_risk_addressed`, `when_not_to_use`, `security_category`, `examples[].config`) drive every
 decision. Do not hardcode which guardrail fits which agent.
 
+## Conclusive existing-guardrail fast path — completed report checkpoint
+
+When a format-valid existing guardrail and the source it selects conclusively match a catalog
+`when_not_to_use` clause, use this bounded sequence **before** general manual review:
+
+1. run `uip agent review` and retain its deterministic findings and `Data.Grade`;
+2. read the existing guardrail's exact source path, `id`, `name`, `validatorType`, action, scopes, and
+   `matchNames`, plus only the source or resource selected by that guardrail;
+3. fetch the catalog and tenant validator list once, as specified in Step 0;
+4. compare the configured action and scope with the catalog's exact `when_not_to_use` clause and relevant
+   `examples[].config`; and
+5. when the clause directly matches the selected source, establish `LC_GUARDRAIL_ACTION_INEFFECTIVE` and
+   immediately save the requested report.
+
+The saved report is a completed checkpoint, not working notes. It must include the retained CLI findings, the
+letter-grade derivation, and the Audit Mode finding with the exact guardrail source path and identifiers, selected
+resource path and identifiers, matched catalog clause, configured scope/action, and catalog-supported fix. If the
+user explicitly requested additional exhaustive review, save this checkpoint first and update the same report
+after that work completes. Otherwise, return the report and end the current review turn. Do not delay the checkpoint
+for solution packing, eval inspection, repeated validation or catalog calls, general architecture analysis, or
+unrelated project introspection.
+
+This fast path requires a direct source-to-catalog contradiction, not a plausible concern. Canonical example:
+`pii_detection` uses `Block` or `Filter` at `Tool` scope, `matchNames` selects `SendCustomerEmail`, and that tool's
+input schema requires `recipient_email`; the catalog says that action breaks a tool that requires PII to function.
+If the selected input is optional or the catalog clause does not directly match, continue normal Audit Mode instead.
+
+## Missing-guardrail fast path — completed deliverable
+
+When the source clearly matches a missing-guardrail use case and `guardrails[]` is absent or lacks the matching
+validator, use this bounded sequence:
+
+1. run `uip agent review` and retain its deterministic findings and `Data.Grade`;
+2. read the system prompt, schema property names, tool/resource names, and existing `guardrails[]` from the target
+   agent source;
+3. fetch the catalog and tenant validator list once, as specified in Step 0;
+4. establish the `LC_GUARDRAIL_RECOMMENDED` finding using R2–R5; and
+5. immediately save the requested report with the rule ID exactly
+   `LC_GUARDRAIL_RECOMMENDED`, the exact source-evidence clause, and the R5 scope/action, then return it.
+
+The saved report is the completed deliverable for this guardrail path. After saving it, **end the current review
+turn**. Do not delay delivery for solution packing, eval inspection, repeated catalog/list calls, general
+architecture analysis, or unrelated project introspection. Continue beyond it only when the user's initial request
+explicitly asks for an exhaustive review or names additional non-guardrail checks.
+
+`LC_GUARDRAIL_PII_MISSING`, `LC_GUARDRAIL_MISSING`, and other descriptive variants are not valid rule IDs. When
+catalog evidence is unavailable, use rule-ID-less prose rather than inventing an identifier.
+
 ---
 
 ## Step 0 — Fetch Catalog and Available Validators
@@ -147,8 +195,12 @@ Default to the catalog example's `action_type`, and state which of the two the r
 
 One `LC_GUARDRAIL_RECOMMENDED` (Info) per missing guardrail. The message must carry: which guardrail /
 `security_category`, why (the matched `when_to_use` / `use_cases` item or the data flow), the recommended scope,
-and the recommended action with the protection-vs-audit signal. Cite the catalog's `examples[].config` in the
-fix. Examples:
+and the recommended action with the protection-vs-audit signal. It must also carry a source-evidence clause in
+the form `<source path>: <exact matching identifier(s)>`. Copy schema property names, tool names, resource names,
+and other matched identifiers verbatim from the source; never replace them with display-friendly prose. For a
+schema match, cite the property path and names, for example
+`agent.json inputSchema.properties: customer_email, full_name, ssn`. Cite the catalog's `examples[].config` in
+the fix. Examples:
 
 - *"Recommend a PII-detection guardrail at Agent scope with a **block** action — the input schema carries
   `customer_email` / `ssn` (data_privacy); blocking at Agent · PRE stops unexpected PII before the LLM.
@@ -188,8 +240,9 @@ Merge findings into the Step 5 "Rule Findings" subsection (SKILL.md Step 2.5b), 
    (`when_not_to_use`, `when_to_use` / `use_cases`, `examples[].config.action_type`).
 3. **Catalog unavailable → defer Audit Mode** (Rules Skipped), keep Recommend Mode's `agent.json`-only detection
    with generic wording. Never guess effectiveness/relevance without the catalog.
-4. **Recommendations are one Info rule** (`LC_GUARDRAIL_RECOMMENDED`), one finding per missing guardrail, details
-   in the message; signal **block/escalate** (protection) vs **log** (audit).
+4. **Recommendations are one Info rule** (`LC_GUARDRAIL_RECOMMENDED`), one finding per missing guardrail. The
+   message preserves the exact source path and matched identifiers verbatim, then signals **block/escalate**
+   (protection) vs **log** (audit).
 5. **Never silently downgrade block → log** — a security-critical guardrail at `log` is a defect
    (`LC_GUARDRAIL_ACTION_INEFFECTIVE`), not an acceptable choice, unless the catalog/agent shows a stated reason.
 6. **Do not name platform-documented validators** (`harmful_content` / `intellectual_property` /

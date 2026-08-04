@@ -63,7 +63,7 @@ def check_pyproject() -> None:
         sys.exit("FAIL: pyproject.toml has no [project] section")
     if "authors" not in text:
         sys.exit(
-            "FAIL: pyproject.toml has no `authors` entry — `uip functions "
+            "FAIL: pyproject.toml has no `authors` entry — `uip function "
             "pack` will reject the package with `Project authors cannot "
             "be empty`."
         )
@@ -99,7 +99,7 @@ def check_entry_points() -> None:
     doc = _load_json(ROOT / "entry-points.json")
     entrypoints = doc.get("entryPoints") or []
     if not entrypoints:
-        sys.exit("FAIL: entry-points.json has no entryPoints — `uip functions init` did not run successfully")
+        sys.exit("FAIL: entry-points.json has no entryPoints — `uip function init` did not run successfully")
     matches = [
         ep for ep in entrypoints
         if ep.get("filePath") in ("main", "main.py")
@@ -109,7 +109,7 @@ def check_entry_points() -> None:
         sys.exit(f'FAIL: no entrypoint with filePath "main" or "main.py"; got {paths}')
     ep = matches[0]
     if not ep.get("uniqueId"):
-        sys.exit("FAIL: entrypoint is missing `uniqueId` — `uip functions init` did not generate it")
+        sys.exit("FAIL: entrypoint is missing `uniqueId` — `uip function init` did not generate it")
     raw = json.dumps(ep)
     for field in ("message", "repeat", "echoed", "length"):
         if field not in raw:
@@ -147,7 +147,7 @@ def main() -> None:
     check_entry_points()
     check_bindings()
     if not (ROOT / "run_marker.txt").is_file():
-        sys.exit(f"FAIL: {ROOT}/run_marker.txt does not exist — `uip functions run` likely never finished")
+        sys.exit(f"FAIL: {ROOT}/run_marker.txt does not exist — `uip function run` likely never finished")
     print("OK: run_marker.txt exists (run completed cleanly)")
 
 

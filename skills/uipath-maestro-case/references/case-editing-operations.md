@@ -58,7 +58,7 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
 7. **Every regular stage has at least one entry condition.** With edges retired, stage entry conditions are the sole reachability contract — orphan stages don't execute. The first stage carries `case-entered`; every other regular stage carries `selected-stage-completed` / `selected-stage-exited` naming a reachable predecessor. When adding a stage, also plan its entry condition (Step 10).
 
-8. **Preserve task structure and order.** Increment `laneIndex` per task only for the structural/layout array when needed. Sequence behavior comes from each task's `runs-sequentially` entry condition and its order in `stageNode.data.tasks`; lane-sharing does not express sequence.
+8. **Preserve task structure and order.** Increment `laneIndex` per task only for the structural/layout array when needed. A strict sequential chain uses consecutive single-task sets (`[[A], [B], [C]]`); intentionally parallel siblings share a task set at stage start (`[[A, B], [C]]`) or after an immediate predecessor (`[[A], [B, C], [D]]`). Sequence behavior comes from each task's entry condition and its order in `stageNode.data.tasks`; lane-sharing alone does not express sequence.
 
 9. **Task `elementId` = `${stageId}-${taskId}`.** Compute and write this composite string on every new task.
 
@@ -188,6 +188,7 @@ Procedure per section:
    - **Large sections (≥10 T-entries)** — single whole-section write replacing the section's container (e.g., entire `schema.nodes` array for stages, a stage's full `data.tasks` array for tasks within that stage). Compose the complete post-section state in reasoning from the Read snapshot, then emit via one Edit (replacing the container slice) or one Write (whole-file rewrite) — Write only when the per-section Edit slice is too large to express as a single unambiguous `old_string`/`new_string` pair.
 3. **Skip the re-Read between sibling Edits** — Edit's tool result confirms applied state in context; explicit re-Read is redundant for in-memory correctness.
 4. **One `validate`** at section boundary (Pre-flight Item 12 above).
+5. **Repair preservation.** Before a whole-file Write used to repair a validation error, record from the section-entry Read the stage IDs, task IDs, root binding IDs, and selected-resource task IDs that are outside the repair target. Immediately re-Read after the Write and verify that every recorded item remains. A repair may not remove or replace unrelated topology, bindings, or a resolved task merely to make `validate` pass; use a targeted Edit when the reported error identifies an individual binding or task.
 
 **Same-file sequential Edits — anchoring.** N Edits against `caseplan.json` in one section serialize in order; each later Edit runs against the text the earlier ones already changed. `caseplan.json` has keys that recur across nodes (`"tasks"`, `"data"`, `"entryConditions"`, `"exitConditions"`, `"inputs"`) — a bare recurring key is NOT a safe anchor.
 
@@ -249,11 +250,11 @@ Not authored (Rule 20). To make a stage reachable, add a `stage-entry-conditions
 
 1. Read `caseplan.json`.
 2. Locate the stage node by ID.
-3. Ensure `stageNode.data.tasks` exists; ensure `stageNode.data.tasks[laneIndex]` exists (expand with empty arrays if needed).
+3. Ensure `stageNode.data.tasks` exists. Use the task's activation mode and entry rule before honoring lane placement: strict sequential / `runs-sequentially`, adhoc, event-driven, fan-in, conditional-gate, and standalone tasks append as new single-task inner arrays. Reuse an existing `stageNode.data.tasks[laneIndex]` only for tasks explicitly planned as `parallel` or `parallel-after-predecessor` siblings with same-lane intent and rationale.
 4. Generate a task ID.
 5. Compute `elementId = ${stageId}-${taskId}`.
 6. Build the task object per the plugin's JSON Recipe. Do NOT add `entryConditions` here — the task-entry-conditions plugin (Step 10) writes them from the SDD's authored rows, for every task type alike.
-7. Push onto `stageNode.data.tasks[laneIndex]`.
+7. Push onto `stageNode.data.tasks[laneIndex]` only for explicitly parallel or parallel-after-predecessor siblings; otherwise write `[task]` as its own inner task set. If `laneIndex` conflicts with activation mode, activation mode wins and note the lane correction in the completion report.
 8. Edit — narrow slice targeting that stage node's `data.tasks[laneIndex]`. Never whole-file Write.
 
 ### Bind an input
@@ -384,12 +385,12 @@ Relocate a task within the case. **Keep the task `id`** so conditions and cross-
    - the task itself: `elementId = ${destStageId}-${taskId}`
    - any `wait-for-connector` entry-condition rule on the task, and each entry in that rule's `uipath.outputs[]`: `elementId = ${destStageId}-${ruleId}`
    - (root `inputOutputs[]` companions are `elementId: "root"` — NOT stage-scoped, leave them.)
-3. Remove the task from the source `data.tasks[oldTaskSet]` and insert it into the destination task set in the preserved `data.tasks` order. Parallel task sets remain allowed; lane/task-set placement is structural, while `runs-sequentially` entry conditions carry sequencing.
+3. Remove the task from the source `data.tasks[oldTaskSet]` and insert it into the destination task set in the preserved `data.tasks` order. Parallel task sets remain allowed, but shared destination task sets are valid only for explicitly parallel or parallel-after-predecessor siblings. For `runs-sequentially` strict-chain tasks or other non-parallel entry modes, insert the task as its own single-task set; lane/task-set placement is structural, while entry conditions carry sequencing.
 4. **Repoint cross-task bindings that consume this task's outputs.** Any other task input with `sourceTask == <taskId>` keeps `sourceTask`, but its `sourceStage` must change to `<destStageId>`. Confirm ordering still holds — a consumer can only read a task that runs before it; moving the task later in the flow can invalidate the binding.
 5. **Re-check the moved task's `entryConditions[]`:**
    - `current-stage-entered` — no change; it follows the task to the destination stage.
    - `selected-tasks-completed` — `selectedTasksIds` left behind in the source stage now gate across stages; repoint to a task in the destination or remove if the dependency no longer applies.
-   - `runs-sequentially` — the move splits the source group; re-evaluate lane membership (step 3) in both stages.
+   - `runs-sequentially` — the moved task must be in its own single-task set unless it is explicitly part of a parallel-after-predecessor sibling set; re-evaluate lane membership (step 3) in both stages so strict sequential chains stay as consecutive single-task sets.
    - **Reverse sweep — tasks left behind in the source stage.** Any task remaining in the source stage whose `selected-tasks-completed.selectedTasksIds` names the moved task now gates *across stages* (the gater stayed put, the gated task left). Repoint each such reference to a surviving source-stage task, or remove it if the dependency no longer applies. This is the inverse of the moved task's own gater re-check above — easy to miss because step 5 otherwise looks only at the moved task.
 6. Update the task's `id-map.json` entry `stageId` if the sidecar is present.
 7. Edit — narrow slices for the source and destination `data.tasks`, the recomputed `elementId`s, and any consumer-binding slices. Never whole-file Write. Validate at the section boundary.

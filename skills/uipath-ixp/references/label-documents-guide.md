@@ -29,7 +29,7 @@ For each document from the list, process one at a time: get predictions, downloa
 uip ixp labellings get-predictions <project-name> <document-id> --output json
 ```
 
-This returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is `{ DocumentId, Labels[] }` (for a single-document call, `Predictions[0]`). Each label is `{ Name, Occurrence, Fields[] }`, and each field has `FieldId`, `FieldName`, `FormattedValue`. `Occurrence` is the explicit 0-based index used for `--occurrence`/`--updates`.
+This returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is `{ DocumentId, Labels[] }` (for a single-document call, `Predictions[0]`). Each label is `{ Name, Occurrence, Fields[] }`, and each field has `FieldId`, `FieldName`, `FormattedValue`. `Occurrence` is the explicit 0-based index used for `--occurrence`/`--updates`, valid **for this read only** — see [Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped).
 
 ### 2b. Download the document file
 
@@ -48,8 +48,8 @@ Use the **Read tool** to view the document file (read the whole document in one 
 
 1. **Look at the document** to understand the layout and where field values appear.
 2. **For each predicted field**, assign one of four verdicts:
-   - **CONFIRMED** — the predicted value matches what is in the document. Minor OCR-level differences (capitalization, whitespace) are acceptable.
-   - **CORRECTED** — **OCR-mangled values only.** The prediction found the right field in the right location, the bytes-on-page are correct, but the text was garbled in transcription (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`, `lNGRAM` instead of `INGRAM`). The reference is correct, only the literal characters need fixing. Do NOT use CORRECTED for booleans that came back with the wrong answer, inferred/computed values that came back wrong, or any case where IXP picked the wrong source on the page — those are NOT CONFIRMED.
+   - **CONFIRMED** — the predicted value matches what is in the document, literally or in its data type's normalized form. Minor OCR-level differences (capitalization, whitespace) are acceptable, as is any difference that is purely the type's normalization — a `Date` reads back as `2022-06-21T00:00:00Z` for a page showing `21-JUN-22`, a `Monetary Quantity` as `114.91 AUD` for a page showing `114.91`. Compare the values by reading them; do not write a script to convert or check formats. See [CLI Reference § Normalized output formats](cli-reference.md#normalized-output-formats).
+   - **CORRECTED** — **OCR-mangled values only.** The prediction found the right field in the right location, the bytes-on-page are correct, but the text was garbled in transcription (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`, `lNGRAM` instead of `INGRAM`, or a misread digit in a number — page `£7,300.00` predicted as `£730.00`). The reference is correct, only the literal characters need fixing. **A number whose magnitude differs from the page is OCR garble, never type normalization** (Rule 8). Do NOT use CORRECTED to restore a page's date or amount formatting, for booleans that came back with the wrong answer, inferred/computed values that came back wrong, or any case where IXP picked the wrong source on the page — those are NOT CONFIRMED.
    - **MISSING** — IXP predicted **no value** (empty `FormattedValue`) AND the field is genuinely absent from the document. Both conditions must hold. If IXP predicted a value but the field isn't actually in the document, that's NOT CONFIRMED, not MISSING — Critical Rule 12 forbids overriding a non-empty prediction with "missing".
    - **NOT CONFIRMED** — the prediction is wrong for any reason other than OCR mangling. Covers: wrong literal value on the right field, wrong-source extraction, hallucinated value, boolean came back with the wrong answer, inferred/computed value came back wrong, predicted a value the document doesn't contain. Left unannotated. Do NOT try to "fix" these with `--corrections` — `--corrections` is OCR-only (see Critical Rule 8). Improve the prompt instead.
 3. **Report your verdict for every field.** Print a table per document:
@@ -69,7 +69,7 @@ Discount                 | MISSING       | IXP predicted no value AND no discoun
 Line Items > Description | CONFIRMED     | Predicted "Widget A" matches row 1 in the table
 ```
 
-**Repeatable field groups produce one extraction per row.** `get-predictions` returns one label per row, each with an explicit 0-based `Occurrence` — `Line Items` on a multi-line invoice has N entries indexed 0..N-1 (read `Occurrence` directly; it equals document order). When validation differs across rows, give per-occurrence verdicts:
+**Repeatable field groups produce one extraction per row.** `get-predictions` returns one label per row, each with an explicit 0-based `Occurrence` — `Line Items` on a multi-line invoice has N entries indexed 0..N-1. Read `Occurrence` directly — on an unlabelled document it matches document order, but once part of the group is confirmed it does not (see [Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped)), so match rows to the document by their values, not by index. When validation differs across rows, give per-occurrence verdicts:
 
 ```text
 Line Items > Description (occurrence 0) | CONFIRMED     | "Widget A" matches line 1
@@ -140,7 +140,17 @@ uip ixp labellings confirm <project-name> <document-id> \
   --group "Line Items" --occurrence 2 --fields c4e1907a3b8f25d6 --output json
 ```
 
-Occurrences not targeted carry forward whatever annotation they already had (so wrong predictions in untouched occurrences stay unannotated). For batching many occurrences in one call, use `--updates '[…]'` — see [CLI Reference § Labellings](cli-reference.md#labellings). See Critical Rule 13.
+Occurrences not targeted carry forward whatever annotation they already had (so wrong predictions in untouched occurrences stay unannotated).
+
+**Confirm all the correct rows in one `--updates` call, not one `--occurrence` call per row** — every index in a single call resolves against the same read, whereas the second of two sequential calls is working from indices the first one invalidated ([Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped)):
+
+```bash
+uip ixp labellings confirm <project-name> <document-id> \
+  --group "Line Items" --updates '[{"occurrence":0},{"occurrence":2,"fields":["c4e1907a3b8f25d6"]}]' \
+  --output json
+```
+
+See [CLI Reference § Labellings](cli-reference.md#labellings) and Critical Rule 13.
 
 **Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates '[…]'`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 14.
 
@@ -150,9 +160,27 @@ uip ixp labellings unconfirm <project-name> <document-id> \
   --group "Line Items" --occurrence 2 --output json
 ```
 
+Take the index from a **fresh** `get-predictions`: on a partly-confirmed group, the index that confirmed a row is usually not the index that rolls it back.
+
 ### 2e. Move to the next document
 
 Repeat steps 2a–2d for all documents in the list.
+
+### Occurrence numbers are read-scoped
+
+`get-predictions` does not return a repeatable group's rows in a fixed order. The server pairs each annotation with its prediction and lists the **matched pairs first**, then the still-unmatched predictions. So on a partly-confirmed group:
+
+- confirmed rows sort to the front — confirm the third row of four and it reads back as `Occurrence` 0, with the other three shifted to 1, 2, 3;
+- the same holds in the IXP UI, which shows the confirmed row first;
+- nothing is lost or mis-assigned: the confirmed row keeps its own values and page location, it is only positioned differently in the read.
+
+Only two states read back in document order: a document with no annotations on the group, and one where every row is annotated.
+
+The consequence for labelling: **an `Occurrence` value is only valid for the read that produced it, and any write to that group invalidates it.** So
+
+- put every occurrence you want to confirm (or unconfirm) in ONE `--updates` call — all of its indices resolve against the same read;
+- if sequential per-occurrence calls are unavoidable, re-run `get-predictions` between them and re-locate each row by its field values;
+- never reuse an index across a write, and report rows to the user by value ("the row with Description `Widget B`"), not as "row 3".
 
 ### Removing a document from the project
 

@@ -22,7 +22,13 @@ run_limits:
 initial_prompt: |
   HR needs a digital employee directory in UiPath Data Fabric.
 
-  Make a list called `CE_EmployeeDirectory` with these fields:
+  Use tenant scope (no folder). I explicitly approve creating and changing
+  `CE_EmployeeDirectory`, importing its rows, and updating the requested
+  employee records in this run. Proceed without another confirmation and do
+  not mutate any other Data Fabric resource.
+
+  Make an entity called `CE_EmployeeDirectory`, shown to users as
+  `E2E Employee Directory`, with these fields:
     - Full name — required, no longer than 200 characters
     - Department — required, no longer than 50 characters (one of:
       Engineering, Sales, Finance, HR)
@@ -84,14 +90,7 @@ success_criteria:
     description: "Agent queried employees with filterGroup"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+records\s+query'
-    min_count: 2
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used fieldName key in entity create body"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*fieldName'
+    # Both requested query workflows may be grouped in one Bash action.
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -99,23 +98,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used addFields key when evolving schema"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+update.*addFields'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent applied lengthLimit on STRING fields"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*lengthLimit'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent applied decimalPrecision on Salary"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*decimalPrecision'
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*(?:addFields|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -123,7 +106,7 @@ success_criteria:
   - type: command_executed
     description: "Agent applied minValue / maxValue on a numeric field (Salary on create or PerformanceScore on addFields)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*(minValue|maxValue)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*(?:minValue|maxValue|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -131,7 +114,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used filterGroup key in records query body"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:filterGroup|--file\s+\S+)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -139,9 +122,20 @@ success_criteria:
   - type: command_executed
     description: "Agent included Id key in records update body"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+update.*\"Id\"'
+    command_pattern: '(?s)uip\s+df\s+records\s+update.*(?:\\?"Id\\?"\s*:|--file\s+\S+)'
     min_count: 1
     weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: employee schema constraints match"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      --entity-name CE_EmployeeDirectory --ignore-field-case
+      --assertions "FullName.lengthLimit=200,FullName.isRequired=true,Department.isRequired=true,JobTitle.lengthLimit=100,Salary.decimalPrecision=2,Salary.minValue=0,Salary.maxValue=1000000,Salary.isRequired=true,PerformanceScore.minValue=0,PerformanceScore.maxValue=100"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 5.0
     pass_threshold: 1.0
 
   - type: file_exists
@@ -161,7 +155,7 @@ success_criteria:
   - type: run_command
     description: "End state (deterministic): all 20 employee records landed in CE_EmployeeDirectory"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_EmployeeDirectory --expected 20"
-    timeout: 60
+    timeout: 240
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -207,10 +201,10 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_EmployeeDirectory"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_EmployeeDirectory --include-folders"
     timeout: 60
     fail_on_error: false
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_EmployeeDirectory"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_EmployeeDirectory --include-folders"
     timeout: 60

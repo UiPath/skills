@@ -6,8 +6,8 @@
 # First page
 uip df records list <entity-id> --limit 50 --output json
 
-# Next page — pass NextCursor value from previous response
-uip df records list <entity-id> --limit 50 --cursor <NextCursor> --output json
+# Next page — pass Data.NextCursor.Value from the previous response
+uip df records list <entity-id> --limit 50 --cursor <cursor-value> --output json
 ```
 
 Response wrapper: `{ Result, Code: "RecordList" | "RecordQuery", Data: { Items, TotalCount, HasNextPage, NextCursor, CurrentPage, TotalPages, SupportsPageJump } }`.
@@ -39,7 +39,7 @@ Offset-based under the hood. Available on both `records list` and `records query
 
 ## Folder scope (`--folder-key`)
 
-`records list`, `records get`, `records insert`, `records update`, `records delete`, `records query`, and `records import` all accept `--folder-key <GUID>` (CLI ≥ `1.197.0`). Required when the parent entity is folder-scoped; recommended on every destructive op. Look up the parent's folder key from `entities list --include-folders --output json` (`FolderId` per row).
+`records list`, `records get`, `records insert`, `records update`, `records delete`, `records query`, and `records import` all accept `--folder-key <GUID>`. Pass it when the parent entity is folder-scoped. Look up the key from `entities list --include-folders --output json` (`FolderId` per row).
 
 ```bash
 uip df records list  <entity-id> --folder-key <folder-guid> --output json
@@ -48,16 +48,7 @@ uip df records query <entity-id> --folder-key <folder-guid> \
   --output json
 ```
 
-`--folder-key` is forwarded as `X-UIPATH-FolderKey` and threaded through to the SDK — for tenant-scoped entities it's harmless (server resolves by UUID), so passing it defensively never breaks reads.
-
-```bash
-# Sequential sweep
-uip df records list <entity-id> --limit 100 --output json
-uip df records list <entity-id> --limit 100 --cursor "<NextCursor>" --output json
-
-# Jump directly to the page containing record #250 (with --limit 100 → page 3)
-uip df records list <entity-id> --limit 100 --offset 250 --output json
-```
+Omit `--folder-key` for tenant-scoped entities.
 
 ## Always Query the Server for Answers
 
@@ -75,12 +66,12 @@ Pagination uses the same `--limit` / `--cursor` / `--offset` flags as `records l
 
 The `filterGroup` shape, operators, response, and per-type support are in [`filter-platform-contract.md`](filter-platform-contract.md). Beyond the filter, the query body accepts:
 
-- `"selectedFields": ["F1","F2"]` — projection. Default is all fields (data-fabric.md Rule 16).
+- `"selectedFields": ["F1","F2"]` — projection. Default is all fields (data-fabric.md Rule 17).
 - `"sortOptions": [{ "fieldName": "Score", "isDescending": true }]` — server-side sort.
 
 ### Verifying a filter applied
 
-Compare the response's `TotalCount` against an unfiltered baseline. If they match, the filter didn't narrow the result set — re-check the body against the contract.
+Check that every returned record satisfies the requested predicate. Equal filtered and unfiltered counts are valid when every record matches.
 
 ### Nested Filter Groups
 
@@ -203,9 +194,7 @@ Values are the **uppercase strings** above — `"COUNT"` not `"Count"`.
 - When `selectedFields` is present alongside `aggregates`, every entry in `selectedFields` must also appear in `groupBy` — otherwise the API rejects the request. The shortcut: use the same array for both, as in the examples above.
 - `groupBy` and `selectedFields` may reference root-entity fields only — expansions are not supported in aggregate mode.
 - The same `filterGroup`, `sortOptions`, and pagination flags (`--limit`, `--cursor`) work alongside aggregates. Filters are applied **before** grouping (SQL `WHERE`).
-- Choice-set fields in `groupBy` / filters require the numeric `numberId`, not the display label. Discover via the choice-set lookup if you need to filter / group by a choice value.
-
-> Needs `@uipath/data-fabric-tool` `1.0.1+`; older versions silently drop `aggregates`/`groupBy` and return a plain record list — `uip tools install @uipath/data-fabric-tool@latest`.
+- `groupBy` names the choice-set field. Group keys and filter values use numeric `NumberId` values rather than display labels.
 
 ## Insert Records
 
@@ -244,21 +233,11 @@ uip df records insert <entity-id> \
 
 Display labels, choice-value UUIDs, and non-UUID relationship values are rejected — resolve first. Reads echo the same shape.
 
-### FILE fields — never write through insert/update
+### FILE fields
 
-**Anti-pattern.** Never include a FILE-typed key in `records insert` or `records update` payload (data-fabric.md Rule 6). Expected behavior: the platform silently strips FILE values — paths, base64 blobs, filenames, UUIDs, and `null` — and returns `Result: Success` with the FILE column unchanged. Do not interpret Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. To attach, replace, or clear a file, use the `files` verbs documented in [`file-attachments.md`](file-attachments.md). Required write path:
-
-```bash
-# 1. Insert the row WITHOUT the FILE column
-uip df records insert <entity-id> --body '{"title":"Q1 report"}' --output json
-#    → Data.Id is the new record's UUID
-
-# 2. Attach the file to the FILE field on that record
-uip df files upload <entity-id> <record-id> <file-field-name> \
-  --file /local/path/report.pdf --output json
-```
-
-`files upload` is both attach and replace — call it directly against the record/field whether the field is currently empty or already has a file (no need to `files delete` first). `files delete` clears the field, `files download` retrieves the binary. CSV `records import` drops `FILE` columns too — see Rule 20. Full file-attachment surface in [`file-attachments.md`](file-attachments.md).
+Never include a FILE key in record insert/update/import payloads; the platform
+silently drops it. Insert the row without that key, then use `files upload`.
+See data-fabric.md Rule 6 and [`file-attachments.md`](file-attachments.md).
 
 ## Update Records
 

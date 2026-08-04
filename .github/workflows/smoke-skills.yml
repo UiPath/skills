@@ -127,7 +127,7 @@ jobs:
           SKIP_INFRA_TRIGGER=false
           echo "$PR_LABELS" | grep -qw 'ci:skip-infra-trigger' && SKIP_INFRA_TRIGGER=true
 
-          if [ "$SKIP_INFRA_TRIGGER" = "false" ] && echo "$CHANGED" | grep -qE '^tests/experiments/smoke\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-skills\.yml$'; then
+          if [ "$SKIP_INFRA_TRIGGER" = "false" ] && echo "$CHANGED" | grep -qE '^tests/experiments/smoke\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^tests/\.coder-eval-version$|^\.github/workflows/smoke-skills\.yml$'; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
@@ -338,10 +338,13 @@ jobs:
         run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
       # Pull the pinned agent image from GHCR (never built from source); the
-      # skills smoke image extends it below. GH_PAT needs read:packages.
+      # skills smoke image extends it below. Needs read:packages only —
+      # GH_PACKAGES_TOKEN, never the repo-write PAT: this workflow is
+      # `pull_request`-triggered, so anyone who can push a branch to this
+      # public repo can read the secret it is handed.
       - name: Pull pinned coder-eval-agent image
         run: |
-          echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }}
 
       # Build custom smoke image extending coder-eval-agent with @uipath/cli and
@@ -354,7 +357,7 @@ jobs:
         run: |
           docker build \
             --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }} \
-            --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
+            --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .

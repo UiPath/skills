@@ -2,7 +2,7 @@
 
 Trust the SDD. Emit inputs/outputs exactly as declared. Every SDD Outputs row carries `->` or `=`; preserve that operator and both operands through `tasks.md`. Bare `tasks.md` outputs come only from resolved-schema discovery, never from an SDD row. There is no `caseplan.json` yet — all validation happens during [implementation](impl-json.md).
 
-## SDD table to `tasks.md` projection (mandatory)
+## SDD Outputs table to `tasks.md` projection (mandatory)
 
 The SDD Outputs table has separate `Field`, `Type`, and `Binding / Value` columns, while `tasks.md` uses one canonical list item per row. Project each SDD row exactly once:
 
@@ -26,6 +26,24 @@ Treat `—` and blank `Field` cells on `=` rows as presentation-only placeholder
 ```
 
 Before the Phase 1 approval gate, reject any SDD Outputs row without `->` or `=`, and reject any `tasks.md` output item whose first token is `—`, `->`, or `=`. Every SDD-projected item must match `<field-path> -> <case-variable>` or `<case-variable> = <expression>`; `<top-level-field>` is reserved for schema-discovered items.
+
+## SDD Inputs table to `tasks.md` projection (mandatory)
+
+The SDD Inputs table has separate `Field`, `Type`, and `Binding` columns, exactly like the Outputs table above — but the `tasks.md` input item drops the `Type` column entirely. Project each SDD Inputs row to `<Field> <- <Binding>` or `<Field> = <Binding>` (operator comes from the Binding cell itself, per [Input/Output Notation](#inputoutput-notation) below); never carry the `Type` column into `tasks.md`:
+
+| SDD `Field` | SDD `Type` | SDD `Binding` | Canonical `tasks.md` item |
+|---|---|---|---|
+| `APIInput1` | `string` | `"literal-seed"` | `APIInput1 = "literal-seed"` |
+| `APIInput1` | `string` | `=vars.caseInput` | `APIInput1 = =vars.caseInput` |
+| `APIInput1` | `string` | `<- "Binding Matrix"."Echo literal".APIOutput1` | `APIInput1 <- "Binding Matrix"."Echo literal".APIOutput1` |
+
+```markdown
+<!-- INVALID: leaked the SDD Type column as a literal pipe segment -->
+- APIInput1 | string | <- "Binding Matrix"."Echo literal".APIOutput1
+
+<!-- VALID -->
+- APIInput1 <- "Binding Matrix"."Echo literal".APIOutput1
+```
 
 ## Discovering Input/Output Names
 

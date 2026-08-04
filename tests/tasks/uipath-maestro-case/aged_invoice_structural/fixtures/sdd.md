@@ -34,8 +34,9 @@
 | Case Description | Registers an aged invoice case, triages it, captures AP ownership, and closes it, with interrupting SLA-escalation and automation-incident lanes. Compact connector-free proof-of-value variant. |
 | Case Identifier | Type: constant. Prefix: AIR |
 | Priority | Choiceset: Low, Medium, High, Critical — Default: High |
-| Case-Level SLA | 30 m |
+| Case-Level SLA | 90 m |
 | SLA Type | time-based |
+| SLA Title | Case Resolution SLA |
 | Case App | Disabled |
 | Task-output passing | Direct |
 | Case Identifier source | `=metadata.ExternalId` |
@@ -44,8 +45,8 @@
 
 | SLA Status | Threshold | Action |
 |------------|-----------|--------|
-| At-Risk | 70% of SLA duration | Notify: AP Team Leads |
-| Breached | 100% of SLA duration | Notify: Finance Leadership |
+| At-Risk | 70% of SLA duration | Notify: UserGroup: AP Team Leads |
+| Breached | 100% of SLA duration | Notify: UserGroup: Finance Leadership |
 
 ### Case Triggers
 
@@ -81,6 +82,7 @@
 ### Stage 1: Intake
 
 **Type:** Stage
+**Design Rationale:** Intake is the first primary stage because the record-created trigger must register the aged invoice and classify its root cause before AP review begins.
 **Description:** Registers the aged invoice as a case from the record-created trigger and triages its root cause.
 **Required for Case Completion:** Yes
 
@@ -98,9 +100,11 @@
 
 #### Stage SLA
 
+**SLA Title:** Intake SLA
+
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: AP Intake | Notify: AP Intake |
+| 15 | m | 70% | Notify: UserGroup: AP Intake | Notify: UserGroup: AP Intake |
 
 #### Tasks
 
@@ -112,6 +116,8 @@
 ##### Task 1.1: Register case
 
 **Type:** api-workflow
+**Activation Mode:** parallel
+**Design Rationale:** The API workflow classification preserves the existing lightweight case-registration resource while keeping the task local to Intake.
 **Description:** Creates the case shell record linking invoice and supplier.
 
 **Entry Condition:**
@@ -119,6 +125,8 @@
 | WHEN | IF | Display Name |
 |------|-----|--------------|
 | current-stage-entered | — | Entry Rule 1 |
+
+**Task envelope** (every task — render after the Entry Condition table):
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|
@@ -147,6 +155,8 @@
 ##### Task 1.2: Run Invoice Triage Agent
 
 **Type:** agent
+**Activation Mode:** parallel
+**Design Rationale:** The agent task captures automated invoice triage as a resolved in-tenant resource instead of adding connector dependencies to this structural fixture.
 **Description:** Classifies the exception root cause and proposes a priority.
 
 **Entry Condition:**
@@ -154,6 +164,8 @@
 | WHEN | IF | Display Name |
 |------|-----|--------------|
 | current-stage-entered | — | Entry Rule 1 |
+
+**Task envelope** (every task — render after the Entry Condition table):
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|
@@ -184,6 +196,7 @@
 ### Stage 2: AP Review
 
 **Type:** Stage
+**Design Rationale:** AP Review is a primary stage because the human ownership decision gates normal completion before closure work can start.
 **Description:** AP accepts ownership of the case and confirms the resolution path.
 **Required for Case Completion:** Yes
 
@@ -201,9 +214,11 @@
 
 #### Stage SLA
 
+**SLA Title:** AP Review SLA
+
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: AP Clerk | Notify: AP Team Lead |
+| 15 | m | 70% | Notify: UserGroup: AP Clerk | Notify: UserGroup: AP Team Lead |
 
 #### Tasks
 
@@ -214,6 +229,8 @@
 ##### Task 2.1: AP ownership review
 
 **Type:** action
+**Activation Mode:** parallel
+**Design Rationale:** The action task is human-in-the-loop because AP must explicitly accept ownership or reclassify the invoice before the case can close.
 **Description:** AP clerk accepts ownership of the case or reclassifies it.
 
 **Entry Condition:**
@@ -221,6 +238,8 @@
 | WHEN | IF | Display Name |
 |------|-----|--------------|
 | current-stage-entered | — | Entry Rule 1 |
+
+**Task envelope** (every task — render after the Entry Condition table):
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|
@@ -262,6 +281,7 @@
 ### Stage 3: Closure
 
 **Type:** Stage
+**Design Rationale:** Closure is the final primary stage because it performs the ERP update, optional child-case tracking, and KPI write-back after AP accepts ownership.
 **Description:** Updates the mock ERP, tracks the reimbursement via a child case, and closes the case.
 **Required for Case Completion:** Yes
 
@@ -279,9 +299,11 @@
 
 #### Stage SLA
 
+**SLA Title:** Closure SLA
+
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: AP Clerk | Notify: AP Team Lead |
+| 15 | m | 70% | Notify: UserGroup: AP Clerk | Notify: UserGroup: AP Team Lead |
 
 #### Tasks
 
@@ -294,6 +316,8 @@
 ##### Task 3.1: Update mock ERP outcome
 
 **Type:** rpa
+**Activation Mode:** parallel
+**Design Rationale:** RPA models the mock ERP update as existing unattended automation while keeping the case definition connector-free.
 **Description:** RPA bot posts the resolution outcome to the mock ERP UI.
 
 **Entry Condition:**
@@ -301,6 +325,8 @@
 | WHEN | IF | Display Name |
 |------|-----|--------------|
 | current-stage-entered | — | Entry Rule 1 |
+
+**Task envelope** (every task — render after the Entry Condition table):
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|
@@ -328,6 +354,8 @@
 ##### Task 3.2: Track Payment Sub-Case
 
 **Type:** case-management
+**Activation Mode:** parallel
+**Design Rationale:** The child-case task keeps payment tracking as a separate lifecycle without blocking closure in this structural scenario.
 **Description:** Spawns a payment-tracking child case with its own lifecycle.
 
 **Entry Condition:**
@@ -335,6 +363,8 @@
 | WHEN | IF | Display Name |
 |------|-----|--------------|
 | current-stage-entered | — | Entry Rule 1 |
+
+**Task envelope** (every task — render after the Entry Condition table):
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|
@@ -363,6 +393,8 @@
 ##### Task 3.3: Close case and update KPIs
 
 **Type:** api-workflow
+**Activation Mode:** parallel
+**Design Rationale:** The API workflow records closure metrics through a resolved reusable resource after the primary resolution work is complete.
 **Description:** Records the closure reason and updates dashboard metrics.
 
 **Entry Condition:**
@@ -370,6 +402,8 @@
 | WHEN | IF | Display Name |
 |------|-----|--------------|
 | current-stage-entered | — | Entry Rule 1 |
+
+**Task envelope** (every task — render after the Entry Condition table):
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|
@@ -401,6 +435,7 @@
 
 **Type:** Stage
 **Stage Kind:** secondary
+**Design Rationale:** SLA Escalation is a secondary interrupting lane because priority-based escalation should pause the active primary stage once, run the reminder work, then return to origin.
 **Description:** Interrupting lane for at-risk or breached SLA conditions; holds for an escalation timer and returns to the originating stage.
 **Required for Case Completion:** No
 **Interrupting:** Yes
@@ -419,9 +454,11 @@
 
 #### Stage SLA
 
+**SLA Title:** SLA Escalation Reminder SLA
+
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: AP Team Lead | Notify: Finance Operations |
+| 15 | m | 70% | Notify: UserGroup: AP Team Lead | Notify: UserGroup: Finance Operations |
 
 #### Tasks
 
@@ -432,6 +469,8 @@
 ##### Task S1.1: SLA warning timer
 
 **Type:** wait-for-timer
+**Activation Mode:** parallel
+**Design Rationale:** The timer task represents the escalation reminder window inside the interrupting secondary stage without requiring external systems.
 **Description:** Short hold representing the SLA escalation reminder window.
 
 **Entry Condition:**
@@ -439,6 +478,8 @@
 | WHEN | IF | Display Name |
 |------|-----|--------------|
 | current-stage-entered | — | Entry Rule 1 |
+
+**Task envelope** (every task — render after the Entry Condition table):
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|
@@ -455,6 +496,7 @@
 
 **Type:** Stage
 **Stage Kind:** secondary
+**Design Rationale:** Automation Incident is a secondary interrupting lane because failed automation should be captured as recoverable exception work and then return to the interrupted stage.
 **Description:** Interrupting lane for failed API/RPA/agent automation; raises an incident and returns to the originating stage.
 **Required for Case Completion:** No
 **Interrupting:** Yes
@@ -473,9 +515,11 @@
 
 #### Stage SLA
 
+**SLA Title:** Automation Incident SLA
+
 | SLA | Unit | At-Risk | At-Risk Action | Breach Action |
 |-----|------|---------|----------------|---------------|
-| 5 | m | 70% | Notify: Automation Support | Notify: Automation CoE |
+| 15 | m | 70% | Notify: UserGroup: Automation Support | Notify: UserGroup: Automation CoE |
 
 #### Tasks
 
@@ -486,6 +530,8 @@
 ##### Task S2.1: Create incident record
 
 **Type:** api-workflow
+**Activation Mode:** parallel
+**Design Rationale:** The API workflow records the incident using the same resolved structural resource pattern as the other connector-free automation tasks.
 **Description:** Raises an incident for the failed automation (ServiceNow transport re-typed to an api-workflow).
 
 **Entry Condition:**
@@ -493,6 +539,8 @@
 | WHEN | IF | Display Name |
 |------|-----|--------------|
 | current-stage-entered | — | Entry Rule 1 |
+
+**Task envelope** (every task — render after the Entry Condition table):
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|

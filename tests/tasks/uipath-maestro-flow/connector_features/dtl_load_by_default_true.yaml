@@ -16,6 +16,7 @@ initial_prompt: |
   Discover the create-resource-group operation and pick the region from the
   location dropdown.
   Validate the final flow file.
+  Use the connection present in Shared/uipath-maestro-flow.
 
 success_criteria:
   - type: run_command

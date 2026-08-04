@@ -36,6 +36,14 @@ sandbox:
       path: data
   mock_path_dirs: ["m"]
 
+pre_run:
+  # Seal the mock store before the agent starts: packs m/r/ into an opaque
+  # m/.store and removes m/r/, so the agent cannot read the recorded uip
+  # outputs and reach the diagnosis without investigating.
+  - command: "python m/seal"
+    timeout: 60
+    fail_on_error: true
+
 reference:
   file: RESOLUTION.md
 
@@ -46,9 +54,6 @@ initial_prompt: |
   Range writing 312 scraped HR records to a directory workbook.
   Yesterday's run with the same workflow and same workbook
   succeeded. What changed?
-
-  The project source for the failing process is at ./ExcelDirectoryProcess/ in the
-  current working directory.
 
 success_criteria:
   - type: skill_triggered
@@ -62,6 +67,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
+    include_dialog: true
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
@@ -91,7 +97,9 @@ simulation:
   constraints:
     - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report, other than the project-source location noted above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
+    - "If the agent offers or asks to apply/implement the fix itself (editing project files, or running validate/build/pack/publish), DECLINE: say you will apply the change yourself in Studio later, and ask only for the root cause and the exact fix steps. Never approve a source-file edit."
   max_turns: 6

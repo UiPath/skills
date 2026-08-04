@@ -20,16 +20,25 @@ sandbox:
     - type: template_dir
       path: ../../../_shared/mock_template
     - type: template_dir
+      path: process
+    - type: template_dir
       path: data
   mock_path_dirs:
     - m
+
+pre_run:
+  # Seal the mock store before the agent starts: packs m/r/ into an opaque
+  # m/.store and removes m/r/, so the agent cannot read the recorded uip
+  # outputs and reach the diagnosis without investigating.
+  - command: "python m/seal"
+    timeout: 60
+    fail_on_error: true
 
 reference:
   file: RESOLUTION.md
 
 initial_prompt: |
   My MailerAgent failed with trace ID cccccccccccccccccccccccccccccccc.
-  The local source is under process/MailerSolution.
   Diagnose why it failed and recommend the agent.json and lifecycle changes. Do not run live debug or edit files.
 
 success_criteria:
@@ -67,9 +76,10 @@ simulation:
   goal: |
     Let the agent complete the diagnosis and provide a remediation plan.
   constraints:
-    - "If the agent asks where the source code is, say it is under process/MailerSolution."
+    - "If the agent asks where the source code is, say it is under ./MailerSolution."
     - "If the agent asks whether it can edit files, say no."
     - "If the agent asks whether it can run uip agent debug, say no and ask it to provide the command instead."
     - "If the agent asks whether to expand investigation scope, answer yes."
     - "Keep replies short and do not invent new facts."
+    - "If the agent offers or asks to apply/implement the fix itself (editing project files, or running validate/build/pack/publish), DECLINE: say you will apply the change yourself in Studio later, and ask only for the root cause and the exact fix steps. Never approve a source-file edit."
   max_turns: 6
