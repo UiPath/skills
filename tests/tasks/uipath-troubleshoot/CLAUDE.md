@@ -255,8 +255,6 @@ The mock machinery itself is never readable in the sandbox — its source would 
 
 `fail_on_error: true` is deliberate — a silent seal failure restores the leak. `m/seal` is idempotent and no-ops when there is no `r/manifest.json`, so a re-run in a reused sandbox still exits 0.
 
-Once the store is committed the seal machinery has no further use, so it removes itself: `m/seal` is truncated to zero bytes and `m/.seal.bin` is deleted. `m/uip` needs `.uip.bin` and `.store`, never `.seal.bin`, so dispatch is unaffected for the rest of the run, and a zero-byte `m/seal` is valid Python that exits 0 — so the invocation above keeps working. Ordering is load-bearing and must not be rearranged: the self-destruct is strictly the LAST thing `seal.py` does, after the store write and the `rmtree`, and it never runs on the no-manifest path. Blanking `m/seal` any earlier would let a `pre_run` retry exit 0 over a sandbox whose `r/` fixtures are still readable — the leak this seal exists to prevent, made silent. Within the self-destruct the stub is blanked before the blob is unlinked, so no crash point leaves a `m/seal` that exits non-zero on a task that did seal correctly.
-
 The passthrough cache lives at `m/_cache` (beside the shim, not under `r/`) so `docsai` proxying keeps working after `r/` is gone. Its entries are encrypted like the other runtime data files, and record only the response — not the query text the agent typed.
 
 `_build_task_yaml` in `generate_scenario.py` emits this block, so generated scenarios get it automatically. Hand-written scenarios MUST add it.
