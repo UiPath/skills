@@ -23,7 +23,7 @@ If the user just wants a generic form (no DU document), use the standard Action 
 3. **Set `optimizeDeps.exclude: ['@uipath/du-validation-station-wc']` in `vite.config.ts`.** Vite's pre-bundler rewrites `import.meta.url` and breaks runtime asset resolution.
 4. **Body needs `light` or `dark` class** for theming. Match it to the `theme` prop. Action apps already manage this via `onInitTheme` from `CodedActionAppService.getTask()`.
 5. **`sdk` must already be initialized.** Pass the same `UiPath` instance produced by `useAuth()` (web app) or constructed in `src/uipath.ts` (action app). Do not construct a second SDK just for the widget — auth state will diverge.
-6. **Required SDK scopes depend on where the document data comes from.** Bucket-backed paths need `OR.Buckets` — the widget fetches the document and extraction artifacts from a storage bucket. The in-memory path needs neither `OR.Buckets` nor an SDK instance, because the web component issues no HTTP calls (see [Integration: in-memory data](#integration-in-memory-data-no-storage-bucket)). Either way, add `OR.Tasks` when the app is rendered inside an Action Center task (action app, or web app that completes a task on save). Add to the `scope` field in `uipath.json` before first run; mismatch fails silently with 401/403. See [../oauth-scopes.md](../oauth-scopes.md).
+6. **`OR.Buckets` depends on where the document data comes from; `OR.Tasks` does not.** Bucket-backed paths need `OR.Buckets` — the widget fetches the document and extraction artifacts from a storage bucket. The in-memory path needs no `OR.Buckets`, and the widget itself needs no `UiPath` instance, because it issues no HTTP calls (see [Integration: in-memory data](#integration-in-memory-data-no-storage-bucket)). **Add `OR.Tasks` whenever your app completes an Action Center task on save** — action app, or web app that calls `task.complete()` — regardless of which data path you chose, and note a web app completing a task still needs its own `UiPath` instance to do so. Add to the `scope` field in `uipath.json` before first run; mismatch fails silently with 401/403. See [../oauth-scopes.md](../oauth-scopes.md).
 7. **Widget does NOT surface failures.** `onSubmitComplete` / `onSaveAsDraftComplete` fire with `{ success: false, error }` on failure but render no toast — the host owns all UI feedback (toast, retry, log). Wire these callbacks or failures are silent.
 8. **Report-as-exception makes no API call.** `onReportExceptionComplete(documentId, reason)` only hands the host the data — it does NOT persist. The host must call `OrchestratorDuModule.submitExceptionReport(taskId, documentId, reason, { folderId })` itself, or the user's "Report as exception" click is a no-op. Needs `OR.Tasks`.
 
@@ -355,7 +355,9 @@ useEffect(() => {
 
 ## Integration: in-memory data (no storage bucket)
 
-Both sections above read the document from a storage bucket. The underlying web component makes **no HTTP calls of its own** — when your backend already holds the document data, you can hand it over directly and keep every write. No `sdk`, no bucket, no `OR.Buckets`.
+Both sections above read the document from a storage bucket. The underlying web component makes **no HTTP calls of its own** — when your backend already holds the document data, you can hand it over directly and keep every write. No bucket, no `OR.Buckets`, and no `UiPath` instance for the widget.
+
+This drops the bucket requirement only. If your app completes an Action Center task on save it still needs `OR.Tasks` — and, in a web app, still needs its own `UiPath` instance to call `task.complete()`. See Critical Rule 6.
 
 **One question decides which way you go:**
 

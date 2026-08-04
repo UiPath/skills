@@ -92,8 +92,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Does NOT mount the bucket-backed <ValidationStation> component, whose props require sdk + ContentValidationData"
-    command: 'grep -Eq "<ValidationStation[[:space:]/>]" src/components/DocumentReview.tsx'
+    description: "Does NOT mount the bucket-backed <ValidationStation> component, whose props require sdk + ContentValidationData. Comments are stripped first — naming it to explain why it was rejected is fine; mounting it is not."
+    command: 'sed "s://.*::" src/components/DocumentReview.tsx | grep -Ev "^[[:space:]]*(\*|/\*)" | grep -Eq "<ValidationStation[[:space:]/>]"'
     timeout: 10
     expected_exit_code: 1
     weight: 2.0

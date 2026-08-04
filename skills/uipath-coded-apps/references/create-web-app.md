@@ -225,7 +225,7 @@ const records = await entities.getAllRecords('<entity-id>'); // entity ID is a U
 
 Method signatures come from the installed types (`node_modules/@uipath/uipath-typescript/dist/<subpath>/index.d.ts`); per-method scopes from the shipped `node_modules/@uipath/uipath-typescript/docs/oauth-scopes.md` — see [oauth-scopes.md](oauth-scopes.md) for bundles and the lookup protocol.
 
-If the user wants a **Document Understanding validation UI** (review/correct extraction results), embed the Validation Station widget — see [widgets/validation-station.md](widgets/validation-station.md). When the document comes from a storage bucket the required scope is `OR.Buckets` (plus `OR.Tasks` if the widget completes an Action Center task on save) — add to the `scope` field in `uipath.json` during Step 4. If your backend already holds the document data, the in-memory path needs neither.
+If the user wants a **Document Understanding validation UI** (review/correct extraction results), embed the Validation Station widget — see [widgets/validation-station.md](widgets/validation-station.md). `OR.Buckets` is required when the document comes from a storage bucket; the in-memory path drops it. `OR.Tasks` is required whenever the app completes an Action Center task on save, on either data path. Add to the `scope` field in `uipath.json` during Step 4.
 
 When implementing specific SDK services, read the corresponding reference:
 
