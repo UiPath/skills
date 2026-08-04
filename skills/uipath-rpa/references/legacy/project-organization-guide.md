@@ -2,7 +2,7 @@
 
 Best practices for structuring, naming, and organizing legacy UiPath RPA projects.
 
-For project.json schema and package dependencies, see [project-structure.md](./project-structure.md).
+For project.json schema and package dependencies, see [cli-reference.md § Legacy Project Structure](./cli-reference.md#legacy-project-structure).
 For REFramework file structure, see [activity-docs/_REFRAMEWORK.md](./activity-docs/_REFRAMEWORK.md).
 
 ---
@@ -274,7 +274,7 @@ In `project.json`, set `outputType` to `"Library"`:
 }
 ```
 
-See [project-structure.md](./project-structure.md) for the full Library project.json template.
+See [cli-reference.md § Legacy Project Structure](./cli-reference.md#legacy-project-structure) for the full Library project.json template.
 
 ### Key Differences from Process Projects
 
