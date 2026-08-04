@@ -451,7 +451,7 @@ The trailing `` `{stage_id}` `` (e.g., `` `stage-intake` ``) MUST appear so read
 |---|---|---|---|
 | `case-entered` (root only) / `selected-stage-completed("<Stage>")` / `selected-stage-exited("<Stage>")` / `wait-for-connector` / `user-selected-stage` / `sla-status-change("<SLA target>","<SLA Title>")` (breach) / `sla-status-change("<SLA target>","<SLA Title>","<At-Risk Escalation Display Name>")` (at-risk) | optional `conditionExpression` | `Yes` for every secondary-stage entry row, except an `sla-status-change` parallel-oversight row (`No`); `No` for regular-stage entry | optional |
 
-`sla-status-change` args are specified in [case-sdd-template.md](../assets/templates/case-sdd-template.md) § Stage Entry Conditions; closure is enforced by § Logical integrity step 6.
+Write the call form ONLY in condition-table rows, always with complete args — in prose, use the bare rule name, never a placeholder call form (`sla-status-change("root", ...)`). `sla-status-change` args are specified in [case-sdd-template.md](../assets/templates/case-sdd-template.md) § Stage Entry Conditions; closure is enforced by § Logical integrity step 6.
 
 `user-selected-stage` is valid only when another stage has a `wait-for-user` exit that exposes this target to the user. It is not the rule for deterministic rejection, approval, send-back, or SLA routing. Use decision facts plus guarded stage entry/exit rows for deterministic routes.
 
