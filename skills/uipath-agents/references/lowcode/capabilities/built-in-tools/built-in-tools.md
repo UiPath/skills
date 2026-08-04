@@ -15,7 +15,7 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 2. **`properties.toolType` is the discriminator** — fixed per built-in, kebab-lowercase. Copy from the per-tool walkthrough; do not invent.
 3. **No solution-level files.** Built-in tools need no `uip solution resources refresh`. Validate the agent and bundle.
 4. **Input/output schemas are fixed.** Do not edit them. Each tool's walkthrough lists the canonical schema.
-5. **Inline agents are out of scope here.** Built-in tools on *inline* agents are embedded in the `.flow` (a `uipath.agent.resource.tool.builtin.<toolType>` node carrying its full config); owned by the `uipath-maestro-flow` skill — see [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md). This file covers standalone agents only.
+5. **Inline agents are out of scope here.** Built-in tools on *inline* agents are embedded in the `.flow` (a `uipath.agent.resource.tool.builtin.<suffix>` node — suffixes `analyzefiles`/`summarize`/`batchtransform`, NOT these kebab-case toolTypes — carrying its full config); owned by the `uipath-maestro-flow` skill — see [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md). This file covers standalone agents only.
 
 ## Resource Shape
 

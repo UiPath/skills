@@ -160,9 +160,9 @@ Confirm:
 
 ## 7. Resource Nodes
 
-Resource nodes carry their **full config in their own `inputs`** (plus their own `inputs.source` UUID) and attach via exactly ONE artifact edge: agent `sourcePort ∈ {tool, context, escalation}` → resource `targetPort: "input"`, depth 1, one agent per resource.
+Resource nodes carry their **full config in their own `inputs`** (plus their own identity UUID — `inputs.source` for most kinds; built-ins vary: summarize/batchtransform mint `inputs.id` and their `source` is a file reference, see [built-in-tools.md § Identity](capabilities/built-in-tools.md#identity--two-patterns)) and attach via exactly ONE artifact edge: agent `sourcePort ∈ {tool, context, escalation}` → resource `targetPort: "input"`, depth 1, one agent per resource.
 
-Universal recipe, all kinds: discover the node type (`registry search` prefix → `registry get`), mint a lowercase UUID for `inputs.source`, add the node with full `inputs`, copy its definition verbatim into `definitions[]`, wire the one artifact edge, validate. The **definitions-or-nothing law** (§ 3) applies with force here: a resource node without its definition silently vanishes from the derived agent and the package.
+Universal recipe, all kinds: discover the node type (`registry search` prefix → `registry get`), mint a lowercase identity UUID (`inputs.source` unless the kind's capability doc says otherwise), add the node with full `inputs`, copy its definition verbatim into `definitions[]`, wire the one artifact edge, validate. The **definitions-or-nothing law** (§ 3) applies with force here: a resource node without its definition silently vanishes from the derived agent and the package.
 
 | Kind | Edge source port | Node type pattern | Capability doc |
 |------|------------------|-------------------|----------------|

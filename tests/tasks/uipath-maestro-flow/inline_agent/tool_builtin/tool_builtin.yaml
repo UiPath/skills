@@ -106,7 +106,7 @@ success_criteria:
     path: "DocsFlowSol/DocsFlow/DocsFlow.flow"
     includes:
       - '"uipath.agent.autonomous"'
-      - 'uipath.agent.resource.tool.builtin.analyzefiles'
+      - '"uipath.agent.resource.tool.builtin.analyzefiles"'
     weight: 1.5
     pass_threshold: 1.0
 
