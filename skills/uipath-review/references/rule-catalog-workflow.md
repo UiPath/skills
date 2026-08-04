@@ -40,7 +40,7 @@ If the review command is unavailable (CLI not installed, or a version without `a
 1. **Identify which catalog files apply.** Use the detection table below.
 2. **Read each catalog file in full.**
 3. **Apply each rule's `detection_method`** (always the judgment form): read the named source material, reason about it, emit a finding when the criteria hold. Log the reasoning in the finding's `description`.
-4. **Track skipped rules.** If a rule cannot apply (`status: deferred`, missing optional file, no eval set to assess against), record `rule_id` + reason for the report's "Rules Skipped" subsection. **Never silently skip.**
+4. **Track skipped rules.** If a rule was intended but could not be applied (`status: deferred`, review CLI unavailable, guardrail catalog unavailable, required source unreadable), record `rule_id` + reason for the report's "Rules Skipped" subsection. **Never silently skip.** A rule with an empty subject set is not skipped — see SKILL.md Critical Rule 11.
 5. **Merge findings into the Step 5 report** — into the Critical / Warning / Info findings tables, one row per finding:
 
    ```
