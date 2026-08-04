@@ -133,7 +133,8 @@ def _get_store():
             "manifest": blob["manifest"],
             "files": {name: base64.b64decode(b64) for name, b64 in blob.get("files", {}).items()},
         }
-    except Exception:  # unreadable, damaged, or not the document we wrote
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        # Unreadable, damaged, or not the document `seal` writes.
         sys.exit("uip: runtime data unreadable")
     return _STORE
 

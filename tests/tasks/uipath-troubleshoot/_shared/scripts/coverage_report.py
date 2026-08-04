@@ -35,7 +35,7 @@ from pathlib import Path
 # sources it belongs to instead of carrying a second copy of the key.
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "mock_src"))
-from _cipher import data_open, line_open  # noqa: E402
+from _cipher import data_open, line_open
 
 CALL_LOG_NAMES = (".log", ".calls.jsonl")
 
