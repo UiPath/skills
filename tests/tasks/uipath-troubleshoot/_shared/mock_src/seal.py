@@ -19,15 +19,23 @@ blob (`m/seal` is a thin loader for `m/.seal.bin`, packed by
 `_shared/scripts/compile_mocks.py`), so nothing readable in the sandbox
 documents the manifest schema or the `.store` format.
 
+Once the seal is committed this machinery has no further use, so it removes
+itself: `m/seal` is truncated to zero bytes and `m/.seal.bin` is deleted (see
+`_self_destruct`). `m/uip` needs `.uip.bin` and `.store`, never `.seal.bin`,
+so dispatch is unaffected for the rest of the run.
+
 Idempotent and safe to run anywhere:
-    - No `r/manifest.json` present  → no-op (exit 0). Lets an experiment-level
-      pre_run run this for EVERY task; non-mock tasks simply skip, and a
-      re-run in a reused sandbox (where sealing already removed `r/`) is a
-      no-op.
+    - No `r/manifest.json` present  → no-op (exit 0), and specifically NOT a
+      self-destruct: this path cannot tell "already sealed" from "never had
+      fixtures", so it touches nothing. Lets an experiment-level pre_run run
+      this for EVERY task; non-mock tasks simply skip, and a re-run in a
+      reused sandbox (where sealing already removed `r/`) is a no-op.
     - A PARTIAL seal (a crash mid-way) always leaves `r/manifest.json` in
       place (the store write and `rmtree` happen last), so the pre_run retry
       RESUMES the seal — every step is idempotent or skip-guarded. `.store`
       alone is never treated as proof the seal completed.
+    - After a COMPLETED seal, a re-run is an empty program: `m/seal` is zero
+      bytes, which is valid Python and exits 0 without doing anything.
 
 Blob format (`.store`): this utf-8 JSON document, compressed and then
 encrypted under `DATA_KEY` (`mock_src/_cipher.py`, purpose `store`):
@@ -64,6 +72,46 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 RESPONSES_DIR = SCRIPT_DIR / "r"
 MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
 STORE_PATH = SCRIPT_DIR / ".store"
+# This script's own staged artifacts, removed once the seal is committed.
+SEAL_STUB = SCRIPT_DIR / "seal"
+SEAL_BLOB = SCRIPT_DIR / ".seal.bin"
+
+
+def _self_destruct() -> None:
+    """Remove this script's own machinery from the mock directory.
+
+    Call ONLY after the store is written and `r/` is gone. Ordering is the
+    whole risk here: a blank file is valid Python and exits 0, so a `seal`
+    blanked before the store is committed would make the pre_run retry report
+    success over a sandbox whose `r/` fixtures are still readable — the exact
+    leak this script exists to prevent, turned silent. Hence last, and hence
+    never on the no-manifest path.
+
+    Truncate the stub BEFORE unlinking the blob, not the other way round. With
+    the blob gone first, a crash before the truncate leaves a `seal` whose
+    loader exits non-zero on "runtime data missing", failing the `fail_on_error`
+    pre_run of a task that was in fact sealed correctly. Blanking first means
+    every later crash point still leaves a `seal` that exits 0.
+
+    Best-effort: a failure here leaves readable *machinery*, never readable
+    fixtures, so it must not fail the pre_run of a completed seal. `OSError`
+    covers the file already being absent (a re-run, or a sandbox that got part
+    way through this function) as well as a refused write.
+
+    Opening the stub `r+b` rather than writing it is deliberate: a plain write
+    would CREATE the file when it is absent, which for a direct run of this
+    source in `mock_src/` (no `seal` stub beside it, only `seal.py`) would drop
+    a stray file into the repo.
+    """
+    try:
+        with SEAL_STUB.open("r+b") as stub:
+            stub.truncate(0)
+    except OSError:
+        pass
+    try:
+        SEAL_BLOB.unlink()
+    except OSError:
+        pass
 
 
 def main() -> int:
@@ -88,6 +136,8 @@ def main() -> int:
     # first: the shim must always find either `.store` or `r/`.
     STORE_PATH.write_bytes(packed)
     shutil.rmtree(RESPONSES_DIR)
+    # Strictly last: until `r/` is gone, a retry has to be able to re-run this.
+    _self_destruct()
     return 0
 
 
