@@ -6,10 +6,7 @@
 
 ## Instructions for SDD Generation
 
-You are generating an **SDD — a case definition blueprint** (NOT a traditional
-solution design document). Every section maps directly to what the UiPath Case
-Designer actually consumes. A developer reading this document should be able to
-build the case in the Case Designer without guessing.
+You are generating an **SDD — a case definition blueprint** (NOT a traditional solution design document). Every section maps directly to what the UiPath Case Designer actually consumes. A developer reading this document should be able to build the case in the Case Designer without guessing.
 
 **Inputs:**
 - Phase 0 interview answers (free-text + AskUserQuestion picks) — primary source
@@ -246,12 +243,7 @@ DO NOT include in Configuration:
 - Meta notes like `No required event parameters` or `No user filter` (absence is the default; the skill discovers required params at `case spec` time).
 - Connector activity slug, HTTP method, or any spec-discovered detail.
 
-> **Tenant object starts are still event triggers.** If the user says a case starts
-> when a tenant case-entity / data-object record is created, author
-> `Intsvc.EventTrigger` with that object name as Source. Do NOT downgrade to
-> `Manual` just because the eval sandbox or current tenant may not have the
-> object provisioned. Planning/implementation preserve unresolved event triggers
-> as placeholders.
+> **Tenant object starts are still event triggers.** If the user says a case starts when a tenant case-entity / data-object record is created, author `Intsvc.EventTrigger` with that object name as Source. Do NOT downgrade to `Manual` just because the eval sandbox or current tenant may not have the object provisioned. Planning/implementation preserve unresolved event triggers as placeholders.
 
 ### Case Exit Conditions
 

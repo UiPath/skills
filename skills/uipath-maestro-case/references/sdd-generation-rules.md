@@ -330,12 +330,7 @@ Required whenever **any** SLA is configured — case, stage, or `action` task. O
 
 > Variable mapping (which trigger payload field populates which case variable) is declared in **§1.5 Case Variables** via the `sourceTriggers` / `sourceFields` columns — NOT in this table. The Triggers table only identifies and configures each trigger; payload extraction is owned by Case Variables.
 
-> **Tenant object starts are not Manual.** If the user says a case starts when a
-> tenant case-entity / data-object record is created, record an
-> `Intsvc.EventTrigger` row with the object name as Source. Missing tenant
-> provisioning, absent local registry data, or unresolved connection details
-> become an unresolved event trigger / placeholder later; they are never a reason
-> to change the SDD trigger type to `Manual`.
+> **Tenant object starts are not Manual.** If the user says a case starts when a tenant case-entity / data-object record is created, record an `Intsvc.EventTrigger` row with the object name as Source. Missing tenant provisioning, absent local registry data, or unresolved connection details become an unresolved event trigger / placeholder later; they are never a reason to change the SDD trigger type to `Manual`.
 
 Unresolved `Intsvc.EventTrigger` resolution (`connectionId` / `activityTypeId` missing) → `high`-severity review item.
 

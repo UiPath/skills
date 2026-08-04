@@ -215,12 +215,7 @@ Procedure:
 3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
 4. **`registry-resolved.json`.** Same section-batched discipline — one Read per section, N Edit-appends, no re-Read between siblings.
 
-**T-entry heading contract.** Every declaration is its own level-two heading in
-the exact form `## T<n>: <action>`. Do not use level-three-or-deeper headings
-for T-entries, and do not nest a task beneath a stage's T-entry. A task
-heading must quote its display name, for example
-`## T08: Add wait-for-timer task "First Step" to "Process"`. This keeps the
-plan independently addressable by Phase 2 and by plan validators.
+**T-entry heading contract.** Every declaration is its own level-two heading in the exact form `## T<n>: <action>`. Do not use level-three-or-deeper headings for T-entries, and do not nest a task beneath a stage's T-entry. A task heading must quote its display name, for example `## T08: Add wait-for-timer task "First Step" to "Process"`. This keeps the plan independently addressable by Phase 2 and by plan validators.
 
 Why: section-batched round-trips keep tool-call transcript reviewable, preserve rollback granularity at section boundary, allow mid-run interruption recovery via re-Read + resume from next un-applied T-entry, and surface omissions before they propagate — without paying a per-T-entry Read tax that inflates inference latency by ~5s per turn.
 
@@ -387,19 +382,8 @@ Treat the generated `tasks.md` as approved and proceed directly to Phase 2 by de
 
 Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)); context may have compacted during planning. `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.
 
-**Plan-shape gate.** Before Phase 2, re-read every §4.6 task T-entry itself
-(not the §4.7 condition entries) and confirm it literally contains its own
-`- activation-mode:` line and its own `- entry-rule:` line — **exactly one of
-each, colocated on the task's own T-entry** — and that the pair is legal for
-that mode. Re-run the §4.6 Activation-mode audit over the finished plan,
-covering all six modes, not just `sequential`.
+**Plan-shape gate.** Before Phase 2, re-read every §4.6 task T-entry itself (not the §4.7 condition entries) and confirm it literally contains its own `- activation-mode:` line and its own `- entry-rule:` line — **exactly one of each, colocated on the task's own T-entry** — and that the pair is legal for that mode. Re-run the §4.6 Activation-mode audit over the finished plan, covering all six modes, not just `sequential`.
 
-**Known failure pattern:** deferring the rule to a *separate* §4.7
-task-entry-condition entry (`rule-type:`) does not satisfy this gate —
-`caseplan.json` can end up fully correct while `tasks.md` itself still fails
-this check, because §4.6 and §4.7 are graded as separate artifacts. See
-[task-entry-conditions/planning.md § Phase 1 Plan Presentation Contract](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract)
-for the compliant §4.6 shape.
+**Known failure pattern:** deferring the rule to a *separate* §4.7 task-entry-condition entry (`rule-type:`) does not satisfy this gate — `caseplan.json` can end up fully correct while `tasks.md` itself still fails this check, because §4.6 and §4.7 are graded as separate artifacts. See [task-entry-conditions/planning.md § Phase 1 Plan Presentation Contract](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract) for the compliant §4.6 shape.
 
-Correct the plan before building; validation of `caseplan.json` cannot detect
-a malformed Phase 1 handoff.
+Correct the plan before building; validation of `caseplan.json` cannot detect a malformed Phase 1 handoff.
