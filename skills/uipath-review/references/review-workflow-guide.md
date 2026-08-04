@@ -364,7 +364,11 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 - Queue usage: <observation and recommendation>
 - Bulk operations: <observation and recommendation>
 - Transaction handling: <observation and recommendation>
+
+**Final grade: <A–F>**
 ```
+
+> **`Final grade:` is the report's last line — nothing follows it.** It restates the Summary's `Agent Grade` letter (the two must match) so the grade stays visible at the tail. Letter only — no label, no derivation. Agent projects only; omit when the review has no agent projects. See SKILL.md Step 4.5 + [agent-grading-rubric.md](agents/agent-grading-rubric.md).
 
 **Overall Quality determination** (all project types):
 - **Good** — 0 Critical findings, 0-3 Warnings
