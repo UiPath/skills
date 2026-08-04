@@ -28,6 +28,17 @@ damage MUST be loud. The header is deliberately outside the ciphertext: the
 loader has to know the expected length before it can tell a short read from a
 short payload.
 
+The length field must also stay FIRST and stay big-endian, for a reason outside
+the loader. There is deliberately no `.gitattributes` marking these files binary,
+so git classifies them with its own heuristic — a NUL byte within the first 8000
+— and a 4-byte big-endian length of any payload under 64 KiB puts `0x00` at
+offsets 0 and 1. That is the only NUL the format guarantees; the ciphertext
+carries some by chance, never by construction. Reorder the header (digest first),
+make the length a varint, or move it to the tail, and a repack can emit a blob
+git reads as text — whereupon `core.autocrlf=true` rewrites its LF bytes on
+checkout and every scenario fails with "runtime data missing" and nothing
+pointing at the cause.
+
 The digest covers `CODE_KEY` as well as the plaintext, which is what stops a
 header being *forged* rather than merely damaged. Over a plaintext alone the
 digest is a public constant, so for a tiny payload a search over the ciphertext
