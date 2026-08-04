@@ -85,8 +85,22 @@ def _load_manifest(sandbox: Path) -> dict | None:
         return json.loads(manifest_path.read_text(encoding="utf-8"))
     store_path = sandbox / "m" / ".store"
     if store_path.is_file():
-        blob = json.loads(data_open(store_path.read_bytes(), "store").decode("utf-8"))
-        return blob.get("manifest")
+        raw = store_path.read_bytes()
+        # Current stores first; sealed runs before the store moved to DATA_KEY
+        # used zlib+base64. Damage is non-fatal — one unreadable replicate must
+        # not take down the report over the rest of the run.
+        for decode in (
+            lambda: data_open(raw, "store"),
+            lambda: zlib.decompress(base64.b64decode(raw)),
+        ):
+            try:
+                blob = json.loads(decode().decode("utf-8"))
+            except (ValueError, zlib.error):
+                continue
+            if isinstance(blob, dict):
+                manifest = blob.get("manifest")
+                if isinstance(manifest, dict):
+                    return manifest
     return None
 
 
