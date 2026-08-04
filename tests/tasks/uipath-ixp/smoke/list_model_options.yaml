@@ -83,10 +83,14 @@ success_criteria:
     pass_threshold: 1.0
 
   # Without this, re-pointing the mock's sink leaves the seeded log clean and the
-  # guard above passes vacuously.
+  # guard above passes vacuously. Asserts the FLAT_LOG assignment because
+  # calls.log is the sink graded above. Coupled to mock source text (the
+  # documented weak fallback — no `uip` call is guaranteed in a correct run, so
+  # there is no positive control): keep in sync with
+  # ../_shared/mock_template/mocks/uip when that mock is refactored.
   - type: file_contains
     description: "Mock still records invocations to the graded calls.log (guard is not vacuous)"
     path: "mocks/uip"
-    includes: ['>> "$(dirname "$0")/calls.log"']
+    includes: ['FLAT_LOG = os.path.join(MOCK_DIR, "calls.log")']
     weight: 1.0
     pass_threshold: 1.0
