@@ -14,15 +14,15 @@ Read this file, [case-authoring-rules-guide.md](case-authoring-rules-guide.md) (
 
 | Mode | Trigger | Terminal step |
 |---|---|---|
-| **Delegated — SDD-only** | `uipath-maestro-case` delegates at runtime because no `sdd.md` exists for a case build request | **NO file write.** Hand back: confirmed in-memory model + rendered SDD text (template-conformant, gate-passed) + resolution ledger (§Resolution ledger). The caller executes its own batched write. |
+| **Delegated — subagent SDD author** | `uipath-maestro-case` spawns this lane as a **subagent** because no `sdd.md` exists for a case build request (or a case draft needs finalizing) | **Write `sdd.md`** at the caller's working root (never overwrite an existing one), template-conformant and gate-passed, `Status: ready`. AskUserQuestion is unavailable in a subagent — run best-assumption throughout (§Failure modes fallback). **Return in the final report:** the full Case Review packet + `Decisions I made` + the resolution ledger as a JSON block (§Resolution ledger). The caller presents the review to the user and owns the build. |
 | **Direct design** | User (or Delegate) asks to design / generate a case SDD, greenfield, no PDD | Write `<CASE_NAME_KEBAB>-sdd.md` (user-specified output path wins), Planner Handoff `Status: ready`, report the path, STOP. Task derivation / build continue on a later turn (Lane A or `uipath-maestro-case`). |
 | **Draft request** | User explicitly asks for a reviewable draft and to stop there | Write `sdd.draft.md` (or `<name>-sdd.draft.md` when the request names the file), report, STOP. Never promote. |
 | **Draft finalization** | A case `sdd.draft.md` exists and the user asks to finalize it | §Resumption: read the draft as the settled design, normalize to the template, run the conformance gate, write the final SDD, STOP. Final basename derives from the draft's: `sdd.draft.md` → `sdd.md`; `<name>-sdd.draft.md` → `<name>-sdd.md`; a user-specified output path wins. |
 | **PDD-driven case** | A PDD routed to Phase D and scope selection picked Case Management | Standard Phase D flow ([sdd-generation-guide.md](sdd-generation-guide.md)) — but the case body obeys [case-authoring-rules-guide.md](case-authoring-rules-guide.md) and grounding runs per this guide. |
 
-**One output contract.** The design engine exists once; the fork between modes is a single node — who executes the Write. In delegated mode the caller owns the filename (`sdd.md`); in direct mode this skill owns it (`<CASE_NAME_KEBAB>-sdd.md`). Never write `sdd.md` AND `<case>-sdd.md` for the same design, and NEVER overwrite an existing `sdd.md` at the caller's resolved path — if one appears mid-run, abort the write and surface it.
+**One output contract.** The design engine exists once; this skill ALWAYS executes the Write. The filename follows the consumer: delegated mode writes the caller's contract (`sdd.md` at the provided working root); direct mode writes this skill's (`<CASE_NAME_KEBAB>-sdd.md`). Never write `sdd.md` AND `<case>-sdd.md` for the same design, and NEVER overwrite an existing `sdd.md` at the caller's resolved path — if one appears mid-run, abort the write and surface it.
 
-**Delegation prompt contract (delegated mode).** The caller passes: the user's request + document paths verbatim, the resolved working directory, and "SDD-only — return, don't write". This lane runs Listen → grounding → Sketch → Case Review exactly as below; the Case Review folds in the caller's build options (its build-review preference: `Build it — straight through` / `Build it — pause at the build preview`). On the Build answer, the lane returns the three hand-back artifacts in-memory and yields control back to the caller's flow. The confirmed model crosses the skill boundary for free — same conversation, no file handoff, no extra latency.
+**Delegation prompt contract (subagent mode).** The caller spawns one subagent whose prompt carries: the user's request + document paths verbatim, the resolved working directory, and the instruction to follow this lane end-to-end. Inside the subagent there is no user: skip the one clarifying call, decide everything best-assumption (every would-have-asked value gets a decision line), run grounding + the resolution gate non-interactively (`resolve at build` for every gate item — never `create during build`), pass the conformance gate, and write `sdd.md` via the §Terminal step cadence. The subagent's **final report** is the approval payload: the complete 10-section Case Review, the `Decisions I made` block, ⚠ flags, and the resolution ledger as one fenced JSON block. The caller shows that review to the real user for the Build answer — the SDD file on disk is the durable artifact at the boundary; corrections re-enter as a targeted re-delegation ("edit `sdd.md`: <change>").
 
 ## Goal
 
@@ -143,7 +143,7 @@ Use this exact section order:
 
 **Confirmation question (AskUserQuestion)** — options by mode:
 
-- **Delegated build:** `Build it — straight through` / `Build it — pause at the build preview` / `Change something`. The build choice records the caller's build-review preference — never re-asked mid-build. When ⚠ flagged items exist, relabel the first option `Build despite N flagged items — straight through`.
+- **Delegated build (subagent):** no question is asked — the caller presents the returned Case Review and captures the build choice itself. The report's review packet must therefore be complete enough to approve from. The caller's build-review preference — never re-asked mid-build. When ⚠ flagged items exist, relabel the first option `Build despite N flagged items — straight through`.
 - **Direct design-only:** `Save the design` / `Change something`.
 - **Draft request:** `Save as draft` / `Change something`. If the user's initial prompt already says to get/save a draft and stop, treat that as the `Save as draft` answer after the Case Review: write the draft immediately and stop without another approval prompt.
 
@@ -153,7 +153,7 @@ Corrections (`Change something` or any free text) update the model, re-run affec
 
 ### Template conformance gate — before `sdd.md` is written
 
-The exact rendered SDD text must pass this gate before it leaves the lane — in delegated mode against the hand-back text; in direct/finalize mode against the **on-disk file assembled by the write-early cadence, before the `Status: ready` flip** (one structural Read is the check). This is a render check, not a second design review. Do not use the read to redesign the case.
+The exact rendered SDD text must pass this gate before it leaves the lane — in every mode against the **on-disk file assembled by the write-early cadence, before the `Status: ready` flip** (one structural Read is the check). This is a render check, not a second design review. Do not use the read to redesign the case.
 
 Required shape:
 
@@ -170,18 +170,17 @@ Required shape:
 
 Forbidden summary-only replacement sections at top level: `## Source`, `## Case Objective`, `## Actors And Systems`, `## Case Trigger`, `## Stages`, `## Business Rules`, `## Task Plan`, `## Resource Resolution`, `## Acceptance Scenarios`. Their presence as the main document structure means the SDD is a summary, not a template render. Also forbid source/build-mode/path narration such as `Source: /...`, `Build mode`, `output folder`, validation-command checklists, or "generated from requirements file" prose in the SDD body.
 
-If the gate fails, rewrite from the model and template before shipping. Do not hand back or write a summary SDD, even if a later `caseplan.json` would validate.
+If the gate fails, rewrite from the model and template before shipping. Do not write a summary SDD, even if a later `caseplan.json` would validate.
 
 ### Terminal step — who writes what
 
-On the confirmation's accept answer, execute the mode's terminal step (§Entry modes):
+On the confirmation's accept answer — or, in subagent mode, as soon as Finalization passes (no user to ask) — execute the mode's terminal step (§Entry modes):
 
-**Delegated (SDD-only):**
+**Delegated (subagent) — same write-early cadence as direct mode, then report:**
 
-1. Render the full SDD text from the template and pass the §Template conformance gate.
-2. Flip the Planner Handoff fields in the rendered text: `Status: ready`, `Template validation: passed`.
-3. Hand back to the caller, in-conversation: **(a)** the confirmed in-memory model, **(b)** the rendered SDD text, **(c)** the resolution ledger (§Resolution ledger). Write NOTHING. The caller batches its own write (its `sdd.md` + planning artifacts + solution init) — design artifacts and build artifacts land together, zero added latency.
-4. If an `sdd.md` appeared at the caller's path since the lane started, abort and surface it — never overwrite.
+1. Write `sdd.md` at the caller's working root via the cadence below (`Status: draft` seed → per-section appends → gate → `ready` flip). If an `sdd.md` appeared at that path since the lane started, abort and surface it — never overwrite.
+2. Compose the final report: the complete Case Review packet (all 10 sections), `Decisions I made`, ⚠ flags, and the resolution ledger as one fenced JSON block (§Resolution ledger). The report IS the caller's approval payload — a bare "done, wrote sdd.md" return defeats the design; the caller must be able to show the review without re-reading the file.
+3. Return. The caller owns the user-facing Build answer, the build preference, and every later phase.
 
 **Direct design / draft / finalization — write early, section-batched (mandatory):**
 
@@ -197,7 +196,7 @@ Never compose the whole SDD in-head and Write once at the end: a long silent com
 
 ## Resolution ledger
 
-The machine-shaped record of §Tenant grounding, handed back in delegated mode (and kept in-memory in direct mode — the SDD cells carry the identities for cross-session use). One entry per resolved/attempted lookup, exact keys: `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches` (the full exact-name match set from the refreshed cache, not a summary), `selected` (the adopted entry, or `null` after a genuine empty lookup), and `rationale` — plus a `gateDecision` field (`pick:<name>` / `resolve-at-build` / `create-during-build`) when the item went through the resolution gate. This is exactly the build skill's `tasks/registry-resolved.json` entry shape, so the caller persists it verbatim and its planning pass verifies instead of re-resolving. Connection resolutions ride the matching connector task's entry.
+The machine-shaped record of §Tenant grounding, returned as a fenced JSON block in the delegated subagent's final report (and kept in-memory in direct mode — the SDD cells carry the identities for cross-session use). One entry per resolved/attempted lookup, exact keys: `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches` (the full exact-name match set from the refreshed cache, not a summary), `selected` (the adopted entry, or `null` after a genuine empty lookup), and `rationale` — plus a `gateDecision` field (`pick:<name>` / `resolve-at-build` / `create-during-build`) when the item went through the resolution gate. This is exactly the build skill's `tasks/registry-resolved.json` entry shape, so the caller persists it verbatim and its planning pass verifies instead of re-resolving. Connection resolutions ride the matching connector task's entry.
 
 ## Resumption
 
@@ -229,7 +228,7 @@ The user sees a conversation that produces a case design. Never surface in chat 
 
 - Internal filenames (`sdd.draft.md` is user-visible only on explicit draft requests; the written SDD path is intentionally user-visible in the artifact line).
 - `<UNRESOLVED>` markers in narration (file-only; chat says `resolve at build`).
-- `Listen`, `Sketch`, `Confirm`, mode names, `the validator`, `structural validation`, `the cache`, `the registry index`, `~/.uip/`, `resolution ledger`, `delegation`, `SDD-only mode`.
+- `Listen`, `Sketch`, `Confirm`, mode names, `the validator`, `structural validation`, `the cache`, `the registry index`, `~/.uip/`, `resolution ledger`, `delegation`, `subagent mode`.
 - `interview answers`, `from cache`, `REVIEW:`, or any chain-of-thought mechanics.
 
 If the user asks how something works, explain in their language (cases, stages, tasks, triggers, SLAs, personas, connectors, exceptions).
@@ -240,20 +239,20 @@ If the user asks how something works, explain in their language (cases, stages, 
 |---|---|
 | User says "skip" / "I don't know" during the one clarifying call | Best assumption + decision line. Optional field with no basis → `—`. |
 | Required field with no basis even for assumption | `<UNRESOLVED: <question>>` in the model + ⚠ flagged line in the confirmation. The build's phases revisit. |
-| AskUserQuestion unavailable / unresponsive (Delegate needs this) | One-line notice, continue best-assumption: every would-have-asked value gets a decision line; gate items default to `resolve at build`; promotion scoped to the request — draft request → draft file only; design-only → the final SDD on a clean Finalization pass, stop; delegated build → hand back with decisions carried in the confirmation text. |
+| AskUserQuestion unavailable / unresponsive (Delegate needs this) | One-line notice, continue best-assumption: every would-have-asked value gets a decision line; gate items default to `resolve at build`; promotion scoped to the request — draft request → draft file only; design-only → the final SDD on a clean Finalization pass, stop; delegated build (subagent) is already the AskUserQuestion-unavailable case — write `sdd.md` and return the review with decisions carried in it. |
 | Registry pull fails (CLI error, no auth) | One plain-language line immediately. Keep concrete portable names; mark identities/folders `resolve at build` (`<UNRESOLVED>` in the file) with paired review items. The build's planning pass retries discovery. |
-| `sdd.md` already exists at the caller's resolved path | Delegated mode should never have been entered — surface to the caller; never overwrite. |
+| `sdd.md` already exists at the caller's resolved path | Delegated mode should never have been entered — return an error report; never overwrite. |
 | Caller context lost mid-delegation (compaction) | The rendered SDD text + Case Review live in the conversation; re-render from them on request. |
 | Context compaction mid-render (direct/finalize) | Resume from the on-disk partial SDD: re-read it + the design source (`sdd.draft.md` or the model summary in the Case Review), append the next missing section, continue the cadence. Do NOT re-invoke skills, do NOT re-read reference guides already applied, do NOT search the filesystem, do NOT spawn background tasks — the partial file + template are sufficient. |
 
 ## Output contract — what the consumer sees
 
-- **Delegated, in-session:** the confirmed in-memory model + rendered SDD text + resolution ledger drive the caller's batched write and verify-only planning directly. No file from this lane.
+- **Delegated (subagent):** `sdd.md` on disk is the contract — the caller reads it per its trust-as-written rule; the returned Case Review powers the caller's approval gate, and the returned ledger JSON seeds its verify-only planning directly. No file from this lane.
 - **Direct, cross-session:** the written SDD is the sole contract, read by any consumer exactly as if the user wrote it — Planner Handoff `Status: ready`, resolved identities in Section 2/Section 4 cells, `<UNRESOLVED>` only where deferred with review items, every process/agent/rpa/api-workflow task carrying a concrete `Resolved Resource`, every action a concrete Action App title, every case-management task a concrete `Child Case`.
 
 ## Anti-patterns
 
-- **Do NOT write any file in delegated mode.** The hand-back is the deliverable; the caller owns the batched write.
+- **Do NOT return without the full Case Review + ledger in the report.** The file alone is not the deliverable — the caller's approval gate runs on the returned review, and its verify-only planning runs on the returned ledger.
 - **Do NOT overwrite an existing `sdd.md`.** Presence = trust-as-written; abort and surface.
 - **Do NOT interrogate.** No entry menu when the request has content, no per-dimension question walk, no confirming what the playbook decides. The budget is ONE clarifying call (when earned) + ONE confirmation (with the folded resolution gate). Uncertainty is resolved by assumption + disclosure, not by a question.
 - **Do NOT hide a decision.** Every assumption, override, and resource pick appears in the `Decisions I made` block. Best-assumption without disclosure is guessing.
@@ -265,7 +264,7 @@ If the user asks how something works, explain in their language (cases, stages, 
 - **Do NOT auto-pick among multiple resource matches, and do NOT re-ask at build what the gate already answered.** Ambiguity is the gate's job, once, at review time. (Single confident match adopts silently — that is the only silent pick.)
 - **Do NOT scaffold projects, spawn build subagents, or execute create-on-missing here.** `Create during build` is a recorded decision the build skill executes.
 - **Do NOT write `sdd.draft.md` or checkpoint files in a normal run.** The model lives in memory; drafts exist on explicit request only.
-- **Do NOT ask the user to review or approve the SDD document.** The confirmation is the approval; the file (or hand-back) is its artifact. An explicit sign-off request adds one prompt — nothing else does.
+- **Do NOT ask the user to review or approve the SDD document.** The confirmation is the approval; the file is its artifact. (Subagent mode: the caller runs the approval on the returned review.) An explicit sign-off request adds one prompt — nothing else does.
 - **Do NOT go silent during assembly.** Post the expectation-setter and milestone lines from §What to say while working.
 - **Do NOT invent gates or thresholds.** No size limit, no approval-before-creating-files, no complexity stop.
 - **Do NOT narrate filenames or schema mechanics.** See §Forbidden vocabulary.

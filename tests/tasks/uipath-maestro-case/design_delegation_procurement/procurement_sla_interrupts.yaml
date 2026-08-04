@@ -15,6 +15,13 @@ tags:
   - feature:escalation
   - feature:trigger
 
+# Inherit agent from the experiment; override only allowed_tools — the Rule 15
+# design delegation spawns a uipath-planner subagent (Agent/Task tool).
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent", "Task", "TodoWrite"]
+
 run_limits:
   task_timeout: 3000
   max_turns: 120
