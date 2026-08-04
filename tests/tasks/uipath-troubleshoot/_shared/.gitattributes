@@ -1,8 +1,0 @@
-# Packed blobs under mock_template/m/ are ciphertext, not text. Without this,
-# `core.autocrlf=true` checkouts fall back to git's NUL-byte heuristic, and a
-# repack that happens to contain no NUL would get its CR/LF bytes rewritten -
-# corrupting the blob and taking the whole suite down.
-#
-# Lives here rather than in mock_template/m/ because that directory's contents
-# are staged into the sandbox verbatim.
-mock_template/m/*.bin -text -diff
