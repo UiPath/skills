@@ -13,8 +13,10 @@ beyond the manifest's `expected_calls`. On sealed runs each record is encrypted
 under `DATA_KEY` (decode with `coverage_report.py --dump`) so the agent cannot
 read its own call history and infer the CLI is mocked; unsealed local runs keep
 plain JSONL for easy debugging. The file stays line-oriented and append-only
-either way: one self-contained record per line, so a record damaged mid-write
-costs that record and no other.
+either way: one self-contained record per line, so damage never reaches the
+records already written. A record damaged in place costs that record alone; a
+record cut off before its terminating newline also costs the next append, which
+lands on the stump and makes one unparseable line out of the two.
 
 Manifest schema (v2):
     {
