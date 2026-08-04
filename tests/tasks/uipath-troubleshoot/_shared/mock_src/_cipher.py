@@ -91,7 +91,11 @@ def data_seal(raw: bytes, purpose: str) -> bytes:
 
 
 def data_open(blob: bytes, purpose: str) -> bytes:
-    """Inverse of `data_seal`. Raises `ValueError` on a damaged payload."""
+    """Inverse of `data_seal`. Raises `ValueError` when the zlib frame rejects
+    the payload — truncated, flipped, or encrypted for another purpose. Bytes
+    appended after a complete frame are ignored rather than reported, so this
+    does not raise on every possible alteration.
+    """
     try:
         return zlib.decompress(xor_stream(blob, data_seed(purpose)))
     except zlib.error as exc:
