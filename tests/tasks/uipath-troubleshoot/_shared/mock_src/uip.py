@@ -48,7 +48,9 @@ Each rule has one of:
 
 Dispatch precedence:
     1. First matching rule (first match wins).
-    2. `unmocked_default` — if set, return its `response` + `exit_code`.
+    2. `unmocked_default` — if set, return its `response` + `exit_code`. The
+       `response` may be a string, or the JSON value to return, which is
+       serialized.
     3. Otherwise, error on stderr (legacy behavior).
 
 Matching (see `_rule_matches`) is token-aware, with a plain-substring
@@ -123,14 +125,27 @@ def _get_store():
     ``files`` (name → raw ``bytes``), or ``_NO_STORE`` when there is no
     ``.store`` (the shim then reads ``r/`` as before).
 
-    A ``.store`` that will not decrypt, parse, or hold the shape the dispatcher
-    walks is fatal, and deliberately so: the alternative is dispatching against
-    an empty store, which serves the `unmocked_default` for every command and
-    lets a scenario be graded on evidence that was never delivered. Fail loudly
-    on one line instead. The shape is checked here rather than at each use so
-    the failure lands in this handler; reaching `main` with a malformed manifest
-    raises deep in dispatch, and the traceback puts the loader's `exec` line on
-    the agent's stderr.
+    A ``.store`` that will not decrypt, will not parse, or does not carry every
+    field the dispatcher dereferences is fatal, and deliberately so: the
+    alternative is dispatching against an empty store, which serves the
+    `unmocked_default` for every command and lets a scenario be graded on
+    evidence that was never delivered. Fail loudly on one line instead.
+
+    Exactly what is checked, and why here: `manifest` is an object; `rules` is a
+    list of objects; each rule's `match` is a string (`_tokenize` splits it) and
+    names a target (`passthrough`, or a `file` the dispatcher indexes with); any
+    `exit_code` is int-able; each fixture's bytes decode strictly. Every one of
+    those is dereferenced without a guard further down, so a missing or
+    wrong-typed field raises deep in dispatch — and that traceback puts the
+    loader's `exec` line on the agent's stderr. Checking here puts the failure in
+    this handler instead. `unmocked_default.response` is NOT checked here: a
+    non-string one is serialized at the point of use (see `_response_body`),
+    because rejecting it would take out every command in a scenario whose store
+    is otherwise sound.
+
+    Unsealed local runs read `r/manifest.json` in `main` unchecked, on purpose:
+    that manifest is the author's own working copy, and a traceback naming the
+    offending line is the more useful signal there.
     """
     global _STORE
     if _STORE is not None:
@@ -146,9 +161,24 @@ def _get_store():
         rules = manifest.get("rules", [])
         if not isinstance(rules, list) or not all(isinstance(r, dict) for r in rules):
             raise TypeError("manifest rules are not a list of objects")
+        for rule in rules:
+            if not isinstance(rule.get("match", ""), str):
+                raise TypeError("rule match is not a string")
+            if not rule.get("passthrough") and not isinstance(rule.get("file"), str):
+                raise TypeError("rule names neither a file nor passthrough")
+            if "exit_code" in rule:
+                int(rule["exit_code"])
+        default = manifest.get("unmocked_default")
+        if isinstance(default, dict) and "exit_code" in default:
+            int(default["exit_code"])
         _STORE = {
             "manifest": manifest,
-            "files": {name: base64.b64decode(b64) for name, b64 in blob.get("files", {}).items()},
+            # Strict: b64decode silently drops non-alphabet bytes otherwise, so a
+            # damaged fixture would decode to b"" and be served as empty stdout.
+            "files": {
+                name: base64.b64decode(b64, validate=True)
+                for name, b64 in blob.get("files", {}).items()
+            },
         }
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         # Unreadable, damaged, or not the document `seal` writes.
@@ -303,6 +333,19 @@ def _strip_doc_keys(text: str) -> str:
     return json.dumps(_prune_doc_keys(doc), indent=2, ensure_ascii=False) + trailing
 
 
+def _response_body(response: object) -> str:
+    """Render a manifest `response` value as the text to write to stdout.
+
+    A manifest may spell `unmocked_default.response` as the JSON object it wants
+    returned rather than as a string of JSON. Serialize that instead of handing a
+    dict to `sys.stdout.write`, which raises and puts the loader's `exec` line on
+    the agent's stderr. A string response is emitted byte-for-byte as before.
+    """
+    if isinstance(response, str):
+        return response
+    return json.dumps(response, indent=2, ensure_ascii=False) + "\n"
+
+
 def _cache_key(args: str) -> str:
     return hashlib.md5(args.encode("utf-8")).hexdigest()[:16]
 
@@ -447,7 +490,7 @@ def main(argv: list[str]) -> int:
     # 2. Unmocked default.
     default = manifest.get("unmocked_default")
     if isinstance(default, dict):
-        body = _strip_doc_keys(default.get("response", ""))
+        body = _strip_doc_keys(_response_body(default.get("response", "")))
         exit_code = int(default.get("exit_code", 0))
         sys.stdout.write(body)
         _log_call(args, None, exit_code, error="unmocked_default")
