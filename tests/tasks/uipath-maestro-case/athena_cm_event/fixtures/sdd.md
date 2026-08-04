@@ -23,7 +23,6 @@
 | Case Name | AthenaCMEventCase |
 | Case Description | Coordinates three operational stages for an event-directed case. |
 | Case Identifier | Type: external. Source: `=vars.InstanceExternalId` |
-| Priority | Choiceset: Normal — Default: Normal |
 | Case-Level SLA | 10 d |
 | SLA Type | time-based |
 | Case App | Enabled |
