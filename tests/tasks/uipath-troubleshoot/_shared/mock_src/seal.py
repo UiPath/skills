@@ -11,8 +11,8 @@ directory so the `m/uip` shim can resolve it. But that also lets the agent
 the diagnosis-revealing log lines — diagnosing WITHOUT ever invoking `uip` or
 the `uipath-troubleshoot` skill (empirically the dominant `skill_triggered`
 failure mode). After sealing there is no readable fixture in the sandbox: the
-`r/` directory is gone and `.store` is opaque (zlib+base64). The shim
-(`m/uip`) transparently reads `.store` instead of `r/`.
+`r/` directory is gone and `.store` is opaque. The shim (`m/uip`)
+transparently reads `.store` instead of `r/`.
 
 This script ships to the sandbox only as an encrypted docstring-stripped
 blob (`m/seal` is a thin loader for `m/.seal.bin`, packed by
@@ -29,18 +29,27 @@ Idempotent and safe to run anywhere:
       RESUMES the seal — every step is idempotent or skip-guarded. `.store`
       alone is never treated as proof the seal completed.
 
-Blob format (`.store`): base64( zlib( utf-8 json( {
-    "manifest": <manifest dict>,
-    "files":    { "<name>": "<base64 of the file's raw bytes>", ... }
-} ) ) ). Raw bytes are preserved per file so UTF-16/BOM fixtures survive.
+Blob format (`.store`): this utf-8 JSON document, compressed and then
+encrypted under `DATA_KEY` (`mock_src/_cipher.py`, purpose `store`):
+
+    { "manifest": <manifest dict>,
+      "files":    { "<name>": "<base64 of the file's raw bytes>", ... } }
+
+Raw bytes are preserved per file so UTF-16/BOM fixtures survive. That base64
+lives inside the encrypted payload, never on disk, so nothing readable in the
+sandbox describes how `.store` is encoded.
 """
 
 import base64
 import json
 import shutil
 import sys
-import zlib
 from pathlib import Path
+
+try:  # Direct run: `_cipher.py` sits beside this file.
+    from _cipher import data_seal
+except ImportError:  # Packed blob: the prelude already defines `data_seal`.
+    pass
 
 # Sandboxes execute this file as an encrypted blob (`m/.seal.bin`, decrypted
 # and exec'd by the `m/seal` stub with __file__ set to the blob's path in the
@@ -68,7 +77,7 @@ def main() -> int:
         files[item.name] = base64.b64encode(item.read_bytes()).decode("ascii")
 
     blob = {"manifest": manifest, "files": files}
-    packed = base64.b64encode(zlib.compress(json.dumps(blob).encode("utf-8"), 9))
+    packed = data_seal(json.dumps(blob).encode("utf-8"), "store")
 
     # Commit the store, then remove the readable fixture directory. Store
     # first: the shim must always find either `.store` or `r/`.

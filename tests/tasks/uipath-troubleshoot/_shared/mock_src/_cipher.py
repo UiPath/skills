@@ -7,10 +7,11 @@ Two independent keys, with different blast radii:
 `m/.uip.bin` / `m/.seal.bin`. The loaders must run unaided in the sandbox, so
 this key is necessarily present there in plaintext.
 
-`DATA_KEY` below will cover the runtime data files the mock writes beside
-itself (`.store`, `.log`, `_cache`) — **not yet wired: it currently covers
-nothing.** It is defined only in `mock_src/`, which is never staged, so no
-plaintext file staged into a sandbox carries it.
+`DATA_KEY` below covers the runtime data files the mock writes beside itself:
+the sealed fixture store `.store`, the call log `.log`, and the passthrough
+cache `_cache/*.json`. It is defined only in `mock_src/`, which is never
+staged, so no plaintext file staged into a sandbox carries it — reaching it
+means first decrypting a code blob under `CODE_KEY`.
 
 Keys are unrelated values; neither is derivable from the other.
 
@@ -26,10 +27,23 @@ It exists to make the staged artifacts opaque to casual inspection.
 
 The transform provides no integrity of its own: XOR decrypts damaged input
 into garbage just as willingly as intact input. Anything that stores a
-keystream-encrypted payload MUST carry its own length + digest header and
-refuse a payload that fails it, so corruption is loud instead of silently
-yielding empty or partial data. `scripts/compile_mocks.py` documents the
-header the code blobs use.
+keystream-encrypted payload MUST therefore be framed so damage is loud rather
+than silently yielding empty or partial data. The two layers frame it
+differently:
+
+- Data payloads are compressed before encryption, and a zlib stream is its own
+  frame — it carries an Adler-32 over the plaintext and refuses an incomplete
+  stream — so `data_open` raises on a truncated or flipped payload.
+- The code blobs are raw source with no compression (a `zlib` token in a
+  loader would hand the sandbox the recipe), so they carry an explicit length +
+  digest header instead. `scripts/compile_mocks.py` documents it.
+
+Each purpose gets its own keystream, seeded `sha256(DATA_KEY + purpose)`, so
+recovering the keystream of one file kind reveals nothing about another — the
+store does not become readable because the call log was cracked. Payloads
+sharing a purpose (every record in `.log`, every entry in `_cache`) do share a
+keystream; the exposure is bounded to those files' own contents, which the
+agent's own invocations largely dictate anyway.
 """
 
 import hashlib
@@ -66,21 +80,29 @@ def code_seed(key: bytes, name: str) -> bytes:
     return hashlib.sha256(key + name.encode("utf-8")).digest()
 
 
-def data_seal(raw: bytes) -> bytes:
-    """Compress and encrypt `raw` under `DATA_KEY`. Output is binary."""
-    return xor_stream(zlib.compress(raw, 9), DATA_KEY)
+def data_seed(purpose: str) -> bytes:
+    """Keystream seed for the data files of one `purpose` (`store`/`log`/`cache`)."""
+    return hashlib.sha256(DATA_KEY + purpose.encode("utf-8")).digest()
 
 
-def data_open(blob: bytes) -> bytes:
-    """Inverse of `data_seal`."""
-    return zlib.decompress(xor_stream(blob, DATA_KEY))
+def data_seal(raw: bytes, purpose: str) -> bytes:
+    """Compress and encrypt `raw` for `purpose`. Output is binary."""
+    return xor_stream(zlib.compress(raw, 9), data_seed(purpose))
 
 
-def line_seal(text: str) -> str:
+def data_open(blob: bytes, purpose: str) -> bytes:
+    """Inverse of `data_seal`. Raises `ValueError` on a damaged payload."""
+    try:
+        return zlib.decompress(xor_stream(blob, data_seed(purpose)))
+    except zlib.error as exc:
+        raise ValueError(f"damaged {purpose} payload") from exc
+
+
+def line_seal(text: str, purpose: str) -> str:
     """`data_seal` for one line of a line-oriented file: hex, no newlines."""
-    return data_seal(text.encode("utf-8")).hex()
+    return data_seal(text.encode("utf-8"), purpose).hex()
 
 
-def line_open(line: str) -> str:
-    """Inverse of `line_seal`."""
-    return data_open(bytes.fromhex(line.strip())).decode("utf-8")
+def line_open(line: str, purpose: str) -> str:
+    """Inverse of `line_seal`. Raises `ValueError` on a damaged line."""
+    return data_open(bytes.fromhex(line.strip()), purpose).decode("utf-8")

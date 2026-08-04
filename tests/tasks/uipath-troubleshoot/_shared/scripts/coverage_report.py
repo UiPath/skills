@@ -29,6 +29,13 @@ import zlib
 from collections import Counter, defaultdict
 from pathlib import Path
 
+# The mock's runtime data files are encrypted under `DATA_KEY`. This reporter
+# runs on the host, from the checkout, so it imports the cipher from the
+# sources it belongs to instead of carrying a second copy of the key.
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "mock_src"))
+from _cipher import data_open  # noqa: E402
+
 CALL_LOG_NAMES = (".log", ".calls.jsonl")
 
 
@@ -72,7 +79,7 @@ def _load_manifest(sandbox: Path) -> dict | None:
         return json.loads(manifest_path.read_text(encoding="utf-8"))
     store_path = sandbox / "m" / ".store"
     if store_path.is_file():
-        blob = json.loads(zlib.decompress(base64.b64decode(store_path.read_bytes())).decode("utf-8"))
+        blob = json.loads(data_open(store_path.read_bytes(), "store").decode("utf-8"))
         return blob.get("manifest")
     return None
 

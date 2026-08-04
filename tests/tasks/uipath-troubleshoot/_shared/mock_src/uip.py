@@ -77,6 +77,11 @@ import time
 import zlib
 from pathlib import Path
 
+try:  # Direct run: `_cipher.py` sits beside this file.
+    from _cipher import data_open
+except ImportError:  # Packed blob: the prelude already defines `data_open`.
+    pass
+
 # Sandboxes execute this file as an encrypted docstring-stripped blob
 # (`m/.uip.bin`, decrypted and exec'd by the `m/uip` stub with __file__ set to
 # the blob's path in the mock dir), so every data path (store, log, cache)
@@ -91,10 +96,10 @@ CACHE_DIR = SCRIPT_DIR / "_cache"
 
 # Sealed fixture store (written by `m/seal`). When present, the manifest and
 # every response fixture are read from here — decoded in memory — and the
-# readable `r/` directory no longer exists. Opaque on disk (zlib+base64), so
-# `cat`-ing it reveals no evidence. `None` until first access; then either the
-# decoded dict `{"manifest": ..., "files": {name: rawbytes}}` or the sentinel
-# `_NO_STORE` (unsealed run → fall back to `r/`).
+# readable `r/` directory no longer exists. Encrypted on disk, so `cat`-ing it
+# reveals no evidence. `None` until first access; then either the decoded dict
+# `{"manifest": ..., "files": {name: rawbytes}}` or the sentinel `_NO_STORE`
+# (unsealed run → fall back to `r/`).
 STORE_PATH = SCRIPT_DIR / ".store"
 _NO_STORE = object()
 _STORE: object = None
@@ -103,9 +108,14 @@ _STORE: object = None
 def _get_store():
     """Load and cache the sealed store, or ``_NO_STORE`` if unsealed.
 
-    Decoded once per process. Returns a dict with ``manifest`` (dict) and
+    Decrypted once per process. Returns a dict with ``manifest`` (dict) and
     ``files`` (name → raw ``bytes``), or ``_NO_STORE`` when there is no
     ``.store`` (the shim then reads ``r/`` as before).
+
+    A ``.store`` that will not decrypt or parse is fatal, and deliberately so:
+    the alternative is dispatching against an empty store, which serves the
+    `unmocked_default` for every command and lets a scenario be graded on
+    evidence that was never delivered. Fail loudly on one line instead.
     """
     global _STORE
     if _STORE is not None:
@@ -113,11 +123,14 @@ def _get_store():
     if not STORE_PATH.is_file():
         _STORE = _NO_STORE
         return _STORE
-    blob = json.loads(zlib.decompress(base64.b64decode(STORE_PATH.read_bytes())).decode("utf-8"))
-    _STORE = {
-        "manifest": blob["manifest"],
-        "files": {name: base64.b64decode(b64) for name, b64 in blob.get("files", {}).items()},
-    }
+    try:
+        blob = json.loads(data_open(STORE_PATH.read_bytes(), "store").decode("utf-8"))
+        _STORE = {
+            "manifest": blob["manifest"],
+            "files": {name: base64.b64decode(b64) for name, b64 in blob.get("files", {}).items()},
+        }
+    except Exception:  # unreadable, damaged, or not the document we wrote
+        sys.exit("uip: runtime data unreadable")
     return _STORE
 
 
