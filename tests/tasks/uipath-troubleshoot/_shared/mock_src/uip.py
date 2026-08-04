@@ -310,16 +310,20 @@ def _cache_key(args: str) -> str:
 def _load_cache(args: str) -> dict | None:
     """Return the cached `{stdout, exit_code, cached_at}` for `args`, or None.
 
-    A cache entry that will not decrypt or parse is treated as a miss: the
-    caller then proxies to the real CLI, which is the correct answer anyway.
+    A cache entry that will not decrypt, parse, or hold a JSON object is treated
+    as a miss: the caller then proxies to the real CLI, which is the correct
+    answer anyway. The shape check is not decoration — a decrypted scalar or
+    list reaches `_passthrough` and raises there, putting the loader's `exec`
+    line on the agent's stderr.
     """
     path = CACHE_DIR / f"{_cache_key(args)}.json"
     if not path.is_file():
         return None
     try:
-        return json.loads(data_open(path.read_bytes(), "cache").decode("utf-8"))
+        rec = json.loads(data_open(path.read_bytes(), "cache").decode("utf-8"))
     except (OSError, ValueError):
         return None
+    return rec if isinstance(rec, dict) else None
 
 
 def _save_cache(args: str, stdout: str, exit_code: int) -> None:
