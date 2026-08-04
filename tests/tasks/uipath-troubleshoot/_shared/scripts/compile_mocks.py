@@ -85,10 +85,14 @@ Three details of the comparison each carry weight:
   which is as shadowable as anything else before the filter has run. Folding
   unconditionally would equate two distinct paths on a case-sensitive filesystem.
 
-Verified on CPython 3.10-3.14, Windows and Linux, inside and outside a virtualenv,
-to leave the stdlib zip and `DLLs`/`Lib` (`lib-dynload` / `dist-packages` on
-Linux) in place — plus the base install's own `site-packages`, while a venv's
-`site-packages` is dropped along with the rest of the venv tree.
+Exercised, and no wider than this: a full seal + dispatch cycle on Windows under
+CPython 3.10, 3.11, 3.12, 3.13 and 3.14 base installs, plus 3.13 in a `uv venv`
+and 3.14 in a `python -m venv`; and on Linux under 3.12 and 3.13, each in and out
+of a `python -m venv`. Every run left the stdlib zip and `DLLs`/`Lib`
+(`lib-dynload` / `dist-packages` on Linux) in place — plus the base install's own
+`site-packages`, while a venv's `site-packages` is dropped along with the rest of
+the venv tree. Linux 3.10/3.11/3.14 and macOS are UNVERIFIED; do not widen this
+sentence without running them.
 
 The filter is about import integrity, not key confidentiality, and it does not
 make `DATA_KEY` unreachable. `mock_src/_cipher.py` states the measured ceiling:
