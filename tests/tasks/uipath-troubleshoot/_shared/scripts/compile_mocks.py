@@ -34,6 +34,19 @@ while leaving each blob self-contained (the sandbox has no importable copy of
 `mock_src/`), and keeps `DATA_KEY` — which lives in `_cipher.py` — reachable
 only from inside a `CODE_KEY`-encrypted blob.
 
+Two constraints follow from prepending rather than importing:
+
+- **No entry point may use `from __future__ import ...`.** Such an import has
+  to be the first statement in a module, and the prelude now sits ahead of it.
+  The packer compiles the combined source and fails loudly if this happens,
+  rather than letting the SyntaxError surface only in a sandbox.
+- **Library modules must not depend on each other at module level.** They are
+  concatenated in a fixed order (by lowercased filename) into one namespace,
+  with no import machinery to resolve a cycle or a forward reference. Sorting
+  is explicitly case-insensitive because bare `sorted()` on `Path` is
+  case-insensitive on Windows and case-sensitive on POSIX, which would order a
+  second library module differently per platform and break byte-stability.
+
 Deterministic given the same source and packing interpreter: `ast.unparse`
 output is stable within a CPython minor, and the cipher is unsalted. The
 canonical committed blobs are produced with CPython 3.13 (the version pinned
@@ -147,7 +160,25 @@ def main() -> int:
     prelude = [_stripped_source(s) for s in libs]
     for src in entries:
         stripped = "\n".join(prelude + [_stripped_source(src)])
+
+        # The combined source is what the sandbox executes, and a blob that
+        # cannot compile only fails there. Prepending the prelude can break an
+        # entry point that compiles fine on its own — a `from __future__`
+        # import, which must be the first statement in a module, is the case
+        # that bites. Catch it here instead.
+        try:
+            compile(stripped, src.name, "exec")
+        except SyntaxError as exc:
+            return (
+                f"compile_mocks: {src.name} does not compile once the prelude is "
+                f"prepended: {exc.msg} (line {exc.lineno}). A `from __future__ import ...` "
+                "in an entry point cannot survive the prepend - remove it, or move the "
+                "code needing it into a library module."
+            )
+
         blob = _pack(stripped)
+        if _unpack(blob) != stripped.encode("utf-8"):
+            return f"compile_mocks: {src.name} failed its own round-trip; refusing to write."
         out = OUT_DIR / f".{src.stem}.bin"
         out.write_bytes(blob)
         inlined = f" (+{', '.join(s.name for s in libs)})" if libs else ""
