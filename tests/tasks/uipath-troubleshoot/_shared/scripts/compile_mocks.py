@@ -60,8 +60,13 @@ sources is byte-identical and produces no git diff; the script refuses other
 minors unless --allow-any-version is passed.
 
 `CODE_KEY` is duplicated as a byte literal in the two loaders, which must
-decrypt without importing anything from this repo. Change it in one place and
-the round-trip breaks loudly on the next run.
+decrypt without importing anything from this repo. That duplication cannot
+detect itself: `_pack` and `_unpack` both read the constant below, so a packer
+that disagrees with a loader still packs and round-trips cleanly at exit 0, and
+the mismatch surfaces only when the mock runs — as the loader's "runtime data
+missing" guard, far from the edit that caused it. So the packer reads the
+32-byte literal out of each entry point's loader and refuses to pack when it
+differs from `CODE_KEY`.
 
 Run after any edit to `mock_src/*.py`:
 
@@ -137,6 +142,19 @@ def _unpack(blob: bytes, name: str) -> bytes | None:
     return plain
 
 
+def _loader_key(loader: Path) -> bytes | None:
+    """Return the 32-byte key literal the loader at `loader` decrypts with.
+
+    The loaders spell the key as adjacent escaped byte literals, which the
+    parser folds into one constant, so the first 32-byte `bytes` constant in the
+    file is it. None when the file has no such constant.
+    """
+    for node in ast.walk(ast.parse(loader.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Constant) and isinstance(node.value, bytes) and len(node.value) == 32:
+            return node.value
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
@@ -174,6 +192,16 @@ def main() -> int:
     # blob paired with a fresh one behind an "it failed" exit code.
     outputs: list[tuple[Path, bytes, str]] = []
     for src in entries:
+        loader = OUT_DIR / src.stem
+        if not loader.is_file():
+            return f"compile_mocks: {src.name} has no loader at {loader.relative_to(SHARED_DIR)}."
+        if _loader_key(loader) != CODE_KEY:
+            return (
+                f"compile_mocks: {loader.relative_to(SHARED_DIR)} decrypts with a different key "
+                "than this packer's CODE_KEY. Blobs packed now would fail that loader's integrity "
+                "check at mock runtime; align the two before packing."
+            )
+
         entry = _stripped_source(src)
         if not entry:
             return f"compile_mocks: {src.name} strips to nothing; there is no entry point to pack."
