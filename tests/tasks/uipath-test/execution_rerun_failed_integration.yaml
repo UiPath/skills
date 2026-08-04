@@ -20,6 +20,80 @@ run_limits:
   turn_timeout: 1200
   task_timeout: 1500
 
+# Self-healing fixture: this task CONSUMES its own premise — retrying the
+# failed cases reopens their logs, and whatever closes them (no robot serves
+# this tenant) leaves the newest finished execution with zero failures, so the
+# next run has nothing to retry (2026-08-03 nightly: newest run read P3/F0 and
+# the agent correctly declined). Before each run, make sure the newest finished
+# execution of the suite has at least one Failed case — flipping an existing
+# log rather than seeding a new execution, so the shared suite's history depth
+# stays stable for the flaky-analysis task.
+pre_run:
+  - command: |
+      python3 - <<'EOF' || true
+      import json, subprocess
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+      sets = uip("tm", "testsets", "list", "--project-key", "CLAIM", "--filter", "UAT Smoke Suite").get("Data", [])
+      ts = next((t for t in sets if t.get("Name") == "UAT Smoke Suite"), None)
+      if not ts:
+          raise SystemExit(0)
+      ex = [e for e in uip("tm", "executions", "list", "--project-key", "CLAIM",
+                           "--test-set-id", ts["Id"]).get("Data", []) if e.get("Status") == "Finished"]
+      if not ex:
+          raise SystemExit(0)
+      newest = max(ex, key=lambda e: e.get("Created", ""))
+      if (newest.get("Failed") or 0) > 0:
+          raise SystemExit(0)
+      logs = uip("tm", "executions", "testcaselogs", "list", "--project-key", "CLAIM",
+                 "--execution-id", newest["Id"]).get("Data", [])
+      if not logs:
+          raise SystemExit(0)
+      target = logs[-1]
+      subprocess.run(["uip", "tm", "testcaselog", "finish", "--project-key", "CLAIM",
+                      "--execution-id", newest["Id"], "--test-case-id", target["TestCaseId"],
+                      "--result", "Failed", "--has-error", "true",
+                      "--executed-by", "eval-fixture@uipath.com", "--output", "json"],
+                     capture_output=True, text=True)
+      print(f"seeded failure on {newest['Id']} / {target.get('TestCase', {}).get('ObjKey')}")
+      EOF
+    timeout: 180
+
+# The retry leaves an execution that can never complete on this robot-less
+# tenant; close its logs so Pending/Running runs don't accumulate on the suite.
+post_run:
+  - command: |
+      python3 - <<'EOF' || true
+      import json, subprocess
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+      sets = uip("tm", "testsets", "list", "--project-key", "CLAIM", "--filter", "UAT Smoke Suite").get("Data", [])
+      ts = next((t for t in sets if t.get("Name") == "UAT Smoke Suite"), None)
+      if not ts:
+          raise SystemExit(0)
+      for e in uip("tm", "executions", "list", "--project-key", "CLAIM",
+                   "--test-set-id", ts["Id"]).get("Data", []):
+          if e.get("Status") not in ("Pending", "Running"):
+              continue
+          for l in uip("tm", "executions", "testcaselogs", "list", "--project-key", "CLAIM",
+                       "--execution-id", e["Id"]).get("Data", []):
+              if l.get("Result") in (None, "", "None"):
+                  subprocess.run(["uip", "tm", "testcaselog", "finish", "--project-key", "CLAIM",
+                                  "--execution-id", e["Id"], "--test-case-id", l["TestCaseId"],
+                                  "--result", "Passed", "--has-error", "false",
+                                  "--executed-by", "eval-fixture@uipath.com", "--output", "json"],
+                                 capture_output=True, text=True)
+      EOF
+    timeout: 300
+
 initial_prompt: |
   Our "UAT Smoke Suite" in the CLAIM project (Test Manager) had a regression run
   finish recently and a few cases failed. Can you pull up that latest finished
