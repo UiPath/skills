@@ -40,12 +40,14 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
   - <SDD output row, copied verbatim>
 - isRequired: true
 - runOnlyOnce: false
-- activation-mode: event-triggered   # required; normally event-triggered for a connector event wait
-- entry-rule: wait-for-connector   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
+- activation-mode: <copy the supplied/approved SDD activation mode>
+- entry-rule: <copy the matching supplied/approved SDD task-entry rule>
 - order: after T<m>
 - lane: <n>
 - verify: Confirm task created with correct event parameters
 ```
+
+Task type never supplies activation semantics. Copy the SDD pair losslessly: a stage-entry listener uses `parallel` + `current-stage-entered`; a listener after an immediate predecessor uses `parallel-after-predecessor` + `runs-sequentially`; an event-gated task uses `event-triggered` + `wait-for-connector`; any other explicitly authored legal task-entry rule remains authoritative.
 
 ## Unresolved Fallback
 
