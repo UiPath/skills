@@ -23,9 +23,11 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent", "Task", "TodoWrite"]
 
 run_limits:
-  task_timeout: 3000
+  task_timeout: 4800
   max_turns: 120
-  turn_timeout: 2400
+  # The design delegation runs one planner subagent inside a single parent
+  # turn — the whole design phase is one turn of wall clock.
+  turn_timeout: 4200
 
 initial_prompt: |
   Design a "SupplierApplication" Maestro case and produce `sdd.md` plus the

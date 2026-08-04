@@ -174,11 +174,11 @@ If the gate fails, rewrite from the model and template before shipping. Do not w
 
 ### Terminal step — who writes what
 
-On the confirmation's accept answer — or, in subagent mode, as soon as Finalization passes (no user to ask) — execute the mode's terminal step (§Entry modes):
+On the confirmation's accept answer, execute the mode's terminal step (§Entry modes). **Subagent mode does NOT wait:** there is no user and no accept answer — start writing as soon as the case model's Section 1 fields settle, and run the Finalization checks against the growing on-disk file, section by section, instead of in-head first. A composition stretch longer than a few minutes with no Write is a defect in subagent mode — the seed write is the FIRST act after Sketch, not the last after checks.
 
-**Delegated (subagent) — same write-early cadence as direct mode, then report:**
+**Delegated (subagent) — write earliest, then report:**
 
-1. Write `sdd.md` at the caller's working root via the cadence below (`Status: draft` seed → per-section appends → gate → `ready` flip). If an `sdd.md` appeared at that path since the lane started, abort and surface it — never overwrite.
+1. Seed `sdd.md` at the caller's working root the moment Sketch settles Section 1 (`Status: draft`), then append each Section 2 stage block as it is decided, then Sections 3/4 — running the relevant Finalization checks per section against the on-disk text and fixing findings by editing the file. Gate, then `ready` flip last. If an `sdd.md` appeared at that path since the lane started, abort and surface it — never overwrite.
 2. Compose the final report: the complete Case Review packet (all 10 sections), `Decisions I made`, ⚠ flags, and the resolution ledger as one fenced JSON block (§Resolution ledger). The report IS the caller's approval payload — a bare "done, wrote sdd.md" return defeats the design; the caller must be able to show the review without re-reading the file.
 3. Return. The caller owns the user-facing Build answer, the build preference, and every later phase.
 
