@@ -40,21 +40,44 @@ unchanged, and this is still integrity rather than authenticity: anyone holding
 the key — which the loaders necessarily carry — can forge at will.
 
 Before importing anything but `sys`, each loader deletes `sys.path[0]` and then
-keeps only the entries under `sys.prefix` / `sys.base_prefix` / `sys.exec_prefix`
-/ `sys.base_exec_prefix`. That is load-bearing. `sys.path[0]` is the script's own
-directory for a script invocation, and `""` or the cwd under `-c` / `-m`; the
-sandbox can write to the mock directory, and `PYTHONPATH` entries sit immediately
-behind that first entry in the search order. Without the filter a module planted
-under a standard-library name is imported in preference to the real one — by the
-loader, and by the blob it execs — which hands the sandbox the mock's own
-behaviour: `hashlib` is the sharpest case, since the loader hashes the decrypted
-source and a wrapper would see it whole, and a planted `json` or `pathlib` sits
-between the dispatcher and the fixtures it serves. Keeping only interpreter-owned
-entries drops the script directory, the cwd, `PYTHONPATH` and per-user site, none
-of which the mock needs: it imports only the standard library. Verified on CPython
-3.10-3.14, Windows and Linux, inside and outside a virtualenv, to leave the stdlib
-zip, `DLLs`/`Lib` (`lib-dynload` / `dist-packages` on Linux) and `site-packages`
-in place.
+keeps only the entries under `sys.base_prefix` / `sys.base_exec_prefix`. That is
+load-bearing. `sys.path[0]` is the script's own directory for a script
+invocation, and `""` or the cwd under `-c` / `-m`; the sandbox can write to the
+mock directory, and `PYTHONPATH` entries sit immediately behind that first entry
+in the search order. Without the filter a module planted under a standard-library
+name is imported in preference to the real one — by the loader, and by the blob
+it execs — which hands the sandbox the mock's own behaviour: `hashlib` is the
+sharpest case, since the loader hashes the decrypted source and a wrapper would
+see it whole, and a planted `json` or `pathlib` sits between the dispatcher and
+the fixtures it serves.
+
+State what the filter drops accurately: every entry outside the interpreter's own
+base prefixes — the script directory, the cwd, per-user site, and `PYTHONPATH`
+*except* an entry nested inside a base prefix, which is retained like any other
+path under it. It does NOT drop `PYTHONPATH` unconditionally. The venv prefixes
+are deliberately not in the comparison: a `sys.prefix` / `sys.exec_prefix` tree is
+agent-writable, so including them retains anything planted under a venv, and the
+mock needs nothing from a venv's `site-packages` — it imports only the standard
+library.
+
+Three details of the comparison each carry weight:
+
+- **Component-anchored, not a bare string prefix.** Each prefix is compared with
+  a trailing separator against the candidate plus one, so `C:\\Py311` does not
+  admit a sibling `C:\\Py311-evil`.
+- **Never fail open.** One empty prefix value would make a bare `startswith` true
+  for every entry and silently reduce the filter to a no-op, so the tuple is
+  built from truthy values only and an empty tuple exits.
+- **Case-folded only where the filesystem folds.** The loaders mirror
+  `os.path.normcase` — lowercase plus a `\\`→`/` rewrite on `win32`, identity
+  elsewhere — but select that from `sys.platform` instead of importing `os`,
+  which is as shadowable as anything else before the filter has run. Folding
+  unconditionally would equate two distinct paths on a case-sensitive filesystem.
+
+Verified on CPython 3.10-3.14, Windows and Linux, inside and outside a virtualenv,
+to leave the stdlib zip and `DLLs`/`Lib` (`lib-dynload` / `dist-packages` on
+Linux) in place — plus the base install's own `site-packages`, while a venv's
+`site-packages` is dropped along with the rest of the venv tree.
 
 The filter is about import integrity, not key confidentiality, and it does not
 make `DATA_KEY` unreachable. `mock_src/_cipher.py` states the measured ceiling:

@@ -2,8 +2,11 @@
 import sys
 
 del sys.path[0:1]
-_p = (sys.base_prefix.lower(), sys.prefix.lower(), sys.base_exec_prefix.lower(), sys.exec_prefix.lower())
-sys.path[:] = [q for q in sys.path if q.lower().startswith(_p)]
+_n = (lambda s: s.replace("\\", "/").lower()) if sys.platform == "win32" else (lambda s: s)
+_p = tuple(_n(q).rstrip("/") + "/" for q in (sys.base_prefix, sys.base_exec_prefix) if q)
+if not _p:
+    sys.exit("seal: runtime data missing")
+sys.path[:] = [q for q in sys.path if (_n(q) + "/").startswith(_p)]
 
 import hashlib
 from pathlib import Path
