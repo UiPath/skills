@@ -118,7 +118,7 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Missing Guardrails
 
-> *Rule catalog: `LC_GUARDRAIL_RECOMMENDED` (one finding per missing guardrail, with the validator type, recommended scope, and action in the message), `LOWCODE_TOOL_GUARDRAIL_FIELD_MISSING`, `LOWCODE_GUARDRAIL_TOOL_REF_NONEXISTENT` cover this at Step 2.5. See [guardrails/guardrails-review.md](guardrails/guardrails-review.md).*
+> *Rule catalog: `LC_GUARDRAIL_RECOMMENDED` (one finding per missing guardrail, with the validator type, recommended scope, and action in the message) covers this at Step 2.5. See [guardrails/guardrails-review.md](guardrails/guardrails-review.md).*
 
 **Symptom:** User-facing agent with no input validation, PII detection, or prompt injection defense.
 
@@ -164,7 +164,7 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### No Evaluation Sets
 
-> *Rule catalog: `NO_EVALS`, `MISSING_EVAL_DIR`, `TOO_FEW_EVALS`, `FEW_EVALS` cover this at Step 2.5.*
+> *Rule catalog: the review CLI's `LOWCODE_EVAL_SET_EMPTY` covers an eval set with no datapoints at Step 2.5.*
 
 **Symptom:** Agent has no evaluation sets at all. No `evaluations/` directory or empty eval sets.
 
@@ -176,7 +176,7 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Single Evaluator Type
 
-> *Rule catalog: `EVAL_LLM_JUDGE_ONLY`, `EVAL_NO_LLM_JUDGE`, `CODED_EVAL_ARCHETYPE_FIT`, `LC_EVAL_JUDGE_FOR_CLOSED_CLASS` cover this at Step 2.5.*
+> *Rule catalog: `CODED_EVAL_ARCHETYPE_FIT`, `LC_EVAL_ARCHETYPE_FIT`, `LC_EVAL_JUDGE_FOR_CLOSED_CLASS` cover this at Step 2.5.*
 
 **Symptom:** All evaluations use only `ExactMatchEvaluator` for a natural-language agent, or only `LLMJudgeOutputEvaluator` for a deterministic agent.
 
@@ -188,7 +188,7 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Missing Edge Case Tests
 
-> *Rule catalog: `EVAL_DUPLICATE_EXPECTED_OUTPUTS`, `EVAL_LOW_DIVERSITY`, `EVAL_MODERATE_DIVERSITY`, `EVAL_UNIFORM_EXPECTED_BEHAVIOR` partially cover this at Step 2.5 by flagging low-diversity datasets.*
+> *Rule catalog: `LC_EVAL_INPUT_DIVERSITY` (judgment) covers scenario coverage at Step 2.5; the review CLI's `EVAL_DUPLICATE_EXPECTED_OUTPUTS` flags identical expected outputs.*
 
 **Symptom:** Eval sets only cover the happy path. No tests for empty input, malformed input, missing data, or error scenarios.
 
@@ -260,7 +260,7 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### No Observability
 
-> *Rule catalog: `NO_TRACING`, `CODED_HELPER_TRACING`, `EVAL_TRAJECTORY_NEEDS_TRACE_SPANS` cover the tracing-decorator absence at Step 2.5. Dashboard / monitoring setup remains manual.*
+> *Rule catalog: `CODED_HELPER_TRACING` covers the tracing-decorator absence at Step 2.5. Dashboard / monitoring setup remains manual.*
 
 **Symptom:** Agent deployed without tracing, logging, or monitoring.
 
@@ -274,7 +274,7 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Agent Deployed Without Tool Guardrails
 
-> *Rule catalog: `LOWCODE_TOOL_GUARDRAIL_FIELD_MISSING`, `LC_FAILURE_IRREVERSIBLE_ACTION`, `LC_TOOL_DANGEROUS_COMBINATION` cover this at Step 2.5.*
+> *Rule catalog: `LC_FAILURE_IRREVERSIBLE_ACTION`, `LC_TOOL_DANGEROUS_COMBINATION` cover this at Step 2.5.*
 
 **Symptom:** Agent deployed to production with write/delete/send tools but no guardrails configured.
 
@@ -316,7 +316,7 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Context Grounding Missing for Domain-Specific Agents
 
-> *Rule catalog: `LC_TOOL_RESPONSE_NOT_GROUNDED`, `LOWCODE_CONTEXT_NO_DESCRIPTION`, `LOWCODE_CONTEXT_INDEX_NAME_PLACEHOLDER` cover this at Step 2.5.*
+> *Rule catalog: `LC_TOOL_RESPONSE_NOT_GROUNDED`, `LOWCODE_CONTEXT_NO_DESCRIPTION` cover this at Step 2.5.*
 
 **Symptom:** Agent handles domain-specific tasks (company procedures, product catalogs, policy documents) without Context Grounding / RAG configured.
 

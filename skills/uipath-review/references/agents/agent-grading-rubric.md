@@ -17,7 +17,7 @@ Final grade = min(G_det, G_jud)
 
 ## G_det — read it from the review CLI, never recompute
 
-`uip agent review` / `uip codedagent review` already runs every deterministic check (structural/schema, placeholder cross-refs, eval counts/diversity, secret & import regex, framework symbol existence, packaging/git hygiene) and grades them. Read the grade from the JSON response and use it verbatim:
+`uip agent review` / `uip codedagent review` runs the deterministic checks its registry ships (structural/schema gates, placeholder cross-refs, eval-set structure, guardrail configuration validity) and grades them. Read the grade from the JSON response and use it verbatim:
 
 ```
 G_det = <response>.Data.Grade        # e.g. "B"
