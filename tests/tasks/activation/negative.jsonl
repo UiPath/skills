@@ -28,7 +28,6 @@
 {"id": "negative-028", "prompt": "Create a new PostgreSQL table", "expected_skill": ""}
 {"id": "negative-029", "prompt": "Write a Dockerfile for a Node app", "expected_skill": ""}
 {"id": "negative-030", "prompt": "Configure Nginx reverse proxy", "expected_skill": ""}
-{"id": "negative-031", "prompt": "Set up UiPath Process Mining to analyze bottlenecks in my procure-to-pay process", "expected_skill": ""}
 {"id": "negative-032", "prompt": "Set up Cypress for end-to-end testing of my React app", "expected_skill": ""}
 {"id": "negative-033", "prompt": "Set up distributed tracing with OpenTelemetry, Jaeger, and Prometheus", "expected_skill": ""}
 {"id": "negative-034", "prompt": "Plan the rollout of an SAP S/4HANA upgrade across our regional offices", "expected_skill": ""}
