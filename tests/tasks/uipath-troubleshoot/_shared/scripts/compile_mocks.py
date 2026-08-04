@@ -13,6 +13,20 @@ host CPython >= 3.10 (the sources' syntax floor; the sandbox resolves
 `python` from the host PATH, so the artifact must not care which minor runs
 it).
 
+Blob layout — a plaintext integrity header followed by the ciphertext:
+
+    bytes 0:4    plaintext length, big-endian
+    bytes 4:12   first 8 bytes of sha256(plaintext)
+    bytes 12:    keystream-encrypted stripped source
+
+Both loaders check the length and the digest before `compile()` and exit with
+their "runtime data missing" guard on mismatch. A keystream cipher cannot
+detect damage on its own — XOR happily decrypts a truncated or flipped blob
+into garbage — and a mock that fails quietly would let a scenario grade
+against evidence that was never served, so damage MUST be loud. The header is
+deliberately outside the ciphertext: the loader has to know the expected
+length before it can tell a short read from a short payload.
+
 `mock_src/*.py` whose name starts with `_` are library modules, not entry
 points: they get no blob of their own, and their stripped source is prepended
 to every entry point's blob. That keeps a single definition of shared code
@@ -38,6 +52,7 @@ Run after any edit to `mock_src/*.py`:
 
 import argparse
 import ast
+import hashlib
 import sys
 from pathlib import Path
 
@@ -82,6 +97,28 @@ def _stripped_source(path: Path) -> str:
     return ast.unparse(_strip_docstrings(ast.parse(path.read_text(encoding="utf-8"))))
 
 
+HEADER_LEN = 12
+
+
+def _pack(stripped: str) -> bytes:
+    """Encrypt `stripped` and prefix the integrity header. See module docstring."""
+    plain = stripped.encode("utf-8")
+    header = len(plain).to_bytes(4, "big") + hashlib.sha256(plain).digest()[:8]
+    return header + xor_stream(plain, CODE_KEY)
+
+
+def _unpack(blob: bytes) -> bytes | None:
+    """Reverse `_pack`, or None if the header does not match — mirrors the loaders."""
+    if len(blob) < HEADER_LEN:
+        return None
+    plain = xor_stream(blob[HEADER_LEN:], CODE_KEY)
+    if len(plain) != int.from_bytes(blob[:4], "big"):
+        return None
+    if hashlib.sha256(plain).digest()[:8] != blob[4:HEADER_LEN]:
+        return None
+    return plain
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
@@ -110,7 +147,7 @@ def main() -> int:
     prelude = [_stripped_source(s) for s in libs]
     for src in entries:
         stripped = "\n".join(prelude + [_stripped_source(src)])
-        blob = xor_stream(stripped.encode("utf-8"), CODE_KEY)
+        blob = _pack(stripped)
         out = OUT_DIR / f".{src.stem}.bin"
         out.write_bytes(blob)
         inlined = f" (+{', '.join(s.name for s in libs)})" if libs else ""

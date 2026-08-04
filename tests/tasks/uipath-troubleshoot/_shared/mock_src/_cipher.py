@@ -23,6 +23,13 @@ identical input yields identical bytes.
 
 Not a confidentiality boundary — a reader who has the key can reverse it.
 It exists to make the staged artifacts opaque to casual inspection.
+
+The transform provides no integrity of its own: XOR decrypts damaged input
+into garbage just as willingly as intact input. Anything that stores a
+keystream-encrypted payload MUST carry its own length + digest header and
+refuse a payload that fails it, so corruption is loud instead of silently
+yielding empty or partial data. `scripts/compile_mocks.py` documents the
+header the code blobs use.
 """
 
 import hashlib
