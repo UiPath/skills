@@ -7,7 +7,7 @@ Expression/code patterns for transforming data in modern projects: DataTable LIN
 - C# XAML expression *binding* form (`CSharpValue`/`CSharpReference`) → [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 - Config.xlsx row/field access in REFramework → [reframework-guide.md](reframework-guide.md).
 - Per-activity property surfaces (ForEachRow, AddDataRow, JoinDataTables, SortDataTable, …) → `{PROJECT_DIR}/.local/docs/packages/UiPath.System.Activities/` or `references/activity-docs/UiPath.System.Activities/`.
-- Coded-mode `using` directives → [coded/coding-guidelines.md](coded/coding-guidelines.md).
+- Coded-mode `using` directives → [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules).
 
 ## Where each snippet goes — read first
 
@@ -28,7 +28,7 @@ A DataTable LINQ chain needs ALL of the following in `TextExpression` (XAML). Do
 - **Namespace imports** (`NamespacesForImplementation`): `System.Data`, `System.Linq`
 - **Assembly references** (`ReferencesForImplementation`): `System.Data`, `System.Data.Common`, `System.Data.DataSetExtensions`
 
-A scaffolded project (`uip rpa init`) already has all of these — untouched, the LINQ family just works. Add them only when hand-authoring a XAML file or after trimming imports. Coded (`.cs`): `using System.Data;` + `using System.Linq;` ([coded/coding-guidelines.md](coded/coding-guidelines.md)).
+A scaffolded project (`uip rpa init`) already has all of these — untouched, the LINQ family just works. Add them only when hand-authoring a XAML file or after trimming imports. Coded (`.cs`): `using System.Data;` + `using System.Linq;` ([coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules)).
 
 Notes:
 - `AsEnumerable` / `CopyToDataTable` / `DataRowComparer`: in modern (Windows / cross-platform) they resolve via `System.Data` (the `System.Data.DataSetExtensions` reference is harmless and present by default); **legacy (.NET Framework 4.6.1) requires `System.Data.DataSetExtensions`** — there they live in that assembly, not `System.Data`. Including it in both is the safe default.
@@ -55,6 +55,7 @@ See [csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 | Expression filter, no new columns | `dt.Select("[Amount] > 1000")` | returns `DataRow()`; string match is **case-INSENSITIVE** by default; SQL-ish syntax |
 | Filter/sort/group/join/project | **LINQ** in one `Assign` | most flexible; ~2× faster than Join Data Tables on large sets |
 | Heavy multi-step transforms, unit-tested logic, safe accessors | **coded** (`.cs`) | C# LINQ inline; see § When to move to coded |
+| Multi-step transform inside a **C#-expression XAML** workflow | **Invoke Code** (or coded workflow via Invoke Workflow File) | C# XAML expression trees forbid statements/`out var`/optional-arg overloads (`CS0854`); helper `.cs` types unreachable — see § Exception below |
 | Key-value config / counters | `Dictionary(Of K,V)` | |
 | Tabular data | `DataTable` | typed columns; LINQ via `.AsEnumerable()` |
 
@@ -63,6 +64,20 @@ See [csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 **Default in VB projects: native expressions (`Assign`) for LINQ and JSON — not `Invoke Code`.** Inline `Invoke Code` adds assembly/import/version pitfalls (it compiles against a separately-resolved set, drifts from the project's references, and isn't checked by `validate`); native expressions reuse the project's imports and round-trip in the designer. The `[expr]` snippets here are all native.
 
 When a transform genuinely outgrows expressions — >2 statement steps, a reusable safe accessor/helper, mutating rows in a loop, real try/catch around a parse, or an unreadable one-liner — move to a **coded (`.cs`) workflow** ([coded/operations-guide.md](coded/operations-guide.md)), still not `Invoke Code`. Coded gives `?.`, `out var`, multi-statement logic, and unit tests.
+
+### Exception: C#-expression XAML workflows — Invoke Code or a coded workflow via Invoke Workflow File; NEVER a helper `.cs` source file
+
+When the transform must live inside a C#-expression XAML workflow, two hard limits change the advice above:
+
+1. XAML expressions cannot reference the project's coded source file (`.cs`) types — `CS0103` at validate/build ([xaml/common-pitfalls.md § XAML Expressions Cannot Reference Coded Source File Types](xaml/common-pitfalls.md)). A helper class in a Coded Source File is unreachable from XAML expressions, period.
+2. C# XAML expressions compile as expression trees — no statements, no `out var` (`TryParse`), no optional-argument overloads (`CS0854`) ([xaml/common-pitfalls.md § C# XAML Expressions Compile as Expression Trees](xaml/common-pitfalls.md)).
+
+Two valid escalations:
+
+- **`Invoke Code`** — logic stays inline in the XAML; data in/out via its Arguments collection; author `Code` as an XML attribute ([xaml/common-pitfalls.md § InvokeCode Code Property](xaml/common-pitfalls.md)).
+- **Coded Workflow invoked via `Invoke Workflow File`** — logic moves to a `.cs` file carrying `[Workflow]` + `Execute` (a Coded *Workflow*, not a bare source file); the XAML calls it like any child workflow (see § Source file vs workflow below).
+
+**Code vs activity chains for row processing:** unless the user states a preference, complex bulk row processing (per-row parse + validate + branch + accumulate) goes to **code** — one of the two escalations above — not an activity chain. Nested `If`/`Switch` levels inside a `ForEach` become unreadable, trip the analyzer nesting threshold, and every embedded expression re-fights the expression-tree limits. A simple `ForEach` row with ONE `If` or `Switch` is fine as plain XAML activities — more readable than code for that size.
 
 **Source file vs workflow — and how to call it:** a bare **Coded Source File** (helper class, no entry point) is callable only from other code. To invoke the logic from a XAML process, make it a **Coded Workflow** (`[Workflow]` + `Execute`) and call it via **Invoke Workflow File** (from XAML) or `RunWorkflow` / the typed `workflows` property (from coded) — see [coded/operations-guide.md](coded/operations-guide.md).
 
@@ -308,4 +323,4 @@ API-response pattern: parse `responseBody`, `If response("error") IsNot Nothing`
 
 ## Coded (`.cs`) note
 
-Coded workflows use the C# forms directly (`r => r["Col"]`, ternary, `out`, `?.`, `??`, collection initializers, verbatim `@"\d+"` regex, query or method LINQ). Add the `using`s (`System.Data`, `System.Linq`, `System.Text.RegularExpressions`, `System.Globalization`) per [coded/coding-guidelines.md](coded/coding-guidelines.md). The XAML C# *binding* wrapper is separate — [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
+Coded workflows use the C# forms directly (`r => r["Col"]`, ternary, `out`, `?.`, `??`, collection initializers, verbatim `@"\d+"` regex, query or method LINQ). Add the `using`s (`System.Data`, `System.Linq`, `System.Text.RegularExpressions`, `System.Globalization`) per [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules). The XAML C# *binding* wrapper is separate — [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
