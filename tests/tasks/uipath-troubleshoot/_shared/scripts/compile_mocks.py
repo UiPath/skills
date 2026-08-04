@@ -39,6 +39,18 @@ the required digest is uncomputable without `CODE_KEY`. Damage detection is
 unchanged, and this is still integrity rather than authenticity: anyone holding
 the key — which the loaders necessarily carry — can forge at will.
 
+Each loader drops `sys.path[0]` (plus any `""` / `"."` entry) before importing
+anything but `sys`, and that is load-bearing. `sys.path[0]` is the loader's own
+directory; whatever runs in a sandbox can write there, and a module planted under
+a standard-library name would then be imported in preference to the real one — by
+the loader, and by the blob it execs. An imported module can read its importer's
+globals, which puts `DATA_KEY` one file away; `hashlib` is the sharpest case,
+since the loader hashes the decrypted source and a wrapper would see it whole.
+The two `sys.path` lines carry no comment on purpose: they are staged into the
+sandbox verbatim, and prose explaining what they defend against is prose
+describing what to attack. Do not "tidy" them away, and do not add an import
+above them.
+
 `mock_src/*.py` whose name starts with `_` are library modules, not entry
 points: they get no blob of their own, and their stripped source is prepended
 to every entry point's blob. That keeps a single definition of shared code
