@@ -25,9 +25,29 @@ Idempotent and safe to run anywhere:
       re-run in a reused sandbox (where sealing already removed `r/`) is a
       no-op.
     - A PARTIAL seal (a crash mid-way) always leaves `r/manifest.json` in
-      place (the store write and `rmtree` happen last), so the pre_run retry
-      RESUMES the seal — every step is idempotent or skip-guarded. `.store`
-      alone is never treated as proof the seal completed.
+      place, so the pre_run retry RESUMES the seal — every step is idempotent
+      or skip-guarded. `.store` alone is never treated as proof the seal
+      completed.
+
+      The deletion order is what makes that true, and a whole-tree delete is
+      not: it is not atomic, and `manifest.json` is not the last name it
+      reaches (`README.md` — the scenario write-up that NAMES the root cause —
+      sorts after it). One undeletable child, and a file lock from an indexer
+      or a scanner is enough, would then leave `README.md` readable with no
+      manifest beside it: the retry hits the no-op guard above, exits 0 without
+      sealing, and the answer is in the agent's working directory while the run
+      reports success. So every OTHER child goes first, and only once all of
+      them are gone is `manifest.json` unlinked and the directory removed. Any
+      failure before that point leaves the manifest, and the retry resumes.
+    - A retry re-seals from what SURVIVES in `r/`, which after a partial
+      deletion is a subset — so a naive rewrite would replace a complete
+      `.store` with a degraded one and the run would grade against fixtures
+      that are no longer served. The store is therefore written only when the
+      copy on disk does not already cover the current manifest and every
+      surviving fixture byte-for-byte; otherwise the existing, more complete
+      `.store` is kept and the retry only finishes the deletion. Refusing to
+      proceed instead would strand the retry with readable fixtures on every
+      attempt; keeping the better copy always terminates.
 
 Blob format (`.store`): this utf-8 JSON document, compressed and then
 encrypted under `DATA_KEY` (`mock_src/_cipher.py`, purpose `store`):
@@ -53,8 +73,8 @@ from pathlib import Path
 # whatever `_cipher.py` sits in the loader's own directory in a sandbox, which
 # is writable, and a planted module can read `DATA_KEY` out of its importer's
 # globals.
-if "data_seal" not in globals():
-    from _cipher import data_seal
+if "data_open" not in globals():
+    from _cipher import data_open, data_seal
 
 # Sandboxes execute this file as an encrypted blob (`m/.seal.bin`, decrypted
 # and exec'd by the `m/seal` stub with __file__ set to the blob's path in the
@@ -64,6 +84,29 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 RESPONSES_DIR = SCRIPT_DIR / "r"
 MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
 STORE_PATH = SCRIPT_DIR / ".store"
+
+
+def _store_already_covers(manifest: dict, files: dict[str, str]) -> bool:
+    """True when `.store` already holds this manifest and at least these fixtures.
+
+    A resumed seal sees only the fixtures the previous attempt had not deleted
+    yet, so rewriting unconditionally would downgrade a complete store. Anything
+    unreadable, wrong-shaped, from another manifest, or disagreeing on a
+    surviving fixture's bytes answers False: the readable `r/` is authoritative
+    then, and rewriting from it is correct.
+    """
+    if not STORE_PATH.is_file():
+        return False
+    try:
+        blob = json.loads(data_open(STORE_PATH.read_bytes(), "store").decode("utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(blob, dict) or blob.get("manifest") != manifest:
+        return False
+    have = blob.get("files")
+    if not isinstance(have, dict):
+        return False
+    return all(have.get(name) == b64 for name, b64 in files.items())
 
 
 def main() -> int:
@@ -81,13 +124,29 @@ def main() -> int:
             continue
         files[item.name] = base64.b64encode(item.read_bytes()).decode("ascii")
 
-    blob = {"manifest": manifest, "files": files}
-    packed = data_seal(json.dumps(blob).encode("utf-8"), "store")
-
     # Commit the store, then remove the readable fixture directory. Store
     # first: the shim must always find either `.store` or `r/`.
-    STORE_PATH.write_bytes(packed)
-    shutil.rmtree(RESPONSES_DIR)
+    if not _store_already_covers(manifest, files):
+        blob = {"manifest": manifest, "files": files}
+        STORE_PATH.write_bytes(data_seal(json.dumps(blob).encode("utf-8"), "store"))
+
+    # Every other child first; `manifest.json` only once they are all gone, so
+    # any failure here leaves the manifest and the pre_run retry resumes.
+    for item in sorted(RESPONSES_DIR.iterdir()):
+        if item.name == "manifest.json":
+            continue
+        if item.is_dir():
+            shutil.rmtree(item)
+        else:
+            item.unlink()
+    MANIFEST_PATH.unlink()
+    # The seal is complete by here — store written, nothing readable left — so a
+    # directory that will not go is cosmetic, and raising would fail a pre_run
+    # whose work is done.
+    try:
+        RESPONSES_DIR.rmdir()
+    except OSError:
+        pass
     return 0
 
 
