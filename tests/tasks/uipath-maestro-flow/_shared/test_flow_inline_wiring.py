@@ -17,15 +17,20 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from flow_inline_wiring import (  # noqa: E402
     assert_agent_input_vars,
     assert_agent_output_vars,
+    assert_agent_sequence_wiring,
+    assert_bindings_rows,
+    assert_builtin_identity,
     assert_cluster_vars_ref,
     assert_definition_present,
     assert_edge,
     assert_embedded_agent,
+    assert_no_derived_resource_fields,
     assert_prompt_tokens,
     assert_resource_inputs,
     assert_resource_source_uuid,
     assert_tool_type_key_uuid,
     find_autonomous_agent_node,
+    find_flow_file,
     find_wired_resource,
     load_json,
 )
@@ -571,3 +576,205 @@ def test_cluster_vars_ref_found_in_variable_mode_argument_path():
 def test_cluster_vars_ref_fails_when_absent():
     with pytest.raises(SystemExit, match="no .vars./.metadata. reference"):
         assert_cluster_vars_ref([_agent_node(), _tool_node()])
+
+
+# ── assert_no_derived_resource_fields (M3) ───────────────────────────────────
+
+
+def test_no_derived_fields_passes_on_clean_tool_node():
+    assert_no_derived_resource_fields(_tool_node())
+
+
+def test_no_derived_fields_rejects_resource_type_discriminator():
+    node = _tool_node()
+    node["inputs"]["$resourceType"] = "tool"
+    with pytest.raises(SystemExit, match=r"\$resourceType"):
+        assert_no_derived_resource_fields(node)
+
+
+def test_no_derived_fields_rejects_derived_type_string():
+    with pytest.raises(SystemExit, match="derived resource.json type"):
+        assert_no_derived_resource_fields(_tool_node(type="internal"))
+
+
+def test_no_derived_fields_allows_argument_named_type():
+    # A legitimate tool argument named "type" is a ValueSourceField OBJECT
+    # (or a string outside the derived-type value set) — must not FAIL.
+    node = _tool_node(type={"mode": "prompt", "textValue": "",
+                            "promptValue": "The record type", "argumentPath": ""})
+    assert_no_derived_resource_fields(node)
+
+
+def test_no_derived_fields_rejects_location():
+    with pytest.raises(SystemExit, match="location"):
+        assert_no_derived_resource_fields(_tool_node(location="solution"))
+
+
+def test_no_derived_fields_rejects_argument_properties():
+    with pytest.raises(SystemExit, match="argumentProperties"):
+        assert_no_derived_resource_fields(
+            _tool_node(argumentProperties={"index": {"variant": "argument"}})
+        )
+
+
+def test_no_derived_fields_rejects_properties_tool_type():
+    node = _tool_node(properties={"processName": "X", "folderPath": "Y",
+                                  "toolType": "analyze-attachments"})
+    with pytest.raises(SystemExit, match="toolType"):
+        assert_no_derived_resource_fields(node)
+
+
+# ── assert_bindings_rows (M3) ────────────────────────────────────────────────
+
+
+def _bindings_row(attr="name"):
+    return {"id": "b1", "name": attr, "type": "string", "resource": "process",
+            "resourceKey": "Shared/uipath-agents/FibonacciRPA.FibonacciRPA",
+            "propertyAttribute": attr, "default": "FibonacciRPA"}
+
+
+def test_bindings_rows_pass_on_name_row():
+    flow = _cluster_flow()
+    flow["bindings"] = [_bindings_row("name"), _bindings_row("folderPath")]
+    assert len(assert_bindings_rows(flow)) == 2
+
+
+def test_bindings_rows_fail_when_absent():
+    with pytest.raises(SystemExit, match="no top-level bindings"):
+        assert_bindings_rows(_cluster_flow())
+
+
+def test_bindings_rows_fail_on_unrelated_rows_only():
+    flow = _cluster_flow()
+    flow["bindings"] = [_bindings_row("connectionId")]
+    with pytest.raises(SystemExit, match="no top-level bindings"):
+        assert_bindings_rows(flow)
+
+
+# ── assert_agent_sequence_wiring (M3) ────────────────────────────────────────
+
+
+def _sequence_edges():
+    return [
+        {"id": "e1", "sourceNodeId": "start", "sourcePort": "output",
+         "targetNodeId": "expAgent", "targetPort": "input"},
+        {"id": "e2", "sourceNodeId": "expAgent", "sourcePort": "success",
+         "targetNodeId": "end", "targetPort": "input"},
+    ]
+
+
+def test_sequence_wiring_passes():
+    flow = _flow(edges=_sequence_edges())
+    assert_agent_sequence_wiring(flow, find_autonomous_agent_node(flow))
+
+
+def test_sequence_wiring_fails_without_input_edge():
+    flow = _flow(edges=_sequence_edges()[1:])
+    with pytest.raises(SystemExit, match="'input' port"):
+        assert_agent_sequence_wiring(flow, find_autonomous_agent_node(flow))
+
+
+def test_sequence_wiring_fails_without_success_edge():
+    flow = _flow(edges=_sequence_edges()[:1])
+    with pytest.raises(SystemExit, match="'success' port"):
+        assert_agent_sequence_wiring(flow, find_autonomous_agent_node(flow))
+
+
+# ── find_flow_file (M3) ──────────────────────────────────────────────────────
+
+
+def test_find_flow_file_prefers_expected(tmp_path, monkeypatch):
+    expected = tmp_path / "Sol" / "Proj" / "Proj.flow"
+    expected.parent.mkdir(parents=True)
+    expected.write_text("{}")
+    monkeypatch.chdir(tmp_path)
+    assert find_flow_file(expected) == expected
+
+
+def test_find_flow_file_falls_back_to_sole_candidate(tmp_path, monkeypatch):
+    actual = tmp_path / "Other" / "Other.flow"
+    actual.parent.mkdir(parents=True)
+    actual.write_text("{}")
+    monkeypatch.chdir(tmp_path)
+    got = find_flow_file(tmp_path / "Sol" / "Proj" / "Proj.flow")
+    assert got.name == "Other.flow"
+
+
+def test_find_flow_file_fails_on_multiple_candidates(tmp_path, monkeypatch):
+    for name in ("A", "B"):
+        d = tmp_path / name
+        d.mkdir()
+        (d / f"{name}.flow").write_text("{}")
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(SystemExit, match="2 .flow candidates"):
+        find_flow_file(tmp_path / "Sol" / "Proj" / "Proj.flow")
+
+
+def test_find_flow_file_fails_when_none(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(SystemExit, match="0 .flow candidates"):
+        find_flow_file(tmp_path / "Sol" / "Proj" / "Proj.flow")
+
+
+# ── assert_builtin_identity (M3) ─────────────────────────────────────────────
+
+
+def _builtin_node(suffix, **input_overrides):
+    inputs = {
+        "name": "Tool",
+        "description": "A built-in tool.",
+    }
+    inputs.update(input_overrides)
+    return {
+        "id": "builtinTool",
+        "type": f"uipath.agent.resource.tool.builtin.{suffix}",
+        "typeVersion": "1.1",
+        "display": {"label": "Tool"},
+        "inputs": inputs,
+    }
+
+
+def test_builtin_identity_analyzefiles_requires_source_uuid():
+    node = _builtin_node("analyzefiles",
+                         source="3f2a9c1e-7b4d-4e8a-9c5f-1d2e3a4b5c6d")
+    assert assert_builtin_identity(node) == "3f2a9c1e-7b4d-4e8a-9c5f-1d2e3a4b5c6d"
+
+
+def test_builtin_identity_analyzefiles_fails_without_source():
+    with pytest.raises(SystemExit, match="model.source: true"):
+        assert_builtin_identity(_builtin_node("analyzefiles"))
+
+
+def test_builtin_identity_summarize_requires_id_uuid():
+    node = _builtin_node("summarize",
+                         id="8e1b2d3c-4a5f-4b6e-8d7c-9a0b1c2d3e4f",
+                         source="")
+    assert assert_builtin_identity(node) == "8e1b2d3c-4a5f-4b6e-8d7c-9a0b1c2d3e4f"
+
+
+def test_builtin_identity_summarize_allows_vars_file_expr_source():
+    node = _builtin_node("summarize",
+                         id="8e1b2d3c-4a5f-4b6e-8d7c-9a0b1c2d3e4f",
+                         source="{{ $vars.start.output.docFile }}")
+    assert_builtin_identity(node)
+
+
+def test_builtin_identity_summarize_fails_without_id():
+    with pytest.raises(SystemExit, match="identity is inputs.id"):
+        assert_builtin_identity(_builtin_node("summarize", source=""))
+
+
+def test_builtin_identity_batchtransform_rejects_uuid_in_source():
+    node = _builtin_node("batchtransform",
+                         id="8e1b2d3c-4a5f-4b6e-8d7c-9a0b1c2d3e4f",
+                         source="9c40fd2e-58f4-45a3-93bb-0dbe38a72e10")
+    with pytest.raises(SystemExit, match="FILE REFERENCE"):
+        assert_builtin_identity(node)
+
+
+def test_builtin_identity_rejects_instance_model_block():
+    node = _builtin_node("analyzefiles",
+                         source="3f2a9c1e-7b4d-4e8a-9c5f-1d2e3a4b5c6d")
+    node["model"] = {"source": True}
+    with pytest.raises(SystemExit, match="instance 'model' block"):
+        assert_builtin_identity(node)
