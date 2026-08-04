@@ -161,10 +161,17 @@ class SharedParserTest(unittest.TestCase):
     exercise them."""
 
     def setUp(self) -> None:
-        sys.path.insert(0, str(PLANNER_ROOT))
-        from _shared import entry_rule_check  # noqa: PLC0415
+        # Path-based import: a package import (`from _shared import ...`) collides
+        # with the sibling suite's identically-named `_shared` package when both
+        # test trees are collected in one pytest run.
+        import importlib.util  # noqa: PLC0415
 
-        self.mod = entry_rule_check
+        spec = importlib.util.spec_from_file_location(
+            "planner_shared_entry_rule_check", PLANNER_ROOT / "_shared" / "entry_rule_check.py"
+        )
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        self.mod = mod
 
     def test_section_one_headings_are_not_parsed_as_stages(self) -> None:
         text = "\n\n".join(

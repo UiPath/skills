@@ -198,6 +198,10 @@ Never compose the whole SDD in-head and Write once at the end: a long silent com
 
 The machine-shaped record of §Tenant grounding, returned as a fenced JSON block in the delegated subagent's final report (and kept in-memory in direct mode — the SDD cells carry the identities for cross-session use). One entry per resolved/attempted lookup, exact keys: `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches` (the full exact-name match set from the refreshed cache, not a summary), `selected` (the adopted entry, or `null` after a genuine empty lookup), and `rationale` — plus a `gateDecision` field (`pick:<name>` / `resolve-at-build` / `create-during-build`) when the item went through the resolution gate. This is exactly the build skill's `tasks/registry-resolved.json` entry shape, so the caller persists it verbatim and its planning pass verifies instead of re-resolving. Connection resolutions ride the matching connector task's entry.
 
+## HTML preview
+
+Optional, **on-request only** — never offered proactively. Self-contained local HTML review of the case design (Case Definition, collapsible Stages & Tasks, Personas, Integrations; filters and search). Generation: Read [`assets/templates/sdd-viewer.html`](../assets/templates/sdd-viewer.html), replace the `__SDD_DATA__` token in its `<script id="sdd-data">` block with JSON serialized from the in-memory model (schema in the template's header comment — do NOT re-parse the SDD when the model is live), Write `./sdd-viewer.html`, tell the user: `Generated ./sdd-viewer.html — open it in a browser to review.` Failure → one-line notice, continue. Downstream build phases ignore this file.
+
 ## Resumption
 
 A case `sdd.draft.md` at lane entry is a leftover from an on-request draft or an older run. AskUserQuestion (3 options):

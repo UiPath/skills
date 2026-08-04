@@ -298,7 +298,7 @@ Every stage T-entry includes `rationale:` copied from the SDD. It must explain t
 
 ### 4.5 Edges — not authored (RETIRED)
 
-The skill does not author edges (Rule 20). Emit no edge T-entries. Stage transitions derive entirely from stage entry/exit conditions (§4.7); `caseplan.json.edges` stays `[]`; case start is the first stage's `case-entered` entry condition. See the reachability check in [`sdd-generation-rules.md`](sdd-generation-rules.md).
+The skill does not author edges (Rule 20). Emit no edge T-entries. Stage transitions derive entirely from stage entry/exit conditions (§4.7); `caseplan.json.edges` stays `[]`; case start is the first stage's `case-entered` entry condition. Reachability is condition-driven: every stage needs an entry condition naming a reachable producer (the first stage carries `case-entered`); orphan/unreachable stages are design defects owned by the planner's design lane and surfaced by skeleton/full `validate`.
 
 ### 4.6 Add tasks
 
