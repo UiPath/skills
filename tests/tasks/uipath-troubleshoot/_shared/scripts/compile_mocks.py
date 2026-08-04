@@ -71,9 +71,9 @@ decrypt without importing anything from this repo. That duplication cannot
 detect itself: `_pack` and `_unpack` both read the constant below, so a packer
 that disagrees with a loader still packs and round-trips cleanly at exit 0, and
 the mismatch surfaces only when the mock runs — as the loader's "runtime data
-missing" guard, far from the edit that caused it. So the packer reads the
-32-byte literal out of each entry point's loader and refuses to pack when it
-differs from `CODE_KEY`.
+missing" guard, far from the edit that caused it. So the packer collects the
+32-byte `bytes` literals in each entry point's loader and refuses to pack unless
+`CODE_KEY` is among them.
 
 Run after any edit to `mock_src/*.py`:
 
@@ -149,17 +149,23 @@ def _unpack(blob: bytes, name: str) -> bytes | None:
     return plain
 
 
-def _loader_key(loader: Path) -> bytes | None:
-    """Return the 32-byte key literal the loader at `loader` decrypts with.
+def _loader_keys(loader: Path) -> list[bytes]:
+    """Return every 32-byte `bytes` constant in the loader at `loader`.
 
-    The loaders spell the key as adjacent escaped byte literals, which the
-    parser folds into one constant, so the first 32-byte `bytes` constant in the
-    file is it. None when the file has no such constant.
+    Membership, not position: `ast.walk` yields breadth-first rather than in
+    source order, so "the first 32-byte constant" is not a thing a caller can
+    rely on, and any other 32-byte literal in the file would outrank the key and
+    be reported as a key mismatch. Asking whether `CODE_KEY` is present has no
+    ordering dependency and still catches drift — a flipped literal means the
+    key is absent from the list. It does not catch a key spelled as anything
+    other than a `bytes` literal (`bytes.fromhex(...)`, say), which is why an
+    empty list is reported as its own failure rather than as a mismatch.
     """
-    for node in ast.walk(ast.parse(loader.read_text(encoding="utf-8"))):
-        if isinstance(node, ast.Constant) and isinstance(node.value, bytes) and len(node.value) == 32:
-            return node.value
-    return None
+    return [
+        node.value
+        for node in ast.walk(ast.parse(loader.read_text(encoding="utf-8")))
+        if isinstance(node, ast.Constant) and isinstance(node.value, bytes) and len(node.value) == 32
+    ]
 
 
 def main() -> int:
@@ -202,7 +208,14 @@ def main() -> int:
         loader = OUT_DIR / src.stem
         if not loader.is_file():
             return f"compile_mocks: {src.name} has no loader at {loader.relative_to(SHARED_DIR)}."
-        if _loader_key(loader) != CODE_KEY:
+        keys = _loader_keys(loader)
+        if not keys:
+            return (
+                f"compile_mocks: {loader.relative_to(SHARED_DIR)} holds no 32-byte bytes literal, so "
+                "its key cannot be read. The loader must spell CODE_KEY as escaped bytes for this "
+                "check to compare it against the packer's."
+            )
+        if CODE_KEY not in keys:
             return (
                 f"compile_mocks: {loader.relative_to(SHARED_DIR)} decrypts with a different key "
                 "than this packer's CODE_KEY. Blobs packed now would fail that loader's integrity "
