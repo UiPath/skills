@@ -95,6 +95,7 @@ Skip entirely when no review items are open. Blocking = yes keeps Planner Handof
 | Case Identifier | Type: <constant \| external>. Constant → Prefix: <2-4 char UPPER prefix>. External → Source: <=vars.<In/InOut variable> \| =js:`expression`> |
 | Priority | Choiceset: <comma-separated values> — Default: <value> |
 | Case-Level SLA | <count> <unit: h/d/w/m> |
+| SLA Title | <non-empty root-unique SLA rule title, no `:` — omit this row when Case-Level SLA is —> |
 | SLA Type | <time-based \| condition-based> |
 | Case App | <Enabled \| Disabled> |
 | Task-output passing | <Direct \| Shared> |
@@ -104,10 +105,10 @@ Skip entirely when no review items are open. Blocking = yes keeps Planner Handof
 
 **Design Rationale:** <Why this target, at-risk threshold, recipients, and breach behavior fit the case requirement; name any interrupting secondary stage entered through `sla-status-change`.>
 
-| SLA Status | Threshold | Action |
-|------------|-----------|--------|
-| At-Risk | <percentage>% of SLA duration | Notify: <recipient or group> |
-| Breached | 100% of SLA duration | Notify: <recipient or group> |
+| SLA Status | Threshold | Action | Display Name |
+|------------|-----------|--------|--------------|
+| At-Risk | <percentage>% of SLA duration | Notify: <recipient or group> | <non-empty root-unique escalation title, no `:`> |
+| Breached | 100% of SLA duration | Notify: <recipient or group> | <non-empty root-unique escalation title, no `:`> |
 
 ### Variable SLA Rules
 
@@ -176,7 +177,7 @@ Every row must have Category.
 
 | WHEN | IF | Interrupting | Display Name |
 |------|-----|-------------|--------------|
-| <case-entered \| selected-stage-completed("StageName") \| selected-stage-exited("StageName") \| user-selected-stage \| wait-for-connector \| sla-status-change("<SLA>","<Escalation>")> | <conditionExpression or —> | <Yes \| No> | <label or —> |
+| <case-entered \| selected-stage-completed("StageName") \| selected-stage-exited("StageName") \| user-selected-stage \| wait-for-connector \| sla-status-change("<SLA target>","<SLA Title>") for a breach \| sla-status-change("<SLA target>","<SLA Title>","<At-Risk Escalation Display Name>") for at-risk> | <conditionExpression or —> | <Yes \| No> | <label or —> |
 
 #### Stage Exit Conditions
 
@@ -188,10 +189,11 @@ Every row must have Category.
 
 **Design Rationale:** <Why this duration, threshold, recipients, and breach behavior fit.>
 **SLA Type:** <time-based \| condition-based>
+**SLA Title:** <non-empty stage-unique SLA rule title, no `:` — this exact title is what a `sla-status-change("<Stage>","<SLA Title>")` entry row references>
 
-| SLA | Unit | At-Risk | At-Risk Action | Breach Action |
-|-----|------|---------|----------------|---------------|
-| <count> | <min \| h \| d \| w \| m> | <percentage>% | Notify: <recipient> | Notify: <recipient> |
+| SLA | Unit | At-Risk | At-Risk Action | At-Risk Escalation Display Name | Breach Action | Breach Escalation Display Name |
+|-----|------|---------|----------------|----------------------------------|---------------|---------------------------------|
+| <count> | <min \| h \| d \| w \| m> | <percentage>% | Notify: <recipient> | <stage-unique title, no `:`> | Notify: <recipient> | <stage-unique title, no `:`> |
 
 ##### Stage Variable SLA Rules
 
