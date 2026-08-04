@@ -81,10 +81,10 @@ CRUD for evaluators scoped by process key.
 ### evaluator list
 
 ```bash
-uip or eval evaluator list --process-key <guid> [--tenant <tenant>] --output json
+uip or eval evaluator list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
 ```
 
-Output code: `EvaluatorList`. Fields: EvaluatorId, Name, Description, EvaluatorTypeId, Version, CreatedAt.
+Output code: `EvaluatorList`. Fields: EvaluatorId, Name, Description, EvaluatorTypeId, Version, CreatedAt. Includes `Pagination` field.
 
 ### evaluator get
 
@@ -140,10 +140,10 @@ CRUD for eval sets (dataset containers) scoped by process key.
 ### eval-set list
 
 ```bash
-uip or eval eval-set list --process-key <guid> [--tenant <tenant>] --output json
+uip or eval eval-set list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
 ```
 
-Output code: `EvalSetList`. Fields: EvalSetId, Name, Version, Description, BatchSize, EvaluatorRefs, CreatedAt.
+Output code: `EvalSetList`. Fields: EvalSetId, Name, Version, Description, BatchSize, EvaluatorRefs, CreatedAt. Includes `Pagination` field.
 
 ### eval-set get
 
@@ -204,11 +204,13 @@ CRUD for evaluations (test cases / data points) within eval sets.
 uip or eval evaluation list \
   --process-key <guid> \
   --eval-set-id <guid> \
+  [--limit <n>] \
+  [--offset <n>] \
   [--tenant <tenant>] \
   --output json
 ```
 
-Output code: `EvaluationList`. Fields: EvaluationId, EvalSetId, Name, Inputs, ExpectedOutput, ExpectedBehavior, CreatedAt.
+Output code: `EvaluationList`. Fields: EvaluationId, EvalSetId, Name, Inputs, ExpectedOutput, ExpectedBehavior, CreatedAt. Includes `Pagination` field.
 
 ### evaluation get
 
@@ -272,10 +274,10 @@ Query eval run results by process key.
 ### run list
 
 ```bash
-uip or eval run list --process-key <guid> [--limit <n>] [--tenant <tenant>] --output json
+uip or eval run list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
 ```
 
-Output code: `EvalSetRunList`. Fields: EvalSetRunId, EvalSetId, Status, Score, EvalsExecuted, Duration, CreatedAt.
+Output code: `EvalSetRunList`. Fields: EvalSetRunId, EvalSetId, Status, Score, EvalsExecuted, Duration, CreatedAt. Includes `Pagination` field.
 
 ### run get
 
