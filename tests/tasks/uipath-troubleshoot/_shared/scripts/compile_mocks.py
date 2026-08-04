@@ -16,21 +16,28 @@ it).
 Blob layout — a plaintext integrity header followed by the ciphertext:
 
     bytes 0:4    plaintext length, big-endian
-    bytes 4:12   first 8 bytes of sha256(plaintext)
+    bytes 4:12   first 8 bytes of sha256(CODE_KEY + plaintext)
     bytes 12:    keystream-encrypted stripped source
 
 Both loaders check the length and the digest before `compile()` and exit with
 their "runtime data missing" guard on mismatch, and reject a blob with no
-payload at all: the empty plaintext's length and digest are the same constants
-for every key, so a bare 12-byte header would otherwise satisfy both checks
-without anyone having to know `CODE_KEY`, and `compile(b"")` then `exec`s to a
-silent no-op. The packer refuses an entry point that strips to nothing for the
-same reason. A keystream cipher cannot
-detect damage on its own — XOR happily decrypts a truncated or flipped blob
-into garbage — and a mock that fails quietly would let a scenario grade
-against evidence that was never served, so damage MUST be loud. The header is
-deliberately outside the ciphertext: the loader has to know the expected
-length before it can tell a short read from a short payload.
+payload at all. A keystream cipher cannot detect damage on its own — XOR happily
+decrypts a truncated or flipped blob into garbage — and a mock that fails
+quietly would let a scenario grade against evidence that was never served, so
+damage MUST be loud. The header is deliberately outside the ciphertext: the
+loader has to know the expected length before it can tell a short read from a
+short payload.
+
+The digest covers `CODE_KEY` as well as the plaintext, which is what stops a
+header being *forged* rather than merely damaged. Over a plaintext alone the
+digest is a public constant, so for a tiny payload a search over the ciphertext
+byte walks every possible plaintext while the digest of a chosen one (a newline
+— `compile()` accepts it and `exec`s to nothing) stays fixed: 256 tries with no
+key knowledge produce a blob that passes both checks and exits 0 with no
+output, the exact silent-success shape this header exists to eliminate. Keyed,
+the required digest is uncomputable without `CODE_KEY`. Damage detection is
+unchanged, and this is still integrity rather than authenticity: anyone holding
+the key — which the loaders necessarily carry — can forge at will.
 
 `mock_src/*.py` whose name starts with `_` are library modules, not entry
 points: they get no blob of their own, and their stripped source is prepended
@@ -126,7 +133,7 @@ HEADER_LEN = 12
 def _pack(stripped: str, name: str) -> bytes:
     """Encrypt `stripped` and prefix the integrity header. See module docstring."""
     plain = stripped.encode("utf-8")
-    header = len(plain).to_bytes(4, "big") + hashlib.sha256(plain).digest()[:8]
+    header = len(plain).to_bytes(4, "big") + hashlib.sha256(CODE_KEY + plain).digest()[:8]
     return header + xor_stream(plain, code_seed(CODE_KEY, name))
 
 
@@ -137,7 +144,7 @@ def _unpack(blob: bytes, name: str) -> bytes | None:
     plain = xor_stream(blob[HEADER_LEN:], code_seed(CODE_KEY, name))
     if len(plain) != int.from_bytes(blob[:4], "big"):
         return None
-    if hashlib.sha256(plain).digest()[:8] != blob[4:HEADER_LEN]:
+    if hashlib.sha256(CODE_KEY + plain).digest()[:8] != blob[4:HEADER_LEN]:
         return None
     return plain
 

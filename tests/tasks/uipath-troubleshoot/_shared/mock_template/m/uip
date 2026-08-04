@@ -11,10 +11,11 @@ if not _bin.is_file():
 _raw = _bin.read_bytes()
 if len(_raw) <= 12:
     sys.exit("uip: runtime data missing")
-_b = hashlib.sha256(
+_k = (
     b"\xa4\x9e\x38\x19\x8e\x6c\x9b\xf1\xa9\x0d\x8a\xd1\x2d\xc1\x21\xf5"
-    b"\xc5\x99\x94\xf2\x8c\x85\xec\x6d\x44\xab\x92\xad\xf2\xd2\xa1\x16" + b"uip"
-).digest()
+    b"\xc5\x99\x94\xf2\x8c\x85\xec\x6d\x44\xab\x92\xad\xf2\xd2\xa1\x16"
+)
+_b = hashlib.sha256(_k + b"uip").digest()
 _s = bytearray()
 while len(_s) < len(_raw) - 12:
     _b = hashlib.sha256(_b).digest()
@@ -22,7 +23,7 @@ while len(_s) < len(_raw) - 12:
 _src = bytes(x ^ y for x, y in zip(_raw[12:], _s))
 if len(_src) != int.from_bytes(_raw[:4], "big"):
     sys.exit("uip: runtime data missing")
-if hashlib.sha256(_src).digest()[:8] != _raw[4:12]:
+if hashlib.sha256(_k + _src).digest()[:8] != _raw[4:12]:
     sys.exit("uip: runtime data missing")
 _code = compile(_src, "uip", "exec")
 exec(_code, {"__name__": "__main__", "__file__": str(_bin)})
