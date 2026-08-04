@@ -162,6 +162,12 @@ def main() -> int:
         return f"compile_mocks: no entry points found under {SRC_DIR}"
 
     prelude = [_stripped_source(s) for s in libs]
+
+    # Build every blob first, write nothing until all of them pass. The blobs
+    # are a matched set — `m/seal` writes the runtime data files that `m/uip`
+    # reads — so writing one and then failing on the next would leave a stale
+    # blob paired with a fresh one behind an "it failed" exit code.
+    outputs: list[tuple[Path, bytes, str]] = []
     for src in entries:
         stripped = "\n".join(prelude + [_stripped_source(src)])
 
@@ -183,10 +189,12 @@ def main() -> int:
         blob = _pack(stripped, src.stem)
         if _unpack(blob, src.stem) != stripped.encode("utf-8"):
             return f"compile_mocks: {src.name} failed its own round-trip; refusing to write."
-        out = OUT_DIR / f".{src.stem}.bin"
+        outputs.append((OUT_DIR / f".{src.stem}.bin", blob, src.name))
+
+    inlined = f" (+{', '.join(s.name for s in libs)})" if libs else ""
+    for out, blob, name in outputs:
         out.write_bytes(blob)
-        inlined = f" (+{', '.join(s.name for s in libs)})" if libs else ""
-        print(f"packed {src.name}{inlined} -> {out.relative_to(SHARED_DIR)}")
+        print(f"packed {name}{inlined} -> {out.relative_to(SHARED_DIR)}")
     return 0
 
 
