@@ -134,11 +134,13 @@ def _get_store():
     Exactly what is checked, and why here: `manifest` is an object; `rules` is a
     list of objects; each rule's `match` is a string (`_tokenize` splits it) and
     names a target (`passthrough`, or a `file` the dispatcher indexes with); any
-    `exit_code` is int-able; each fixture's bytes decode strictly. Every one of
-    those is dereferenced without a guard further down, so a missing or
+    `exit_code` is int-able; each fixture's base64 layer decodes strictly. Every
+    one of those is dereferenced without a guard further down, so a missing or
     wrong-typed field raises deep in dispatch — and that traceback puts the
     loader's `exec` line on the agent's stderr. Checking here puts the failure in
-    this handler instead. `unmocked_default.response` is NOT checked here: a
+    this handler instead. Only the base64 layer is checked here: turning those
+    bytes into text happens at the point of use, where both decodes replace
+    undecodable input rather than raising. `unmocked_default.response` is NOT checked here: a
     non-string one is serialized at the point of use (see `_response_body`),
     because rejecting it would take out every command in a scenario whose store
     is otherwise sound.
@@ -477,8 +479,11 @@ def main(argv: list[str]) -> int:
                 return _err({"error": "response file missing", "path": str(response_file)}, 2)
             raw = response_file.read_bytes()
         # Tolerate fixtures written by PowerShell (UTF-16 LE BOM) or UTF-8.
+        # Both decodes replace on error rather than raising: an odd byte count or
+        # an unpaired surrogate would otherwise traceback out of the shim and put
+        # the loader's `exec` line on the agent's stderr.
         if raw.startswith(b"\xff\xfe") or raw.startswith(b"\xfe\xff"):
-            text = raw.decode("utf-16")
+            text = raw.decode("utf-16", errors="replace")
         else:
             text = raw.decode("utf-8-sig", errors="replace")
         text = _strip_doc_keys(text)
