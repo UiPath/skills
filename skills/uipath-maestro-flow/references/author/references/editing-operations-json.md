@@ -85,7 +85,7 @@ Reach for `jq` / `python3` only when JMESPath cannot express the operation (mult
 ### Why scripting is approval-gated
 
 - `Edit` on nested JSON is fragile. Indented sibling fields, trailing commas, and quote styles all break the exact-match constraint. One byte of drift, no edit applied.
-- Whole-file `Write` is safe but lossy — every field has to round-trip through chat, and large `.flow` files (>500 lines once layout, definitions, and bindings settle) blow the read budget. Use `Write` only for new flows or full reshapes.
+- Whole-file `Write` is lossy — every field has to round-trip through chat, and large `.flow` files (>500 lines once layout, definitions, and bindings settle) blow the read budget. Use `Write` only for new flows or full reshapes; on a flow with connector / managed-HTTP nodes it silently clobbers CLI-owned `bindings[]` / `inputs.detail` (invisible to `flow validate`) — `Edit` in place instead.
 - `python3 -c` / heredoc is a fallback for structural rewrites that are too brittle for `Edit` and too large for safe whole-file `Write`. Use it only after surfacing the trade-offs and getting explicit user approval.
 
 ---
