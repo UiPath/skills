@@ -1,0 +1,55 @@
+task_id: skill-test-link-to-automation
+description: >
+  P&E GA-validation scenario 3.5 (test cases write).
+  Linked a HEALTH test case to an automation package. Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:testcases-link-automation]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  In Test Manager, we've published a test automation called
+  'TestManagerSmoke' to the Shared/uipath-test folder. Link one of its entry points to a
+  test case in the HEALTH project so the case shows as automated instead of
+  manual.
+
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Discovered available automations in the Orchestrator folder before linking"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases\s+list-automations\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Linked a HEALTH test case to an automation entry point"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+(?:update|link-automation)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Verified the test case now shows as automated after linking"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+testcases\s+(?:list|get)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

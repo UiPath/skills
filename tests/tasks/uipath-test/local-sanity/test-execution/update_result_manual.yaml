@@ -1,0 +1,37 @@
+task_id: skill-test-update-result-manual
+description: >
+  P&E GA-validation scenario 6.5 (test execution).
+  Manually set a test-case result (result/executions). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:testcaselog-finish]
+
+skip: true
+
+run_limits:
+  expected_turns: 16
+  max_turns: 50
+
+initial_prompt: |
+  In Test Manager, start a manual run of one of the HEALTH project's test sets,
+  then mark one of its test cases as passed by hand.
+
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Manually set a test-case result by finishing its log (testcaselog finish)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

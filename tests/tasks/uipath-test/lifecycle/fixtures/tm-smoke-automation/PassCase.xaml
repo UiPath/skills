@@ -1,0 +1,31 @@
+<Activity mc:Ignorable="sap sap2010 sads" x:Class="PassCase"
+ xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+ xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+ xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
+ xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+ xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+ xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+ xmlns:uicore="clr-namespace:UiPath.Core;assembly=UiPath.System.Activities"
+ xmlns:ui="http://schemas.uipath.com/workflow/activities"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- PassCase — the passing test case. Logs + takes a screenshot, no failure. -->
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="2">
+      <x:String>System.Activities</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <Sequence DisplayName="Pass case" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="uicore:Image" Name="screenshot" />
+    </Sequence.Variables>
+    <ui:LogMessage DisplayName="Log - start" Level="Info"
+      Message="PassCase: opening Test Manager page" sap2010:WorkflowViewState.IdRef="LogMessage_1" />
+    <ui:TakeScreenshot DisplayName="Take screenshot" Screenshot="[screenshot]"
+      sap2010:WorkflowViewState.IdRef="TakeScreenshot_1" />
+    <ui:SaveImage DisplayName="Save screenshot" Image="[screenshot]"
+      FileName="pass-case.png" sap2010:WorkflowViewState.IdRef="SaveImage_1" />
+    <ui:LogMessage DisplayName="Log - done" Level="Info"
+      Message="PassCase: page opened and screenshot captured - passing" sap2010:WorkflowViewState.IdRef="LogMessage_2" />
+  </Sequence>
+</Activity>

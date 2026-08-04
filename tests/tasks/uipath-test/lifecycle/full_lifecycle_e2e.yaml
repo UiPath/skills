@@ -1,0 +1,590 @@
+task_id: skill-test-full-lifecycle-e2e
+description: >
+  End-to-end lifecycle test: one agent run drives a single Test Manager
+  project through its entire life — create, populate, automate, run,
+  collect results, explore, and tear down — touching every `uip tm`
+  subject in one connected thread against a live tenant. The agent
+  self-seeds a uniquely-named project (so reruns never collide), then:
+  (1) CREATE — project with a meaningful name + description, several test
+  cases with steps, a requirement with the test cases linked, and two test
+  sets (an Automated Suite and a Manual Suite) the cases are split across;
+  (2) METADATA — an object label, a custom
+  field definition plus a value row and a label row, and file attachments
+  on the project and a test case; (3) AUTOMATE — discovers a small
+  pre-published test automation (two entry points: PassCase passes, FailCase
+  is expected to fail) in the target folder, and links both to different Test
+  Manager test cases (the automation + the robot are created once outside the
+  test); (4) RUN —
+  assigns the serverless machine to the folder, triggers an automated
+  execution on the robot, waits for it to finish (expecting a pass/fail
+  mix), and pulls stats + per-test-case logs + the downloaded result;
+  (5) MANUAL — runs the Manual Suite manually, records a passing and a
+  failing test-case log with step logs, and attaches a screenshot to the
+  failing log; (6) EXPLORE — lists executions, traces requirements back from the
+  execution, and generates a report; (7) CLEANUP — unlinks the automation
+  and deletes the project. The agent only drives `uip` CLI calls (the
+  automation runs on the cloud serverless robot), so the task runs on Linux.
+  Criteria are weighted per leg so the create / metadata / manual / explore
+  coverage scores on its own; the automated-run leg carries the top weight,
+  so a missing robot/automation costs that one criterion rather than the
+  whole task. Needs the pre-published automation + an assignable serverless
+  robot in the folder (passed via env).
+tags: [uipath-test, e2e, mode:operate, lifecycle:setup, resource, feature:test-case]
+
+# The lifecycle is long: raise the per-iteration turn cap well above the SDK
+# default (20), give each turn room for slow cold-runner `uip` calls, and cap
+# the whole run. These are TOP-LEVEL task fields (not a `run_limits:` block —
+# the TaskDefinition model reads them here).
+max_turns: 200
+turn_timeout: 1200
+task_timeout: 3000
+expected_commands: 35
+
+# Linux-runnable: the agent only drives `uip` CLI calls; the linked automation
+# runs on the cloud serverless robot, so no Studio/Windows runner is needed.
+sandbox:
+  driver: tempdir
+  env:
+    E2E_TM_FOLDER_NAME: "Shared/uipath-test"
+    E2E_TM_FOLDER: "fcf79fe1-147b-4000-82b3-9eb81b165452"
+    E2E_TM_MACHINE_KEY: "ce01aa90-5e52-4ec3-afb2-ed67850e6e87"
+  agent:
+    type: claude-code
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    disallowed_tools: ["Agent"]
+    permission_mode: acceptEdits
+    model: claude-sonnet-4-6
+
+initial_prompt: |
+  **ENVIRONMENT VARIABLES (already set)**:
+  - E2E_TM_FOLDER_NAME: "Shared/uipath-test"
+  - E2E_TM_FOLDER: "fcf79fe1-147b-4000-82b3-9eb81b165452" (folder key)
+  - E2E_TM_MACHINE_KEY: "ce01aa90-5e52-4ec3-afb2-ed67850e6e87" (serverless machine)
+
+  We're standing up Test Manager for a brand-new feature on our Online
+  Banking app — the payments flow — and I'd like you to take it the whole
+  way for me: from an empty project to a clean tenant again, in one go.
+  Please just work straight through and don't stop to check in with me.
+
+  Start by spinning up a fresh project for this. Give it a clear name (think
+  something like "Online Banking — Payments E2E") and a real description of
+  what it covers, and make the name unique to this run so it doesn't clash
+  with a previous attempt. The moment the project exists, drop its project
+  key into ./project-key.txt on its own line — that way, if anything falls
+  over later, we can still find it and clean it up.
+
+  Then flesh it out like a real test project. Add a handful of test cases for
+  the payments feature, each with proper steps. Raise a requirement for the
+  feature and link those cases to it — and read the links back afterward so
+  we know they actually stuck. Organize the cases into two suites: an
+  "Automated Suite" for the ones we'll drive from a robot, and a "Manual
+  Suite" with at least a couple of cases we'll run by hand. Once it's laid
+  out, don't leave everything pristine-from-create — go back and reword one
+  of the test cases, refine the requirement a little, and rename or
+  re-describe one of the suites.
+
+  Add the governance bits we always tack on: drop a label/tag on one of the
+  cases, and define a custom field on test cases — then actually fill it in
+  on a case, both as free text and as a tag value. Attach a short spec doc
+  to the project itself and a test-data file to one of the cases — we'll
+  handle the third attachment (a screenshot on a test-case log) later during
+  the manual run. While you're in there, polish the project description and
+  tweak that custom field definition too.
+
+  For the automation side: I've already published a tiny test automation
+  called "TestManagerSmoke" to our Orchestrator folder (in the folder specified
+  by $E2E_TM_FOLDER above), so you don't need to build or publish anything —
+  the folder and a serverless robot are already set up for you. Use the values
+  above (E2E_TM_FOLDER and E2E_TM_MACHINE_KEY). It exposes two entry points
+  that each log a line and grab a screenshot: "PassCase" passes, and "FailCase"
+  is meant to fail — it throws, standing in for a step that needs a login the
+  robot won't have. Find those entry points and wire each one to a different
+  case in the Automated Suite.
+
+  Then actually run it. Point the project at that folder so it knows where
+  automated runs should execute, make sure the serverless machine is assigned
+  to the folder, and kick the Automated Suite off on the robot. Wait for it
+  to come back — you'll get a mix of pass and fail, and that mix is exactly
+  what we expect here, so just capture it; don't go off trying to "fix" the
+  failing one. When it's done, pull the run's stats, look at the per-case
+  logs, check a case's result history, download the results, and grab the
+  screenshots the automation took. Since one case failed, kick off a retry of
+  that run once just so we exercise that path — it's fine if it fails the
+  same way again.
+
+  Separately, handle the manual side: run the Manual Suite as a manual
+  execution and record real outcomes for its cases — at least one pass and
+  one fail, with step-by-step notes. Once you've finished and marked one of
+  the logs as failed, attach a screenshot to that test-case log entry itself
+  (not to the test case — to the log). Then double-check that the step logs
+  and the assertions on that case actually recorded.
+
+  Once everything's in place, go back over the whole project read-only and
+  make sure it all hangs together: list the projects, the project's test
+  cases (and for one of them, its steps and which suites it belongs to), the
+  suites and the cases inside each, the requirements, the labels, and the
+  custom fields. List out the executions too, and look up a user while you're
+  at it. Trace which requirements that automated run covered, and export the
+  requirement. Finally, pull a Test Manager report. Then write me a one-page
+  summary at ./tm-lifecycle-summary.md that names the project, the
+  requirement, both test sets, both executions (the automated one and the
+  manual one), and how the pass/fail shook out.
+
+  When all that's done, please leave the tenant the way you found it: unlink
+  the automation, clear the project's default folder, and delete the project.
+
+  One practical tip as you go — ask for JSON output on the read commands so
+  you can reliably pull ids back out and chain them into the next step.
+
+# Safety-net cleanup: the agent deletes its project in step 7, but if the run
+# is interrupted (timeout, max_turns, crash) that step may never run and the
+# self-seeded project would leak onto the shared tenant. This runs after the
+# verdict, reads the key the agent recorded in step 1, and deletes the project.
+# It does not affect pass/fail. `|| true` keeps it quiet when the agent already
+# cleaned up (delete of a missing project is a no-op here).
+post_run:
+  - command: |
+      if [ -f project-key.txt ]; then
+        KEY=$(tr -d '[:space:]' < project-key.txt)
+        if [ -n "$KEY" ]; then
+          uip tm project delete --project-key "$KEY" --yes --output json || true
+        fi
+      fi
+    timeout: 60
+
+success_criteria:
+  # ---- auth ----
+  - type: command_executed
+    description: "Checked login status (`uip login status --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ---- CREATE leg ----
+  - type: command_executed
+    description: "Created the project with a name AND a description (`uip tm project create --name <…> --description <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--name\s+\S)(?=.*--description\s+\S)uip\s+tm\s+project\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created at least two test cases (`uip tm testcases create --project-key <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+\S)uip\s+tm\s+testcases?\s+create\b'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created a requirement (`uip tm requirements create --project-key <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+\S)uip\s+tm\s+requirements?\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Linked test cases to the requirement (`uip tm requirements testcases --add-testcase-ids <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--requirement-id\s+\S)(?=.*--add-testcase-ids\s+\S)uip\s+tm\s+requirements?\s+testcases\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Confirmed the requirement's linked test cases (`uip tm requirements list-testcase-ids --requirement-id <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--requirement-id\s+\S)uip\s+tm\s+requirements?\s+list-testcase-ids\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created test sets — Automated + Manual suites (`uip tm testsets create --project-key <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+\S)uip\s+tm\s+testsets?\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Added test cases to the test sets (`uip tm testcases add …` — both suites)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+add\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Updated a test case (`uip tm testcases update …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+update\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Updated the requirement (`uip tm requirements update …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+update\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Updated a test set (`uip tm testsets update …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testsets?\s+update\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ---- METADATA leg ----
+  - type: command_executed
+    description: "Tagged an object with a label (`uip tm objectlabel add --object-type <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--object-type\s+\S)uip\s+tm\s+objectlabel\s+add\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Defined a custom field (`uip tm customfield create --object-type <…> --data-type <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--object-type\s+\S)(?=.*--data-type\s+\S)uip\s+tm\s+customfield\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Set a custom field value row (`uip tm customfield value create|update …`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--object-type\s+\S)uip\s+tm\s+customfield\s+value\s+(create|update)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Added a custom field label/tag row (`uip tm customfield label add|create …`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--object-type\s+\S)uip\s+tm\s+customfield\s+label\s+(add|create)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Uploaded file attachments to project and testcase (`uip tm attachment upload --object-type project|testcase --file <…>`, ≥2)"
+    tool_name: "Bash"
+    command_pattern: '(?s)(?=[\s\S]*--object-type\s+\S)(?=[\s\S]*--file\s+\S)uip\s+tm\s+attachment\s+upload\b'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Updated the project (`uip tm project update --project-key <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+\S)uip\s+tm\s+project\s+update\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Updated the custom field definition (`uip tm customfield update …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+customfield\s+update\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ---- AUTOMATE leg (link the pre-published automation fixture, then run) ----
+  - type: command_executed
+    description: "Discovered automation entry points before linking (`uip tm testcases list-automations --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+list-automations\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Linked automation entry points to test cases (`uip tm testcases link-automation --project-key <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+\S)uip\s+tm\s+testcases?\s+link-automation\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # ---- RUN leg (the faithful automated run — top weight, isolated) ----
+  - type: command_executed
+    description: "Set the project's default Orchestrator folder for automated runs (`uip tm project set-default-folder …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+set-default-folder\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Triggered an AUTOMATED execution of the Automated Suite (`uip tm testsets run --execution-type automated`, or `testcases run/execute --execution-type automated`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-type\s+["\x27]?automated["\x27]?)uip\s+tm\s+(testsets?\s+run|testcases?\s+(run|execute))\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Waited for the execution to reach a terminal state (`uip tm wait …` or `--wait`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+wait\b|uip\s+tm\s+testsets?\s+run\b.*--wait'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Pulled execution stats (`uip tm executions get-stats …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions\s+get-stats\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed per-test-case logs of the execution (`uip tm executions testcaselogs list --execution-id <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id\s+\S)uip\s+tm\s+executions\s+testcaselogs\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Downloaded the execution result (`uip tm result download --execution-id <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id\s+\S)uip\s+tm\s+result\s+download\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Downloaded the execution's attachments / screenshots (`uip tm attachment download --execution-id <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id\s+\S)uip\s+tm\s+attachment\s+download\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Retried the failed automated execution (`uip tm executions retry --execution-id <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id\s+\S)uip\s+tm\s+executions\s+retry\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ---- MANUAL leg (results + the screenshot-in-execution touchpoint) ----
+  - type: command_executed
+    description: "Triggered a MANUAL execution of the Manual Suite (`uip tm testsets run --execution-type manual`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-type\s+["\x27]?manual["\x27]?)uip\s+tm\s+testsets?\s+run\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Started a manual test-case log (`uip tm testcaselog start --execution-id <…> --test-case-id <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id\s+\S)(?=.*--test-case-id\s+\S)uip\s+tm\s+testcaselog\s+start\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Finished test-case logs with results, including a Failed one (`uip tm testcaselog finish --result <…>`, ≥2)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--result\s+\S)uip\s+tm\s+testcaselog\s+finish\b'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Attached a screenshot to a test-case log (`uip tm attachment upload --object-type testCaseLog …`)"
+    tool_name: "Bash"
+    command_pattern: '(?is)(?=[\s\S]*--object-type\s+["\x27]?testcaselog["\x27]?)(?=[\s\S]*--file\s+\S)uip\s+tm\s+attachment\s+upload\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed test step logs (`uip tm teststeplog list …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+teststeplog\s+list\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed assertions on a test-case log (`uip tm testcaselog list-assertions …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+list-assertions\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ---- EXPLORE / report leg (read sweep across subjects) ----
+  - type: command_executed
+    description: "Listed projects (`uip tm project list`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+list\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed test cases (`uip tm testcases list --project-key <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+\S)uip\s+tm\s+testcases?\s+list\b(?!-)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed a test case's steps (`uip tm testcases list-steps …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+list-steps\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed the test sets a test case belongs to (`uip tm testcases list-testsets …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+list-testsets\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed test sets (`uip tm testsets list --project-key <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+\S)uip\s+tm\s+testsets?\s+list\b(?!-)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed a test set's test cases (`uip tm testsets list-testcases …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testsets?\s+list-testcases\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed requirements (`uip tm requirements list --project-key <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+\S)uip\s+tm\s+requirements?\s+list\b(?!-)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Exported the requirement (`uip tm requirements export …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+export\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed object labels (`uip tm objectlabel list …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+objectlabel\s+list\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed custom field definitions (`uip tm customfield list …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+customfield\s+list\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed executions (`uip tm executions list` or `list-filtered`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions\s+list(-filtered)?\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Looked up a user (`uip tm user get …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+user\s+get\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Traced requirements from the execution (`uip tm requirements list-by-test-execution --execution-id <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--execution-id\s+\S)uip\s+tm\s+requirements?\s+list-by-test-execution\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Generated a Test Manager report (`uip tm report get …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+report\s+get\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # ---- CLEANUP leg ----
+  - type: command_executed
+    description: "Cleared the project's default folder (`uip tm project clear-default-folder …`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+clear-default-folder\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deleted the self-seeded project to clean up (`uip tm project delete --project-key <…>`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+\S)uip\s+tm\s+project\s+delete\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ---- artifact ----
+  - type: run_command
+    description: "Lifecycle summary written, naming the requirement / test set / both executions / pass-fail outcome"
+    command: |
+      python3 -c "
+      import re, sys
+      try:
+          body = open('tm-lifecycle-summary.md', encoding='utf-8', errors='replace').read()
+      except FileNotFoundError:
+          sys.stderr.write('tm-lifecycle-summary.md not found' + chr(10)); sys.exit(2)
+      lower = body.lower()
+      checks = {
+          'markdown header': re.search(r'(?m)^#{1,3}\s+\S', body) is not None,
+          'requirement referenced': 'requirement' in lower,
+          'test set referenced': re.search(r'(?i)test\s*set', body) is not None,
+          'automated + manual executions referenced': ('automated' in lower and 'manual' in lower),
+          'pass/fail outcome': all(t in lower for t in ['pass', 'fail']),
+      }
+      missing = [k for k, ok in checks.items() if not ok]
+      if missing:
+          sys.stderr.write('missing: ' + ', '.join(missing) + chr(10)); sys.exit(1)
+      sys.exit(0)
+      "
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

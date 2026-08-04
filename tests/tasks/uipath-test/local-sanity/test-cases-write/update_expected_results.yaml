@@ -1,0 +1,35 @@
+task_id: skill-test-update-expected-results
+description: >
+  P&E GA-validation scenario 3.3 (test cases write).
+  Updated expected results on a HEALTH test case (testcases update). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:testcases-update]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  We changed the vendor lookup so it returns accountCode now, not vendorId. The test case for that in our Test Manager HEALTH project still expects the old field, so the expected results need fixing.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Updated expected results on a HEALTH test case (testcases update)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--output\s+json)uip\s+tm\s+testcases?\s+update\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

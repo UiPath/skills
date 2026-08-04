@@ -1,0 +1,35 @@
+task_id: skill-test-read-project-details
+description: >
+  P&E GA-validation scenario 1.2 (project and configuration).
+  Read HEALTH project details (project get / list --filter). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:project-get]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  I'm trying to get a full picture of our HEALTH project in Test Manager. What's the description, which Jira project is it tied to, what environments are set up? Lay it all out for me please.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Read HEALTH project details (project get / list --filter)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+project\s+(?:get|list\s+.*--filter)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

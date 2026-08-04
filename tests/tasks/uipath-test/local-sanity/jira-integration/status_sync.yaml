@@ -1,0 +1,35 @@
+task_id: skill-test-status-sync
+description: >
+  P&E GA-validation scenario 13.2 (jira integration).
+  Checked recently-changed Jira-origin requirements in HEALTH to see if the resolution landed (requirements list --changed-since). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:discover, feature:requirements-list]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  We closed the PDF issue in Jira this week. In Test Manager, have the Jira-linked requirements in the HEALTH project picked that up yet?
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Checked Jira-origin requirements for the update (requirements list --changed-since)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+requirements\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

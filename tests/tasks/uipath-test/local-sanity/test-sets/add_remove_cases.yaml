@@ -1,0 +1,35 @@
+task_id: skill-test-add-remove-cases
+description: >
+  P&E GA-validation scenario 5.3 (test sets).
+  Added/removed cases on a HEALTH test set. Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:testsets-update]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  In Test Manager, swap one of the cases on the 'PE Regression' set in the HEALTH project for a different one — pull the old one out and add a new one in.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Added/removed cases on the PE Regression set (testcases add/remove --test-set-key)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--test-set-key)(?=.*--output\s+json)uip\s+tm\s+testcases\s+(?:add|remove)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

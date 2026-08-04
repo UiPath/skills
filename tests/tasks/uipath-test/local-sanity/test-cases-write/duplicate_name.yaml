@@ -1,0 +1,35 @@
+task_id: skill-test-duplicate-name
+description: >
+  P&E GA-validation scenario 3.6 (test cases write).
+  Re-created a duplicate-named HEALTH test case (warns/dedups). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:testcases-create]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  Add a test case in Test Manager, in the HEALTH project, named 'PE - Validate invoice total calculation'. I think we might already have one with that name but go ahead and set it up.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Re-created a duplicate-named HEALTH test case (warns/dedups)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir
