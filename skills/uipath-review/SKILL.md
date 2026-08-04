@@ -484,7 +484,7 @@ CLI findings already shaped `Data.Grade` (G_det); only **judgment** findings fee
 
 **Overall Agent Grade:** single agent → its grade. Multiple agents → the **worst** per-agent grade. Never average grades.
 
-Report the **binding constraint** in one line (e.g. "B — gated by G_det = CLI Data.Grade B; design strong (G_jud A)"). Since the skill grade is `min(Data.Grade, G_jud)`, it is always ≤ `Data.Grade` — report both; never overwrite the CLI grade.
+Report the **binding constraint** in one line (e.g. "B — gated by G_det = CLI Data.Grade B; design strong (G_jud A)"). Since the skill grade is `min(Data.Grade, G_jud)`, it is always ≤ `Data.Grade` — report both; never overwrite the CLI grade. This goes in the Summary's `Agent Grade` line, and the letter alone is restated as `**Final grade: <A–F>**` on the report's last line (Step 5).
 
 Full rubric, agent-principle scoring, edge cases (no-PDD / CLI-unavailable / no-eval-set), CLI-grade alignment, and worked examples: [references/agents/agent-grading-rubric.md](references/agents/agent-grading-rubric.md).
 
@@ -605,7 +605,11 @@ Route each fix to the appropriate skill:
 
 ### Optimization Notes
 - <queue usage, bulk operations, retry/idempotency observations — e.g., partial-failure handling for one-to-many shapes>
+
+**Final grade: <A–F>**
 ```
+
+> **`Final grade:` is the report's last line — nothing follows it.** It restates the Summary's `Agent Grade` letter so the grade stays visible at the tail of a long report; the two must always match. Letter only. Only print for agent projects.
 
 **Finding severity labels (never "Mismatch"/"Aligned"):**
 - Overall Quality: `Good` / `Needs Improvement` / `Critical Issues` (all project types)
