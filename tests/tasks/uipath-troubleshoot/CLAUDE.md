@@ -166,7 +166,7 @@ The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wi
 Each rule has one of:
 
 - `file: <path>` — return the canned response under `r/<file>`.
-- `passthrough: true` — proxy to the real `uip` CLI installed on the host. Use this for open-ended commands like `docsai ask` whose query strings vary between runs. Responses are cached to the sandbox's `r/_cache/<key>.json` for in-run reuse; the cache is **not** persisted to the source — every run hits the live CLI on its first call for each unique query.
+- `passthrough: true` — proxy to the real `uip` CLI installed on the host. Use this for open-ended commands like `docsai ask` whose query strings vary between runs. Responses are cached to the sandbox's `m/_cache/<key>.json` for in-run reuse; the cache is **not** persisted to the source — every run hits the live CLI on its first call for each unique query.
 
 When no rule matches:
 
@@ -253,7 +253,7 @@ The mock machinery itself is never readable in the sandbox — its source would 
 
 `fail_on_error: true` is deliberate — a silent seal failure restores the leak. `m/seal` is idempotent and no-ops when there is no `r/manifest.json`, so a re-run in a reused sandbox still exits 0.
 
-The passthrough cache moves to `m/_cache` (beside the shim) so `docsai` proxying keeps working after `r/` is gone.
+The passthrough cache lives at `m/_cache` (beside the shim, not under `r/`) so `docsai` proxying keeps working after `r/` is gone.
 
 `_build_task_yaml` in `generate_scenario.py` emits this block, so generated scenarios get it automatically. Hand-written scenarios MUST add it.
 

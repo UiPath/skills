@@ -33,10 +33,6 @@ Blob format (`.store`): base64( zlib( utf-8 json( {
     "manifest": <manifest dict>,
     "files":    { "<name>": "<base64 of the file's raw bytes>", ... }
 } ) ) ). Raw bytes are preserved per file so UTF-16/BOM fixtures survive.
-
-The passthrough cache (`r/_cache`, used only by `docsai ask` proxy rules) is
-moved to `<mock_dir>/_cache` so live-proxy caching keeps working after `r/`
-is removed; it holds docs Q&A, not scenario evidence.
 """
 
 import base64
@@ -54,8 +50,6 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 RESPONSES_DIR = SCRIPT_DIR / "r"
 MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
 STORE_PATH = SCRIPT_DIR / ".store"
-CACHE_SRC = RESPONSES_DIR / "_cache"
-CACHE_DST = SCRIPT_DIR / "_cache"
 
 
 def main() -> int:
@@ -75,10 +69,6 @@ def main() -> int:
 
     blob = {"manifest": manifest, "files": files}
     packed = base64.b64encode(zlib.compress(json.dumps(blob).encode("utf-8"), 9))
-
-    # Preserve the passthrough cache (docsai) outside the doomed r/ dir.
-    if CACHE_SRC.is_dir() and not CACHE_DST.exists():
-        shutil.move(str(CACHE_SRC), str(CACHE_DST))
 
     # Commit the store, then remove the readable fixture directory. Store
     # first: the shim must always find either `.store` or `r/`.

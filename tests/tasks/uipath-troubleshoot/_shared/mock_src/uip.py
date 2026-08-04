@@ -34,9 +34,10 @@ Manifest schema (v2):
 Each rule has one of:
     - `file: <path>` — return the canned response under r/<file>.
     - `passthrough: true` — proxy to the real `uip` CLI installed on the
-      host. Responses are cached under r/_cache/<key>.json on
-      first run; subsequent runs replay the cache. Cache files are
-      committed alongside fixtures so tests stay reproducible offline.
+      host. Each response is cached under <script_dir>/_cache/<key>.json so
+      the rest of the run replays it instead of calling out again. The cache
+      is per-sandbox and never committed: the first call for a given query
+      always hits the live CLI.
 
 Dispatch precedence:
     1. First matching rule (first match wins).
@@ -84,11 +85,9 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 RESPONSES_DIR = SCRIPT_DIR / "r"
 MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
 CALL_LOG_PATH = SCRIPT_DIR / ".log"
-# Passthrough (docsai) cache. Canonical location is beside the shim so it
-# survives `m/seal` removing `r/`; fall back to the legacy `r/_cache` for
-# unsealed local runs that shipped committed caches under `r/`.
+# Passthrough (docsai) cache, beside the shim rather than under `r/` so it
+# survives `m/seal` removing that directory mid-run.
 CACHE_DIR = SCRIPT_DIR / "_cache"
-LEGACY_CACHE_DIR = RESPONSES_DIR / "_cache"
 
 # Sealed fixture store (written by `m/seal`). When present, the manifest and
 # every response fixture are read from here — decoded in memory — and the
@@ -275,15 +274,13 @@ def _cache_key(args: str) -> str:
 
 def _load_cache(args: str) -> dict | None:
     """Return cached `{stdout, exit_code, args, cached_at}` or None."""
-    key = f"{_cache_key(args)}.json"
-    for path in (CACHE_DIR / key, LEGACY_CACHE_DIR / key):
-        if not path.is_file():
-            continue
-        try:
-            return json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-    return None
+    path = CACHE_DIR / f"{_cache_key(args)}.json"
+    if not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
 
 
 def _save_cache(args: str, stdout: str, exit_code: int) -> None:
