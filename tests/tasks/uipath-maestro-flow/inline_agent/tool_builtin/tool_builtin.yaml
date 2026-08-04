@@ -53,13 +53,19 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # Advisory, NOT enforced: builtin node types are STATIC (no per-target key
+  # suffix) and the capability doc pins all three in its Node Types table, so
+  # an agent can legitimately skip `registry search` and go straight to
+  # `registry get <exact-type>` (the enforced gate below — the step that
+  # sources the verbatim definitions). Gating on search is outcome-invisible
+  # (M3 gate: 3/3 replicates produced fully correct artifacts without it).
   - type: command_executed
-    description: "Agent searched the flow registry for the built-in tool node type"
+    description: "Agent searched the flow registry for the built-in tool node type (informational)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+search\b'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent fetched the built-in tool node manifest from the flow registry"
