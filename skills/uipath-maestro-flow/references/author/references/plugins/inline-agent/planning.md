@@ -45,7 +45,7 @@ Do not inline an agent you intend to reuse. Inline agents are private to the flo
 | `success` | right | source | Normal flow output |
 | `error` | right | source | Implicit error port (shared with all action nodes) — see [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes) |
 | `tool` | bottom | source (artifact) | Tool resource nodes — process-family: [capabilities/process.md](capabilities/process.md); built-in: [capabilities/built-in-tools.md](capabilities/built-in-tools.md); connector docs land per roadmap milestone |
-| `context` | bottom | source (artifact) | Context resource nodes — capability docs land per roadmap milestone |
+| `context` | bottom | source (artifact) | Context resource nodes — [capabilities/context-index.md](capabilities/context-index.md) |
 | `escalation` | top | source (artifact) | Escalation resource nodes — capability docs land per roadmap milestone |
 
 The current autonomous manifest exposes no `memory` or `mcp` artifact handle — confirm via `registry get` before planning either capability.
@@ -64,7 +64,7 @@ Every inline agent node (and, per capability, most resource nodes) carries `inpu
 
 ## Resource Nodes
 
-The agent attaches resource nodes to its artifact ports (tools on `tool`, context on `context`, escalation on `escalation`). Each resource node carries its **full config in its own `inputs`** plus its own identity UUID (`inputs.source` for most kinds; built-ins vary — see [capabilities/built-in-tools.md § Identity](capabilities/built-in-tools.md#identity--two-patterns)), and connects via exactly one artifact edge. Decide which capabilities the agent needs at planning time; wiring mechanics live in [impl.md § Resource Nodes](impl.md#7-resource-nodes). Process-family tools: [capabilities/process.md](capabilities/process.md); built-in tools: [capabilities/built-in-tools.md](capabilities/built-in-tools.md); remaining capability docs land per roadmap milestone.
+The agent attaches resource nodes to its artifact ports (tools on `tool`, context on `context`, escalation on `escalation`). Each resource node carries its **full config in its own `inputs`** plus its own identity UUID (`inputs.source` for most kinds; built-ins vary — see [capabilities/built-in-tools.md § Identity](capabilities/built-in-tools.md#identity--two-patterns)), and connects via exactly one artifact edge. Decide which capabilities the agent needs at planning time; wiring mechanics live in [impl.md § Resource Nodes](impl.md#7-resource-nodes). Process-family tools: [capabilities/process.md](capabilities/process.md); built-in tools: [capabilities/built-in-tools.md](capabilities/built-in-tools.md); context grounding: [capabilities/context-index.md](capabilities/context-index.md); remaining capability docs land per roadmap milestone.
 
 ## Planning Annotation
 
@@ -73,6 +73,6 @@ In the architectural plan:
 - `inline-agent: <description>` — mint the `inputs.source` UUID during Phase 2 authoring
 - `inline-agent-tool: <ToolName> (<kind>, solution|external) → <name> in <folder-path>` — one line per external tool. `<kind>` is one of `process` | `agent` | `api` | `processOrchestration` (annotation casing only — the node-type segment is lowercase: `…tool.processorchestration.<release-key>`).
 - `inline-agent-escalation: <EscalationName> → <AppName> in <folder-path>` — one line per escalation (Action Center HITL).
-- `inline-agent-context: <ContextName> (index) → <IndexName> in <folder-path>` — one line per context resource.
+- `inline-agent-context: <ContextName> (index) → <IndexName> in <folder-path>` — one line per context resource — [capabilities/context-index.md](capabilities/context-index.md).
 - `inline-agent-builtin-tool: <ToolName> (<node-type suffix>)` — one line per built-in tool (`analyzefiles` | `summarize` | `batchtransform`); no folder (self-contained) — [capabilities/built-in-tools.md](capabilities/built-in-tools.md).
 - If an existing published agent already covers the use case, prefer the [published agent](../agent/planning.md) annotation instead
