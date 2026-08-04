@@ -73,11 +73,12 @@ def stage(
 
 COMPLETION_EXIT = ["`required-tasks-completed`", "—", "exit-only", "Yes"]
 PICKER_ENTRY = ["`user-selected-stage`", "—", "Yes"]
-WAIT_FOR_USER_EXIT = ["`required-tasks-completed`", "—", "wait-for-user", "No"]
+WAIT_FOR_USER_EXIT = ["`required-tasks-completed`", "—", "wait-for-user", "Yes"]
 
 
 def picker_sdd(
     *,
+    document_exits: list[list[str]] | None = None,
     upstream_exits: list[list[str]] | None = None,
     lane_entry: list[list[str]] | None = None,
     lane_exits: list[list[str]] | None = None,
@@ -87,6 +88,11 @@ def picker_sdd(
     parts = [
         "# SDD — VendorOnboarding\n",
         "## Section 2: Stages & Tasks\n",
+        stage(
+            "Document Collection",
+            [["`case-entered`", "—", "No"]],
+            document_exits or [COMPLETION_EXIT],
+        ),
         stage("Vendor Approval", [["`case-entered`", "—", "No"]], upstream_exits or [COMPLETION_EXIT]),
     ]
     if include_lane:
@@ -236,8 +242,13 @@ class PickerPairingCheckTest(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0, "grader accepted a regression")
         self.assertIn(expected, (result.stdout + result.stderr).lower())
 
-    def test_accepts_picker_entry_paired_with_upstream_wait_for_user_exit(self) -> None:
-        self.assert_pass(picker_sdd(upstream_exits=[COMPLETION_EXIT, WAIT_FOR_USER_EXIT]))
+    def test_accepts_picker_entry_exposed_from_every_primary_stage(self) -> None:
+        self.assert_pass(
+            picker_sdd(
+                document_exits=[WAIT_FOR_USER_EXIT],
+                upstream_exits=[WAIT_FOR_USER_EXIT],
+            )
+        )
 
     def test_rejects_picker_entry_with_no_wait_for_user_anywhere(self) -> None:
         self.assert_fail(picker_sdd(), "wait-for-user")
@@ -277,6 +288,11 @@ class PickerPairingCheckTest(unittest.TestCase):
             [
                 "# SDD — VendorOnboarding",
                 "## Section 2: Stages & Tasks",
+                stage(
+                    "Document Collection",
+                    [["`case-entered`", "—", "No"]],
+                    [COMPLETION_EXIT],
+                ),
                 "### Stage 1: Vendor Approval",
                 "**Type:** Stage",
                 "#### Stage Entry Conditions",

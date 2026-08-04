@@ -54,6 +54,7 @@ build the case in the Case Designer without guessing.
    - `Marks Stage Complete: No` (routing / divergent exits) → WHEN may be `selected-tasks-completed("TaskA")`, `wait-for-connector`, etc.
    - Same stage may carry one completion exit (`Yes` + `required-tasks-completed` / `wait-for-connector`) plus zero or more routing exits (`No` + `selected-tasks-completed` / `wait-for-connector`).
    - `return-to-origin` is a completion exit: use `Marks Stage Complete: Yes` with `required-tasks-completed` (or `wait-for-connector`). Never pair it with `No` + `selected-tasks-completed`.
+   - **Stage-picker repair is a replacement, never a duplicate:** when `user-selected-stage` requires picker exposure from an origin, replace that origin's `required-tasks-completed | exit-only | Yes` completion row with `required-tasks-completed | wait-for-user | Yes`. Keep exactly one `required-tasks-completed` row; never add a second `Marks Stage Complete: No` row.
 
    *Case exit (preferred pattern: one row, `Yes` + `required-stages-completed`):*
    - `Marks Case Complete: Yes` → WHEN MUST be `required-stages-completed` or `wait-for-connector`. **NEVER** `selected-stage-completed(...)` / `selected-stage-exited(...)`.

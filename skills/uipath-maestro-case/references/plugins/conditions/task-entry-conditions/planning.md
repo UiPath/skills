@@ -53,7 +53,7 @@ The Case App selector has three distinct modes:
 
 `adhoc` is task-entry-only. It is never a stage entry rule, never a case trigger, never a substitute for `wait-for-connector`, and never the way to model a user-selected interrupting lane. Use a secondary stage with `user-selected-stage` for that.
 
-For generated SDDs, any requirement that says `then`, `after`, `before`, `in order`, or otherwise declares an immediate dependency should already be authored as `runs-sequentially` on every task in that run. Do not convert it to parallel `current-stage-entered` tasks merely because no data binding links them. Use parallel mode only when the SDD rationale states that the tasks are independent. If a task row says `selected-tasks-completed("<previous task>")`, preserve it only when the SDD is intentionally expressing a condition/event-driven sibling gate, branch convergence, or non-immediate dependency.
+While authoring a new SDD, any requirement that says `then`, `after`, `before`, `in order`, or otherwise declares an immediate dependency should be authored as `runs-sequentially` on every task in that run. Do not convert it to parallel `current-stage-entered` tasks merely because no data binding links them. Use parallel mode only when the rationale says the tasks are independent. **Phase 1 does not re-author a supplied or approved SDD:** if its task row explicitly says `selected-tasks-completed("<previous task>")`, preserve that exact rule and selector even when the selected task is immediately previous.
 
 ## Phase 1 Plan Presentation Contract
 
@@ -77,7 +77,7 @@ For every task-entry-condition T-entry, verify the task's `activation-mode` and 
 | `fan-in` | `selected-tasks-completed` with multiple selected tasks or an explicit convergence rationale |
 | `conditional-gate` | `selected-tasks-completed` with a branch/non-immediate dependency rationale, or the explicitly authored gate rule |
 
-If the selected task is the immediately previous task in the same stage and there is no fan-in, branch, event, or non-immediate dependency rationale, `selected-tasks-completed` is a planning error. Rewrite the ordered run as `activation-mode: sequential` with `rule-type: runs-sequentially` on every task in the run. This is required even when all tasks are placeholders.
+During Phase 0 authoring, a plain immediate ordered run with no fan-in, branch, event, or non-immediate dependency rationale should be modeled as `activation-mode: sequential` with `rule-type: runs-sequentially`. During Phase 1, never use that heuristic to rewrite an explicit supplied/approved SDD row: preserve `selected-tasks-completed` and its selector as `conditional-gate` or `fan-in`, including when all tasks are placeholders.
 
 ## Ordering
 

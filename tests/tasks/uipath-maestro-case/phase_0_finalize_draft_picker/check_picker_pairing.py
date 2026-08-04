@@ -31,6 +31,7 @@ from _shared.entry_rule_check import (  # noqa: E402
 )
 
 LANE = "Compliance Hold"
+PRIMARY_STAGES = ("Document Collection", "Vendor Approval")
 
 
 def main() -> None:
@@ -54,23 +55,36 @@ def main() -> None:
         if not interrupting.startswith("y"):
             fail(f"{LANE!r} user-selected-stage entry row is not Interrupting: Yes (got {interrupting!r})")
 
-    # The pairing: an upstream PRIMARY stage must expose this lane via a wait-for-user exit.
-    # A secondary or exception lane exposing another lane is not an upstream producer.
+    # The requirement says the person may pull *any active case* into the lane,
+    # so every named primary stage must expose the picker with the canonical
+    # completing exit. Exposure from one phase cannot cover another active phase.
     exposing = []
-    for label, block in blocks.items():
-        if label.lower() == LANE.lower() or stage_kind(block) != "primary":
-            continue
-        for row in exit_rows(block):
-            if "wait-for-user" in column(row, "exit type").lower():
-                exposing.append(label)
-    if not exposing:
-        fail(
-            f"{LANE!r} is entered by user-selected-stage but no upstream stage carries a "
-            "wait-for-user exit, so nothing exposes the lane to the picker and it is unreachable "
-            "(sdd-generation-rules § Logical integrity 5, § Finalization 12a)"
-        )
+    for label in PRIMARY_STAGES:
+        block = find_stage(blocks, label)
+        if stage_kind(block) != "primary":
+            fail(f"{label!r} must remain a primary stage")
+        completion_rows = [
+            row
+            for row in exit_rows(block)
+            if rule_type(row) == "required-tasks-completed"
+        ]
+        if len(completion_rows) != 1:
+            fail(
+                f"{label!r} must have exactly one required-tasks-completed completion exit; "
+                "replace the existing row instead of adding a duplicate"
+            )
+        row = completion_rows[0]
+        if (
+            "wait-for-user" not in column(row, "exit type").lower()
+            or not column(row, "marks stage complete").lower().startswith("y")
+        ):
+            fail(
+                f"{label!r} must expose {LANE!r} with a required-tasks-completed / "
+                "wait-for-user / Marks Stage Complete: Yes exit"
+            )
+        exposing.append(label)
 
-    print(f"OK: {LANE} user-selected-stage entry is paired with a wait-for-user exit on {exposing}")
+    print(f"OK: {LANE} user-selected-stage entry is exposed from every primary stage: {exposing}")
 
 
 if __name__ == "__main__":
