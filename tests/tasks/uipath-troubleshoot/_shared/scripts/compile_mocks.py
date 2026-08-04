@@ -119,14 +119,25 @@ across the repo's workflows and tests/.venv) so regenerating unchanged
 sources is byte-identical and produces no git diff; the script refuses other
 minors unless --allow-any-version is passed.
 
-`CODE_KEY` is duplicated as a byte literal in the two loaders, which must
-decrypt without importing anything from this repo. That duplication cannot
-detect itself: `_pack` and `_unpack` both read the constant below, so a packer
-that disagrees with a loader still packs and round-trips cleanly at exit 0, and
-the mismatch surfaces only when the mock runs — as the loader's "runtime data
-missing" guard, far from the edit that caused it. So the packer collects the
-32-byte `bytes` literals in each entry point's loader and refuses to pack unless
-`CODE_KEY` is among them.
+Every value a loader has to agree with this packer about is duplicated in the
+loader as a literal, because a loader must decrypt without importing anything
+from this repo. That duplication cannot detect itself: `_pack` and `_unpack` both
+read the packer's own constants, so a packer that disagrees with a loader still
+packs and round-trips cleanly at exit 0, and the mismatch surfaces only when the
+mock runs — as the loader's "runtime data missing" guard, far from the edit that
+caused it. Three values must therefore be checked against the loader before
+packing, all read in one AST pass (`_loader_literals`):
+
+- **`CODE_KEY`** — among the loader's 32-byte `bytes` literals.
+- **The blob's own name** (`code_seed(CODE_KEY, src.stem)` binds each keystream
+  to it) — among the loader's short `bytes` literals. Checking the key alone is
+  not enough: a new entry point whose loader keeps `b"uip"` derives the wrong
+  keystream and decrypts to garbage, which is a runtime failure the round-trip
+  here cannot see, because the packer round-trips against its OWN seed.
+- **`.<name>.bin`** — among the loader's `str` literals, so a loader that
+  decrypts correctly but reads another blob's file is caught too.
+
+Any of the three missing is a refusal, not a warning.
 
 Run after any edit to `mock_src/*.py`:
 
@@ -202,8 +213,13 @@ def _unpack(blob: bytes, name: str) -> bytes | None:
     return plain
 
 
-def _loader_keys(loader: Path) -> list[bytes]:
-    """Return every 32-byte `bytes` constant in the loader at `loader`.
+def _loader_literals(loader: Path) -> tuple[list[bytes], set[bytes], set[str]]:
+    """Return the loader's 32-byte `bytes` constants, its short `bytes`
+    constants, and its `str` constants.
+
+    Three things the packer has to agree with the loader about, all readable
+    from one AST pass: the key (32 bytes), the keystream seed's name suffix (a
+    short `bytes` literal), and the blob filename (a `str`).
 
     Membership, not position: `ast.walk` yields breadth-first rather than in
     source order, so "the first 32-byte constant" is not a thing a caller can
@@ -212,13 +228,28 @@ def _loader_keys(loader: Path) -> list[bytes]:
     ordering dependency and still catches drift — a flipped literal means the
     key is absent from the list. It does not catch a key spelled as anything
     other than a `bytes` literal (`bytes.fromhex(...)`, say), which is why an
-    empty list is reported as its own failure rather than as a mismatch.
+    empty list is reported as its own failure rather than as a mismatch. The
+    same holds for the other two: a name or filename assembled by expression
+    rather than written as a literal reads as absent, and is reported as drift.
+
+    Adjacent literals are already joined by the parser, so the key spelled as
+    two 16-byte literals arrives here as one 32-byte constant and no 16-byte
+    fragment is ever collected as a "short" one.
     """
-    return [
-        node.value
-        for node in ast.walk(ast.parse(loader.read_text(encoding="utf-8")))
-        if isinstance(node, ast.Constant) and isinstance(node.value, bytes) and len(node.value) == 32
-    ]
+    keys: list[bytes] = []
+    names: set[bytes] = set()
+    texts: set[str] = set()
+    for node in ast.walk(ast.parse(loader.read_text(encoding="utf-8"))):
+        if not isinstance(node, ast.Constant):
+            continue
+        if isinstance(node.value, bytes):
+            if len(node.value) == 32:
+                keys.append(node.value)
+            elif len(node.value) < 32:
+                names.add(node.value)
+        elif isinstance(node.value, str):
+            texts.add(node.value)
+    return keys, names, texts
 
 
 def main() -> int:
@@ -261,7 +292,7 @@ def main() -> int:
         loader = OUT_DIR / src.stem
         if not loader.is_file():
             return f"compile_mocks: {src.name} has no loader at {loader.relative_to(SHARED_DIR)}."
-        keys = _loader_keys(loader)
+        keys, names, texts = _loader_literals(loader)
         if not keys:
             return (
                 f"compile_mocks: {loader.relative_to(SHARED_DIR)} holds no 32-byte bytes literal, so "
@@ -273,6 +304,19 @@ def main() -> int:
                 f"compile_mocks: {loader.relative_to(SHARED_DIR)} decrypts with a different key "
                 "than this packer's CODE_KEY. Blobs packed now would fail that loader's integrity "
                 "check at mock runtime; align the two before packing."
+            )
+        if src.stem.encode("utf-8") not in names:
+            return (
+                f"compile_mocks: {loader.relative_to(SHARED_DIR)} does not seed its keystream with "
+                f"{src.stem!r}, so it derives a different keystream than this packer does for "
+                f"{src.name}. Its decrypt would produce garbage and fail the integrity header at "
+                "mock runtime; align the two before packing."
+            )
+        if f".{src.stem}.bin" not in texts:
+            return (
+                f"compile_mocks: {loader.relative_to(SHARED_DIR)} names no '.{src.stem}.bin', so it "
+                f"does not read the blob this packer writes for {src.name}; align the two before "
+                "packing."
             )
 
         entry = _stripped_source(src)
