@@ -148,7 +148,11 @@ def main() -> int:
             "`uv run --python 3.13 ...`, or pass --allow-any-version."
         )
 
-    sources = sorted(SRC_DIR.glob("*.py"))
+    # Sort on the lowercased filename, not on Path: Path ordering is
+    # case-insensitive on Windows and case-sensitive on POSIX, so a second
+    # library module could be prepended in a different order per platform and
+    # silently produce different blob bytes on each.
+    sources = sorted(SRC_DIR.glob("*.py"), key=lambda s: s.name.lower())
     if not sources:
         return f"compile_mocks: no sources found under {SRC_DIR}"
 
