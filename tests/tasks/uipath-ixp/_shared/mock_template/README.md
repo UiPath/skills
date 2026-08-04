@@ -34,3 +34,10 @@ disobedient agent cannot reach the cloud with the harness-injected token.
 
 Integration/e2e tasks use `live_calls_template`; its wrapper records the same log
 format and delegates unchanged to the real CLI.
+
+Two overlays replace this `mocks/uip` with a canned-JSON responder when a task
+needs the CLI to answer instead of fail — list them SECOND in `template_sources`:
+[`mock_template_ambiguous`](../mock_template_ambiguous/README.md) (discovery
+fixture for the rename-ambiguity smoke) and
+[`extraction_mock_template`](../extraction_mock_template/README.md) (the async
+runtime-extraction flow, whose second step is unreachable against a fail-all mock).
