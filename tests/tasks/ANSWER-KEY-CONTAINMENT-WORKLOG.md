@@ -304,6 +304,92 @@ path now ends as `ERROR` instead of being graded. Some rows that currently read 
 - ~60 docker tests skip on Windows. The new `test_docker_stage_inputs.py` demonstrates `_build_argv` /
   `_stage_inputs` are pure enough to test platform-neutrally; more existing assertions could move.
 
+## 2026-08-04 — Code review: the detector catches 2 of the 5 measured leaks
+
+An adversarial review reconstructed each of the five leaks measured in `2026-08-03_04-43-50` and ran them
+through the real `integrity.py` rather than reading it. Result:
+
+| case | verdict |
+|---|---|
+| `hitl-create-task-with-app` (grader read) | caught |
+| `functions-deploy-tenant` (grader read) | caught |
+| `inline-is-connector-tool` (`_fixtures/` golden solution) | **missed** |
+| `push-resource-not-found` (`mocks/responses/manifest.json`) | **missed** |
+| delegate `.store` decode | **missed** |
+
+**H1 — the spec derivation is incomplete.** `derive_graded_material` consults `reference.file`, `$TASK_DIR`
+operands and `CONTAINER_INPUT_DIR`, but never `sandbox.mock_path_dirs` or
+`template_sources[*].mount_point`, and `_fixtures/` is not in the conservative globs. The entire
+antigravity-class leak (90 manifest reads, 13 fixture reads, 30 dispatcher reads) sits in that blind spot.
+This is a gap in **the plan's derivation list**, faithfully implemented — my error, not the implementer's.
+
+**H2 — `$TASK_DIR` operands are emitted only as `$TASK_DIR/x` and `/work/task_dir/x`.** Under
+`driver: tempdir` — the whole skills nightly — the agent reads the real checkout path, which matches
+neither. So detection rests entirely on the `check_*.py` glob, and the reviewer found a live task graded by
+`python3 $TASK_DIR/check.py`: no underscore, no match, invisible. One-line fix (also emit
+`(task_file.parent / suffix).resolve()`).
+
+**M1 — false positives that would get the detector switched off.** `cat > check_env.py`,
+`rm -f check_env.py`, `mv check_temp.py …`, even `for f in check_*.py` all classify as reads, because rule 6
+treats an unknown leading utility as a read and the basename glob is location-independent. Under `void`
+that destroys an honest row for writing its own helper script.
+
+**M2 — voided rows still count as passes in the experiment aggregate.** `reports_experiment.py:527`
+computes the pass rate from `weighted_score`, which the gate deliberately leaves at 1.0, so a variant whose
+rows were all voided still reports 100% in the summary a reviewer reads when comparing arms.
+
+**M4** — `Edit`/`Write`/`MultiEdit`/`WebFetch` are unclassified, so merely mentioning graded material sends
+the whole row `INCONCLUSIVE`. **M5** — the branch was based on `cc2cfc78` while main had moved to
+`b390d7dc`; merging the diff as computed against main would have reverted early-stop #74.
+
+Two review findings (H3: `MOCK_NEVER_INVOKED` overriding the blind-spot rule and false-voiding a codex run
+whose sub-agent rollout failed; M3: fail-closed faults retried 4x with a misleading "check your API key"
+hint) **disappear with the commits dropped below** — they belonged to the mock/plugin fail-closed work.
+
+Verified as sound and not re-litigated: gate placement in `_finalize_result` with nothing downstream
+overwriting `final_status`, status semantics, `run.json` + `task.json` wiring, mode switch, mock-evidence
+sampling before teardown, and all four plan-conformance constraints (no `FinalStatus` member, no criterion
+type, no `result_summary` scanning, no `_matching_commands` reuse with a `>2000`-char guard importing the
+real constant).
+
+## 2026-08-04 — Trimmed to 5 commits: `feat/leak-detection`
+
+Owner's call: drop everything about the delegate arm / silent invalidity — a different problem, and most of
+it is covered on another branch. Dropped `9e2a200c` (mock_path_dirs fail-closed), `648ba912` (plugin-path
+fail-closed), `be671907` (mock-never-invoked). All three remain intact on `feat/integrity-checks` for
+retrieval.
+
+New branch `feat/leak-detection`, worktree `coder_eval-leakdet`, based on **current** main `b390d7dc`
+(fixing M5), no upstream set:
+
+| sha | commit |
+|---|---|
+| `d4ef50e2` | Add IntegrityInfo telemetry with run.json wiring and an INTEGRITY_MODE switch |
+| `f15e0d7c` | Count sub-agents whose inner tool calls could not be recovered |
+| `2916f918` | Add a graded-material read detector for finished transcripts |
+| `1024ec8a` | Void a passing row whose transcript read graded material |
+| `e303ce5c` | Stop handing the scenario folder and the raw task YAML to the container |
+
+`f15e0d7c` was checked rather than assumed: `scan_commands` sums `unrecovered_subagent_threads` to force
+`INCONCLUSIVE`, so it serves leak-detection quality on the codex arm, not the dropped mock check — kept.
+`IntegrityFindingKind.MOCK_NEVER_INVOKED` became unreachable and was removed inside the plumbing commit
+rather than left stranded; verified absent from `src/`.
+
+Tests, full suite, same machine: `origin/main` @ `b390d7dc` = **6 failed / 3765 passed / 109 skipped**;
+`feat/leak-detection` = **6 failed / 3889 passed / 109 skipped** — the same six by name (2 Windows symlink
+`WinError 1314`, 3 live-marked claude-settings, 1 pre-existing `test_claude_agent_timeout_preserves_partial_turn_record`
+that fails identically on untouched main). +124 net tests, ruff clean.
+
+**What the drops cost:** the delegate arm's 102 graded-but-meaningless passes stay graded; an unresolved
+`$SKILLS_REPO_PATH` still yields a well-formed 0.000 FAILURE indistinguishable from a bad skill; no signal
+when a declared mock is never invoked. Worth confirming the other branch really covers the mock-PATH fix —
+a search of `coder_eval`'s remote found no branch matching delegate/path-prepend/mock and nothing in the
+last 30 commits of `origin/main`.
+
+**State:** leak detection exists and is correctly plumbed, but catches 2 of 5 known cases. H1, H2, M1, M2,
+M4 should land before any `detect` nightly, or the report will read reassuringly clean while measuring one
+glob.
+
 ### Root cause of three discarded runs: `.env` does not reach the agent's environment
 
 Attempts v1-v3 all produced the same result — five `FAILURE` rows at score 0.000, `skill_triggered=no`,
