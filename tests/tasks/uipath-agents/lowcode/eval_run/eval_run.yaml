@@ -1,0 +1,89 @@
+task_id: skill-agent-lowcode-eval-run
+description: >
+  Full low-code eval execution lifecycle against the Agent Runtime. Unlike
+  coded evals (local Python process), low-code evals run in the cloud, so
+  this exercises the cloud path end-to-end: scaffold a low-code agent, author
+  an eval set with test cases, `uip solution upload`, `uip agent eval run
+  start --wait`, then fetch results. Closes the gap where the low-code
+  `uip agent eval run` subsystem (separate from `uip codedagent eval`) had
+  zero coverage. Requires a live tenant (not the offline smoke runner).
+tags: [uipath-agents, e2e, mode:operate, lifecycle:setup, low-code, feature:eval]
+max_iterations: 1
+
+run_limits:
+  expected_turns: 28
+  max_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath low-code autonomous agent "GreeterAgent" in a solution
+  named "EvalRunSol". It accepts a required `name` (string) and returns a
+  `greeting` (string) — a short friendly greeting that uses the name.
+
+  Then evaluate it end-to-end against the Agent Runtime:
+    1. Add at least two test cases to the Default Evaluation Set
+       (e.g. name "Ada" -> a greeting that mentions Ada).
+    2. Upload the solution so the runtime has the agent definition.
+    3. Run the evaluation set and wait for it to finish.
+    4. Export the run results to a JSON file in the agent project directory.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in a
+  single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added test cases with uip agent eval add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+add\b'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uploaded the solution (required before cloud eval run)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+upload'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started the eval run and waited for completion"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+start\b.*--wait'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched run results or status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+(results|status)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "Exported eval results artifact exists, valid JSON, references the run"
+    command: "python3 $TASK_DIR/check_eval_run.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

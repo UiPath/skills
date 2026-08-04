@@ -4,6 +4,8 @@ Walkthrough for adding a context resource backed by an ECS Context Grounding ind
 
 For other context variants, see [context.md](context.md).
 
+> **Wrong file for runtime-uploaded files.** `index` requires a pre-existing Context Grounding index. If the caller uploads files fresh with each run and no index exists yet, you want [attachments.md](attachments.md), not this — see [context.md](context.md) § Decision.
+
 ## When to Use
 
 - Agent needs to retrieve from a knowledge base of indexed documents
