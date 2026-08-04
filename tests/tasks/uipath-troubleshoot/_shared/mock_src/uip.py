@@ -121,10 +121,14 @@ def _get_store():
     ``files`` (name → raw ``bytes``), or ``_NO_STORE`` when there is no
     ``.store`` (the shim then reads ``r/`` as before).
 
-    A ``.store`` that will not decrypt or parse is fatal, and deliberately so:
-    the alternative is dispatching against an empty store, which serves the
-    `unmocked_default` for every command and lets a scenario be graded on
-    evidence that was never delivered. Fail loudly on one line instead.
+    A ``.store`` that will not decrypt, parse, or hold the shape the dispatcher
+    walks is fatal, and deliberately so: the alternative is dispatching against
+    an empty store, which serves the `unmocked_default` for every command and
+    lets a scenario be graded on evidence that was never delivered. Fail loudly
+    on one line instead. The shape is checked here rather than at each use so
+    the failure lands in this handler; reaching `main` with a malformed manifest
+    raises deep in dispatch, and the traceback puts the loader's `exec` line on
+    the agent's stderr.
     """
     global _STORE
     if _STORE is not None:
@@ -134,8 +138,14 @@ def _get_store():
         return _STORE
     try:
         blob = json.loads(data_open(STORE_PATH.read_bytes(), "store").decode("utf-8"))
+        manifest = blob["manifest"]
+        if not isinstance(manifest, dict):
+            raise TypeError("manifest is not an object")
+        rules = manifest.get("rules", [])
+        if not isinstance(rules, list) or not all(isinstance(r, dict) for r in rules):
+            raise TypeError("manifest rules are not a list of objects")
         _STORE = {
-            "manifest": blob["manifest"],
+            "manifest": manifest,
             "files": {name: base64.b64decode(b64) for name, b64 in blob.get("files", {}).items()},
         }
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
