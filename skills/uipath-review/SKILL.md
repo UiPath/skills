@@ -264,7 +264,7 @@ Run the review command for the agent type, once, capturing JSON:
 
 The CLI runs every deterministic static check — structural/schema, placeholder cross-refs, eval counts/diversity, secret & import regex, framework symbol existence, eval-run analysis, packaging/git hygiene — and returns them in rule format. Parse `Data.Issues[]`; each issue is `{RuleId, Category, Severity, Description, File, SuggestedFix}`. Carry each into the report **verbatim** — do not re-derive, rename, or re-rank. These rule IDs are authoritative as emitted by the CLI; they are **not** listed in the skill catalog.
 
-> **Guardrail configuration is CLI-only — never eyeball it.** Whether a guardrail is well-formed (real validator, allowed scope, required/typed/legal parameters, valid custom-rule shape) is decided **only** by `uip agent review` — the `GUARDRAIL_*` and `GUARDRAIL_CUSTOM_*` rule IDs come from this command, never from reading `agent.json` by eye and never from the judgment catalog. So whenever the task involves checking / validating / diagnosing / fixing a guardrail, running the review CLI in this step is **mandatory** (use `--checks guardrails` if you only need the guardrail pass), and every `GUARDRAIL_*` finding it returns **must** appear verbatim in the report's Rule Findings — do not replace it with a hand-written description of the problem. (The judgment catalog's `LC_GUARDRAIL_*` rules are the complement: they audit only guardrails the CLI found format-valid and recommend missing ones at Info — see Step 2.5b and [`references/agents/guardrails/guardrails-review.md`](references/agents/guardrails/guardrails-review.md).)
+> **Guardrail configuration is CLI-only — never eyeball it.** Whether a guardrail is well-formed (real validator, allowed scope, required/typed/legal parameters, valid custom-rule shape) is decided **only** by `uip agent review` — the `GUARDRAIL_*` and `GUARDRAIL_CUSTOM_*` rule IDs come from this command, never from reading `agent.json` by eye and never from the judgment catalog. So whenever the task involves checking / validating / diagnosing / fixing a guardrail, running the review CLI in this step is **mandatory** (use `--checks guardrails` if you only need the guardrail pass), and every `GUARDRAIL_*` finding it returns **must** appear verbatim in the report's findings tables — do not replace it with a hand-written description of the problem. (The judgment catalog's `LC_GUARDRAIL_*` rules are the complement: they audit only guardrails the CLI found format-valid and recommend missing ones at Info — see Step 2.5b and [`references/agents/guardrails/guardrails-review.md`](references/agents/guardrails/guardrails-review.md).)
 
 #### 2.5b — Apply the judgment catalog (reasoning the CLI cannot do)
 
@@ -287,10 +287,10 @@ The CLI runs every deterministic static check — structural/schema, placeholder
 4. **Apply each rule's `detection_method`:** read the named source material (system prompt, tool descriptions, eval datapoints, schemas) and reason about it. Emit a finding when the criteria hold; log the reasoning in the finding's `description`.
 5. **Track skipped rules** with their reason (`status: deferred`, missing optional file, review CLI unavailable). Never silently skip.
 6. **Verify rule_id provenance.** Before merging, confirm each cited `rule_id` appears **verbatim** in EITHER a loaded catalog file OR the `uip agent review` / `uip codedagent review` JSON output. Any finding whose `rule_id` matches neither is **demoted** to a `rule_id`-less Critical / Warning / Info finding (the observation stays; the false citation goes). This enforces Critical Rule 12.
-7. **Merge findings into the Step 5 report** under the "Rule Findings" subsection. Use the canonical line format:
+7. **Merge findings into the Step 5 report** — into the Critical / Warning / Info findings tables, one row per finding:
 
    ```
-   [<prefix><n>] `<rule_id>` — <file> — <description>. Fix: <suggested_fix>.
+   | <id> | `<rule_id>` | <file> | <description> | <suggested_fix> |
    ```
 
    where prefix is `C-D-` (Critical), `W-D-` (Warning), or `I-D-` (Info) per the severity mapping in [`references/rule-format.md`](references/rule-format.md).
@@ -543,35 +543,33 @@ Output a structured report in chat (do NOT create a file):
 
 > For Legacy projects, note: "Validation CLI (`uip rpa validate`, `uip rpa analyze`) targets Modern projects. Legacy validation runs through `uipath-rpa` Legacy mode (using the `uip rpa-legacy` CLI)."
 
-### Rule Findings
+### Rules Skipped
 
-| Project | Source | Errors | Warnings | Info | Skipped |
-|---|---|---|---|---|---|
-| ClassifierAgent | `uip agent review` + judgment catalog | 2 | 5 | 3 | 1 |
-| TriageAgent | `uip codedagent review` + judgment catalog | 1 | 4 | 2 | 1 |
-
-**From the review CLI (deterministic):**
-- [C-D-001] `LOWCODE_MESSAGES_NO_USER` — `ClassifierAgent/agent.json` — messages[] has no role="user" entry. Fix: Add a `{"role": "user", "content": "..."}` message.
-- [C-D-003] `FRAMEWORK_DEP_MISSING` — `TriageAgent/pyproject.toml` — langgraph.json present but uipath-langchain missing from [project] dependencies. Fix: Add `"uipath-langchain"` to [project] dependencies in pyproject.toml.
-
-**From the judgment catalog (reasoning):**
-- [W-D-002] `LC_PROMPT_ROLE_DEFINITION` — `ClassifierAgent/agent.json` — System prompt opens with task instructions before establishing the agent's role. Fix: Add an opening sentence: "You are an X that does Y."
-- [W-D-004] `CODED_ERROR_HANDLING` — `TriageAgent/main.py` — `llm.ainvoke(...)` call has no try/except, fallback, or retry. Fix: Wrap the call in try/except with a fallback path or surface the error in the agent's output state.
-- ...
-
-**Rules Skipped (and why):**
-- `uip codedagent review` — CLI not available in environment (deterministic checks not run)
-
-> The Rule Findings section is required for every agent project (low-code or coded). It is omitted for project types whose catalog has not yet been authored (RPA, flows, coded apps as of phase 1).
+| Rule / Command | Why |
+|---|---|
+| `uip codedagent review` | CLI not available in environment (deterministic checks not run) |
+| `LC_GUARDRAIL_MISAPPLIED` | Guardrails catalog unavailable |
 
 ### Critical Findings (block deployment)
-1. [C-001] <concise title> — `<project/file>` — <what to check + recommended fix>
+
+| ID | Rule | File | Issue | Fix |
+|---|---|---|---|---|
+| C-D-001 | `LOWCODE_MESSAGES_NO_USER` | `ClassifierAgent/agent.json` | messages[] has no role="user" entry | Add a `{"role": "user", "content": "..."}` message |
+| C-001 | — | `ProjectA/Helper.cs` | Password argument typed String instead of SecureString | Change the argument type to SecureString |
 
 ### Warnings (should fix before production)
-1. [W-001] <concise title> — `<project/file>` — <what to check + recommended fix>
+
+| ID | Rule | File | Issue | Fix |
+|---|---|---|---|---|
+| W-D-002 | `LC_PROMPT_ROLE_DEFINITION` | `ClassifierAgent/agent.json` | System prompt opens with task instructions before establishing the agent's role | Add an opening sentence: "You are an X that does Y." |
 
 ### Improvement Opportunities
-1. [I-001] <concise title> — `<project/file>` — <what to improve>
+
+| ID | Rule | File | Issue | Fix |
+|---|---|---|---|---|
+| I-D-001 | `LC_GUARDRAIL_RECOMMENDED` | `ClassifierAgent/agent.json` | inputSchema.properties carries `customer_email`, `ssn` with no PII guardrail | Add a PII-detection guardrail at Agent scope with a block action |
+
+> One row per finding. Review-CLI, judgment-catalog, and manual-checklist findings all go in these three tables — do not split them into separate sections by source, and never list a finding in more than one table. `Rule` is `—` for a finding with no `rule_id` (Critical Rule 12).
 
 ### Per-Project Summary
 | Project | Type | Language | Size | Validation | Quality | Grade | Key Findings |
