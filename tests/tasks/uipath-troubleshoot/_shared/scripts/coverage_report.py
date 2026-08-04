@@ -3,8 +3,9 @@
 Reads:
   - <run_dir>/<NN>/artifacts/<task_id>/m/.log
       one record per uip invocation written by the mock dispatcher —
-      zlib+base64-encoded on sealed runs, plain JSON on unsealed local runs
-      (legacy artifacts used plain `.calls.jsonl`; both are handled)
+      encrypted under `DATA_KEY` on sealed runs, plain JSON on unsealed local
+      runs (legacy artifacts used plain `.calls.jsonl`, and older sealed runs
+      a zlib+base64 record; all are handled)
   - <run_dir>/<NN>/artifacts/<task_id>/m/r/manifest.json
       the manifest's `expected_calls` declares minimum-coverage patterns
       (on sealed runs `r/` is gone; the manifest is read from `m/.store`)
@@ -34,17 +35,22 @@ from pathlib import Path
 # sources it belongs to instead of carrying a second copy of the key.
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "mock_src"))
-from _cipher import data_open  # noqa: E402
+from _cipher import data_open, line_open  # noqa: E402
 
 CALL_LOG_NAMES = (".log", ".calls.jsonl")
 
 
 def _parse_call_line(line: str) -> dict | None:
-    """Parse one call-log line: plain JSON first, then zlib+base64."""
+    """Parse one call-log line: plain JSON, then sealed, then the legacy sealed form."""
     try:
         return json.loads(line)
     except json.JSONDecodeError:
         pass
+    try:
+        return json.loads(line_open(line, "log"))
+    except ValueError:
+        pass
+    # Sealed runs before the call log moved to DATA_KEY.
     try:
         return json.loads(zlib.decompress(base64.b64decode(line)).decode("utf-8"))
     except (ValueError, zlib.error):

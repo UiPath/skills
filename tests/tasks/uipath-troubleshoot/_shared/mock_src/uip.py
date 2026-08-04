@@ -9,10 +9,12 @@ needs editing when a new scenario is added.
 
 Every invocation is appended to <script_dir>/.log so post-run analysis can
 compare expected vs performed commands and surface exploration the agent did
-beyond the manifest's `expected_calls`. On sealed runs each record is written
-zlib+base64-encoded (decode with `coverage_report.py --dump`) so the agent
-cannot read its own call history and infer the CLI is mocked; unsealed local
-runs keep plain JSONL for easy debugging.
+beyond the manifest's `expected_calls`. On sealed runs each record is encrypted
+under `DATA_KEY` (decode with `coverage_report.py --dump`) so the agent cannot
+read its own call history and infer the CLI is mocked; unsealed local runs keep
+plain JSONL for easy debugging. The file stays line-oriented and append-only
+either way: one self-contained record per line, so a record damaged mid-write
+costs that record and no other.
 
 Manifest schema (v2):
     {
@@ -74,12 +76,11 @@ import shutil
 import subprocess
 import sys
 import time
-import zlib
 from pathlib import Path
 
 try:  # Direct run: `_cipher.py` sits beside this file.
-    from _cipher import data_open
-except ImportError:  # Packed blob: the prelude already defines `data_open`.
+    from _cipher import data_open, line_seal
+except ImportError:  # Packed blob: the prelude already defines these.
     pass
 
 # Sandboxes execute this file as an encrypted docstring-stripped blob
@@ -141,10 +142,10 @@ def _log_call(args: str, rule: dict | None, exit_code: int, error: str | None = 
     breaks an agent's command. The file is the source of truth for
     expected-vs-performed coverage analysis after the run.
 
-    On sealed runs the record is zlib+base64-encoded: the log lives in the
-    agent's working directory, and plain records (`matched_rule`, `fixture`)
-    would reveal the CLI is mocked. Unsealed local runs keep plain JSONL.
-    Decode with `coverage_report.py --dump`.
+    On sealed runs the record is encrypted: the log lives in the agent's
+    working directory, and plain records (`matched_rule`, `fixture`) would
+    reveal the CLI is mocked. Unsealed local runs keep plain JSONL. Decode with
+    `coverage_report.py --dump`.
     """
     record = {
         "ts": time.time(),
@@ -157,7 +158,7 @@ def _log_call(args: str, rule: dict | None, exit_code: int, error: str | None = 
         record["error"] = error
     line = json.dumps(record)
     if _get_store() is not _NO_STORE:
-        line = base64.b64encode(zlib.compress(line.encode("utf-8"), 9)).decode("ascii")
+        line = line_seal(line, "log")
     try:
         with CALL_LOG_PATH.open("a", encoding="utf-8") as f:
             f.write(line + "\n")
