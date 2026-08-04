@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""ConnectorWaitCase: a RESOLVED wait-for-connector task and entry rule are wired.
+"""ConnectorWaitCase: connector task type and activation stay independent.
 
 Asserts the connector-trigger plugin resolved a real Integration Service event
 into the caseplan (Rule 8 — no fabricated IDs) with the correct serviceType,
-rather than leaving a `data: {}` skeleton. Does NOT run debug: a
-wait-for-connector suspends waiting for a real external event.
+rather than leaving a `data: {}` skeleton, while preserving the typed task's
+positional entry rule. Does NOT run debug: a wait-for-connector suspends waiting
+for a real external event.
 
 The task-entry rule must also be upgraded past its Phase 2 stub. The stub has
 the final serviceType, so checking serviceType alone would let a non-runnable
@@ -42,6 +43,16 @@ def _find_task_by_label(plan: dict, label: str) -> dict:
         for task in iter_tasks(plan)
     ]
     sys.exit(f"FAIL: task {label!r} not found; saw {labels}")
+
+
+def _entry_rules(task: dict) -> list[dict]:
+    return [
+        rule
+        for condition in (task.get("entryConditions") or [])
+        for group in (condition.get("rules") or [])
+        for rule in (group or [])
+        if isinstance(rule, dict)
+    ]
 
 
 def main():
@@ -100,7 +111,26 @@ def main():
             f"got isRequired={event_task.get('isRequired')!r}"
         )
 
-    task = assert_task_type_present("wait-for-connector")
+    assert_task_type_present("wait-for-connector")
+    task = _find_task_by_label(plan, "Wait for reply email")
+    if task.get("type") != "wait-for-connector":
+        sys.exit(
+            "FAIL: 'Wait for reply email' must keep type='wait-for-connector'; "
+            f"got {task.get('type')!r}"
+        )
+    task_rules = _entry_rules(task)
+    if len(task_rules) != 1 or task_rules[0].get("rule") != "current-stage-entered":
+        sys.exit(
+            "FAIL: typed wait-for-connector task must preserve exactly one "
+            "current-stage-entered entry rule; "
+            f"got {task_rules!r}"
+        )
+    if "uipath" in task_rules[0]:
+        sys.exit(
+            "FAIL: typed wait-for-connector task's positional "
+            "current-stage-entered rule must not carry a connector uipath payload; "
+            f"got {task_rules[0].get('uipath')!r}"
+        )
     if task_is_skeleton(task):
         sys.exit(
             "FAIL: wait-for-connector task is a skeleton (missing data.typeId / "
@@ -125,7 +155,9 @@ def main():
     print(
         f"OK: first task is event-triggered with wait-for-connector-only entry "
         f"semantics and its entry rule is upgraded past the Phase 2 stub "
-        f"(connectorKey={rule_ck!r}, no placeholders); wait-for-connector task resolved "
+        f"(connectorKey={rule_ck!r}, no placeholders); typed wait-for-connector "
+        f"task preserves one positional "
+        f"current-stage-entered rule without connector uipath and is resolved "
         f"(displayName={task.get('displayName')!r}, "
         f"serviceType={svc}, connectorKey={ck!r}, typeId + connectionId set)"
     )
