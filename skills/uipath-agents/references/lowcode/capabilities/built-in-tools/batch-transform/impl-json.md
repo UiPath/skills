@@ -1,6 +1,6 @@
 # BatchTransform in a Low-Code Agent — Implementation
 
-`agent.json` agents enable BatchTransform via a built-in tool resource. Same `resource.json` shape for standalone and inline-in-flow.
+`agent.json` agents enable BatchTransform via a built-in tool resource. Standalone agents only — inline agents embed built-in tools in the `.flow` (owned by `uipath-maestro-flow`; see [../../inline-in-flow/inline-in-flow.md](../../inline-in-flow/inline-in-flow.md)).
 
 ## Resource Shape
 
@@ -69,9 +69,7 @@ batch-transform's `inputSchema`/`outputSchema` are empty — the per-run config 
 
 The `properties.settings` keys above are the Studio Web authoring shape. At runtime the platform receives a separate API body (e.g. `useWebSearchGrounding`, `targetFileGlobPattern`) whose names are SDK-version-specific — see `uipath/platform/context_grounding/_context_grounding_service.py` (`_batch_transform_*_creation_spec`). If `uip agent refresh` rejects a setting, verify the key against your CLI version.
 
-## Standalone vs Inline-in-Flow
-
-**Standalone:**
+## Project Layout (Standalone)
 
 ```
 <solution>/<AgentName>/
@@ -81,12 +79,6 @@ The `properties.settings` keys above are the Studio Web authoring shape. At runt
 ```
 
 Agent owns its tools directly. Runtime exposes `batch-transform` to the agent's tool-calling loop.
-
-**Inline-in-flow:** flow has a `uipath.agent.autonomous` node and a built-in tool node under the `uipath.agent.resource.tool.*` prefix (canonical: `uipath.agent.resource.tool.builtin`), plus an edge from agent `tool` → tool node `input`. The shared inline-builtin-tool checker (`tests/tasks/uipath-agents/inline_builtin_tool/`) validates by prefix; verify the exact node type at your CLI version with `uip maestro flow registry search "uipath.agent.resource.tool" --output json`.
-
-```text
-[uipath.agent.autonomous] --tool--> [uipath.agent.resource.tool.builtin]
-```
 
 ## Output Column Descriptions
 

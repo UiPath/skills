@@ -1,6 +1,6 @@
 # DeepRAG in a Low-Code Agent — Implementation
 
-`agent.json` agents enable DeepRAG via a built-in tool resource. Same `resource.json` shape for standalone and inline-in-flow.
+`agent.json` agents enable DeepRAG via a built-in tool resource. Standalone agents only — inline agents embed built-in tools in the `.flow` (owned by `uipath-maestro-flow`; see [../../inline-in-flow/inline-in-flow.md](../../inline-in-flow/inline-in-flow.md)).
 
 ## Resource Shape
 
@@ -62,9 +62,7 @@ deep-rag's `inputSchema`/`outputSchema` are empty — the config lives in `prope
 
 Unlike `batch-transform`, deep-rag carries no `outputColumns` and no `webSearchGrounding`. The context-index form of DeepRAG (not this tool form) instead takes `citationMode` (`"Inline"`/`"Skip"`) — see [planning.md](planning.md) § Tool resource vs context-index resource. The `properties.settings` keys are the Studio Web authoring shape; if `uip agent refresh` rejects one, verify it against your CLI version.
 
-## Standalone vs Inline-in-Flow
-
-**Standalone:**
+## Project Layout (Standalone)
 
 ```
 <solution>/<AgentName>/
@@ -74,12 +72,6 @@ Unlike `batch-transform`, deep-rag carries no `outputColumns` and no `webSearchG
 ```
 
 Agent owns its tools directly. Runtime exposes `deep-rag` to the agent's tool-calling loop.
-
-**Inline-in-flow:** flow has a `uipath.agent.autonomous` node and a built-in tool node under the `uipath.agent.resource.tool.*` prefix (canonical: `uipath.agent.resource.tool.builtin`), plus an edge from agent `tool` → tool node `input`. The shared inline-builtin-tool checker (`tests/tasks/uipath-agents/inline_builtin_tool/`) validates by prefix; verify the exact node type at your CLI version with `uip maestro flow registry search "uipath.agent.resource.tool" --output json`.
-
-```text
-[uipath.agent.autonomous] --tool--> [uipath.agent.resource.tool.builtin]
-```
 
 ## Authoring the System Prompt
 

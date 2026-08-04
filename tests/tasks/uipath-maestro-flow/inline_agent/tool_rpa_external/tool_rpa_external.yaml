@@ -14,7 +14,7 @@ description: >
   Validate-only by design: `uip maestro flow debug` cannot yet run
   flow-only inline agents (no sidecar synthesis — known CLI gap
   pinned at roadmap M0), so `flow validate` is the grading ceiling.
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, node:inline-agent, shape:multi-node]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, node:inline-agent, shape:multi-node, resource]
 
 run_limits:
   expected_turns: 65
@@ -40,7 +40,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+solution\s+init'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   # Global transform (roadmap §7): the sidecar lifecycle verbs must not run —

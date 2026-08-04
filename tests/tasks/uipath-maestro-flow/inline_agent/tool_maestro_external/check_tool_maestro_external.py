@@ -26,7 +26,11 @@ from _shared.flow_inline_wiring import (  # noqa: E402
     assert_prompt_tokens,
     assert_agent_input_vars,
     assert_agent_output_vars,
+    assert_agent_sequence_wiring,
+    assert_bindings_rows,
     assert_definition_present,
+    assert_no_derived_resource_fields,
+    find_flow_file,
     find_wired_resource,
     assert_resource_source_uuid,
     assert_resource_inputs,
@@ -47,12 +51,13 @@ EXPECTED_OUTPUTS = {"status": "boolean"}
 
 
 def main() -> None:
-    flow = load_json(FLOW_PATH)
+    flow = load_json(find_flow_file(FLOW_PATH))
     agent_node = find_autonomous_agent_node(flow)
 
     assert_embedded_agent(agent_node)
     assert_prompt_tokens(agent_node)
     assert_agent_input_vars(agent_node)
+    assert_agent_sequence_wiring(flow, agent_node)
     assert_agent_output_vars(agent_node, EXPECTED_OUTPUTS)
     print(
         f"OK: {agent_node['id']} is self-contained with typed output "
@@ -77,6 +82,7 @@ def main() -> None:
 
     assert_tool_type_key_uuid(tool_node)
     assert_resource_source_uuid(tool_node)
+    assert_no_derived_resource_fields(tool_node)
     assert_resource_inputs(tool_node, expected_properties=EXPECTED_PROPERTIES)
     print(
         'OK: tool inputs carry processName="ProcurementProcess", the real '
@@ -84,6 +90,8 @@ def main() -> None:
     )
 
     assert_definition_present(flow, tool_node)
+    assert_bindings_rows(flow)
+    print("OK: top-level bindings[] rows present for the tool")
     print("OK: tool definition present at the exact (type, typeVersion)")
 
     assert_cluster_vars_ref([agent_node, tool_node])

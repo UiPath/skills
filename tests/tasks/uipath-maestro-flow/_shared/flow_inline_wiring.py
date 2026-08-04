@@ -14,7 +14,10 @@ Successor to `tests/tasks/uipath-agents/_shared/inline_wiring.py`, which
 graded the sidecar files. Per-kind resource helpers grow in the M2-M8
 milestones as each kind's shapes are pinned (M2: `find_wired_resource`,
 `assert_resource_source_uuid`, `assert_resource_inputs`,
-`assert_tool_type_key_uuid`, `assert_cluster_vars_ref`).
+`assert_tool_type_key_uuid`, `assert_cluster_vars_ref`; M3:
+`assert_no_derived_resource_fields`, `assert_bindings_rows`,
+`assert_agent_sequence_wiring`, `find_flow_file`,
+`assert_builtin_identity`).
 
 Import pattern in a check script:
 
@@ -36,6 +39,7 @@ Import pattern in a check script:
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -389,6 +393,143 @@ def find_wired_resource(flow: dict, agent_node: dict, *, type_prefix: str, sourc
     )
 
 
+# Derived resource.json `type` values (canvas-to-storage CANVAS_TO_STORAGE_TOOL_TYPE
+# range). Used to value-gate the inputs.type contamination check so a legitimate
+# tool argument that happens to be named "type" (a ValueSourceField OBJECT, or a
+# string outside this set) never false-FAILs.
+DERIVED_TOOL_TYPE_VALUES = {
+    "process", "agent", "api", "integration", "internal",
+    "clientSide", "ixp", "processOrchestration", "flow",
+}
+
+
+def assert_no_derived_resource_fields(node: dict) -> None:
+    """Assert the tool node's `inputs` carry no derived resource.json fields.
+
+    The deleted sidecar `resource.json`'s content is the likely legacy
+    contamination: an agent trained on the old pattern copies its derived
+    fields into the node. Projection owns these — they are never authored:
+
+      - `$resourceType` (resource-file discriminator)
+      - `type` when it holds a derived-type string (`"internal"`,
+        `"process"`, …) — value-gated, see DERIVED_TOOL_TYPE_VALUES
+      - `location` when it holds `"solution"`/`"external"`
+      - `argumentProperties` (built from per-argument modes / file bindings)
+      - `properties.toolType` (runtime discriminator — the flow surface
+        encodes the tool in the node TYPE suffix instead)
+
+    Graded tasks author NEW nodes, so a hit is always contamination (only
+    canvas hydration of a legacy shell writes some of these back).
+    """
+    inputs = node.get("inputs") or {}
+    errs = []
+    if "$resourceType" in inputs:
+        errs.append("inputs.$resourceType is a derived resource.json field — never authored")
+    type_val = inputs.get("type")
+    if isinstance(type_val, str) and type_val in DERIVED_TOOL_TYPE_VALUES:
+        errs.append(
+            f"inputs.type={type_val!r} is the derived resource.json type — "
+            "never authored (the node's TYPE string already encodes the kind)"
+        )
+    location = inputs.get("location")
+    if isinstance(location, str) and location in {"solution", "external"}:
+        errs.append(f"inputs.location={location!r} is projection-owned — never authored")
+    if isinstance(inputs.get("argumentProperties"), dict):
+        errs.append(
+            "inputs.argumentProperties is derived from per-argument modes — "
+            "author ValueSourceField entries per argument instead"
+        )
+    props = inputs.get("properties")
+    if isinstance(props, dict) and "toolType" in props:
+        errs.append(
+            "inputs.properties.toolType is the derived runtime discriminator — "
+            "the tool is selected by the node type suffix, never authored"
+        )
+    if errs:
+        sys.exit(f"FAIL ({node.get('id')}): " + "; ".join(errs))
+
+
+def assert_bindings_rows(
+    flow: dict,
+    *,
+    property_attributes: tuple[str, ...] = ("name", "folderPath"),
+) -> list[dict]:
+    """Assert the flow has top-level `bindings[]` rows for a process-family tool.
+
+    Tolerant DIRECT assertion (deliberately weaker than `flow validate`,
+    which enforces the full row set with actionable errors): at least one
+    row whose `propertyAttribute` is in `property_attributes`. Exists so
+    bindings coverage survives a CLI validate regression — do not tighten
+    to exact row matching (the validate criterion owns that).
+    """
+    rows = flow.get("bindings") or []
+    hits = [
+        r for r in rows
+        if isinstance(r, dict) and r.get("propertyAttribute") in property_attributes
+    ]
+    if not hits:
+        sys.exit(
+            "FAIL: no top-level bindings[] row with propertyAttribute in "
+            f"{sorted(property_attributes)} — process-family tools require "
+            "rows mirroring the definition's model.bindings.values[]"
+        )
+    return hits
+
+
+def assert_agent_sequence_wiring(flow: dict, agent_node: dict) -> None:
+    """Assert the agent node sits on the sequence path.
+
+    At least one sequence edge INTO the agent's `input` port and one OUT of
+    its `success` port — an agent wired only via artifact edges never runs.
+    """
+    agent_id = agent_node.get("id")
+    edges = flow.get("edges") or []
+    has_input = any(
+        e.get("targetNodeId") == agent_id and e.get("targetPort") == "input"
+        for e in edges
+    )
+    has_success = any(
+        e.get("sourceNodeId") == agent_id and e.get("sourcePort") == "success"
+        for e in edges
+    )
+    errs = []
+    if not has_input:
+        errs.append("no sequence edge into the agent's 'input' port")
+    if not has_success:
+        errs.append("no sequence edge out of the agent's 'success' port")
+    if errs:
+        sys.exit(
+            f"FAIL ({agent_id}): " + "; ".join(errs) +
+            " — the agent must be on the trigger→end sequence path"
+        )
+
+
+def find_flow_file(expected: Path) -> Path:
+    """Return the graded `.flow` path, tolerating a relocated project.
+
+    Prefer `expected` (the path the prompt names — separate lower-weight
+    path criteria grade its exactness). When absent, fall back to the
+    single `*.flow` under the working directory (skipping hidden dirs and
+    node_modules) so the content checker still grades a correctly-authored
+    flow at a wrong path. Zero or multiple candidates FAIL.
+    """
+    expected = Path(expected)
+    if expected.is_file():
+        return expected
+    root = Path(os.getcwd())
+    candidates = [
+        p for p in root.rglob("*.flow")
+        if not any(part.startswith(".") or part == "node_modules" for part in p.relative_to(root).parts)
+    ]
+    if len(candidates) == 1:
+        print(f"NOTE: {expected} missing; grading sole flow file {candidates[0]}")
+        return candidates[0]
+    sys.exit(
+        f"FAIL: {expected} does not exist and fallback found "
+        f"{len(candidates)} .flow candidates: {[str(c) for c in candidates]}"
+    )
+
+
 def assert_resource_source_uuid(node: dict) -> str:
     """Assert the resource node's identity contract and return its source.
 
@@ -472,6 +613,57 @@ def assert_tool_type_key_uuid(node: dict) -> str:
             "`uip maestro flow registry search`, never construct it by hand"
         )
     return key
+
+
+# Builtin tool node-type suffixes whose manifest declares model.source: true —
+# identity is a minted inputs.source UUID (validator-enforced). The other
+# builtins (summarize, batchtransform) declare no model.source: identity is a
+# minted inputs.id, and their inputs.source is a FILE REFERENCE (empty string
+# or a $vars file expression), never a UUID.
+BUILTIN_SOURCE_IDENTITY_SUFFIXES = {"analyzefiles"}
+
+
+def assert_builtin_identity(node: dict) -> str:
+    """Assert a builtin tool node's identity contract and return the UUID.
+
+    Dispatches on the node-type suffix (`…tool.builtin.<suffix>`):
+    `analyzefiles` requires a lowercase-UUID `inputs.source`;
+    `summarize`/`batchtransform` require a lowercase-UUID `inputs.id`.
+    Also rejects an instance `model` block (never authored).
+    """
+    errs = []
+    if "model" in node:
+        errs.append(
+            "node has an instance 'model' block — never authored; node "
+            "semantics live in definitions[]"
+        )
+    suffix = str(node.get("type", "")).rsplit(".", 1)[-1]
+    inputs = node.get("inputs") or {}
+    if suffix in BUILTIN_SOURCE_IDENTITY_SUFFIXES:
+        identity = inputs.get("source")
+        if not isinstance(identity, str) or not UUID_RE.match(identity):
+            errs.append(
+                f"inputs.source is not a lowercase UUID: {identity!r} — "
+                f"the {suffix} manifest declares model.source: true"
+            )
+    else:
+        identity = inputs.get("id")
+        if not isinstance(identity, str) or not UUID_RE.match(identity):
+            errs.append(
+                f"inputs.id is not a lowercase UUID: {identity!r} — "
+                f"{suffix} has no model.source; identity is inputs.id "
+                "(inputs.source is the file reference)"
+            )
+        source = inputs.get("source")
+        if isinstance(source, str) and UUID_RE.match(source):
+            errs.append(
+                f"inputs.source holds a UUID ({source!r}) on a {suffix} node — "
+                "source is the FILE REFERENCE here; the identity UUID belongs "
+                "at inputs.id"
+            )
+    if errs:
+        sys.exit(f"FAIL ({node.get('id')}): " + "; ".join(errs))
+    return identity
 
 
 def assert_cluster_vars_ref(nodes: list[dict]) -> None:
