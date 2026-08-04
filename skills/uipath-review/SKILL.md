@@ -21,12 +21,12 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 ## Critical Rules
 
 1. **NEVER manually modify any files.** This skill is read-only. Exception: The command `uip agent refresh` is allowed and mandatory for low code agents, because it is not a manual modification, even when the command updates derived files -- do not restore or clean up those CLI-managed changes. If fixes are needed, identify them in the report and tell the user which skill to use (uipath-rpa, uipath-agents, uipath-maestro-flow, uipath-maestro-bpmn, uipath-api-workflow, uipath-coded-apps, uipath-platform, uipath-solution).
-2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). For low-code agents, run `uip agent refresh` and `uip agent validate`. Run `uip maestro flow validate` on flows, `uip maestro bpmn validate` on BPMN processes, `uip api-workflow validate` on API workflows. Report every Error, Warning, and Info result from every command. A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
+2. **ALWAYS run validation and Workflow Analyzer before manual review.** For RPA projects, run **both** `uip rpa validate` on every entry point AND `uip rpa build "<PROJECT_DIR>"` — `validate` catches structural / analyzer issues, `build` catches compile-time issues `validate` misses (unknown member names, invalid enum values, JIT failures). For low-code agents, run `uip agent refresh` and `uip agent validate`. Run `uip maestro flow validate` on flows, `uip maestro bpmn validate` on BPMN processes, `uip api-workflow validate` on API workflows. Report every command's Error / Warning / Info **counts** in the validation table, and a detail line for each Error and Warning — never a detail line for a clean result (Step 2d). A review without both `validate` AND `build` (for RPA) is incomplete and may ship broken member references.
 3. **ALWAYS discover and classify before reviewing.** For solutions: classify every project before reviewing any individual one. For single projects: identify the project type and find the enclosing project directory before reviewing individual files.
 4. **Report severity for every finding.** Use: **Critical** (blocks deployment), **Warning** (should fix), **Info** (improvement opportunity).
 5. **Understand business context first.** Before evaluating optimization, ask or infer what the solution is trying to accomplish. A queue-based architecture is not "better" if the use case processes 5 items/day.
 6. **Use `--output json`** on all CLI validation commands for programmatic parsing.
-7. **Do not duplicate what validation commands catch.** Reference the validation output by rule ID and message — do not manually re-describe the same issue. But DO include every validation result (Error, Warning, Info) in the report.
+7. **Do not duplicate what validation commands catch.** Reference the validation output by rule ID and message — do not manually re-describe the same issue, and do not restate what a command checks or that it passed. Every validation result is accounted for by its count in the validation table; Errors and Warnings additionally get a detail line.
 8. **Cap the review at 30 minutes of analysis.** For very large solutions (10+ projects), provide a summary review with deep dives on the 3 highest-risk projects. Offer to review remaining projects if the user wants.
 9. **Run the review CLI first, then apply the judgment catalog, for every agent encountered.** First run `uip agent review` (low-code) or `uip codedagent review` (coded) with `--output json` — it returns the deterministic findings (Step 2.5a). Then load the format-specific judgment catalog (`agents-lowcode-rules.md` or `agents-coded-rules.md`). Future phases add catalogs for RPA, flows, coded apps. This holds even when the skill loads mid-task: if review work already started before this skill loaded (e.g., a generic code-review pass produced findings), Step 2.5a and the guardrail Step 0 catalog fetch are still mandatory — run them, then merge the earlier findings into this skill's report format. Prior review output is never a substitute for the review CLI or the live catalog.
 10. **Rule findings are authoritative as emitted.** Carry review-CLI findings (`Data.Issues[]`) into the report verbatim — `RuleId`, `Severity`, `Description`, `File`, `SuggestedFix` unchanged. For the judgment catalog, use its `rule_id`, `severity`, `trigger`, and `suggested_fix` verbatim. Map severity to the report's bands: `error` → Critical, `warning` → Warning, `info` → Info. `judgment` severity rows default to Warning; the agent may escalate or de-escalate with reasoning logged in the finding's `description`. Do not re-rank otherwise.
@@ -169,7 +169,7 @@ This step is **mandatory** and **non-negotiable**. You MUST run validation comma
 - **Solution / Multi-project scope:** Run validation on **every project** in the solution. For each RPA project, validate **every entry point file**.
 - **Single Project scope:** Run validation on the single project. For RPA projects, validate **every entry point file**.
 
-Report **all** results — Errors, Warnings, and Info — in the final review report.
+Account for **all** results in the final review report: Error / Warning / Info counts in the validation table, plus a detail line per Error and Warning (Step 2d).
 
 #### 2a. RPA Projects — Validate Every Entry Point
 
@@ -186,7 +186,7 @@ uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --outp
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
-4. Collect **all** results from both commands — Errors, Warnings, and Info-level messages
+4. Collect **all** results from both commands — Errors, Warnings, and Info-level messages (Info feeds the table's count; it gets no detail line)
 5. If any entry point has `validate` errors **or** the project fails to `build`, the project is **not deployable**
 
 > Do NOT validate only Main.xaml — validate every file listed in `entryPoints`. A project can have multiple entry points and errors in any of them block deployment.
@@ -241,11 +241,12 @@ For the review report, create a validation summary:
 - [W-001] InvoiceProcessor/Main.xaml: ST-MRD-011 — Write Line activity used (use Log Message instead)
 - [W-002] InvoiceProcessor/Main.xaml: ST-DBP-003 — Empty Catch block in TryCatch_1
 - [W-003] InvoiceProcessor/Main.xaml: ST-NMG-001 — Variable 'temp_val' does not match naming convention
-- [I-001] InvoiceProcessor: ST-ANA-009 — 12 file activities detected
 - [W-004] ClassifierAgent: Missing tool description for 'lookup_customer'
 ```
 
 > The validation results section is **required** in every review report. A review without automated validation is incomplete.
+
+**Counts in the table; detail lines for Errors and Warnings only.** Every command's Error / Warning / Info counts go in the table — that is where Info is reported. Write a detail line only for an Error or a Warning. Never write a detail line that narrates a clean or successful result (`Status: Valid`, `Verdict: PASS`, `Score: 100`, "no drift", "0 issues", "N files regenerated", "already at schema X") — the `0` in the table already says it, and the Info column already carries the count.
 
 ### Step 2.5 — Run the Review CLI, then Apply the Judgment Catalog
 
@@ -537,9 +538,9 @@ Output a structured report in chat (do NOT create a file):
 |---|---|---|---|---|---|
 | ... | ... | ... | ... | ... | ... |
 
-**Validation Details:**
+**Validation Details:** *(Errors and Warnings only — omit the heading entirely when there are none)*
 - [V-E-001] <project>/<file>: **<rule-id>** — <message>
-- ...
+- [V-W-001] <project>/<file>: **<rule-id>** — <message>
 
 > For Legacy projects, note: "Validation CLI (`uip rpa validate`, `uip rpa analyze`) targets Modern projects. Legacy validation runs through `uipath-rpa` Legacy mode (using the `uip rpa-legacy` CLI)."
 
