@@ -101,7 +101,7 @@ Node `inputs` (authoring surface — everything else derives):
 | `properties` | Yes | `{"processName": "<Name>", "folderPath": "<Folder>"}` — both from discovery step 1. **Never leave `folderPath` empty**: local → `"solution_folder"` (literal string), external → the literal Orchestrator folder. |
 | `isEnabled` | No | Default `true`. |
 
-No instance `outputs`, no instance `model` block. Hydrated legacy nodes may additionally carry `inputs.referenceKey` — leave it; do not author it for new nodes.
+No instance `outputs`, no instance `model` block. Hydrated legacy nodes may additionally carry `inputs.referenceKey` or `inputs.exampleCalls` (canvas simulation settings) — leave them; do not author either for new nodes.
 
 Example (external RPA process, one argument):
 
@@ -143,6 +143,8 @@ Each argument named in the manifest's `inputDefinition.properties` gets one `inp
 
 A `variable`-mode `argumentPath` is a real `$vars` reference: it is scanned into the derived `agentInputVariables` exactly like a prompt token, and the referenced trigger field needs its `variables.globals[]` declaration ([impl.md § 4](../impl.md#4-wire-flow-data-into-prompts)). An omitted/empty argument is treated as LLM-fillable with no guidance — prefer an explicit `prompt`-mode entry with a real `promptValue`.
 
+> The manifest's `inputDefaults.<arg>` may hold a **scalar** default (e.g. `"index": 0`) — a schema default, NOT the instance input shape. Never copy it into the node; the instance `inputs.<arg>` is always the ValueSourceField object above.
+
 ## Bindings
 
 Process-family tools require **top-level `bindings[]` rows** (root of the `.flow` document, sibling of `nodes[]`) mirroring the manifest's `model.bindings` — one row per `model.bindings.values[]` entry:
@@ -154,13 +156,13 @@ Process-family tools require **top-level `bindings[]` rows** (root of the `.flow
 ]
 ```
 
-Copy `resource`, `resourceKey`, `propertyAttribute`, `default` verbatim from the manifest (`resourceKey` is the in-solution resource key UUID for local targets, `<folderPath>.<name>` for remote); `id` is any unique string (`b1`, `b2`, …); `type` is `"string"`. The canvas prunes `bindings[]` to live references on save — rows for a deleted tool disappear on their own.
+Copy `resource`, `resourceKey`, `propertyAttribute`, `default` verbatim from the manifest (`resourceKey` is the in-solution resource key UUID for local targets, `<folderPath>.<name>` for remote); `id` is any unique string (`b1`, `b2`, …); `type` is `"string"`. Rows mirror `model.bindings.values[]` ONLY — sibling `model.bindings` keys (`resourceSubType`, `orchestratorType`, …) stay in the definition, never in the rows. The canvas prunes `bindings[]` to live references on save — rows for a deleted tool disappear on their own.
 
 ## Derived Fields — Never Author
 
 Projection injects these into the derived `resource.json`; they are not node inputs:
 
-- `type` (family mapping) and `location` (`"solution"` / `"external"`)
+- `type` (family mapping) and `location` — `"solution"` for every process-family tool, **including remote/deployed targets** (only integration and ixp tools derive `"external"`)
 - `argumentProperties` (built from the per-argument modes)
 - `guardrail.policies` (filtered from the **agent node's** `inputs.guardrails`)
 - `$resourceType`, `canvasNodeId`, `iconUrl`, `settings` defaults, `isEnabled: true` default
@@ -196,7 +198,7 @@ uip maestro flow validate "<FILE>.flow" --output json
 
 ## In-Solution (Local) Targets
 
-- The target project must already be registered in the parent solution — adding a tool never scaffolds or re-creates the target project, and never re-initializes the solution. Registration mechanics are the flow skill's solution guidance, not this capability.
+- The target project must already be registered in the parent solution — adding a tool never scaffolds or re-creates the target project, and never re-initializes the solution. Registration mechanics: [shared/cli-commands.md § flow init](../../../../../shared/cli-commands.md), not this capability.
 - Run `registry search/get --local` from **inside the flow project directory** (the local registry scans the parent solution).
 - Local manifests carry `model.projectId`; on canvas save these in-solution `definitions[]` entries keep their file-provided `inputDefinition`/`outputDefinition`/`form` while everything else is rebuilt from the live registry.
 - **`inputs.properties.folderPath` is ALWAYS the literal string `"solution_folder"` for a local target — never `""`.** Do not copy the local manifest's binding `default` (often `""`) into `properties.folderPath`; the two are different fields. The `bindings[]` rows are the only place the manifest's defaults are copied verbatim (empty included).

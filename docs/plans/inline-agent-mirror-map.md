@@ -2,7 +2,7 @@
 
 Authoring aid only (roadmap decision 8 — no drift control yet). One row per file in `skills/uipath-agents/references/lowcode/` (7,434 lines total), mapped to its target under `skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/`. Update the Status column as milestones land.
 
-Status: **M1 rows landed 2026-07-31** (critical-rules, autonomous-critical-rules, model-selection-guide, prompting guide + router absorption, inline-in-flow.md → stub, planning.md/impl.md class-D content, project-lifecycle/lowcode/debug redirect passes). **M2 row landed 2026-08-03** (capabilities/process.md; impl.md §8 worked example extended with the RPA tool).
+Status: **M1 rows landed 2026-07-31** (critical-rules, autonomous-critical-rules, model-selection-guide, prompting guide + router absorption, inline-in-flow.md → stub, planning.md/impl.md class-D content, project-lifecycle/lowcode/debug redirect passes). **M2 row landed 2026-08-03** (capabilities/process.md; impl.md §8 worked example extended with the RPA tool). **M3 rows landed 2026-08-04** (per-tool twin files COLLAPSED into one `capabilities/built-in-tools.md` — flow-side field sets are compact and the resource.json shapes don't survive the swap).
 
 Delta classes:
 
@@ -26,10 +26,10 @@ Delta classes:
 | `capabilities/inline-in-flow/inline-in-flow.md` (392) | — (superseded by the whole plugin) | C | M1 | shrinks to ~20-line redirect stub |
 | `capabilities/process/process.md` (258) | `capabilities/process.md` | B | M2 ☑ | discovery (`uip solution resources list/get`) verbatim; authoring → `…tool.<family>.<resource-key>` node + `bindings[]` rows; landed 2026-08-03 |
 | `capabilities/process/solution-files.md` (548) | — | C | — | solution-resource mechanics owned by the flow skill (decision 7); plugin links to flow-skill solution guidance |
-| `capabilities/built-in-tools/built-in-tools.md` (76) | `capabilities/built-in-tools.md` | B | M3 | node type `…tool.builtin.<toolType>`; identity = `inputs.id` (no `model.source`) |
-| `capabilities/built-in-tools/analyze-attachments.md` (115) | `capabilities/built-in-tools/analyze-attachments.md` | B | M3 | tenant builtin is `analyzefiles`; reconcile naming at M3 |
-| `capabilities/built-in-tools/batch-transform/{planning,impl-json,api-reference}.md` (223) | `capabilities/built-in-tools/batch-transform.md` (collapse TBD at M3) | B | M3 | impl-json's resource.json shape → node `inputs` |
-| `capabilities/built-in-tools/deeprag/{planning,impl-json,api-reference}.md` (203) | `capabilities/built-in-tools/deeprag.md` (collapse TBD at M3) | B | M3 | not in tenant registry builtins (analyzefiles/batchtransform/summarize) — verify availability at M3 |
+| `capabilities/built-in-tools/built-in-tools.md` (76) | `capabilities/built-in-tools.md` | B | M3 ☑ | node types `…tool.builtin.{analyzefiles,summarize,batchtransform}` (static, no per-target key); identity asymmetry pinned: analyzefiles `model.source: true` ⇒ mint `inputs.source` (validator-required); summarize/batchtransform ⇒ mint `inputs.id`, their `source` is a file ref |
+| `capabilities/built-in-tools/analyze-attachments.md` (115) | § Analyze Files in `capabilities/built-in-tools.md` | B | M3 ☑ | naming reconciled from flow-workbench `CANVAS_TO_RUNTIME_BUILTIN_TYPE`: node suffix `analyzefiles` ⇒ derived toolType `analyze-attachments` |
+| `capabilities/built-in-tools/batch-transform/{planning,impl-json,api-reference}.md` (223) | § Batch Transform in `capabilities/built-in-tools.md` | B | M3 ☑ | impl-json's `properties.settings` → node `inputs` (`query` ValueSourceField, `outputColumns` min 1 validator-enforced, `webSearchGrounding`); output-column-descriptions table survives; api-reference not mirrored (debug-only) |
+| `capabilities/built-in-tools/deeprag/{planning,impl-json,api-reference}.md` (203) | § Summarize in `capabilities/built-in-tools.md` | B | M3 ☑ | naming reconciled: canvas/flow surface is `summarize`, runtime toolType `deep-rag` (asymmetric on purpose — flow-workbench `canvas-to-storage.ts`); no `load-attachments` node type exists |
 | `capabilities/context/context.md` (40) | absorbed into `capabilities/context-index.md` intro | C | M4 | kind router; plugin routes via impl.md §7 kind matrix |
 | `capabilities/context/index.md` (275) | `capabilities/context-index.md` | B | M4 | index discovery verbatim; flat inputs incl. ValueSourceField shapes (`query`, `folderPathPrefix` as `{mode,textValue,promptValue,argumentPath}`) |
 | `capabilities/context/attachments.md` (55) | — | C | — | out of mirror scope; revisit if inline attachments demand appears |
