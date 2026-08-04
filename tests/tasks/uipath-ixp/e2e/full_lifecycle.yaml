@@ -8,9 +8,19 @@ description: >
   Exercises every reference file in the skill end-to-end.
 tags: [uipath-ixp, e2e, mode:build, lifecycle:setup]
 
+# task_timeout matches the training-heavy integration tasks. #1818 raised those
+# from 3000 to 6000 because training took longer than the budget allowed; this
+# task was never given the same treatment, and it waits for MORE retrains than
+# any of them — three (after upload, after confirming labellings, after the
+# prompt update) against two for publish_lifecycle / versions_and_metrics and
+# one for labelling_correctness. At 2400 that was 800s per wait where its
+# siblings get 3000-3600, so a single wait running to the documented ceiling
+# left almost nothing for the document reads, confirms and publish. 6000 keeps
+# it the tightest of the four per wait (2000s) while making the retrains this
+# task now REQUIRES to complete affordable.
 run_limits:
   max_turns: 120
-  task_timeout: 2400
+  task_timeout: 6000
   turn_timeout: 1800
 
 # driver: docker (NOT tempdir) is required. `uip ixp` ships as the separate
