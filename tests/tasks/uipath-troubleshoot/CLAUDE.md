@@ -255,6 +255,8 @@ The mock machinery itself is never readable in the sandbox — its source would 
 
 `fail_on_error: true` is deliberate — a silent seal failure restores the leak. `m/seal` is idempotent and no-ops when there is no `r/manifest.json`, so a re-run in a reused sandbox still exits 0.
 
+`m/seal` and `m/.seal.bin` deliberately STAY in the sandbox after a completed seal — do not make the sealer remove itself. The sealer must stay able to seal: any sandbox that acquires an `r/manifest.json` again has to re-seal, and a sealer blanked to zero bytes exits 0 over those readable fixtures instead, turning the leak this seal prevents into a silent success. Removing it buys nothing against the ceiling above: whoever can read the decrypted archive reads the manifest and `.store` structure from the data itself, so the sealer's source discloses nothing further.
+
 The passthrough cache lives at `m/_cache` (beside the shim, not under `r/`) so `docsai` proxying keeps working after `r/` is gone. Its entries are encrypted like the other runtime data files, and record only the response — not the query text the agent typed.
 
 `_build_task_yaml` in `generate_scenario.py` emits this block, so generated scenarios get it automatically. Hand-written scenarios MUST add it.
