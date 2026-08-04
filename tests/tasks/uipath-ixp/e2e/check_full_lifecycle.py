@@ -1,16 +1,28 @@
 #!/usr/bin/env python3
 """Verify the IXP full-lifecycle e2e artifacts.
 
-Grades artifact integrity, NOT whether the model's F1 improved. On the ~3-doc
-fixture set a single flipped prediction moves a field's F1 by a large fraction,
-so a small regression tolerance is noise the agent doesn't control, not signal.
+Grades artifact integrity and that the improvement round-trip actually happened,
+NOT whether the model's F1 improved. On the ~3-doc fixture set a single flipped
+prediction moves a field's F1 by a large fraction, so a regression tolerance is
+noise the agent doesn't control, not signal — the F1 delta is printed but never
+gates.
+
 Asserts: artifacts present & well-formed; Fields[] populated; ModelVersion an int
-and not backwards; target field resolves to a numeric F1 in both snapshots. The F1
-delta is printed but never gates. An advanced version with byte-identical Fields[]
-only WARNs — on the coarse fixture a genuine retrain can flip no prediction, so
-identical metrics are the same noise this check refuses to grade, and it cannot be
-told from a counter bump by the artifacts alone. "Did the agent run the improve loop"
-(update-prompts, two metric fetches, publish) is graded from `calls.log`.
+that **strictly advances** from baseline to improved; target field resolves to a
+numeric F1 in both snapshots.
+
+The strict advance is what verifies the retrain waits. The lifecycle has three:
+after upload (predictions appear), after confirming labellings (the first version
+trains and validates), and after the prompt update (the second version). Only two
+version points are observable — a project with no confirmed labellings has no
+trained model at all, so `get-metrics` returns `not_found` and there is nothing to
+number. But a *validated* baseline can only exist if predictions arrived and labels
+were confirmed and trained, so requiring `improved > baseline` transitively proves
+all three waits completed.
+
+An advanced version with byte-identical Fields[] still only WARNs — on the coarse
+fixture a genuine retrain can flip no prediction, and that is the same noise this
+check refuses to grade.
 """
 from __future__ import annotations
 
@@ -104,7 +116,11 @@ def main() -> int:
     if improved_version < baseline_version:
         log_fail(f"ModelVersion went backwards ({baseline_version} -> {improved_version}) — improved_metrics is stale, from another project, or swapped")
     if improved_version == baseline_version:
-        log_info(f"ModelVersion unchanged at {baseline_version} — no new version yet (acceptable)")
+        log_fail(
+            f"ModelVersion unchanged at {baseline_version} — improved_metrics was captured before the "
+            "post-update retrain produced a new version, so it is the baseline re-read and no "
+            "improvement round-trip is demonstrated. Wait for the version to advance before capturing."
+        )
     else:
         log_info(f"ModelVersion advanced {baseline_version} -> {improved_version}")
         # Advanced version + byte-identical Fields[] *can* be a copied snapshot with the counter

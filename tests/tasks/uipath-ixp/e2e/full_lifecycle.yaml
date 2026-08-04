@@ -53,9 +53,11 @@ initial_prompt: |
   - `target_field.json` — the field you chose to improve, exactly:
       {"field_id": "<FieldId from metrics>", "name": "<name from taxonomy>"}
   - `improved_metrics.json` — full metrics response after the
-    improvement and retrain. If retrain has not completed after a few
-    minutes of polling, capture the current metrics and proceed rather
-    than waiting indefinitely.
+    improvement and retrain. Capture it only once the retrain has
+    produced a NEW model version: its `ModelVersion` must be higher
+    than `baseline_metrics.json`'s. Re-reading the baseline version
+    does not count. If the version has not advanced by the end of the
+    documented bounded wait, stop and report rather than capturing.
 
   - The `uip` CLI is already authenticated.
   - Do NOT ask for approval, confirmation, or feedback; do NOT pause
