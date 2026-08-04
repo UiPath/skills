@@ -86,7 +86,7 @@ CODE_KEY = bytes.fromhex("a49e38198e6c9bf1a90d8ad12dc121f5c59994f28c85ec6d44ab92
 # `mock_src/`, which would otherwise show up as untracked repo noise.
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(SRC_DIR))
-from _cipher import xor_stream
+from _cipher import code_seed, xor_stream
 
 
 def _strip_docstrings(tree: ast.Module) -> ast.Module:
@@ -113,18 +113,18 @@ def _stripped_source(path: Path) -> str:
 HEADER_LEN = 12
 
 
-def _pack(stripped: str) -> bytes:
+def _pack(stripped: str, name: str) -> bytes:
     """Encrypt `stripped` and prefix the integrity header. See module docstring."""
     plain = stripped.encode("utf-8")
     header = len(plain).to_bytes(4, "big") + hashlib.sha256(plain).digest()[:8]
-    return header + xor_stream(plain, CODE_KEY)
+    return header + xor_stream(plain, code_seed(CODE_KEY, name))
 
 
-def _unpack(blob: bytes) -> bytes | None:
+def _unpack(blob: bytes, name: str) -> bytes | None:
     """Reverse `_pack`, or None if the header does not match — mirrors the loaders."""
     if len(blob) < HEADER_LEN:
         return None
-    plain = xor_stream(blob[HEADER_LEN:], CODE_KEY)
+    plain = xor_stream(blob[HEADER_LEN:], code_seed(CODE_KEY, name))
     if len(plain) != int.from_bytes(blob[:4], "big"):
         return None
     if hashlib.sha256(plain).digest()[:8] != blob[4:HEADER_LEN]:
@@ -176,8 +176,8 @@ def main() -> int:
                 "code needing it into a library module."
             )
 
-        blob = _pack(stripped)
-        if _unpack(blob) != stripped.encode("utf-8"):
+        blob = _pack(stripped, src.stem)
+        if _unpack(blob, src.stem) != stripped.encode("utf-8"):
             return f"compile_mocks: {src.name} failed its own round-trip; refusing to write."
         out = OUT_DIR / f".{src.stem}.bin"
         out.write_bytes(blob)

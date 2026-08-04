@@ -54,6 +54,18 @@ def xor_stream(data: bytes, key: bytes) -> bytes:
     return bytes(a ^ b for a, b in zip(data, keystream(key, len(data))))
 
 
+def code_seed(key: bytes, name: str) -> bytes:
+    """Per-blob keystream seed for the code blob named `name`.
+
+    Every code blob starts with the same inlined library prelude. Keying them
+    all on `CODE_KEY` alone would therefore give every blob an identical
+    ciphertext prefix as long as that prelude, which advertises both that the
+    blobs share a plaintext head and how long it is. Binding the seed to the
+    blob's own name removes the shared prefix.
+    """
+    return hashlib.sha256(key + name.encode("utf-8")).digest()
+
+
 def data_seal(raw: bytes) -> bytes:
     """Compress and encrypt `raw` under `DATA_KEY`. Output is binary."""
     return xor_stream(zlib.compress(raw, 9), DATA_KEY)
