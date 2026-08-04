@@ -1,16 +1,22 @@
-task_id: skill-agent-inline-solution-agent-tool
+task_id: skill-flow-inline-tool-agent-solution
 description: >
   Add an inline-agent agent-as-tool inside an existing solution
-  (brownfield). The fixture ships an `OrchestratorFlowSol` solution that
-  already contains a registered low-code `ToolAgent` project. The agent
-  must add a NEW `OrchestratorFlow` Flow project whose inline low-code
-  agent delegates to the pre-existing `ToolAgent` as a tool — reusing it,
-  NOT re-creating it and NOT re-initializing the solution. Verifies the
-  tool resource.json under the inline agent's UUID subdirectory uses
-  `type: "agent"`, `location: "solution"`, `folderPath: "solution_folder"`,
-  and that a `uipath.agent.resource.tool.agent.<process-key>` flow node is
-  wired to the autonomous agent node's `tool` handle.
-tags: [uipath-agents, e2e, mode:build, low-code, inline-flow]
+  (brownfield), flow-file-first. The fixture ships an
+  `OrchestratorFlowSol` solution that already contains a registered
+  low-code `ToolAgent` project. The agent must add a NEW
+  `OrchestratorFlow` Flow project whose inline low-code agent (full
+  definition embedded in the `uipath.agent.autonomous` node's `inputs`)
+  delegates to the pre-existing `ToolAgent` as a tool — reusing it, NOT
+  re-creating it and NOT re-initializing the solution. Verifies a
+  `uipath.agent.resource.tool.agent.<key>` node carries the tool config
+  in its `inputs` (UUID `source`, `properties.processName: "ToolAgent"`,
+  `properties.folderPath: "solution_folder"`), is wired to the agent's
+  `tool` handle with its registry definition present, and the flow
+  validates. No sidecar authored, no `uip agent` lifecycle commands.
+  Validate-only by design: `uip maestro flow debug` cannot yet run
+  flow-only inline agents (no sidecar synthesis — known CLI gap
+  pinned at roadmap M0), so `flow validate` is the grading ceiling.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, node:inline-agent, shape:multi-node]
 
 run_limits:
   expected_turns: 80
@@ -18,8 +24,8 @@ run_limits:
 
 pre_run:
   # Brownfield fixture: an OrchestratorFlowSol solution that already
-  # contains a registered ToolAgent (mirrors solution_agent_tool's fixture).
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/inline_solution_agent_tool/_fixtures/OrchestratorFlowSol ."
+  # contains a registered ToolAgent.
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/inline_agent/tool_agent_solution/_fixtures/OrchestratorFlowSol ."
     timeout: 10
 
 initial_prompt: |
@@ -27,6 +33,9 @@ initial_prompt: |
   "OrchestratorFlowSol" solution (in the current directory). Its inline low-code
   agent should get its work done by handing off to the existing "ToolAgent"
   that's already in the solution, rather than doing it itself.
+
+  The task is NOT complete until `uip maestro flow validate` passes for the
+  flow file.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -36,21 +45,13 @@ success_criteria:
   # Brownfield: the solution already exists in the fixture. Re-running
   # `uip solution init` would clobber it — the agent must NOT. The
   # exclude_pattern lets a read-only `uip solution init --help` verb-probe
-  # through (agents commonly confirm the post-rename verb exists).
+  # through.
   - type: command_not_executed
     description: "Agent did NOT re-initialize the pre-existing solution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+init'
+    command_pattern: '(uip|\$UIP)\s+solution\s+init'
     exclude_pattern: '--help'
     weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent scaffolded the inline agent with --inline-in-flow"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+init\s+.*--inline-in-flow'
-    min_count: 1
-    weight: 2.0
     pass_threshold: 1.0
 
   # Brownfield: ToolAgent ships in the fixture. The agent must reuse it,
@@ -58,8 +59,17 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did NOT re-create the existing ToolAgent project"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+init\s+["'']?ToolAgent'
+    command_pattern: '(uip|\$UIP)\s+agent\s+init\s+["'']?ToolAgent'
     weight: 1.5
+    pass_threshold: 1.0
+
+  # Global transform (roadmap §7): the sidecar lifecycle verbs must not run —
+  # the definition lives in the .flow.
+  - type: command_not_executed
+    description: "No legacy inline-agent lifecycle commands (definition lives in the .flow)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+(init|refresh|validate)\s+.*--inline-in-flow'
+    weight: 1.0
     pass_threshold: 1.0
 
   # Informational discovery criteria: the agent may use file reads instead of
@@ -67,21 +77,15 @@ success_criteria:
   - type: command_executed
     description: "Agent discovered the existing ToolAgent via solution resources list (informational)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources?\s+list\b.*--source\s+local'
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources?\s+list\b.*--source\s+local'
     min_count: 1
     weight: 0.5
     pass_threshold: 0.0
 
-  # Informational, NOT enforced: pass_threshold:0 means score (0 when the
-  # agent skips `resource get`) always clears the bar, so this criterion can
-  # never fail the run — the task PASS/FAIL gate is all-criteria-pass. weight
-  # must be > 0 (schema forbids 0); kept at the 0.5 floor so it barely moves
-  # the reported weighted_score. The `resource list` discovery above is the
-  # enforced signal; `get` is an acceptable-but-optional follow-up.
   - type: command_executed
     description: "Agent fetched the ToolAgent configuration with uip solution resources get (informational)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources?\s+get\b'
     min_count: 1
     weight: 0.5
     pass_threshold: 0.0
@@ -91,7 +95,7 @@ success_criteria:
   - type: command_executed
     description: "Agent searched or listed the local flow registry for the agent-as-tool manifest (informational)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list)\b.*--local'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+(search|list)\b.*--local'
     min_count: 1
     weight: 0.5
     pass_threshold: 0.0
@@ -99,7 +103,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched the solution (local) agent-as-tool node manifest from the flow registry"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.resource\.tool\.agent\..*--local'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.resource\.tool\.agent\..*--local'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -107,7 +111,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched the inline autonomous agent node manifest from the flow registry"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.autonomous'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.autonomous'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -125,32 +129,33 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent refreshed the inline agent with --inline-in-flow"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent validated the inline agent with --inline-in-flow"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: file_exists
     description: "Flow file was created"
     path: "OrchestratorFlowSol/OrchestratorFlow/OrchestratorFlow.flow"
     weight: 1.5
     pass_threshold: 1.0
 
+  - type: file_contains
+    description: "Flow embeds the inline agent and the agent-as-tool node types"
+    path: "OrchestratorFlowSol/OrchestratorFlow/OrchestratorFlow.flow"
+    includes:
+      - '"uipath.agent.autonomous"'
+      - 'uipath.agent.resource.tool.agent.'
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: run_command
-    description: "Inline solution agent tool: resource.json shape + flow node (tool.agent.*) + tool-handle edge"
-    command: "python3 $TASK_DIR/check_inline_solution_agent_tool.py"
+    description: "Inline solution agent tool: embedded agent + tool node inputs (processName/folderPath) + tool-handle edge + definitions"
+    command: 'python3 "$TASK_DIR/check_tool_agent_solution.py"'
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the authored flow"
+    command: 'python3 "$TASK_DIR/../../_shared/validate_flow.py"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
