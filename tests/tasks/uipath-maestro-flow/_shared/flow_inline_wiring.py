@@ -11,9 +11,10 @@ DERIVED artifact. These checks therefore read ONLY the `.flow`:
     materialize it).
 
 Successor to `tests/tasks/uipath-agents/_shared/inline_wiring.py`, which
-graded the sidecar files. Per-kind resource helpers (`find_wired_resource`,
-`assert_resource_inputs`, `assert_resource_source_uuid`) are added in the
-M2-M8 milestones as each kind's shapes are pinned.
+graded the sidecar files. Per-kind resource helpers grow in the M2-M8
+milestones as each kind's shapes are pinned (M2: `find_wired_resource`,
+`assert_resource_source_uuid`, `assert_resource_inputs`,
+`assert_tool_type_key_uuid`, `assert_cluster_vars_ref`).
 
 Import pattern in a check script:
 
@@ -335,4 +336,158 @@ def assert_definition_present(flow: dict, node: dict) -> dict:
         f"FAIL: definitions[] has no entry for ({node_type!r}, "
         f"{type_version!r}) — the node would not hydrate, validate, or "
         "project into the derived agent"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Resource-node helpers (M2+: capability tasks — tools/context/escalation)
+# ---------------------------------------------------------------------------
+
+# Raw `$vars.` / `$metadata.` reference — matches braced prompt tokens AND
+# structured raw refs (e.g. a variable-mode per-argument
+# `argumentPath: "$vars.start.output.index"`); the cluster ref scanner
+# (agent-cluster-rewrite) catches both forms.
+RAW_VARS_RE = re.compile(r"\$(vars|metadata)\.")
+
+# Node-type key suffix for process-family tools: the registry mints one node
+# type per callable target, `uipath.agent.resource.tool.<family>.<key>`,
+# where <key> is the target's resource key GUID. Case-insensitive: the key is
+# registry-owned (unlike the author-minted inputs.source, which must be
+# lowercase).
+TYPE_KEY_UUID_RE = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
+
+
+def find_wired_resource(flow: dict, agent_node: dict, *, type_prefix: str, source_port: str) -> dict:
+    """Find the resource node with the given type prefix wired to the agent.
+
+    Asserts (1) at least one node's `type` starts with `type_prefix` and
+    (2) one of them is attached via the single artifact edge — agent
+    `source_port` (source) -> resource `input` (target). Returns the wired
+    resource node.
+    """
+    nodes = flow.get("nodes") or []
+    candidates = [n for n in nodes if str(n.get("type", "")).startswith(type_prefix)]
+    if not candidates:
+        sys.exit(f"FAIL: flow has no node with type prefix {type_prefix!r}")
+    agent_id = agent_node.get("id")
+    edges = flow.get("edges") or []
+    for node in candidates:
+        for e in edges:
+            if (
+                e.get("sourceNodeId") == agent_id
+                and e.get("sourcePort") == source_port
+                and e.get("targetNodeId") == node.get("id")
+                and e.get("targetPort") == "input"
+            ):
+                return node
+    sys.exit(
+        f"FAIL: no artifact edge wires agent {agent_id!r} port {source_port!r} "
+        f"to the 'input' port of a {type_prefix!r} node — unwired candidate(s): "
+        f"{[n.get('id') for n in candidates]}"
+    )
+
+
+def assert_resource_source_uuid(node: dict) -> str:
+    """Assert the resource node's identity contract and return its source.
+
+    `inputs.source` must be a lowercase UUID (it becomes the derived
+    `resources/<source>/resource.json` id), and the node must not carry an
+    instance `model` block (never authored — identity lives in `inputs`,
+    node semantics in `definitions[]`).
+    """
+    errs = []
+    if "model" in node:
+        errs.append(
+            "node has an instance 'model' block — never authored; identity "
+            "lives at inputs.source, node semantics in definitions[]"
+        )
+    source = (node.get("inputs") or {}).get("source")
+    if not isinstance(source, str) or not UUID_RE.match(source):
+        errs.append(f"inputs.source is not a lowercase UUID: {source!r}")
+    if errs:
+        sys.exit(f"FAIL ({node.get('id')}): " + "; ".join(errs))
+    return source
+
+
+def assert_resource_inputs(
+    node: dict,
+    *,
+    expected_properties: dict[str, str] | None = None,
+    require_name: bool = True,
+    require_description: bool = True,
+) -> dict:
+    """Assert the resource node carries its config in `inputs` (never a sidecar).
+
+    - `expected_properties` maps `inputs.properties` keys to exact expected
+      values (e.g. {"processName": "CalculatePay", "folderPath":
+      "solution_folder"}). A missing/empty value fails — an empty
+      `folderPath` breaks runtime process resolution.
+    - `require_name` / `require_description`: non-empty string `inputs.name`
+      (the tool name the LLM selects by) and `inputs.description`.
+
+    Returns the node's `inputs` dict for follow-up assertions.
+    """
+    inputs = node.get("inputs") or {}
+    errs = []
+    if require_name and not (isinstance(inputs.get("name"), str) and inputs["name"].strip()):
+        errs.append(f"inputs.name is missing or empty: {inputs.get('name')!r}")
+    if require_description and not (
+        isinstance(inputs.get("description"), str) and inputs["description"].strip()
+    ):
+        errs.append(
+            "inputs.description is missing or empty — the LLM selects tools "
+            "by description"
+        )
+    if expected_properties:
+        props = inputs.get("properties")
+        if not isinstance(props, dict):
+            errs.append(f"inputs.properties is not an object: {props!r}")
+        else:
+            for key, expected in expected_properties.items():
+                actual = props.get(key)
+                if actual != expected:
+                    errs.append(
+                        f"inputs.properties.{key} should be {expected!r}, got {actual!r}"
+                    )
+    if errs:
+        sys.exit(f"FAIL ({node.get('id')}): " + "; ".join(errs))
+    return inputs
+
+
+def assert_tool_type_key_uuid(node: dict) -> str:
+    """Assert a process-family tool node's type ends in the target's key GUID.
+
+    The registry mints `uipath.agent.resource.tool.<family>.<key>` per
+    callable target — a non-UUID suffix means the type string was constructed
+    by hand instead of discovered via `registry search`.
+    """
+    node_type = str(node.get("type", ""))
+    key = node_type.rsplit(".", 1)[-1]
+    if not TYPE_KEY_UUID_RE.match(key):
+        sys.exit(
+            f"FAIL ({node.get('id')}): node type {node_type!r} does not end in "
+            "the target's resource-key GUID — discover the exact node type via "
+            "`uip maestro flow registry search`, never construct it by hand"
+        )
+    return key
+
+
+def assert_cluster_vars_ref(nodes: list[dict]) -> None:
+    """Assert at least one `$vars.` / `$metadata.` ref across the nodes' inputs.
+
+    Flow data can legitimately enter an agent cluster through a prompt token
+    (`{{ $vars.* }}`) OR through a resource node's structured input (e.g. a
+    variable-mode per-argument `argumentPath`) — the derivation scanner
+    accepts both. Use in tasks whose prompt mandates wiring flow inputs in.
+    """
+    for node in nodes:
+        blob = json.dumps(node.get("inputs") or {})
+        if RAW_VARS_RE.search(blob):
+            return
+    sys.exit(
+        "FAIL: no $vars./$metadata. reference in any cluster node's inputs "
+        f"(checked {[n.get('id') for n in nodes]}) — the task expects flow "
+        "data wired into the agent cluster"
     )
