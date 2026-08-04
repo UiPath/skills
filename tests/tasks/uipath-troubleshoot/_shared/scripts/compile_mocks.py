@@ -20,7 +20,12 @@ Blob layout — a plaintext integrity header followed by the ciphertext:
     bytes 12:    keystream-encrypted stripped source
 
 Both loaders check the length and the digest before `compile()` and exit with
-their "runtime data missing" guard on mismatch. A keystream cipher cannot
+their "runtime data missing" guard on mismatch, and reject a blob with no
+payload at all: the empty plaintext's length and digest are the same constants
+for every key, so a bare 12-byte header would otherwise satisfy both checks
+without anyone having to know `CODE_KEY`, and `compile(b"")` then `exec`s to a
+silent no-op. The packer refuses an entry point that strips to nothing for the
+same reason. A keystream cipher cannot
 detect damage on its own — XOR happily decrypts a truncated or flipped blob
 into garbage — and a mock that fails quietly would let a scenario grade
 against evidence that was never served, so damage MUST be loud. The header is
@@ -122,7 +127,7 @@ def _pack(stripped: str, name: str) -> bytes:
 
 def _unpack(blob: bytes, name: str) -> bytes | None:
     """Reverse `_pack`, or None if the header does not match — mirrors the loaders."""
-    if len(blob) < HEADER_LEN:
+    if len(blob) <= HEADER_LEN:
         return None
     plain = xor_stream(blob[HEADER_LEN:], code_seed(CODE_KEY, name))
     if len(plain) != int.from_bytes(blob[:4], "big"):
@@ -169,7 +174,10 @@ def main() -> int:
     # blob paired with a fresh one behind an "it failed" exit code.
     outputs: list[tuple[Path, bytes, str]] = []
     for src in entries:
-        stripped = "\n".join(prelude + [_stripped_source(src)])
+        entry = _stripped_source(src)
+        if not entry:
+            return f"compile_mocks: {src.name} strips to nothing; there is no entry point to pack."
+        stripped = "\n".join(prelude + [entry])
 
         # The combined source is what the sandbox executes, and a blob that
         # cannot compile only fails there. Prepending the prelude can break an

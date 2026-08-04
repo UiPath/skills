@@ -9,7 +9,7 @@ _bin = Path(__file__).resolve().parent / ".uip.bin"
 if not _bin.is_file():
     sys.exit("uip: runtime data missing")
 _raw = _bin.read_bytes()
-if len(_raw) < 12:
+if len(_raw) <= 12:
     sys.exit("uip: runtime data missing")
 _b = hashlib.sha256(
     b"\xa4\x9e\x38\x19\x8e\x6c\x9b\xf1\xa9\x0d\x8a\xd1\x2d\xc1\x21\xf5"
