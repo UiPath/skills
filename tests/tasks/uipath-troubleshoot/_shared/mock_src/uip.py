@@ -363,20 +363,27 @@ def _cache_key(args: str) -> str:
 def _load_cache(args: str) -> dict | None:
     """Return the cached `{stdout, exit_code, cached_at}` for `args`, or None.
 
-    A cache entry that will not decrypt, parse, or hold a JSON object is treated
-    as a miss: the caller then proxies to the real CLI, which is the correct
-    answer anyway. The shape check is not decoration — a decrypted scalar or
-    list reaches `_passthrough` and raises there, putting the loader's `exec`
-    line on the agent's stderr.
+    A cache entry that will not decrypt, parse, hold a JSON object, or carry an
+    int-able `exit_code` is treated as a miss: the caller then proxies to the real
+    CLI, which is the correct answer anyway. Neither check is decoration — a
+    decrypted scalar or list, and equally a non-numeric `exit_code`, reaches
+    `_passthrough` and raises there, putting the loader's `exec` line on the
+    agent's stderr. `exit_code` is validated HERE rather than at the `int()` in
+    `_passthrough` for the same reason the shape is: every field this record
+    surrenders to a caller is checked in one place, on the read.
     """
     path = CACHE_DIR / f"{_cache_key(args)}.json"
     if not path.is_file():
         return None
     try:
         rec = json.loads(data_open(path.read_bytes(), "cache").decode("utf-8"))
-    except (OSError, ValueError):
+        if not isinstance(rec, dict):
+            return None
+        if "exit_code" in rec:
+            int(rec["exit_code"])
+    except (OSError, TypeError, ValueError):
         return None
-    return rec if isinstance(rec, dict) else None
+    return rec
 
 
 def _save_cache(args: str, stdout: str, exit_code: int) -> None:
