@@ -76,8 +76,8 @@ import time
 import zlib
 from pathlib import Path
 
-# Sandboxes execute this file as a compressed docstring-stripped blob
-# (`m/.uip.bin`, decoded and exec'd by the `m/uip` stub with __file__ set to
+# Sandboxes execute this file as an encrypted docstring-stripped blob
+# (`m/.uip.bin`, decrypted and exec'd by the `m/uip` stub with __file__ set to
 # the blob's path in the mock dir), so every data path (store, log, cache)
 # anchors correctly both there and when running this source directly.
 SCRIPT_DIR = Path(__file__).resolve().parent

@@ -14,7 +14,7 @@ failure mode). After sealing there is no readable fixture in the sandbox: the
 `r/` directory is gone and `.store` is opaque (zlib+base64). The shim
 (`m/uip`) transparently reads `.store` instead of `r/`.
 
-This script ships to the sandbox only as a compressed docstring-stripped
+This script ships to the sandbox only as an encrypted docstring-stripped
 blob (`m/seal` is a thin loader for `m/.seal.bin`, packed by
 `_shared/scripts/compile_mocks.py`), so nothing readable in the sandbox
 documents the manifest schema or the `.store` format.
@@ -46,7 +46,7 @@ import sys
 import zlib
 from pathlib import Path
 
-# Sandboxes execute this file as a compressed blob (`m/.seal.bin`, decoded
+# Sandboxes execute this file as an encrypted blob (`m/.seal.bin`, decrypted
 # and exec'd by the `m/seal` stub with __file__ set to the blob's path in the
 # mock dir), so every data path anchors correctly there and when running this
 # source directly.
