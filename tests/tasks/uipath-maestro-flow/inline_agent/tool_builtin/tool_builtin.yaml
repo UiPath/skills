@@ -1,0 +1,127 @@
+task_id: skill-flow-inline-tool-builtin
+description: >
+  Add a built-in tool (inline agent) — flow-file-first. End-to-end
+  test: scaffold a flow project whose inline low-code agent (full
+  definition embedded in the `uipath.agent.autonomous` node's `inputs`)
+  enables the built-in "Analyze Files" tool so it can read uploaded
+  document contents. Verifies a
+  `uipath.agent.resource.tool.builtin.analyzefiles` node carries the
+  tool config in its `inputs` (UUID `inputs.source` — the analyzefiles
+  manifest declares `model.source: true`), is wired to the agent's
+  `tool` handle with its registry definition present, carries no
+  derived resource.json fields (no `properties.toolType` — the tool is
+  selected by the node TYPE suffix), and the flow validates. No
+  sidecar authored, no `uip agent` lifecycle commands, no `bindings[]`
+  required (built-ins reference no deployed target).
+  Validate-only by design: `uip maestro flow debug` cannot yet run
+  flow-only inline agents (no sidecar synthesis — known CLI gap
+  pinned at roadmap M0), so `flow validate` is the grading ceiling.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, node:inline-agent, shape:multi-node]
+
+run_limits:
+  expected_turns: 45
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow project "DocsFlow" that uses an inline low-code agent to
+  help users understand uploaded documents. Enable the built-in "Analyze Files"
+  tool on the inline agent so it can analyze PDF and image attachments. The
+  solution should be named "DocsFlowSol".
+
+  The task is NOT complete until `uip maestro flow validate` passes for the
+  flow file.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+
+  # Global transform (roadmap §7): the sidecar lifecycle verbs must not run —
+  # the definition lives in the .flow.
+  - type: command_not_executed
+    description: "No legacy inline-agent lifecycle commands (definition lives in the .flow)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+(init|refresh|validate)\s+.*--inline-in-flow'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Advisory, NOT enforced: builtin node types are STATIC (no per-target key
+  # suffix) and the capability doc pins all three in its Node Types table, so
+  # an agent can legitimately skip `registry search` and go straight to
+  # `registry get <exact-type>` (the enforced gate below — the step that
+  # sources the verbatim definitions). Gating on search is outcome-invisible
+  # (M3 gate: 3/3 replicates produced fully correct artifacts without it).
+  - type: command_executed
+    description: "Agent searched the flow registry for the built-in tool node type (informational)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+search\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent fetched the built-in tool node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.resource\.tool\.builtin\.'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the inline autonomous agent node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.autonomous'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "DocsFlowSol/DocsFlowSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "DocsFlowSol/DocsFlow/DocsFlow.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow embeds the inline agent and the built-in tool node types"
+    path: "DocsFlowSol/DocsFlow/DocsFlow.flow"
+    includes:
+      - '"uipath.agent.autonomous"'
+      - '"uipath.agent.resource.tool.builtin.analyzefiles"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline built-in tool: embedded agent + analyzefiles node (UUID source, no derived resource.json fields) + tool-handle edge + definitions"
+    command: 'python3 "$TASK_DIR/check_tool_builtin.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the authored flow"
+    command: 'python3 "$TASK_DIR/../../_shared/validate_flow.py"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

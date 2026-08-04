@@ -4,7 +4,7 @@
 
 Pick this when:
 
-- Project has `agent.json` with `"type": "lowCode"` (standalone) **or** the agent is inline inside a Maestro Flow (`uipath.agent.autonomous` node)
+- Project has `agent.json` with `"type": "lowCode"` (standalone agent). For BatchTransform on an *inline* agent (a `uipath.agent.autonomous` node in a `.flow`): embedded in the `.flow` as a Batch transform built-in tool node; owned by the `uipath-maestro-flow` skill — see [../../inline-in-flow/inline-in-flow.md](../../inline-in-flow/inline-in-flow.md)
 - User is building in Studio Web Agent Builder, no Python
 - Source data is tabular (CSV) — one input row should produce one output row plus extra LLM-filled columns
 - Output destination is an Orchestrator bucket attachment downstream consumers (RPA, agents) can read
@@ -17,7 +17,7 @@ For coded agents (Python, LangGraph) → [../../../../coded/capabilities/batch-t
 
 | Input | Why | Source |
 |---|---|---|
-| Agent project shape | Standalone vs. inline-in-flow — affects where `resource.json` lives | Inspect `agent.json` and the parent solution |
+| Agent project shape | Confirm the agent is standalone (`agent.json` project) — inline agents are out of scope here | Inspect `agent.json` and the parent solution |
 | Tool resource configuration | Top-level prompt + per-column descriptions + web-grounding default | Author / Studio Web tool config |
 | Attachment ingress | The `batch-transform` tool consumes runtime-uploaded CSV attachments — confirm the agent has an attachment input wired | Studio Web schema / `entry-points.json` |
 | Output destination | Bucket + path where the augmented CSV is written | User config; include unique suffix per run to avoid overwrites |
@@ -40,7 +40,7 @@ Two valid shapes for enabling BatchTransform on a low-code agent. This skill doc
 |---|---|
 | `batch-transform` vs `deep-rag` | Pick by input file type: `.csv` → `batch-transform`; `.pdf` / `.txt` → `deep-rag`. Hard rule, no subjective tiebreaker. |
 | `batch-transform` vs `analyze-attachments` | `analyze-attachments` does single-file, single-shot extraction. `batch-transform` iterates across all rows of a CSV at scale. |
-| Standalone agent vs inline-in-flow | Same `resource.json` shape for both. The flow wiring differs — inline requires an edge from the agent's `tool` port to the tool node's `input` port. See [impl-json.md](impl-json.md). |
+| Standalone agent vs inline-in-flow | This file covers standalone only. Inline: embedded in the `.flow`; owned by `uipath-maestro-flow` — see [../../inline-in-flow/inline-in-flow.md](../../inline-in-flow/inline-in-flow.md). |
 | Output column names | Must match regex `^[\w\s\.,!?-]+$`. No `/`, `:`, `&`, `(`, `)`, or other special chars. |
 | Output column descriptions | Each is the per-column LLM instruction. Be specific about format, enums, and "when uncertain" handling. Worked examples improve quality. |
 | Web grounding default | Off unless the prompt explicitly needs fresh external data. |
