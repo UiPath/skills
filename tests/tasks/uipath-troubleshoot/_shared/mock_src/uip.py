@@ -35,6 +35,14 @@ Manifest schema (v2):
       }
     }
 
+`unmocked_default.response` may be the body as a string, as above, or the JSON
+value to return, which is serialized on the way out:
+
+      "unmocked_default": {
+        "response": { "Result": "Success", "Code": "Empty", "Data": [] },
+        "exit_code": 0
+      }
+
 Each rule has one of:
     - `file: <path>` — return the canned response under r/<file>.
     - `passthrough: true` — proxy to the real `uip` CLI installed on the

@@ -170,7 +170,7 @@ Each rule has one of:
 
 When no rule matches:
 
-1. `unmocked_default` (if set) — return its `response` + `exit_code`.
+1. `unmocked_default` (if set) — return its `response` + `exit_code`. `response` may be the body as a string (`"[]\n"`) or the JSON value to return (`{"Result": "Success", "Code": "Empty", "Data": []}`), which is serialized on the way out.
 2. Otherwise, error on stderr.
 
 Test runs require valid `uip` auth on the host (set via `.env` or environment) for any rule with `passthrough: true` to succeed.
