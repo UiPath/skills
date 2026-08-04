@@ -263,7 +263,7 @@ Run the review command for the agent type, once, capturing JSON:
 | Low-code | `uip agent review "<PROJECT_DIR>" --output json` |
 | Coded | `uip codedagent review "<PROJECT_DIR>" --output json` |
 
-The CLI runs every deterministic static check — structural/schema, placeholder cross-refs, eval counts/diversity, secret & import regex, framework symbol existence, eval-run analysis, packaging/git hygiene — and returns them in rule format. Parse `Data.Issues[]`; each issue is `{RuleId, Category, Severity, Description, File, SuggestedFix}`. Carry each into the report **verbatim** — do not re-derive, rename, or re-rank. These rule IDs are authoritative as emitted by the CLI; they are **not** listed in the skill catalog.
+The CLI runs the deterministic static checks its registry ships — structural/schema gates, placeholder cross-refs, eval-set structure and schema cross-refs, guardrail configuration validity, tool count, prompt length/platform — and returns them in rule format. Parse `Data.Issues[]`; each issue is `{RuleId, Category, Severity, Description, File, SuggestedFix}`. Carry each into the report **verbatim** — do not re-derive, rename, or re-rank. These rule IDs are authoritative as emitted by the CLI; they are **not** listed in the skill catalog.
 
 > **Guardrail configuration is CLI-only — never eyeball it.** Whether a guardrail is well-formed (real validator, allowed scope, required/typed/legal parameters, valid custom-rule shape) is decided **only** by `uip agent review` — the `GUARDRAIL_*` and `GUARDRAIL_CUSTOM_*` rule IDs come from this command, never from reading `agent.json` by eye and never from the judgment catalog. So whenever the task involves checking / validating / diagnosing / fixing a guardrail, running the review CLI in this step is **mandatory** (use `--checks guardrails` if you only need the guardrail pass), and every `GUARDRAIL_*` finding it returns **must** appear verbatim in the report's findings tables — do not replace it with a hand-written description of the problem. (The judgment catalog's `LC_GUARDRAIL_*` rules are the complement: they audit only guardrails the CLI found format-valid and recommend missing ones at Info — see Step 2.5b and [`references/agents/guardrails/guardrails-review.md`](references/agents/guardrails/guardrails-review.md).)
 
@@ -557,7 +557,7 @@ Output a structured report in chat (do NOT create a file):
 
 | ID | Rule | File | Issue | Fix |
 |---|---|---|---|---|
-| C-D-001 | `LOWCODE_MESSAGES_NO_USER` | `ClassifierAgent/agent.json` | messages[] has no role="user" entry | Add a `{"role": "user", "content": "..."}` message |
+| C-D-001 | `LOWCODE_SYSTEM_MESSAGE_MISSING` | `ClassifierAgent/agent.json` | `messages[0]` (system role) has empty content | Set `messages[0].content` to a non-empty system prompt |
 | C-001 | — | `ProjectA/Helper.cs` | Password argument typed String instead of SecureString | Change the argument type to SecureString |
 
 ### Warnings (should fix before production)
