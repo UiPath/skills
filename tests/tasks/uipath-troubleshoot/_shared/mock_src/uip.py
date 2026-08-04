@@ -39,7 +39,10 @@ Each rule has one of:
       host. Each response is cached under <script_dir>/_cache/<key>.json so
       the rest of the run replays it instead of calling out again. The cache
       is per-sandbox and never committed: the first call for a given query
-      always hits the live CLI.
+      always hits the live CLI. Cache entries are encrypted under `DATA_KEY`
+      like the other runtime data files — they sit in the agent's working
+      directory, and a readable one would show the mock proxying its own
+      commands. The query text itself is not recorded, only the response.
 
 Dispatch precedence:
     1. First matching rule (first match wins).
@@ -79,7 +82,7 @@ import time
 from pathlib import Path
 
 try:  # Direct run: `_cipher.py` sits beside this file.
-    from _cipher import data_open, line_seal
+    from _cipher import data_open, data_seal, line_seal
 except ImportError:  # Packed blob: the prelude already defines these.
     pass
 
@@ -287,28 +290,35 @@ def _cache_key(args: str) -> str:
 
 
 def _load_cache(args: str) -> dict | None:
-    """Return cached `{stdout, exit_code, args, cached_at}` or None."""
+    """Return the cached `{stdout, exit_code, cached_at}` for `args`, or None.
+
+    A cache entry that will not decrypt or parse is treated as a miss: the
+    caller then proxies to the real CLI, which is the correct answer anyway.
+    """
     path = CACHE_DIR / f"{_cache_key(args)}.json"
     if not path.is_file():
         return None
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        return json.loads(data_open(path.read_bytes(), "cache").decode("utf-8"))
+    except (OSError, ValueError):
         return None
 
 
 def _save_cache(args: str, stdout: str, exit_code: int) -> None:
-    """Persist a passthrough response so subsequent runs replay offline."""
+    """Persist a passthrough response so the rest of the run replays it.
+
+    `args` names the file (via `_cache_key`) but is not stored in it: nothing
+    reads it back, and it is the agent's own query text.
+    """
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     path = CACHE_DIR / f"{_cache_key(args)}.json"
     payload = {
-        "args": args,
         "stdout": stdout,
         "exit_code": exit_code,
         "cached_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     try:
-        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        path.write_bytes(data_seal(json.dumps(payload).encode("utf-8"), "cache"))
     except OSError:
         pass
 
