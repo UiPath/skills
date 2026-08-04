@@ -39,17 +39,25 @@ the required digest is uncomputable without `CODE_KEY`. Damage detection is
 unchanged, and this is still integrity rather than authenticity: anyone holding
 the key — which the loaders necessarily carry — can forge at will.
 
-Each loader drops `sys.path[0]` (plus any `""` / `"."` entry) before importing
-anything but `sys`, and that is load-bearing. `sys.path[0]` is the loader's own
-directory; whatever runs in a sandbox can write there, and a module planted under
-a standard-library name would then be imported in preference to the real one — by
-the loader, and by the blob it execs. An imported module can read its importer's
-globals, which puts `DATA_KEY` one file away; `hashlib` is the sharpest case,
+Before importing anything but `sys`, each loader deletes `sys.path[0]` and then
+keeps only the entries under `sys.prefix` / `sys.base_prefix` / `sys.exec_prefix`
+/ `sys.base_exec_prefix`. That is load-bearing. `sys.path[0]` is the script's own
+directory for a script invocation, and `""` or the cwd under `-c` / `-m`; the
+sandbox can write to the mock directory, and `PYTHONPATH` entries sit immediately
+behind that first entry in the search order. Without the filter a module planted
+under a standard-library name is imported in preference to the real one — by the
+loader, and by the blob it execs — and an imported module can read its importer's
+globals, which puts `DATA_KEY` one file away. `hashlib` is the sharpest case,
 since the loader hashes the decrypted source and a wrapper would see it whole.
-The two `sys.path` lines carry no comment on purpose: they are staged into the
-sandbox verbatim, and prose explaining what they defend against is prose
-describing what to attack. Do not "tidy" them away, and do not add an import
-above them.
+Keeping only interpreter-owned entries drops the script directory, the cwd,
+`PYTHONPATH` and per-user site, none of which the mock needs: it imports only the
+standard library. Verified on CPython 3.10-3.14, Windows and Linux, inside and
+outside a virtualenv, to leave the stdlib zip, `DLLs`/`Lib` (`lib-dynload` /
+`dist-packages` on Linux) and `site-packages` in place.
+
+These lines carry no comment on purpose: they are staged into the sandbox
+verbatim, and prose explaining what they defend against is prose describing what
+to attack. Do not "tidy" them away, and do not add an import above them.
 
 `mock_src/*.py` whose name starts with `_` are library modules, not entry
 points: they get no blob of their own, and their stripped source is prepended
