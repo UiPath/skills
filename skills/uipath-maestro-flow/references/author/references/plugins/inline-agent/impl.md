@@ -167,12 +167,12 @@ Universal recipe, all kinds: discover the node type (`registry search` prefix �
 | Kind | Edge source port | Node type pattern | Capability doc |
 |------|------------------|-------------------|----------------|
 | Process-family tool (RPA / agent / API / process orchestration) | `tool` | `uipath.agent.resource.tool.<process\|agent\|api\|processorchestration>.<resource-key>` | [capabilities/process.md](capabilities/process.md) |
-| Built-in tool | `tool` | `uipath.agent.resource.tool.builtin.<toolType>` | lands per roadmap milestone |
+| Built-in tool | `tool` | `uipath.agent.resource.tool.builtin.<suffix>` | [capabilities/built-in-tools.md](capabilities/built-in-tools.md) |
 | IS connector tool | `tool` | `uipath.agent.resource.tool.connector.<key>.<name>` | lands per roadmap milestone |
 | Context (index / RAG) | `context` | `uipath.agent.resource.context.index.<name>.<id>` | lands per roadmap milestone |
 | Escalation (HITL) | `escalation` | `uipath.agent.resource.escalation.<variant>` | lands per roadmap milestone |
 
-Until a kind's capability doc lands, pin its exact `inputs` shape from a canvas-authored flow or the manifest's `inputDefaults` — do not guess field sets. Process-family and connector tools additionally require top-level `bindings[]` rows mirroring the definition's `model.bindings` ([capabilities/process.md § Bindings](capabilities/process.md#bindings)); built-ins require none.
+Until a kind's capability doc lands, pin its exact `inputs` shape from a canvas-authored flow or the manifest's `inputDefaults` — do not guess field sets. Process-family and connector tools additionally require top-level `bindings[]` rows mirroring the definition's `model.bindings` ([capabilities/process.md § Bindings](capabilities/process.md#bindings)); built-ins require none ([capabilities/built-in-tools.md](capabilities/built-in-tools.md)).
 
 ## 8. Worked Example — Trigger → Agent → End + RPA Tool
 
