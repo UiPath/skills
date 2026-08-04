@@ -28,8 +28,10 @@ def has_near(text: str, left: str, right: str, distance: int = 500) -> bool:
 
 def task_section(plan: str, task_name: str) -> str:
     heading = (
+        # Accepts the compact plan title (`T21: task "Name"`) AND the canonical
+        # full-form build title (`T21: Add <type> task "Name" to "Stage"`).
         rf"^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])\s*"
-        rf"(?:Task:\s*)?(?:task\s+)?(?:\"{re.escape(task_name)}\"|{re.escape(task_name)}\b)[^\n]*\n"
+        rf"(?:[^\"\n]*?\btask\s+)?(?:Task:\s*)?(?:\"{re.escape(task_name)}\"|{re.escape(task_name)}\b)[^\n]*\n"
     )
     next_heading = rf"^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])"
     match = re.search(
