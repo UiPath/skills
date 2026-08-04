@@ -1,6 +1,6 @@
 # Inline Agent Node — Implementation
 
-The inline agent is authored **entirely in the `.flow` file**. This plugin covers the agent node itself — prompts, model config, schemas, identity, wiring in/out, validation — plus the derived-sidecar contract and legacy migration. Resource capabilities (tools, context, escalation) get their own files under `capabilities/` (landing per roadmap milestone; see [§ Resource Nodes](#7-resource-nodes)).
+The inline agent is authored **entirely in the `.flow` file**. This plugin covers the agent node itself — prompts, model config, schemas, identity, wiring in/out, validation — plus the derived-sidecar contract and legacy migration. Resource capabilities get their own files under `capabilities/` — process-family tools: [capabilities/process.md](capabilities/process.md); remaining kinds land per roadmap milestone (see [§ Resource Nodes](#7-resource-nodes)).
 
 Mandatory constraints: [critical-rules.md](critical-rules.md). Prompt quality: [prompting/autonomous-agent-prompting-guide.md](prompting/autonomous-agent-prompting-guide.md). Model choice: [model-selection-guide.md](model-selection-guide.md).
 
@@ -166,17 +166,17 @@ Universal recipe, all kinds: discover the node type (`registry search` prefix �
 
 | Kind | Edge source port | Node type pattern | Capability doc |
 |------|------------------|-------------------|----------------|
-| Process-family tool (RPA / agent / API / process orchestration) | `tool` | `uipath.agent.resource.tool.<process\|agent\|api\|processorchestration>.<release-key>` | lands per roadmap milestone |
+| Process-family tool (RPA / agent / API / process orchestration) | `tool` | `uipath.agent.resource.tool.<process\|agent\|api\|processorchestration>.<resource-key>` | [capabilities/process.md](capabilities/process.md) |
 | Built-in tool | `tool` | `uipath.agent.resource.tool.builtin.<toolType>` | lands per roadmap milestone |
 | IS connector tool | `tool` | `uipath.agent.resource.tool.connector.<key>.<name>` | lands per roadmap milestone |
 | Context (index / RAG) | `context` | `uipath.agent.resource.context.index.<name>.<id>` | lands per roadmap milestone |
 | Escalation (HITL) | `escalation` | `uipath.agent.resource.escalation.<variant>` | lands per roadmap milestone |
 
-Until a kind's capability doc lands, pin its exact `inputs` shape from a canvas-authored flow or the manifest's `inputDefaults` — do not guess field sets. Process-family and connector tools additionally require top-level `bindings[]` rows mirroring the definition's `model.bindings`; built-ins require none.
+Until a kind's capability doc lands, pin its exact `inputs` shape from a canvas-authored flow or the manifest's `inputDefaults` — do not guess field sets. Process-family and connector tools additionally require top-level `bindings[]` rows mirroring the definition's `model.bindings` ([capabilities/process.md § Bindings](capabilities/process.md#bindings)); built-ins require none.
 
-## 8. Worked Example — Trigger → Agent → End
+## 8. Worked Example — Trigger → Agent → End + RPA Tool
 
-Complete single-agent flow (definitions abbreviated). Two trigger inputs, two typed outputs.
+Complete flow (definitions abbreviated). Two trigger inputs, two typed outputs, one external RPA tool (`InvoiceLookup`, discovered per [capabilities/process.md](capabilities/process.md)).
 
 ```json
 {
@@ -199,7 +199,7 @@ Complete single-agent flow (definitions abbreviated). Two trigger inputs, two ty
       "display": { "label": "Dispute Analyst" },
       "inputs": {
         "source": "e5715a3f-0d31-4ad8-9c70-91df180760e6",
-        "systemPrompt": "You are a billing-dispute analyst for a SaaS product. Determine whether each dispute is justified.\n\nScope:\n- In scope: analyzing the dispute and producing a determination with rationale.\n- Out of scope: contacting the customer or issuing refunds — only analyze.\n\nOutput:\n- Return every declared output field. determination MUST be one of: justified, unjustified, needs-review.\n- Never invent invoice details not present in the input.\n\nUncertainty:\n- If the dispute description is empty or unintelligible, set determination=\"needs-review\" and say why in rationale.",
+        "systemPrompt": "You are a billing-dispute analyst for a SaaS product. Determine whether each dispute is justified.\n\nScope:\n- In scope: analyzing the dispute and producing a determination with rationale.\n- Out of scope: contacting the customer or issuing refunds — only analyze.\n\nTools:\n- InvoiceLookup: fetches the invoice line items and payment status. Call it at most 2 times. After the last call, stop retrieving and decide with the evidence you already have. If the invoice cannot be retrieved, say so in rationale, and still return every declared output field.\n\nOutput:\n- Return every declared output field. determination MUST be one of: justified, unjustified, needs-review.\n- Never invent invoice details not present in the input or the InvoiceLookup result.\n\nUncertainty:\n- If the dispute description is empty or unintelligible, set determination=\"needs-review\" and say why in rationale.",
         "userPrompt": "Analyze this billing dispute.\n\nInvoice: {{ $vars.start.output.invoiceNumber }}\nDispute: {{ $vars.start.output.disputeDescription }}\n\nReturn the determination and a one-sentence rationale.",
         "model": "anthropic.claude-sonnet-4-6",
         "temperature": 0,
@@ -215,6 +215,21 @@ Complete single-agent flow (definitions abbreviated). Two trigger inputs, two ty
       "outputs": { "error": { "type": "object", "description": "Error information if the node fails", "source": "=Error", "var": "error" } }
     },
     {
+      "id": "invoiceLookup",
+      "type": "uipath.agent.resource.tool.process.7d1e0c2b-4f6a-4b8e-9d3c-2a5b7c9e1f04",
+      "typeVersion": "1.0.0",
+      "display": { "label": "InvoiceLookup" },
+      "inputs": {
+        "source": "4b8f2d61-9a0c-4e7b-b5d2-8c3f6a1e9d40",
+        "name": "InvoiceLookup",
+        "description": "Fetches the invoice line items and payment status for an invoice number.",
+        "invoiceNumber": { "mode": "variable", "textValue": "", "promptValue": "", "argumentPath": "$vars.start.output.invoiceNumber" },
+        "inputSchema": { "type": "object", "properties": { "invoiceNumber": { "type": "string" } } },
+        "outputSchema": { "type": "object", "properties": { "lineItems": { "type": "string" }, "paymentStatus": { "type": "string" } } },
+        "properties": { "processName": "InvoiceLookup", "folderPath": "Shared/Billing" }
+      }
+    },
+    {
       "id": "done",
       "type": "core.control.end",
       "typeVersion": "1.0",
@@ -228,7 +243,8 @@ Complete single-agent flow (definitions abbreviated). Two trigger inputs, two ty
   ],
   "edges": [
     { "id": "e1", "sourceNodeId": "start", "sourcePort": "output", "targetNodeId": "disputeAnalyst", "targetPort": "input" },
-    { "id": "e2", "sourceNodeId": "disputeAnalyst", "sourcePort": "success", "targetNodeId": "done", "targetPort": "input" }
+    { "id": "e2", "sourceNodeId": "disputeAnalyst", "sourcePort": "success", "targetNodeId": "done", "targetPort": "input" },
+    { "id": "e3", "sourceNodeId": "disputeAnalyst", "sourcePort": "tool", "targetNodeId": "invoiceLookup", "targetPort": "input" }
   ],
   "variables": {
     "globals": [
@@ -238,15 +254,20 @@ Complete single-agent flow (definitions abbreviated). Two trigger inputs, two ty
       { "id": "rationale", "direction": "out", "type": "string" }
     ]
   },
+  "bindings": [
+    { "id": "b1", "name": "name", "type": "string", "resource": "process", "resourceKey": "Shared/Billing.InvoiceLookup", "propertyAttribute": "name", "default": "InvoiceLookup" },
+    { "id": "b2", "name": "folderPath", "type": "string", "resource": "process", "resourceKey": "Shared/Billing.InvoiceLookup", "propertyAttribute": "folderPath", "default": "Shared/Billing" }
+  ],
   "definitions": [
     { "…": "core.trigger.manual — verbatim from registry get" },
     { "…": "uipath.agent.autonomous — verbatim from registry get" },
+    { "…": "uipath.agent.resource.tool.process.7d1e0c2b-… — verbatim from registry get" },
     { "…": "core.control.end — verbatim from registry get" }
   ]
 }
 ```
 
-Then `uip maestro flow format` (back-fills layout + `variables.nodes[]`) and `uip maestro flow validate` (§ 9). No sidecar exists and none is needed.
+The tool's `invoiceNumber` argument is `variable`-mode (bound to trigger data); the raw `$vars.start.output.invoiceNumber` in `argumentPath` counts as a scanned ref, so the trigger global declaration covers it. Then `uip maestro flow format` (back-fills layout + `variables.nodes[]`) and `uip maestro flow validate` (§ 9). No sidecar exists and none is needed.
 
 ## 9. Validate
 

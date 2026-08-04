@@ -2,7 +2,7 @@
 
 Authoring aid only (roadmap decision 8 — no drift control yet). One row per file in `skills/uipath-agents/references/lowcode/` (7,434 lines total), mapped to its target under `skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/`. Update the Status column as milestones land.
 
-Status: **M1 rows landed 2026-07-31** (critical-rules, autonomous-critical-rules, model-selection-guide, prompting guide + router absorption, inline-in-flow.md → stub, planning.md/impl.md class-D content, project-lifecycle/lowcode/debug redirect passes).
+Status: **M1 rows landed 2026-07-31** (critical-rules, autonomous-critical-rules, model-selection-guide, prompting guide + router absorption, inline-in-flow.md → stub, planning.md/impl.md class-D content, project-lifecycle/lowcode/debug redirect passes). **M2 row landed 2026-08-03** (capabilities/process.md; impl.md §8 worked example extended with the RPA tool).
 
 Delta classes:
 
@@ -24,7 +24,7 @@ Delta classes:
 | `prompting/autonomous-agent-prompting-guide.md` (148) | `prompting/autonomous-agent-prompting-guide.md` | A | M1 | token form `{{input.x}}` → `{{ $vars.x }}` (spaced braces); cross-skill deep link removed from the twin |
 | `prompting/conversational-agent-prompting-guide.md` (123) | — | C | — | autonomous-only |
 | `capabilities/inline-in-flow/inline-in-flow.md` (392) | — (superseded by the whole plugin) | C | M1 | shrinks to ~20-line redirect stub |
-| `capabilities/process/process.md` (258) | `capabilities/process.md` | B | M2 | discovery (`uip solution resources list/get`) verbatim; authoring → `…tool.<family>.<release-key>` node + `bindings[]` rows |
+| `capabilities/process/process.md` (258) | `capabilities/process.md` | B | M2 ☑ | discovery (`uip solution resources list/get`) verbatim; authoring → `…tool.<family>.<resource-key>` node + `bindings[]` rows; landed 2026-08-03 |
 | `capabilities/process/solution-files.md` (548) | — | C | — | solution-resource mechanics owned by the flow skill (decision 7); plugin links to flow-skill solution guidance |
 | `capabilities/built-in-tools/built-in-tools.md` (76) | `capabilities/built-in-tools.md` | B | M3 | node type `…tool.builtin.<toolType>`; identity = `inputs.id` (no `model.source`) |
 | `capabilities/built-in-tools/analyze-attachments.md` (115) | `capabilities/built-in-tools/analyze-attachments.md` | B | M3 | tenant builtin is `analyzefiles`; reconcile naming at M3 |

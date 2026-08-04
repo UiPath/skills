@@ -44,7 +44,7 @@ Do not inline an agent you intend to reuse. Inline agents are private to the flo
 | `input` | left | target | Flow sequence input |
 | `success` | right | source | Normal flow output |
 | `error` | right | source | Implicit error port (shared with all action nodes) — see [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes) |
-| `tool` | bottom | source (artifact) | Tool resource nodes — capability docs land per roadmap milestone |
+| `tool` | bottom | source (artifact) | Tool resource nodes — process-family: [capabilities/process.md](capabilities/process.md); built-in/connector docs land per roadmap milestone |
 | `context` | bottom | source (artifact) | Context resource nodes — capability docs land per roadmap milestone |
 | `escalation` | top | source (artifact) | Escalation resource nodes — capability docs land per roadmap milestone |
 
@@ -64,7 +64,7 @@ Every inline agent node (and, per capability, most resource nodes) carries `inpu
 
 ## Resource Nodes
 
-The agent attaches resource nodes to its artifact ports (tools on `tool`, context on `context`, escalation on `escalation`). Each resource node carries its **full config in its own `inputs`** plus its own `inputs.source` UUID, and connects via exactly one artifact edge. Decide which capabilities the agent needs at planning time; wiring mechanics live in [impl.md § Resource Nodes](impl.md#7-resource-nodes). Per-capability authoring docs land per roadmap milestone.
+The agent attaches resource nodes to its artifact ports (tools on `tool`, context on `context`, escalation on `escalation`). Each resource node carries its **full config in its own `inputs`** plus its own `inputs.source` UUID, and connects via exactly one artifact edge. Decide which capabilities the agent needs at planning time; wiring mechanics live in [impl.md § Resource Nodes](impl.md#7-resource-nodes). Process-family tools: [capabilities/process.md](capabilities/process.md); remaining capability docs land per roadmap milestone.
 
 ## Planning Annotation
 

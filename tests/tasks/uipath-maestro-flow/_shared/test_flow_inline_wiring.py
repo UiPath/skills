@@ -17,11 +17,16 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from flow_inline_wiring import (  # noqa: E402
     assert_agent_input_vars,
     assert_agent_output_vars,
+    assert_cluster_vars_ref,
     assert_definition_present,
     assert_edge,
     assert_embedded_agent,
     assert_prompt_tokens,
+    assert_resource_inputs,
+    assert_resource_source_uuid,
+    assert_tool_type_key_uuid,
     find_autonomous_agent_node,
+    find_wired_resource,
     load_json,
 )
 
@@ -369,3 +374,200 @@ def test_definition_version_must_match_exactly():
     node = find_autonomous_agent_node(flow)
     with pytest.raises(SystemExit, match="no entry"):
         assert_definition_present(flow, node)
+
+
+# ── resource-node helpers (M2: process-family tools) ────────────────────────
+
+
+TOOL_TYPE = "uipath.agent.resource.tool.process.f27d0f9b-6972-47d3-8874-ec8aed8e8e16"
+
+
+def _tool_node(**input_overrides):
+    inputs = {
+        "source": "9c40fd2e-58f4-45a3-93bb-0dbe38a72e10",
+        "name": "FibonacciRPA",
+        "description": "Computes the Fibonacci number for a given index.",
+        "index": {"mode": "prompt", "textValue": "",
+                  "promptValue": "The index to compute", "argumentPath": ""},
+        "inputSchema": {"type": "object", "properties": {"index": {"type": "number"}}},
+        "outputSchema": {"type": "object", "properties": {"value": {"type": "integer"}}},
+        "properties": {"processName": "FibonacciRPA",
+                       "folderPath": "Shared/uipath-agents/FibonacciRPA"},
+    }
+    inputs.update(input_overrides)
+    return {
+        "id": "rpaTool",
+        "type": TOOL_TYPE,
+        "typeVersion": "1.0.0",
+        "display": {"label": "FibonacciRPA"},
+        "inputs": inputs,
+    }
+
+
+def _cluster_flow(tool=None, edges=None):
+    tool = tool if tool is not None else _tool_node()
+    return _flow(
+        nodes=[_agent_node(), tool],
+        edges=edges if edges is not None else [
+            {"id": "e5", "sourceNodeId": "expAgent", "sourcePort": "tool",
+             "targetNodeId": "rpaTool", "targetPort": "input"},
+        ],
+    )
+
+
+# ── find_wired_resource ──────────────────────────────────────────────────────
+
+
+def test_find_wired_resource_returns_wired_node():
+    flow = _cluster_flow()
+    agent = find_autonomous_agent_node(flow)
+    node = find_wired_resource(
+        flow, agent, type_prefix="uipath.agent.resource.tool.process.",
+        source_port="tool",
+    )
+    assert node["id"] == "rpaTool"
+
+
+def test_find_wired_resource_fails_when_no_candidate():
+    flow = _flow()
+    agent = find_autonomous_agent_node(flow)
+    with pytest.raises(SystemExit, match="no node with type prefix"):
+        find_wired_resource(
+            flow, agent, type_prefix="uipath.agent.resource.tool.process.",
+            source_port="tool",
+        )
+
+
+def test_find_wired_resource_fails_when_unwired():
+    flow = _cluster_flow(edges=[])
+    agent = find_autonomous_agent_node(flow)
+    with pytest.raises(SystemExit, match="no artifact edge"):
+        find_wired_resource(
+            flow, agent, type_prefix="uipath.agent.resource.tool.process.",
+            source_port="tool",
+        )
+
+
+def test_find_wired_resource_fails_on_wrong_port():
+    flow = _cluster_flow(edges=[
+        {"id": "e5", "sourceNodeId": "expAgent", "sourcePort": "context",
+         "targetNodeId": "rpaTool", "targetPort": "input"},
+    ])
+    agent = find_autonomous_agent_node(flow)
+    with pytest.raises(SystemExit, match="no artifact edge"):
+        find_wired_resource(
+            flow, agent, type_prefix="uipath.agent.resource.tool.process.",
+            source_port="tool",
+        )
+
+
+# ── assert_resource_source_uuid ──────────────────────────────────────────────
+
+
+def test_resource_source_uuid_accepts_lowercase_uuid():
+    assert assert_resource_source_uuid(_tool_node()) == (
+        "9c40fd2e-58f4-45a3-93bb-0dbe38a72e10"
+    )
+
+
+def test_resource_source_uuid_rejects_non_uuid():
+    with pytest.raises(SystemExit, match="not a lowercase UUID"):
+        assert_resource_source_uuid(_tool_node(source="fibonacci-tool"))
+
+
+def test_resource_source_uuid_rejects_uppercase():
+    with pytest.raises(SystemExit, match="not a lowercase UUID"):
+        assert_resource_source_uuid(
+            _tool_node(source="9C40FD2E-58F4-45A3-93BB-0DBE38A72E10")
+        )
+
+
+def test_resource_source_uuid_rejects_instance_model_block():
+    node = _tool_node()
+    node["model"] = {"source": True}
+    with pytest.raises(SystemExit, match="instance 'model' block"):
+        assert_resource_source_uuid(node)
+
+
+# ── assert_resource_inputs ───────────────────────────────────────────────────
+
+
+def test_resource_inputs_pass():
+    inputs = assert_resource_inputs(
+        _tool_node(),
+        expected_properties={"processName": "FibonacciRPA",
+                             "folderPath": "Shared/uipath-agents/FibonacciRPA"},
+    )
+    assert inputs["name"] == "FibonacciRPA"
+
+
+def test_resource_inputs_fails_on_wrong_process_name():
+    with pytest.raises(SystemExit, match="processName"):
+        assert_resource_inputs(
+            _tool_node(properties={"processName": "Renamed",
+                                   "folderPath": "Shared/uipath-agents/FibonacciRPA"}),
+            expected_properties={"processName": "FibonacciRPA"},
+        )
+
+
+def test_resource_inputs_fails_on_empty_folder_path():
+    # An empty folderPath breaks runtime process resolution — the exact
+    # failure seen on the 2026-07-23 codex nightly (inline_solution_maestro).
+    with pytest.raises(SystemExit, match="folderPath"):
+        assert_resource_inputs(
+            _tool_node(properties={"processName": "FibonacciRPA", "folderPath": ""}),
+            expected_properties={"processName": "FibonacciRPA",
+                                 "folderPath": "solution_folder"},
+        )
+
+
+def test_resource_inputs_fails_on_missing_properties_object():
+    node = _tool_node()
+    del node["inputs"]["properties"]
+    with pytest.raises(SystemExit, match="properties is not an object"):
+        assert_resource_inputs(node, expected_properties={"processName": "FibonacciRPA"})
+
+
+def test_resource_inputs_fails_on_empty_name_and_description():
+    with pytest.raises(SystemExit, match="inputs.name.*inputs.description"):
+        assert_resource_inputs(_tool_node(name="", description="  "))
+
+
+# ── assert_tool_type_key_uuid ────────────────────────────────────────────────
+
+
+def test_tool_type_key_uuid_accepts_registry_minted_type():
+    assert assert_tool_type_key_uuid(_tool_node()) == (
+        "f27d0f9b-6972-47d3-8874-ec8aed8e8e16"
+    )
+
+
+def test_tool_type_key_uuid_rejects_hand_constructed_type():
+    node = _tool_node()
+    node["type"] = "uipath.agent.resource.tool.process.FibonacciRPA"
+    with pytest.raises(SystemExit, match="resource-key GUID"):
+        assert_tool_type_key_uuid(node)
+
+
+# ── assert_cluster_vars_ref ──────────────────────────────────────────────────
+
+
+def test_cluster_vars_ref_found_in_prompt_token():
+    agent = _agent_node(userPrompt="Compute {{ $vars.start.output.index }}.")
+    tool = _tool_node()
+    assert_cluster_vars_ref([agent, tool])
+
+
+def test_cluster_vars_ref_found_in_variable_mode_argument_path():
+    # Flow data may enter through a resource node's structured input instead
+    # of a prompt token — a variable-mode per-argument argumentPath.
+    agent = _agent_node()
+    tool = _tool_node(index={"mode": "variable", "textValue": "",
+                             "promptValue": "",
+                             "argumentPath": "$vars.start.output.index"})
+    assert_cluster_vars_ref([agent, tool])
+
+
+def test_cluster_vars_ref_fails_when_absent():
+    with pytest.raises(SystemExit, match="no .vars./.metadata. reference"):
+        assert_cluster_vars_ref([_agent_node(), _tool_node()])
