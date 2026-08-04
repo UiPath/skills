@@ -332,16 +332,22 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 - [V-I-001] Project/File: **ST-RULE-ID** — Description
 
 ### Critical Findings (blocks deployment)
-1. [C-001] <finding title> — `<project/file path>` — <recommendation>
-2. [C-002] ...
+
+| ID | Rule | File | Issue | Fix |
+|---|---|---|---|---|
+| C-001 | `<rule_id>` or `—` | `<project/file path>` | <issue> | <fix> |
 
 ### Warnings (should fix before production)
-1. [W-001] <finding title> — `<project/file path>` — <recommendation>
-2. [W-002] ...
+
+| ID | Rule | File | Issue | Fix |
+|---|---|---|---|---|
+| W-001 | `<rule_id>` or `—` | `<project/file path>` | <issue> | <fix> |
 
 ### Improvement Opportunities
-1. [I-001] <finding title> — `<project/file path>` — <recommendation>
-2. [I-002] ...
+
+| ID | Rule | File | Issue | Fix |
+|---|---|---|---|---|
+| I-001 | `<rule_id>` or `—` | `<project/file path>` | <issue> | <fix> |
 
 ### Per-Project Summary
 | Project | Type | Validation | Quality | Grade | Key Findings |

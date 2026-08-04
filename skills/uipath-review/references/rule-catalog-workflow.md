@@ -41,10 +41,10 @@ If the review command is unavailable (CLI not installed, or a version without `a
 2. **Read each catalog file in full.**
 3. **Apply each rule's `detection_method`** (always the judgment form): read the named source material, reason about it, emit a finding when the criteria hold. Log the reasoning in the finding's `description`.
 4. **Track skipped rules.** If a rule cannot apply (`status: deferred`, missing optional file, no eval set to assess against), record `rule_id` + reason for the report's "Rules Skipped" subsection. **Never silently skip.**
-5. **Merge findings into the Step 5 report** under the "Rule Findings" subsection. Use the canonical line format:
+5. **Merge findings into the Step 5 report** — into the Critical / Warning / Info findings tables, one row per finding:
 
    ```
-   [<prefix><n>] `<rule_id>` — <file> — <description>. Fix: <suggested_fix>.
+   | <id> | `<rule_id>` | <file> | <description> | <suggested_fix> |
    ```
 
    where prefix is `C-D-` (Critical), `W-D-` (Warning), or `I-D-` (Info) per the severity mapping in [`rule-format.md`](rule-format.md).
@@ -71,7 +71,7 @@ Deterministic checks (file presence, schema walks, counts, set-membership, regex
 
 - The CLI + judgment catalog cover what can be checked mechanically or with focused judgment. The checklists in `references/<type>/<type>-review-checklist.md` cover broader semantic / contextual checks (PDD alignment, business-logic correctness, architectural fit).
 - Checklist rows that overlap with a rule are tagged like `*(rule: \`RULE_ID\`)*` — when reviewing, that rule (CLI or judgment) already covered it; do not re-flag.
-- Findings from the CLI + judgment catalog appear in the "Rule Findings" subsection; findings from manual review use the Critical / Warning / Info sections.
+- Findings from the CLI, the judgment catalog, and manual review all go in the same Critical / Warning / Info findings tables, keeping their own ID prefixes (`-D-` for rule-driven, no infix for manual — see [`rule-format.md`](rule-format.md)). A finding appears in exactly one table, once.
 
 ## Determinism contract
 

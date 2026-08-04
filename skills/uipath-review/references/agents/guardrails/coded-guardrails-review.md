@@ -238,10 +238,10 @@ recommended action with the protection-vs-audit signal. Examples:
 
 ## Report
 
-Merge findings into the Step 5 "Rule Findings" subsection (SKILL.md Step 2.5b), canonical line format:
+Merge findings into the Step 5 Critical / Warning / Info findings tables (SKILL.md Step 2.5b), one row per finding:
 
 ```
-[<prefix><n>] `<rule_id>` — <file> — <message>. Fix: <suggested_fix>.
+| <id> | `<rule_id>` | <file> | <message> | <suggested_fix> |
 ```
 
 - Recommendations (`CODED_GUARDRAIL_RECOMMENDED`) → **`I-D-` (Info)** — improvements, not failures. The action
