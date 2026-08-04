@@ -81,10 +81,15 @@ import sys
 import time
 from pathlib import Path
 
-try:  # Direct run: `_cipher.py` sits beside this file.
+# The packed blob carries `_cipher.py` inlined ahead of this module, so these
+# names are already bound there and NO import is attempted. Only a direct run
+# of this source (where `_cipher.py` is the sibling on `sys.path[0]`) imports.
+# The condition is load-bearing: an unconditional import would resolve against
+# whatever `_cipher.py` sits in the loader's own directory in a sandbox, which
+# is writable, and a planted module can read `DATA_KEY` out of its importer's
+# globals.
+if "data_open" not in globals():
     from _cipher import data_open, data_seal, line_seal
-except ImportError:  # Packed blob: the prelude already defines these.
-    pass
 
 # Sandboxes execute this file as an encrypted docstring-stripped blob
 # (`m/.uip.bin`, decrypted and exec'd by the `m/uip` stub with __file__ set to
