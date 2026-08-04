@@ -7,10 +7,10 @@ Two independent keys, with different blast radii:
 `m/.uip.bin` / `m/.seal.bin`. The loaders must run unaided in the sandbox, so
 this key is necessarily present there in plaintext.
 
-`DATA_KEY` below covers the runtime data files the mock writes beside itself
-(`.store`, `.log`, `_cache`). It is defined only in `mock_src/`, which reaches
-the sandbox exclusively inside the `CODE_KEY`-encrypted blobs, so no plaintext
-file staged into a sandbox carries it.
+`DATA_KEY` below will cover the runtime data files the mock writes beside
+itself (`.store`, `.log`, `_cache`) — **not yet wired: it currently covers
+nothing.** It is defined only in `mock_src/`, which is never staged, so no
+plaintext file staged into a sandbox carries it.
 
 Keys are unrelated values; neither is derivable from the other.
 

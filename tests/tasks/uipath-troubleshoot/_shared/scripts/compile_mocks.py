@@ -31,8 +31,8 @@ length before it can tell a short read from a short payload.
 points: they get no blob of their own, and their stripped source is prepended
 to every entry point's blob. That keeps a single definition of shared code
 while leaving each blob self-contained (the sandbox has no importable copy of
-`mock_src/`), and keeps `DATA_KEY` — which lives in `_cipher.py` — reachable
-only from inside a `CODE_KEY`-encrypted blob.
+`mock_src/`), and keeps `DATA_KEY` — which lives in `_cipher.py` — out of
+every plaintext file staged into a sandbox.
 
 Two constraints follow from prepending rather than importing:
 
