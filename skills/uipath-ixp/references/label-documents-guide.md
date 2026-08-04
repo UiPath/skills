@@ -29,7 +29,7 @@ For each document from the list, process one at a time: get predictions, downloa
 uip ixp labellings get-predictions <project-name> <document-id> --output json
 ```
 
-This returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is `{ DocumentId, Labels[] }` (for a single-document call, `Predictions[0]`). Each label is `{ Name, Occurrence, Fields[] }`, and each field has `FieldId`, `FieldName`, `FormattedValue`. `Occurrence` is the explicit 0-based index used for `--occurrence`/`--updates`, valid **for this read only** — see [Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped).
+This returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is `{ DocumentId, Labels[] }` (for a single-document call, `Predictions[0]`). Each label is `{ Name, Occurrence, Fields[] }`, and each field has `FieldId`, `FieldName`, `FormattedValue`. `Occurrence` is the explicit 0-based index used for `--occurrence`/`--updates` — the row's stable document-position index (see [Occurrence numbering](#occurrence-numbering)).
 
 ### 2b. Download the document file
 
@@ -69,7 +69,7 @@ Discount                 | MISSING       | IXP predicted no value AND no discoun
 Line Items > Description | CONFIRMED     | Predicted "Widget A" matches row 1 in the table
 ```
 
-**Repeatable field groups produce one extraction per row.** `get-predictions` returns one label per row, each with an explicit 0-based `Occurrence` — `Line Items` on a multi-line invoice has N entries indexed 0..N-1. Read `Occurrence` directly — on an unlabelled document it matches document order, but once part of the group is confirmed it does not (see [Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped)), so match rows to the document by their values, not by index. When validation differs across rows, give per-occurrence verdicts:
+**Repeatable field groups produce one extraction per row.** `get-predictions` returns one label per row, each with an explicit 0-based `Occurrence` — `Line Items` on a multi-line invoice has N entries indexed 0..N-1. Read `Occurrence` directly — it is the row's document-position rank and stays stable as you confirm rows (see [Occurrence numbering](#occurrence-numbering)). When validation differs across rows, give per-occurrence verdicts:
 
 ```text
 Line Items > Description (occurrence 0) | CONFIRMED     | "Widget A" matches line 1
@@ -142,7 +142,7 @@ uip ixp labellings confirm <project-name> <document-id> \
 
 Occurrences not targeted carry forward whatever annotation they already had (so wrong predictions in untouched occurrences stay unannotated).
 
-**Confirm all the correct rows in one `--updates` call, not one `--occurrence` call per row** — every index in a single call resolves against the same read, whereas the second of two sequential calls is working from indices the first one invalidated ([Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped)):
+**Prefer one `--updates` call over several `--occurrence` calls** — a single atomic request instead of N round-trips (indices are stable either way; see [Occurrence numbering](#occurrence-numbering)):
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
@@ -160,27 +160,21 @@ uip ixp labellings unconfirm <project-name> <document-id> \
   --group "Line Items" --occurrence 2 --output json
 ```
 
-Take the index from a **fresh** `get-predictions`: on a partly-confirmed group, the index that confirmed a row is usually not the index that rolls it back.
+The index is the same one `get-predictions`/`confirm` use and is stable across writes, so the index that confirmed a row also rolls it back.
 
 ### 2e. Move to the next document
 
 Repeat steps 2a–2d for all documents in the list.
 
-### Occurrence numbers are read-scoped
+### Occurrence numbering
 
-`get-predictions` does not return a repeatable group's rows in a fixed order. The server pairs each annotation with its prediction and lists the **matched pairs first**, then the still-unmatched predictions. So on a partly-confirmed group:
+`get-predictions` returns a repeatable group's rows in **document reading order** and numbers each row's `Occurrence` from its page position (page → top-to-bottom), 0..N-1 within the group. Because the index comes from the row's document span, it is **stable across writes**: confirming, correcting, or unconfirming a row does not renumber the group.
 
-- confirmed rows sort to the front — confirm the third row of four and it reads back as `Occurrence` 0, with the other three shifted to 1, 2, 3;
-- the same holds in the IXP UI, which shows the confirmed row first;
-- nothing is lost or mis-assigned: the confirmed row keeps its own values and page location, it is only positioned differently in the read.
+So an `Occurrence` value read from `get-predictions` stays valid across later writes:
 
-Only two states read back in document order: a document with no annotations on the group, and one where every row is annotated.
-
-The consequence for labelling: **an `Occurrence` value is only valid for the read that produced it, and any write to that group invalidates it.** So
-
-- put every occurrence you want to confirm (or unconfirm) in ONE `--updates` call — all of its indices resolve against the same read;
-- if sequential per-occurrence calls are unavoidable, re-run `get-predictions` between them and re-locate each row by its field values;
-- never reuse an index across a write, and report rows to the user by value ("the row with Description `Widget B`"), not as "row 3".
+- read once and target occurrences across several confirm/unconfirm calls — the index that confirmed a row is the index that rolls it back;
+- one `--updates` call is still preferred when several rows are involved (one atomic request), but not required to keep indices valid;
+- reporting rows to the user by value ("the row with Description `Widget B`") stays a readability habit, not a workaround.
 
 ### Removing a document from the project
 
