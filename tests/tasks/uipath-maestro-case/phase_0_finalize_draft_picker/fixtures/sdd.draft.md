@@ -21,7 +21,6 @@ A Case Definition Blueprint for onboarding a new supplier at Northwind: collect 
 | Case Name | VendorOnboarding |
 | Case Description | Onboards a new supplier at Northwind from document collection through vendor approval, with a manually-launched compliance hold lane. |
 | Case Identifier | Type: constant. Prefix: VO |
-| Priority | Choiceset: Low, Medium, High — Default: Medium |
 | Case-Level SLA | — |
 | SLA Type | — |
 

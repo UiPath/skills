@@ -49,7 +49,6 @@ initial_prompt: |
   | Case Name | TaskDependencyChain |
   | Case Description | Three-stage flow exercising task-driven stage completion, runs-sequentially / adhoc / selected-tasks-completed task-entry rules, and a non-timer skeleton task in a downstream stage. |
   | Case Identifier | Prefix: TDC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
   | SLA Type | Not specified |
 

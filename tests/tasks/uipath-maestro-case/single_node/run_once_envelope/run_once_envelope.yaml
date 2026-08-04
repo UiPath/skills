@@ -37,7 +37,6 @@ initial_prompt: |
   | Case Name | RunOnceEnvelopeCase |
   | Case Description | Holds a record under retention review with a frozen snapshot, a recurring reminder, and an escalation hold. |
   | Case Identifier | Prefix: RO, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 

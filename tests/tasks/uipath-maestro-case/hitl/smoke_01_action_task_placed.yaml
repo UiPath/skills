@@ -34,7 +34,6 @@ initial_prompt: |
   | Case Name | InvoiceApprovalCase |
   | Case Description | Tracks an invoice through manager approval. |
   | Case Identifier | Prefix: IAC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 

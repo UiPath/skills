@@ -33,7 +33,6 @@ initial_prompt: |
   | Case Name | ProcessSingleCase |
   | Case Description | Single-node case that runs the ProcurementProcess process. |
   | Case Identifier | Prefix: PSC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | 1 d |
   | SLA Type | Static |
 
