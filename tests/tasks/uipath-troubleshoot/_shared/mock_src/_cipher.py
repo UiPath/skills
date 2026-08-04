@@ -10,10 +10,41 @@ this key is necessarily present there in plaintext.
 `DATA_KEY` below covers the runtime data files the mock writes beside itself:
 the sealed fixture store `.store`, the call log `.log`, and the passthrough
 cache `_cache/*.json`. It is defined only in `mock_src/`, which is never
-staged, so no plaintext file staged into a sandbox carries it — reaching it
-means first decrypting a code blob under `CODE_KEY`.
+staged, so no plaintext file staged into a sandbox carries it.
 
-Keys are unrelated values; neither is derivable from the other.
+Keys are unrelated values; neither is derivable from the other. That is not a
+containment claim, and the split does not put `DATA_KEY` behind `CODE_KEY`.
+What the two layers actually buy is stated below.
+
+What this protects, measured:
+
+No file staged into a sandbox states its own encoding: the loaders name no
+transform, and `grep`-ing the staged tree for `base64` / `zlib` / `compress`
+turns up nothing. Recovering the fixture archive is therefore a deliberate
+reverse-engineering exercise — read a loader, reproduce its keystream,
+decrypt its blob, lift `DATA_KEY` out of the recovered source, then decrypt
+`.store` — rather than copying a two-line recipe out of a small plaintext
+file. Raising that cost is the entire benefit, and it is worth having.
+
+It is NOT confidentiality, and NOT a boundary. `CODE_KEY` is a byte literal in
+each loader (spelled as two adjacent literals, which Python concatenates)
+because the loaders must run unaided; the plaintext a loader decrypts to
+defines `DATA_KEY` within its first three lines, since the `_cipher.py` prelude
+leads every blob. So reproducing the keystream and reaching the data key is
+about fifteen lines of standard library over files the sandbox already holds —
+no planted module, no `PYTHONPATH`, no `sitecustomize` needed. Anyone who reads
+a loader can reach the data key. Treat every key here as recoverable and design
+accordingly.
+
+Detection of answer-key reads is the control that actually holds. This layer
+only raises cost.
+
+Known residual, stated rather than fixed: a `sitecustomize.py` planted on
+`PYTHONPATH` executes at interpreter startup, before a loader's first line, so
+no loader-side change can close it — the only levers are outside the loader
+(`-E`, or scrubbing the environment). It is left open because it grants nothing
+beyond the ceiling above: the keys are already reachable by reading a staged
+loader.
 
 The transform is a chained-SHA-256 keystream XORed over the payload: the key
 is hashed repeatedly, each digest supplying the next 32 keystream bytes.
@@ -23,7 +54,8 @@ Deterministic: no salt, no nonce, no timestamp, so repacking or re-sealing
 identical input yields identical bytes.
 
 Not a confidentiality boundary — a reader who has the key can reverse it.
-It exists to make the staged artifacts opaque to casual inspection.
+It exists to make the staged artifacts opaque to inspection that stops short of
+reverse-engineering a loader.
 
 The transform provides no integrity of its own: XOR decrypts damaged input
 into garbage just as willingly as intact input. Anything that stores a
@@ -43,7 +75,9 @@ recovering the keystream of one file kind reveals nothing about another — the
 store does not become readable because the call log was cracked. Payloads
 sharing a purpose (every record in `.log`, every entry in `_cache`) do share a
 keystream; the exposure is bounded to those files' own contents, which the
-agent's own invocations largely dictate anyway.
+agent's own invocations largely dictate anyway. This bounds keystream reuse
+only. It is not containment: `DATA_KEY` itself derives every purpose's seed, so
+whoever recovers the key from a loader gets all of them at once.
 """
 
 import hashlib

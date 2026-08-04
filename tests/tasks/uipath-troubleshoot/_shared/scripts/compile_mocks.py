@@ -46,14 +46,22 @@ directory for a script invocation, and `""` or the cwd under `-c` / `-m`; the
 sandbox can write to the mock directory, and `PYTHONPATH` entries sit immediately
 behind that first entry in the search order. Without the filter a module planted
 under a standard-library name is imported in preference to the real one — by the
-loader, and by the blob it execs — and an imported module can read its importer's
-globals, which puts `DATA_KEY` one file away. `hashlib` is the sharpest case,
-since the loader hashes the decrypted source and a wrapper would see it whole.
-Keeping only interpreter-owned entries drops the script directory, the cwd,
-`PYTHONPATH` and per-user site, none of which the mock needs: it imports only the
-standard library. Verified on CPython 3.10-3.14, Windows and Linux, inside and
-outside a virtualenv, to leave the stdlib zip, `DLLs`/`Lib` (`lib-dynload` /
-`dist-packages` on Linux) and `site-packages` in place.
+loader, and by the blob it execs — which hands the sandbox the mock's own
+behaviour: `hashlib` is the sharpest case, since the loader hashes the decrypted
+source and a wrapper would see it whole, and a planted `json` or `pathlib` sits
+between the dispatcher and the fixtures it serves. Keeping only interpreter-owned
+entries drops the script directory, the cwd, `PYTHONPATH` and per-user site, none
+of which the mock needs: it imports only the standard library. Verified on CPython
+3.10-3.14, Windows and Linux, inside and outside a virtualenv, to leave the stdlib
+zip, `DLLs`/`Lib` (`lib-dynload` / `dist-packages` on Linux) and `site-packages`
+in place.
+
+The filter is about import integrity, not key confidentiality, and it does not
+make `DATA_KEY` unreachable. `mock_src/_cipher.py` states the measured ceiling:
+`CODE_KEY` is a byte literal in every loader, and the plaintext a loader decrypts
+to defines `DATA_KEY` in its first three lines, so reading a staged loader is
+already enough. Read that section before adding any claim about what these layers
+withhold.
 
 These lines carry no comment on purpose: they are staged into the sandbox
 verbatim, and prose explaining what they defend against is prose describing what
@@ -64,7 +72,9 @@ points: they get no blob of their own, and their stripped source is prepended
 to every entry point's blob. That keeps a single definition of shared code
 while leaving each blob self-contained (the sandbox has no importable copy of
 `mock_src/`), and keeps `DATA_KEY` — which lives in `_cipher.py` — out of
-every plaintext file staged into a sandbox.
+every *plaintext* file staged into a sandbox. Out of the plaintext only: the
+prelude leads every blob, so `DATA_KEY` is among the first lines of what a blob
+decrypts to. See `mock_src/_cipher.py` for what that does and does not buy.
 
 Two constraints follow from prepending rather than importing:
 
