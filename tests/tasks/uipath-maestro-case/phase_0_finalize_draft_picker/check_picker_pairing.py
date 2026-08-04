@@ -63,14 +63,21 @@ def main() -> None:
         block = find_stage(blocks, label)
         if stage_kind(block) != "primary":
             fail(f"{label!r} must remain a primary stage")
-        valid_rows = [
+        completion_rows = [
             row
             for row in exit_rows(block)
             if rule_type(row) == "required-tasks-completed"
-            and "wait-for-user" in column(row, "exit type").lower()
-            and column(row, "marks stage complete").lower().startswith("y")
         ]
-        if not valid_rows:
+        if len(completion_rows) != 1:
+            fail(
+                f"{label!r} must have exactly one required-tasks-completed completion exit; "
+                "replace the existing row instead of adding a duplicate"
+            )
+        row = completion_rows[0]
+        if (
+            "wait-for-user" not in column(row, "exit type").lower()
+            or not column(row, "marks stage complete").lower().startswith("y")
+        ):
             fail(
                 f"{label!r} must expose {LANE!r} with a required-tasks-completed / "
                 "wait-for-user / Marks Stage Complete: Yes exit"

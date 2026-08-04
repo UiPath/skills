@@ -223,11 +223,11 @@ closes on required-stages-completed.
         }
         sections = []
         for index, (task_name, (mode, rule, selected)) in enumerate(contracts.items(), 1):
-            selected_line = f"\n- selected-tasks-ids: {selected}" if selected else ""
+            rendered_rule = f'{rule}("{selected}")' if selected else rule
             sections.append(
                 f'## T{index}: Add process task "{task_name}" to "Stage"\n\n'
                 f"- activation-mode: {mode}\n"
-                f"- entry-rule: {rule}{selected_line}\n"
+                f"- entry-rule: {rendered_rule}\n"
             )
         tasks = self.workdir / "tasks" / "tasks.md"
         tasks.parent.mkdir()

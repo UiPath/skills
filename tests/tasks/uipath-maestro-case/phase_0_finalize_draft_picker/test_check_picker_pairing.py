@@ -38,11 +38,17 @@ class PickerPairingCheckerTest(unittest.TestCase):
         exposed_by: tuple[str, ...],
         *,
         noncompleting: tuple[str, ...] = (),
+        duplicate_completion: tuple[str, ...] = (),
     ) -> None:
         primary_blocks = []
         for index, stage_name in enumerate(PRIMARY_STAGES, 1):
             exit_type = "wait-for-user" if stage_name in exposed_by else "exit-only"
             marks_complete = "No" if stage_name in noncompleting else "Yes"
+            duplicate_row = (
+                "\n| required-tasks-completed | — | exit-only | Yes |"
+                if stage_name in duplicate_completion
+                else ""
+            )
             primary_blocks.append(
                 f"""### Stage {index}: {stage_name}
 
@@ -50,7 +56,7 @@ class PickerPairingCheckerTest(unittest.TestCase):
 
 | WHEN | IF | Exit Type | Marks Stage Complete |
 |---|---|---|---|
-| required-tasks-completed | — | {exit_type} | {marks_complete} |
+| required-tasks-completed | — | {exit_type} | {marks_complete} |{duplicate_row}
 """
             )
         text = "# SDD — VendorOnboarding\n\n" + "\n".join(primary_blocks) + """
@@ -86,6 +92,12 @@ class PickerPairingCheckerTest(unittest.TestCase):
         result = run(self.workdir)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Vendor Approval", result.stdout + result.stderr)
+
+    def test_rejects_duplicate_completion_exit_instead_of_replacement(self) -> None:
+        self.write_sdd(PRIMARY_STAGES, duplicate_completion=("Document Collection",))
+        result = run(self.workdir)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Document Collection", result.stdout + result.stderr)
 
 
 if __name__ == "__main__":
