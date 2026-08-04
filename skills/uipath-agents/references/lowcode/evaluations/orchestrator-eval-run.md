@@ -335,15 +335,17 @@ Update requires at least one of `--eval-set-id` or `--cron`. Folder key is immut
 
 ---
 
-## Typical Workflow
+## Typical Workflow — CRUD-first
+
+Create evaluators, eval sets, and data points via CRUD, then run against the eval set.
 
 ```bash
-# 1. Create evaluators
+# 1. Create an evaluator
 uip or eval evaluator create \
   --process-key "$PROCESS_KEY" --workload-id "$WORKLOAD_ID" --folder-key "$FOLDER_KEY" \
   --name "Semantic Similarity" --description "LLM output comparison" \
   --evaluator-type-id 5 \
-  --evaluator-config '{"name":"Semantic","type":5,"category":1,"prompt":"Score 0-100...","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}' \
+  --evaluator-config '{"name":"Semantic","type":5,"category":1,"prompt":"As an expert evaluator, analyze the semantic similarity of these outputs to determine a score from 0-100.\n----\nExpectedOutput:\n{{ExpectedOutput}}\n----\nActualOutput:\n{{ActualOutput}}\n","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}' \
   --output json
 
 # 2. Create an eval set linking the evaluator
@@ -352,25 +354,26 @@ uip or eval eval-set create \
   --name "Smoke Tests" --evaluator-refs "$EVALUATOR_ID" \
   --output json
 
-# 3. Add data points
+# 3. Add data points to the eval set
 uip or eval evaluation create \
   --process-key "$PROCESS_KEY" --eval-set-id "$EVAL_SET_ID" --folder-key "$FOLDER_KEY" \
   --name "Greeting test" --inputs '{"input":"hello"}' \
   --expected-output '{"content":"Hi there!"}' \
   --output json
 
-# 4. Run the eval
+# 4. Run the eval referencing the eval set
 uip or eval execute-and-evaluate \
   --process-key "$PROCESS_KEY" \
+  --eval-set-id "$EVAL_SET_ID" \
   --items '[{"id":"i1","name":"Greeting test","inputs":{"input":"hello"},"expectedOutput":{"content":"Hi there!"},"expectedBehavior":""}]' \
-  --evaluators '[{"id":"ev-1","evaluatorTypeId":"5","evaluatorConfig":{}}]' \
+  --evaluators '[{"id":"'"$EVALUATOR_ID"'","version":"","evaluatorTypeId":"5","evaluatorConfig":{"name":"Semantic","type":5,"category":1,"prompt":"Score 0-100...","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}}]' \
   --output json
 
 # 5. Check results
 uip or eval run list --process-key "$PROCESS_KEY" --output json
 uip or eval run results "$EVAL_SET_RUN_ID" --process-key "$PROCESS_KEY" --output json
 
-# 6. Schedule recurring runs
+# 6. Schedule recurring runs against the eval set
 uip or eval schedule create \
   --process-key "$PROCESS_KEY" --workload-id "$WORKLOAD_ID" \
   --eval-set-id "$EVAL_SET_ID" --folder-key "$FOLDER_KEY" \
@@ -387,3 +390,11 @@ uip or eval schedule create \
 | `personal workspace not found` | No personal workspace | Pass `--folder-key` explicitly |
 | `--items is not a valid JSON array` | Malformed JSON | Check JSON syntax; must be array of objects |
 | `--evaluator-config is not valid JSON` | Malformed JSON | Pass a valid JSON object |
+
+## Anti-patterns
+
+- **Don't pass `evaluatorConfig: {}` (empty) in `--evaluators`.** LLM-based evaluators (types 5, 7) need `prompt`, `model`, and `targetOutputKey` in the config. An empty config will fail at runtime.
+- **Don't pass `"model": "same-as-agent"` in inline evaluator configs.** Runtime evals have no access to `agent.json` to resolve this. Use an explicit model ID.
+- **Don't forget `--folder-key` on create commands when not using the personal workspace.** The default personal workspace fallback only works for `execute-and-evaluate`. CRUD commands (`evaluator create`, `eval-set create`, `evaluation create`) require `--folder-key` explicitly.
+- **Don't create data points via CRUD and then re-specify them inline in `execute-and-evaluate`.** Pick one approach: either create via CRUD and reference the eval set with `--eval-set-id`, or pass everything inline. Mixing them duplicates data and risks drift.
+- **Don't reuse evaluator IDs across different processes.** Evaluators are scoped to a process key. Using IDs from one process in another will fail.
