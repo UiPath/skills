@@ -260,7 +260,7 @@ Use `Edit` to add an entry to `variables.globals`:
 {
   "id": "<VARIABLE_ID>",
   "direction": "in|out|inout",
-  "type": "string|number|boolean|object|array",
+  "type": "string|number|boolean|object|array|file",
   "defaultValue": "<OPTIONAL_DEFAULT>",
   "description": "<OPTIONAL_DESCRIPTION>"
 }
@@ -268,6 +268,7 @@ Use `Edit` to add an entry to `variables.globals`:
 
 For `out` variables: add output mapping to **every reachable End node** (see below).
 For `inout` variables: add `variableUpdates` entries on nodes that modify the state.
+Attachment-carrying inputs MUST use `"type": "file"` — `"object"` breaks attachment binding and faults IxP extraction with `[430002]` (see [plugins/ixp/impl.md#debug](plugins/ixp/impl.md#debug)).
 
 See [variables-and-expressions.md](../../shared/variables-and-expressions.md) for the full schema, type system, and scoping rules.
 
