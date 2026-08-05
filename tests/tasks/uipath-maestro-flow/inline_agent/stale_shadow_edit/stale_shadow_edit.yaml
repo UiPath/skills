@@ -18,7 +18,7 @@ description: >
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, node:inline-agent, shape:multi-node]
 
 run_limits:
-  expected_turns: 24
+  expected_turns: 30
   turn_timeout: 1200
 
 pre_run:
