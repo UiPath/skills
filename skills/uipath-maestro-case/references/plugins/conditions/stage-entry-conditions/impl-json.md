@@ -121,6 +121,8 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 | `sla-status-change` | `slaId` from Step 9.9 `id-map.json`; `escalationId` **at-risk only** (omit for breach) |
 | `wait-for-connector` | `uipath` connector configuration (see [common](../../../connector-trigger-common.md#target-connector-bound-condition-rule)) |
 
+> **Editing a `28.0.0`+ file:** the field is `selectedStageIds: ["<stageId>"]`. A singular `selectedStageId` is a hard parse error there — the designer refuses to open the case. See [case-schema.md § Schema version contract](../../../case-schema.md#schema-version-contract).
+
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. **Use strict `===` / `!==`, never loose `==` / `!=` — normalize SDD shorthand like `approved == true` to `=js:vars.approved === true` (do not transcribe `==` verbatim).** Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ## Post-Write Verification

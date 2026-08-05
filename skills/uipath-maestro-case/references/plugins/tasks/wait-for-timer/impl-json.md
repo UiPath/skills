@@ -26,6 +26,8 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
 
 > **Envelope source.** `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope via `tasks.md`; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from timer task type.
 > **`data` holds ONLY `timerType` + the duration field.** `skipCondition` and all other envelope fields are top-level siblings of `data`, never nested inside it (a misplaced one passes `validate` silently but is never applied). See [case-schema.md](../../../case-schema.md) §7 Tasks — BaseTask shape.
+>
+> **Editing a `28.0.0`+ file:** the key is `data.timer`, not `data.timerType` — a `timerType` key is silently dropped there, leaving the timer unconfigured. See [case-schema.md § Schema version contract](../../../case-schema.md#schema-version-contract).
 
 ## Procedure
 

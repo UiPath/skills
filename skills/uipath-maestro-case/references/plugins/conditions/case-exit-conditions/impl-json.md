@@ -74,6 +74,8 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 | `false` | `selected-stage-exited` | `selectedStageId` |
 | `false` | `wait-for-connector` | `uipath` connector configuration |
 
+> **Editing a `28.0.0`+ file:** the field is `selectedStageIds: ["<stageId>"]`. A singular `selectedStageId` is a hard parse error there — the designer refuses to open the case. See [case-schema.md § Schema version contract](../../../case-schema.md#schema-version-contract).
+
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. Use bare `=js:<expr>` (no outer parens); combined boolean expressions wrap each sub-clause in parens: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Use strict `===` / `!==`, never loose `==` / `!=` — normalize SDD shorthand like `approved == true` to `=js:vars.approved === true` (do not transcribe `==` verbatim). Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ## Post-Write Verification

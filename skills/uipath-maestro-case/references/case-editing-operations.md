@@ -33,6 +33,22 @@ The following Pre-flight Checklist items become **NOOPs** because layout state l
 
 Skill emits empty `layout: {}` at top level — never populates `layout.nodes` or `layout.edges`. Layout authoring is a canvas-time concern, not a skill concern.
 
+## Editing a tenant-exported caseplan
+
+An edit target pulled from a tenant (`uip solution download <solutionId> --extract`) may declare a newer schema than this skill emits. **Read its `version` first and branch:**
+
+```bash
+node -e "console.log(require('./caseplan.json').version)"
+```
+
+- **`23.0.0`–`27.0.0`** — edit with the shapes documented throughout this skill. `uip maestro case validate` gates the result as normal.
+- **`28.0.0` or higher** — the document uses the renamed fields in [case-schema.md § Schema version contract](case-schema.md#schema-version-contract) (`selectedStageIds`, `data.timer`). Match the shapes **already in the file**, not the `23.0.0` shapes in this skill.
+
+Two rules for the `28.0.0`+ path:
+
+1. **Do not rewrite `version`.** Neither down to `23.0.0` (the surrounding field names would no longer match its schema) nor as a way to make `validate` pass. Leave the literal exactly as downloaded.
+2. **`uip maestro case validate` cannot gate this file.** It fails with `[error] [version] Invalid input: expected "27.0.0"` on any `28.0.0`+ document, including an unmodified Studio Web export. This is a validator ceiling, not a defect in your edit — do not "repair" the file to satisfy it. Verify by reopening the case in Studio Web instead, and report the blocked validation to the user rather than looping on it.
+
 ## Pre-flight Checklist
 
 Before every write to `caseplan.json`, confirm each item. These are the failure modes the CLI normally prevents.
