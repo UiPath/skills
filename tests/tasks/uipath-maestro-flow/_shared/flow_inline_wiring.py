@@ -17,7 +17,8 @@ milestones as each kind's shapes are pinned (M2: `find_wired_resource`,
 `assert_tool_type_key_uuid`, `assert_cluster_vars_ref`; M3:
 `assert_no_derived_resource_fields`, `assert_bindings_rows`,
 `assert_agent_sequence_wiring`, `find_flow_file`,
-`assert_builtin_identity`; M4: `assert_context_inputs`).
+`assert_builtin_identity`; M4: `assert_context_inputs`; M5:
+`assert_escalation_inputs`).
 
 Import pattern in a check script:
 
@@ -733,6 +734,172 @@ def assert_context_inputs(
                 f"inputs.indexId {index_id!r} does not match the node type's "
                 f"index-GUID suffix {type_suffix!r} — identity is copied from "
                 "the manifest's inputDefaults, never guessed"
+            )
+
+    if errs:
+        sys.exit(f"FAIL ({node.get('id')}): " + "; ".join(errs))
+    return inputs
+
+
+# Case-insensitive UUID for tenant-provided identifiers (app resourceKey from
+# `uip solution resources list` — the tenant controls the casing, unlike the
+# authored lowercase inputs.source).
+ANY_CASE_UUID_RE = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
+
+# Priority values the projection accepts verbatim — anything else silently
+# falls back to "medium" at derivation (flow-workbench mapEscalationResource),
+# and `flow validate` does not catch the drift. Checker is the only gate.
+VALID_ESCALATION_PRIORITIES = {"low", "medium", "high", "critical"}
+
+# Sidecar resource.json fields an agent trained on the old pattern copies into
+# the node. The flow form is FLAT (app/recipients/outcomeMapping/_additionalProps
+# directly in inputs); the entire delivery layer (channels[]) is derived.
+ESCALATION_DERIVED_INPUT_FIELDS = (
+    "channels",
+    "$resourceType",
+    "escalationType",
+    "isEnabled",
+    "isAgentMemoryEnabled",
+    "governanceProperties",
+    "taskTitleV2",
+    # Projection-carried resource.json fields (escalation.md § Derived Fields):
+    # hydration never writes them back to canvas inputs, so on an authored
+    # node they always mark a ported sidecar file.
+    "referenceKey",
+    "folderPath",
+)
+
+
+def assert_escalation_inputs(
+    node: dict,
+    *,
+    expected_app: dict[str, str] | None = None,
+    require_full_app: bool = True,
+) -> dict:
+    """Assert an app-task escalation node carries the flat flow-form config.
+
+    - Never-author guards: none of ESCALATION_DERIVED_INPUT_FIELDS in
+      `inputs` (the derived resource.json shape — `channels[]` is built at
+      projection from the flat fields), and no quick-form `schema` on an
+      app-task node.
+    - `inputs.name` non-empty (ESCALATION_NAME_REQUIRED is the validator
+      twin; the name is what the system prompt refers to).
+    - `inputs.type`, when present, must be "app-task" — "quick-form" on a
+      `.coded-action-app` node flips the projection to the schema path and
+      the app is ignored.
+    - `inputs.app`: object; `expected_app` maps app keys to exact expected
+      values (e.g. {"appName": "FraudEscalation", "folderName":
+      "Shared/uipath-agents/FraudEscalation"}); `resourceKey` must be
+      UUID-shaped (any case — tenant-provided via `resources list`).
+    - `require_full_app`: validate only checks app PRESENCE — a
+      {appName, resourceKey, folderName}-only app passes validate but
+      derives a channel with EMPTY schemas (task form carries no data).
+      Requires `inputSchema`/`outputSchema` objects with non-empty
+      `properties` and an integer `appVersion` >= 0 (draft apps carry
+      ActionSchema version 0; projection coerces falsy to 1).
+    - `inputs.recipients`: >= 1 dict entry with a non-empty string `value`
+      (validator twin: ESCALATION_RECIPIENT_REQUIRED).
+    - `inputs.outcomeMapping`, when present and non-null: dict with values
+      in {"continue", "end"}.
+    - `inputs._additionalProps.priority`, when present: one of
+      VALID_ESCALATION_PRIORITIES (anything else silently degrades to
+      "medium" at projection — validate cannot catch it).
+
+    Returns the node's `inputs` dict for follow-up assertions.
+    """
+    inputs = node.get("inputs") or {}
+    errs = []
+
+    for field in ESCALATION_DERIVED_INPUT_FIELDS:
+        if field in inputs:
+            errs.append(
+                f"inputs.{field} is a derived resource.json field — never "
+                "authored (the flow form is flat; channels[] derive at projection)"
+            )
+    if inputs.get("schema") is not None:
+        errs.append(
+            "inputs.schema is quick-form-only (HitlSchema) — an app-task "
+            "escalation is configured via inputs.app"
+        )
+
+    if not (isinstance(inputs.get("name"), str) and inputs["name"].strip()):
+        errs.append(f"inputs.name is missing or empty: {inputs.get('name')!r}")
+
+    esc_type = inputs.get("type")
+    if esc_type is not None and esc_type != "app-task":
+        errs.append(
+            f"inputs.type should be 'app-task' (or absent) on an app-backed "
+            f"escalation node, got {esc_type!r}"
+        )
+
+    app = inputs.get("app")
+    if not isinstance(app, dict):
+        errs.append(f"inputs.app is not an object: {app!r}")
+    else:
+        if expected_app:
+            for key, expected in expected_app.items():
+                actual = app.get(key)
+                if actual != expected:
+                    errs.append(f"inputs.app.{key} should be {expected!r}, got {actual!r}")
+        rkey = app.get("resourceKey")
+        if not isinstance(rkey, str) or not ANY_CASE_UUID_RE.match(rkey):
+            errs.append(
+                f"inputs.app.resourceKey must be the app's UUID Key from "
+                f"`uip solution resources list`, got {rkey!r}"
+            )
+        if require_full_app:
+            for schema_key in ("inputSchema", "outputSchema"):
+                schema = app.get(schema_key)
+                props = schema.get("properties") if isinstance(schema, dict) else None
+                if not (isinstance(props, dict) and props):
+                    errs.append(
+                        f"inputs.app.{schema_key} must carry the app's action "
+                        f"schema (non-empty properties), got {schema!r} — a "
+                        "schema-less app passes validate but derives an empty "
+                        "task form"
+                    )
+            app_version = app.get("appVersion")
+            # >= 0: draft apps carry ActionSchema version 0 — the projection
+            # coerces falsy to 1; a faithful copy of 0 is correct authoring.
+            if not isinstance(app_version, int) or isinstance(app_version, bool) or app_version < 0:
+                errs.append(
+                    f"inputs.app.appVersion must be the parsed ActionSchema's "
+                    f"integer version (NOT Spec.Version, the package semver), "
+                    f"got {app_version!r}"
+                )
+
+    recipients = inputs.get("recipients")
+    valid_recipients = [
+        r for r in (recipients if isinstance(recipients, list) else [])
+        if isinstance(r, dict) and isinstance(r.get("value"), str) and r["value"].strip()
+    ]
+    if not valid_recipients:
+        errs.append(
+            f"inputs.recipients needs >= 1 entry with a non-empty value "
+            f"(the runtime task routes nowhere otherwise), got {recipients!r}"
+        )
+
+    outcome_mapping = inputs.get("outcomeMapping")
+    if outcome_mapping is not None:
+        if not isinstance(outcome_mapping, dict):
+            errs.append(f"inputs.outcomeMapping is not an object: {outcome_mapping!r}")
+        else:
+            bad = {k: v for k, v in outcome_mapping.items() if v not in ("continue", "end")}
+            if bad:
+                errs.append(
+                    f"inputs.outcomeMapping values must be 'continue' or 'end', got {bad!r}"
+                )
+
+    additional = inputs.get("_additionalProps")
+    if isinstance(additional, dict) and "priority" in additional:
+        priority = additional.get("priority")
+        if priority not in VALID_ESCALATION_PRIORITIES:
+            errs.append(
+                f"inputs._additionalProps.priority must be one of "
+                f"{sorted(VALID_ESCALATION_PRIORITIES)}, got {priority!r} — "
+                "anything else silently degrades to 'medium' at projection"
             )
 
     if errs:

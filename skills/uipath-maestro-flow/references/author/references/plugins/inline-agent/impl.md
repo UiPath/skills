@@ -1,6 +1,6 @@
 # Inline Agent Node — Implementation
 
-The inline agent is authored **entirely in the `.flow` file**. This plugin covers the agent node itself — prompts, model config, schemas, identity, wiring in/out, validation — plus the derived-sidecar contract and legacy migration. Resource capabilities get their own files under `capabilities/` — process-family tools: [capabilities/process.md](capabilities/process.md); built-in tools: [capabilities/built-in-tools.md](capabilities/built-in-tools.md); context grounding: [capabilities/context-index.md](capabilities/context-index.md); remaining kinds land per roadmap milestone (see [§ Resource Nodes](#7-resource-nodes)).
+The inline agent is authored **entirely in the `.flow` file**. This plugin covers the agent node itself — prompts, model config, schemas, identity, wiring in/out, validation — plus the derived-sidecar contract and legacy migration. Resource capabilities get their own files under `capabilities/` — process-family tools: [capabilities/process.md](capabilities/process.md); built-in tools: [capabilities/built-in-tools.md](capabilities/built-in-tools.md); context grounding: [capabilities/context-index.md](capabilities/context-index.md); escalations: [capabilities/escalation.md](capabilities/escalation.md); remaining kinds land per roadmap milestone (see [§ Resource Nodes](#7-resource-nodes)).
 
 Mandatory constraints: [critical-rules.md](critical-rules.md). Prompt quality: [prompting/autonomous-agent-prompting-guide.md](prompting/autonomous-agent-prompting-guide.md). Model choice: [model-selection-guide.md](model-selection-guide.md).
 
@@ -170,9 +170,9 @@ Universal recipe, all kinds: discover the node type (`registry search` prefix �
 | Built-in tool | `tool` | `uipath.agent.resource.tool.builtin.<suffix>` | [capabilities/built-in-tools.md](capabilities/built-in-tools.md) |
 | IS connector tool | `tool` | `uipath.agent.resource.tool.connector.<key>.<name>` | lands per roadmap milestone |
 | Context (index / RAG) | `context` | `uipath.agent.resource.context.index.<name>.<id>` | [capabilities/context-index.md](capabilities/context-index.md) |
-| Escalation (HITL) | `escalation` | `uipath.agent.resource.escalation.<variant>` | lands per roadmap milestone |
+| Escalation (HITL) | `escalation` | `uipath.agent.resource.escalation.<variant>` | [capabilities/escalation.md](capabilities/escalation.md) |
 
-Until a kind's capability doc lands, pin its exact `inputs` shape from a canvas-authored flow or the manifest's `inputDefaults` — do not guess field sets. Process-family and connector tools additionally require top-level `bindings[]` rows mirroring the definition's `model.bindings` ([capabilities/process.md § Bindings](capabilities/process.md#bindings)); built-ins ([capabilities/built-in-tools.md](capabilities/built-in-tools.md)) and contexts ([capabilities/context-index.md](capabilities/context-index.md)) require none.
+Until a kind's capability doc lands, pin its exact `inputs` shape from a canvas-authored flow or the manifest's `inputDefaults` — do not guess field sets. Process-family and connector tools additionally require top-level `bindings[]` rows mirroring the definition's `model.bindings` ([capabilities/process.md § Bindings](capabilities/process.md#bindings)); built-ins ([capabilities/built-in-tools.md](capabilities/built-in-tools.md)), contexts ([capabilities/context-index.md](capabilities/context-index.md)), and escalations ([capabilities/escalation.md](capabilities/escalation.md)) require none.
 
 ## 8. Worked Example — Trigger → Agent → End + RPA Tool + Context
 
