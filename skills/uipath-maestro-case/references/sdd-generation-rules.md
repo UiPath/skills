@@ -99,10 +99,10 @@ Exact cell formats live in [§ Stage content rules](#stage-content-rules) and [�
 
 ### Triggers, connectors, variables — how the case meets the world
 
-**Trigger** — how a case instance is *born* (`TriggerNode`, `case-management:Trigger`, field `data.uipath.serviceType`):
+**Trigger** — how a case instance is *born* (`TriggerNode`, `uipath.case.trigger`, field `data.inputs.serviceType`):
 
 - `None` → **Manual**: a user or API call starts the case.
-- `Intsvc.TimerTrigger` → **Timer**: a schedule starts it.
+- `timer` → **Timer**: a schedule starts it. (SDD author token: `Intsvc.TimerTrigger`.)
 - `Intsvc.EventTrigger` → **Connector Event**: an external system fires it.
 
 One trigger is the root; additional triggers are secondary. Reason: *what makes a new case appear?* A portal signup, inbound form, or schedule is NEVER Manual — assume the event/timer trigger per the playbook and disclose the decision the moment such a source is named.
@@ -311,7 +311,7 @@ Required whenever **any** SLA is configured — case, stage, or `action` task. O
 | Source | conditional | Connector or system for `Intsvc.EventTrigger`; schedule expression for `Intsvc.TimerTrigger`; `Manual` literal for `Manual` |
 | Configuration | conditional | User-stated intent only — see Configuration rules below. `Intsvc.EventTrigger` MUST have a concrete operation phrase. |
 
-> **`Manual` is not a `serviceType`.** The CLI serviceType enum is `None` / `Intsvc.EventTrigger` / `Intsvc.TimerTrigger`. A manual trigger carries **no** `serviceType` in `caseplan.json` (absence = manual — see [`plugins/triggers/manual/impl-json.md`](plugins/triggers/manual/impl-json.md)). Author `Manual` in the SDD; never emit `serviceType: "Manual"`.
+> **`Manual` is not a `serviceType`.** The on-disk serviceType enum (`data.inputs.serviceType`) is `None` / `Intsvc.EventTrigger` / `timer` — the SDD's `Intsvc.TimerTrigger` author token maps to on-disk `serviceType: "timer"`. A manual trigger carries **no** `serviceType` in `caseplan.json` (absence = manual — see [`plugins/triggers/manual/impl-json.md`](plugins/triggers/manual/impl-json.md)). Author `Manual` in the SDD; never emit `serviceType: "Manual"`.
 
 **Configuration cell — what to write (user intent only, business terms):**
 
