@@ -10,9 +10,9 @@ on:
       - 'hooks/**'
       - 'assets/**'
       - '.claude-plugin/**'
-      - 'scripts/compose-skill-flavor.py'
-      - 'tests/scripts/test_skill_flavor_composer.py'
-      - 'tests/scripts/test_manage_skill_flavors_skill.py'
+      - 'scripts/compose-skill-flavor.mjs'
+      - 'tests/scripts/compose-skill-flavor.test.mjs'
+      - 'tests/scripts/manage-skill-flavors-skill.test.mjs'
       - '.claude/skills/manage-skill-flavors/**'
       - '.gitignore'
       - 'package.json'
@@ -34,22 +34,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
       - uses: actions/setup-node@v4
         with:
           node-version: '22.x'
 
-      - name: Install focused test dependencies
-        run: python3 -m pip install pytest pyyaml
-
       - name: Test the flavor composer and contributor contracts
-        run: >-
-          python3 -m pytest -q
-          tests/scripts/test_skill_flavor_composer.py
-          tests/scripts/test_manage_skill_flavors_skill.py
+        run: npm run skills:test
 
       - name: Validate source contracts
         run: npm run skills:validate

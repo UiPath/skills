@@ -45,8 +45,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 │       └── assets/            # Templates, examples, static files (optional)
 ├── skill-flavors/             # Sparse build-time exceptions for custom hosts
 │   └── <flavor>/
-│       ├── skills.allowlist   # Reviewed skills shipped by this flavor
-│       └── uipath-<name>/     # Mirrors paths under skills/uipath-<name>/
+│       └── uipath-<name>/     # Sparse overrides mirroring skills/uipath-<name>/
 ├── tests/                     # Skill evaluation tests (coder_eval)
 │   ├── experiments/           # Experiment configs (smoke, integration, e2e)
 │   ├── tasks/                 # Test tasks organized by skill
@@ -81,10 +80,10 @@ Tool wiring lives outside `skills/`:
 | Cursor IDE | `.cursor/rules/*.mdc` | Scoped MDC rules: `token-optimization` (always-apply), `skill-structure` + `content-quality` (glob-scoped), `skill-review` + `pr-review` (agent-requested) |
 | GitHub Copilot coding agent | `AGENTS.md` (symlink → `CLAUDE.md`) | Copilot reads `AGENTS.md` natively (since Aug 2025) |
 
-When adding a skill, the root integration files already wire the canonical
-`SKILL.md` up automatically. Review the complete skill for each custom flavor;
-add it to that flavor's `skills.allowlist` only when its built output is safe
-for that environment.
+When adding a skill, the root integration files and every custom flavor include
+it automatically. Review the complete skill for each flavor and add the
+smallest sparse override wherever canonical guidance is not safe for that
+environment. No flavor manifest or inclusion list is required.
 
 ## Adding a New Skill
 
@@ -266,7 +265,8 @@ Create the project with the host capability exposed in this environment.
 - Keep shared content outside blocks; do not create a second full `SKILL.md`.
 - An override must contain complete marked blocks and no unmarked prose.
 - Mirror the canonical relative path, including nested `references/` paths.
-- Put a reviewed skill in `skills.allowlist` even when it passes through unchanged.
+- Every flavor contains every canonical skill. If no override exists for a file, its canonical content is intentionally reused unchanged.
+- A new flavor directory must contain at least one real sparse override. If a host needs no exceptions, consume the default package rather than creating an identical empty flavor.
 - Do not check generated flavor trees into source control; build them into the ignored `build/` directory for validation and package staging.
 
 Validate the source contract, then build the final Markdown trees:
@@ -282,9 +282,9 @@ The build writes complete, marker-free trees to `build/skills/default/` and
 `build/packages/default/` plus `build/packages/<flavor>/`, and creates real
 tarballs under `build/npm/`; it must not read sparse override sources directly.
 The package convention is `default` → `@uipath/skills` and `<flavor>` →
-`@uipath/skills-<flavor>`. Adding a valid flavor directory automatically adds
-its package—do not add a registry JSON, a flavor-specific npm script, or a CI
-branch.
+`@uipath/skills-<flavor>`. Adding a valid flavor directory with sparse
+overrides automatically adds its complete-catalog package—do not add an
+allowlist, registry JSON, flavor-specific npm script, or CI branch.
 
 ### 7. Add Templates/Assets (Optional)
 
@@ -419,7 +419,7 @@ Before submitting your PR, verify:
 - [ ] The canonical `SKILL.md` is still complete and useful as the default/local skill
 - [ ] Only genuinely different passages are enclosed in flavor blocks
 - [ ] Custom override files contain matching complete blocks and no unmarked content
-- [ ] Every custom flavor explicitly includes only skills reviewed for that environment
+- [ ] Every canonical skill has been reviewed for every custom flavor; add sparse overrides wherever canonical guidance is unsafe
 - [ ] Complete default and custom file trees build and validate before package staging
 - [ ] `npm run skills:pack` creates one correctly named tarball per discovered flavor
 - [ ] Built trees, staged packages, and actual tarballs contain no flavor marker comments or sparse override sources
