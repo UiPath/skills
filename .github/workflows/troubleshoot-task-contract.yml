@@ -1,0 +1,42 @@
+name: Troubleshoot Task Contract
+
+# Fails the build if any uipath-troubleshoot scenario task YAML drifts from the
+# suite contract in tests/contracts/troubleshoot-scenario-contract.yaml
+# (required simulation constraints, required/forbidden success-criteria types,
+# canonical llm_judge shape, structural keys). The generator template in
+# _shared/scripts/generate_scenario.py is validated as a synthetic scenario in
+# the same pass, so a rule can never apply to the scenarios but not the
+# generator that produces new ones.
+#
+# Motivating regression: 39 scenarios let the simulated user approve fix
+# application, sending nightly runs into an ungraded edit + validate/build/pack
+# loop worth ~126 minutes of wall clock. Nothing flagged it — the tasks still
+# passed. See scripts/check-troubleshoot-tasks.py for the full rationale.
+#
+# No `paths:` filter so this can be wired as a required check — it is a
+# sub-second full scan that always reports a definitive pass/fail.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: troubleshoot-task-contract-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    name: Troubleshoot scenarios match the suite contract
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - name: Install PyYAML
+        run: pip install --quiet pyyaml
+      - name: Check troubleshoot scenario contract
+        run: python3 scripts/check-troubleshoot-tasks.py
