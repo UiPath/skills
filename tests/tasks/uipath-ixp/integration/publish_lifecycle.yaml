@@ -36,7 +36,7 @@ sandbox:
 initial_prompt: |
   I need to manage releases on an invoice project. Use the tenant I'm already
   signed into (check I'm logged in; don't re-authenticate): start a project from
-  the files in `./fixtures/` (give it a unique title
+  the files in the working directory (give it a unique title
   `codereval-integ-publish-<random-suffix>` so concurrent runs don't collide) — import the taxonomy, upload one of the invoices —
   and let it train.
 
