@@ -26,6 +26,10 @@ skip: true
 # satisfied, so `flow validate` cannot pass on a flow-only MCP tool.
 # Re-enable when the registry surfaces MCP manifests (re-probe:
 # `uip maestro flow registry search mcp --output json` from a solution dir).
+# At re-enable, also confirm a real registry-minted MCP manifest carries BOTH
+# `inputDefinition` and `handleConfiguration` — the checker's fabrication
+# probe requires them (pinned from flow-workbench transformMcpServer, no
+# CLI-observable precedent yet); relax the probe if the CLI manifest differs.
 
 run_limits:
   expected_turns: 65

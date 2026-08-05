@@ -64,7 +64,7 @@ Node `inputs` (authoring surface — everything else derives):
 | Field | Required | Notes |
 |---|---|---|
 | `source` | Yes | Lowercase UUIDv4 **you mint** ([planning.md § Identity](../planning.md#identity--mint-the-uuids-yourself)). Validator-enforced (MST-9265). Becomes the derived `resources/<source>/resource.json` id. |
-| `name` | Yes | Manifest-required. **Name authority: `inputs.name` only** — projection ignores `display.label`. Name it after the server itself, not the task or tool subset. |
+| `name` | Yes | Manifest-required. **Name authority: `inputs.name` only** — projection ignores `display.label`. Name it after the server itself (the registered display name — manifest `inputDefaults.name` — or the user's wording for it), not the task or tool subset. Distinct from `slug`: name is display-style (`"GitHubMcp"`), slug is the catalog identifier (`"github-mcp"`). |
 | `description` | No | What the server provides — the LLM reads it. |
 | `slug` | Yes | The server's canonical slug — the runtime resolves the server by `folderPath`/`slug`. |
 | `serverUrl` | Yes | **Not a URL** — carries the same slug (it is the manifest-default carrier; projection reads `slug`, falls back to `serverUrl`). Author both, same value. |
@@ -101,7 +101,7 @@ Each `selectedTools[]` entry, mapped from `Spec.Tools`:
   "display": { "label": "GitHub MCP", "shape": "circle" },
   "inputs": {
     "source": "c7d3e9f1-2a4b-4c6d-8e0f-1a3b5c7d9e2f",
-    "name": "github-mcp",
+    "name": "GitHubMcp",
     "description": "GitHub MCP server — issue and repository tools",
     "slug": "github-mcp",
     "serverUrl": "github-mcp",
