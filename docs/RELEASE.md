@@ -1,6 +1,6 @@
-# Releasing the skills package
+# Releasing the skills packages
 
-The whole skills repo is published as an npm package, **`@uipath/skills`**, versioned in lockstep with **`@uipath/cli`** so a given CLI release always resolves to a compatible skills package.
+The complete default tree is published as **`@uipath/skills`**, versioned in lockstep with **`@uipath/cli`** so a given CLI release always resolves to a compatible skills package. Every directory under `skill-flavors/` also builds a marker-free package at the same version and becomes publishable once its registry package is bootstrapped.
 
 ## Version model
 
@@ -39,6 +39,22 @@ The version line mirrors the CLI's `MAJOR.MINOR` (e.g. CLI `1.197.x` → skills 
 
 > **The CLI resolves `@uipath/skills` from npm, matched to its own minor line.** `uip skills install` lists the published versions and picks the one matching the CLI's `MAJOR.MINOR` (`packages/cli/src/commands/skills/contentStore.ts` → `fetchMatchingSkillsPackageInfo` / `pickMatchingSkillsVersion`, registry `registry.npmjs.org`), then fetches that tarball into the content store. So a given CLI release always resolves a compatible skills package and the loop this section describes is closed — for the `uip skills install` **content** path. The Claude Code / Codex plugin marketplace is a **separate** channel (a git ref, not the npm package); its manifests carry the package version, so bumping `package.json` (plus `version:sync`) is what drives plugin auto-update.
 
+### Flavor package convention
+
+There is no package registry file. The source directory is the package identity:
+
+| Source | npm package |
+|--------|-------------|
+| canonical `skills/` | `@uipath/skills` |
+| `skill-flavors/studioweb/` | `@uipath/skills-studioweb` |
+| `skill-flavors/<flavor>/` | `@uipath/skills-<flavor>` |
+
+`npm run skills:pack` discovers every flavor, builds complete files first, stages the packages under `build/packages/`, and creates verified tarballs under `build/npm/`. The default package preserves the existing hooks, commands, plugin metadata, and assets, but its `skills/` directory comes from the marker-free `build/skills/default` tree. Custom packages contain their reviewed complete skill tree and minimal package/legal metadata. Do not run `npm pack` or `npm publish` from the repository root; the root lifecycle guard rejects that path because it would package canonical source markers.
+
+All generated packages use the root `package.json` version. Adding `skill-flavors/<new-flavor>/skills.allowlist` therefore makes `@uipath/skills-<new-flavor>` buildable without changing scripts or workflows. Release jobs publish the exact tarballs inspected by `skills:pack`, process custom flavors before the default package, and skip an exact version only when its registry integrity matches the local tarball. This makes a partial release safe to retry without hiding a same-version artifact collision.
+
+GitHub Packages can create discovered flavor packages with the repository token. npmjs trusted publishing is package-specific and cannot create a package for the first time: a confirmed npmjs `E404` for an unregistered custom flavor is reported and skipped until a maintainer completes the bootstrap in [Required setup](#required-setup). Other registry, network, or authentication lookup failures stop the release rather than silently omitting a package. The default package is still published normally. Once the flavor package exists and trusts `publish.yml`, later preview and latest runs include it automatically.
+
 ## Publishing tracks (`.github/workflows/publish.yml`)
 
 Registry follows channel — you pick a channel, not a registry.
@@ -71,7 +87,7 @@ Every merge to `main` publishes `@uipath/skills@<base>-dev.<run_number>` to **Gi
 
 ### Registry routing
 
-`@uipath/skills` is a **scoped** package, so the publish target is set via the **scoped registry** (`@uipath:registry=<url>`) — not a `--registry` flag (which only sets the *unscoped* default and is ignored for scoped packages). There is **no committed `.npmrc` and no `publishConfig.registry`**: a static scoped-registry line would override the per-job target (and break `npm install` for anyone cloning this public repo).
+Every generated package is under the **`@uipath` scope**, so the publish target is set via the **scoped registry** (`@uipath:registry=<url>`) — not a `--registry` flag (which only sets the *unscoped* default and is ignored for scoped packages). There is **no committed `.npmrc` and no `publishConfig.registry`**: a static scoped-registry line would override the per-job target (and break `npm install` for anyone cloning this public repo).
 
 | Job | registry | Auth |
 |-----|----------|------|
@@ -111,7 +127,8 @@ Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`
 
 ## Required setup
 
-- [x] **npmjs Trusted Publishing** — configure a GitHub Actions trusted publisher on the `@uipath/skills` package (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the `publish-npmjs` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
+- [x] **npmjs Trusted Publishing for the default package** — configure a GitHub Actions trusted publisher on `@uipath/skills` (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the `publish-npmjs` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
+- [ ] **npmjs Trusted Publishing for each flavor package** — pre-create each new `@uipath/skills-<flavor>` package and configure the same `UiPath/skills` + `publish.yml` trusted publisher before its first npmjs publish. Generic build and GitHub Packages publication need no per-flavor source configuration, but npmjs trusts publishers per package. Until this is complete, the npmjs release step logs a warning and skips only that unregistered custom package.
 - [x] Package name/scope confirmed: **`@uipath/skills`** (published).
 - [x] Seed version confirmed: **`1.197.0`** (current CLI minor line). The ongoing CLI↔skills lockstep is automated by `sprint-release-cut.yml` (Sunday 06:00 UTC, 6 h before the CLI's own cut, on the same 14-day cadence anchored at `2026-06-14`).
 

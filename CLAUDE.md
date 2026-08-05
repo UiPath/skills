@@ -37,11 +37,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 
 ## When Reviewing or Editing Skills
 
+- Before changing flavor markers, overrides, allowlists, discovery, package construction, publishing, or flavor CI, read `.claude/skills/manage-skill-flavors/SKILL.md` completely and follow its reference-routing instructions
 - Read the existing SKILL.md before making changes
 - Preserve the Critical Rules section — these prevent expensive agent mistakes
 - Validate YAML frontmatter — broken frontmatter breaks skill discovery
 - Ensure `description` field has both TRIGGER and DO NOT TRIGGER conditions
-- When canonical flavor blocks or custom overrides change, run `npm run skills:validate`, then build both complete file trees with `npm run skills:build` before packaging
+- When canonical flavor blocks or custom overrides change, run `npm run skills:validate`, `npm run skills:build`, and `npm run skills:pack`; inspect the actual generated tarballs before publishing
 
 ## When Writing or Modifying Tests
 

@@ -5,9 +5,23 @@ on:
     paths:
       - 'skills/**'
       - 'skill-flavors/**'
+      - 'agents/**'
+      - 'commands/**'
+      - 'hooks/**'
+      - 'assets/**'
+      - '.claude-plugin/**'
       - 'scripts/compose-skill-flavor.py'
       - 'tests/scripts/test_skill_flavor_composer.py'
+      - 'tests/scripts/test_manage_skill_flavors_skill.py'
+      - '.claude/skills/manage-skill-flavors/**'
+      - '.gitignore'
       - 'package.json'
+      - 'version-manifest.json'
+      - 'README.md'
+      - 'LICENSE'
+      - 'CODEOWNERS'
+      - 'docs/RELEASE.md'
+      - '.github/workflows/publish.yml'
       - '.github/workflows/validate-skill-flavors.yml'
 
 permissions:
@@ -15,7 +29,7 @@ permissions:
 
 jobs:
   validate:
-    name: Build complete default and Studio Web files
+    name: Build and inspect every skill package
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,21 +38,35 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install focused test dependency
-        run: python3 -m pip install pytest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
 
-      - name: Test the flavor composer contract
-        run: python3 -m pytest -q tests/scripts/test_skill_flavor_composer.py
+      - name: Install focused test dependencies
+        run: python3 -m pip install pytest pyyaml
+
+      - name: Test the flavor composer and contributor contracts
+        run: >-
+          python3 -m pytest -q
+          tests/scripts/test_skill_flavor_composer.py
+          tests/scripts/test_manage_skill_flavors_skill.py
 
       - name: Validate source contracts
-        run: python3 scripts/compose-skill-flavor.py validate skill-flavors/studioweb
+        run: npm run skills:validate
 
-      - name: Build complete file trees
-        run: python3 scripts/compose-skill-flavor.py build skill-flavors/studioweb /tmp/built-skill-flavors
+      - name: Build complete trees and real npm tarballs
+        run: npm run skills:pack
 
       - name: Ensure build-only markers do not reach consumers
         run: |
-          if rg -n '<!-- skill-flavor:' /tmp/built-skill-flavors; then
-            echo 'Flavor marker leaked into a built skill file.' >&2
+          if rg -n '<!-- skill-flavor:' build/skills build/packages; then
+            echo 'Flavor marker leaked into a built tree or staged package.' >&2
             exit 1
           fi
+
+      - name: Upload package tarballs for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-flavor-packages
+          path: build/npm/*.tgz
+          if-no-files-found: error

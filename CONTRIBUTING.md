@@ -17,7 +17,8 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ```
 .
 ├── .claude/                   # Claude Code project-level configuration
-│   └── commands/              # Project-only slash commands (e.g., /test-coverage)
+│   ├── commands/              # Project-only slash commands (e.g., /test-coverage)
+│   └── skills/                # Contributor-only repository workflows
 ├── .claude-plugin/            # Plugin manifest and marketplace config
 │   ├── plugin.json            # Plugin name, version, skills directory pointer
 │   └── marketplace.json       # Claude Code marketplace registration
@@ -238,6 +239,10 @@ Reference files go in `references/` and follow these conventions:
 
 ### 6a. Add a Custom Flavor Exception (Only When Needed)
 
+Before editing flavor sources or build/package logic, read
+`.claude/skills/manage-skill-flavors/SKILL.md` completely. It is the
+repository-local contributor workflow for this contract.
+
 Use a flavor exception only when a host's capabilities materially change an
 instruction. Keep the complete default behavior in the canonical file and
 wrap the smallest differing passage with a named block:
@@ -269,11 +274,17 @@ Validate the source contract, then build the final Markdown trees:
 ```bash
 npm run skills:validate
 npm run skills:build
+npm run skills:pack
 ```
 
 The build writes complete, marker-free trees to `build/skills/default/` and
-`build/skills/<flavor>/`. Packaging must consume those directories; it must
-not read the sparse override sources directly.
+`build/skills/<flavor>/`. Packaging consumes those trees, stages
+`build/packages/default/` plus `build/packages/<flavor>/`, and creates real
+tarballs under `build/npm/`; it must not read sparse override sources directly.
+The package convention is `default` → `@uipath/skills` and `<flavor>` →
+`@uipath/skills-<flavor>`. Adding a valid flavor directory automatically adds
+its package—do not add a registry JSON, a flavor-specific npm script, or a CI
+branch.
 
 ### 7. Add Templates/Assets (Optional)
 
@@ -410,6 +421,8 @@ Before submitting your PR, verify:
 - [ ] Custom override files contain matching complete blocks and no unmarked content
 - [ ] Every custom flavor explicitly includes only skills reviewed for that environment
 - [ ] Complete default and custom file trees build and validate before package staging
+- [ ] `npm run skills:pack` creates one correctly named tarball per discovered flavor
+- [ ] Built trees, staged packages, and actual tarballs contain no flavor marker comments or sparse override sources
 
 ### Tests
 - [ ] At least 1 smoke test in `tests/tasks/<skill-name>/`
