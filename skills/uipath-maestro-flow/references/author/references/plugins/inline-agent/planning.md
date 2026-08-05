@@ -48,7 +48,7 @@ Do not inline an agent you intend to reuse. Inline agents are private to the flo
 | `context` | bottom | source (artifact) | Context resource nodes — [capabilities/context-index.md](capabilities/context-index.md) |
 | `escalation` | top | source (artifact) | Escalation resource nodes — [capabilities/escalation.md](capabilities/escalation.md) |
 
-The current autonomous manifest exposes no `memory` artifact handle — confirm via `registry get` before planning memory. There is no `mcp` handle either — MCP servers attach via the `tool` handle ([capabilities/mcp.md](capabilities/mcp.md)); note MCP greenfield authoring is gated on a registry gap (see that doc's callout).
+The current autonomous manifest exposes no `memory` artifact handle — memory spaces are NOT attachable to autonomous inline agents ([capabilities/memory.md](capabilities/memory.md): why, re-probe commands, alternatives). There is no `mcp` handle either — MCP servers attach via the `tool` handle ([capabilities/mcp.md](capabilities/mcp.md)); note MCP greenfield authoring is gated on a registry gap (see that doc's callout).
 
 ## Output Variables
 
