@@ -169,10 +169,11 @@ Universal recipe, all kinds: discover the node type (`registry search` prefix �
 | Process-family tool (RPA / agent / API / process orchestration) | `tool` | `uipath.agent.resource.tool.<process\|agent\|api\|processorchestration>.<resource-key>` | [capabilities/process.md](capabilities/process.md) |
 | Built-in tool | `tool` | `uipath.agent.resource.tool.builtin.<suffix>` | [capabilities/built-in-tools.md](capabilities/built-in-tools.md) |
 | IS connector tool | `tool` | `uipath.agent.resource.tool.connector.<connector-key>.<activity-slug>` | [capabilities/integration-service.md](capabilities/integration-service.md) |
+| MCP server tool | `tool` (no `mcp` handle exists) | `uipath.agent.resource.tool.mcp.<server-name>.<server-key>` | [capabilities/mcp.md](capabilities/mcp.md) — registry gap gates greenfield authoring |
 | Context (index / RAG) | `context` | `uipath.agent.resource.context.index.<name>.<id>` | [capabilities/context-index.md](capabilities/context-index.md) |
 | Escalation (HITL) | `escalation` | `uipath.agent.resource.escalation.<variant>` | [capabilities/escalation.md](capabilities/escalation.md) |
 
-Until a kind's capability doc lands, pin its exact `inputs` shape from a canvas-authored flow or the manifest's `inputDefaults` — do not guess field sets. Process-family and connector tools additionally require top-level `bindings[]` rows mirroring the definition's `model.bindings` — process rows are copied by hand ([capabilities/process.md § Bindings](capabilities/process.md#bindings)), connector rows are written by `uip maestro flow node configure` ([capabilities/integration-service.md § Bindings](capabilities/integration-service.md#bindings)); built-ins ([capabilities/built-in-tools.md](capabilities/built-in-tools.md)), contexts ([capabilities/context-index.md](capabilities/context-index.md)), and escalations ([capabilities/escalation.md](capabilities/escalation.md)) require none.
+Until a kind's capability doc lands, pin its exact `inputs` shape from a canvas-authored flow or the manifest's `inputDefaults` — do not guess field sets. Process-family and connector tools additionally require top-level `bindings[]` rows mirroring the definition's `model.bindings` — process rows are copied by hand ([capabilities/process.md § Bindings](capabilities/process.md#bindings)), connector rows are written by `uip maestro flow node configure` ([capabilities/integration-service.md § Bindings](capabilities/integration-service.md#bindings)); built-ins ([capabilities/built-in-tools.md](capabilities/built-in-tools.md)), MCP servers ([capabilities/mcp.md](capabilities/mcp.md)), contexts ([capabilities/context-index.md](capabilities/context-index.md)), and escalations ([capabilities/escalation.md](capabilities/escalation.md)) require none.
 
 ## 8. Worked Example — Trigger → Agent → End + RPA Tool + Context
 
@@ -322,7 +323,7 @@ Read this to understand what the canvas materializes — never to author it.
 | `model`, `mode`, `temperature`, `maxTokenPerResponse`, `maxIterations`, BYOM keys | `agent.json` `settings.*` (`maxTokens` rename; `engine` comes from schema defaults, never projected) |
 | `agentInputVariables[]` / `agentOutputVariables[]` | `agent.json` `inputSchema` / `outputSchema` |
 | `inputs.source`, `display.label` | `agent.json` `id` + `projectId`, `name` |
-| tool/context/escalation nodes | `resources/<sourceUUID>/resource.json` (per-kind restructures injected at derivation) |
+| tool (incl. MCP)/context/escalation nodes | `resources/<sourceUUID>/resource.json` (per-kind restructures injected at derivation) |
 
 **Token namespaces — the same reference changes form twice:**
 
