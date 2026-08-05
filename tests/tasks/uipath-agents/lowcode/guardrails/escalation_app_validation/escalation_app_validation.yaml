@@ -18,16 +18,14 @@ pre_run:
 initial_prompt: |
   Create a UiPath low-code agent "ReviewAgent" that handles compliance review
   requests, inside the existing "ValidationSol" solution in the current
-  directory (do NOT re-create the solution). Add a guardrail that watches for
-  personal data (email addresses) and, instead of blocking, escalates flagged
-  cases to a human reviewer using our "EscalationWorksApp" Action Center app,
-  which is already part of this solution.
+  directory. Add a guardrail that watches for personal data (email addresses)
+  and, instead of blocking, escalates flagged cases to a human reviewer using
+  our "EscalationWorksApp" Action Center app, which is already part of this
+  solution.
 
-  Do NOT publish, upload, or deploy. Do NOT run
-  `uip solution resources refresh` — the solution resources are already in
-  sync. Do NOT ask for approval, confirmation, or feedback. Do NOT pause
-  between planning and implementation. Do NOT write a plan file. Complete
-  the entire task end-to-end in a single pass.
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Do NOT write
+  a plan file. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
   - type: command_not_executed
