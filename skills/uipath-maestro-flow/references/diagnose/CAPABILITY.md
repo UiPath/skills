@@ -1,5 +1,6 @@
 # Diagnose — Investigate failed or misbehaving flow runs
 
+<!-- skill-flavor:diagnostic-contract:start -->
 Capability index for postmortem on a failed `flow debug` or deployed process run. Diagnose owns the diagnostic priority ladder (incidents → runtime variables → flow correlation → traces) and the catalog of known recurring failure modes (MST-9107, MST-9061, HITL-stuck, reused reference IDs, single-nested layout). Requires `uip login`.
 
 > **Where you came from / where to go next.** Diagnose is downstream of Operate (run faulted → diagnose) and points back to Author for the underlying fix (diagnose → re-author → re-ship). Re-running and lifecycle live in [operate/CAPABILITY.md](../operate/CAPABILITY.md); building/editing the `.flow` file lives in [author/CAPABILITY.md](../author/CAPABILITY.md).
@@ -67,3 +68,4 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 - [shared/cli-conventions.md](../shared/cli-conventions.md) — `--folder-key` requirement, login state, JSON output shape
 - [shared/file-format.md](../shared/file-format.md) — to correlate faulting element IDs back to `.flow` nodes
 - [shared/node-output-wiring.md](../shared/node-output-wiring.md) — referenced from MST-9107 failure mode
+<!-- skill-flavor:diagnostic-contract:end -->

@@ -380,7 +380,9 @@ The scraper bot itself is an RPA project ([/uipath:uipath-rpa](/uipath:uipath-rp
 
 ## Output Format
 
+<!-- skill-flavor:plan-output-location:start -->
 Generate a `<SolutionName>.uipath.flow.arch.plan.md` file in the **solution directory** (the folder containing the `.uipx` file, not the project subfolder). The plan covers the entire solution — which may contain multiple projects in the future.
+<!-- skill-flavor:plan-output-location:end -->
 
 ### 1. Summary
 

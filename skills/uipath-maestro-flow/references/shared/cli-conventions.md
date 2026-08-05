@@ -2,6 +2,7 @@
 
 Shared conventions for the `uip` CLI that apply across **all three capabilities** (Author, Operate, Diagnose). Read this first when invoking any `uip` command — every capability assumes these mechanics.
 
+<!-- skill-flavor:cli-availability:start -->
 ## 1. Resolve the `uip` binary and detect command prefix
 
 The `uip` CLI is installed via npm. Resolve the binary (it may not be on PATH in nvm environments) and detect the command namespace.
@@ -37,6 +38,7 @@ echo "Using: $FLOW_CMD (CLI version $CURRENT)"
 ```
 
 > **All commands across this skill are written as `uip maestro flow ...` (the ≥ 0.3.4 form).** If version detection above returns < 0.3.4, replace `uip maestro flow` with `uip flow`. Arguments and flags are identical — only the prefix differs. See UiPath/cli#841 for background on the restructuring. <!-- uip-check-skip -->
+<!-- skill-flavor:cli-availability:end -->
 
 ## 2. Always use `--output json`
 
@@ -81,6 +83,7 @@ uip maestro flow registry search slack --output json \
 > uip … registry search slack --output json --output-filter "[*].{…}" | head -100                                # wrong: hides matches past line 100
 > ```
 
+<!-- skill-flavor:external-parser-fallback:start -->
 ### When to fall back to `python3` / `jq`
 
 `--output-filter` is the preferred extraction mechanism, but it is not a general-purpose transformation tool. Fall back to `python3 -c` or `jq` when JMESPath cannot express the operation:
@@ -100,6 +103,7 @@ Before reaching for an external parser, verify the JSON shape. The CLI roots `--
   - When unsure, probe before guessing: `--output-filter "keys(@)"` (object) or `--output-filter "[0] | keys(@)"` (array).
 
 Most agent-side retry loops on `uip --output json` parsing come from guessing the shape wrong; verify, then parse.
+<!-- skill-flavor:external-parser-fallback:end -->
 
 ### Cross-references
 
@@ -121,6 +125,7 @@ Every `uip` command returns one of two response shapes:
 
 Always check `Result` first. On failure, `Message` and `Instructions` carry the diagnostic detail.
 
+<!-- skill-flavor:authentication:start -->
 ## 5. Login state
 
 | Capability | Login required? |
@@ -143,6 +148,7 @@ Log in interactively (opens browser):
 uip login
 uip login --authority https://alpha.uipath.com    # non-production environments
 ```
+<!-- skill-flavor:authentication:end -->
 
 ## 6. `--folder-key` requirement
 

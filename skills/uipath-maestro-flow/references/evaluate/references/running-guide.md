@@ -1,5 +1,6 @@
 # Running Flow Evaluations
 
+<!-- skill-flavor:evaluation-runs:start -->
 `uip maestro flow eval run *` — start, monitor, inspect, and compare evaluation runs. All run commands require `uip login` and a Flow solution that already exists in Studio Web.
 
 > **Before running any of these:** read [upload-safety.md](upload-safety.md). The skill must NOT auto-run `uip solution upload` to satisfy the "solution must be in Studio Web" prerequisite. If the solution isn't in Studio Web, ask the user.
@@ -213,3 +214,4 @@ Use `--only-failed` to filter to these rows. Use `--verbose` to read the justifi
 - **Don't compare runs from different eval sets.** `compare` aligns by data point name; cross-set deltas are meaningless.
 - **Don't rely on aggregate `Score` alone.** Inspect per-evaluator scores. A 0.86 aggregate can mask a high-similarity-but-wrong-trajectory failure.
 - **Don't keep retrying `eval run status` while `--wait` is still blocking from another shell.** Pick one — either `--wait` or polling status — to avoid race conditions on the same run ID.
+<!-- skill-flavor:evaluation-runs:end -->

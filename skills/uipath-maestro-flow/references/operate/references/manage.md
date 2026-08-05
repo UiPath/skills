@@ -1,5 +1,6 @@
 # Manage — Instance Lifecycle
 
+<!-- skill-flavor:instance-lifecycle:start -->
 Intervene in a running or faulted Flow instance: pause, resume, cancel, retry. All commands require `uip login` and `--folder-key <FOLDER_KEY>` (`-f` shorthand).
 
 > **Stub-with-content.** This guide ships with the canonical command list. Use-case framing (when to pause vs cancel, retry semantics, partial-flow recovery) is a TODO for a future expansion.
@@ -37,3 +38,4 @@ uip maestro flow instance retry <INSTANCE_ID> -f <FOLDER_KEY> --output json    #
 
 - **Never `retry` a faulted instance without diagnosing the root cause first.** Triage via [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md) — read incidents, runtime variables, and the deployed asset. Then decide whether to retry, cancel, or re-author.
 - **Never skip the `--folder-key` flag.** Without it the command rejects before reaching the API.
+<!-- skill-flavor:instance-lifecycle:end -->

@@ -1,5 +1,6 @@
 # Evaluate — Design and run Flow evaluations
 
+<!-- skill-flavor:evaluation-contract:start -->
 Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval set CRUD with entry-point pinning, data point management with file attachments, and Studio Web run start/status/results/list/compare. Local CRUD is offline; runs require `uip login` and a Flow solution that already exists in Studio Web.
 
 > **Where you came from / where to go next.** Evaluate is downstream of Operate (ship the flow → evaluate it on Studio Web) and feeds back into Author (failing eval → fix the `.flow` → re-ship → re-evaluate). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); publish/deploy lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage on a debug or process run lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
@@ -130,3 +131,4 @@ After a run completes, report:
 
 - [shared/cli-commands.md](../shared/cli-commands.md) — flat CLI lookup including `eval` subcommands
 - [shared/cli-conventions.md](../shared/cli-conventions.md) — login states, `--output json`, JSON output shape
+<!-- skill-flavor:evaluation-contract:end -->

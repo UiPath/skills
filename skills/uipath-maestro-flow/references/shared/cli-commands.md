@@ -1,5 +1,6 @@
 # uip maestro flow — CLI Command Reference
 
+<!-- skill-flavor:command-reference:start -->
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
 > For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
@@ -370,3 +371,4 @@ See the relevant node guide in `nodes/` for connector CLI commands and the confi
 ## Global options (all commands)
 
 All `uip` commands support `--output json|yaml|table` and `--help`. Run any command with `--help` to discover all available options.
+<!-- skill-flavor:command-reference:end -->

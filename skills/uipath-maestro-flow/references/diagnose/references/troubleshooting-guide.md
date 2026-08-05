@@ -1,5 +1,6 @@
 # Troubleshooting Failed Flows
 
+<!-- skill-flavor:diagnostic-workflow:start -->
 Diagnostic workflow for failed debug runs and deployed process runs. All commands require `uip login`.
 
 > **`--folder-key` is required.** All `instance` and `incident get` commands require `--folder-key <FOLDER_KEY>`. Get the folder key from `uip or folders list --output json` or from the job/process context.
@@ -113,3 +114,4 @@ uip maestro flow incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output j
 ```
 
 Use `instance incidents <INSTANCE_ID>` to get incidents scoped to a specific run, then `incident get <INCIDENT_ID>` for full detail on a specific incident.
+<!-- skill-flavor:diagnostic-workflow:end -->

@@ -29,6 +29,7 @@ For complex flows, produce a plan before building. Reference [planning-arch.md](
 **Judgment call:** "Build me a flow that processes invoices."
 → Ambiguous requirements. Ask clarifying questions; plan if answers reveal complexity.
 
+<!-- skill-flavor:greenfield-setup:start -->
 ## Three-turn execution map
 
 Steps 0–6 are **logical phases**, not separate turns. A typical greenfield build collapses to **three assistant turns** (universal SKILL.md rule #10). Each step heading below carries a `[T1]` / `[T2]` / `[T3]` tag — emit every tool call inside the same Turn as one assistant message.
@@ -229,7 +230,9 @@ uip maestro flow registry get "<node-type>" --local --output json  # get full ma
 ```
 
 Run from inside the flow project directory. Returns the same manifest format as the tenant registry. Use `--local` to wire in-solution resources (RPA, agents, flows, API workflows) without publishing them first. `search --local` omits `AvailableOnTenant` — drop it from `--output-filter` projections.
+<!-- skill-flavor:greenfield-setup:end -->
 
+<!-- skill-flavor:authoring-execution:start -->
 ## Step 4 — Build the flow **[T2]**
 
 > **`flow init` scaffolds ONLY the manual trigger (`start` / `core.trigger.manual`) with zero edges.** Every other user-owned node — **including the End node** — is yours to add via `Edit` / `Write`. Any HTTP / connector / connector-trigger node you `node add`-ed in T1 is already in `nodes[]` and `definitions[]` but has empty `inputs.detail` (filled in T3) and is not wired yet.
@@ -283,7 +286,9 @@ Read [editing-operations.md](editing-operations.md) for strategy selection and p
 > **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user (per the dropdown question rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
 For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/remove/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
+<!-- skill-flavor:authoring-execution:end -->
 
+<!-- skill-flavor:validation-format:start -->
 ## Step 5 — Validate **[T3 — chain with Step 6, plus any T1 `node configure`]**
 
 ### Canonical T3 chain — issue this as ONE `Bash` call
@@ -323,7 +328,9 @@ Standalone (only if not chained from Step 5):
 ```bash
 uip maestro flow format <ProjectName>.flow --output json
 ```
+<!-- skill-flavor:validation-format:end -->
 
+<!-- skill-flavor:completion-handoff:start -->
 ## Completion Output
 
 When you finish building the flow, report to the user:
@@ -348,3 +355,4 @@ Authoring terminates here. Each option below hands off to Operate — read [oper
 | **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
 
 Do not run any of these actions without explicit user selection. Once the user picks an option, read [operate/CAPABILITY.md](../../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc.
+<!-- skill-flavor:completion-handoff:end -->

@@ -80,6 +80,7 @@
 
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo @chandusailella @mukundbayyaram
+/skill-flavors/*/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo @chandusailella @mukundbayyaram
 # Flow test tasks (general) — more specific subfolder rules below override this
 /tests/tasks/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh @DevMomo
 

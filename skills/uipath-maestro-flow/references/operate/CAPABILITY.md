@@ -1,5 +1,6 @@
 # Operate — Ship, run, and manage deployed flows
 
+<!-- skill-flavor:operate-contract:start -->
 Capability index for the lifecycle of a flow as a deployed asset. Operate owns everything that touches the cloud — `solution resources refresh`, Studio Web upload, Orchestrator deploy, `flow debug`, `process run`, `job status/traces`, and `instance` lifecycle (pause, resume, cancel, retry). Requires `uip login`.
 
 > **Where you came from / where to go next.** Operate is downstream of Author (build the flow → ship it) and upstream of Diagnose (run faults → diagnose). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
@@ -58,6 +59,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 - **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution against real systems.
 - **Never `retry` a faulted instance without diagnosing the root cause first.** Triage via [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) — read incidents, runtime variables, and the deployed asset. Then decide whether to retry, cancel, or re-author.
 - **Never start diagnosis from `job traces`.** Traces are last-resort verbose output. Begin with incidents — see [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) for the priority ladder.
+<!-- skill-flavor:operate-contract:end -->
 
 ## References
 
