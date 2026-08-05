@@ -1,5 +1,6 @@
 task_id: skill-agent-inline-memory-space
 description: >
+  PARKED (M8 — memory not autonomous-attachable; see skip comment below).
   End-to-end test: scaffold a flow project with an inline low-code
   agent that attaches an existing UiPath Memory Space with
   `uip agent memory`. Verifies that memory spaces are modeled as

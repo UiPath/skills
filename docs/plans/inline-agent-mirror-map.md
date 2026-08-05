@@ -9,7 +9,7 @@ Delta classes:
 - **A — near-verbatim**: token/term swaps only (`{{input.x}}` → `{{ $vars.x }}`, `settings.model` → `inputs.model`, `agent.json` → node `inputs`).
 - **B — skeleton-swap**: twin's heading skeleton + discovery/semantics kept; "author the resource.json" sections replaced by node-type pattern + full `inputs` spec + `definitions[]` requirement + artifact edge + name-authority note + projection-derived fields not to author.
 - **C — not mirrored**: standalone-only or out of mirror scope (decision 7). Cleanup/redirect handled by the M1 uipath-agents redirect pass where noted.
-- **D — inline-only new**: no twin; content sourced from the research record (flow-workbench contracts).
+- **D — inline-only new**: no twin, or twin not mirrorable (limitation doc); content sourced from the research record (flow-workbench contracts).
 
 ## Map
 
