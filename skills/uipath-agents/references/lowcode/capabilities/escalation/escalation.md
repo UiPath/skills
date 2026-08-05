@@ -50,10 +50,6 @@ Filter the result for entries whose `Type` is `"Workflow Action"` (Coded / Coded
 
 `Key` identifies the backing app. `resource list` does not return `systemName`, `deployVersion`, or the action schema — fetch those in Step 3 with `uip solution resources get`.
 
-**Solution-internal apps require the UNFILTERED list.** `--kind`, `--source`, and `--search` filters currently apply only to the remote catalog — a `Source: "Local"` app is dropped by every filtered query and appears only in a plain `uip solution resources list --output json`. Run the unfiltered list (from the solution directory) before concluding an app is absent, and always pass the row's `Key` — not the name — to `resources get` (name lookups fail for solution-internal apps).
-
-**App not in the list — STOP.** If the named app has no row in `uip solution resources list` (or Step 3's `resources get` exits non-zero / "was not found"), the app cannot back an escalation. Report `<APP_NAME> was not found in the solution or the resource catalog — the escalation cannot be wired` and stop. Do NOT retry with alternate search terms, other endpoints, raw API calls, or re-authentication, and do NOT write the escalation (or an escalate guardrail action) referencing the missing app — a single failed lookup is terminal for this run.
-
 ### Step 3 — Fetch the app's action schema
 
 Pass the `Key` from Step 2 to `uip solution resources get` — one CLI-native call returns the app spec, including the action schema. Works for both external (`Source: "Remote"`) and solution-internal (`Source: "Local"`) apps, even before the app is imported into the solution. Run from the solution directory (or pass `--solution-folder <path>`).
