@@ -68,11 +68,9 @@ The `.nupkg` includes auto-generated UiPath metadata files:
 
 ### OAuth Client ID
 
-Pack manages the `uipath.json` SDK config file, which includes the OAuth client ID for the deployed app:
-- First pack: creates a new non-confidential client ID
-- Subsequent packs: the existing client ID in `uipath.json` is **reused automatically**
+`pack` **copies `uipath.json` verbatim** into the package — it does **not** create, mint, or modify the client ID (verified on `codedapp-tool` 1.197). The `clientId` is set once at **scaffold time** (from the External Application) and carried through unchanged by every pack.
 
-> **Do NOT pass `--reuse-client`.** The flag was removed from the CLI — passing it errors `unknown option '--reuse-client'`. Client-ID reuse is now the default; just confirm `uipath.json`'s `clientId` is unchanged after pack (a changed client ID breaks the deployed app's auth). Older docs that tell you to pass `--reuse-client` are stale.
+> **Do NOT pass `--reuse-client`.** The flag was removed from the CLI — passing it errors `unknown option '--reuse-client'`, and there is **no** client option on `pack` at all. `uipath.json` is the single source of truth: ensure `clientId` is correct there **before** packing. Older docs that say "first pack creates a client" or "pass `--reuse-client` to reuse it" are stale.
 
 ### Dry Run
 
@@ -213,28 +211,28 @@ An upgrade is just Pack → Publish → Deploy with a **bumped version** — `de
 1. **Bump the version** on `pack`/`publish` (re-using a version fails `Version already exists`).
 2. **Omit `--path-name`.** The URL slug already exists; re-passing it errors `routing name must be unique`. Omitting it upgrades the app **at its current URL** — no new URL is minted. Pass `--path-name` only on the *first* deploy of a brand-new app.
 3. **Omit `-v` / `--version`** on `deploy` — let it default to Latest. Targeting a just-published version the catalog hasn't finished indexing yields a misleading `...has not been published yet`.
-4. **Keep the same `clientId`.** Reuse is automatic (see [OAuth Client ID](#oauth-client-id)); a changed client ID breaks the deployed app's auth.
+4. **Don't change `clientId`** in `uipath.json` between versions — `pack` carries it through verbatim, so it stays unless you edit the file; a changed client ID breaks the deployed app's auth.
 5. **Looks stale after upgrade? It's browser cache.** `deploy` prints the canonical `…/<app-name>` URL, but the user's existing vanity path keeps serving — the new build is live. Hard-refresh (Cmd/Ctrl+Shift+R) to confirm.
 
-> **Upgrade auto-detect needs a recent CLI.** The in-place upgrade flow shipped in `codedapp-tool` 1.198. If upgrades behave inconsistently across machines (one upgrades cleanly, another duplicates or fails), the machines are on different tool versions — run `uip tools update` to align them, and compare `uip tools list --output json`.
+> **Keep the CLI current.** In-place upgrade auto-detect works on current `codedapp-tool` (verified on 1.197). If upgrades behave inconsistently across machines, they're likely on different tool versions — run `uip tools update` to align them, and compare `uip tools list --output json`.
 
-#### Upgrade matches by name — keep it stable
+#### Upgrade identity — historically fragile, now robust
 
-`deploy` decides *upgrade vs. fresh* by finding the existing deployment via its **app name / systemName**, which must match the app's **portal display name**. When it can't match, it silently falls back to a **fresh** deploy and fails:
+On **older** `codedapp-tool` builds, `deploy` matched an existing deployment by the app's **portal display name**, so renaming the app in the portal — or `pack` silently sanitizing a spaced name — made the CLI lose the deployment and fall into a fresh deploy that then collided:
 
 ```
 This app name is already deployed in this folder. Please choose a different name.
 HTTP 400 · code 1004 · "app already deployed in folder"
 ```
 
-This is the single biggest cause of *"the same steps upgraded one app but not another"*. To keep upgrades reliable:
+That was [APPS-35627](https://uipath.atlassian.net/browse/APPS-35627). **Verified fixed on `codedapp-tool` 1.197 for CLI-deployed apps:** `deploy` resolves the app by name/systemName **server-side** and upgrades in place even when the portal display name differs — and even with no local `.uipath/app.config.json`. So the old "never rename / display name must equal `-n`" rule is **not required** on current builds.
 
-- **Use the exact same `-n <name>` on every `pack` / `publish` / `deploy`.** Changing it — even casing or spacing — mints a new systemName and breaks upgrade matching. `pack` also **sanitizes** the name (strips spaces and invalid characters: `"My App"` → `myapp`), so a name with spaces drifts silently across runs. Pick one clean kebab-case name up front and never change it.
-- **Keep the portal display name identical to the package name.** Known bug ([APPS-35627](https://uipath.atlassian.net/browse/APPS-35627), open): renaming the app in the portal to a friendly title (`DLA Contract Quality Review`) while the package is `dla-contract-quality-review` makes the CLI unable to find it → 1004. Until it's fixed, do not give the app a portal display name that differs from `-n`. If someone already renamed it, rename it back to match `-n`, then re-deploy.
-- **Keep `uipath.json`'s `clientId` populated.** An empty `clientId` makes `pack` mint a new client + systemName every run ([APPS-35784](https://uipath.atlassian.net/browse/APPS-35784)), silently breaking upgrade detection.
-- **Portal-first apps:** if the app was first created from the portal (not the CLI), verify its exact display title, the folder key, and that your logged-in account can see it in that folder before attempting a CLI upgrade.
+Still worth doing as cheap insurance:
 
-**Already stuck at 1004** and the name can't be re-aligned? The only recovery today is to **delete the deployment from the Orchestrator UI**, then run a fresh `deploy` (with `--path-name`). There is no `undeploy` / `--force` flag yet.
+- **Pick a clean lowercase-kebab `-n` up front and keep it stable.** `pack` silently **lowercases and deletes spaces/invalid characters** (`"My Jobs App"` → `myjobsapp` — spaces removed, not hyphenated), so a spaced or mixed-case name becomes something you didn't intend.
+- **Portal-first apps (unverified):** an app first created in the **portal** (never CLI-deployed) hasn't been tested on this upgrade path. If the CLI can't find it, align the portal display name to `-n` and confirm the folder key + account access before upgrading.
+
+If you ever do get stuck on `1004` and can't re-align, delete the deployment from the **Orchestrator UI** and redeploy fresh — there is no `undeploy` / `--force` flag yet ([APPS-35784](https://uipath.atlassian.net/browse/APPS-35784)).
 
 #### URL reserved words
 
@@ -384,11 +382,12 @@ uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 | `Folder key required` / deploy hangs on prompt | Missing folder key | Resolve via `uip or folders list --output json`, then run `uip codedapp deploy --folder-key <key> ...` (or `UIPATH_FOLDER_KEY=<key>` env-var prefix). |
 | `Missing tenant name` on publish | `UIPATH_TENANT_NAME` not set | Set in `.env` or pass `--tenant-name` |
 | `dist/ not found` | App not built | Run `npm run build` |
-| Pack shows wrong clientId | Stale `uipath.json` | Client ID is reused automatically — do NOT pass `--reuse-client` (removed from the CLI). If it's genuinely wrong, delete `uipath.json` and re-pack. |
+| Pack shows wrong clientId | Stale `uipath.json` | `pack` copies `uipath.json` verbatim — it doesn't manage the client ID. Fix `clientId` in `uipath.json`. Do NOT pass `--reuse-client` (removed from the CLI). |
 | `unknown option '--reuse-client'` | Passing a removed flag | Drop `--reuse-client` — reuse is the default now. |
 | `routing name must be unique` on upgrade | `--path-name` re-passed on an upgrade | Omit `--path-name`; it's first-deploy only (see [Upgrading an existing app](#upgrading-an-existing-app)). |
 | App gets a **new URL** on upgrade | `--path-name` passed on upgrade minted a fresh slug | Omit `--path-name` on upgrades to keep the existing URL the user already shared. |
 | Deployed app looks stale after upgrade | Browser cache on the vanity path | Hard-refresh (Cmd/Ctrl+Shift+R); the new build is already live. |
-| `This app name is already deployed in this folder` / HTTP 400 `code 1004` | CLI couldn't match the existing deployment (name / systemName / portal-display-name mismatch) so it took the fresh-deploy path | Make the portal **display name equal `-n`**, keep `-n` and `uipath.json`'s `clientId` stable, then re-deploy. If unrecoverable, delete the deployment in the Orchestrator UI and redeploy. See [Upgrade matches by name](#upgrade-matches-by-name--keep-it-stable). |
-| `pack` sanitized the app name (e.g. `My App` → `myapp`) | Name has spaces/invalid characters | Use a clean kebab-case `-n` with no spaces — a drifting name mints a new systemName and breaks upgrade matching. |
+| `This app name is already deployed in this folder` / HTTP 400 `code 1004` | **Older CLI** matched by display name and lost the existing app (APPS-35627 — fixed on 1.197+) | Update the CLI (`uip tools update`). If it persists (e.g. a portal-first app), align the portal display name to `-n` and redeploy; if unrecoverable, delete via the Orchestrator UI. See [Upgrade identity](#upgrade-identity--historically-fragile-now-robust). |
+| `pack` sanitized the app name (e.g. `My Jobs App` → `myjobsapp`) | Name has spaces/capitals/invalid chars | `pack` lowercases and deletes spaces. Use a clean lowercase-kebab `-n` up front. |
+| `Published app with package name '<name>' already exists` (on publish) | App name already registered **in the tenant** (names are tenant-unique at registration) | Choose a different, distinctive `-n` (generic names like `my-app` are often taken). |
 | Upgrade shipped the **wrong (older) version** | Old CLI defaulting `deploy` to the oldest version | Update the CLI (`uip tools update`); if it persists, pin the target explicitly with `-v <version>`. |
