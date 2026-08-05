@@ -21,6 +21,8 @@ from flow_inline_wiring import (  # noqa: E402
     assert_bindings_rows,
     assert_builtin_identity,
     assert_cluster_vars_ref,
+    assert_connector_bindings,
+    assert_connector_inputs,
     assert_context_inputs,
     assert_definition_present,
     assert_edge,
@@ -1047,3 +1049,173 @@ def test_escalation_inputs_reject_quick_form_schema_on_app_task():
         assert_escalation_inputs(
             _escalation_node(schema={"fields": [], "outcomes": []})
         )
+
+
+# ---------------------------------------------------------------------------
+# assert_connector_inputs / assert_connector_bindings (M6)
+# ---------------------------------------------------------------------------
+
+CONN_ID = "2dc0d640-eac6-445f-9f0c-d5654c4f3b1a"
+CONN_FOLDER_KEY = "040287B3-85B2-4052-A4E1-B2C14BD0C49B"  # any-case tolerated
+
+
+def _connector_detail(**overrides):
+    detail = {
+        "connector": "uipath-uipath-airdk",
+        "connectionId": CONN_ID,
+        "connectionResourceId": CONN_ID,
+        "connectionFolderKey": CONN_FOLDER_KEY,
+        "method": "POST",
+        "endpoint": "/v2/webSearch",
+        "uiPathActivityTypeId": "de237ff4-fac6-34dc-b4a5-8d0708c99e15",
+        "errorState": {"issues": []},
+        "bodyParameters": {"query": '{{prompt: "The natural language query"}}'},
+        "configuration": '=jsonString:{"essentialConfiguration":{"objectName":"v2::webSearch"}}',
+    }
+    detail.update(overrides)
+    return {k: v for k, v in detail.items() if v is not ...}
+
+
+def _connector_node(detail=..., **input_overrides):
+    inputs = {
+        "source": "7f3c2a10-9e4b-4c8d-a1f2-5b6d7e8f9a0b",
+        "name": "WebSearch",
+        "description": "Performs a web search operation.",
+        "detail": _connector_detail() if detail is ... else detail,
+    }
+    inputs.update(input_overrides)
+    inputs = {k: v for k, v in inputs.items() if v is not ...}
+    return {
+        "id": "webSearch",
+        "type": "uipath.agent.resource.tool.connector.uipath-uipath-airdk.web-search",
+        "typeVersion": "1.0.0",
+        "display": {"label": "Web Search"},
+        "inputs": inputs,
+    }
+
+
+def test_connector_inputs_pass_on_cli_populated_form():
+    detail = assert_connector_inputs(_connector_node())
+    assert detail["connectionId"] == CONN_ID
+
+
+def test_connector_inputs_reject_missing_or_empty_detail():
+    with pytest.raises(SystemExit, match="node configure"):
+        assert_connector_inputs(_connector_node(detail=None))
+    with pytest.raises(SystemExit, match="node configure"):
+        assert_connector_inputs(_connector_node(detail={}))
+
+
+def test_connector_inputs_reject_non_uuid_connection_identity():
+    with pytest.raises(SystemExit, match="connectionId"):
+        assert_connector_inputs(
+            _connector_node(detail=_connector_detail(connectionId="my-connection"))
+        )
+    with pytest.raises(SystemExit, match="connectionFolderKey"):
+        assert_connector_inputs(
+            _connector_node(detail=_connector_detail(connectionFolderKey=""))
+        )
+
+
+def test_connector_inputs_reject_missing_endpoint_or_method():
+    with pytest.raises(SystemExit, match="endpoint"):
+        assert_connector_inputs(
+            _connector_node(detail=_connector_detail(endpoint="v2/webSearch"))
+        )
+    with pytest.raises(SystemExit, match="method"):
+        assert_connector_inputs(
+            _connector_node(detail=_connector_detail(method=""))
+        )
+
+
+def test_connector_inputs_reject_hand_written_configuration():
+    # fieldsContainer-only blob = the hand-authored shape that passes
+    # validate but misses essentialConfiguration and fails at runtime.
+    with pytest.raises(SystemExit, match="essentialConfiguration"):
+        assert_connector_inputs(
+            _connector_node(
+                detail=_connector_detail(
+                    configuration='{"fieldsContainer":{"inputFields":[]}}'
+                )
+            )
+        )
+    with pytest.raises(SystemExit, match="essentialConfiguration"):
+        assert_connector_inputs(
+            _connector_node(detail=_connector_detail(configuration=...))
+        )
+
+
+def test_connector_inputs_reject_derived_resource_fields():
+    with pytest.raises(SystemExit, match="properties"):
+        assert_connector_inputs(
+            _connector_node(properties={"toolPath": "/v2/webSearch"})
+        )
+    with pytest.raises(SystemExit, match="inputSchema"):
+        assert_connector_inputs(_connector_node(inputSchema={"type": "object"}))
+    with pytest.raises(SystemExit, match="iconUrl"):
+        assert_connector_inputs(_connector_node(iconUrl="https://x/image"))
+    with pytest.raises(SystemExit, match="resourceType"):
+        assert_connector_inputs(_connector_node(**{"$resourceType": "tool"}))
+
+
+def test_connector_inputs_reject_missing_name_or_description():
+    with pytest.raises(SystemExit, match="name"):
+        assert_connector_inputs(_connector_node(name=""))
+    with pytest.raises(SystemExit, match="description"):
+        assert_connector_inputs(_connector_node(description=...))
+
+
+def _connector_flow_bindings(**overrides):
+    rows = {
+        "conn": {
+            "id": "b1",
+            "name": "uipath-uipath-airdk connection",
+            "type": "string",
+            "resource": "connection",
+            "resourceKey": CONN_ID,
+            "propertyAttribute": "ConnectionId",
+            "default": CONN_ID,
+        },
+        "folder": {
+            "id": "b2",
+            "name": "FolderKey",
+            "type": "string",
+            "resource": "connection",
+            "resourceKey": CONN_ID,
+            "propertyAttribute": "FolderKey",
+            "default": CONN_FOLDER_KEY,
+        },
+    }
+    rows.update(overrides)
+    return {"bindings": [r for r in rows.values() if r is not None]}
+
+
+def test_connector_bindings_pass_on_cli_written_rows():
+    rows = assert_connector_bindings(_connector_flow_bindings(), CONN_ID)
+    assert len(rows) == 2
+
+
+def test_connector_bindings_reject_missing_or_mispointed_rows():
+    with pytest.raises(SystemExit, match="ConnectionId"):
+        assert_connector_bindings(_connector_flow_bindings(conn=None), CONN_ID)
+    with pytest.raises(SystemExit, match="FolderKey"):
+        assert_connector_bindings(_connector_flow_bindings(folder=None), CONN_ID)
+    # Row exists but points at a different connection than detail.connectionId
+    with pytest.raises(SystemExit, match="ConnectionId"):
+        assert_connector_bindings(
+            _connector_flow_bindings(), "99999999-9999-4999-8999-999999999999"
+        )
+    # FolderKey default must be a UUID, not a display name
+    bad = _connector_flow_bindings()
+    bad["bindings"][1]["default"] = "uipath-agents"
+    with pytest.raises(SystemExit, match="FolderKey"):
+        assert_connector_bindings(bad, CONN_ID)
+
+
+def test_connector_bindings_ignore_non_connection_rows():
+    flow = _connector_flow_bindings()
+    flow["bindings"].append(
+        {"id": "b3", "name": "name", "resource": "process",
+         "resourceKey": "x", "propertyAttribute": "ConnectionId", "default": CONN_ID}
+    )
+    assert_connector_bindings(flow, CONN_ID)
