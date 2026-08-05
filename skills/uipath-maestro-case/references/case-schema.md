@@ -488,8 +488,25 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
+| `external-workflow` | `plugins/tasks/external-workflow/` |
 
-> **Not supported yet — do NOT author.** `external-agent`, `external-workflow`, `document-extraction`, `flow-process`. None of these are valid in `caseplan.json` (SKILL.md Rule 16).
+> **Not supported yet — do NOT author.** `external-agent`, `document-extraction`, `flow-process`. None of these are valid in `caseplan.json` (SKILL.md Rule 16).
+
+### `external-workflow` task data
+
+Integration Service **external automation** call — a workflow running in an external system, invoked through an IS connection. Packages to `bpmn:ServiceTask`.
+
+| Field | Notes |
+|---|---|
+| `data.serviceType` | **Always write explicitly.** `"Intsvc.AsyncWorkflowExecution"` (default) or `"Intsvc.SyncWorkflowExecution"`. |
+| `data.name` / `data.folderPath` | `=bindings.<id>` refs, `resource: "process"` pair — same shape as other non-connector tasks. |
+| `data.context[]` | The external-automation triplet: `operation`, `eventMode`, `executionType`. |
+| `data.inputs[]` / `data.outputs[]` | From the resolved activity contract. |
+| `data.bindings[]` | Optional per-task binding array (schema allows; normally empty). |
+
+> **`serviceType` is never omitted.** The packager falls back to `Intsvc.SyncWorkflowExecution` when the key is absent, while the designer's default is `Intsvc.AsyncWorkflowExecution`. Omitting it silently converts an asynchronous call into a synchronous one, and `validate` does not flag it. Write the field on every emitted `external-workflow` task.
+
+> **`executionType` and `serviceType` must agree.** `executionType: "sync"` pairs with `Intsvc.SyncWorkflowExecution`; `"async"` with `Intsvc.AsyncWorkflowExecution`. Nothing validates the pairing.
 
 ---
 

@@ -82,7 +82,7 @@ You are generating an **SDD — a case definition blueprint** (NOT a traditional
    | — | {case variable} = {literal, =js:expression, or =js:vars.X.Y for dotted access} |
    ```
 
-7. **Task types — this skill generates 9 of the CLI's 10 task types. Choose based on WHAT THE TASK DOES, not its surface label.** The 10th CLI type, `external-agent`, has no generation plugin here — model it as `api-workflow` / `execute-connector-activity` instead (see below). Values like `connector-activity` or `wait-for-event` are not CLI task types at all. Emitting anything outside these 9 breaks downstream JSON generation. Consider all 9 for every task:
+7. **Task types — this skill generates 10 task types. Choose based on WHAT THE TASK DOES, not its surface label.** `external-agent`, `document-extraction`, and `flow-process` exist in the CLI but have no generation plugin here — model an external agent as `api-workflow` / `execute-connector-activity` instead (see below). Values like `connector-activity` or `wait-for-event` are not CLI task types at all. Emitting anything outside these 10 breaks downstream JSON generation. Consider all 10 for every task:
    - `action` — a human must review, approve, or make a judgment call. The task PAUSES for a person.
    - `agent` — AI reasoning: classification, criteria application, document analysis, risk assessment, triage. Use for any semi-structured reasoning.
    - `process` — deterministic multi-step BPMN: routing, orchestration, batch processing, report generation. No judgment (human or AI).
@@ -92,6 +92,7 @@ You are generating an **SDD — a case definition blueprint** (NOT a traditional
    - `wait-for-connector` — waits for an Integration Service event from an external system (in-stage trigger).
    - `execute-connector-activity` — executes a pre-built IS connector operation. Prefer over `api-workflow` when a connector exists.
    - `case-management` — starts a child case with its own lifecycle.
+   - `external-workflow` — a workflow owned and executed by an EXTERNAL system (Power Automate flow, ServiceNow workflow), reached through an Integration Service connection. Use only when the other system runs a multi-step workflow of its own; a single operation against that system is `execute-connector-activity`. Always lands as a placeholder — its resources are not reachable from the CLI.
 
    **A well-designed SDD uses a MIX of types.** If all tasks are `action`, the SDD is wrong — most processes have automated steps. If no tasks are `agent`, consider whether any task involves classification, criteria application, or document analysis.
 

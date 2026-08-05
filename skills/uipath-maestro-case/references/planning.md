@@ -114,7 +114,7 @@ When the plan-only / no-build exception is not active, continue with the normal 
 
 ### 3.1 Task Type catalog
 
-> **Closed enum — 9 values.** sdd.md `Type:` and caseplan.json `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 16 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
+> **Closed enum — 10 values.** sdd.md `Type:` and caseplan.json `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 16 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
 
 | sdd.md `Type:` / caseplan.json `type` | Plugin folder |
 |---|---|
@@ -127,6 +127,9 @@ When the plan-only / no-build exception is not active, continue with the normal 
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
+| `external-workflow` | `plugins/tasks/external-workflow/` |
+
+> **`external-workflow` — placeholder-only today.** The type is valid and packages correctly, but its resources live in a TypeCache slice (`IntsvcExternalAutomation`) that `uip maestro case registry pull` does not fetch, so there is no cache to search. Plan it as a placeholder unless the SDD supplies concrete connector identity. See [external-workflow/planning.md](plugins/tasks/external-workflow/planning.md).
 
 > **`agent` & `api-workflow` — create-on-missing.** Both kinds can be built inline at the Rule 17 gate — flow in [§ 3.4](#34-unresolved-resources); type specifics: [agent](plugins/tasks/agent/planning.md#creating-an-agent-inline) / [api-workflow](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline). All other kinds (regular RPA `process`, action, connectors, agentic process) use the §3.4 placeholder path.
 
