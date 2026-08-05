@@ -29,7 +29,7 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 7. **Do not duplicate what validation commands catch.** Reference the validation output by rule ID and message — do not manually re-describe the same issue, and do not restate what a command checks or that it passed. Every validation result is accounted for by its count in the validation table; Errors and Warnings additionally get a detail line.
 8. **Cap the review at 30 minutes of analysis.** For very large solutions (10+ projects), provide a summary review with deep dives on the 3 highest-risk projects. Offer to review remaining projects if the user wants.
 9. **Run the review CLI first, then apply the judgment catalog, for every agent encountered.** First run `uip agent review` (low-code) or `uip codedagent review` (coded) with `--output json` — it returns the deterministic findings (Step 2.5a). Then load the format-specific judgment catalog (`agents-lowcode-rules.md` or `agents-coded-rules.md`). Future phases add catalogs for RPA, flows, coded apps. This holds even when the skill loads mid-task: if review work already started before this skill loaded (e.g., a generic code-review pass produced findings), Step 2.5a and the guardrail Step 0 catalog fetch are still mandatory — run them, then merge the earlier findings into this skill's report format. Prior review output is never a substitute for the review CLI or the live catalog.
-10. **Rule findings are authoritative as emitted.** Carry review-CLI findings (`Data.Issues[]`) into the report verbatim — `RuleId`, `Severity`, `Description`, `File`, `SuggestedFix` unchanged. For the judgment catalog, use its `rule_id`, `severity`, `trigger`, and `suggested_fix` verbatim. Map severity to the report's bands: `error` → Critical, `warning` → Warning, `info` → Info. `judgment` severity rows default to Warning; the agent may escalate or de-escalate with reasoning logged in the finding's `description`. Do not re-rank otherwise.
+10. **Rule findings are authoritative as emitted.** Carry review-CLI `RuleId`, `Severity`, `Description`, `File`, and `SuggestedFix` into the report verbatim. Format the `Recommendation` as `<File>: <Description>. <SuggestedFix>`. Write judgment-catalog findings in the same format, with concise wording. Map severity to the report's bands: `error` → Critical, `warning` → Warning, `info` → Info. `judgment` severity rows default to Warning; the agent may escalate or de-escalate with reasoning logged in the finding's `description`. Do not re-rank otherwise.
 11. **Report rules that could not be applied** (missing tooling, missing file, review CLI unavailable, `status: deferred`) in a dedicated "Rules Skipped" subsection of the report — never silently skip. Only report when the rule was intended, but could not be applied for some reason. Non-applicable rules are not skipped.
 12. **Never invent `rule_id` values.** Every `rule_id` cited in the report MUST appear verbatim in EITHER a loaded judgment-catalog file (`references/agents/agents-*-rules.md`) OR the `uip agent review` / `uip codedagent review` JSON output. `rule_id` is a stable contract identifier — consumers grep for it, dashboards aggregate by it, audits trace it. An invented identifier looks authoritative but cannot be looked up, doesn't aggregate, and produces a different name for the same observation on the next run. If you observe a real issue covered by neither source, the finding is still valid — report it as a normal Critical / Warning / Info finding **without** a `rule_id` (no `` `RULE_ID` `` backtick token in the line). **Before emitting the report, scan every cited `rule_id` and confirm it appears verbatim in a loaded catalog file or the review-CLI output; demote any that don't to `rule_id`-less findings.**
 13. **Grade every agent project by the rubric — derived, never asserted.** For **agent projects** (phase 1), produce a letter grade (`A`/`B`/`C`/`D`/`F`, no `+`/`-`) per agent and overall, computed in Step 4.5 as `min(G_det, G_jud)`. **G_det is read from the review CLI's `Data.Grade` (Step 2.5a) — do not recompute it from finding counts.** G_jud you compute from judgment (architecture scores + Step 2.5b + Step 3). CLI findings already shaped `Data.Grade`; only judgment findings feed G_jud, so each finding lands in exactly one sub-grade. Show the binding constraint for every grade; a grade with no shown derivation is invalid. A security or data-integrity judgment Critical forces **F** regardless of design quality (hard gate, not a blend). The skill grade is always ≤ `Data.Grade` (min only lowers) — report both, never overwrite the CLI grade. Do **not** grade non-agent projects (RPA, flows, coded apps) — that rubric is a future phase. See [references/agents/agent-grading-rubric.md](references/agents/agent-grading-rubric.md).
@@ -291,7 +291,7 @@ The CLI runs the deterministic static checks its registry ships — structural/s
 7. **Merge findings into the Step 5 report** — into the Critical / Warning / Info findings tables, one row per finding:
 
    ```
-   | <id> | `<rule_id>` | <file> | <description> | <suggested_fix> |
+   | <id> | `<rule_id>` | `<file>`: <issue>. <fix>. |
    ```
 
    where prefix is `C-D-` (Critical), `W-D-` (Warning), or `I-D-` (Info) per the severity mapping in [`references/rule-format.md`](references/rule-format.md).
@@ -555,24 +555,24 @@ Output a structured report in chat (do NOT create a file):
 
 ### Critical Findings (block deployment)
 
-| ID | Rule | File | Issue | Fix |
-|---|---|---|---|---|
-| C-D-001 | `LOWCODE_SYSTEM_MESSAGE_MISSING` | `ClassifierAgent/agent.json` | `messages[0]` (system role) has empty content | Set `messages[0].content` to a non-empty system prompt |
-| C-001 | — | `ProjectA/Helper.cs` | Password argument typed String instead of SecureString | Change the argument type to SecureString |
+| ID | Rule | Recommendation |
+|---|---|---|
+| C-D-001 | `LOWCODE_SYSTEM_MESSAGE_MISSING` | `ClassifierAgent/agent.json`: `messages[0]` (system role) has empty content. Set `messages[0].content` to a non-empty system prompt. |
+| C-001 | — | `ProjectA/Helper.cs`: Password argument uses `String`. Change the argument type to `SecureString`. |
 
 ### Warnings (should fix before production)
 
-| ID | Rule | File | Issue | Fix |
-|---|---|---|---|---|
-| W-D-002 | `LC_PROMPT_ROLE_DEFINITION` | `ClassifierAgent/agent.json` | System prompt opens with task instructions before establishing the agent's role | Add an opening sentence: "You are an X that does Y." |
+| ID | Rule | Recommendation |
+|---|---|---|
+| W-D-002 | `LC_PROMPT_ROLE_DEFINITION` | `ClassifierAgent/agent.json`: System prompt starts with task instructions before defining the agent's role. Open with: "You are an X that does Y." |
 
 ### Improvement Opportunities
 
-| ID | Rule | File | Issue | Fix |
-|---|---|---|---|---|
-| I-D-001 | `LC_GUARDRAIL_RECOMMENDED` | `ClassifierAgent/agent.json` | inputSchema.properties carries `customer_email`, `ssn` with no PII guardrail | Add a PII-detection guardrail at Agent scope with a block action |
+| ID | Rule | Recommendation |
+|---|---|---|
+| I-D-001 | `LC_GUARDRAIL_RECOMMENDED` | `ClassifierAgent/agent.json`: `inputSchema.properties` contains `customer_email` and `ssn` without a PII guardrail. Add an Agent-scope PII guardrail with a block action. |
 
-> One row per finding. Review-CLI, judgment-catalog, and manual-checklist findings all go in these three tables — do not split them into separate sections by source, and never list a finding in more than one table. `Rule` is `—` for a finding with no `rule_id` (Critical Rule 12).
+> One row per finding. Format each recommendation as `<file>: <issue>. <fix>.` Use the CLI's `File`, `Description`, and `SuggestedFix` verbatim; keep judgment and manual findings concise. Review-CLI, judgment-catalog, and manual-checklist findings all go in these three tables — do not split them into separate sections by source, and never list a finding in more than one table. `Rule` is `—` for a finding with no `rule_id` (Critical Rule 12).
 
 ### Per-Project Summary
 | Project | Type | Language | Size | Validation | Quality | Grade | Key Findings |
