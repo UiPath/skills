@@ -4,9 +4,9 @@ description: >
   authored source, a stale entry-points.json, and misleading canaries in
   generated runtime trees.
   Verifies the reviewer refreshes and validates the project, runs deterministic
-  review without explicitly writing or editing project files, does not surface
-  CLI-managed generated state in the report, and accepts refresh-managed
-  synchronization instead of reporting pre-refresh state as a defect.
+  review without explicitly writing or editing project files, and accepts
+  refresh-managed synchronization instead of reporting pre-refresh state as a
+  defect.
 tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -72,7 +72,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Refreshed derived state passes; the report excludes CLI-managed state and ends with a matching final grade"
+    description: "Refreshed derived state passes; the report does not file CLI-managed state as a defect and ends with a matching final grade"
     command: "python3 $TASK_DIR/check_stale_generated_files.py"
     timeout: 30
     expected_exit_code: 0
