@@ -228,25 +228,25 @@ Before any Phase 3 mutation:
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
 
-## Step 9.7 — Connector task detail (gather-then-write)
+## Step 9.7 — Connector event/task detail (raw-cache gather-then-splice)
 
-**Phase A — gather.** For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md`:
+**Phase A — gather to target-local files.** For every resolved connector activity task, in-stage connector wait, and case-level event trigger in `tasks.md`:
 
-1. Run `get-connection` (each task runs its own — never reuse).
-2. Run `uip maestro case spec --type <activity|trigger> --activity-type-id <id> --connection-id <id> --input-details '<json>' --output json` per the plugin's `impl-json.md`.
-3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids; mint `var` / `id` / `elementId` on `caseShape.inputs` / `outputs` per the plugin's uniqueness rule.
+1. Run that target's own `get-connection`; never reuse a sibling target's response.
+2. Run `uip maestro case spec --type <activity|trigger> --activity-type-id <id> --connection-id <id> --input-details '<json>' --output json` through the selected implementation owner.
+3. Immediately Write the complete, unmodified response to `tasks/spec-cache.<elementId>.json`, one cache per target. Do not retain, summarize, or reconstruct the payload in reasoning. Required-field correction reruns only that target and replaces its cache; a declined gate retains the last successful response for audit but routes the target to its placeholder.
 
-Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderKey bindings) in reasoning. Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`).
+Skip targets that were unresolved in planning. A failed spec call preserves the resolved Phase 2 envelope without inventing a cache.
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then for each gathered task: one Edit setting `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs = caseShape.outputs` plus the matching root-level Connection + FolderKey binding entries. Skip the re-Read between sibling Edits.
+**Phase B — batched cache-backed splice.** Read `caseplan.json` once. For each successful target, freshly Read its own cache and splice the complete PascalCase `Data.CaseShape.Context`, `Inputs`, and `Outputs` subtrees required by that target. Recursively lower-case only the first character of object keys, preserve every value byte-for-byte, and apply only the selected owner's placeholder substitutions, target-owned IDs, output projection/deduplication, and envelope placement. Edit the existing Phase 2 target and matching root Connection/optional FolderKey bindings; never append a duplicate target or reuse another cache. Event triggers also derive their T-number entry in `tasks/trigger-spec-cache.json` from the same fresh cache Read for the global-variable dispatcher.
 
-**Phase C — sync + validate.** Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md) — single pass includes non-connector bindings from Step 9 and Connection bindings from this step. Run validate.
+**Phase C — dispatch + sync + validate.** After all resolved event-trigger sidecar entries exist, invoke the global-variable owner's spec-dependent trigger-output dispatch. Populate the IS connection cache, then regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md); the pass includes non-connector bindings from Step 9 and all Connection bindings from this step. Run validate.
 
-On context-compaction mid-gather: re-Read `caseplan.json`, scan for connector tasks without `data.context` populated, re-run Phase A for those only.
+On context compaction, treat the target caches and on-disk artifacts as authoritative: re-Read `caseplan.json`, scan for resolved connector targets without populated `context`, and rerun only a target whose complete cache is absent or whose prior spec attempt failed.
 
 ## Step 9.8 — Bind task input/output values (per-task Edit batch)
 
-One Read of `caseplan.json` at Step 9.8 entry. Then **one Edit per task** replacing that task's full `data.inputs` array. Skip the re-Read between sibling Edits. Skip placeholder tasks entirely — they have no inputs.
+One Read of `caseplan.json` at Step 9.8 entry. Then **one Edit per non-connector task** replacing that task's full `data.inputs` array. Skip the re-Read between sibling Edits. Skip placeholder tasks entirely — they have no inputs. Also skip persisted task types `execute-connector-activity` and `wait-for-connector`: Step 9.7 already spliced their CLI-authored input arrays with configured values, and replacing those arrays here would discard connector metadata.
 
 Per-task composition (in reasoning, before that task's Edit) per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
 

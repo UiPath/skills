@@ -13,7 +13,7 @@ Used by three:
 
 ## Phase 3 Implementation — Single CLI Call
 
-> **Each connector trigger runs its own `case spec`.** Even when two triggers share the same `connection-id`, `caseShape` is task-shape-specific (different `objectName`, `eventOperation`, `inputs`, `outputs`). Never reuse another task's spec output.
+> **Each connector target runs its own `case spec`.** Even when targets share the same `connection-id`, `caseShape` is target-specific (different `objectName`, `eventOperation`, inputs, and outputs). Never reuse another target's spec response or cache. “Single” means one target-local call per attempt; a required-field correction reruns that target and replaces its cache.
 
 ### Step 1 — Build `--input-details` JSON from tasks.md
 
@@ -36,13 +36,16 @@ Full input-details contract: [`case-spec-input-details.md`](case-spec-input-deta
 uip maestro case spec --type trigger \
   --activity-type-id "<type-id>" \
   --connection-id "<connection-id>" \
+  --object-name "<selected object when required>" \
   --input-details "<json from Step 1>" \
   --output json
 ```
 
 The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details`). The CLI returns the full `caseShape` populated with values from `--input-details`. Add `--object-name "<picked entity>"` for entity-typed Curated triggers ([planning § 2 Resolve the connection](connector-trigger-planning.md#2-resolve-the-connection)).
 
-Save the response. The interesting parts:
+Immediately use **Write** to persist the complete, unmodified response at `tasks/spec-cache.<elementId>.json`, where `<elementId>` identifies this target. Record `{ cachePath, targetKind, targetId, elementId }` in the working audit state. Do not hold, summarize, or reconstruct the payload in reasoning. A different target always gets a different cache.
+
+The relevant raw-cache paths are:
 
 > **`case spec --output json` returns PascalCase keys.** The `.Data.*` read paths below reflect that (`.Data.CaseShape.Context`, not `.Data.caseShape.context`). A camelCase jq path returns `null`. The spliced subtree is re-cased to camelCase on the way to disk — see [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase).
 
@@ -56,9 +59,15 @@ Save the response. The interesting parts:
 | `spec.caseShape.context[]` | `.Data.CaseShape.Context` — FE-canonical context array. Carries `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders, plus a `metadata.body.bindings[Property]` entry with `{{TRIGGER_REGISTRATION_KEY}}` placeholder when the trigger has event parameters |
 | `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty |
 
+### Step 2.a — Revalidate required event parameters (HARD GATE)
+
+Read this target's raw cache. For every required parameter collected from the lean planning spec, verify a non-empty value in the matching entry under `Data.CaseShape.Inputs`. If any is missing, ask for the named values, rebuild `--input-details`, rerun only this target's spec call, and immediately replace its cache with the new complete response; never patch the cached payload.
+
+If the user declines or the rerun still lacks a required value, retain the last successfully written complete cache for audit, route the selected target to its placeholder, and stop its enrichment. An audit-only cache must never enrich a placeholder.
+
 ### Step 3 — Mint binding IDs and (when applicable) trigger registration key
 
-Mint two prefixed IDs for the connection + folder bindings:
+Mint a prefixed ID for the connection binding and, only when `Data.Connection.FolderKey` is non-null, a distinct folder-binding ID:
 
 | Binding | ID format |
 |---|---|
@@ -87,9 +96,17 @@ The CLI emits placeholders the skill resolves at write-time:
 | `{{FOLDER_BINDING_ID}}` | `caseShape.context[name="folderKey"].value` (string `=bindings.{{FOLDER_BINDING_ID}}`); entry only present when `spec.connection.folderKey !== null` | `<folderBindingId>` |
 | `{{TRIGGER_REGISTRATION_KEY}}` | `caseShape.context[name="metadata"].body.bindings[*].metadata.ParentResourceKey` (string `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`); entry only present when `caseShape.context[name="metadata"].body.bindings` exists (i.e. trigger has event parameters) | `<eventTriggerKey>` |
 
-The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above and the key-casing normalization in [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase). **Every other key — current or future, top-level or nested — must be copied from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
+At mutation time, **Read** this target's raw cache and splice the complete `Data.CaseShape.Context`, `Data.CaseShape.Inputs`, and `Data.CaseShape.Outputs` subtrees required by its target owner. The rest of the response remains discovery metadata and is never written to `caseplan.json`.
 
-> **Mechanical contract.** At gather time, persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task / rule / trigger node). At write time, **Read that file and splice `Data.caseShape.context` verbatim** into the target shape, then re-case keys per [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase). The skill is a substituter, not a composer — the only edits between Read and Write are the placeholder substitutions above and that keys-only re-casing. **Never retype `context` content from agent reasoning.**
+The three subtrees and every nested object are CLI-authoritative. Permitted mutations are only:
+
+1. replace `{{CONN_BINDING_ID}}`, optional `{{FOLDER_BINDING_ID}}`, and optional `{{TRIGGER_REGISTRATION_KEY}}`;
+2. normalize object-key casing as specified below;
+3. mint target-owned `var` / `id` / `elementId` fields;
+4. project/deduplicate outputs; and
+5. place the result inside the selected target envelope.
+
+Preserve every other current or future key. Never retype a subtree from reasoning, selectively copy an allowlist, recase a value, or parse/rewrite a JSON string stored as a value.
 
 #### Normalize key casing (PascalCase → camelCase)
 
@@ -101,9 +118,15 @@ After splicing the spec subtree (`context` / `inputs` / `outputs` and their nest
 - **Scope: the spliced spec subtree only.** The skill-authored caseplan envelope (nodes, edges, variables, bindings, task scaffolding) is already camelCase — do not re-case it.
 - **Compatible with splice-verbatim (above).** Splice the full subtree first (never drop or retype content), then re-case keys. A keys-only transform is structural, not a memory reconstruction.
 
-### Step 5 — Mint `var` / `id` / `elementId` on inputs and outputs
+<a id="step-5--mint-var--id--elementid-on-inputs-and-outputs"></a>
 
-Per-plugin: each plugin's `impl-json.md` mints these onto `caseShape.inputs[]` / `caseShape.outputs[]` and writes them to its target shape (task vs trigger node).
+### Step 5 — Dispatch target-owned ID and output handling
+
+Do not mint the normalized arrays before entering the selected target owner:
+
+- the event-trigger target mints configuration-input IDs only and keeps its derived spec outputs unminted for the global-variable dispatcher;
+- the in-stage wait task mints both arrays with its task `elementId`; and
+- the connector-rule target mints both arrays with `<ownerNodeId>-<ruleId>`.
 
 Conventions (shared with activity):
 - `var` = `v` + 8 alphanumeric chars (unique across the case — see [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule))
@@ -142,9 +165,9 @@ The same stub therefore has two lifetimes: temporary for a resolved connector aw
 ### Procedure (Phase 3)
 
 1. Resolve the connector in planning exactly as the task does — [connector-trigger-planning.md § Planning Pipeline](connector-trigger-planning.md#planning-pipeline). The condition plugin's `planning.md` records the same fields (`type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter`) — T-entry layout: [connector-trigger-planning.md § tasks.md fields](connector-trigger-planning.md#tasksmd-fields-planning). **Event parameters and filter accept `=vars.X` / `=js:` expressions exactly like the task** — they compile into `rule.uipath.context` / filter via `case spec --type trigger --input-details` (`input-values` + filter). Only the literal request `body` input is value-less (an event sends no body).
-2. Run `case spec --type trigger --input-details` ([§ Phase 3 Implementation](#phase-3-implementation--single-cli-call)) to mint the populated `caseShape`.
-3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` in `caseShape.context` ([§ Step 4](#step-4--substitute-placeholders-in-caseshapecontext)). If the caseShape carries a `{{TRIGGER_REGISTRATION_KEY}}` entry (event-parameter connectors only), substitute it exactly as the task does ([§ Step 3](#step-3--mint-binding-ids-and-when-applicable-trigger-registration-key)) — there is no rule-specific variant.
-4. Mint `var` / `id` / `elementId` on `caseShape.inputs[]` / `outputs[]` ([§ Step 5](#step-5--mint-var--id--elementid-on-inputs-and-outputs)), with `elementId = <ownerNodeId>-<ruleId>`. Apply the output dedup rule.
+2. Run the rule's own Phase 3 pipeline through Step 2.a and immediately write `tasks/spec-cache.<ownerNodeId>-<ruleId>.json` after every successful call.
+3. Only after the gate succeeds, Read that cache; splice and normalize all three `Data.CaseShape` subtrees per Steps 3–4. Substitute the connector/folder placeholders and, when present, the registration-key placeholder exactly as the task does.
+4. For this target's Step 5 branch, mint `var = id = v<8 characters>` on every input/output, set `elementId = <ownerNodeId>-<ruleId>`, and apply the shared output-dedup constraint. A cache retained after a declined gate is audit-only and routes to the placeholder.
 5. Replace the existing stub's `uipath` with the populated block below. The full shape is shown for context; do not rewrite the enclosing rule or condition:
 
 ```json
@@ -199,6 +222,8 @@ Emit a **stub `uipath`**, never a bare rule. The stub is the minimum shape accep
 
 This stub is a **deliberate mock**. While temporary, it is simply Phase 2 build state. If it remains after Phase 3, Studio Web flags it and the rule **fails at debug/run**. A remaining stub has no real outputs, Connection/Folder bindings, IS-cache entry, or rule-specific `bindings_v2` resource. Stamp unresolved `tasks.md` entries with Rule 8 markers, log them, and list them in the completion report as **"replace the `placeholder` connector values before debug / publish-to-run."** Upgrade later by re-running the [§ Procedure](#procedure-phase-3).
 
+A fallback reached before any successful spec response has no raw cache. A post-spec required-field fallback retains the last complete target cache for audit only; that cache must never enrich the placeholder.
+
 ---
 
 ## Root-level bindings
@@ -207,7 +232,7 @@ Read [bindings/impl-json.md § Full binding shape — connector tasks](plugins/v
 
 - `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this trigger's `tasks.md` entry
 - `<connectorKey>` (drives ConnectionBinding templated `name`): from `tasks.md`
-- `<folderKey>` (FolderKey binding `default`): from `spec.connection.folderKey` in Step 2 response. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
+- `<folderKey>` (FolderKey binding `default`): from `Data.Connection.FolderKey` in this target's raw cache. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
 
 Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of-truth code: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
 
@@ -220,7 +245,7 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 ## What NOT to Do (shared)
 
 - **Do NOT call legacy `uip maestro case tasks describe --type connector-trigger` or `uip is triggers describe`.** `case spec --type trigger` replaces both. The legacy commands still work but produce a different shape that doesn't include `caseShape` or placeholders.
-- **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and splice `Data.caseShape.context` verbatim. See Step 4.
+- **Do NOT reconstruct any `CaseShape` subtree from agent memory.** Persist the full response at gather time; at mutation time, Read it and splice the complete `Data.CaseShape.Context`, `Inputs`, and `Outputs` subtrees. See Step 4.
 - **Do NOT write the spec's PascalCase keys to disk verbatim.** `case spec` emits PascalCase (`Name`/`Type`/`Value`/`Body`/`DisplayName`/`Source`/`Properties`/…); the caseplan disk schema is camelCase. After splicing, lower-case the first character of every object key in the spec subtree — keys only, never values. See [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase).
 - **Do NOT use `CuratedTrigger` or `Intsvc.Trigger` activityType.** The CLI overrides to `CuratedWaitFor` (in-stage task) or emits the trigger shape directly. Trust the CLI's `essentialConfiguration` value.
 - **Do NOT hand-write JMESPath filter expressions.** Build a structured filter tree and pass it under `--input-details.filter`; the CLI compiles all three sinks.
