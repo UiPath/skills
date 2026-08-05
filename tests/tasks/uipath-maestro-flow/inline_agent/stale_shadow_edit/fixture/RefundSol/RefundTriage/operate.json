@@ -1,0 +1,10 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/operate",
+  "projectId": "5b60db21-6e46-4b45-a3bb-a09e6a14ef08",
+  "contentType": "Flow",
+  "targetFramework": "Portable",
+  "runtimeOptions": {
+    "requiresUserInteraction": false,
+    "isAttended": false
+  }
+}

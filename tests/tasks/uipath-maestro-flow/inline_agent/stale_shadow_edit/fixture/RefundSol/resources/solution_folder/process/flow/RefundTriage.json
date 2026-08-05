@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "RefundTriage",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "fa56d451-03ee-41b2-bedb-ffd95b4fc920",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "RefundTriage"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "RefundTriage",
+      "package": {
+        "key": "e9880130-82a1-43d2-9a7c-c865a185ac01"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "f0490714-153b-4c9a-9b5b-d3233d619600",
+    "files": []
+  }
+}

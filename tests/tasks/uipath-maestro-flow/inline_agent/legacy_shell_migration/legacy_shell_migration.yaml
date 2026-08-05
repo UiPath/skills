@@ -78,7 +78,7 @@ success_criteria:
 
   - type: run_command
     description: "Derived sidecar left untouched (still present, content unchanged)"
-    command: 'python3 "$TASK_DIR/check_sidecar_untouched.py"'
+    command: 'python3 "$TASK_DIR/../../_shared/check_sidecar_untouched.py" "$TASK_DIR/fixture"'
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
