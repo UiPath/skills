@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""ConnectorWaitCase: a RESOLVED wait-for-connector task is wired.
+"""ConnectorWaitCase: a RESOLVED wait-for-connector task and entry rule are wired.
 
 Asserts the connector-trigger plugin resolved a real Integration Service event
 into the caseplan (Rule 8 — no fabricated IDs) with the correct serviceType,
 rather than leaving a `data: {}` skeleton. Does NOT run debug: a
 wait-for-connector suspends waiting for a real external event.
+
+The task-entry rule must also be upgraded past its Phase 2 stub. The stub has
+the final serviceType, so checking serviceType alone would let a non-runnable
+`connectorKey: "placeholder"` rule pass.
 """
 
 import os
@@ -18,6 +22,15 @@ from _shared.case_check import (  # noqa: E402
     read_caseplan,
     task_is_skeleton,
 )
+
+
+def _owning_stage_id(plan: dict, target_task: dict) -> str:
+    for node in plan.get("nodes") or []:
+        for lane in ((node.get("data") or {}).get("tasks")) or []:
+            for task in lane or []:
+                if task is target_task:
+                    return node.get("id")
+    sys.exit("FAIL: could not locate the stage owning the event-triggered task")
 
 
 def _find_task_by_label(plan: dict, label: str) -> dict:
@@ -51,6 +64,36 @@ def main():
             "FAIL: first task's wait-for-connector entry rule must carry "
             f"uipath.serviceType='Intsvc.WaitForEvent'; got {uipath.get('serviceType')!r}"
         )
+    rule_context = [
+        entry for entry in (uipath.get("context") or []) if isinstance(entry, dict)
+    ]
+    placeholder_names = sorted(
+        entry.get("name") or "<unnamed>"
+        for entry in rule_context
+        if entry.get("value") == "placeholder"
+    )
+    if not rule_context or placeholder_names:
+        sys.exit(
+            "FAIL: wait-for-connector entry rule still has its Phase 2 stub; "
+            f"context={rule_context!r}, placeholder entries={placeholder_names!r}"
+        )
+    rule_ck_entry = next(
+        (entry for entry in rule_context if entry.get("name") == "connectorKey"), None
+    )
+    rule_ck = rule_ck_entry.get("value") if rule_ck_entry else None
+    if rule_ck != "uipath-microsoft-outlook365":
+        sys.exit(
+            "FAIL: entry rule connectorKey must be "
+            f"'uipath-microsoft-outlook365'; got {rule_ck!r}"
+        )
+    expected_element_id = f"{_owning_stage_id(plan, event_task)}-{rule.get('id')}"
+    for slot in ("inputs", "outputs"):
+        for entry in uipath.get(slot) or []:
+            if isinstance(entry, dict) and entry.get("elementId") != expected_element_id:
+                sys.exit(
+                    f"FAIL: entry rule {slot}[{entry.get('name')!r}].elementId "
+                    f"must be {expected_element_id!r}; got {entry.get('elementId')!r}"
+                )
     if event_task.get("isRequired") is not False:
         sys.exit(
             "FAIL: event-triggered placeholder process should stay non-required; "
@@ -81,7 +124,8 @@ def main():
         )
     print(
         f"OK: first task is event-triggered with wait-for-connector-only entry "
-        f"semantics; wait-for-connector task resolved "
+        f"semantics and its entry rule is upgraded past the Phase 2 stub "
+        f"(connectorKey={rule_ck!r}, no placeholders); wait-for-connector task resolved "
         f"(displayName={task.get('displayName')!r}, "
         f"serviceType={svc}, connectorKey={ck!r}, typeId + connectionId set)"
     )

@@ -1,8 +1,8 @@
 # task-entry-conditions — Implementation (Direct JSON Write)
 
-> **Phase split.** Phase 3 only. Phase 2 does not write conditions. See [`../../../phased-execution.md`](../../../phased-execution.md).
+> **Phase split.** Phase 2 writes the condition. A `wait-for-connector` rule gets the canonical stub; Phase 3 Step 10.5 upgrades only its `uipath` when resolved. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Write the task-entry condition directly to the target task's `entryConditions[]`. No CLI command needed.
+Write the Phase 2 task-entry condition directly to the target task's `entryConditions[]`; this initial write needs no CLI call. Step 10.5 handles the separate connector-rule upgrade.
 
 ## Condition JSON Shape
 
@@ -75,9 +75,9 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 ### wait-for-connector — bind a connector event
 
-Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) (canonical rule JSON + procedure there) — a bare rule (no `uipath`) is rejected by Studio Web. **Stage-scoped: `elementId = <stageId>-<ruleId>`.** `conditionExpression` optional. If `type-id` / `connection-id` / `connector-key` is `<UNRESOLVED>`, emit the **stub `uipath` placeholder** (2 `"placeholder"` context fields: `connectorKey` + `operation` — see [connector-trigger-common.md § Placeholder fallback](../../../connector-trigger-common.md#placeholder-fallback)).
+In Phase 2, always write the canonical stub from [connector-trigger-common.md § Condition-rule phase contract](../../../connector-trigger-common.md#condition-rule-phase-contract), regardless of connector resolution. In Phase 3 Step 10.5, a resolved connector replaces only `rule.uipath`; final inputs/outputs use the owning stage's `elementId = <stageId>-<ruleId>` (not the task ID). Preserve the optional `conditionExpression`.
 
-**Rule output binding.** If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) **as the last step — after rule write, before root bindings**. `elementId` stays `<stageId>-<ruleId>` on every output entry. Skip when the rule has no `uipath.outputs[]` (stub placeholder).
+**Rule output binding.** Defer it with the stub. After the Phase 3 upgrade produces real outputs, dispatch them per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules), before root bindings. `elementId` stays `<stageId>-<ruleId>`.
 
 ### runs-sequentially — sequential task chain
 
@@ -93,7 +93,7 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 "rules": [[ { "id": "rxxxxxxxx", "rule": "sla-status-change", "slaId": "sla_aB3kL9Qx" } ]]
 ```
 
-The task fires when the referenced SLA changes status — the direct shape for a `start-task` response ([sla-response-shapes.md](../../../sla-response-shapes.md)): the follow-up task lives in the breached stage and activates on the SLA event itself, so no stage re-entry is involved and the stage's other tasks do not re-run. Reference the stage's **own** SLA for a stage-scoped response, or `root`'s for a case-scoped one.
+The task fires when the referenced SLA changes status — the direct shape for a `start-task` response ([sla-response-shapes.md](../../../sla-response-shapes.md)): the follow-up task lives in the breached stage and activates on the SLA event itself, so no stage re-entry is involved and the stage's other tasks do not re-run. Resolve `slaId` (and an at-risk `escalationId`) against the objects already written in Phase 2 Step 11. Reference the stage's **own** SLA for a stage-scoped response, or `root`'s for a case-scoped one.
 
 `slaId` alone is a **breach** rule; add a concrete at-risk `escalationId` declared on that same SLA for an at-risk rule. Never the `"any"` sentinel. Verified valid on uip 1.198.0-preview.102 for both stage-owned and root SLAs.
 
@@ -114,4 +114,4 @@ When a *stage* should take the case instead, the rule goes on the stage's `entry
 
 ## Post-Write Verification
 
-Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`), non-empty `displayName` (SDD value or `Entry Rule {N}` default), and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated, inputs/outputs `elementId` is `<stageId>-<ruleId>`, and ConnectionId + FolderKey root bindings exist. Full `validate` flags a missing `rule.uipath`/`context` (`connector activity missing`) but not its internals (a wrong `serviceType` passes) — confirm the connector resolves in Studio Web.
+Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`), non-empty `displayName` (SDD value or `Entry Rule {N}` default), and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use the owning stage's `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
