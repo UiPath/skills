@@ -1,12 +1,10 @@
 # Registry Discovery Reference
 
-Resolve the correct task type and entity identifier for a case task by searching the local registry cache files directly.
+Resolve a compatible registry entry and entity identifier for a case task by searching local cache files directly. The validated SDD task type is already fixed; discovery never chooses or changes it.
 
 ## When to Use
 
-During sdd.md → task.md interpretation, when you need to determine:
-- What **task type** to use for a task (e.g., `agent`, `process`, `execute-connector-activity`)
-- What **entity identifier** to reference in the task.md
+During sdd.md → task.md interpretation, use this reference to select a compatible registry entry and its **entity identifier** without rewriting the SDD task type.
 
 ## Prerequisites
 
@@ -23,6 +21,10 @@ The `uip maestro case registry search` command has known gaps. In particular, it
 3. Record the gap in `registry-resolved.json` so the audit trail reflects the fallback.
 
 Direct cache-file inspection is the authoritative discovery method for this skill.
+
+## Local Solution Scope
+
+Before any agent/API pre-gate `registry --local` search, derive the case's exact intended solution `.uipx` using the case-planning path rules. Accept a local result only when the CLI lookup is anchored to that manifest. If the target solution does not yet exist, or the nearest ancestor manifest is different, discard any returned siblings and treat a recognized `--local` command as supported with no sibling; do not scaffold during this check. This prevents an unrelated ancestor solution from resolving the task and bypassing Rule 17.
 
 ## MUST Confirm Before Placeholder Fallback
 
@@ -46,7 +48,7 @@ Options:
       → build nothing; EVERY missing resource (all <N>) becomes an `<UNRESOLVED>` placeholder (per-plugin Unresolved Fallback).
 ```
 
-**Apply once per planning batch, not per-task.** Each option is batch-level. Group by unique `(name, type)`, list all usages, and keep that mapping for selected-build deduplication and binding. Force pull loops back with only the resources still empty. Establish local capability once during the first agent/API pre-gate sibling search: an unknown `--local` option means unsupported; `No solution found for --local` means supported with no sibling. Cache the result and never scaffold during the probe. Show **Create** only when a genuine empty agent/API exists and that result is supported; otherwise use the two-option gate. Do not read a Create guide yet. Emit no placeholder T-entry and invoke no per-plugin fallback until this gate assigns that resource to fallback.
+**Apply once per planning batch, not per-task.** Each option is batch-level. Group by unique `(name, type)`, list all usages, and keep that mapping for selected-build deduplication and binding. Force pull loops back with only the resources still empty. Under [Local Solution Scope](#local-solution-scope), establish capability once during the first agent/API pre-gate search: an unknown `--local` option means unsupported; `No solution found for --local` means supported with no sibling. Cache the result and never scaffold during the probe. Show **Create** only when a genuine empty agent/API exists and that result is supported; otherwise use the two-option gate. Do not read a Create guide yet. Emit no placeholder T-entry and invoke no per-plugin fallback until this gate assigns that resource to fallback.
 
 **Do NOT pre-judge.** Resource-name heuristics ("looks vendor-specific, won't be in registry anyway", "this is an obvious custom connector") are the user's call to make, not the agent's. Always ask. SKILL.md Rule 17.
 
@@ -69,7 +71,7 @@ Each file is a JSON array of resource entries.
 
 ## Create-on-Missing build and rediscovery
 
-This is a compatibility router, not the Create algorithm. Only after the gate records **Create missing resources inline** should the skill read [inline-resource-creation-guide.md](inline-resource-creation-guide.md), then [create-inline-common.md](plugins/tasks/create-inline-common.md) and only the selected [agent](plugins/tasks/agent/inline-creation-guide.md) or [API-workflow](plugins/tasks/api-workflow/inline-creation-guide.md) guide. Those owners cover selection through binding. Unselected, non-creatable, unavailable-skill, failed, or skipped resources return here already assigned to fallback; only then may their placeholder path run.
+This is a compatibility router, not the Create algorithm. After the gate records the batch choice **Create missing resources inline**, read only [inline-resource-creation-guide.md](inline-resource-creation-guide.md). Its Select step then routes once to [create-inline-common.md](plugins/tasks/create-inline-common.md) and only the checked [agent](plugins/tasks/agent/inline-creation-guide.md) and/or [API-workflow](plugins/tasks/api-workflow/inline-creation-guide.md) guide. Unchecked, non-creatable, unavailable-skill, failed, or skipped resources return here assigned to fallback; only then may their placeholder path run.
 
 ### 0 — Prerequisite (solution must exist) + capability probe (once per run)
 
@@ -174,12 +176,11 @@ for item in data:
 
 If no match is found across all relevant cache files:
 
-1. **Already gated above.** AskUserQuestion confirmation already ran. If the user picked `Force pull and re-resolve`, the force pull has already executed; this step is reached for lookups that remained empty after the second-pass search.
+1. If the user picked `Force pull and re-resolve`, run the force pull, re-search caches, update the audit, and return every still-empty resource to the batch gate. Do not continue to fallback from the Force branch.
    ```bash
-   # already executed during the gate's Force-pull branch:
    uip maestro case registry pull --force
    ```
-2. If still no match (or the user picked `Use placeholders for all`, and any creatable resource was not selected for Create), mark it in tasks.md: `[REGISTRY LOOKUP FAILED: <name> in <folder>]` and proceed to the per-plugin Unresolved Fallback path.
+2. Reach fallback only after `Use placeholders for all`, an unchecked Create selection, or the shared Retry/Skip contract returns a failed build here. Then mark `[REGISTRY LOOKUP FAILED: <name> in <folder>]` in tasks.md and proceed to the per-plugin Unresolved Fallback path.
 
 ### 4. Return All Matches
 
@@ -192,6 +193,8 @@ Collect all matching results for the `registry-resolved.json` debug output. Reco
 - `matches`: the full exact-name objects from that cache (empty array when none)
 - `selected`: the selected full object, or `null` when unresolved
 - `rationale`: why that object was selected, or why no compatible match exists
+
+**Inline-local exception.** When Rule 17 creates a sibling after a genuine tenant empty, retain the tenant cache basename and `matches: []`, then store the exact-name `Source: "local"` resource returned by post-registration rediscovery in `selected`. This keeps the original tenant lookup visible while making the resolved local binding auditable.
 
 ## Identifier Mapping — Cache File Never Controls Task `type`
 
