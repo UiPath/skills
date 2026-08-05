@@ -8,7 +8,10 @@ description: >
   Approve/Reject outcomes). The agent is asked to add an escalate guardrail
   backed by that app; it must fetch the action schema via
   `uip solution resources get`, detect the mismatch, and reject the app with
-  the error message instead of writing the guardrail.
+  the error message instead of writing the guardrail. The checker also asserts
+  the app's action schema was left intact — an `actionSchema` is derived from
+  the published app design, so rewriting the solution resource file to force a
+  fit is a wrong answer, not an alternative solution.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 
 pre_run:
@@ -21,7 +24,8 @@ initial_prompt: |
   directory. Add a guardrail that watches for personal data (email addresses)
   and, instead of blocking, escalates flagged cases to a human reviewer using
   our "EscalationWorksApp" Action Center app, which is already part of this
-  solution.
+  solution. That app is published and owned by another team — treat it as
+  read-only.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
   or feedback. Do NOT pause between planning and implementation. Do NOT write
