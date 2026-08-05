@@ -63,15 +63,18 @@ def check_report() -> None:
         fail("report does not classify the project as a low-code agent")
     if "validation" not in normalized and "validate" not in normalized:
         fail("report does not include the validation result")
-    has_review_result = any(
-        token in normalized
-        for token in ("agent review", "review cli", "review result", "cli grade")
+    summary_grade = re.search(
+        r"(?m)^\s*-\s+\*\*Agent Grade:\*\*\s+([ABCDF])(?:\s|$)", report
     )
-    has_grade = bool(
-        re.search(r"\bgrade\b\s*(?:\||:|-)?\s*\**(?:a|b|c|d|f)\b", normalized)
+    if not summary_grade:
+        fail("report does not include a valid Summary Agent Grade")
+    final_grade = re.search(
+        r"(?m)^\*\*Final grade: ([ABCDF])\*\*\Z", report.rstrip()
     )
-    if not has_review_result and not has_grade:
-        fail("report does not include the review CLI result or grade")
+    if not final_grade:
+        fail("report does not end with '**Final grade: <A-F>**'")
+    if summary_grade.group(1) != final_grade.group(1):
+        fail("Summary Agent Grade and final grade do not match")
     surfaced_canaries = [canary for canary in CANARIES if canary in report]
     if surfaced_canaries:
         fail(f"report surfaced generated-only canaries: {surfaced_canaries}")
@@ -85,7 +88,7 @@ def check_report() -> None:
 def main() -> None:
     check_derived_state()
     check_report()
-    print("PASS: refreshed derived state and report boundary are valid")
+    print("PASS: refreshed derived state, report boundary, and grade footer are valid")
 
 
 if __name__ == "__main__":
