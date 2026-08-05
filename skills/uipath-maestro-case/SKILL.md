@@ -209,7 +209,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Publish to Studio 
 | `action` | [action](references/plugins/tasks/action/planning.md) | `action` |
 | `api-workflow` | [api-workflow](references/plugins/tasks/api-workflow/planning.md) | `api-workflow` |
 | `case-management` | [case-management](references/plugins/tasks/case-management/planning.md) | `case-management` |
-| `execute-connector-activity` | [activity owner](references/plugins/tasks/connector-activity/planning.md) | `connector-activity` |
+| `execute-connector-activity` | [activity owner](references/plugins/tasks/connector-activity/planning.md); [complex inputs](references/plugins/tasks/connector-activity/complex-inputs-guide.md) **only for** schema-revealed array-object/multipart or supported SDD filter | `connector-activity` |
 | `wait-for-connector` | [trigger common](references/connector-trigger-common.md) + [task target](references/plugins/tasks/connector-trigger/planning.md) | `connector-trigger` |
 | `wait-for-timer` | [wait-for-timer](references/plugins/tasks/wait-for-timer/planning.md) | `wait-for-timer` (no CLI describe needed) |
 

@@ -17,6 +17,7 @@ The `tasks.md` entry provides:
 | `connector-key` | `"uipath-microsoft-outlook365"` |
 | `object-name` | `"send-mail-v2"` |
 | `input-values` | `{"bodyParameters":{"message.toRecipients":"user@example.com"},"queryParameters":{...}}` (already resolved IDs, dotted body keys) |
+| `file-inputs` (optional) | `{"file":"=vars.evidenceDoc"}` (multipart only; exact parameter name to whole file-variable reference) |
 | `filter` (optional) | `{"groupOperator":"And","filters":[...]}` (FilterTree object — present only when planning Step 7 authored a filter) |
 | `isRequired` | `true` |
 | `runOnlyOnce` | `false` |
@@ -67,18 +68,7 @@ Full per-sink rule and FE source-of-truth: [bindings-and-expressions.md § Canon
 
 #### Step 1.b — Array-of-object body fields: pre-input scan (MANDATORY)
 
-Before passing `bodyParameters` to the CLI, scan for keys containing literal `[*]`. Halt if any are present — the binding is malformed.
-
-The `[*]` in `inputs.bodyFields[].name` is **schema notation** (JSONPath-style "array of") for documentation only — NOT a valid input key. Array-of-object body fields MUST be expressed in tasks.md `input-values.bodyParameters` as real JSON arrays under the parent name (see [`planning.md` § Array-of-object body fields](planning.md)). The planner is responsible for emitting the correct shape; this step is a safety net.
-
-**Halt condition.** If any `bodyParameters` key contains literal `[*]`, halt with explicit error:
-```
-ERROR: bodyParameters key '<key>' contains literal '[*]'.
-        Spec field was: <spec field name>. Expected: '<parent>' with a real JSON array value.
-        Fix in tasks.md input-values.bodyParameters; do NOT pass [*] keys to the CLI.
-```
-
-The CLI accepts the literal `field[*]` key (well-formed JSON) and validate passes, but runtime APIs reject with HTTP 400 `UnableToDeserializePostBody`. The check repeats as a post-write verification — see [Step 8 Post-Write Verification](#post-write-verification) item #11.
+When the resolved body schema contains `[*]`, load [complex inputs § Step 1.b](complex-inputs-guide.md#step-1b--array-of-object-body-fields-pre-input-scan-mandatory) and run its mandatory scan before the spec call. Otherwise skip both the guide and this step.
 
 ### Step 2 — Run `case spec` with input-details
 
@@ -123,13 +113,7 @@ This is a hard gate — do NOT proceed to write the task until every required fi
 
 ### Step 4 — FilterBuilder detection (when planning authored a filter)
 
-When `tasks.md` carries a `filter:` object, the activity's operation must declare a `FilterBuilder` design parameter. The CLI rejects the filter at configure time when no FilterBuilder param exists; the planning step 7 should already have caught this by checking `spec.filter` presence, but verify here as a safety net.
-
-- `spec.filter` present (with `builder: "ceql"` and `fields[]`) → CEQL filter is supported. Pass the structured tree under `--input-details.filter`. The CLI compiles it into both halves of the contract: the runtime CEQL string at `caseShape.inputs[name="queryParameters"].body.<filterParamName>` AND the design-time tree under `essentialConfiguration.savedFilterTrees.<filterParamName>` (inside the `=jsonString:` blob in `caseShape.context[name="metadata"].body.activityPropertyConfiguration.configuration`).
-- **Do NOT pass a raw CEQL string under `queryParameters.where`** (or whichever connector-specific name) when authoring a filter. The CLI rejects this; even if it didn't, the design-time tree would be empty and Studio Web would render the filter widget as `undefined` when the activity is reopened.
-- Tree shape, operator table, examples → [/uipath:uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
-
-If the operation has no FilterBuilder parameter, server-side filtering is not supported — the spec will return `filter: undefined`. Filter downstream (post-execution) instead.
+When `tasks.md` carries `filter:`, load [complex inputs § Step 4](complex-inputs-guide.md#step-4--filterbuilder-detection) and run that branch. Otherwise skip both the guide and this step.
 
 ### Step 5 — Mint binding IDs
 
@@ -163,7 +147,7 @@ Replace the two placeholders with the minted ids:
 
 At write time, **Read** `tasks/spec-cache.<elementId>.json` and splice the complete `Data.CaseShape.Context`, `Data.CaseShape.Inputs`, and `Data.CaseShape.Outputs` subtrees required by the task. The rest of the response is discovery metadata and is not written to `caseplan.json`.
 
-All three subtrees, including every nested current or future key, are CLI-authoritative. The only permitted changes are the placeholder substitutions above, recursively normalizing object-key casing, minting `var` / `id` / `elementId`, output projection/deduplication, and placement in the task envelope. Never reconstruct a subtree from reasoning or enumerate an allowlist of keys.
+All three subtrees, including every nested current or future key, are CLI-authoritative. The only permitted changes are the placeholder substitutions above, recursively normalizing object-key casing, minting `var` / `id` / `elementId`, output projection/deduplication, the conditional guide's multipart file-value binding, and placement in the task envelope. Never reconstruct a subtree from reasoning or enumerate an allowlist of keys.
 
 > **Normalize key casing (PascalCase → camelCase).** After splicing `context` / `inputs` / `outputs` and their nested bodies, recursively lower-case only the first character of every object **key** (`DisplayName`→`displayName`, `UiPathActivityTypeId`→`uiPathActivityTypeId`). Arrays keep order. Never change values or parse/rewrite `=jsonString:` / `=js:` values.
 
@@ -183,12 +167,7 @@ For each entry in `caseShape.outputs[]`:
 
 #### Step 7.a — Multipart file inputs
 
-When `caseShape.inputs[]` contains an entry with `target: "file"` (multipart sink — emitted by `case spec` for activities whose IS spec has `multipart.parameters[].isFile === true`, e.g., Outlook Send Email):
-
-- `target` is a **literal string** `"file"` (the IS request-shape multipart sink name), NOT an expression. Preserve verbatim — do not prepend `=`.
-- `value` MUST be `"=vars.<fileVarId>"` (whole-record reference). The FE picker is `selectionOnly` for file inputs (`IntsvcActivityPropertiesUtils.tsx:272-279`) — only a file-typed case Variable can be wired; freeform expressions are rejected at picker time. Sub-field references (`=vars.<id>.FullName`) are NOT valid for file inputs — the runtime adapter expects the full JobAttachment record to dereference.
-- No `source`, no `body`, no `displayName` on the multipart file input entry — `case spec` returns just `{name, type, target}`; mint `var` / `id` / `elementId` / `value` per Step 7 and stop.
-- The runtime adapter dereferences `=vars.<fileVarId>` to the JobAttachment record at execution time and streams bytes from the JobAttachment store into the multipart `file` part of the outbound HTTP request.
+When the normalized raw-cache inputs contain `target: "file"` (or planning recorded multipart), load [complex inputs § Step 7.a](complex-inputs-guide.md#step-7a--multipart-file-binding) and run that branch. Otherwise skip both the guide and this step.
 
 ### Step 8 — Targeted Edit of existing `data`
 
@@ -249,7 +228,7 @@ Checks 2–11 apply only to a fully configured task. A Rule 8 fallback follows t
 8. `data.bindings[]` is empty `[]`
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` minted (uniqueness rule applied for outputs)
 10. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
-11. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
+11. Every activated array/filter/multipart branch passes [complex inputs § Branch verification](complex-inputs-guide.md#branch-verification).
 
 ## What NOT to Do
 
@@ -259,12 +238,9 @@ Checks 2–11 apply only to a fully configured task. A Rule 8 fallback follows t
 - **Do NOT copy root bindings into `data.bindings[]`.** Leave it as `[]`. The FE crashes if activity tasks have task-level binding copies.
 - **Do NOT reconstruct any `CaseShape` subtree from agent memory.** Persist the full response at gather time; at mutation time, Read it and splice the complete `Data.CaseShape.Context`, `Inputs`, and `Outputs` subtrees. See Step 6.
 - **Do NOT write the spec's PascalCase keys to disk verbatim.** Normalize keys only as defined in Step 6; never recase values.
-- **Do NOT pass a raw CEQL string under `queryParameters.where`** (or whichever connector-specific name) when authoring a filter. Pass the structured tree under `filter:` in tasks.md and let the CLI compile both halves.
-- **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
 - **Do NOT pass `bodyParameters` for synthetic HTTP request activities.** Use `queryParameters` instead, or omit.
-- **Do NOT pass literal `field[*]` keys in `bodyParameters`.** The `[*]` in `inputs.bodyFields[].name` is JSONPath-style schema notation meaning "array of"; it is NOT a valid input key. Express array-of-object body fields as real JSON arrays under the parent name (see [planning.md](planning.md)). Pre-input scan in [Step 1.b](#step-1b--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
 - **Do NOT auto-inject `entryConditions`.** Step 10 in [implementation.md](../../../implementation.md) handles them — injecting here creates duplicates.
-- **Never reuse a reference ID from a prior case or session.** Reference IDs (e.g., Jira project keys, Slack channel IDs) are scoped to the authenticated account behind each connection. Always resolve fresh via `uip is resources run list` against the current `--connection-id`. See [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+- **Never reuse a reference ID from a prior connection or session.** Resolve it fresh against this task's current `connection-id`.
 - **Do NOT use legacy `uip maestro case tasks describe` or `uip is resources describe` as the operation-contract source.** `case spec --input-details` owns that shape; Generic object selection is the sole `resources list` / `resources describe` discovery exception.
 
 ## Known Limitations
