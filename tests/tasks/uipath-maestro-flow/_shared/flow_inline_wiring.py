@@ -764,6 +764,11 @@ ESCALATION_DERIVED_INPUT_FIELDS = (
     "isAgentMemoryEnabled",
     "governanceProperties",
     "taskTitleV2",
+    # Projection-carried resource.json fields (escalation.md § Derived Fields):
+    # hydration never writes them back to canvas inputs, so on an authored
+    # node they always mark a ported sidecar file.
+    "referenceKey",
+    "folderPath",
 )
 
 
@@ -792,7 +797,8 @@ def assert_escalation_inputs(
       {appName, resourceKey, folderName}-only app passes validate but
       derives a channel with EMPTY schemas (task form carries no data).
       Requires `inputSchema`/`outputSchema` objects with non-empty
-      `properties` and an integer `appVersion` >= 1.
+      `properties` and an integer `appVersion` >= 0 (draft apps carry
+      ActionSchema version 0; projection coerces falsy to 1).
     - `inputs.recipients`: >= 1 dict entry with a non-empty string `value`
       (validator twin: ESCALATION_RECIPIENT_REQUIRED).
     - `inputs.outcomeMapping`, when present and non-null: dict with values

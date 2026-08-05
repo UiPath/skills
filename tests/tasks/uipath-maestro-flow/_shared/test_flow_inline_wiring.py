@@ -1034,6 +1034,12 @@ def test_escalation_inputs_reject_sidecar_resource_fields():
         assert_escalation_inputs(_escalation_node(isEnabled=True))
     with pytest.raises(SystemExit, match="taskTitleV2"):
         assert_escalation_inputs(_escalation_node(taskTitleV2={"type": "textBuilder"}))
+    # Projection-carried fields — hydration never writes them back, so an
+    # authored node carrying them ported a sidecar resource.json.
+    with pytest.raises(SystemExit, match="referenceKey"):
+        assert_escalation_inputs(_escalation_node(referenceKey=""))
+    with pytest.raises(SystemExit, match="folderPath"):
+        assert_escalation_inputs(_escalation_node(folderPath="solution_folder"))
 
 
 def test_escalation_inputs_reject_quick_form_schema_on_app_task():
