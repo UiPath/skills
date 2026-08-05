@@ -57,9 +57,9 @@ def entity_folder_key(entity: dict) -> str:
 
 
 def list_native_entities(
-    include_folders: bool = False, folder_key: str = ""
+    include_folders: bool = False, folder_key: str = "", federated: bool = False
 ) -> list[dict]:
-    args = ["df", "entities", "list", "--native-only"]
+    args = ["df", "entities", "list", "--federated-only" if federated else "--native-only"]
     if folder_key:
         args += ["--folder-key", folder_key]
     elif include_folders:
@@ -210,6 +210,11 @@ def main() -> None:
         action="store_true",
         help="Also sweep choice sets whose Name matches the same prefix rule.",
     )
+    parser.add_argument(
+        "--federated-only",
+        action="store_true",
+        help="Sweep federated entities instead of native (for federated-source entities).",
+    )
     args = parser.parse_args()
 
     if args.first_folder:
@@ -218,9 +223,9 @@ def main() -> None:
             print("SKIP: no accessible folder found")
             entities = []
         else:
-            entities = list_native_entities(folder_key=folder_key)
+            entities = list_native_entities(folder_key=folder_key, federated=args.federated_only)
     else:
-        entities = list_native_entities(include_folders=args.include_folders)
+        entities = list_native_entities(include_folders=args.include_folders, federated=args.federated_only)
     matches = match_by_prefix(entities, args.name_prefix)
     if matches:
         print(f"Found {len(matches)} leftover entity/entities matching `{args.name_prefix}`:")

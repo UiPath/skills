@@ -6,7 +6,7 @@ Data Fabric supports file-type fields on entities. Files are stored per-record p
 
 ## Creating a FILE field correctly
 
-When creating a FILE field through the CLI, use only `{"fieldName":"X","type":"FILE"}`. The server auto-wires the `EntityAttachment` binding. See [`entity-schema.md` → FILE Fields](entity-schema.md#file-fields).
+When creating a FILE field through the CLI, use only `{"name":"X","type":"FILE"}`. The server auto-wires the `EntityAttachment` binding. See [`entity-schema.md` → FILE Fields](entity-schema.md#file-fields).
 
 ## Prerequisites
 

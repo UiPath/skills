@@ -10,16 +10,16 @@ uip df entities create "MyEntity" \
     "displayName": "My Entity",
     "description": "Optional description",
     "fields": [
-      {"fieldName": "Title",       "type": "STRING",   "isRequired": true},
-      {"fieldName": "Score",       "type": "DECIMAL",  "decimalPrecision": 0},
-      {"fieldName": "Active",      "type": "BOOLEAN"},
-      {"fieldName": "CreatedDate", "type": "DATE"}
+      {"name": "Title",       "type": "STRING",   "isRequired": true},
+      {"name": "Score",       "type": "DECIMAL",  "decimalPrecision": 0},
+      {"name": "Active",      "type": "BOOLEAN"},
+      {"name": "CreatedDate", "type": "DATE"}
     ]
   }' \
   --output json
 ```
 
-- `fields` array is **required**. Each entry must include `fieldName`.
+- `fields` array is **required**. Each entry must include `name`.
 - `displayName`, `description`, and `isRbacEnabled` are optional top-level keys.
 - Response: `{ Code: "EntityCreated", Data: { Id: "<entity-id>" } }` — save `Data.Id` for subsequent operations.
 - Alternatively use `--file <path>` pointing to a JSON file with the same structure.
@@ -85,7 +85,7 @@ Very large text. Contract differs from `MULTILINE_TEXT`:
 
 ```bash
 uip df entities create "Documents" \
-  --body '{"fields":[{"fieldName":"Title","type":"STRING","isRequired":true},{"fieldName":"Body","type":"MULTILINE_MAX"}]}' \
+  --body '{"fields":[{"name":"Title","type":"STRING","isRequired":true},{"name":"Body","type":"MULTILINE_MAX"}]}' \
   --output json
 ```
 
@@ -111,7 +111,7 @@ Within one create/add batch, field names and effective display names must each b
 
 ```json
 {
-  "fieldName": "AccountNumber",
+  "name": "AccountNumber",
   "type": "STRING",
   "displayName": "Account Number",
   "description": "Customer bank account number",
@@ -126,9 +126,9 @@ Within one create/add batch, field names and effective display names must each b
 
 | Option | Type | Default | Notes |
 |--------|------|---------|-------|
-| `fieldName` | string | required | 3–100 chars, starts with letter, letters and digits only |
+| `name` | string | required | 3–100 chars, starts with letter, letters and digits only |
 | `type` | `EntityFieldDataType` | `STRING` | See type table above |
-| `displayName` | string | fieldName | Human-readable label, max 128 chars |
+| `displayName` | string | name | Human-readable label, max 128 chars |
 | `description` | string | `""` | Optional description, max 512 chars |
 | `isRequired` | boolean | `false` | Field must have a value on insert |
 | `isUnique` | boolean | `false` | Value must be unique across all records |
@@ -151,9 +151,9 @@ Accepted on `entities create` and on `addFields` / `updateFields` in `entities u
 uip df entities create "Orders" \
   --body '{
     "fields": [
-      {"fieldName": "ProductName", "type": "STRING",  "lengthLimit": 500, "isRequired": true},
-      {"fieldName": "Price",       "type": "DECIMAL", "decimalPrecision": 4, "maxValue": 999999, "minValue": 0},
-      {"fieldName": "Quantity",    "type": "DECIMAL", "decimalPrecision": 0, "maxValue": 10000, "minValue": 1}
+      {"name": "ProductName", "type": "STRING",  "lengthLimit": 500, "isRequired": true},
+      {"name": "Price",       "type": "DECIMAL", "decimalPrecision": 4, "maxValue": 999999, "minValue": 0},
+      {"name": "Quantity",    "type": "DECIMAL", "decimalPrecision": 0, "maxValue": 10000, "minValue": 1}
     ]
   }' \
   --output json
@@ -172,8 +172,8 @@ uip df entities update <entity-id> \
 ### Choice Set Fields
 
 ```json
-{ "fieldName": "Status", "type": "CHOICE_SET_SINGLE",   "choiceSetId": "<choice-set-id>" }
-{ "fieldName": "Tags",   "type": "CHOICE_SET_MULTIPLE", "choiceSetId": "<choice-set-id>" }
+{ "name": "Status", "type": "CHOICE_SET_SINGLE",   "choiceSetId": "<choice-set-id>" }
+{ "name": "Tags",   "type": "CHOICE_SET_MULTIPLE", "choiceSetId": "<choice-set-id>" }
 ```
 
 `choiceSetId` is the UUID from `uip df choice-sets list`. If a needed choice set doesn't exist, ask the user — then author it with `choice-sets create` + `choice-set-values create` (do not fall back to `STRING`). Record value is the integer `NumberId` (single) or integer array (multi), from `choice-sets list-values`. Filter semantics — including the `CHOICE_SET_MULTIPLE` `=` vs `contains` distinction — are in [records-query.md](records-query.md#filtering-on-choice-set-fields). Full workflow in [`choice-sets.md`](choice-sets.md).
@@ -181,7 +181,7 @@ uip df entities update <entity-id> \
 ### Relationship Fields
 
 ```json
-{ "fieldName": "customerId", "type": "RELATIONSHIP", "referenceEntityId": "<target-entity-uuid>", "referenceFieldId": "<target-field-uuid>" }
+{ "name": "customerId", "type": "RELATIONSHIP", "referenceEntityId": "<target-entity-uuid>", "referenceFieldId": "<target-field-uuid>" }
 ```
 
 - `referenceEntityId` — UUID of the target entity. Get it from `entities list --native-only` (the `Id` column). Target must exist and be native (no federated targets).
@@ -217,7 +217,7 @@ Surface this constraint to the user **before** invoking `entities create` / `add
 > **Never include a FILE-typed key in `records insert` or `records update` payloads (data-fabric.md Rule 6).** Expected behavior: the platform silently strips FILE values — UUID, file path, filename, base64, `null` — and returns `Result: Success` with no error. Do not read Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. Required path: `files upload` to attach or replace, `files delete` to clear, `files download` to retrieve. Sequence to seed a file on a new row: `records insert` without the FILE column → `files upload <entity-id> <record-id> <field-name> --file <path>` against the returned `Id`. CSV `records import` drops FILE columns too (Rule 20).
 
 ```json
-{ "fieldName": "EvidenceFile", "type": "FILE" }
+{ "name": "EvidenceFile", "type": "FILE" }
 ```
 
 - **No reference fields required or accepted.** Server auto-wires to the tenant `EntityAttachment` system entity; any caller-supplied `referenceEntityId` / `referenceFieldId` is stripped by the SDK. Never treat these as user-domain choices — no `AskUserQuestion` about which field to bind. The Rule 14 display-field dropdown fires only for `RELATIONSHIP`.
@@ -241,12 +241,12 @@ Apply only the choices the user confirms — never cascade silently. If the user
 ```bash
 uip df entities update <entity-id> \
   [--folder-key <…>] \
-  --body '{"removeFields":[{"fieldName":"<exact-field-name>"}]}' \
+  --body '{"removeFields":[{"name":"<exact-field-name>"}]}' \
   --yes --reason "<why>" \
   --output json
 ```
 
-Irreversible — drops the column and every record's value in it. Note the body shape: `removeFields` takes `{"fieldName": "..."}`, **NOT** `{"id": "..."}` (that's `updateFields`). Mixing those forms returns *"Each field in removeFields must include a non-empty 'fieldName' string"*.
+Irreversible — drops the column and every record's value in it. Note the body shape: `removeFields` takes `{"name": "..."}`, **NOT** `{"id": "..."}` (that's `updateFields`). Mixing those forms returns *"Each field in removeFields must include a non-empty 'name' string"*.
 
 Before invoking, surface the impact to the user **and** run the cascade-ask (data-fabric.md Rule 11):
 
@@ -276,7 +276,7 @@ Use `entities update` to add fields, modify existing field metadata, or update e
 ```bash
 # Add new fields
 uip df entities update <entity-id> \
-  --body '{"addFields":[{"fieldName":"Priority","type":"DECIMAL","decimalPrecision":0},{"fieldName":"Tags","type":"STRING"}]}' \
+  --body '{"addFields":[{"name":"Priority","type":"DECIMAL","decimalPrecision":0},{"name":"Tags","type":"STRING"}]}' \
   --output json
 
 # Update entity display name and description (metadata only)
@@ -287,7 +287,7 @@ uip df entities update <entity-id> \
 # Add fields and update metadata in one call
 uip df entities update <entity-id> \
   --body '{
-    "addFields": [{"fieldName":"Region","type":"STRING"}],
+    "addFields": [{"name":"Region","type":"STRING"}],
     "displayName": "Regional Entity"
   }' \
   --output json
@@ -321,7 +321,7 @@ uip df entities update <entity-id> \
 |-----|-------------|
 | `addFields` | Array of field definition objects to add (same shape as create) |
 | `updateFields` | Array of field updates — each entry must include `id` (field UUID) |
-| `removeFields` | Array of field-delete entries — each takes `{"fieldName":"..."}`; see [Deleting a Field](#deleting-a-field) for full gating |
+| `removeFields` | Array of field-delete entries — each takes `{"name":"..."}`; see [Deleting a Field](#deleting-a-field) for full gating |
 | `displayName` | New display name for the entity |
 | `description` | New description |
 | `isRbacEnabled` | Toggle RBAC on the entity |
@@ -382,6 +382,6 @@ Each `entities list` row carries an `EntityType` field (no `Source` field exists
 - `SystemEntity` — internal entity (e.g. `SystemUser`); hidden by `--native-only`, not writable
 - Federated rows (backed by external connectors like Salesforce, Azure AD) surface here as well — read-only. The exact `EntityType` value for federated rows depends on the connector; verify by listing the tenant. `--native-only` filters them out alongside `SystemEntity`.
 
-**Only native entities support record creation, update, delete, and import.**
+**Only native entities support record creation, update, delete, and import.** Federated entities are read-only for records — read via `records list` or `records query` (query supports filter/sort/projection, but not aggregates or multi-entity joins; see federated-entity-creation.md Rule 8).
 
-> Creating federated entities or linking entities to external connectors is **not currently supported**. This cannot be done via the CLI or the UiPath portal.
+> **Creating** a federated entity from an Integration Service connector (Salesforce, HubSpot, Data hub, …) or from another DF entity **is supported** — see [`federated-entity-creation.md`](federated-entity-creation.md) for the create payload, field mapping, `EntityClass: "Federated"`, and `--federated-only` listing. Only **record writes** to a federated entity are unsupported (data lives in the source, so writes happen there).
