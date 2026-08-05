@@ -11,7 +11,6 @@
 | Case Name | PortableActionCaseHandoff |
 | Case Description | Plans resolved and unresolved Action App tasks plus a child-case task while treating this SDD as authoritative over any stale registry cache. |
 | Case Identifier | Type: constant. Prefix: PAC |
-| Priority | Choiceset: Low, Medium, High — Default: Medium |
 | Case-Level SLA | — |
 | SLA Type | — |
 | Case App | Disabled |

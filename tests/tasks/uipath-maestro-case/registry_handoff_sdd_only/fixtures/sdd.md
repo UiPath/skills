@@ -11,7 +11,6 @@
 | Case Name | CrossMachineRegistryHandoff |
 | Case Description | Runs two existing tenant resources from an approved SDD whose Phase 0 registry cache was not transferred. |
 | Case Identifier | Type: constant. Prefix: XMH |
-| Priority | Choiceset: Low, Medium, High — Default: Medium |
 | Case-Level SLA | — |
 | SLA Type | — |
 | Case App | Disabled |

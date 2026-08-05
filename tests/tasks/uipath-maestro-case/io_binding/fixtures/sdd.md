@@ -11,7 +11,6 @@ forms against existing deterministic tenant resources.
 | Case Name | IoBindingCase |
 | Case Description | Sequential task I/O binding matrix using existing tenant resources. |
 | Case Identifier | Prefix: IOB, Type: constant |
-| Priority | Choiceset: Low, Medium, High - Default: Medium |
 | Case-Level SLA | 1 d |
 | SLA Type | Static |
 

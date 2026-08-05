@@ -42,7 +42,6 @@ initial_prompt: |
   | Case Name | ConnectorWaitCase |
   | Case Description | Case whose first task is event-triggered by an inbound Outlook 365 email before the case waits for the same event. |
   | Case Identifier | Type: constant. Prefix: CWC |
-  | Priority | Choiceset: Low, Medium, High — Default: Medium |
   | Case-Level SLA | — |
   | SLA Type | — |
 

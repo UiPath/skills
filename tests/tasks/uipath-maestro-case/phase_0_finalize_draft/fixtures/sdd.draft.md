@@ -32,7 +32,6 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process â€
 | Case Name | CandidateInterview |
 | Case Description | Manages the end-to-end hiring lifecycle for a candidate at Helix, from application receipt through recruiter screening, technical evaluation, optional onsite interview loop, compensation debrief, offer issuance via DocuSign, and final employee record creation in Workday. |
 | Case Identifier | Type: constant. Prefix: CI |
-| Priority | Choiceset: Low, Medium, High, Critical â€” Default: Medium |
 | Case-Level SLA | 42 d |
 | SLA Type | time-based |
 

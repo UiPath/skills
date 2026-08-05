@@ -44,7 +44,6 @@ initial_prompt: |
   | Case Name | PurchaseApprovalCase |
   | Case Description | Tracks a purchase through manager approval and recording. |
   | Case Identifier | Prefix: PAC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 

@@ -33,7 +33,6 @@
 | Case Name | AgedInvoiceResolution |
 | Case Description | Registers an aged invoice case, triages it, captures AP ownership, and closes it, with interrupting SLA-escalation and automation-incident lanes. Compact connector-free proof-of-value variant. |
 | Case Identifier | Type: constant. Prefix: AIR |
-| Priority | Choiceset: Low, Medium, High, Critical — Default: High |
 | Case-Level SLA | 90 m |
 | SLA Type | time-based |
 | SLA Title | Case Resolution SLA |

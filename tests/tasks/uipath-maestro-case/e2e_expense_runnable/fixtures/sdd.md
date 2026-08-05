@@ -39,7 +39,6 @@
 | Case Name | ExpenseReimbursementRunnable |
 | Case Description | Handles an employee-submitted expense from submission through manager and finance approval to payment and close-out, ending in Approved, Rejected, or Withdrawn. Fully-automated runnable variant bound to generic tenant resources. |
 | Case Identifier | Type: constant. Prefix: EXP |
-| Priority | Choiceset: Low, Medium, High — Default: Medium |
 | Case-Level SLA | 15 m |
 | SLA Type | time-based |
 | Case App | Disabled |

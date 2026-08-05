@@ -37,7 +37,6 @@ initial_prompt: |
   | Case Name | ConnectorActivityCase |
   | Case Description | Single-node case that posts a Slack message via a connector activity. |
   | Case Identifier | Type: constant. Prefix: CAC |
-  | Priority | Choiceset: Low, Medium, High — Default: Medium |
   | Case-Level SLA | — |
   | SLA Type | — |
 

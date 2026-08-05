@@ -47,7 +47,6 @@ initial_prompt: |
   | Case Name | VendorApprovalCase |
   | Case Description | Compliance officer reviews a new vendor for onboarding. |
   | Case Identifier | Prefix: VAC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 

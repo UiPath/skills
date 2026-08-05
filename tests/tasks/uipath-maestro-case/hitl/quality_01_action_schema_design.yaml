@@ -46,7 +46,6 @@ initial_prompt: |
   | Case Name | VendorPOReviewCase |
   | Case Description | Procurement officer reviews a vendor purchase order. |
   | Case Identifier | Prefix: VPR, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: High |
   | Case-Level SLA | - |
   | SLA Type | - |
 

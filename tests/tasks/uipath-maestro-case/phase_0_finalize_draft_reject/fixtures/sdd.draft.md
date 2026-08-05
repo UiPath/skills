@@ -22,7 +22,6 @@ A Case Definition Blueprint for reviewing a community grant application at River
 | Case Name | GrantReview |
 | Case Description | Reviews a community grant application at Rivermark Foundation from eligibility review through award or rejection. |
 | Case Identifier | Type: constant. Prefix: GR |
-| Priority | Choiceset: Low, Medium, High — Default: Medium |
 | Case-Level SLA | — |
 | SLA Type | — |
 

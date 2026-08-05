@@ -45,7 +45,6 @@ initial_prompt: |
   | Case Name | InArgTriggerBind |
   | Case Description | Two triggers; two In-args bound to different triggers via sourceTriggers. |
   | Case Identifier | Prefix: IAT, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
   | SLA Type | Not specified |
 

@@ -54,7 +54,6 @@ initial_prompt: |
   | Case Name | ContractReviewCase |
   | Case Description | Legal reviewer approves a contract before close. |
   | Case Identifier | Prefix: CRC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 

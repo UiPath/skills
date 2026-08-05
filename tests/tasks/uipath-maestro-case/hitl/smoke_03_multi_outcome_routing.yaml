@@ -48,7 +48,6 @@ initial_prompt: |
   | Case Name | LeaveRequestCase |
   | Case Description | Manager review of an employee leave request. |
   | Case Identifier | Prefix: LRC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 

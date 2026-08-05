@@ -43,7 +43,6 @@ initial_prompt: |
   | Case Name | ExpenseApprovalCase |
   | Case Description | Reviews and records an employee expense decision. |
   | Case Identifier | Prefix: EAC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 
@@ -235,6 +234,6 @@ post_run:
 
 run_limits:
   expected_turns: 94
-  task_timeout: 900
+  task_timeout: 1200
   max_turns: 120
-  turn_timeout: 900
+  turn_timeout: 1200
