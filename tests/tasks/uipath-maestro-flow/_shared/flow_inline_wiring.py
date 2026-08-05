@@ -17,7 +17,7 @@ milestones as each kind's shapes are pinned (M2: `find_wired_resource`,
 `assert_tool_type_key_uuid`, `assert_cluster_vars_ref`; M3:
 `assert_no_derived_resource_fields`, `assert_bindings_rows`,
 `assert_agent_sequence_wiring`, `find_flow_file`,
-`assert_builtin_identity`).
+`assert_builtin_identity`; M4: `assert_context_inputs`).
 
 Import pattern in a check script:
 
@@ -664,6 +664,80 @@ def assert_builtin_identity(node: dict) -> str:
     if errs:
         sys.exit(f"FAIL ({node.get('id')}): " + "; ".join(errs))
     return identity
+
+
+# Context-index retrievalMode values — ALL-LOWERCASE by contract. The manifest
+# schema discriminates on lowercase consts (`deeprag`, `batchtransform`); a
+# camelCase value (`deepRAG`) matches none of the conditionals, silently falls
+# into the semantic branch, and PASSES `flow validate` while misconfiguring
+# retrieval — this checker is the only gate that catches casing drift.
+VALID_CONTEXT_RETRIEVAL_MODES = {"semantic", "structured", "deeprag", "batchtransform"}
+
+
+def assert_context_inputs(
+    node: dict,
+    *,
+    expected_identity: dict[str, str] | None = None,
+) -> dict:
+    """Assert a context-index node carries the flat flow-form config in `inputs`.
+
+    - `expected_identity` maps TOP-LEVEL `inputs` identity keys to exact
+      expected values (e.g. {"indexName": "MyIndex", "folderPath":
+      "Shared/Knowledge"}) — copied from the manifest's `inputDefaults`,
+      never guessed. (Identity is flat on context nodes, unlike the
+      process-tool `inputs.properties` nesting.)
+    - `retrievalMode` must be in the all-lowercase VALID_CONTEXT_RETRIEVAL_MODES
+      set (validate cannot catch casing drift — see the set's comment).
+    - When `inputs.indexId` is present, it must equal the node type's `<id>`
+      suffix (the registry mints one node type per index).
+    - Never-author guards: no `$resourceType` / `contextType` / dict
+      `settings` in `inputs` — those are the DERIVED resource.json shape
+      (the flat fields collapse into a `settings` union at projection).
+
+    Returns the node's `inputs` dict for follow-up assertions.
+    """
+    inputs = node.get("inputs") or {}
+    errs = []
+
+    if "$resourceType" in inputs:
+        errs.append("inputs.$resourceType is a derived resource.json field — never authored")
+    if "contextType" in inputs:
+        errs.append(
+            "inputs.contextType is a derived resource.json field — the node "
+            "TYPE string already encodes the context kind"
+        )
+    if isinstance(inputs.get("settings"), dict):
+        errs.append(
+            "inputs.settings is the derived resource.json union — the flow "
+            "form is FLAT (retrievalMode, query, threshold, … directly in inputs)"
+        )
+
+    mode = inputs.get("retrievalMode")
+    if mode not in VALID_CONTEXT_RETRIEVAL_MODES:
+        errs.append(
+            f"inputs.retrievalMode must be one of "
+            f"{sorted(VALID_CONTEXT_RETRIEVAL_MODES)} (all-lowercase), got {mode!r}"
+        )
+
+    if expected_identity:
+        for key, expected in expected_identity.items():
+            actual = inputs.get(key)
+            if actual != expected:
+                errs.append(f"inputs.{key} should be {expected!r}, got {actual!r}")
+
+    index_id = inputs.get("indexId")
+    if isinstance(index_id, str) and index_id:
+        type_suffix = str(node.get("type", "")).rsplit(".", 1)[-1]
+        if index_id.lower() != type_suffix.lower():
+            errs.append(
+                f"inputs.indexId {index_id!r} does not match the node type's "
+                f"index-GUID suffix {type_suffix!r} — identity is copied from "
+                "the manifest's inputDefaults, never guessed"
+            )
+
+    if errs:
+        sys.exit(f"FAIL ({node.get('id')}): " + "; ".join(errs))
+    return inputs
 
 
 def assert_cluster_vars_ref(nodes: list[dict]) -> None:
