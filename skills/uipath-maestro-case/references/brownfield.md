@@ -99,7 +99,7 @@ Report: file path edited, what changed (nodes/tasks/conditions added/removed/mod
 | Option | What it does |
 |---|---|
 | **Run debug session** | Phase 5 — executes the case for real (consent-gated, Rule 12). |
-| **Publish to Studio Web** | Phase 6 — `uip solution resources refresh` then `uip solution upload`, print DesignerUrl. |
+| **Publish to Studio Web** | Phase 6 — `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` (filter mandatory — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload)), print DesignerUrl. |
 | **Done** (default) | Stop here. |
 | **Something else** | Free-form. |
 

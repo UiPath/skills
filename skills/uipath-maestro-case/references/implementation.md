@@ -370,4 +370,4 @@ Run AskUserQuestion per [phased-execution.md § Phase 6](phased-execution.md#pha
 
 ## Step 15 — Publish to Studio Web
 
-Run `uip solution resources refresh` then `uip solution upload` per [phased-execution.md § Publish notes](phased-execution.md#publish-notes). Print `DesignerUrl`. Exit skill.
+Run `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` per [phased-execution.md § Publish notes](phased-execution.md#publish-notes) — the filter is mandatory or `DesignerUrl` is lost to response truncation. Print `DesignerUrl`. Exit skill.
