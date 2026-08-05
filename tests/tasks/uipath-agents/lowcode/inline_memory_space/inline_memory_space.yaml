@@ -1,12 +1,26 @@
 task_id: skill-agent-inline-memory-space
 description: >
+  PARKED (M8 — memory not autonomous-attachable; see skip comment below).
   End-to-end test: scaffold a flow project with an inline low-code
   agent that attaches an existing UiPath Memory Space with
   `uip agent memory`. Verifies that memory spaces are modeled as
   feature files under the inline agent directory and that
   `uip agent refresh --inline-in-flow --bindings-target` propagates the
   generated memorySpace binding to the parent flow project.
-tags: [uipath-agents, e2e, mode:build, low-code, lifecycle:generate, inline-flow]
+tags: [uipath-agents, e2e, mode:build, low-code, lifecycle:generate, inline-flow, path-to-ga]
+skip: true
+# Parked at roadmap M8 (2026-08-05) — memory spaces are NOT attachable to
+# autonomous inline agents: no autonomous manifest version declares a `memory`
+# handle (platform TODO pending memory support in the Agents runtime), the CLI
+# registry mints zero `uipath.agent.resource.memory.*` manifests (studio-layer
+# minting, same gap class as MCP), and `flow validate` rejects a `memory`-port
+# edge. This task also grades the retired sidecar architecture
+# (`uip agent init/refresh --inline-in-flow`), so it is parked, not migrated.
+# When the platform ships support (re-probe: `registry get
+# uipath.agent.autonomous` handleConfiguration gains "memory" + `registry
+# search memory` returns types), REWRITE as a flow-file task under
+# tests/tasks/uipath-maestro-flow/inline_agent/memory_space — do not re-enable
+# this one. See skills/uipath-maestro-flow/.../plugins/inline-agent/capabilities/memory.md.
 
 run_limits:
   expected_turns: 76

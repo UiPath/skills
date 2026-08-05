@@ -184,5 +184,5 @@ Expected shape, for review only:
 | `Invalid metadata JSON` | Metadata is malformed or not an object | Pass a valid JSON object, e.g. `'{"source":"seed"}'` |
 | `Memory space "<name>" matches by memory space name` | More than one feature references the same memory space name | Pass `--folder-path`, use the feature name, or use the feature ID |
 | No `memorySpace` binding after refresh | Refresh was not run after the memory edit | Run `uip agent refresh "<AGENT_PROJECT_DIR>" --output json` |
-| Memory on an **inline** agent (embedded in a flow) | Inline agents are embedded in the `.flow`; owned by the `uipath-maestro-flow` skill | See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md) — this file covers standalone agents only |
+| Memory on an **inline** agent (embedded in a flow) | Not supported: the autonomous flow-agent node exposes no `memory` handle | This file covers standalone agents only. Inline agents are owned by the `uipath-maestro-flow` skill, which documents the limitation and alternatives (e.g. standalone agent with memory wired in as an agent tool). See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md) |
 | User expects this command to create a new memory space | `uip agent memory add` only attaches an existing space | Stop and ask for an existing memory space name and folder |
