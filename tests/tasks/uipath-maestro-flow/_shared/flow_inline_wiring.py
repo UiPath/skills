@@ -907,6 +907,141 @@ def assert_escalation_inputs(
     return inputs
 
 
+# Derived resource.json fields an agent trained on the old IS-tool pattern
+# copies into a connector node. The flow form is: identity + name/description
+# + the CLI-populated `detail` blob; schemas and `properties.*` (toolPath,
+# objectName, connection block, parameters[]) all derive from `detail` at
+# projection.
+CONNECTOR_DERIVED_INPUT_FIELDS = (
+    "$resourceType",
+    "properties",
+    "inputSchema",
+    "outputSchema",
+    "iconUrl",
+    "isPreview",
+    "referenceKey",
+    "argumentProperties",
+)
+
+
+def assert_connector_inputs(node: dict) -> dict:
+    """Assert an IS connector tool node carries the CLI-populated flow form.
+
+    `flow validate` checks NOTHING here beyond `inputs.source` — a connector
+    node with no `detail`, no `name`, or hand-written `detail` validates
+    clean and ships broken. This checker is the only gate.
+
+    - Never-author guards: none of CONNECTOR_DERIVED_INPUT_FIELDS in
+      `inputs` (the derived resource.json shape — schemas/properties derive
+      from `detail`).
+    - `inputs.name` / `inputs.description` non-empty (LLM tool selection).
+    - `inputs.detail` must be the `uip maestro flow node configure` output:
+        - `connectionId` / `connectionFolderKey` — any-case UUIDs
+          (tenant-provided via `uip is connections list --all-folders`)
+        - `endpoint` — non-empty, starts with "/"
+        - `method` — non-empty string
+        - `configuration` — string containing "essentialConfiguration"
+          (the block hand-authoring misses; `=jsonString:` prefix is the
+          CLI form). A fieldsContainer-only blob FAILs — hand-written
+          detail passes validate but breaks at runtime.
+
+    Returns the `detail` dict for follow-up assertions.
+    """
+    inputs = node.get("inputs") or {}
+    errs = []
+
+    for field in CONNECTOR_DERIVED_INPUT_FIELDS:
+        if field in inputs:
+            errs.append(
+                f"inputs.{field} is a derived resource.json field — never "
+                "authored (connector schemas/properties derive from inputs.detail)"
+            )
+
+    if not (isinstance(inputs.get("name"), str) and inputs["name"].strip()):
+        errs.append(f"inputs.name is missing or empty: {inputs.get('name')!r}")
+    if not (isinstance(inputs.get("description"), str) and inputs["description"].strip()):
+        errs.append(
+            "inputs.description is missing or empty — the LLM selects tools "
+            "by description"
+        )
+
+    detail = inputs.get("detail")
+    if not isinstance(detail, dict) or not detail:
+        errs.append(
+            f"inputs.detail is missing or empty: {detail!r} — run "
+            "`uip maestro flow node configure` (validate does not catch this)"
+        )
+        sys.exit(f"FAIL ({node.get('id')}): " + "; ".join(errs))
+
+    for key in ("connectionId", "connectionFolderKey"):
+        val = detail.get(key)
+        if not isinstance(val, str) or not ANY_CASE_UUID_RE.match(val):
+            errs.append(
+                f"detail.{key} must be the UUID from "
+                f"`uip is connections list --all-folders`, got {val!r}"
+            )
+    endpoint = detail.get("endpoint")
+    if not (isinstance(endpoint, str) and endpoint.startswith("/")):
+        errs.append(f"detail.endpoint must be the activity path (\"/...\"), got {endpoint!r}")
+    method = detail.get("method")
+    if not (isinstance(method, str) and method.strip()):
+        errs.append(f"detail.method is missing or empty: {method!r}")
+    configuration = detail.get("configuration")
+    if not (isinstance(configuration, str) and "essentialConfiguration" in configuration):
+        errs.append(
+            "detail.configuration must carry the essentialConfiguration "
+            "block written by `uip maestro flow node configure` — a "
+            f"hand-written blob fails at runtime, got {str(configuration)[:80]!r}"
+        )
+
+    if errs:
+        sys.exit(f"FAIL ({node.get('id')}): " + "; ".join(errs))
+    return detail
+
+
+def assert_connector_bindings(flow: dict, connection_id: str) -> list[dict]:
+    """Assert the two connection `bindings[]` rows for a connector tool.
+
+    `flow validate` does NOT enforce connector binding rows (unlike
+    process-family rows) — this checker is the only gate. Requires, among
+    rows with `resource == "connection"`:
+
+      - one row `propertyAttribute == "ConnectionId"` whose `default` is
+        `connection_id` (the picked connection)
+      - one row `propertyAttribute == "FolderKey"` with a UUID `default`
+
+    Tolerant beyond that (extra rows / ids / names unasserted).
+    """
+    rows = [
+        r for r in (flow.get("bindings") or [])
+        if isinstance(r, dict) and r.get("resource") == "connection"
+    ]
+    conn_rows = [r for r in rows if r.get("propertyAttribute") == "ConnectionId"]
+    folder_rows = [r for r in rows if r.get("propertyAttribute") == "FolderKey"]
+    errs = []
+    if not any(r.get("default") == connection_id for r in conn_rows):
+        errs.append(
+            f"no bindings[] row with resource='connection', "
+            f"propertyAttribute='ConnectionId', default={connection_id!r} "
+            f"(rows: {conn_rows!r})"
+        )
+    if not any(
+        isinstance(r.get("default"), str) and ANY_CASE_UUID_RE.match(r["default"])
+        for r in folder_rows
+    ):
+        errs.append(
+            f"no bindings[] row with resource='connection', "
+            f"propertyAttribute='FolderKey' and a UUID default (rows: {folder_rows!r})"
+        )
+    if errs:
+        sys.exit(
+            "FAIL: " + "; ".join(errs) +
+            " — `uip maestro flow node configure` writes both rows; validate "
+            "does not enforce them"
+        )
+    return rows
+
+
 def assert_cluster_vars_ref(nodes: list[dict]) -> None:
     """Assert at least one `$vars.` / `$metadata.` ref across the nodes' inputs.
 
