@@ -22,9 +22,8 @@ Compose the `slaRules[]` array for each target (root or stage) in one write. Gro
 
 ## ID generation
 
-- SLA rule (default and conditional): `sla_` + 8 chars.
+- SLA rule (default and conditional): `sla_` + 8 chars. **Required** on every entry.
 - Escalation: `esc_` + 6 chars. Per [`case-editing-operations.md § ID Generation`](../../case-editing-operations.md#id-generation).
-- SlaRuleEntry: `sla` + 8 chars. **Required** on every entry (as of schema v26).
 
 Step 9.9 preallocates these IDs before conditions so `sla-status-change` rules can reference them. Record every SLA T-entry under `{kind: "sla-rule", displayName: "<title>", target: "root" | "<stageId>"}` and every escalation T-entry under `{kind: "escalation", displayName: "<title>", parentSlaTask: "T<m>", target: "root" | "<stageId>"}`. Step 11 MUST reuse the preallocated IDs; never regenerate them while composing `slaRules[]`.
 
@@ -46,8 +45,6 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
 ```json
 [
   {
-    "id": "sla<8-rand>",
-    "displayName": "<condition label>",
     "id": "sla_aB3kL9Qx",
     "displayName": "SLA Rule 1",
     "expression": "=js:<translated-condition-1>",
@@ -94,7 +91,7 @@ Emission rules:
 3. **Escalation-only default rule is legal, but it still needs an ID and title.** If a target has escalations but no default SLA T-entry, Step 9.9 preallocates a synthetic default SLA ID and Step 11 emits `{id:"sla_...", displayName:"SLA Rule 1", expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
 4. **Always emit `escalationRule` on every rule.** Use `"escalationRule": []` when a rule has no attached escalations. Never omit the key.
 5. **Omit `slaRules` key entirely** on targets with no SLA T-entries.
-6. **Emit a unique `id` on every SlaRuleEntry.** `sla` + 8 chars — **required** (schema v26). `displayName` is optional (`"Default"` for the trailing `=js:true` entry).
+6. **Emit a unique `id` on every SlaRuleEntry.** `sla_` + 8 chars — **required** (schema v26). `displayName` is optional (`"Default"` for the trailing `=js:true` entry).
 
 ## Recipe — one escalation entry
 

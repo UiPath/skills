@@ -88,7 +88,7 @@ All IDs follow the CLI's `prefixedId(prefix, count)` scheme: a fixed prefix + `c
 | Stage / case / task file-level condition | `Condition_` | 6 | `Condition_xC1XyX` | |
 | Rule inside those conditions | `Rule_` | 6 | `Rule_jdBFrJ` | |
 | Sticky note | `StickyNote_` | 6 | `StickyNote_aBcDeF` | |
-| SLA rule entry | `sla` | 8 | `sla7bK2mNp9` | Required on every `slaRules[]` entry (schema v26). |
+| SLA rule entry | `sla_` | 8 | `sla_7bK2mNp9` | Required on every `slaRules[]` entry (schema v26). |
 | SLA escalation | `esc_` | 6 | `esc_gH2jKl` | |
 | Binding | `b` | 8 | `b3KmNp7Q9` | |
 | Variable formal arg slot (`variables.inputs[]` / `variables.outputs[]` `id`) | `v` | 8 | `vK3mNp9Qx` | In/Out-arg formal slot. Surfaces in case BPMN as `<uipath:input id>` + dot-referenced via `=vars.<id>` — MUST be letter-leading. See [global-vars](plugins/variables/global-vars/impl-json.md#formal-arg-slot-id-format). |
@@ -175,7 +175,7 @@ Pseudocode blocks in this document and in per-plugin `impl-json.md` files (`issu
 
 **Bash is still used for**: UUID v4 generation only (`node -e "console.log(crypto.randomUUID())"` for `operate.json.projectId` and `entry-points.json` `uniqueId`; subprocess MUST NOT `require('fs')`, `require('child_process')`, or use any redirection operator), `uip solution init` / `uip solution projects add` / `uip solution upload`, `uip maestro case validate`, `uip maestro case debug`, `uip maestro case registry` discovery, and read-only metadata fetches (`uip maestro case tasks describe`, `is resources describe`, `is triggers describe`). Never for file mutation.
 
-**Prefixed IDs (`Stage_`, `t`, `Rule_`, `Condition_`, `trigger_`, `c`, `r`, `b`, `sla`, `esc_`, `StickyNote_`) are picked inline by the agent — no subprocess.** See § ID Generation algorithm above.
+**Prefixed IDs (`Stage_`, `t`, `Rule_`, `Condition_`, `trigger_`, `c`, `r`, `b`, `sla_`, `esc_`, `StickyNote_`) are picked inline by the agent — no subprocess.** See § ID Generation algorithm above.
 
 ### Per-section batch write contract — canonical
 
@@ -426,7 +426,7 @@ Mutate a variable's `type` / `body` / `default` in place — keep its `id` so ev
 
 ### Modify or remove an SLA or escalation
 
-The add path is [plugins/sla/impl-json.md](plugins/sla/impl-json.md); this is the in-place modify / remove. SLA rules live in `metadata.slaRules[]` (root target) or `node.data.slaRules[]` (stage target); each rule carries an `escalationRule[]`. Each rule has a **required** `id` (`sla` + 8 chars, schema v26); escalations carry an `esc_` id. Address a rule by `id` or array index.
+The add path is [plugins/sla/impl-json.md](plugins/sla/impl-json.md); this is the in-place modify / remove. SLA rules live in `metadata.slaRules[]` (root target) or `node.data.slaRules[]` (stage target); each rule carries an `escalationRule[]`. Each rule has a **required** `id` (`sla_` + 8 chars, schema v26); escalations carry an `esc_` id. Address a rule by `id` or array index.
 
 1. Read `caseplan.json`. Locate the SLA array — `metadata.slaRules[]` for the root target, else the stage node's `data.slaRules[]` (find by `data.label`).
 2. **Modify a rule:** edit the target rule's `count` / `unit` / `expression` in place. Keep the default rule (`expression == "=js:true"`) **last**; never reorder it ahead of a conditional rule.
