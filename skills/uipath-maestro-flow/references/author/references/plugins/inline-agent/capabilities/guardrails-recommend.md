@@ -4,9 +4,9 @@ This reference covers two workflows for inline agents:
 - **Recommend**: The agent has no guardrails (or insufficient ones) → which guardrails should be added?
 - **Validate**: The agent already has guardrails → are they correctly configured and appropriate?
 
-Both workflows are driven by live CLI data — the catalog for recommendation reasoning and the guardrails list for parameter/scope constraints. Do not hardcode assumptions about which guardrail fits which agent type. The catalog's authored fields (`when_to_use`, `use_cases`, `security_risk_addressed`, `when_not_to_use`) drive recommendation decisions; the guardrails list's `Parameters`, `AllowedScopes`, and `GuardrailStages` drive correctness validation.
+Both workflows are driven by live CLI data — the catalog for recommendation reasoning and the guardrails list for parameter/scope constraints. Do not hardcode assumptions about which guardrail fits which agent type. The catalog's authored fields (`WhenToUse`, `UseCases`, `SecurityRiskAddressed`, `WhenNotToUse`) drive recommendation decisions; the guardrails list's `Parameters`, `AllowedScopes`, and `GuardrailStages` drive correctness validation.
 
-Both CLI commands are tenant-level — they run from the flow project directory with no agent project on disk.
+All `uip agent guardrails` commands are tenant-level — they run from the flow project directory with no agent project on disk.
 
 > **This file covers WHEN to add guardrails and WHY. For the exact JSON schema, discriminator fields, parameter types, and action shapes, always read [guardrails.md](guardrails.md) before writing any guardrail JSON.**
 
@@ -47,7 +47,7 @@ This returns only guardrails available to the current tenant (filtered by entitl
 uip agent guardrails list --output json
 ```
 
-Build a lookup of `{ validatorId: status }` from the `Data` array. You will use this in Steps 2 and 5 to filter recommendations.
+Build a lookup of `{ validatorId: status }` from the `Data` array. You will use this in Steps 2 and 4 to filter recommendations.
 
 > **Catalog vs. list — the key distinction:** The catalog lists all guardrails that exist on the platform (with rich metadata for reasoning). The guardrails list returns only those accessible to this tenant. Only recommend validators where `Status == "Available"` in the list.
 
@@ -102,31 +102,31 @@ mandatory discovery steps but cannot replace or override the custom rule with
 
 For **each entry** in the catalog (`Guardrails[]` array from the cached JSON):
 
-1. Read the entry's `when_to_use`, `use_cases`, `description`, and `security_risk_addressed`.
+1. Read the entry's `WhenToUse`, `UseCases`, `Description`, and `SecurityRiskAddressed`.
 2. Compare against agent context (prompts, variables, tool descriptions) using semantic reasoning:
-   - Does the agent's purpose align with the `when_to_use` scenario?
-   - Do any `use_cases` items describe what this agent does or the data it handles?
-   - Does the agent face the threat described in `security_risk_addressed`?
-3. Also read `when_not_to_use`. If the agent matches a disqualifying condition, exclude this validator from recommendations (or mention it with an explanation).
+   - Does the agent's purpose align with the `WhenToUse` scenario?
+   - Do any `UseCases` items describe what this agent does or the data it handles?
+   - Does the agent face the threat described in `SecurityRiskAddressed`?
+3. Also read `WhenNotToUse`. If the agent matches a disqualifying condition, exclude this validator from recommendations (or mention it with an explanation).
 4. Cross-reference with the guardrails list status lookup from Step 0:
    - `Available` → candidate for recommendation
    - `Unauthorised` → mention to the user ("this guardrail is not licensed for your tenant") but do NOT add it
    - Not in the list at all → skip silently (not available on this platform version)
-5. If the validator is a candidate: use the catalog entry's `examples[].config` to determine the appropriate scope, stage, action, and parameters. The example config is the authoritative template for parameter shape.
+5. If the validator is a candidate: use the catalog entry's `Examples[].Config` to determine the appropriate scope, stage, action, and parameters. The example config is the authoritative template for parameter shape.
 
 Do **not** apply predetermined knowledge about which guardrail maps to which schema field. Let the catalog entry's authored fields drive every recommendation decision.
 
 ### Step 3 — De-duplicate Overlapping Validators
 
-Several catalog validators address the same threat. Recommending more than one of them at the same scope and stage is redundant — it doubles latency and cost on every call for marginal benefit (the canonical case is `prompt_injection` and `user_prompt_attacks`: both have `security_category: "adversarial_input"` and both run at Llm · PRE).
+Several catalog validators address the same threat. Recommending more than one of them at the same scope and stage is redundant — it doubles latency and cost on every call for marginal benefit (the canonical case is `prompt_injection` and `user_prompt_attacks`: both have `SecurityCategory: "adversarial_input"` and both run at Llm · PRE).
 
-After Step 2 produces the candidate list, group candidates by **(`security_category`, scope, stage)**. For any group with more than one candidate:
+After Step 2 produces the candidate list, group candidates by **(`SecurityCategory`, scope, stage)**. For any group with more than one candidate:
 
-1. **Drop deprecated or unavailable entries first.** If the catalog marks an entry deprecated (via its `status`, or a deprecation note in `notes` / `when_not_to_use`), remove it from the group. Never recommend a validator the catalog signals is being retired when an active alternative covers the same category.
-2. **Keep the single best fit** for the agent's context — the one whose `when_to_use` / `use_cases` most closely match. Recommend only that one.
+1. **Drop deprecated or unavailable entries first.** If the catalog marks an entry deprecated (via its `Status`, or a deprecation note in `Notes` / `WhenNotToUse`), remove it from the group. Never recommend a validator the catalog signals is being retired when an active alternative covers the same category.
+2. **Keep the single best fit** for the agent's context — the one whose `WhenToUse` / `UseCases` most closely match. Recommend only that one.
 3. **Mention the alternative(s)** you dropped and why (e.g. "also recommending only User Prompt Attacks, not Prompt Injection — both cover adversarial input at Llm PRE and the catalog marks Prompt Injection deprecated").
 
-Do **not** hardcode validator names or a fixed "prefer X over Y" rule in your reasoning — derive the grouping from each entry's `security_category`, scope, and stage, and derive deprecation from the catalog's own fields. This keeps the behavior correct as the catalog evolves.
+Do **not** hardcode validator names or a fixed "prefer X over Y" rule in your reasoning — derive the grouping from each entry's `SecurityCategory`, scope, and stage, and derive deprecation from the catalog's own fields. This keeps the behavior correct as the catalog evolves.
 
 ### Step 4 — Scoped or Tool-Specific Filtering (only when user requests)
 
@@ -155,12 +155,12 @@ Always confirm the chosen scope is in the validator's `AllowedScopes` from the g
 
 ### Step 5 — Choose the Action
 
-The action (`{"$actionType": "block"}` vs `{"$actionType": "log"}` vs `escalate` / `filter`) is **not** a free choice — default to the `action_type` in the catalog entry's representative `examples[].config`. For security-critical guardrails (`adversarial_input` — prompt injection / user prompt attacks; `content_safety` — harmful content / IP) the catalog examples use **block**, because a logged-but-allowed violation provides no actual protection.
+The action (`{"$actionType": "block"}` vs `{"$actionType": "log"}` vs `escalate` / `filter`) is **not** a free choice — default to the `ActionType` in the catalog entry's representative `Examples[].Config`. For security-critical guardrails (`adversarial_input` — prompt injection / user prompt attacks; `content_safety` — harmful content / IP) the catalog examples use **`Block`**, because a logged-but-allowed violation provides no actual protection.
 
 Rules:
 
-1. **Default to the catalog example's `action_type`.** If it is `block`, generate `{"$actionType": "block", "reason": "..."}`. Do not substitute `log` for a security-critical guardrail on your own initiative.
-2. **Never silently downgrade block → log.** A guardrail set to log-only when the user expected blocking is the dangerous failure mode — the agent looks protected but isn't. If you use `{"$actionType": "log"}` for any guardrail whose catalog default is `block`, you **must** state it explicitly in the report and give the reason.
+1. **Default to the catalog example's `ActionType`.** If it is `Block`, generate `{"$actionType": "block", "reason": "..."}`. Do not substitute `log` for a security-critical guardrail on your own initiative.
+2. **Never silently downgrade block → log.** A guardrail set to log-only when the user expected blocking is the dangerous failure mode — the agent looks protected but isn't. If you use `{"$actionType": "log"}` for any guardrail whose catalog `ActionType` default is `Block`, you **must** state it explicitly in the report and give the reason.
 3. **Legitimate reasons to use `log` instead of `block`** (state which applies):
    - The user explicitly asked for observe-only / audit / "log first, block later" rollout.
    - A high false-positive risk where blocking would break normal operation (e.g. PII `Person` entity flagging ordinary words) — log so the user can tune thresholds before enforcing.
@@ -168,7 +168,7 @@ Rules:
 
 ### Step 6 — Generate Config Blocks
 
-For each recommended guardrail, use the catalog `examples[].config` as the template. Map it to the guardrail object shape using [guardrails.md](guardrails.md) (discriminators, UUID, PascalCase scopes, `$`-prefixed fields).
+For each recommended guardrail, use the catalog `Examples[].Config` as the template. Map it to the guardrail object shape using [guardrails.md](guardrails.md) (discriminators, UUID, PascalCase scopes, `$`-prefixed fields).
 
 > Read [guardrails.md](guardrails.md) before writing any guardrail JSON. The `$guardrailType`, `$parameterType`, `$actionType`, `$ruleType`, and `$selectorType` discriminators cannot be guessed — they are specified there.
 
@@ -198,8 +198,8 @@ running validation or reporting completion.
 
 Report to the user:
 - What was added (by name)
-- Why it was recommended (cite the catalog's `when_to_use` or a specific `use_cases` item that matched the agent's context)
-- What scope and action were chosen and why. If you dropped an overlapping validator in Step 3, name it and the reason. If you used `{"$actionType": "log"}` for a guardrail whose catalog default is `block` (Step 5), call it out explicitly with the reason.
+- Why it was recommended (cite the catalog's `WhenToUse` or a specific `UseCases` item that matched the agent's context)
+- What scope and action were chosen and why. If you dropped an overlapping validator in Step 3, name it and the reason. If you used `{"$actionType": "log"}` for a guardrail whose catalog `ActionType` default is `Block` (Step 5), call it out explicitly with the reason.
 - What parameters were set and their meaning
 
 ---
@@ -231,14 +231,14 @@ Check that every parameter object has a `$parameterType` discriminator. Missing 
 
 1. From the guardrails list output, read `AllowedScopes` for the validator.
 2. Check that `selector.scopes` values are all in `AllowedScopes`. If any scope is not allowed, flag it.
-3. From the catalog entry's `when_not_to_use` (if present), check whether the guardrail may be misapplied given the agent's actual context.
+3. From the catalog entry's `WhenNotToUse` (if present), check whether the guardrail may be misapplied given the agent's actual context.
 4. For Tool-scoped guardrails: does `selector.matchNames` list the intended tools? Does each name match the `inputs.name` of a resource node wired to the agent's `tool` handle? A ghost entry silently never fires.
 
 ### Relevance Check
 
-1. Read the catalog entry's `when_not_to_use` (from the catalog cache).
+1. Read the catalog entry's `WhenNotToUse` (from the catalog cache).
 2. Compare against the agent's current context (prompts, variables, wired tools).
-3. If the agent matches a `when_not_to_use` condition, flag the guardrail as potentially misapplied and explain why.
+3. If the agent matches a `WhenNotToUse` condition, flag the guardrail as potentially misapplied and explain why.
 
 ### Report and Fix
 
@@ -257,9 +257,9 @@ If the user asks to fix identified issues: apply corrections to the agent node's
 1. **Always fetch catalog first** (use cache if fresh); **always fetch guardrails list second** (no cache). Both are required before any analysis.
 2. **If `GuardrailCatalogUnavailable`** → surface the message and stop. Do not fall back to guessing or hardcoded recommendations.
 3. **Only recommend `Available` validators**. Mention `Unauthorised` ones to the user so they can contact their administrator.
-4. **Every recommendation must cite** the catalog entry's `when_to_use` or a specific `use_cases` item that matched the agent's context. Do not recommend a guardrail without explaining why it applies.
-5. **Never recommend two validators with the same `security_category` at the same scope and stage** (e.g. `prompt_injection` + `user_prompt_attacks` at Llm PRE). De-duplicate per Step 3: drop catalog-deprecated entries, keep the best fit, mention the alternative. Derive the grouping and deprecation from the catalog's own fields — do not hardcode validator names.
-6. **Default the action to the catalog example's `action_type`; never silently downgrade `block` → `log`.** Security-critical guardrails (`adversarial_input`, `content_safety`) default to `{"$actionType": "block"}`. If you use `{"$actionType": "log"}` for a guardrail whose catalog default is `block`, state it and the reason in the report (Step 5).
+4. **Every recommendation must cite** the catalog entry's `WhenToUse` or a specific `UseCases` item that matched the agent's context. Do not recommend a guardrail without explaining why it applies.
+5. **Never recommend two validators with the same `SecurityCategory` at the same scope and stage** (e.g. `prompt_injection` + `user_prompt_attacks` at Llm PRE). De-duplicate per Step 3: drop catalog-deprecated entries, keep the best fit, mention the alternative. Derive the grouping and deprecation from the catalog's own fields — do not hardcode validator names.
+6. **Default the action to the catalog example's `ActionType`; never silently downgrade `block` → `log`.** Security-critical guardrails (`adversarial_input`, `content_safety`) default to `{"$actionType": "block"}`. If you use `{"$actionType": "log"}` for a guardrail whose catalog `ActionType` default is `Block`, state it and the reason in the report (Step 5).
 7. **Block as early as possible — pick the outermost scope the validator allows.** For input protection (PII, jailbreak, injection) prefer `selector.scopes: ["Agent"]` over `["Llm"]` over `["Tool"]`, so the run halts before the LLM call. PII meant to stop the agent handling personal data goes at **Agent**, not Llm. Only narrow when the validator is scope-restricted (e.g. `prompt_injection` / `user_prompt_attacks` are Llm-only) or the user asks for a narrower scope. See Step 4.
 8. **For Tool scope**: verify the tool node is wired to the agent's `tool` handle before writing `matchNames`. If the agent has no wired tools, do not add a Tool-scoped guardrail.
 9. **Correctness validation uses `uip agent guardrails list` output** — `Parameters[].Type`, `Options`, `KeySource`, `Min`, `Max`, `Step` are the authoritative source for all parameter rules. Do not hardcode validator-specific knowledge.

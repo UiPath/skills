@@ -104,7 +104,7 @@ When a guardrail applies to more than one scope (e.g., both `Agent` and `Tool`),
 
 ### matchNames — the Tool Node's `inputs.name`
 
-`matchNames` entries must equal the target tool node's **`inputs.name`** — the name authority for every resource node (falls back to the node label / `display.label` only when `inputs.name` is absent; keep them aligned). This is the same name the derived-sidecar filter matches when populating the tool's `guardrail.policies`.
+`matchNames` entries must equal the target tool node's **`inputs.name`** — the name authority. For **tool** nodes specifically, the projection falls back to the node label / `display.label` when `inputs.name` is absent — keep them aligned (other resource kinds resolve by `inputs.name` only, but they are not guardrail targets). This is the same name the derived-sidecar filter matches when populating the tool's `guardrail.policies`.
 
 Only the following tool kinds support guardrails:
 
@@ -213,7 +213,7 @@ Creates a task in an Action Center app for human review.
   "$actionType": "escalate",
   "app": {
     "id": "<Key from uip solution resources list --kind App>",
-    "name": "<app Name>",
+    "name": "<APP_NAME>",
     "version": "0",
     "folderName": "<Folder from uip solution resources list --kind App>"
   },
@@ -289,13 +289,7 @@ or flow, run `uip solution init` and `uip maestro flow init` before app discover
 An incompatible or missing escalation app rejects only the guardrail; it does
 not cancel the requested local scaffolding.
 
-**Step 0 — Discover available validators (MANDATORY for `builtInValidator` guardrails — do not skip even when validator type is already known):**
-
-```bash
-uip agent guardrails list --output json
-```
-
-Confirm the target validator is listed. Record the exact parameter `id` values and `$parameterType` tags from the output — these must match precisely in the guardrail JSON. Skipping this step leads to invalid parameter shapes. (Skip for purely custom guardrails — no validator involved.)
+**Step 0 — Discover available validators** (MANDATORY for `builtInValidator` guardrails; skip for purely custom ones): run the [Step 0 validator fetch](#step-0--fetch-available-validators-mandatory-first-step) and record the exact parameter `id` values and `$parameterType` tags — these must match precisely in the guardrail JSON.
 
 **Step 1 — Discover the app** using `--kind App` from the solution root:
 
@@ -423,6 +417,36 @@ Custom guardrails use deterministic rules you define. They have a `rules` array 
 
 > **Rule combination logic is AND.** Multiple rules in a single guardrail are evaluated with AND — all rules must match for the guardrail to trigger. Multiple fields selected within a single rule (via `$selectorType: "specific"` with multiple `fields` entries) are also AND — every listed field must satisfy the operator.
 >
+> Example with two rules and a multi-field selector (note the array-wildcard `[*]` paths):
+> ```json
+> "rules": [
+>   {
+>     "$ruleType": "word",
+>     "fieldSelector": {
+>       "$selectorType": "specific",
+>       "fields": [
+>         { "path": "editPermissions[*].project.archivedBy.applicationRoles.items[*].groups[*]", "source": "output", "title": "Edit permissions project archived by application roles items groups" },
+>         { "path": "editPermissions[*].project.archivedBy.applicationRoles.items[*].key", "source": "output", "title": "Edit permissions project archived by application roles items key" }
+>       ]
+>     },
+>     "operator": "doesNotStartWith",
+>     "value": "AL"
+>   },
+>   {
+>     "$ruleType": "word",
+>     "fieldSelector": {
+>       "$selectorType": "specific",
+>       "fields": [
+>         { "path": "description", "source": "output", "title": "Description" }
+>       ]
+>     },
+>     "operator": "isNotEmpty",
+>     "value": ""
+>   }
+> ]
+> ```
+> Evaluation: `(groups doesNotStartWith "AL" AND key doesNotStartWith "AL") AND (description isNotEmpty)` — all three conditions must be true for the guardrail to trigger.
+>
 > **OR logic is not supported.** To achieve OR behavior, create separate guardrails — one per condition branch. Each guardrail triggers independently.
 
 > **Critical discriminator fields:** Every rule needs `$ruleType`. Every field selector needs `$selectorType`. Every action needs `$actionType`. Missing any of these causes runtime failure — and `flow validate` will NOT catch it.
@@ -430,7 +454,7 @@ Custom guardrails use deterministic rules you define. They have a `rules` array 
 ```json
 {
   "$guardrailType": "custom",
-  "id": "<uuid>",
+  "id": "<UUID>",
   "name": "Block forbidden terms",
   "description": "Prevents agent from using blacklisted words",
   "enabledForEvals": true,
@@ -569,7 +593,7 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 ```json
 {
   "$guardrailType": "builtInValidator",
-  "id": "<uuid>",
+  "id": "<UUID>",
   "name": "PII Detection",
   "description": "Detects PII in tool outputs",
   "enabledForEvals": true,
@@ -1019,6 +1043,7 @@ For each tool name you plan to put in `matchNames`:
   - Process tool — RPA / agent / API / process orchestration: [process.md](process.md)
   - Built-in tool: [built-in-tools.md](built-in-tools.md)
   - Integration Service tool: [integration-service.md](integration-service.md)
+  - IXP tool: no dedicated capability doc — pin its `inputs` shape from the `registry get` manifest's `inputDefaults` ([impl.md § 7](../impl.md#7-resource-nodes))
 
 > `flow validate` does NOT enforce this — a ghost `matchNames` entry passes validation and silently never fires. The enumeration above is the only gate.
 
@@ -1032,7 +1057,7 @@ Apply the four-outcome decision rule from [Step 0](#step-0--fetch-available-vali
 
 ### Step 4 — Add the guardrail to the agent node
 
-Append the object to `inputs.guardrails[]` on the `uipath.agent.autonomous` node (create the array if the node carries `guardrails: []`).
+Append the object to `inputs.guardrails[]` on the `uipath.agent.autonomous` node (a `guardrails: []` placeholder is appended into; create the array if absent).
 
 For built-in validators, see [Built-in Validator Guardrails](#built-in-validator-guardrails-guardrailtype-builtinvalidator) (Examples 1–5, 8). For custom rules, see [Custom Guardrails](#custom-guardrails-guardrailtype-custom) (Examples 6, 7, 9, 10). Generate a fresh UUID for each guardrail `id`.
 

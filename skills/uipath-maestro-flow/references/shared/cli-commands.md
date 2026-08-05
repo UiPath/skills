@@ -342,7 +342,7 @@ uip agent model list --output json \
 
 ## uip agent guardrails
 
-Validator discovery for inline-agent guardrails — tenant-level reads, no agent project needed:
+Validator discovery for inline-agent guardrails — tenant-level reads, no agent project needed. Requires `uip login`:
 
 ```bash
 uip agent guardrails list --output json                # tenant validators: status, scopes, stages, parameter shapes
