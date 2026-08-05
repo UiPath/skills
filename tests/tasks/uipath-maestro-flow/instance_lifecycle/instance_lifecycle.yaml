@@ -1,0 +1,92 @@
+task_id: skill-case-operate-instance-lifecycle
+description: >
+  Operate mode — drive a live Case process instance through its runtime
+  lifecycle: start an instance of a pre-published Case process, list instances,
+  pause, resume, then cancel it, reading state via `--output json` at each step.
+  Exercises the `uip maestro case instance` command surface (case-commands.md),
+  the one documented "When to Use" runtime capability with no prior coverage
+  (operate mode was carried only by build-time `debug`). Requires cloud auth and
+  a pre-published Case process on the tenant, supplied via the
+  `E2E_CASE_PROCESS_KEY` + `E2E_CASE_FOLDER_KEY` environment variables.
+tags: [uipath-maestro-case, integration, mode:operate, lifecycle:setup, feature:instance]
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 900
+
+initial_prompt: |
+  A Case process is already published on the tenant. Its process key is in the
+  environment variable `E2E_CASE_PROCESS_KEY` and its folder key is in
+  `E2E_CASE_FOLDER_KEY`.
+
+  Manage a live instance of that Case process through its runtime lifecycle:
+
+  1. Start a new instance of the process.
+  2. List the running instances for that process and identify the one you started.
+  3. Pause the instance, then confirm it is paused.
+  4. Resume the instance, then confirm it is running again.
+  5. Cancel the instance, then confirm it is cancelled.
+
+  Read command output as JSON so you can inspect the instance state at each
+  step. Do NOT ask for approval, confirmation, or feedback — carry the instance
+  through the full pause → resume → cancel lifecycle and leave it cancelled.
+
+  Before starting, load the uipath-maestro-case skill and follow its runtime
+  case-management guidance (see case-commands.md).
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started a Case process instance"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+process\s+run'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed live case instances"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+instance\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent paused the instance"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+instance\s+pause'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resumed the instance"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+instance\s+resume'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent cancelled the instance"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+instance\s+cancel'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The started instance reached the Cancelled terminal state on the tenant"
+    command: "python3 $TASK_DIR/check_instance_lifecycle.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
