@@ -216,6 +216,24 @@ An upgrade is just Pack → Publish → Deploy with a **bumped version** — `de
 
 > **Upgrade auto-detect needs a recent CLI.** The in-place upgrade flow shipped in `codedapp-tool` 1.198. If upgrades behave inconsistently across machines (one upgrades cleanly, another duplicates or fails), the machines are on different tool versions — run `uip tools update` to align them, and compare `uip tools list --output json`.
 
+#### Upgrade matches by name — keep it stable
+
+`deploy` decides *upgrade vs. fresh* by finding the existing deployment via its **app name / systemName**, which must match the app's **portal display name**. When it can't match, it silently falls back to a **fresh** deploy and fails:
+
+```
+This app name is already deployed in this folder. Please choose a different name.
+HTTP 400 · code 1004 · "app already deployed in folder"
+```
+
+This is the single biggest cause of *"the same steps upgraded one app but not another"*. To keep upgrades reliable:
+
+- **Use the exact same `-n <name>` on every `pack` / `publish` / `deploy`.** Changing it — even casing or spacing — mints a new systemName and breaks upgrade matching. `pack` also **sanitizes** the name (strips spaces and invalid characters: `"My App"` → `myapp`), so a name with spaces drifts silently across runs. Pick one clean kebab-case name up front and never change it.
+- **Keep the portal display name identical to the package name.** Known bug ([APPS-35627](https://uipath.atlassian.net/browse/APPS-35627), open): renaming the app in the portal to a friendly title (`DLA Contract Quality Review`) while the package is `dla-contract-quality-review` makes the CLI unable to find it → 1004. Until it's fixed, do not give the app a portal display name that differs from `-n`. If someone already renamed it, rename it back to match `-n`, then re-deploy.
+- **Keep `uipath.json`'s `clientId` populated.** An empty `clientId` makes `pack` mint a new client + systemName every run ([APPS-35784](https://uipath.atlassian.net/browse/APPS-35784)), silently breaking upgrade detection.
+- **Portal-first apps:** if the app was first created from the portal (not the CLI), verify its exact display title, the folder key, and that your logged-in account can see it in that folder before attempting a CLI upgrade.
+
+**Already stuck at 1004** and the name can't be re-aligned? The only recovery today is to **delete the deployment from the Orchestrator UI**, then run a fresh `deploy` (with `--path-name`). There is no `undeploy` / `--force` flag yet.
+
 #### URL reserved words
 
 The **app name** (`-n`) may contain words like `uipath` or `microsoft`, but the **URL slug** (`--path-name`) cannot — the platform rejects reserved words with HTTP 400 `reserved`. If the derived slug is rejected, use a variant (e.g. `microsof-…`). Only relevant on the first deploy (when `--path-name` is set).
@@ -369,3 +387,6 @@ uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 | `routing name must be unique` on upgrade | `--path-name` re-passed on an upgrade | Omit `--path-name`; it's first-deploy only (see [Upgrading an existing app](#upgrading-an-existing-app)). |
 | App gets a **new URL** on upgrade | `--path-name` passed on upgrade minted a fresh slug | Omit `--path-name` on upgrades to keep the existing URL the user already shared. |
 | Deployed app looks stale after upgrade | Browser cache on the vanity path | Hard-refresh (Cmd/Ctrl+Shift+R); the new build is already live. |
+| `This app name is already deployed in this folder` / HTTP 400 `code 1004` | CLI couldn't match the existing deployment (name / systemName / portal-display-name mismatch) so it took the fresh-deploy path | Make the portal **display name equal `-n`**, keep `-n` and `uipath.json`'s `clientId` stable, then re-deploy. If unrecoverable, delete the deployment in the Orchestrator UI and redeploy. See [Upgrade matches by name](#upgrade-matches-by-name--keep-it-stable). |
+| `pack` sanitized the app name (e.g. `My App` → `myapp`) | Name has spaces/invalid characters | Use a clean kebab-case `-n` with no spaces — a drifting name mints a new systemName and breaks upgrade matching. |
+| Upgrade shipped the **wrong (older) version** | Old CLI defaulting `deploy` to the oldest version | Update the CLI (`uip tools update`); if it persists, pin the target explicitly with `-v <version>`. |
