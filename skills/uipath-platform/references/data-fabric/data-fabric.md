@@ -13,9 +13,9 @@ for CLI operations.
 
 ## Not Supported
 
-Do not change field types, create federated entities, or write federated records. Do not work around rejected names. FILE values require `files upload`; record writes silently ignore them. The rules and topic references below give the supported alternatives.
+Do not change field types or write federated records. Do not work around rejected names. FILE values require `files upload`; record writes silently ignore them. (**Creating** a federated entity from a connector or another entity **is** supported → [`federated-entity-creation.md`](federated-entity-creation.md); only record *writes* to one are not.) The rules and topic references below give the supported alternatives.
 
-**Immediate refusal.** When the request is categorically unsupported (federated write, type-change, reserved-keyword name, cross-scope binding, etc.) **and** the user's prompt already establishes the fact that makes it unsupported (e.g. *"that list is one we pull from Salesforce"* → federated; *"Amount is currently stored as text, change it to a decimal"* → type-change), refuse immediately, cite the rule, and offer the supported alternative. Do **not** re-verify with `entities list`, `entities get`, or other resource discovery — the user has already told you what you need to know.
+**Immediate refusal.** When the request is categorically unsupported (federated *write*, type-change, reserved-keyword name, cross-scope binding, etc.) **and** the user's prompt already establishes the fact that makes it unsupported (e.g. *"write to that list we pull from Salesforce"* → federated write; *"Amount is currently stored as text, change it to a decimal"* → type-change), refuse immediately, cite the rule, and offer the supported alternative. Do **not** re-verify with `entities list`, `entities get`, or other resource discovery — the user has already told you what you need to know. (A request to *create* an entity from a connector is **not** a refusal case → [`federated-entity-creation.md`](federated-entity-creation.md).)
 
 ## Critical Rules
 
@@ -68,7 +68,7 @@ Do not change field types, create federated entities, or write federated records
 
 8. **Never create duplicate entities.** Always `entities list` first; reuse if it already exists. Entity and choice-set `displayName` values must also be unique. If the user does not provide one, derive a collision-resistant display name from the requested `Name`, not a generic label. On `409` / `RetryWillNotFix`, do not repeat the same create or treat an environment ID from the error as a resource ID; surface the conflict and ask for a different name or display name.
 
-9. **Only work with native entities.** Use `entities list --native-only` before any write. Federated entities are read-only.
+9. **Record writes are native-only.** Use `entities list --native-only` before any record write. Federated entities are read-only for records (data lives in the source) — but **creating** and reading them (`records list` / `records query`) is supported → [`federated-entity-creation.md`](federated-entity-creation.md).
 
 10. **Entity delete — dependent discovery.** Gating lives in the Destructive Operations block. Scan for inbound references (`entities list --output json` → `Fields[].ReferenceEntity.Id == <id>`) and choice sets used by the entity's fields (`Fields[].ChoiceSetId`). Ask per dependent: delete, leave, or stop. Full sequence: [`entity-schema.md` → Deleting an Entity](entity-schema.md#deleting-an-entity).
 
@@ -143,6 +143,7 @@ Entities and choice sets are either tenant-level or folder-scoped. Records and f
 | Explore entities | `entities list` (`--folder-key`, `--include-folders`, or `--native-only` as needed) → `entities get <id>` |
 | Choice sets — full CRUD (sets and values) | [`choice-sets.md`](choice-sets.md) |
 | Create / update / delete entity, add/remove/update fields | [`entity-schema.md`](entity-schema.md) |
+| Create / update a **federated** entity (from a connector or another entity) | [`federated-entity-creation.md`](federated-entity-creation.md) |
 | Read / filter / paginate / sort records | [`records-query.md`](records-query.md) + [`filter-platform-contract.md`](filter-platform-contract.md) |
 | Insert / update / delete records | [`records-query.md`](records-query.md) |
 | Aggregates / group-by | [`records-query.md` → Aggregates](records-query.md#aggregates-server-side) |
@@ -163,5 +164,6 @@ For topic-specific errors, use the relevant reference. Cross-cutting failures:
 | `unknown option '--folder-key'` / `unknown option '--include-folders'` | Installed tool is outdated | `uip tools install @uipath/data-fabric-tool@latest`; if still missing, surface as unsupported |
 | `--folder-key and --include-folders are mutually exclusive` | Both flags passed on `entities list` / `choice-sets list` | Pick one |
 | Entity / choice set created via `--folder-key <X>` doesn't appear in list | Lists default to tenant-only | Re-run with `--folder-key <X>` or `--include-folders` |
+| Record write to a federated entity fails | Federated entities are read-only — data lives in the source | Write at the source; `--native-only` filters writable entities. Creating a federated entity **is** supported → [`federated-entity-creation.md`](federated-entity-creation.md) |
 
 Any error not in this table → Rule 18. Topic-specific error tables live in the topic references.
