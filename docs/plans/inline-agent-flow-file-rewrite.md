@@ -99,6 +99,19 @@ Legend: ☐ not started · ◐ in progress · ☑ done (date + PR). Update at se
 
 **Standing runbook (every milestone).** `git fetch && git rebase origin/main` → docs edits → `/lint-task` over changed task YAMLs → `bash hooks/validate-skill-descriptions.sh` + `python3 scripts/check-skill-status.py` (expect clean — no frontmatter/status changes) → relative-link check over the plugin → **with explicit owner approval** (coder-eval runs need an interactive `uip login` against alpha.uipath.com / codereval / DefaultTenant and are time-consuming — never auto-initiate; owner directive 2026-08-03): `coder-eval` run of the milestone's tasks + a 1-replicate regression pass over previously-migrated tasks → record gate results in the board → PR to the feature branch with the run evidence.
 
+**Gate-run invocation** (recorded at M10 — the worktree has no `tests/.venv`; reuse the main checkout's):
+
+```bash
+# repeats live in the experiment config, not a CLI flag: copy experiments/default.yaml
+# to a scratch file and insert `repeats: 3` as the first key under `defaults:`
+cd <worktree>/tests
+SKILLS_REPO_PATH=<worktree> ~/repos/uipath/skills/tests/.venv/bin/coder-eval run \
+  tasks/uipath-maestro-flow/inline_agent/<task>/<task>.yaml \
+  -e /tmp/<milestone>-gate.yaml --run-dir runs/<milestone>-gate --log-file runs/<milestone>-gate.log
+```
+
+`--run-dir` sets the run id; `tests/runs/` is gitignored. Per-replicate evidence: `runs/<id>/default/<task-id>/<NN>/task.json` (`success_criteria_results`, and `iterations[].commands[]` with `tool_name` + `parameters` for the artifact audit — that is the only reliable place to check which Bash/Write/Edit calls actually ran; grepping the whole `task.json` also hits skill text and criteria descriptions and gives false positives).
+
 ## 6. Milestones
 
 ### M0 — Foundations: gating experiment, baseline, branch, checker skeleton
