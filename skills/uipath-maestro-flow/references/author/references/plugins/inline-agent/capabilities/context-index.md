@@ -63,7 +63,7 @@ Node `inputs` (authoring surface — everything else derives). Start from `input
 | `fileExtension` | No | Plain **string** (`"All"`, `"pdf"`, `"csv"`, …) — NOT the `{value}` object built-in tools use. Per-mode legal values below. |
 | `citations` | No | **String** `"enabled"` \| `"disabled"` — not a boolean. |
 | `outputColumns` | `batchtransform` only | `[{"name", "description"}]` — min 1, both fields required per column (validator-enforced). Author `[]` for other modes. |
-| `webSearchGrounding` | No | Object `{"value": "enabled"\|"disabled"}` — `batchtransform` web augmentation. |
+| `webSearchGrounding` | No | Object `{"value": "enabled"\|"disabled"}` — `batchtransform` web augmentation; **inert for every other mode**. Tenant manifests default it to `"enabled"` — copy verbatim; it does not activate web search for `semantic`/`structured`/`deeprag`. |
 
 No instance `outputs`, no instance `model` block, **no top-level `bindings[]` rows** (contexts bind through the definition, unlike process/connector tools).
 
@@ -104,6 +104,8 @@ Example (semantic retrieval over an existing tenant index):
   }
 }
 ```
+
+The example's `citations`/`webSearchGrounding`/`outputColumns` are the manifest defaults copied verbatim — inert under `semantic` (they apply to `deeprag`/`batchtransform` only).
 
 Wire exactly ONE artifact edge — agent `context` handle → context node `input`:
 

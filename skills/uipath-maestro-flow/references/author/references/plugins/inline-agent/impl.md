@@ -293,7 +293,7 @@ Complete flow (definitions abbreviated). Two trigger inputs, two typed outputs, 
 }
 ```
 
-The tool's `invoiceNumber` argument is `variable`-mode (bound to trigger data); the raw `$vars.start.output.invoiceNumber` in `argumentPath` counts as a scanned ref, so the trigger global declaration covers it. The context node's identity fields are copied from its manifest's `inputDefaults`; it needs no `bindings[]` rows. Then `uip maestro flow format` (back-fills layout + `variables.nodes[]`) and `uip maestro flow validate` (§ 9). No sidecar exists and none is needed.
+The tool's `invoiceNumber` argument is `variable`-mode (bound to trigger data); the raw `$vars.start.output.invoiceNumber` in `argumentPath` counts as a scanned ref, so the trigger global declaration covers it. The context node's identity fields — and the mode-specific defaults (`citations`, `webSearchGrounding`, inert under `semantic`) — are copied verbatim from its manifest's `inputDefaults`; it needs no `bindings[]` rows. Then `uip maestro flow format` (back-fills layout + `variables.nodes[]`) and `uip maestro flow validate` (§ 9). No sidecar exists and none is needed.
 
 ## 9. Validate
 
