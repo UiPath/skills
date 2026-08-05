@@ -71,40 +71,44 @@ def assert_bindings_v2(project_dir: Path) -> None:
             ".agent-builder/) — `uip maestro flow node configure` generates it; "
             "never author it by hand"
         )
-    path = candidates[0]
-    data = load_json(path)
-    resources = data.get("resources") if isinstance(data, dict) else None
-    conn_rows = [
-        r for r in (resources if isinstance(resources, list) else [])
-        if isinstance(r, dict) and r.get("resource") == "connection"
-    ]
-    if not conn_rows:
-        sys.exit(
-            f"FAIL: {path} declares no resource of kind 'connection' — "
-            "the connector tool's connection binding is missing"
-        )
-    print(f"OK: {path.name} declares a connection resource ({conn_rows[0].get('key')})")
+    for path in candidates:
+        data = load_json(path)
+        resources = data.get("resources") if isinstance(data, dict) else None
+        conn_rows = [
+            r for r in (resources if isinstance(resources, list) else [])
+            if isinstance(r, dict) and r.get("resource") == "connection"
+        ]
+        if conn_rows:
+            print(f"OK: {path.name} declares a connection resource ({conn_rows[0].get('key')})")
+            return
+    sys.exit(
+        f"FAIL: none of {[str(p) for p in candidates]} declares a resource of "
+        "kind 'connection' — the connector tool's connection binding is missing"
+    )
 
 
 def assert_connection_resource(solution_dir: Path) -> None:
     """Assert the solution-level connection resource exists (configure-generated)."""
     connection_dir = solution_dir / "resources" / "solution_folder" / "connection"
-    files = [p for p in connection_dir.rglob("*.json") if p.is_file()] if connection_dir.is_dir() else []
+    files = sorted(p for p in connection_dir.rglob("*.json") if p.is_file()) if connection_dir.is_dir() else []
     if not files:
         sys.exit(
             f"FAIL: no connection resource JSON under {connection_dir} — "
             "`uip maestro flow node configure` provisions it as part of the "
             "solution; never create it by hand"
         )
-    resource = (load_json(files[0]).get("resource") or {})
-    if resource.get("kind") != "connection":
-        sys.exit(
-            f"FAIL: {files[0]} resource.kind is {resource.get('kind')!r}, "
-            "expected 'connection'"
-        )
-    print(
-        f"OK: solution connection resource present "
-        f"({files[0].relative_to(solution_dir)})"
+    for path in files:
+        data = load_json(path)
+        resource = data.get("resource") if isinstance(data, dict) else None
+        if isinstance(resource, dict) and resource.get("kind") == "connection":
+            print(
+                f"OK: solution connection resource present "
+                f"({path.relative_to(solution_dir)})"
+            )
+            return
+    sys.exit(
+        f"FAIL: none of {[str(p) for p in files]} has resource.kind "
+        "'connection'"
     )
 
 
