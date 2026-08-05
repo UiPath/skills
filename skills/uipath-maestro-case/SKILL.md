@@ -32,7 +32,7 @@ When `sdd.md` is absent, **Phase 0** designs the case by best assumption from th
 2. **sdd.md is sole input post-Phase-0 — across sessions.** When user-provided, or in any later session, re-run, or staleness recovery (context compaction), trust `sdd.md` as written; the skill does not validate or gap-fill it. Within the session that just confirmed the design, the in-memory model that rendered `sdd.md` is the same content and drives the build directly ([phase-0-interview.md § Build start](references/phase-0-interview.md#build-start--sdd-written-alongside-the-build)) — do not re-read the just-written file. If a build-phase ambiguity arises, use AskUserQuestion — never infer silently.
 3. **PHASE 1 HARD GATE — fresh registry; at most one normal pull per session.** Before cache inspection, carryover, resolution, or Phase 1 writes, run `uip login status --output json` then `uip maestro case registry pull`. Reuse only a successful Phase 0 pull from this session that rendered the current `sdd.md`; otherwise run the full gate. Failure stops Phase 1. Before success, a missing cache/index is a failed precondition, never empty. After success, an absent index is genuinely empty: no further normal pull; only Rule 17's Force option refreshes. Read `~/.uip/case-resources/<type>-index.json` directly. Explicit plan-only/no-build runs skip tenant registry, connection, schema, and user discovery; retain intended names, mark identities `resolve at build`, and defer wiring. Phase 0 build runs start this chain lazily at the first tenant-bound item and perform one name-only pass without schemas/prompts; unresolved items defer here. See [registry discovery](references/registry-discovery.md).
 4. **`--output json` on every parsed read.**
-5. **Follow plugin per node type.** Open matching `planning.md` during planning + `impl-json.md` during execution. Never guess JSON shapes from memory.
+5. **Follow the node owner.** Open its `planning.md` for planning + `impl-json.md` for execution. Trigger targets also load `connector-trigger-common.md`; never load siblings or guess shapes.
 6. **`tasks.md` is declarative, lossless, and one-to-one.** Use plain field identifiers and no shell commands. Emit one level-two `## T<n>: <action>` entry for every SDD declaration; task headings quote the display name. Preserve explicit supplied/approved SDD rules and selectors, every rationale, each input binding mode/value and literal/expression form, and every output operator with both operands. Each task T-entry owns its `activation-mode:` and `entry-rule:`; a separate condition entry is not a substitute. Invoke AskUserQuestion for any ambiguous or unrecognized row; never omit it. Regenerate greenfield plans from scratch; brownfield targeted edits preserve IDs ([brownfield.md](references/brownfield.md)). At Phase 1 Step 4, before the first `tasks.md` write, read the complete [`tasks.md` plan contract](references/tasks-plan-contract-guide.md).
 7. **`tasks.md` gate — auto-approved by default, opt-in stop.** Phase 1 auto-proceeds into Phase 2 Prototyping with no AskUserQuestion sign-off; treat the plan as approved. **Stop after `tasks.md` only when the request explicitly asked for a plan-only / review-first run** (e.g. "just the plan", "Phase 1 only", "stop after tasks.md for review", "don't build the case yet") — then report the plan and do NOT proceed to Phase 2. Re-read `tasks.md` before executing.
 8. **Fallback-assigned unresolved resource → placeholder; never fabricate IDs.** Only the owning resolution path assigns fallback; genuine registry empties first pass Rule 17. Keep `<UNRESOLVED: ...>` in `tasks.md` until assignment. Placeholder **task**: `type` + `displayName` + structural fields, `data: {}`; conditions still reference its TaskId. Placeholder **event trigger**: render fields plus only `data.inputs: { serviceType: "Intsvc.EventTrigger" }`; append its `entry-points.json` entry and create no trigger-edge (Rule 20). Follow [placeholder tasks](references/placeholder-tasks.md) and [event fallback](references/plugins/triggers/event/impl-json.md#placeholder-fallback-unresolved-connector--connection).
@@ -140,7 +140,7 @@ Read [references/implementation.md](references/implementation.md) + [references/
 
 Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 
-1. Connector schema + defaults (Step 9.7) — `uip maestro case spec`
+1. Connector event/task target-local raw-cache splice (Step 9.7); skip both persisted connector task types during Step 9.8 input binding
 2. I/O binding all task classes (Step 9.8) — per [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md)
 3. Upgrade resolved connector-bound condition stubs in place (Step 10.5) — replace only `rule.uipath`; unresolved connectors keep the stub and are reported
 4. In-expression `vars.$xref` marker resolution (Step 11.5) — per [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md)
@@ -177,7 +177,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Publish to Studio 
 | Troubleshoot a failed case | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
 | Resolve task identifiers and gate genuine empty lookups | [references/registry-discovery.md](references/registry-discovery.md) |
 | Wire inputs/outputs + cross-task refs + expression prefixes | [references/bindings-and-expressions.md](references/bindings-and-expressions.md) |
-| Configure connector activity / trigger / event | [references/connector-integration.md](references/connector-integration.md) |
+| Select a connector target owner | [references/connector-integration.md](references/connector-integration.md) |
 | Construct `case spec --input-details` JSON | [references/case-spec-input-details.md](references/case-spec-input-details.md) |
 | Emit placeholders after Rule 17 assigns fallback | [references/placeholder-tasks.md](references/placeholder-tasks.md) |
 | Build a Rule 17-selected inline resource | [shared flow](references/inline-resource-creation-guide.md), [common contract](references/plugins/tasks/create-inline-common.md), then only the selected [agent](references/plugins/tasks/agent/inline-creation-guide.md) or [API workflow](references/plugins/tasks/api-workflow/inline-creation-guide.md) guide |
@@ -209,8 +209,8 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Publish to Studio 
 | `action` | [action](references/plugins/tasks/action/planning.md) | `action` |
 | `api-workflow` | [api-workflow](references/plugins/tasks/api-workflow/planning.md) | `api-workflow` |
 | `case-management` | [case-management](references/plugins/tasks/case-management/planning.md) | `case-management` |
-| `execute-connector-activity` | [connector-activity](references/plugins/tasks/connector-activity/planning.md) | `connector-activity` |
-| `wait-for-connector` | [connector-trigger](references/plugins/tasks/connector-trigger/planning.md) | `connector-trigger` |
+| `execute-connector-activity` | [activity owner](references/plugins/tasks/connector-activity/planning.md) | `connector-activity` |
+| `wait-for-connector` | [trigger common](references/connector-trigger-common.md) + [task target](references/plugins/tasks/connector-trigger/planning.md) | `connector-trigger` |
 | `wait-for-timer` | [wait-for-timer](references/plugins/tasks/wait-for-timer/planning.md) | `wait-for-timer` (no CLI describe needed) |
 
 **Triggers** (`references/plugins/triggers/`):
@@ -219,7 +219,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Publish to Studio 
 |--------|------|
 | [manual](references/plugins/triggers/manual/planning.md) | User-initiated start |
 | [timer](references/plugins/triggers/timer/planning.md) | Scheduled start |
-| [event](references/plugins/triggers/event/planning.md) | External connector event |
+| [trigger common](references/connector-trigger-common.md) + [event target](references/plugins/triggers/event/planning.md) | External connector event |
 
 **Conditions** (`references/plugins/conditions/`):
 
@@ -230,7 +230,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Publish to Studio 
 | [task-entry-conditions](references/plugins/conditions/task-entry-conditions/planning.md) | Task starts |
 | [case-exit-conditions](references/plugins/conditions/case-exit-conditions/planning.md) | Case completes/exits |
 
-> **Connector-bound rules:** a `wait-for-connector` rule in any condition scope must carry the connector configuration under `rule.uipath` (built from `case spec --type trigger`, like the connector-trigger task) — bare connector rules are invalid in Studio Web and are NOT caught by CLI `validate`. See [connector-trigger-common.md § Target: connector-bound condition rule](references/connector-trigger-common.md#target-connector-bound-condition-rule).
+> **Connector-bound rules:** load [trigger common](references/connector-trigger-common.md#target-connector-bound-condition-rule) plus the selected condition plugin. It owns the complete `rule.uipath`; a bare connector rule is invalid.
 
 ## Anti-patterns
 

@@ -28,7 +28,7 @@ TaskUpdate items keyed by T-number are the audit trail — mark each `in_progres
 
 **Cap single Write at ~15K out tok / ~40KB.** When a section's whole-section Write would exceed this, keep the per-section cadence: root/nodes/vars and task shapes first, then Phase 2 SLA and conditions, then Phase 3 connector/value details. For cases with ≥40 tasks or ≥8 stages, NEVER emit the full populated caseplan.json in one Write. A single 15K-out-tok Write turn pays ~150s inference; smaller turns let validate gates catch field drops between phases. Build-assembler helper scripts (`/tmp/build-caseplan.js` etc.) are forbidden — they violate Rule 13 regardless of `/tmp` placement or framing.
 
-For CLI-gated sections (§4.6 non-connector schema, §9.7 connector schema), use **gather-then-write**: run all CLI calls first, collect results in reasoning, then enter the Read → writes → validate batch.
+For §4.6 non-connector schema, use **gather-then-write**: run its CLI calls first, collect those small schemas in reasoning, then enter the Read → writes → validate batch. Section §9.7 instead uses **cache-then-write**: after each target-local CLI call, immediately Write the complete response to that target's raw cache; only after the eligible caches exist may its mutation batch begin. Never collect a connector payload in reasoning.
 
 Full contract — recovery, tool primitive selection (Edit default, whole-section Write at ≥10 T-entries), audit trail, scope — in [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical). Phase 1 `tasks.md` building uses the same section-batched contract per [planning.md §4.0a](planning.md).
 
@@ -98,14 +98,14 @@ The case file must live inside a solution + project. The case plugin owns projec
 
 For each trigger T-entry in `tasks.md §4.3`, open the matching plugin's `impl-json.md`:
 
-- Manual / Timer / Event (resolved) → `plugins/triggers/<type>/impl-json.md` §3
+- Manual / Timer → `plugins/triggers/<type>/impl-json.md`; Event (resolved) → [`plugins/triggers/event/impl-json.md`](plugins/triggers/event/impl-json.md) Phase 2 envelope only
 - Event (UNRESOLVED) → [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) — node still written; case stays reachable
 
-Each plugin writes one node to `caseplan.json.nodes[]` and appends one entry to `entry-points.json.entryPoints[]` atomically. Capture every `TriggerId` for Step 6.2 — an In-arg's `elementId` resolves to `id-map[<sourceTriggers T-number>].id`, or the primary trigger (T02) when its `sourceTriggers` is blank.
+Each plugin writes one node to `caseplan.json.nodes[]` and appends one entry to `entry-points.json.entryPoints[]` atomically. Capture every `TriggerId` for Step 6.2 — an In-arg's `elementId` resolves to `id-map[<sourceTriggers T-number>].id`, or the primary trigger (T02) when its `sourceTriggers` is blank. A resolved connector event is only scaffolded here; its own Phase 3 spec/cache/splice runs in Step 9.7.
 
 ## Step 6.2 — Declare global variables and arguments
 
-For each variable/argument T-entry from `tasks.md §4.2.1`, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md). This step populates top-level `variables` (inputs, outputs, inputOutputs) and trigger output mappings. Execute these before adding stages — downstream tasks and conditions reference variables via `=vars.<id>`.
+For each variable/argument T-entry from `tasks.md §4.2.1`, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md). This step populates top-level `variables` and spec-independent trigger argument bridges before stages are added. Defer only the connector-event spec-output dispatcher and its spec-dependent validation until Step 9.7 creates `tasks/trigger-spec-cache.json`; do not fabricate a sidecar in Phase 2.
 
 ## Step 6.3 — Refresh entry-points.json input/output
 
@@ -219,7 +219,7 @@ Before any Phase 3 mutation:
 1. **Re-read `tasks.md`** — per Rule 7 of `SKILL.md`.
 2. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index.
 3. **Seed Phase 3 progress todos** — call TodoWrite with the section-level items below. Mark each `in_progress` on entry, `completed` on exit. Phase 2 todos (if any) are stale — replace, do not append.
-   1. Wire connector task schemas (Step 9.7)
+   1. Configure connector event/task targets (Step 9.7)
    2. Bind task I/O values (Step 9.8)
    3. Upgrade resolved connector-bound condition rules (Step 10.5)
    4. Resolve in-expression `vars.$xref` markers (Step 11.5)
@@ -228,25 +228,31 @@ Before any Phase 3 mutation:
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
 
-## Step 9.7 — Connector task detail (gather-then-write)
+## Step 9.7 — Connector event/task detail (raw-cache gather then splice)
 
-**Phase A — gather.** For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md`:
+Process resolved targets in this order: case-level connector events, connector activities, then in-stage connector waits. Skip target placeholders.
 
-1. Run `get-connection` (each task runs its own — never reuse).
-2. Run `uip maestro case spec --type <activity|trigger> --activity-type-id <id> --connection-id <id> --input-details '<json>' --output json` per the plugin's `impl-json.md`.
-3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids; mint `var` / `id` / `elementId` on `caseShape.inputs` / `outputs` per the plugin's uniqueness rule.
+**Phase A — target-local cache.** For each target, follow its selected owner:
 
-Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderKey bindings) in reasoning. Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`).
+| Target | Owner |
+|---|---|
+| Event trigger | [`plugins/triggers/event/impl-json.md`](plugins/triggers/event/impl-json.md) + trigger [common](connector-trigger-common.md#phase-3-implementation--single-cli-call) |
+| Connector activity | [`plugins/tasks/connector-activity/impl-json.md`](plugins/tasks/connector-activity/impl-json.md) |
+| In-stage wait | [`plugins/tasks/connector-trigger/impl-json.md`](plugins/tasks/connector-trigger/impl-json.md) + trigger common |
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then for each gathered task: one Edit setting `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs = caseShape.outputs` plus the matching root-level Connection + FolderKey binding entries. Skip the re-Read between sibling Edits.
+Every target runs its own Phase 3 `get-connection` and `case spec --input-details --output json`. Immediately Write the complete unmodified response to `tasks/spec-cache.<elementId>.json` and record cache path + target identity. Do not reuse or substitute another target's response, and never keep this payload only in reasoning. After the selected owner's post-spec gate, also record whether the cache is eligible for enrichment or retained for audit only.
 
-**Phase C — sync + validate.** Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md) — single pass includes non-connector bindings from Step 9 and Connection bindings from this step. Run validate.
+**Phase B — cache-derived mutation.** One Read of `caseplan.json` at section entry. For each successfully gated, enrichment-eligible target, Read its cache immediately before that target's Edit. Splice the complete `Data.CaseShape.Context`, `Inputs`, and `Outputs` subtrees required by its owner; recursively lower-case only the first character of object keys; then apply only mutations explicitly permitted by that owner: placeholder substitution, ID minting, output projection/deduplication, envelope placement, and the activity owner's multipart file-value binding. Preserve all other values, including JSON-string values. Append that target's root bindings and skip a caseplan re-Read between sibling Edits. Never splice a cache retained only for audit after placeholder fallback.
 
-On context-compaction mid-gather: re-Read `caseplan.json`, scan for connector tasks without `data.context` populated, re-run Phase A for those only.
+For every enrichment-eligible event target, derive its unminted `tasks/trigger-spec-cache.json[T<N>]` view from the raw cache. After all event entries exist, run only the global-variable owner's deferred connector-event spec-output dispatch and spec-dependent validation; merge outputs with Phase 2 argument bridges rather than replacing them.
+
+**Phase C — sync + validate.** Populate the IS connection cache, regenerate `bindings_v2.json` once (including non-connector bindings from Step 9), and validate.
+
+On context compaction, re-Read `caseplan.json` and the relevant raw cache. A populated target without its recorded full-response cache is not proof of a safe resume; rerun that target's spec and replace only its cache before continuing.
 
 ## Step 9.8 — Bind task input/output values (per-task Edit batch)
 
-One Read of `caseplan.json` at Step 9.8 entry. Then **one Edit per task** replacing that task's full `data.inputs` array. Skip the re-Read between sibling Edits. Skip placeholder tasks entirely — they have no inputs.
+One Read of `caseplan.json` at Step 9.8 entry. Then **one Edit per non-connector task** replacing that task's full `data.inputs` array. Skip the re-Read between sibling Edits. Skip placeholders and both persisted connector task types (`execute-connector-activity`, `wait-for-connector`) entirely: their owners already passed resolved values through `case spec`, and replacing `data.inputs` would destroy CLI-authored sink forms.
 
 Per-task composition (in reasoning, before that task's Edit) per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
 
@@ -263,7 +269,9 @@ Read `caseplan.json` and scan all four condition scopes for `wait-for-connector`
 
 For each matched rule whose connector resolved in planning, run the connector-trigger `case spec --type trigger --input-details` procedure, mint its output IDs/element IDs, and gather its root Connection/Folder bindings. Then Edit **only that rule's `uipath` block**. Preserve the enclosing condition array plus the rule's `id`, `rule`, `conditionExpression`, scope, and placement. Apply declared rule-output bindings after the real outputs exist.
 
-If the connector is `<UNRESOLVED>` or `case spec` fails, leave the stub unchanged, log it, and list it in the completion report. After all successful upgrades, populate the IS cache and regenerate `bindings_v2.json` once. Re-scan: every resolved rule must be free of `"placeholder"`; any remaining stub must map to a reported unresolved connector. Full procedure and scope-specific `elementId` rules: [`connector-trigger-common.md § Target: connector-bound condition rule`](connector-trigger-common.md#target-connector-bound-condition-rule).
+Each rule runs its own target-local spec call and immediately Writes the complete unmodified response to `tasks/spec-cache.<ownerNodeId>-<ruleId>.json`. Only after the common required-field gate succeeds may that exact cache be Read and its complete PascalCase `Data.CaseShape.Context`, `Inputs`, and `Outputs` subtrees be normalized and spliced into `rule.uipath`; a cache retained for placeholder audit is never mutation input. No rule may reuse a sibling response.
+
+If the connector is `<UNRESOLVED>`, `case spec` fails, or the required-field gate is declined, leave the stub unchanged, log it, and list it in the completion report. After all successful upgrades, populate the IS cache and regenerate `bindings_v2.json` once. Re-scan: every resolved rule must be free of `"placeholder"`; any remaining stub must map to a reported unresolved connector. Full procedure and scope-specific `elementId` rules: [`connector-trigger-common.md § Target: connector-bound condition rule`](connector-trigger-common.md#target-connector-bound-condition-rule).
 
 ## Step 11.5 — Resolve in-expression `vars.$xref` markers (whole-file pass)
 
