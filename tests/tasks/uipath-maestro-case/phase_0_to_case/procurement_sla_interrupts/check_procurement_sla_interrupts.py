@@ -41,7 +41,7 @@ def task_section(plan: str, task_name: str, stage_name: str | None = None) -> st
             match
             for match in matches
             if re.search(
-                rf'(?im)^-\s*stage:\s*["`]?{re.escape(stage_name)}["`]?\s*$',
+                rf'(?im)^(?:-\s*)?stage:\s*["`]?{re.escape(stage_name)}["`]?\s*$',
                 match.group(0),
             )
         ]
@@ -127,8 +127,8 @@ def check_plan_preserves_task_activation(sdd: str, plan: str) -> None:
     """The no-build handoff must not reinterpret confirmed task semantics."""
     for (stage_name, task_name), (sdd_activation, sdd_entry_rule) in sdd_task_activation(sdd).items():
         section = task_section(plan, task_name, stage_name)
-        activation = re.search(r"(?im)^-\s*activation-mode:\s*([^\n]+)", section)
-        entry_rule = re.search(r"(?im)^-\s*entry-rule:\s*([^\n]+)", section)
+        activation = re.search(r"(?im)^(?:-\s*)?activation-mode:\s*([^\n]+)", section)
+        entry_rule = re.search(r"(?im)^(?:-\s*)?entry-rule:\s*([^\n]+)", section)
         if not activation:
             fail(f"missing tasks.md activation-mode for task {task_name!r}")
         if not entry_rule:
@@ -157,7 +157,7 @@ def stage_section(sdd: str, stage_name: str) -> str:
 
 
 def task_lane(section: str, task_name: str) -> int:
-    match = re.search(r"(?im)^-\s*[^\n]*\blane:\s*(\d+)\b", section)
+    match = re.search(r"(?im)^(?:-\s*)?[^\n]*\blane:\s*(\d+)\b", section)
     if not match:
         fail(f"missing lane for sequential task {task_name!r}")
     return int(match.group(1))
