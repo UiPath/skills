@@ -4,13 +4,13 @@ Read this reference completely when adding a flavor or changing the composer, pa
 
 ## Decision Matrix
 
-| Situation | Canonical source | Flavor source | Allowlist |
+| Situation | Canonical source | Flavor source | Result |
 |---|---|---|---|
-| Shared correction | Edit normal prose | No edit | No edit unless review status changed |
-| One host-specific instruction | Add the smallest complete marked block | Add the matching replacement block at the mirrored path | Skill must be listed |
-| Reviewed pass-through skill | No marker needed | No override needed | Add the skill |
-| Unsafe or unreviewed skill | Keep default complete | No override required | Keep the skill out |
-| New flavor | No edit unless a real difference exists | Create sparse overrides only where needed | Create the required file |
+| Shared correction | Edit normal prose | No edit | Every flavor inherits it. |
+| One host-specific instruction | Add the smallest complete marked block | Add the matching replacement block at the mirrored path | That passage differs only in the target flavor. |
+| Reviewed pass-through skill | No marker needed | No override needed | The complete skill is included automatically. |
+| Unsafe canonical instruction | Keep the default complete | Add the smallest matching replacement | The custom package remains complete and host-correct. |
+| New flavor | No edit unless a real difference exists | Create at least one real sparse override | Generic discovery creates its complete package. |
 
 ## Path and Block Closure
 
@@ -20,7 +20,7 @@ For each override, verify all four mappings:
 canonical: skills/<skill>/<relative-path>.md
 override:  skill-flavors/<flavor>/<skill>/<relative-path>.md
 block:     canonical name == override name
-review:    <skill> appears in skill-flavors/<flavor>/skills.allowlist
+inclusion: every canonical skill is present in every flavor
 ```
 
 The override may contain multiple complete blocks separated by whitespace. Canonical block order controls the built file; override order must not affect it.
@@ -36,19 +36,18 @@ Test discovery with temporary flavors created in reverse lexical order.
 
 - No custom flavor: build only `default`.
 - `alpha-host` and `zeta-host`: build `default`, `alpha-host`, `zeta-host` in stable order.
-- Allowlist with no override: build a complete pass-through flavor.
-- New `future-host`: automatically create `build/skills/future-host`, `build/packages/future-host`, and `@uipath/skills-future-host`.
+- Skills without overrides pass through in every custom flavor.
+- New `future-host` with one sparse override: automatically create `build/skills/future-host`, `build/packages/future-host`, and `@uipath/skills-future-host`.
 - Reject uppercase, underscore, whitespace, path-like, or reserved `default` names.
-- Reject flavor-directory symlinks and missing or empty allowlists.
+- Reject flavor-directory symlinks and empty flavor directories.
 - Reject a derived npm package name longer than npm's 214-character limit.
 
 ## Composition Cases
 
 - Default contains every canonical skill.
-- Each flavor contains exactly its allowlisted skills.
+- Each flavor contains every canonical skill.
 - Two flavors can replace the same canonical block independently.
-- An allowlisted skill without overrides passes through byte-for-byte except marker removal.
-- Non-allowlisted skills never appear in that flavor.
+- A skill without overrides passes through byte-for-byte except marker removal.
 - Binary assets copy byte-for-byte.
 - Canonical and sparse source files remain unchanged after builds.
 - Malformed, nested, duplicate, unmatched, or unmarked override content fails before output replacement.
@@ -70,7 +69,7 @@ Inspect staged directories and real `.tgz` archives.
 
 - A second generic build succeeds and replaces only generated directories.
 - Removing a flavor removes its prior tree, package, and tarball on the next successful run.
-- Removing an allowlist entry removes that skill from the next custom package.
+- Removing the final override removes that flavor source directory/package once the directory no longer exists.
 - A validation or packing failure leaves the last successful outputs unchanged.
 - A symlinked build root or generated output target fails safely.
 - Legacy explicit-flavor output commands still refuse non-empty arbitrary destinations.

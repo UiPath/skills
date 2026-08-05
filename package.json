@@ -38,10 +38,11 @@
     "CODEOWNERS"
   ],
   "scripts": {
-    "skills:validate": "python3 scripts/compose-skill-flavor.py validate",
-    "skills:build": "python3 scripts/compose-skill-flavor.py build",
-    "skills:pack": "python3 scripts/compose-skill-flavor.py pack",
-    "prepack": "python3 scripts/compose-skill-flavor.py guard-root-pack",
+    "skills:test": "node --test tests/scripts/compose-skill-flavor.test.mjs tests/scripts/manage-skill-flavors-skill.test.mjs",
+    "skills:validate": "node scripts/compose-skill-flavor.mjs validate",
+    "skills:build": "node scripts/compose-skill-flavor.mjs build",
+    "skills:pack": "node scripts/compose-skill-flavor.mjs pack",
+    "prepack": "node scripts/compose-skill-flavor.mjs guard-root-pack",
     "version:sync": "node scripts/sync-version.mjs",
     "version:check": "node scripts/sync-version.mjs --check"
   }

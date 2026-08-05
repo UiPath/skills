@@ -6,7 +6,7 @@ This repository contains self-contained AI agent skills for UiPath automation de
 
 - **Skills are self-contained.** Each skill under `skills/` must function on its own: it MUST NOT import, inline, or read another skill's files, and MUST still deliver its core value if sibling skills are absent. A skill MAY delegate a task to a sibling skill in this same plugin at runtime (e.g., spawn a subagent that hands an artifact edit to the artifact's owning domain skill) when that work is the sibling's domain — provided the delegation degrades gracefully (the skill still presents an actionable result when the sibling is unavailable).
 - **SKILL.md is the canonical default contract.** Every skill folder must have a complete `SKILL.md` with valid YAML frontmatter. Local/default consumers can understand it without a flavor manifest or runtime resolver. Shared guidance stays there; only genuinely different passages may be enclosed by named flavor-block comments.
-- **Custom flavors are sparse exceptions.** Files under `skill-flavors/<flavor>/<skill>/` mirror canonical skill paths and contain only complete replacement blocks. Do not duplicate a whole skill merely to change a few paragraphs. A flavor's `skills.allowlist` is an explicit review boundary, not a fragment map.
+- **Custom flavors inherit the complete catalog and contain only sparse exceptions.** Every flavor ships every canonical skill. Files under `skill-flavors/<flavor>/<skill>/` mirror canonical skill paths and contain only complete replacement blocks. If no override exists, the canonical file is intentionally reused unchanged. Do not duplicate a whole skill merely to change a few paragraphs.
 - **Build files before packages.** Build complete `default` and custom-flavor skill trees, validate those final files, and only then stage packages. Consumers must copy a finished tree; they must not interpret flavor markers or compose Markdown at runtime.
 - **Twin hook scripts — keep in sync.** Every session hook exists twice: `hooks/<name>.sh` (bash — macOS, Linux, Windows with Git Bash) and `hooks/<name>.ps1` (PowerShell 5.1/7+ — Windows without Git Bash). The two files are behavioral twins: **any change to one REQUIRES the equivalent change to the other in the same PR.** `hooks/hooks.json` registers a single bash/PowerShell polyglot command per event that dispatches to the twin matching the executing shell — do not add a `shell` field to these entries; the polyglot depends on Claude Code's default shell selection.
 
@@ -21,7 +21,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 5. **No structural cross-skill dependencies** — a skill must work in isolation (never import or read another skill's files); runtime delegation to a same-plugin sibling skill is allowed when it degrades gracefully
 6. **No secrets or personal paths** in committed files
 7. **CLI commands must use `--output json`** when output is parsed programmatically
-8. **Review new skills for every custom flavor** and update that flavor's `skills.allowlist` only when the complete built skill is safe for the target environment
+8. **Review new skills for every custom flavor.** They are included automatically; add the smallest sparse override wherever canonical guidance is not safe for a target environment
 
 ## File Conventions
 
@@ -29,7 +29,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 |------|-----------|
 | `SKILL.md` | Required. Uppercase. YAML frontmatter + markdown body. |
 | `references/*.md` | Kebab-case. Guides end with `-guide.md`. |
-| `skill-flavors/<flavor>/skills.allowlist` | One reviewed canonical skill directory name per line. |
 | `skill-flavors/<flavor>/<skill>/**/*.md` | Optional sparse overrides at paths relative to `skills/`; contain only named replacement blocks. |
 | `<!-- skill-flavor:<name>:start\|end -->` | Boundary around the smallest canonical passage that differs by flavor. Names are lowercase kebab-case and unique within a file. |
 | `assets/templates/*` | Templates end with `-template.md` or `-template.<ext>`. |
@@ -37,7 +36,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 
 ## When Reviewing or Editing Skills
 
-- Before changing flavor markers, overrides, allowlists, discovery, package construction, publishing, or flavor CI, read `.claude/skills/manage-skill-flavors/SKILL.md` completely and follow its reference-routing instructions
+- Before changing flavor markers, overrides, discovery, package construction, publishing, or flavor CI, read `.claude/skills/manage-skill-flavors/SKILL.md` completely and follow its reference-routing instructions
 - Read the existing SKILL.md before making changes
 - Preserve the Critical Rules section — these prevent expensive agent mistakes
 - Validate YAML frontmatter — broken frontmatter breaks skill discovery

@@ -1,6 +1,6 @@
 ---
 name: manage-skill-flavors
-description: "Maintain build-time skill flavors in the UiPath skills repository. Use when adding or editing skill-flavor marker blocks, sparse flavor overrides, skills.allowlist files, generic flavor discovery, marker-free default or custom npm packages, package inspection, flavor CI, or composer/package tests. Preserve SKILL.md as the complete default, keep overrides exceptional, and validate finished trees and tarballs."
+description: "Maintain build-time skill flavors in the UiPath skills repository. Use when adding or editing skill-flavor marker blocks, sparse flavor overrides, generic flavor discovery, marker-free default or custom npm packages, package inspection, flavor CI, or composer/package tests. Preserve SKILL.md as the complete default, keep overrides exceptional, and validate finished trees and tarballs."
 ---
 
 # Manage Skill Flavors
@@ -9,9 +9,9 @@ Maintain one complete canonical skill while building reviewed host-specific exce
 
 ## Start With the Complete Context
 
-1. Confirm the repository root contains `skills/`, `skill-flavors/`, and `scripts/compose-skill-flavor.py`.
+1. Confirm the repository root contains `skills/`, `skill-flavors/`, and `scripts/compose-skill-flavor.mjs`.
 2. Read the complete canonical file being changed.
-3. Read the matching relative file under every existing `skill-flavors/<flavor>/` directory, when present.
+3. Read the matching relative file under every existing `skill-flavors/<flavor>/` directory, when present. No override means that flavor intentionally inherits the canonical file.
 4. Read [references/flavor-test-matrix.md](references/flavor-test-matrix.md) completely when adding a flavor or changing discovery, composition, packaging, publishing, or CI.
 
 ## Classify the Change
@@ -20,9 +20,9 @@ Maintain one complete canonical skill while building reviewed host-specific exce
 |---|---|
 | Behavior is valid in every host | Edit only the canonical file. |
 | A host capability changes one instruction | Mark the smallest complete canonical passage and add one sparse replacement block. |
-| An existing skill is newly safe for a flavor | Add it to that flavor's `skills.allowlist`; no override is required. |
-| A new canonical skill is added | Review it against every flavor; allowlist it only where the complete built result is safe. |
-| A new flavor is added | Create `skill-flavors/<flavor>/skills.allowlist`; generic build and CI must discover it without another registry edit. |
+| An existing skill is safe unchanged for a flavor | Make no flavor edit; it is included automatically. |
+| A new canonical skill is added | Review it against every flavor; add sparse overrides only where canonical guidance is unsafe. |
+| A new flavor is added | Add its first real sparse override under `skill-flavors/<flavor>/`; generic build and CI must discover it without another registry edit. |
 
 Do not create an exception merely to reword shared guidance.
 
@@ -57,13 +57,15 @@ override that used the old block, and compare its complete built file before
 and after the refactor—the existing flavor's consumer text must remain
 unchanged. Never nest a narrower block inside the old one.
 
-## Treat Allowlists as Review Boundaries
+## Treat Missing Overrides as Intentional Inheritance
 
-`skills.allowlist` contains one canonical skill directory name per line. It selects the exact skills shipped by that flavor; it is not a fragment map.
+Every custom flavor package contains every canonical skill. Sparse files only
+replace passages that differ for that host.
 
-- Include a reviewed pass-through skill even when it has no override.
-- Exclude an unsafe or unreviewed skill rather than assuming default guidance works in the host.
-- Keep comments explanatory and entries deterministic; the composer sorts the result.
+- Add no flavor file when canonical guidance is correct for the host.
+- Add the smallest replacement block when canonical guidance is wrong for the host.
+- Review every new canonical skill and materially changed marked passage against every existing flavor because inclusion is automatic.
+- Do not create an empty flavor. If a host has no exceptions, it should consume the default package.
 
 ## Preserve Generic Discovery and Package Naming
 
@@ -77,7 +79,7 @@ Package names derive mechanically from the root package:
 | `studioweb` | `@uipath/skills-studioweb` |
 | `<flavor>` | `@uipath/skills-<flavor>` |
 
-Do not add `skill.build.json`, a flavor registry, or per-flavor package metadata. The directory name and allowlist are the source contract.
+Do not add an allowlist, `skill.build.json`, a flavor registry, or per-flavor package metadata. The directory name and sparse overrides are the source contract.
 
 ## Validate the Consumer Artifacts
 
@@ -87,7 +89,7 @@ Run the repository commands in order:
 npm run skills:validate
 npm run skills:build
 npm run skills:pack
-python3 -m pytest -q tests/scripts/test_skill_flavor_composer.py
+npm run skills:test
 git diff --check
 ```
 
@@ -96,7 +98,7 @@ git diff --check
 Inspect the final package contract, not only sparse sources:
 
 - The default contains every canonical skill and retains canonical block bodies without marker boundaries.
-- Each custom package contains exactly its allowlisted skills and its replacements.
+- Each custom package contains every canonical skill and its flavor replacements.
 - Every staged manifest uses the root version and the derived package name.
 - No built tree, staged package, or tarball contains `skill-flavor:` comments, `skill-flavors/`, repository tests, or composer source.
 - Binary and template assets remain byte-identical.
@@ -116,7 +118,7 @@ includes it automatically.
 2. **Build files before packages.** Packages consume complete `build/skills/<variant>` trees, never canonical and sparse sources directly.
 3. **Make additions automatic.** A valid new flavor directory must receive a tree and package without code, npm-script, or workflow edits.
 4. **Package the default from generated files.** Direct root `npm pack` or `npm publish` is forbidden because it can leak source markers.
-5. **Never edit generated output.** Change canonical files, sparse overrides, allowlists, or the composer; do not modify or commit `build/`.
+5. **Never edit generated output.** Change canonical files, sparse overrides, or the composer; do not modify or commit `build/`.
 6. **Fail before replacement.** Validate every flavor and inspect every tarball before replacing the last successful generated artifacts.
 
 ## What Not to Do

@@ -1,6 +1,6 @@
 # Code Review Guidelines
 
-This repository contains Markdown skill definitions plus deterministic build and packaging scripts for the UiPath skill packages. Most changes are Markdown, YAML frontmatter, shell scripts, and coder_eval task YAMLs; flavor changes also use `scripts/compose-skill-flavor.py` to build and inspect complete npm artifacts.
+This repository contains Markdown skill definitions plus deterministic build and packaging scripts for the UiPath skill packages. Most changes are Markdown, YAML frontmatter, shell scripts, and coder_eval task YAMLs; flavor changes also use `scripts/compose-skill-flavor.mjs` to build and inspect complete npm artifacts.
 
 ## Review Criteria
 
