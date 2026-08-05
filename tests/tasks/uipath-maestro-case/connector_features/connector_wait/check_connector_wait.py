@@ -13,7 +13,9 @@ the final serviceType, so checking serviceType alone would let a non-runnable
 """
 
 import os
+import re
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
@@ -23,6 +25,53 @@ from _shared.case_check import (  # noqa: E402
     read_caseplan,
     task_is_skeleton,
 )
+
+TASKS_PLAN = Path("tasks/tasks.md")
+
+
+def _task_plan_section(tasks_md: str, task_name: str) -> str:
+    pattern = re.compile(
+        rf'(?ims)^##\s+T\d+:(?![^\n]*\btask[- ]entry[- ]condition\b)'
+        rf'[^\n]*\btask\s+"{re.escape(task_name)}"[^\n]*\n'
+        rf'.*?(?=^##\s+T\d+:|\Z)'
+    )
+    matches = pattern.findall(tasks_md)
+    if len(matches) != 1:
+        sys.exit(
+            f"FAIL: tasks/tasks.md must contain exactly one task T-entry for "
+            f"{task_name!r}; found {len(matches)}"
+        )
+    return matches[0]
+
+
+def _task_plan_field(section: str, task_name: str, field: str) -> str:
+    values = re.findall(rf"(?im)^-\s*{re.escape(field)}:\s*(.*?)\s*$", section)
+    if len(values) != 1:
+        sys.exit(
+            f"FAIL: tasks/tasks.md T-entry for {task_name!r} must contain exactly "
+            f"one {field!r} field; found {len(values)}"
+        )
+    return values[0].strip()
+
+
+def _assert_plan_activation() -> None:
+    if not TASKS_PLAN.is_file():
+        sys.exit(f"FAIL: {TASKS_PLAN} is missing; the Phase 1 plan is required")
+    tasks_md = TASKS_PLAN.read_text(encoding="utf-8", errors="ignore")
+    expected = {
+        "Process reply event": ("event-triggered", "wait-for-connector"),
+        "Wait for reply email": ("parallel", "current-stage-entered"),
+    }
+    for task_name, (expected_mode, expected_rule) in expected.items():
+        section = _task_plan_section(tasks_md, task_name)
+        activation_mode = _task_plan_field(section, task_name, "activation-mode")
+        entry_rule = _task_plan_field(section, task_name, "entry-rule")
+        if activation_mode != expected_mode or entry_rule != expected_rule:
+            sys.exit(
+                f"FAIL: tasks/tasks.md T-entry for {task_name!r} must preserve "
+                f"activation-mode: {expected_mode} with entry-rule: {expected_rule}; "
+                f"got activation-mode={activation_mode!r}, entry-rule={entry_rule!r}"
+            )
 
 
 def _owning_stage_id(plan: dict, target_task: dict) -> str:
@@ -152,12 +201,14 @@ def main():
             f"FAIL: expected connectorKey 'uipath-microsoft-outlook365'; got {ck!r} — "
             "agent may have resolved against the mock connector"
         )
+    _assert_plan_activation()
     print(
         f"OK: first task is event-triggered with wait-for-connector-only entry "
         f"semantics and its entry rule is upgraded past the Phase 2 stub "
         f"(connectorKey={rule_ck!r}, no placeholders); typed wait-for-connector "
         f"task preserves one positional "
-        f"current-stage-entered rule without connector uipath and is resolved "
+        f"parallel/current-stage-entered plan pair, has no connector uipath on "
+        f"that entry rule, and is resolved "
         f"(displayName={task.get('displayName')!r}, "
         f"serviceType={svc}, connectorKey={ck!r}, typeId + connectionId set)"
     )

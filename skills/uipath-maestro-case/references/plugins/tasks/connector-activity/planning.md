@@ -194,8 +194,9 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
   - <SDD output row, copied verbatim>
 - isRequired: true
 - runOnlyOnce: false
-- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
-- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
+- activation-mode: <sequential|parallel|parallel-after-predecessor|event-triggered|adhoc|fan-in|conditional-gate>   # required
+- entry-rule: <copy the matching supplied/approved SDD task-entry rule>   # required; legality: ../../conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract
+- rationale: "<copy the supplied/approved SDD rationale>"   # required
 - order: after T<m>
 - lane: <n>
 - verify: tasks.md `input-values` covers every `inputs.*[?required]` from the lean spec across `bodyFields`, `queryParameters`, `pathParameters` — see Step 5 above.
