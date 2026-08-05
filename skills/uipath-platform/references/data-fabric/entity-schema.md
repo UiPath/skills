@@ -398,6 +398,6 @@ Each `entities list` row carries an `EntityType` field (no `Source` field exists
 - `SystemEntity` — internal entity (e.g. `SystemUser`); hidden by `--native-only`, not writable
 - Federated rows (backed by external connectors like Salesforce, Azure AD) surface here as well — read-only. The exact `EntityType` value for federated rows depends on the connector; verify by listing the tenant. `--native-only` filters them out alongside `SystemEntity`.
 
-**Only native entities support record creation, update, delete, and import.**
+**Only native entities support record creation, update, delete, and import.** Federated entities are read-only for records — read via `records list` or `records query` (query supports filter/sort/projection, but not aggregates or multi-entity joins; see federated-entity-creation.md Rule 8).
 
-> Creating federated entities or linking entities to external connectors is **not currently supported**. This cannot be done via the CLI or the UiPath portal.
+> **Creating** a federated entity from an Integration Service connector (Salesforce, HubSpot, Data hub, …) or from another DF entity **is supported** — see [`federated-entity-creation.md`](federated-entity-creation.md) for the create payload, field mapping, `EntityClass: "Federated"`, and `--federated-only` listing. Only **record writes** to a federated entity are unsupported (data lives in the source, so writes happen there).
