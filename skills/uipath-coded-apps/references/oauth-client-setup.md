@@ -4,6 +4,8 @@ Create and update UiPath External Applications (OAuth clients) with the **`uip a
 
 > **CLI-first.** Do NOT drive the admin portal with browser automation. Every create/update below is one CLI call. Fall back to the [Manual portal steps](#manual-portal-fallback) ONLY when the CLI can't run (see [When the CLI can't be used](#when-the-cli-cant-be-used)).
 
+> **Deployment evidence boundary.** Creating or updating an External Application changes deployable configuration. If a governed deployment plan already exists, stop and regenerate its client/config hashes and approval after the change. For an explicit synthetic Alpha/Staging test, start a new automatic testing receipt. Never modify a client and resume an interrupted publish/deploy as though the reviewed inputs were unchanged.
+
 ## Prerequisites
 
 1. Install the admin tool (provides the `uip admin external-apps` commands): `uip tools install admin-tool`
@@ -43,7 +45,7 @@ uip admin external-apps create "<APP_NAME>" \
 ```
 
 - Register the redirect **with and without** the trailing slash — the SDK may send either.
-- Production redirect URIs are registered automatically by `uip codedapp deploy` — do not add them here.
+- Hosted redirect URIs are normally registered by `uip codedapp deploy`. Do not pre-add them for a planned create; verify them after deployment and treat missing registration as an incomplete deploy.
 - Parse `id` from the JSON response — that is the **Client ID**. Write it to `uipath.json` as `clientId`.
 
 ## Add redirect URIs to an existing app
@@ -101,7 +103,7 @@ A missing scope name (`scope not found`) is NOT a fallback trigger — fix the n
 3. Set **Application name** to `<app name>`
 4. Select **"Non-Confidential application"** (required for browser/PKCE flow)
 5. For each resource, click **"Add scopes"**, pick the resource, check the required scopes, confirm
-6. Add the localhost redirect URIs (with and without trailing slash) in **Redirect URL**, pressing Enter after each. Production URIs are registered by `uip codedapp deploy`.
+6. Add the localhost redirect URIs (with and without trailing slash) in **Redirect URL**, pressing Enter after each. Hosted URIs are normally registered by `uip codedapp deploy` and must be verified afterward.
 7. Click **"Add"** and copy the generated **Application ID** (a UUID) — this is the Client ID
 8. Write the Client ID into `uipath.json` → `clientId`
 

@@ -115,17 +115,16 @@ For a compiler-managed dashboard, read `primitives/incremental-editor.md` in the
 Read: references/dashboards/plugins/deploy/impl.md  *(from skill root)*
 ```
 
-Read this file in parallel with:
+Do not run login status or any other CLI command yet. The deploy plugin binds a named profile after the lane-specific authorization point; checking an unnamed/default session here would contradict that boundary.
 
-```bash
-uip login status --output json
-```
+### Step 2 — Present the lane-specific deployment summary
 
-**Do not run any other commands until you have read the deploy plugin and presented the plan to the user.**
+Read `.dashboard/state.json` in memory to get the app name, version, and intended routing name. Treat its deployment block as a local hint, not remote authority. First classify the release lane and deployment target per `plugins/deploy/impl.md` Step 0:
 
-### Step 2 — Present the deploy plan (pure text, zero CLI calls)
+- **Testing-only** only when the user explicitly requests an internal, synthetic-data deployment to Alpha or Staging.
+- **Governed** for Production, customer data, durable release evidence, or ambiguity.
 
-Read `.dashboard/state.json` in memory to get the app name, version, and routing name. First determine the deployment target — **governance/admin dashboard** vs **standard dashboard app** — per `plugins/deploy/impl.md` Step 0. The folder line and the pin question depend on it.
+The folder line and pin question depend on the governance/admin versus standard dashboard target. Create versus upgrade remains proposed until post-authorization remote preflight proves it.
 
 ```
 Your **[Dashboard Name]** is ready to be deployed.
@@ -133,7 +132,9 @@ Your **[Dashboard Name]** is ready to be deployed.
 📦  Version:    [current] → [bumped]
 🔗  URL path:   [routing-name]
 📁  Folder:     [AdminDashboards (governance) | user-chosen folder (standard)]
-🔄  Type:       Fresh deploy  OR  Updating existing deployment
+👤  Profile:    [named CLI profile; exact org/tenant verified before writes]
+🛡️  Lane:       Testing-only (Alpha/Staging synthetic)  OR  Governed release
+🔄  Intent:     Proposed create/upgrade; remote preflight required
 
 📌  (governance only) Do you want to pin this dashboard to the Governance UI?
    → "deploy and pin" — visible in the Governance section
@@ -144,11 +145,14 @@ A standard dashboard deploys to a user-chosen folder with no pin question — se
 
 > ⚠️ Pinning surfaces the dashboard in the Governance section, which is an **Agentic Governance preview** feature — it only takes effect if the org is enrolled in the preview. When offering the pin, say so; either way the dashboard deploys and is reachable at its URL. See `plugins/deploy/impl.md` Step 4 / Step 10.
 
-**HALT. Do not run any CLI command until the user confirms.**
+Authorization differs by lane:
+
+- **Testing-only** — the user's explicit request to deploy an internal synthetic dashboard to Alpha/Staging is the deployment authorization. Present the summary, then continue without a second plan-hash or confirmation reply when target, mode, and folder are already supplied. Ask only for a missing material choice; that question is not a second release approval.
+- **Governed** — end with `Confirm to deploy, or tell me what to change.` and HALT. Run no CLI command until the user confirms the reviewed plan.
 
 ### Step 3 — Follow plugins/deploy/impl.md
 
-After user confirms, follow every step in `plugins/deploy/impl.md` exactly as written. Do not invent steps, do not run `uip tools list`, do not run `npm run build` before the plan is confirmed.
+For an authorized testing-only request, or after governed confirmation, follow every step in `plugins/deploy/impl.md` exactly as written. Do not invent steps or run `npm run build` before that authorization point. The deploy plugin may run `uip tools list` after authorization when it needs to establish the documented Orchestrator-folder prerequisite.
 
 ---
 
@@ -165,10 +169,10 @@ This skill only handles dashboard building, editing, and deploying. For anything
 - **Never** show raw tool call outputs to the user — read results in context, surface only meaningful information
 - **Never** echo raw event names (WIDGET_READY, TSC_PASS, BUILD_RESULT, etc.) — translate them to clean progress lines
 - **Never** show intermediate bash command outputs between the user's request and the plan — the plan is the first visible output
-- **Never** call any tool — including the question/option tool — in the same response as the plan. The plan is pure text; the user replies to it; structured setup questions (OAuth, deploy pin) fire only after approval and only for details the user hasn't already given
-- **Never** run ANY CLI command before presenting the plan and getting user confirmation
+- **Never** put a tool call or setup question in the same response as a governed plan; the user must reply first. A testing-only execution summary has no approval question and may continue into the deploy plugin in the same turn when every material choice is already supplied.
+- **Never** run a CLI command before presenting the deployment summary. Governed releases also require a confirmation reply; an explicit eligible testing-only request is already authorized and requires no second reply.
 - **Never** improvise deploy steps — always read `plugins/deploy/impl.md` first
-- **Never** run `uip tools list`, `npm run build`, or any command not in the relevant impl.md
+- **Never** run `uip tools list`, `npm run build`, or another command unless the relevant impl.md calls for it after authorization
 - **Never** use `"agent-health-dashboard"` (routing slug) as the `-n` flag — always use the human-readable display name from state.json
 - **Never** run `uip codedapp publish` without `-n` and `--version` flags
 - **Never** fetch the live SDK docs URL — it takes 60–90s
@@ -176,4 +180,6 @@ This skill only handles dashboard building, editing, and deploying. For anything
 - **Never** run directory exploration via ANY shell — `ls`, `find`, `dir`, `Get-ChildItem`, `tree`, glob loops. Memory or prior-session hints are not a reason to explore; the state.json check is the only existing-work probe
 - **Never** read files one at a time
 - **Never** commit generated dashboard files
-- **Never** auto-deploy without explicit user confirmation
+- **Never** classify an ambiguous deployment as testing-only; testing requires an explicit synthetic Alpha/Staging request
+- **Never** use `.dashboard/state.json` as proof of create/upgrade or remote route ownership
+- **Never** auto-deploy from ambiguous wording. An explicit eligible testing-only deployment request counts as confirmation; governed or materially changed plans require a confirmation reply.

@@ -1,6 +1,70 @@
 # Pack / Publish / Deploy Guide
 
-Complete guide for packaging, publishing, and deploying UiPath Coded Web Applications to production.
+Guide for packaging, publishing, and deploying UiPath Coded Web Applications through either an explicit testing-only lane or a governed release lane.
+
+## Choose the lane before publishing
+
+| Lane | Eligible use | Required boundary |
+|------|--------------|-------------------|
+| **Testing-only quick path** | User explicitly requests an internal, synthetic-data deployment to UiPath Alpha or Staging | Bind the exact target, profile, client, route, candidate bytes, and `create`/`upgrade` intent in an automatic testing receipt. Dirty source is allowed but is not provenance. No second approval is required. |
+| **Governed release** | Production, customer data, or any request for durable release evidence | Use reviewed source, exact dist/package/runtime hashes, remote target evidence, explicit approval, immutable receipt, rollback authority, and post-deploy verification. |
+
+Ambiguity defaults to governed. The testing lane must state `production_eligible: false` and `release_evidence: false`; it cannot be promoted into a governed receipt after execution.
+
+Before either lane writes remotely, choose one intent:
+
+- **Create** — fresh remote inventory proves there is no matching deployment and the exact route is unused.
+- **Upgrade** — fresh remote inventory proves the exact existing deployment, system name, route, current version, and candidate version.
+
+`.uipath/app.config.json`, dashboard state, and prior command output are local hints only. If remote evidence cannot establish exactly one intent, stop. Never use automatic upsert behavior as the decision maker.
+
+The stock `uip codedapp` 1.198.0 surface has no deployment `list` or `get`. It may execute a preflighted `publish`/`deploy`, but it cannot establish authoritative create/upgrade state by itself. Use an approved inventory-capable deployment helper or Apps API runtime without exposing bearer tokens. If none is available, stop before the write.
+
+### Automatic testing receipt
+
+Before the first external write, create a new receipt at `.uipath/testing-evidence/<UTC>-<app>-<version>.json` (or an equivalently ignored release-evidence directory) and atomically claim the exact candidate/target in `<receipt>.claim` using create-if-absent semantics. Verify the directory is ignored with `git check-ignore`; if it is tracked or not ignored, choose an ignored evidence directory before continuing. Use policy version `codedapp-testing-only/1.0`. Minimum fields:
+
+- `kind: "uipcodedappdeploy.testing-receipt"`, `schemaVersion: "1.0"`
+- `authorization.mode: "explicit_testing_request"`
+- Exact environment/control plane, org, tenant, folder, profile, CLI version/path, app/package, client, route, intent, candidate version, and artifact/config hashes
+- Git HEAD and worktree-status digest as context only
+- `data_classification: "synthetic_only"`, `production_eligible: false`, `release_evidence: false`
+- Fixed waived gates and non-waivable policy version
+- Per-stage timestamps/results and one terminal status: `failed_prewrite`, `publish_indeterminate`, `published_not_deployed`, `deploy_indeterminate`, `deployed_unverified`, or `succeeded_testing`
+
+For `codedapp-testing-only/1.0`, record these exact sorted arrays; do not invent or omit values:
+
+```json
+{
+  "waived_gates": [
+    "absent_backend_and_realtime_certification",
+    "clean_source_provenance",
+    "full_multi_role_and_pilot_certification",
+    "independent_release_approval",
+    "protected_release_environment",
+    "rebuild_and_full_suite_for_exact_audited_candidate",
+    "second_plan_hash_approval",
+    "signed_production_receipt"
+  ],
+  "nonwaivable_gates": [
+    "alpha_or_staging_target",
+    "automatic_receipt_and_atomic_claim",
+    "bundle_audit_and_postdeploy_verification",
+    "exact_target_profile_client_route_and_artifact_binding",
+    "explicit_create_or_upgrade",
+    "internal_authenticated_access",
+    "no_route_mutation_delete_recreate_or_blind_retry",
+    "no_secret_exposure",
+    "synthetic_data_only"
+  ]
+}
+```
+
+Do not include `plan_hash`, `approved_plan_hash`, tokens, secrets, environment dumps, or unredacted response bodies. Release the candidate claim only after a handled pre-write failure. Retain it after any possible external write. There is no resume: reconciliation plus a fresh explicit testing request creates a new receipt.
+
+Use SHA-256. Hash package files as exact bytes; hash runtime JSON after UTF-8 canonical serialization with sorted keys; hash `dist/` as the sorted list of relative paths plus each file's SHA-256 and size so timestamps and archive metadata cannot change the identity. Write receipt updates to a sibling temporary file, flush, then atomically rename.
+
+This skill documents but does not fabricate a governed executor. If the environment does not provide a reviewed approval/receipt/rollback implementation for governed release, stop and report that release gate rather than writing an ad hoc JSON file.
 
 ## Pipeline Overview
 
@@ -18,6 +82,8 @@ Each step depends on the previous one:
 - **Publish** needs the `.nupkg` file (from pack)
 - **Deploy** needs the app registration (from publish)
 
+The exception is an exact already-published candidate selected after remote reconciliation: deploy that candidate directly rather than rebuilding or republishing it.
+
 ## Pack
 
 Package the app build output into a `.nupkg` file with UiPath metadata.
@@ -29,7 +95,7 @@ Package the app build output into a `.nupkg` file with UiPath metadata.
 uip codedapp pack dist
 
 # Pack with all options specified
-uip codedapp pack dist -n my-webapp --version 1.0.0 -a "My Team" --description "Production app"
+uip codedapp pack dist -n my-webapp --version 1.0.0 --author "My Team" --description "Production app"
 ```
 
 ### Options
@@ -40,12 +106,11 @@ uip codedapp pack dist -n my-webapp --version 1.0.0 -a "My Team" --description "
 | `-n, --name <name>` | Package name | Prompted |
 | `-v, --version <version>` | Package version | `1.0.0` |
 | `-o, --output <dir>` | Output directory for `.nupkg` | `./.uipath` |
-| `-a, --author <author>` | Package author | `UiPath Developer` |
+| `--author <author>` | Package author | `UiPath Developer` |
 | `--description <desc>` | Package description | Prompted |
 | `--main-file <file>` | Main entry file | `index.html` |
 | `--content-type <type>` | `webapp`, `library`, or `process` | `webapp` |
 | `--dry-run` | Preview without creating | `false` |
-| `--reuse-client` | Reuse clientId from `uipath.json` | `false` |
 
 ### Content Types
 
@@ -69,9 +134,7 @@ The `.nupkg` includes auto-generated UiPath metadata files:
 
 ### OAuth Client ID
 
-Pack manages the `uipath.json` SDK config file, which includes the OAuth client ID for the deployed app:
-- First pack: creates a new non-confidential client ID
-- Subsequent packs: use `--reuse-client` to keep the existing client ID from `uipath.json`
+`pack` does not create, select, or reuse an OAuth client. Configure the non-confidential client in `uipath.json`, verify it against the target tenant, and pass the exact client explicitly to `deploy` with `--client-id <GUID>` when required. If the client or its scopes/redirects change after a governed plan is approved, invalidate that plan and re-bind the configuration. For testing, re-hash the configuration and start a new testing receipt.
 
 ### Dry Run
 
@@ -151,7 +214,7 @@ After publish, `.uipath/app.config.json` stores the registration:
 }
 ```
 
-This file is consumed by `deploy` to resolve the app name automatically. **Do not delete `.uipath/` between publish and deploy.**
+This file is consumed by `deploy` to resolve the app name automatically. Preserve it between publish and deploy, but do not treat it as remote authority. Compare its system/deployment identifiers with fresh remote inventory before choosing `create` or `upgrade`.
 
 ### Multiple Packages
 
@@ -169,16 +232,20 @@ uip codedapp publish -n my-webapp --version 2.0.0
 
 ## Deploy
 
-Deploy or upgrade a coded app in UiPath. The command auto-detects whether to perform a fresh deployment or upgrade an existing one.
+Deploy or upgrade a coded app in UiPath. The CLI can auto-detect, but an agent must not delegate the create/upgrade decision to that behavior: prove the intended operation from remote state first.
 
 ### Basic Usage
 
 ```bash
-# Deploy (uses app.config.json)
-uip codedapp deploy
+# Proven create: bind route, client, version, folder, and profile
+uip codedapp deploy -n my-webapp --version 1.0.0 \
+  --path-name my-webapp --client-id <client-guid> \
+  --folder-key <folder-guid> --profile <profile> --output json
 
-# Deploy with explicit name
-uip codedapp deploy -n my-webapp
+# Proven upgrade: preserve the existing route by omitting --path-name
+uip codedapp deploy -n my-webapp --version 1.1.0 \
+  --client-id <client-guid> --folder-key <folder-guid> \
+  --profile <profile> --output json
 ```
 
 ### Options
@@ -186,21 +253,39 @@ uip codedapp deploy -n my-webapp
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-n, --name <name>` | App name | From `app.config.json` or prompted |
-| `-v, --version <version>` | Target a **specific published version** (different semantic from `pack`/`publish`'s `-v`). **Prefer omitting it** — let it default to Latest. Passing a version that the catalog hasn't finished indexing yields a misleading `"...has not been published yet"` error. | Latest |
+| `-v, --version <version>` | Exact published candidate to deploy. Verify it is indexed before deployment; never omit this merely to select an unreviewed Latest version. | Latest |
 | `--folder-key <key>` | UiPath folder **key** (GUID, not the name). **Always pass explicitly** — see below. | From `UIPATH_FOLDER_KEY` env var, else interactive (avoid) |
 | `--org-name <name>` | Organization name (for app URL) | From `.env` |
+| `--path-name <name>` | Permanent hosted route; pass only for a proven create | Generated/defaulted by tool |
+| `--client-id <id>` | Exact non-confidential OAuth client | Tool/config default |
+| `--tags <tags>` | Comma-separated categorization tags | None |
+| `--profile <name>` | Named authenticated CLI profile | Active/default profile |
 
-### Fresh Deploy vs. Upgrade
+### Create vs. Upgrade
 
-| Scenario | Behavior |
-|----------|----------|
-| **First deploy** | Deploys version 1 of the app |
-| **Already deployed** | Upgrades to the latest published version |
+| Intent | Preconditions | Route handling |
+|--------|---------------|----------------|
+| **Create** | Exact deployment absent and route unused in fresh remote inventory | Pass the reviewed `--path-name`; a collision stops the operation |
+| **Upgrade** | Exact deployment/system/route/current version match fresh remote inventory | Omit `--path-name`; preserve and verify the existing route |
 
 The command resolves the app name from:
 1. `--name` flag (highest priority)
 2. `.uipath/app.config.json` (created by `publish`)
 3. Interactive prompt (fallback)
+
+Resolution convenience is not authorization. Always pass the name and all available target flags explicitly. For upgrades, verify that the local config identifies the same remote deployment before executing.
+
+### External-write failure boundary
+
+Once `publish` or `deploy` starts, a timeout, interruption, 5xx, HTML response, or nonzero exit may still have changed remote state. Do not immediately retry. Re-read remote package/deployment state and create a fresh operation from the reconciled result.
+
+Never respond to a conflict by:
+
+- Auto-bumping and republishing an unreviewed version.
+- Generating a random route or omitting the intended route.
+- Deleting and recreating the deployment.
+- Falling back from upgrade to create.
+- Assuming `.uipath/app.config.json` proves what happened remotely.
 
 ### Folder Key
 
@@ -235,8 +320,8 @@ match = next((x for x in d['Data'] if x['Name'] == 'Shared'), None)
 print(match['Key'] if match else '')
 ")
 
-# 3. Deploy with the resolved key
-uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
+# 3. Bind the key into the separately preflighted create or upgrade operation
+test -n "$FOLDER_KEY" && printf '%s\n' "$FOLDER_KEY"
 ```
 
 If the name is ambiguous (multiple matches) or not found, surface an error to the user — do NOT fall through to interactive selection.
@@ -270,55 +355,60 @@ echo "UIPATH_FOLDER_KEY=$FOLDER_KEY" >> .env
 
 ---
 
-## Full Pipeline Examples
+## Pipeline Examples
 
-### First-Time Deployment
+### Testing-only Alpha/Staging create
+
+The user must explicitly request a synthetic/internal test. Record an automatic testing receipt and confirm the route is unused before these writes.
 
 ```bash
-# 1. Authenticate
-uip login
+# 1. Authenticate with an exact non-production profile
+uip login status --profile "$PROFILE" --output json
 
 # 2. Build the app
 npm run build
 
-# 3. Pack
-uip codedapp pack dist -n my-webapp
+# 3. Pack an explicit version
+uip codedapp pack dist -n my-webapp --version 1.0.0 -o .uipath
 
-# 4. Publish
-uip codedapp publish
+# 4. Publish the exact candidate
+uip codedapp publish -n my-webapp --version 1.0.0 --profile "$PROFILE" --output json
 
-# 5. Deploy
-uip codedapp deploy
+# 5. Create on the preflighted route
+uip codedapp deploy -n my-webapp --version 1.0.0 \
+  --path-name my-webapp --client-id "$CLIENT_ID" \
+  --folder-key "$FOLDER_KEY" --profile "$PROFILE" --output json
 ```
 
-### Version Update
+### Testing-only Alpha/Staging upgrade
+
+Re-read and match the exact existing deployment before executing. The route is immutable and therefore omitted.
 
 ```bash
-# 1. Make changes and rebuild
+# 1. Build and pack the chosen candidate version
 npm run build
+uip codedapp pack dist -n my-webapp --version 2.0.0 -o .uipath
 
-# 2. Pack with bumped version
-uip codedapp pack dist -n my-webapp --version 2.0.0
+# 2. Publish the exact candidate
+uip codedapp publish -n my-webapp --version 2.0.0 --profile "$PROFILE" --output json
 
-# 3. Publish new version
-uip codedapp publish
-
-# 4. Deploy (auto-detects upgrade)
-uip codedapp deploy
+# 3. Upgrade the reconciled deployment; never pass or change its route
+uip codedapp deploy -n my-webapp --version 2.0.0 \
+  --client-id "$CLIENT_ID" --folder-key "$FOLDER_KEY" \
+  --profile "$PROFILE" --output json
 ```
 
-### CI/CD Pipeline
+### Governed CI/CD release
+
+The reviewed plan supplies the exact values and hashes below. The named profile must be provisioned securely before the job; never put a client secret or bearer token in command arguments.
 
 ```bash
-# Non-interactive flow with explicit options — every flag passed, no prompts.
-# --scope MUST include Apps.Read Apps.Write, or publish's "Registering coded app"
-# step 401s even though the package upload succeeds (see publish internals above).
-uip login --client-id $CLIENT_ID --client-secret $CLIENT_SECRET \
-  --scope "OR.Folders OR.Execution OR.Administration Apps.Read Apps.Write"
 npm run build
-uip codedapp pack dist -n my-webapp --version $VERSION
-uip codedapp publish -n my-webapp --version $VERSION
-uip codedapp deploy -n my-webapp --folder-key $FOLDER_KEY
+uip codedapp pack dist -n "$APP_NAME" --version "$VERSION" -o .uipath
+uip codedapp publish -n "$APP_NAME" --version "$VERSION" --profile "$PROFILE" --output json
+uip codedapp deploy -n "$APP_NAME" --version "$VERSION" \
+  --client-id "$CLIENT_ID" --folder-key "$FOLDER_KEY" \
+  --profile "$PROFILE" --output json
 ```
 
 ### Agent flow (user provides folder name only)
@@ -330,8 +420,10 @@ FOLDER_KEY=$(uip or folders list --output json \
 
 [ -z "$FOLDER_KEY" ] && { echo "Folder '$USER_FOLDER_NAME' not found"; exit 1; }
 
-# 2. Deploy non-interactively with the resolved key
-uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
+# 2. Use the key in the separately preflighted create or upgrade command
+uip codedapp deploy -n "$APP_NAME" --version "$VERSION" \
+  --client-id "$CLIENT_ID" --folder-key "$FOLDER_KEY" \
+  --profile "$PROFILE" --output json
 ```
 
 ---
@@ -341,9 +433,11 @@ uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | `No packages found` | Missing `.nupkg` | Run `uip codedapp pack` first |
-| `Version already exists` | Same version published | Bump version: `-v 2.0.0` |
+| `Version already exists` | Candidate version conflicts with remote state | Reconcile whether the attempted publish succeeded. If it did not, select and review a new version before packing; never auto-bump and retry. |
 | `App not found` on deploy | App not published | Run `uip codedapp publish` first |
 | `Folder key required` / deploy hangs on prompt | Missing folder key | Resolve via `uip or folders list --output json`, then run `uip codedapp deploy --folder-key <key> ...` (or `UIPATH_FOLDER_KEY=<key>` env-var prefix). |
 | `Missing tenant name` on publish | `UIPATH_TENANT_NAME` not set | Set in `.env` or pass `--tenant-name` |
 | `dist/ not found` | App not built | Run `npm run build` |
-| Pack shows wrong clientId | Stale `uipath.json` | Use `--reuse-client` or delete `uipath.json` |
+| OAuth client is wrong | `uipath.json`, deploy flags, or remote client differ | Stop; verify the exact client and target. Re-bind governed evidence or begin a new testing receipt before changing configuration. |
+| `routing name must be unique` | Route is occupied or upgrade was misclassified | Stop and reconcile remote state. Never randomize or omit a reviewed route and retry. |
+| Publish/deploy timeout, 5xx, HTML, or interruption | External write may have succeeded | Treat as indeterminate; inspect remote state before forming a fresh operation. |

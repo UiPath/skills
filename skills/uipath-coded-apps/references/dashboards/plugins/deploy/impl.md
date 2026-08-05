@@ -2,41 +2,44 @@
 
 Publishes a built dashboard to Automation Cloud as a Coded Web App.
 
-**Pipeline order:** Production build → Pack → Publish → Deploy.
+**New-candidate order:** Build → Pack → Publish → Deploy. An exact already-published testing candidate may go directly to a reconciled upgrade without rebuilding or republishing.
 
 > **What the user should see:** The deploy plan (Step 3), the mode/folder choices (Step 4), progress ticks, and the final URL. All other steps are silent — run commands, read outputs in context, never echo raw JSON or bash output to the user.
 
 ---
 
-## Pre-flight
+## Pre-flight inputs (deferred)
 
-Verify login and read state.json:
+Do not run a login or cloud command merely because this file was opened. First classify the lane and present the Step 3 governed plan or testing-only execution summary. Step 4a runs the named-profile login check after the applicable authorization point.
 
-```bash
-uip login status --output json
-```
-
-Check `Data.Status === "Logged in"`. If not, stop and ask the user to run `uip login`.
-
-Read current deployment state from `.dashboard/state.json` — extract `app.name`, `app.routingName`, `app.semver`, `deployment.systemName`, `deployment.folderKey`, `deployment.folderName`, `deployment.pinnedToGovernance`.
+Read current deployment state from `.dashboard/state.json` — extract `app.name`, `app.routingName`, `app.semver`, `deployment.systemName`, `deployment.folderKey`, `deployment.folderName`, `deployment.pinnedToGovernance`. These values propose a plan; they do not prove remote state.
 
 If `routingName` is empty: tell the user to run the build first.
 
 ---
 
-## Step 0 — Classify deploy type
+## Step 0 — Classify lane and proposed intent
 
-- `deployment.systemName` is empty → **Fresh deploy**
-- `deployment.systemName` is set → **Upgrade** — keep the mode and folder from the prior deploy (`deployment.pinnedToGovernance` + `deployment.folderName`/`folderKey`); the plan re-confirms but Step 4 asks nothing.
+Classify the release lane first:
+
+- **Testing-only** — only when the user explicitly requests an internal, synthetic-data deployment to UiPath Alpha or Staging. Dirty source may be used, but exact built bytes/configuration are authoritative and the receipt must state `production_eligible: false` and `release_evidence: false`.
+- **Governed** — Production, customer data, durable release evidence, or any ambiguity. Require reviewed source/artifact/config hashes, an approval record, immutable receipt, rollback authority, and post-deploy verification.
+
+Then derive a **proposed** intent from local state for the plan:
+
+- `deployment.systemName` empty → proposed **Create**
+- `deployment.systemName` present → proposed **Upgrade**; tentatively keep the prior mode and folder
+
+Do not execute from this proposal. Step 4a must prove the exact create or upgrade from fresh remote inventory. A missing local system name does not prove the app is absent; a present value does not prove that deployment still exists.
 
 ---
 
 ## Step 1 — Set the publish version
 
-The version used for pack + publish (Steps 7–8) is `NEXT_SEMVER`, derived by deploy type:
+The candidate version used for pack + publish (Steps 7–8) is selected before external writes:
 
-- **Fresh deploy** (`deployment.systemName` empty): first publish — use `app.semver` as-is. `NEXT_SEMVER = <CURRENT_SEMVER>` (no bump; the version doesn't exist yet).
-- **Upgrade** (`deployment.systemName` set): the current version is **already published**, so you **MUST** bump before pack/publish — re-publishing the same version fails with "version already exists". This bump is mandatory, not optional; never pack/publish an upgrade at `<CURRENT_SEMVER>`. Compute the next patch:
+- **Proposed create**: propose `app.semver` as `NEXT_SEMVER`.
+- **Proposed upgrade**: propose the next patch as `NEXT_SEMVER`:
 
   ```bash
   node -e "
@@ -45,9 +48,7 @@ The version used for pack + publish (Steps 7–8) is `NEXT_SEMVER`, derived by d
   " <CURRENT_SEMVER>
   ```
 
-  This gives `NEXT_SEMVER`. Pack (Step 7) and Publish (Step 8) MUST pass `--version "<NEXT_SEMVER>"`.
-
-Step 8 (Publish) still auto-bumps and retries on a 409 / "already exists" as a backstop — but on an Upgrade you bump here first; do not skip the bump and rely on the retry alone.
+  This gives a proposal only. Step 4a must prove the exact candidate version is not already published before pack. If it conflicts, stop and present a revised version before any write. Never auto-bump in response to a publish failure.
 
 ---
 
@@ -69,9 +70,9 @@ Recommend a mode from `.dashboard/state.json` `widgets`:
 
 **Folder** — three options: **Personal workspace** · **Existing folder** (user names it) · **Create a new folder**. Recommend:
 - **Governance modes → `AdminDashboards`** (the governance home; provisioned in Step 5).
-- **Standalone → Personal workspace** (zero-config, private to the user).
+- **Standalone → an existing shared team folder such as `Shared`** (team-visible without governance role provisioning). Offer Personal workspace as the private alternative.
 
-**Upgrade short-circuit:** if `deployment.systemName` is set, keep the state-implied mode (`deployment.pinnedToGovernance` + the tags used before) and folder (`deployment.folderName`/`folderKey`). Step 4 asks nothing.
+**Proposed-upgrade short-circuit:** if `deployment.systemName` is set, tentatively keep the state-implied mode (`deployment.pinnedToGovernance` + the tags used before) and folder (`deployment.folderName`/`folderKey`). Step 4 asks nothing unless Step 4a finds a remote discrepancy.
 
 **Capture user wording:** if the request already names a mode ("as a governance dashboard, pinned") and/or a folder ("in a new folder called X" / "to my personal workspace"), treat those as settled — the matching Step-4 question is skipped.
 
@@ -84,14 +85,15 @@ Recommend a mode from `.dashboard/state.json` `widgets`:
 ```
 Your **<APP_NAME>** is ready to be deployed.
 
-📦  Version:    <SEMVER> → <NEXT_SEMVER>   (or "1.0.0 (first publish)" on a fresh deploy)
+📦  Version:    <SEMVER> → <NEXT_SEMVER>   (or "1.0.0 (first publish)" on a proposed create)
 🔗  URL path:   <ROUTING_NAME>
+🛡️  Lane:       <TESTING_ONLY_OR_GOVERNED>
 🎯  Mode:       <MODE_LABEL>   (recommended — <why>, or "kept from last deploy" on upgrade)
 📁  Folder:     <FOLDER_LABEL>   (recommended — <why>)
-🔄  Type:       Fresh deploy  OR  Updating existing deployment
+🔄  Intent:     Proposed Create OR Upgrade — remote preflight required
 ```
 
-**Governance mode + fresh deploy + shared-folder target** — also show:
+**Governance mode + proposed create + shared-folder target** — also show:
 ```
 ⚠️  Governance deploy provisions the <FOLDER_LABEL> folder and grants Administrators
     Folder Administrator on it — an elevated permission the coding agent will ask you
@@ -105,7 +107,9 @@ Your **<APP_NAME>** is ready to be deployed.
 ```
 **Standalone, or ANY Personal-workspace target** — show no elevated-permissions warning (deploying there assigns no roles).
 
-End the deploy plan with: `Confirm to deploy, or tell me what to change.` — **pure text, no tool calls in this response. HALT.**
+For **governed**, end the plan with `Confirm to deploy, or tell me what to change.` — pure text, no tool calls in this response, then HALT.
+
+For **testing-only**, the user's explicit eligible Alpha/Staging synthetic deployment request is authorization. Present the same content as an execution summary and continue without a second reply when mode and folder are already settled. If a material choice is missing, ask only that choice and wait; do not request a plan hash.
 
 ---
 
@@ -113,11 +117,13 @@ End the deploy plan with: `Confirm to deploy, or tell me what to change.` — **
 
 On the user's reply:
 - **Change request / cancel** → handle it; re-present the plan if changed.
-- **Upgrade** (`systemName` set) → skip both questions; go to Step 5 with the kept mode/folder.
+- **Proposed upgrade** (`systemName` set) → skip both questions; go to Step 4a with the kept mode/folder.
 
-Otherwise this is a **fresh deploy**: ask the two SHORT structured-choice questions below (SKILL.md Rule 18), recommended option first and suffixed "(Recommended)". **Never** put them in the same message as the plan — they fire on this later, short turn.
+For an already-authorized testing-only request, apply the same branches immediately after its execution summary. Ask only questions whose values were not supplied by the request.
 
-> **When an interactive user is present, ALWAYS present Question 1 (mode) on a fresh deploy.** The Step-2 inference only decides which option is pre-marked "(Recommended)" — with a human present it does **NOT** let you silently auto-pick a mode. Deploying as *standalone* without asking is a bug: an agent-health / jobs / KPI dashboard is merely *recommended* standalone, but the user may deliberately want it as a governance dashboard, so show all three and let them choose. A bare "deploy" / "confirm" / "yes" does **not** settle the mode — ask.
+Otherwise this is a **proposed create**: ask the two SHORT structured-choice questions below (SKILL.md Rule 18), recommended option first and suffixed "(Recommended)". **Never** put them in the same message as the plan — they fire on this later, short turn.
+
+> **When an interactive user is present, ALWAYS present Question 1 (mode) on a proposed create.** The Step-2 inference only decides which option is pre-marked "(Recommended)" — with a human present it does **NOT** let you silently auto-pick a mode. Deploying as *standalone* without asking is a bug: an agent-health / jobs / KPI dashboard is merely *recommended* standalone, but the user may deliberately want it as a governance dashboard, so show all three and let them choose. A bare "deploy" / "confirm" / "yes" does **not** settle the mode — ask.
 >
 > **Skip Question 1 ONLY when:** (a) the user's wording already named the mode ("deploy as a governance dashboard, pinned" / "just deploy as a standalone app"); or (b) the user told you not to ask / to proceed without confirmation, or the run is non-interactive / automated (e.g. CI) — then use the **recommended** mode and proceed without asking (never block a headless deploy on a question). The **same two carve-outs** govern Question 2 (folder): ask when interactive, otherwise use the recommended folder.
 
@@ -145,11 +151,46 @@ Free-text replies (including a bare folder name) remain valid and take precedenc
 
 ---
 
+## Step 4a — Prove the remote operation (read-only)
+
+Verify the exact named profile first:
+
+```bash
+uip login status --profile "<CLI_PROFILE>" --output json
+```
+
+Check `Data.Status === "Logged in"`. If not, stop and ask the user to authenticate that profile. Bind its control plane, org, and tenant; do not reuse a default session whose target is ambiguous.
+
+Before folder provisioning, publish, or deploy, query the authenticated target's authoritative app/package inventory through an approved inventory-capable deployment helper or Apps API runtime. The stock `uip codedapp` 1.198.0 surface exposes `init`, `pack`, `publish`, `deploy`, `push`, and `pull`, but no deployment `list`/`get`; it cannot satisfy this preflight by itself. Never obtain or print a bearer token to compensate. If no approved inventory-capable path is available, stop; local files are not an acceptable fallback.
+
+Bind and compare the exact control plane, org, tenant, named profile, app/package name, OAuth client, intended route, folder, current deployment/system identity, current version, candidate version, and app type.
+
+- **Create** passes only when there is no matching deployment and the exact route is unused.
+- **Upgrade** passes only when one exact existing deployment matches the local candidate's system identity, permanent route, folder, client, and current version.
+- The candidate version must be the exact reviewed version and must not already exist before a new publish.
+- Testing-only additionally requires Alpha or Staging, internal authentication, and synthetic data. Otherwise stop or reclassify as governed.
+
+If authoritative evidence changes the proposed intent, mode, folder, route, current version, or candidate version, re-present the corrected plan and wait for confirmation—even in testing-only. Never silently switch create↔upgrade.
+
+Start the lane's receipt before the first external write. A testing-only run creates its automatic receipt without a second hash approval. A governed run requires its reviewed approval and immutable receipt first.
+
+---
+
 ## Step 5 — Resolve and provision the chosen folder
 
 Resolve the chosen folder to `folderKey` and persist `deployment.folderKey`/`folderName` in `.dashboard/state.json`.
 
-**If `deployment.folderKey` is already set** (upgrade / prior run) — skip this entire step.
+After authorization, confirm the Orchestrator tool prerequisite:
+
+```bash
+uip tools list --output json
+# Only when the returned inventory lacks orchestrator-tool:
+uip tools install @uipath/orchestrator-tool
+```
+
+This is the only `uip tools list` use permitted by the dashboard capability. If installation fails, stop before folder operations rather than improvising a portal path.
+
+**If Step 4a verified the existing deployment's exact `folderKey`** (upgrade) — skip this entire step. A local folder key alone is insufficient.
 
 **Governance mode targeting a SHARED folder** (AdminDashboards, or any user-named/newly-created shared folder — anything except Personal workspace) — provision via the script (silent — no output to user until "<FOLDER_NAME> folder is ready"):
 
@@ -196,7 +237,9 @@ Capture `Data.Key`. If it fails "already exists," resolve the existing folder's 
 
 ---
 
-## Step 6 — Production build
+## Step 6 — Build or bind the candidate
+
+For a source-built candidate:
 
 ```bash
 cd <PROJECT_DIR> && npm run build
@@ -218,6 +261,8 @@ process.stdout.write(html.includes('uipath:org-name') ? 'CONFIG_OK' : 'CONFIG_MI
 
 If it prints `CONFIG_MISSING`, `uipath.json` lacked `orgName` at build time — re-run the build (the build script writes `uipath.json`) and re-check. **Never deploy a `CONFIG_MISSING` bundle** — it loads blank in the browser. **Skip this check for template builds** (Step 7b) — a tenant-neutral template intentionally omits the org name.
 
+For an explicitly requested testing-only "deploy as-is" operation, an existing `dist/` or exact already-published candidate may be used without rebuilding. Hash and audit the exact bytes and runtime configuration, record the skipped build in the automatic testing receipt, and never claim source provenance or production readiness. If the candidate is already published and Step 4a identified it exactly, skip Steps 7–8; do not repack or republish it.
+
 ---
 
 ## Step 7 — Pack (silent)
@@ -225,8 +270,10 @@ If it prints `CONFIG_MISSING`, `uipath.json` lacked `orgName` at build time — 
 `-n` is the **friendly Title Case display name** (state.json `app.name`, e.g. `"Jobs Health Dashboard"`) — **never the routing slug.** The CLI sanitizes it to a slug (`jobshealthdashboard`) internally for package matching, but uses the friendly name as the display name in the catalog and Governance UI. Passing the slug makes the dashboard show up as `jobshealthdashboard`; the friendly name reads "Jobs Health Dashboard". Use the **same** `-n` for pack, publish, and deploy.
 
 ```bash
-cd <PROJECT_DIR> && uip codedapp pack dist -n "<APP_NAME>" --version "<NEXT_SEMVER>" --output json
+cd <PROJECT_DIR> && uip codedapp pack dist -n "<APP_NAME>" --version "<NEXT_SEMVER>" -o .uipath
 ```
+
+Verify and hash the resulting `.nupkg` directly. `pack` uses `--output` for its output directory, so do not pass `--output json` to this subcommand.
 
 ---
 
@@ -248,17 +295,19 @@ This stages a **tenant-neutral** modify-face (`intent.json`, `src/`, config file
 
 ---
 
-## Step 8 — Publish (silent)
+## Step 8 — Publish once (silent)
 
 ```bash
-cd <PROJECT_DIR> && uip codedapp publish -n "<APP_NAME>" --version "<NEXT_SEMVER>" --output json
+cd <PROJECT_DIR> && uip codedapp publish \
+  -n "<APP_NAME>" \
+  --version "<NEXT_SEMVER>" \
+  --profile "<CLI_PROFILE>" \
+  --output json
 ```
 
 Read the JSON output (silent — no output shown until success or error):
-- **Success** (`Result === "Success"`)→ extract `DeploymentVersion`, continue
-- **Contains "409" or "already exists"** → bump version once more, re-pack, retry publish (up to 4 attempts total)
-- **Contains "5xx" or HTML** → this is a transient gateway error; wait 10 seconds and retry (up to 4 attempts)
-- **Other error** → surface it to the user, stop
+- **Success** (`Result === "Success"`) → extract `DeploymentVersion`. Poll authoritative read-only inventory until that exact candidate is visible/indexed, then continue.
+- **Any non-success, timeout, interruption, 409, 5xx, or HTML response** → mark the write indeterminate, stop this operation, and reconcile remote package/app state. Do not auto-bump, repack, or retry in the same run.
 
 ---
 
@@ -269,52 +318,51 @@ Set tags from the chosen **mode** (Step 2/4):
 - **Governance, pinned** → tags = `"governance,dashboard"`
 - **Governance, not pinned** → tags = `"governance"`
 
-Two flags differ from pack/publish — getting these wrong is the most common deploy failure:
+Bind the exact candidate and target:
 
-- **No `--version` on deploy.** The CLI resolves the latest published version itself. Passing `--version` triggers a false `"...has not been published yet"` error.
-- **`--path-name` only on a FRESH deploy.** It sets the URL slug the first time. On an **upgrade** the routing name already exists — re-passing `--path-name` errors with `"routing name must be unique"`.
+- **Always pass `--version <NEXT_SEMVER>`.** Wait for authoritative inventory to show that exact candidate before deploy. Never omit it merely to select an unreviewed Latest version.
+- **Pass `--path-name` only on a proven Create.** It permanently sets the URL route.
+- **Omit `--path-name` on a proven Upgrade.** Preserve and verify the existing route.
+- Pass the exact non-confidential OAuth client from the audited runtime configuration and the named authenticated profile.
 
-**Fresh deploy** (`deployment.systemName` was empty):
+**Create** (proved by Step 4a):
 
 ```bash
 cd <PROJECT_DIR> && uip codedapp deploy \
   -n "<APP_NAME>" \
+  --version "<NEXT_SEMVER>" \
   --path-name "<ROUTING_NAME>" \
+  --client-id "<CLIENT_ID>" \
   --folder-key "<FOLDER_KEY>" \
   --tags "<TAGS>" \
+  --profile "<CLI_PROFILE>" \
   --output json
 ```
 
-**Upgrade** (`deployment.systemName` is set — omit `--path-name`):
+**Upgrade** (proved by Step 4a; omit `--path-name`):
 
 ```bash
 cd <PROJECT_DIR> && uip codedapp deploy \
   -n "<APP_NAME>" \
+  --version "<NEXT_SEMVER>" \
+  --client-id "<CLIENT_ID>" \
   --folder-key "<FOLDER_KEY>" \
   --tags "<TAGS>" \
+  --profile "<CLI_PROFILE>" \
   --output json
 ```
 
 Read the JSON output:
-- **Success** → extract `SystemName` and `AppUrl`, continue
-- **Contains "indexing" or "not been published"** → platform propagation delay after publish. Show `↻ App is indexing — retrying in 10 seconds (attempt N/3)…`. Wait 10 seconds and retry (up to 3 times). If all 3 fail, surface the error and stop.
-- **(Fresh deploy only) Contains "conflict", "already exist", or "name must be unique"** → the routing slug is taken; generate a new suffix and retry the fresh deploy (keep `--path-name`):
-
-```bash
-node -e "
-const base   = process.argv[1].replace(/-[a-z0-9]{4}$/, '')
-const suffix = Math.random().toString(36).slice(2, 6)
-process.stdout.write(base + '-' + suffix)
-" <ROUTING_NAME>
-```
-
-Use the new routing name in a fresh deploy call. Retry up to 3 times.
-
-- **Other error** → surface it to the user, stop
+- **Success** → extract `SystemName` and `AppUrl`, then continue to authoritative post-verification.
+- **Any non-success, timeout, interruption, indexing error, conflict, 5xx, HTML response, or `routing name must be unique`** → mark the write indeterminate, stop this operation, and reconcile the exact remote deployment/version/route. Never retry with a random route, omitted route, omitted version, delete/recreate, or create fallback.
 
 ---
 
-## Step 10 — Update state.json
+## Step 10 — Verify remotely, then update state.json
+
+Re-read the authoritative deployment before writing local state. Require the exact org, tenant, folder, deployment/system identity, version, route, client, tags, and URL from Steps 4a and 9. Verify the route and referenced assets, authentication, and an app-specific smoke test. If verification fails, leave local state unchanged and record `deployed_unverified` (testing) or the governed failure state.
+
+Only after all checks pass, update `.dashboard/state.json` atomically:
 
 ```bash
 node -e "
@@ -337,12 +385,24 @@ fs.renameSync(fp + '.tmp', fp)
 
 ## Step 11 — Report
 
+For a governed release that passed every acceptance check:
+
 ```
 🎉 **<APP_NAME>** is live.
 
 <APP_URL>
 
 Version <NEXT_SEMVER> · <FOLDER_NAME>
+```
+
+For testing-only:
+
+```
+**<APP_NAME>** is deployed for synthetic Alpha/Staging testing.
+
+<APP_URL>
+
+Version <NEXT_SEMVER> · <FOLDER_NAME> · Not production eligible
 ```
 
 **(governance only)**
@@ -360,21 +420,23 @@ Always: "To update after making changes, say 'deploy this dashboard' again."
 | "Folder Administrator" role not found | Run `uip or roles list --output json` and show the user the available roles |
 | Administrators group not found | List groups from the response, ask user which to use |
 | Build fails | Show the error — dev credentials are always restored |
-| Publish 409 | Auto-bump version and retry (up to 4 times) |
-| Publish 5xx / HTML | Wait 10s and retry (up to 4 times) |
-| Deploy "indexing" / "not been published" (with NO `--version` passed) | Propagation delay — show retry ticker, wait 10s, retry up to 3 times |
-| Deploy "not been published" but you passed `--version` | Remove `--version` from the deploy call — deploy resolves the latest version itself |
-| Deploy "routing name must be unique" on an upgrade | You passed `--path-name` on an upgrade — omit it; routing already exists |
-| Deploy path-name conflict (fresh deploy) | Generate new suffix, retry deploy only (pack/publish already done) |
+| Publish 409 / version exists | Stop and reconcile whether the exact publish occurred. Select a different version only in a new reviewed operation; never auto-bump. |
+| Publish/deploy timeout, interruption, 5xx, HTML, or nonzero exit | Treat the external write as indeterminate; reconcile remote state and stop the current operation. |
+| Candidate is not indexed | Poll authoritative read-only inventory before deploy. Do not issue and retry a deploy while indexing is unresolved. |
+| Deploy `routing name must be unique` on upgrade | Stop and reconcile the exact deployment target. Omit `--path-name` only in a fresh, proved upgrade operation; never blind-retry. |
+| Deploy route conflict on create | Stop and present an intentional plan change. Never generate a suffix or omit the reviewed route. |
 | "Agentic Governance is a preview feature and is not enabled for your organization" (on a pinned/governance deploy) | Not a deploy failure — the app IS deployed and reachable at its URL. Governance pinning is preview-gated: the pin just won't surface in the Governance section until the org is enrolled. Report success with the URL, add the preview note (Step 11), and tell the user to contact their UiPath representative for preview access. Do NOT retry or bump the version. |
 | state.json missing | Tell user to run the build first |
 
 ## Rules
 
 - `-n` is the **friendly Title Case display name** (state.json `app.name`, e.g. "Jobs Health Dashboard") — same across pack, publish, deploy. Never the routing slug: the CLI slugifies it for package matching but shows the friendly name in the catalog/Governance UI.
-- `--version` goes on **pack and publish only — NOT deploy.** Deploy resolves the latest published version; passing `--version` causes a false "has not been published yet" error.
-- `--path-name` goes on **fresh deploy only** — it sets the URL slug. On an upgrade the routing already exists; re-passing it errors "routing name must be unique."
+- `--version` goes on pack, publish, and deploy so the exact candidate stays bound. Prove it is indexed before deploy; never omit it to select Latest.
+- `--path-name` goes on a remotely proved Create only. Omit it on a remotely proved Upgrade while preserving and post-verifying the existing route.
 - Routing name is permanent after the first successful deploy.
+- `.dashboard/state.json` and `.uipath/app.config.json` are repairable projections, not remote authority.
+- Never auto-upsert, auto-bump, randomize a route, omit a reviewed route/version, delete/recreate, or blind-retry an indeterminate external write.
+- Testing-only is explicit, internal, synthetic, and limited to Alpha/Staging with an automatic non-production receipt. All other deployments default to governed.
 - Always include `--tags`, sourced from the chosen **mode**: standalone → `dashboard`; governance, not pinned → `governance`; governance, pinned → `governance,dashboard`.
 - Choose **mode** and **folder** as two independent decisions (Steps 2–4). Mode sets `--tags`; only a governance mode targeting a **shared** folder provisions `setup-admin-folder.mjs` and assigns elevated roles. A Personal-workspace target never provisions roles; standalone never provisions roles.
-- Recommend the mode from state.json metrics and the folder from the mode (governance→AdminDashboards, standalone→Personal workspace); the user overrides either via the Step-4 structured choice or free-text.
+- Recommend the mode from state.json metrics and the folder from the mode (governance→AdminDashboards, standalone→an existing shared team folder such as `Shared`); offer Personal workspace as the private alternative. The user overrides either via the Step-4 structured choice or free-text.
