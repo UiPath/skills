@@ -59,7 +59,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "sdd.md preserves the conditional >$5M Credit-Analyst gate"
+    # The staged draft states the >$5M rule in prose only (persona row + task
+    # Descriptions) and does NOT pass this checker. Finalization must RENDER the
+    # guard as an executable expression — there is nothing to copy forward.
+    description: "sdd.md renders the >$5M Credit-Analyst gate as an executable guarded expression"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/check_credit_analyst_gate.py sdd.md"
     timeout: 10
     expected_exit_code: 0
