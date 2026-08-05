@@ -215,6 +215,6 @@ uip maestro flow validate "<FILE>.flow" --output json
 ## References
 
 - [impl.md § Resource Nodes](../impl.md#7-resource-nodes) — universal recipe + kind matrix
-- [impl.md § Worked Example](../impl.md#8-worked-example--trigger--agent--end--rpa-tool) — full flow with an RPA tool
+- [impl.md § Worked Example](../impl.md#8-worked-example--trigger--agent--end--rpa-tool--context) — full flow with an RPA tool + context index
 - [critical-rules.md](../critical-rules.md) — mandatory constraints
 - [prompting guide](../prompting/autonomous-agent-prompting-guide.md) — per-tool call/stop criteria

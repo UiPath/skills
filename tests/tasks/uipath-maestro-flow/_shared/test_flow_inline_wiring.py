@@ -21,6 +21,7 @@ from flow_inline_wiring import (  # noqa: E402
     assert_bindings_rows,
     assert_builtin_identity,
     assert_cluster_vars_ref,
+    assert_context_inputs,
     assert_definition_present,
     assert_edge,
     assert_embedded_agent,
@@ -778,3 +779,102 @@ def test_builtin_identity_rejects_instance_model_block():
     node["model"] = {"source": True}
     with pytest.raises(SystemExit, match="instance 'model' block"):
         assert_builtin_identity(node)
+
+
+# ── assert_context_inputs (M4) ───────────────────────────────────────────────
+
+
+CONTEXT_INDEX_ID = "de5819d5-a687-4059-988e-08dee2ae3999"
+
+
+def _context_node(**input_overrides):
+    inputs = {
+        "source": "8d1e4f6a-2b3c-4e5d-9a7f-1c0b9e8d7f6a",
+        "name": "ProductKnowledge",
+        "description": "Semantic retrieval over the product knowledge index",
+        "indexId": CONTEXT_INDEX_ID,
+        "indexName": "UiPathAgentsProductKnowledge",
+        "folderKey": "040287b3-85b2-4052-a4e1-b2c14bd0c49b",
+        "folderPath": "Shared/uipath-agents",
+        "retrievalMode": "semantic",
+        "query": {"mode": "prompt", "textValue": "",
+                  "promptValue": "The query", "argumentPath": ""},
+        "threshold": 0,
+        "resultCount": 3,
+        "fileExtension": "All",
+    }
+    inputs.update(input_overrides)
+    inputs = {k: v for k, v in inputs.items() if v is not ...}
+    return {
+        "id": "productKnowledge",
+        "type": (
+            "uipath.agent.resource.context.index."
+            f"uipathagentsproductknowledge.{CONTEXT_INDEX_ID}"
+        ),
+        "typeVersion": "1.0.0",
+        "display": {"label": "UiPathAgentsProductKnowledge"},
+        "inputs": inputs,
+    }
+
+
+def test_context_inputs_pass_on_full_flow_form():
+    inputs = assert_context_inputs(
+        _context_node(),
+        expected_identity={
+            "indexName": "UiPathAgentsProductKnowledge",
+            "folderPath": "Shared/uipath-agents",
+        },
+    )
+    assert inputs["retrievalMode"] == "semantic"
+
+
+def test_context_inputs_accept_all_lowercase_modes():
+    for mode in ("semantic", "structured", "deeprag", "batchtransform"):
+        assert_context_inputs(_context_node(retrievalMode=mode))
+
+
+def test_context_inputs_reject_camelcase_retrieval_mode():
+    # validate does NOT catch this — the camelCase value matches none of the
+    # schema's lowercase conditionals and silently misroutes to semantic.
+    with pytest.raises(SystemExit, match="all-lowercase"):
+        assert_context_inputs(_context_node(retrievalMode="deepRAG"))
+
+
+def test_context_inputs_reject_missing_retrieval_mode():
+    with pytest.raises(SystemExit, match="retrievalMode"):
+        assert_context_inputs(_context_node(retrievalMode=...))
+
+
+def test_context_inputs_reject_wrong_identity():
+    with pytest.raises(SystemExit, match="indexName"):
+        assert_context_inputs(
+            _context_node(indexName="SomeOtherIndex"),
+            expected_identity={"indexName": "UiPathAgentsProductKnowledge"},
+        )
+
+
+def test_context_inputs_reject_index_id_type_suffix_mismatch():
+    with pytest.raises(SystemExit, match="index-GUID suffix"):
+        assert_context_inputs(
+            _context_node(indexId="11111111-2222-4333-8444-555555555555")
+        )
+
+
+def test_context_inputs_tolerate_absent_index_id():
+    # indexId is part of the copy-from-inputDefaults guidance but the
+    # cross-check only fires when present.
+    assert_context_inputs(_context_node(indexId=...))
+
+
+def test_context_inputs_reject_derived_settings_union():
+    with pytest.raises(SystemExit, match="FLAT"):
+        assert_context_inputs(
+            _context_node(settings={"retrievalMode": "semantic"})
+        )
+
+
+def test_context_inputs_reject_context_type_and_resource_type():
+    with pytest.raises(SystemExit, match="contextType"):
+        assert_context_inputs(_context_node(contextType="index"))
+    with pytest.raises(SystemExit, match="resourceType"):
+        assert_context_inputs(_context_node(**{"$resourceType": "context"}))
