@@ -99,8 +99,8 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Metrics don't change after a prompt update | Re-evaluation hasn't completed | Wait ~2 minutes for retrain. |
-| ModelVersion doesn't advance | Retrain still in progress | Any change to model inputs (labellings OR instructions) triggers a full retrain. Wait ~2 min then retry. |
+| Metrics don't change after a prompt update | Re-evaluation hasn't completed | Wait out the retrain — [Improve Prompts Guide § Waiting for retrain](references/improve-prompts-guide.md#waiting-for-retrain). |
+| ModelVersion doesn't advance | Retrain still in progress | Any change to model inputs (labellings OR instructions) triggers a full retrain. Re-read metrics under the **bounded** wait in [Improve Prompts Guide § Waiting for retrain](references/improve-prompts-guide.md#waiting-for-retrain) — fixed interval, capped number of checks, then stop. Never poll indefinitely. |
 | Field instructions conflict with label_def instructions | `fields update-prompts` only edits per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and update them with `groups update-prompts` if they contradict the per-field prompts. |
 | A confirmed line item now reads back as the first row, or the other rows' `Occurrence` numbers shifted | Expected: the read returns annotation↔prediction matched pairs first, so confirmed rows sort ahead of unconfirmed ones | Nothing to fix — values and page locations are unchanged. Re-run `get-predictions` before the next per-occurrence call and target the row by its values (Critical Rule 18). |
 | A second `--occurrence` call landed on the wrong row, or `unconfirm --occurrence N` no-ops | Indices came from a read taken *before* an earlier confirm renumbered the group | Re-read `get-predictions` between per-occurrence writes, or issue them as one `--updates` call. |
