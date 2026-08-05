@@ -68,14 +68,15 @@ This pair lives on the task's own §4.6 T-entry, not on this condition T-entry. 
 
 For every task-entry-condition T-entry, verify the task's `activation-mode` and this condition's `rule-type` agree:
 
-| activation-mode | Allowed rule-type |
-|---|---|
-| `sequential` | `runs-sequentially` |
-| `parallel` | `current-stage-entered` |
-| `event-triggered` | `wait-for-connector` or another explicitly authored event/condition rule |
-| `adhoc` | `adhoc` |
-| `fan-in` | `selected-tasks-completed` with multiple selected tasks or an explicit convergence rationale |
-| `conditional-gate` | `selected-tasks-completed` with a branch/non-immediate dependency rationale, or the explicitly authored gate rule |
+| activation-mode | entry-rule / rule-type | Required grouping or selector contract |
+|---|---|---|
+| `sequential` | `runs-sequentially` | A strict chain uses consecutive single-task lanes. |
+| `parallel` | `current-stage-entered` | Independent stage-start siblings may share one lane. |
+| `parallel-after-predecessor` | `runs-sequentially` | Siblings after the same immediate predecessor share the same next lane/task set. |
+| `event-triggered` | The explicitly authored event/condition rule, normally `wait-for-connector` | Preserve the authored event configuration; do not infer this mode from task type. |
+| `adhoc` | `adhoc` | Set `isRequired: false`; the user launches the task. |
+| `fan-in` | `selected-tasks-completed` | Preserve the authored selected tasks and convergence rationale. |
+| `conditional-gate` | The explicitly authored gate rule | Preserve every authored selector and gate expression. |
 
 During Phase 0 authoring, a plain immediate ordered run with no fan-in, branch, event, or non-immediate dependency rationale should be modeled as `activation-mode: sequential` with `rule-type: runs-sequentially`. During Phase 1, never use that heuristic to rewrite an explicit supplied/approved SDD row: preserve `selected-tasks-completed` and its selector as `conditional-gate` or `fan-in`, including when all tasks are placeholders.
 
@@ -91,7 +92,7 @@ For sequential tasks, preserve the frontend's ordered `data.tasks` structure, in
 ## T<n>: Add task-entry condition for "<task>" in "<stage>" — <summary>
 - target-stage: "<stage-name>"
 - target-task: "<task-name>"
-- activation-mode: sequential | parallel | event-triggered | adhoc | fan-in | conditional-gate
+- activation-mode: sequential | parallel | parallel-after-predecessor | event-triggered | adhoc | fan-in | conditional-gate
 - rationale: "<why this activation/sequencing mode fits>"
 - display-name: "<name>"                  # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
 - rule-type: selected-tasks-completed
