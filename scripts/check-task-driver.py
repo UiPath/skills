@@ -67,7 +67,7 @@ def _rel(path: Path) -> str:
 
 def _driver_line_number(path: Path) -> int:
     """1-indexed line of the offending `driver: tempdir` (0 if not found textually)."""
-    for n, line in enumerate(path.read_text(errors="ignore").splitlines(), start=1):
+    for n, line in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), start=1):
         if _DRIVER_LINE.match(line):
             return n
     return 0
@@ -79,8 +79,8 @@ def main(argv: list[str]) -> int:
 
     for path in _iter_task_yamls(argv):
         try:
-            doc = yaml.safe_load(path.read_text())
-        except yaml.YAMLError:
+            doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except (yaml.YAMLError, UnicodeDecodeError):
             # Malformed YAML is another gate's problem; don't mask it as a pass
             # but don't crash this check either.
             continue
