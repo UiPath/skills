@@ -38,6 +38,7 @@
         "uipath-test",
         "uipath-governance",
         "uipath-insights",
+        "uipath-process-mining",
         "uipath-tasks",
         "uipath-mcp-servers"
       ]
