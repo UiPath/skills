@@ -1042,6 +1042,165 @@ def assert_connector_bindings(flow: dict, connection_id: str) -> list[dict]:
     return rows
 
 
+# Derived resource.json fields an agent trained on the old MCP pattern copies
+# into the node. The flow form is: identity + name/description + slug/serverUrl
+# + folderPath + referenceKey + selectedTools/toolCatalog/discoveryMode;
+# availableTools / toolsConfiguration / solutionProperties all derive from
+# those at projection (flow-workbench mapMcpResource).
+MCP_DERIVED_INPUT_FIELDS = (
+    "$resourceType",
+    "availableTools",
+    "toolsConfiguration",
+    "solutionProperties",
+)
+
+# MCP server subtypes the platform registers (flow-workbench
+# MCP_SERVER_SUBTYPES; `uiPath` really is camelCase). Membership is checked
+# case-insensitively — the search API returns registered casings ('Remote',
+# 'uiPath') and callers forward the original value.
+VALID_MCP_SUBTYPES = {"command", "remote", "coded", "uipath", "platform"}
+
+
+def assert_mcp_inputs(node: dict, *, expected_name: str | None = None) -> dict:
+    """Assert an MCP server tool node carries the flat flow-form config.
+
+    - Never-author guards: none of MCP_DERIVED_INPUT_FIELDS in `inputs`
+      (the derived resource.json shape — mapMcpResource builds them at
+      projection).
+    - `inputs.name` non-empty (manifest-required; name authority is
+      `inputs.name` — projection ignores `display.label`);
+      `expected_name` pins the exact value when given.
+    - `inputs.slug` and `inputs.serverUrl`: both non-empty strings carrying
+      the SAME canonical server slug (serverUrl is not a URL — it is the
+      manifest-default slug carrier; projection reads slug, falls back to
+      serverUrl).
+    - `inputs.folderPath`: non-empty literal folder, never "solution_folder"
+      (the runtime resolves the server by folderPath/slug; MCP servers are
+      external cloud resources).
+    - `inputs.referenceKey`: UUID-shaped (any case — the cloud server Key
+      from `uip solution resources list --kind mcpServer`), and it must
+      match the node-type suffix key (both carry the server key).
+    - `inputs.selectedTools`: >= 1 entry; each entry needs a non-empty
+      string `name` (nameless entries are silently dropped at projection)
+      and an OBJECT `inputSchema` when present (an escaped-JSON string is
+      silently replaced with an empty schema at projection — every
+      property wiped).
+    - `inputs.discoveryMode`, when present: `{"type": "cached"}` or
+      `{"type": "dynamic", ...}` (anything else collapses to cached at
+      projection — validate cannot catch it).
+    - `inputs.mcpType`, when present: one of VALID_MCP_SUBTYPES
+      (case-insensitive).
+
+    Returns the node's `inputs` dict for follow-up assertions.
+    """
+    inputs = node.get("inputs") or {}
+    errs = []
+
+    for field in MCP_DERIVED_INPUT_FIELDS:
+        if field in inputs:
+            errs.append(
+                f"inputs.{field} is a derived resource.json field — never "
+                "authored (the flow form is flat; mapMcpResource derives it)"
+            )
+
+    name = inputs.get("name")
+    if not (isinstance(name, str) and name.strip()):
+        errs.append(f"inputs.name is missing or empty: {name!r}")
+    elif expected_name is not None and name != expected_name:
+        errs.append(f"inputs.name should be {expected_name!r}, got {name!r}")
+
+    slug = inputs.get("slug")
+    server_url = inputs.get("serverUrl")
+    if not (isinstance(slug, str) and slug.strip()):
+        errs.append(f"inputs.slug is missing or empty: {slug!r}")
+    if not (isinstance(server_url, str) and server_url.strip()):
+        errs.append(
+            f"inputs.serverUrl is missing or empty: {server_url!r} — it "
+            "carries the server slug (not a URL)"
+        )
+    if (
+        isinstance(slug, str) and slug.strip()
+        and isinstance(server_url, str) and server_url.strip()
+        and slug != server_url
+    ):
+        errs.append(
+            f"inputs.slug ({slug!r}) != inputs.serverUrl ({server_url!r}) — "
+            "both carry the same canonical server slug"
+        )
+
+    folder_path = inputs.get("folderPath")
+    if not (isinstance(folder_path, str) and folder_path.strip()):
+        errs.append(f"inputs.folderPath is missing or empty: {folder_path!r}")
+    elif folder_path == "solution_folder":
+        errs.append(
+            "inputs.folderPath is 'solution_folder' — MCP servers are "
+            "external cloud resources; author the literal Orchestrator "
+            "folder from discovery (slug resolution is per-folder)"
+        )
+
+    ref_key = inputs.get("referenceKey")
+    if not (isinstance(ref_key, str) and ANY_CASE_UUID_RE.match(ref_key)):
+        errs.append(
+            f"inputs.referenceKey must be the cloud server's UUID Key from "
+            f"`uip solution resources list --kind mcpServer`, got {ref_key!r}"
+        )
+    else:
+        type_key = str(node.get("type", "")).rsplit(".", 1)[-1]
+        if type_key.lower() != ref_key.lower():
+            errs.append(
+                f"node-type suffix key ({type_key!r}) != inputs.referenceKey "
+                f"({ref_key!r}) — both carry the registered server's key"
+            )
+
+    tools = inputs.get("selectedTools")
+    if not (isinstance(tools, list) and tools):
+        errs.append(
+            f"inputs.selectedTools must be a non-empty list (the curated "
+            f"tool subset — the agent's tool surface in cached mode), got {tools!r}"
+        )
+    else:
+        for i, tool in enumerate(tools):
+            if not isinstance(tool, dict):
+                errs.append(f"inputs.selectedTools[{i}] is not an object: {tool!r}")
+                continue
+            tool_name = tool.get("name")
+            if not (isinstance(tool_name, str) and tool_name.strip()):
+                errs.append(
+                    f"inputs.selectedTools[{i}].name is missing or empty "
+                    "(nameless entries are silently dropped at projection)"
+                )
+            schema = tool.get("inputSchema")
+            if schema is not None and not isinstance(schema, dict):
+                errs.append(
+                    f"inputs.selectedTools[{i}].inputSchema must be a JSON "
+                    f"object (parse the escaped string from Spec.Tools), got "
+                    f"{type(schema).__name__} — projection silently replaces "
+                    "a non-object with an empty schema"
+                )
+
+    discovery = inputs.get("discoveryMode")
+    if discovery is not None:
+        mode_type = discovery.get("type") if isinstance(discovery, dict) else None
+        if mode_type not in ("cached", "dynamic"):
+            errs.append(
+                f"inputs.discoveryMode must be {{'type': 'cached'}} or "
+                f"{{'type': 'dynamic', ...}}, got {discovery!r} — anything "
+                "else collapses to cached at projection"
+            )
+
+    mcp_type = inputs.get("mcpType")
+    if mcp_type is not None:
+        if not isinstance(mcp_type, str) or mcp_type.lower() not in VALID_MCP_SUBTYPES:
+            errs.append(
+                f"inputs.mcpType must be one of the platform subtypes "
+                f"{sorted(VALID_MCP_SUBTYPES)} (case-insensitive), got {mcp_type!r}"
+            )
+
+    if errs:
+        sys.exit(f"FAIL ({node.get('id')}): " + "; ".join(errs))
+    return inputs
+
+
 def assert_cluster_vars_ref(nodes: list[dict]) -> None:
     """Assert at least one `$vars.` / `$metadata.` ref across the nodes' inputs.
 
