@@ -57,13 +57,36 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # Gate on "the stub flow ran with a real connection", NOT on 6 separate calls:
+  # min_count counts matching TOOL CALLS, so an agent that batches its 6 stub
+  # commands into one Bash call scores 1/6 and fails despite correct work. The
+  # per-activity count is graded behaviorally below, which is strictly stronger --
+  # invoking stub 6 times proves nothing if the output was never wired in.
   - type: command_executed
-    description: "Stubbed each Requirement activity (6) with a real connection id (`registry stub ... --connection-id`)"
+    description: "Stubbed Requirement activities via the registry with a real connection id"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+registry\s+stub[\s\S]+?--connection-id'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: workflow wires all 6 Requirement activities as IntSvc connector calls"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF" && [ "$(grep -o ''"call"[[:space:]]*:[[:space:]]*"UiPath.IntSvc"'' "$WF" | wc -l)" -ge 6 ]'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Advisory: records the one-stub-call-per-activity convention without docking
+  # agents that batch. Weight 0 so it never moves the score.
+  - type: command_executed
+    description: "Convention: one stub invocation per activity (6) (advisory, batching not penalized)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+api-workflow\s+registry\s+stub[\s\S]+?--connection-id'
     min_count: 6
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 0
+    pass_threshold: 0
 
   - type: command_executed
     description: "Validated the workflow (`uip api-workflow validate`)"
