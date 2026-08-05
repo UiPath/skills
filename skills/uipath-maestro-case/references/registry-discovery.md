@@ -142,7 +142,7 @@ The `.uipx` is a shared file; concurrent registration races. So build skips regi
 uip solution projects add "<built path>" "<solution .uipx>" --output json   # one per built sibling, sequential
 ```
 
-Both positionals MUST be absolute paths — the relative form fails with `Failed to add project to solution` regardless of CWD (see [implementation.md](implementation.md) § Step 6.0b). Then run `uip solution resources refresh` (Rule 14) so the solution-level resource files + `debug_overwrites.json` are generated before any upload/debug.
+Both positionals MUST be absolute paths — the relative form fails with `Failed to add project to solution` regardless of CWD (see [implementation.md](implementation.md) § Step 6.0b). Then run `uip solution resources refresh` (Rule 14) so the solution-level resource files + `debug_overwrites.json` are generated before upload.
 
 ### 3b — "Already exists" = adopt (kind-agnostic residual)
 

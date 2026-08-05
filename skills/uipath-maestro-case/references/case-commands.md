@@ -1,6 +1,8 @@
 # uip — Surviving CLI Command Reference
 
-`caseplan.json` mutations are direct file edits, not CLI calls. The commands below are the only `uip` invocations the skill issues — read-only metadata fetches, registry discovery, validation, debug, runtime/instance management, and solution scaffold/upload.
+`caseplan.json` mutations are direct file edits, not CLI calls. The commands below are the only `uip` invocations the skill issues — read-only metadata fetches, registry discovery, validation, runtime/instance management, and solution scaffold/upload.
+
+> **Exception — `uip maestro case debug`.** Documented here for the **user** to run, never for the skill to issue: it executes the case for real (SKILL.md Rule 12, no debug phase). Print it only when the user asks how to run their case.
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
@@ -14,7 +16,8 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 | `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
-| `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
+| `instance`, `processes`, `incidents`, `process run`, `job traces` | Query/manage live Orchestrator state | Yes |
+| `debug` | Execute the case for real — **user-run only, never issued by the skill** (Rule 12) | Yes |
 
 ---
 
@@ -82,7 +85,7 @@ uip solution resources refresh --solution-folder <SolutionDir> --output json
 
 > `--solution-folder` is required when invoking from outside the solution directory. Omit the flag (and run from inside the solution dir) only for ad-hoc local use; the skill always passes it explicitly so the cwd doesn't matter.
 
-**Always run before `uip solution upload` or `uip maestro case debug`.** Without this step, connection resources may not be registered on Studio Web ("Resource is not configured" warning).
+**Always run before `uip solution upload`** — and the user must run it before their own `uip maestro case debug`. Without this step, connection resources may not be registered on Studio Web ("Resource is not configured" warning).
 
 > Requires `bindings_v2.json` to be populated. If still the empty scaffold (`resources: []`), no resources will be synced.
 
@@ -147,14 +150,23 @@ Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported
 
 ## uip maestro case debug
 
-Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`. Executes the case for real — sends emails, posts messages, calls APIs. Only run on explicit user consent.**
+Debug a Case JSON file via a Studio Web debug session. Uploads to Studio Web, runs in Orchestrator, streams results.
+
+> **The skill NEVER runs this — it is the user's own step (Rule 12).** It executes the case for real: sends emails, posts messages, calls APIs, writes to databases. There is no debug phase and no debug prompt; the pipeline ends at Phase 5 Publish. Print the command pair below only when the user asks how to run their case, then let them run it.
+
+Requires `uip login`.
 
 ```bash
 uip solution resources refresh --solution-folder <SolutionDir> --output json
 uip maestro case debug <project-path> --log-level debug --output json
 ```
 
-> **Always run `uip solution resources refresh`** on the solution directory before debug.
+> **`uip solution resources refresh` must run first** — without it, Studio Web cannot resolve connector dependencies ("Resource is not configured").
+
+Notes for a run the user reports back:
+
+- Diagnose with [troubleshooting-guide.md](troubleshooting-guide.md) + [implementation.md § Appendix — Troubleshoot a failed case](implementation.md#appendix--troubleshoot-a-failed-case). Fix `caseplan.json`, re-run `validate`, hand the re-run back to the user.
+- **Inline-built api-workflow siblings are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found") by design; agent siblings do resolve. Verifying it needs a full solution deploy. See [api-workflow/planning.md § Step 3](plugins/tasks/api-workflow/planning.md#step-3--binding-no-new-field).
 
 | Flag | Description |
 |------|-------------|

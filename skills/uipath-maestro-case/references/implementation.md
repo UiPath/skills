@@ -1,6 +1,6 @@
-# Phases 2–6 — Execution: tasks.md → caseplan.json
+# Phases 2–5 — Execution: tasks.md → caseplan.json
 
-Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per plugin. Validate, then optionally debug and publish. Five phases: **Phase 2 Prototyping** → **Phase 3 Implementation** → **Phase 4 Validate** → **Phase 5 Debug** → **Phase 6 Publish**.
+Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per plugin. Validate, then optionally publish. Four phases: **Phase 2 Prototyping** → **Phase 3 Implementation** → **Phase 4 Validate** → **Phase 5 Publish**. Running the case (`uip maestro case debug`) is not a phase — it is the user's own step (SKILL.md Rule 12).
 
 > **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip this execution pipeline — see [brownfield.md](brownfield.md).
 
@@ -8,7 +8,7 @@ Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per 
 >
 > **Input:** `tasks/tasks.md` — the complete handoff artifact.
 
-> **Five phases follow planning.** Execution splits into **Phase 2 — Prototyping** (skeleton build), **Phase 3 — Implementation** (detail build), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Debug** (optional CLI debug run), **Phase 6 — Publish** (optional Studio Web upload). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, and Phase 6 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbering below marks phase boundaries.
+> **Four phases follow planning.** Execution splits into **Phase 2 — Prototyping** (skeleton build), **Phase 3 — Implementation** (detail build), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (completion report + optional Studio Web upload). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, and Phase 5 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbering below marks phase boundaries.
 
 ## Per-plugin execution
 
@@ -332,42 +332,38 @@ Write issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`]
 
 ---
 
-# Phase 5 — Debug (Steps 13, 13a)
+# Phase 5 — Publish (Steps 13, 14, 15)
 
-Optional CLI debug run. Full contract — report fields, prompt options, debug command, safety warning, loop behavior — in [phased-execution.md § Phase 5](phased-execution.md#phase-5--debug). This section is a bridge — do NOT duplicate contract here.
+Completion report + optional Studio Web upload. Full contract — report fields, prompt options, publish commands, pack/publish warning — in [phased-execution.md § Phase 5](phased-execution.md#phase-5--publish). This section is a bridge — do NOT duplicate contract here.
 
-## Step 13 — Completion report + Debug prompt + session
+## Step 13 — Completion report
 
-Print report fields and run AskUserQuestion + debug command per [phased-execution.md § Phase 5](phased-execution.md#phase-5--debug). On `Run debug session` → run `uip solution resources refresh` then `uip maestro case debug`, loop until `Skip to Publish`. On `Skip to Publish` → Phase 6. Never auto-run (Rule 12).
-
-## Step 13a — Troubleshoot failed case
-
-When a debug or process run fails, read **[troubleshooting-guide.md](troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → caseplan.json correlation → traces (last resort).
-
-**Diagnose → fix → re-run loop.** After each diagnostic pass, classify root cause and act:
-
-1. **Fixable in `caseplan.json`** (wrong binding, missing condition, malformed expression, incorrect input value): apply targeted fix via matching plugin's `impl-json.md`, re-run `uip maestro case validate`, then re-run Step 13 debug.
-2. **Fixable outside `caseplan.json`** (missing/expired connection, unregistered task type, missing Orchestrator asset, permissions): halt agent edits. Report exact resource + remediation steps to user via **AskUserQuestion** with options — `Resource fixed, re-run debug`, `Abort`.
-3. **Inconclusive** (no actionable cause): proceed to next round per retry policy.
-
-> **Known by-design debug fault:** an inline-built api-workflow sibling's task failing with incident `170007` ("job's associated process could not be found") under `case debug` is expected — debug does not provision Api siblings (agent siblings do resolve). Do not spend troubleshoot rounds on it; runtime verification needs a full solution deploy, offered via AskUserQuestion per [phased-execution.md § Debug notes](phased-execution.md#debug-notes) (the contract owner).
-
-**Retry policy.** Up to 3 troubleshoot → fix → debug rounds per failed run. Each round must add new context (different element ID, broader scope, fallback command) or apply different fix — do not repeat identical commands or re-apply same fix. Track round count.
-
-**Per-round timeout.** If debug run exceeds 10 minutes wall-clock, treat round as inconclusive and advance to next round (counts toward 3-round limit). Advisory — do not hard-kill subprocess; classify by elapsed time and move on.
-
-After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user with **AskUserQuestion**. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.json` edits without confirmed cause.
-
----
-
-# Phase 6 — Publish (Steps 14, 15)
-
-Optional Studio Web upload. Full contract — prompt options, publish commands, pack/publish warning — in [phased-execution.md § Phase 6](phased-execution.md#phase-6--publish). This section is a bridge — do NOT duplicate contract here.
+Print the report fields per [phased-execution.md § Completion report](phased-execution.md#completion-report-printed-before-the-prompt). Issue list comes from `tasks/build-issues.md` (Step 12.1).
 
 ## Step 14 — Publish prompt
 
-Run AskUserQuestion per [phased-execution.md § Phase 6](phased-execution.md#phase-6--publish). On `Publish to Studio Web` → Step 15. On `Done` → exit skill.
+Run AskUserQuestion per [phased-execution.md § Phase 5](phased-execution.md#phase-5--publish). On `Publish to Studio Web` → Step 15. On `Done` → exit skill. Two options only — never add a `Run debug session` option and never run `uip maestro case debug` (Rule 12).
 
 ## Step 15 — Publish to Studio Web
 
 Run `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` per [phased-execution.md § Publish notes](phased-execution.md#publish-notes) — the filter is mandatory or `DesignerUrl` is lost to response truncation. Print `DesignerUrl`. Exit skill.
+
+---
+
+# Appendix — Troubleshoot a failed case
+
+**On request only.** The skill never runs `uip maestro case debug` and has no debug phase (Rule 12). Enter this appendix when the **user** reports a failed run they triggered themselves — a `case debug` session or a deployed case process run — and asks for help. Never enter it speculatively, and never re-run the case to reproduce.
+
+Read **[troubleshooting-guide.md](troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → `caseplan.json` correlation → traces (last resort).
+
+**Diagnose → fix → hand back.** After each diagnostic pass, classify root cause and act:
+
+1. **Fixable in `caseplan.json`** (wrong binding, missing condition, malformed expression, incorrect input value): apply targeted fix via matching plugin's `impl-json.md`, re-run `uip maestro case validate`, report the fix, and leave the re-run to the user.
+2. **Fixable outside `caseplan.json`** (missing/expired connection, unregistered task type, missing Orchestrator asset, permissions): halt agent edits. Report the exact resource + remediation steps; the user fixes it and re-runs.
+3. **Inconclusive** (no actionable cause): report what was ruled out and what run data would narrow it (instance ID, folder key, incident IDs).
+
+> **Known by-design debug fault:** an inline-built api-workflow sibling's task failing with incident `170007` ("job's associated process could not be found") under `case debug` is expected — debug does not provision Api siblings (agent siblings do resolve). Do not spend rounds on it; runtime verification needs a full solution deploy. Contract owner: [api-workflow/planning.md § Step 3](plugins/tasks/api-workflow/planning.md#step-3--binding-no-new-field).
+
+**Round cap.** Up to 3 diagnose → fix rounds per failure the user reports. Each round must add new context (different element ID, broader scope, fallback command) or apply a different fix — never repeat identical commands or re-apply the same fix. Track round count.
+
+After the 3rd inconclusive round, stop and report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot, what was tried each round. Ask via **AskUserQuestion** — `Provide additional context` (user supplies hints; run one more targeted diagnostic round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.json` edits without a confirmed cause.

@@ -272,6 +272,6 @@ If the user asks how something works, explain in their language (cases, stages, 
 - **Do NOT let discovery workers write skill artifacts, prompt the user, or run the registry pull.** Fan-out is read-only; the parent owns every write.
 - **Do NOT go silent during assembly and build start.** Post the expectation-setter and milestone lines from §What to say while working.
 - **Do NOT use `sed`/`awk`/`python`/`node` to mutate `sdd.md`, `sdd.draft.md`, or `sdd-viewer.html`.** Read + Write/Edit only (Rule 13).
-- **Do NOT invent gates or thresholds.** No size limit, no approval-before-creating-files, no complexity stop. The complete Phase 0 stop list: the one clarifying call (when earned), the confirmation, the explicit-sign-off prompt (when requested) — then the build's own gates (Phase 4 retry cap, debug, publish).
+- **Do NOT invent gates or thresholds.** No size limit, no approval-before-creating-files, no complexity stop. The complete Phase 0 stop list: the one clarifying call (when earned), the confirmation, the explicit-sign-off prompt (when requested) — then the build's own gates (Phase 4 retry cap, publish).
 - **Do NOT narrate filenames or schema mechanics.** See §Forbidden vocabulary.
 - **Do NOT ask for permission to read user-provided docs.** If the user named them, read them.

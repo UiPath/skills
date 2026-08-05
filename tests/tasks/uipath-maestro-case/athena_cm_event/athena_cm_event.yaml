@@ -37,8 +37,8 @@ initial_prompt: |
   - Do NOT call AskUserQuestion — it is not available in this harness.
   - If the registry does not contain one of the named process resources, use
     the skill's placeholder fallback; never fabricate tenant IDs or bindings.
-  - Skip Phase 5 and Phase 6. Do NOT run `uip maestro case debug` and do NOT
-    publish to Studio Web.
+  - Skip Phase 5. Do NOT publish to Studio Web, and do NOT run
+    `uip maestro case debug`.
   - The task is NOT complete until
     `uip maestro case validate AthenaCMEventCase/AthenaCMEventCase/caseplan.json --output json`
     passes.

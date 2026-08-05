@@ -6,7 +6,7 @@ Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.
 
 ## When to Run
 
-**Batched, not per-task.** `bindings_v2.json` is only consumed by `uip solution resources refresh` (which runs once before upload/debug). No intermediate step reads it. Regenerating after every task wastes Read→convert→Write cycles on a growing file.
+**Batched, not per-task.** `bindings_v2.json` is only consumed by `uip solution resources refresh` (which runs once before upload). No intermediate step reads it. Regenerating after every task wastes Read→convert→Write cycles on a growing file.
 
 Run at these three points only:
 

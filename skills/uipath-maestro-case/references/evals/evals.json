@@ -82,8 +82,8 @@
       "expected_output": "Skill shows the roadmap, asks the Listen opener once (bare request), designs the case by best assumption, and confirms it in ONE decision-first Case Review that is complete enough to approve without opening sdd.md",
       "expectations": [
         "The case-management skill was triggered",
-        "Shows the high-level journey first: reads the request and makes the design calls, one review packet with every decision for confirmation, then build and validate without interruptions, pausing only before any run or publish",
-        "Does not expose internal Phase 0 through Phase 6 labels in the user-facing roadmap",
+        "Shows the high-level journey first: reads the request and makes the design calls, one review packet with every decision for confirmation, then build and validate without interruptions, pausing only before publishing",
+        "Does not expose internal Phase 0 through Phase 5 labels in the user-facing roadmap",
         "Asks the Listen opener once, then fills every open field by best assumption — no per-dimension question walk about trigger, task types, exits, or SLAs",
         "Presents ONE Case Review with the required sections: Case Snapshot, Primary Journey, Other Paths Considered, SLA and Escalations, Rules and Outcomes, Resources and Integrations, Decisions I Made, Review Flags, and Caller obligation when relevant",
         "The Case Review names every stage and every task in the Primary Journey or Other Paths tables, with task type, activation mode, required/optional status, routing/exit behavior, and SLA context",
@@ -127,7 +127,7 @@
     {
       "id": 10,
       "prompt": "Build me a complete employee-offboarding case end to end. I trust the design process — I don't need to review anything until it's ready to run.",
-      "expected_output": "Skill designs by best assumption, confirms once (capturing the straight-through choice), then writes sdd.md batched with the first build actions and runs Phase 1 through Phase 4 automatically, pausing next at the debug gate",
+      "expected_output": "Skill designs by best assumption, confirms once (capturing the straight-through choice), then writes sdd.md batched with the first build actions and runs Phase 1 through Phase 4 automatically, pausing next at the publish gate",
       "expectations": [
         "The single Case Review carries the build continuation choice: build straight through vs pause at the build preview",
         "The Case Review is complete enough to approve without opening sdd.md: it includes Case Snapshot, Primary Journey, Other Paths Considered, SLA and Escalations, Rules and Outcomes, Resources and Integrations, Decisions I Made, and Review Flags while keeping data and variable details in sdd.md",
@@ -137,7 +137,7 @@
         "No blocking prompt between the confirmation and Phase 4 validation on the straight-through path — the Phase 2 boundary prints the skeleton counts line and continues",
         "The build proceeds from the in-memory model without re-reading the just-written sdd.md, and Phase 1 reuses this session's successful registry pull instead of re-pulling",
         "Posts an expectation-setting line before long silent work and one-line business-language milestones during the build — no internal phase or mode names",
-        "Still stops at the debug-consent gate and the publish gate — those are never bypassed",
+        "Still stops at the publish gate — never bypassed — and never offers or runs a debug session",
         "If any high review item exists, the Build option is relabeled build-despite with the count"
       ]
     },

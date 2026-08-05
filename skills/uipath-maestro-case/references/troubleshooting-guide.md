@@ -2,6 +2,8 @@
 
 Diagnostic workflow for failed debug runs and deployed case process runs. All commands require `uip login`.
 
+> **On request only.** The skill never runs `uip maestro case debug` (SKILL.md Rule 12) — enter this guide when the **user** reports a run they triggered themselves. Entry contract, round cap, and the diagnose → fix → hand-back loop: [implementation.md § Appendix — Troubleshoot a failed case](implementation.md#appendix--troubleshoot-a-failed-case).
+
 > **`--folder-key` is required for `incident get`.** Most `instance` subcommands accept `--folder-key <FOLDER_KEY>` and auto-detect from the authenticated folder if omitted, but `incident get` requires it explicitly. Get the folder key from `uip or folders list --output json` or from the job/process context.
 
 ## Diagnostic priority

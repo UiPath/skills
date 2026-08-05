@@ -40,8 +40,8 @@ initial_prompt: |
   - If `uip maestro case registry pull` reports unauthenticated or empty
     cache, record the state and proceed without registry data. This is a
     smoke test — the agent does not need real type IDs.
-  - Skip Phase 6 entirely. Do not run `uip maestro case debug` — just
-    validate locally.
+  - Skip the Phase 5 publish entirely. Do not run `uip maestro case debug`
+    — just validate locally.
 
 success_criteria:
   - type: command_executed
