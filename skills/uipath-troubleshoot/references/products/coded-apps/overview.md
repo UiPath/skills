@@ -10,6 +10,15 @@ Unlike server-side products, a coded app runs **in the user's browser**. Most fa
 - **Auth is browser OAuth 2.0 Authorization Code + PKCE.** The External Application backing a coded app is a **non-confidential (public) client** with **user-delegated scopes**. The app redirects to UiPath, the user signs in, and the SDK exchanges the code for a token via `sdk.completeOAuth()`.
 - **API host is the API subdomain** (`api.uipath.com`), NOT the portal domain (`cloud.uipath.com`). The portal domain does not return browser CORS headers.
 - **Deployed apps** are served under a platform-routed URL, so the app must be built with a **relative** Vite base (`base: './'`) and read its route prefix from `getAppBase()` — an absolute or hardcoded base breaks asset/routing resolution after deploy.
+- **Routing names are unique assignments.** A fresh deployment cannot claim a route owned by another app. An upgrade must target the existing deployment; creating a second app, changing the route randomly, or deleting and recreating the app is not an upgrade.
+
+## Deployment Write Semantics
+
+`publish` and `deploy` change remote state. A timeout, connection loss, interruption, HTTP 5xx, or nonzero client exit after either command starts does not prove that the server rejected the write. Treat the result as **indeterminate** until the target tenant's Apps deployment inventory is re-read.
+
+Before another write, reconcile the exact organization, tenant, folder, app/deployment identifier, system name, routing name, active version, and candidate package version. A subsequent operation must be bound to that reconciled state. Do not blindly retry, create a replacement app, delete and recreate the deployment, or choose a random route to make the error disappear.
+
+`.uipath/app.config.json` is a local convenience file, not authoritative remote state. It can identify the deployment that the previous local run expected, but it cannot prove what the service accepted.
 
 ## Dependencies
 
@@ -43,7 +52,8 @@ There is **no runtime job/trace/log CLI** for a deployed coded app. Diagnosis is
 | Error string the user pastes | OAuth error param (`redirect_uri_mismatch`, `invalid_scope`), HTTP status (401/403/404), CORS message, deploy output |
 | `uipath.json` (project root) | What the app **requests**: `clientId`, `scope`, `baseUrl`, `redirectUri` |
 | `uip admin external-apps get <client-id>` | What the External Application **allows**: registered redirect URIs and scopes |
-| `.uipath/app.config.json` | Deploy result: `appUrl`, `systemName` (present only after a successful `deploy`) |
+| Target tenant's Apps deployment inventory | Authoritative current deployment identity, route, and active version; required after an indeterminate publish/deploy result |
+| `.uipath/app.config.json` | Local hint from a prior deploy: `appUrl`, `systemName`; never proof of current remote state |
 | `vite.config.ts` | `base` and `server.port` — governs deployed routing and local dev URL |
 
 The mismatch between what the app *requests* (`uipath.json`) and what the client *allows* (`external-apps get`) is the root of most coded-app auth failures.
