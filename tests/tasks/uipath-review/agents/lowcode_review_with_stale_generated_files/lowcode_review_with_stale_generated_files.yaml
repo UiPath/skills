@@ -72,7 +72,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Refreshed derived state passes and the report excludes CLI-managed generated state"
+    description: "Refreshed derived state passes; the report excludes CLI-managed state and ends with a matching final grade"
     command: "python3 $TASK_DIR/check_stale_generated_files.py"
     timeout: 30
     expected_exit_code: 0
