@@ -332,21 +332,21 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 
 ### Critical Findings (blocks deployment)
 
-| ID | Rule | File | Issue | Fix |
-|---|---|---|---|---|
-| C-001 | `<rule_id>` or `—` | `<project/file path>` | <issue> | <fix> |
+| ID | Rule | Recommendation |
+|---|---|---|
+| C-001 | `<rule_id>` or `—` | `<project/file path>`: <issue>. <fix>. |
 
 ### Warnings (should fix before production)
 
-| ID | Rule | File | Issue | Fix |
-|---|---|---|---|---|
-| W-001 | `<rule_id>` or `—` | `<project/file path>` | <issue> | <fix> |
+| ID | Rule | Recommendation |
+|---|---|---|
+| W-001 | `<rule_id>` or `—` | `<project/file path>`: <issue>. <fix>. |
 
 ### Improvement Opportunities
 
-| ID | Rule | File | Issue | Fix |
-|---|---|---|---|---|
-| I-001 | `<rule_id>` or `—` | `<project/file path>` | <issue> | <fix> |
+| ID | Rule | Recommendation |
+|---|---|---|
+| I-001 | `<rule_id>` or `—` | `<project/file path>`: <issue>. <fix>. |
 
 ### Per-Project Summary
 | Project | Type | Validation | Quality | Grade | Key Findings |

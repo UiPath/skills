@@ -245,7 +245,7 @@ recommended action with the protection-vs-audit signal. Examples:
 Merge findings into the Step 5 Critical / Warning / Info findings tables (SKILL.md Step 2.5b), one row per finding:
 
 ```
-| <id> | `<rule_id>` | <file> | <message> | <suggested_fix> |
+| <id> | `<rule_id>` | `<file>`: <message>. <suggested_fix>. |
 ```
 
 - Recommendations (`CODED_GUARDRAIL_RECOMMENDED`) → **`I-D-` (Info)** — improvements, not failures. The action

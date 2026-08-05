@@ -230,7 +230,7 @@ layout"). `pii_detection` and `prompt_injection` are SDK-confirmed and may be na
 Merge findings into the Step 5 Critical / Warning / Info findings tables (SKILL.md Step 2.5b), one row per finding:
 
 ```
-| <id> | `<rule_id>` | <file> | <message> | <suggested_fix> |
+| <id> | `<rule_id>` | `<file>`: <message>. <suggested_fix>. |
 ```
 
 - Recommendations (`LC_GUARDRAIL_RECOMMENDED`) → **`I-D-` (Info)** — the lowest grade; they are improvements, not
