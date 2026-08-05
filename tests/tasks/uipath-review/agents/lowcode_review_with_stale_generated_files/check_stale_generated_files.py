@@ -19,11 +19,10 @@ REFRESH_MANAGED_TOKENS = (
     "legacyrequest",
     "legacyresponse",
 )
-DEFECT_SECTIONS = (
-    "critical finding",
-    "warning",
-    "improvement opportunit",
-    "rule finding",
+FINDING_SECTION_PREFIXES = (
+    "critical findings",
+    "warnings",
+    "improvement opportunities",
 )
 HEADING = re.compile(r"^#{2,4}\s+(.+?)\s*$")
 MIN_REPORT_BYTES = 500
@@ -72,10 +71,10 @@ def defect_sections(report: str):
         if not match:
             lines.append(line)
             continue
-        if any(name in heading.lower() for name in DEFECT_SECTIONS):
+        if heading.lower().startswith(FINDING_SECTION_PREFIXES):
             yield heading, lines
         heading, lines = match.group(1), []
-    if any(name in heading.lower() for name in DEFECT_SECTIONS):
+    if heading.lower().startswith(FINDING_SECTION_PREFIXES):
         yield heading, lines
 
 
