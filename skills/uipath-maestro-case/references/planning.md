@@ -315,23 +315,29 @@ Every task entry includes at least:
 - **runOnlyOnce** — from sdd.md (default `false` if not specified). Phase 0-generated SDDs should always state `Run Only Once: Yes/No`; when a user-authored SDD omits it, use the frontend/default-new-task behavior (`false`) and do not infer `true` from task type.
 - **isRequired** — from sdd.md (default `true` if not specified)
 - **order** — authoring order in `tasks.md` (`after T05`, etc.). It is not allowed to carry execution semantics by itself; execution is carried by `activation-mode` + `entry-rule`.
-- **lane** — integer task-set index, default increments per task within the stage starting at 0 for structural/layout compatibility. Lane does not express sequencing by itself; it controls the inner `data.tasks[lane][]` grouping only after `activation-mode` and `entry-rule` are decided. For a strict sequential chain, use consecutive single-task lanes (`[[A], [B], [C]]`) and never reuse a lane. Reuse the same lane only for tasks intentionally modeled as parallel siblings (`activation-mode: parallel`, `entry-rule: current-stage-entered`, same lane, and rationale says why they run together as `[[A, B], [C]]`).
+- **lane** — integer task-set index, default increments per task within the stage starting at 0 for structural/layout compatibility. Lane does not express sequencing by itself; it controls the inner `data.tasks[lane][]` grouping only after `activation-mode` and `entry-rule` are decided. For a strict sequential chain, use consecutive single-task lanes (`[[A], [B], [C]]`) and never reuse a lane. Reuse a lane only for explicit sibling grouping: independent stage-start siblings use `parallel` + `current-stage-entered`; siblings after the same immediate predecessor use `parallel-after-predecessor` + `runs-sequentially` and share that same next lane (`[[A], [B, C], [D]]`). The rationale must explain why the siblings run together.
 - **verify** — what the execution phase should check after running
 
 Additional fields are plugin-specific; read the plugin's `planning.md` before filling the entry.
 
 > **Activation-mode audit before writing §4.7.** After §4.6 is drafted and before any condition T-entry is written, scan every stage's task list and make the task mode visible in the plan:
 >
-> **Authority order:** an explicit rule in the supplied/approved SDD wins. This audit verifies the handoff; it does not redesign or normalize authored rules. Use the derivation bullets below only when authoring from source behavior that has no explicit task-entry rule.
+> **Authority order:** an explicit rule in the supplied/approved SDD wins. This audit verifies the handoff; it does not redesign or normalize authored rules. Use the derivation matrix below only when authoring from source behavior that has no explicit task-entry rule.
 >
-> - Contiguous ordered work in one stage (`then`, `after`, `before`, `in order`, direct previous-step wording, or an upstream prerequisite) → every task in that ordered run gets `activation-mode: sequential` and `entry-rule: runs-sequentially`, including the first task, unless the SDD explicitly declares another legal rule.
-> - Independent work that starts with the stage → `activation-mode: parallel`, `entry-rule: current-stage-entered`, and rationale says why the tasks are independent.
-> - Connector/event callback wait → `activation-mode: event-triggered`, usually `entry-rule: wait-for-connector`.
-> - User-launched optional work → `activation-mode: adhoc`, `entry-rule: adhoc`, `isRequired: false`.
-> - Branch convergence, fan-in, decision-result routing, or a non-immediate dependency → `activation-mode: fan-in` or `conditional-gate`, `entry-rule: selected-tasks-completed`, with the selected tasks named.
+> Task type says **what** a task does; `activation-mode` and `entry-rule` say **when** it starts. A task type never supplies its activation semantics.
+>
+> | activation-mode | entry-rule / rule-type | Required grouping or selector contract |
+> |---|---|---|
+> | `sequential` | `runs-sequentially` | A strict chain uses consecutive single-task lanes. |
+> | `parallel` | `current-stage-entered` | Independent stage-start siblings may share one lane. |
+> | `parallel-after-predecessor` | `runs-sequentially` | Siblings after the same immediate predecessor share the same next lane/task set. |
+> | `event-triggered` | The explicitly authored event/condition rule, normally `wait-for-connector` | Preserve the authored event configuration; do not infer this mode from task type. |
+> | `adhoc` | `adhoc` | Set `isRequired: false`; the user launches the task. |
+> | `fan-in` | `selected-tasks-completed` | Preserve the authored selected tasks and convergence rationale. |
+> | `conditional-gate` | The explicitly authored gate rule | Preserve every authored selector and gate expression. |
 >
 > While authoring a new SDD, do not invent `selected-tasks-completed` merely because a task follows the immediately previous task; model a plain contiguous run as `runs-sequentially`. Once an SDD is supplied or approved, however, preserve every explicit `selected-tasks-completed` row and selector in `tasks.md` and `caseplan.json`; planning is not a second design pass. Map that task to `conditional-gate` or `fan-in` as its authored rationale supports, never to `sequential`.
-> Before leaving §4.6, audit each stage's planned lanes: sequential tasks that form a strict chain MUST NOT share a lane with each other or with adhoc/event-driven/parallel work. If `activation-mode`/`entry-rule` conflicts with `lane`, the mode wins and the lane must be corrected. Same-lane grouping is reserved for intentionally parallel siblings, and the rationale must say why they run in parallel.
+> Before leaving §4.6, audit each stage's planned lanes: sequential tasks that form a strict chain MUST NOT share a lane with each other or with adhoc/event-driven/parallel work. If `activation-mode`/`entry-rule` conflicts with `lane`, the mode wins and the lane must be corrected. Same-lane grouping is reserved for intentional `parallel` or `parallel-after-predecessor` siblings, and the rationale must explain the grouping.
 
 > **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD Outputs table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-outputs-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
 
@@ -382,7 +388,7 @@ Treat the generated `tasks.md` as approved and proceed directly to Phase 2 by de
 
 Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)); context may have compacted during planning. `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.
 
-**Plan-shape gate.** Before Phase 2, re-read every §4.6 task T-entry itself (not the §4.7 condition entries) and confirm it literally contains its own `- activation-mode:` line and its own `- entry-rule:` line — **exactly one of each, colocated on the task's own T-entry** — and that the pair is legal for that mode. Re-run the §4.6 Activation-mode audit over the finished plan, covering all six modes, not just `sequential`.
+**Plan-shape gate.** Before Phase 2, re-read every §4.6 task T-entry itself (not the §4.7 condition entries) and confirm it literally contains its own `- activation-mode:` line and its own `- entry-rule:` line — **exactly one of each, colocated on the task's own T-entry** — and that the pair is legal for that mode. Re-run the §4.6 Activation-mode audit over the finished plan, covering all seven modes, not just `sequential`.
 
 **Known failure pattern:** deferring the rule to a *separate* §4.7 task-entry-condition entry (`rule-type:`) does not satisfy this gate — `caseplan.json` can end up fully correct while `tasks.md` itself still fails this check, because §4.6 and §4.7 are graded as separate artifacts. See [task-entry-conditions/planning.md § Phase 1 Plan Presentation Contract](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract) for the compliant §4.6 shape.
 

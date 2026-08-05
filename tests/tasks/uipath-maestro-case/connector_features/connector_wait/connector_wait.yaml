@@ -98,6 +98,7 @@ initial_prompt: |
   ##### Task 1.1: Process reply event
 
   **Type:** process
+  **Activation Mode:** event-triggered
   **Description:** Placeholder process that is started by the inbound email event. This is the first task in the stage and is event-triggered, so its only task-entry rule is `wait-for-connector`; do not add `current-stage-entered`.
 
   **Entry Condition:**
@@ -125,6 +126,7 @@ initial_prompt: |
   ##### Task 1.2: Wait for reply email
 
   **Type:** wait-for-connector
+  **Activation Mode:** parallel
   **Description:** Suspend until an email is received on the Outlook 365 mailbox.
 
   **Entry Condition:**
@@ -186,7 +188,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan has a first event-triggered task with wait-for-connector-only entry semantics whose connector rule is upgraded past the Phase 2 stub, plus a RESOLVED wait-for-connector task whose sole entry rule remains current-stage-entered without a connector uipath payload (serviceType Intsvc.WaitForEvent, real typeId + connectionId, not a skeleton)"
+    description: "Caseplan has a first event-triggered task with wait-for-connector-only entry semantics whose connector rule is upgraded past the Phase 2 stub, plus a RESOLVED wait-for-connector task whose sole entry rule remains current-stage-entered without a connector uipath payload; tasks/tasks.md preserves event-triggered/wait-for-connector for the process task and parallel/current-stage-entered for the typed connector wait (serviceType Intsvc.WaitForEvent, real typeId + connectionId, not a skeleton)"
     command: "python3 $TASK_DIR/check_connector_wait.py"
     timeout: 60
     expected_exit_code: 0

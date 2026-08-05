@@ -40,8 +40,9 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
   - <SDD output row, copied verbatim>
 - isRequired: true
 - runOnlyOnce: false
-- activation-mode: <copy the supplied/approved SDD activation mode>
-- entry-rule: <copy the matching supplied/approved SDD task-entry rule>
+- activation-mode: <copy the supplied/approved SDD activation mode>  # sequential | parallel | parallel-after-predecessor | event-triggered | adhoc | fan-in | conditional-gate
+- entry-rule: <copy the matching supplied/approved SDD task-entry rule>  # legality: ../../conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract
+- rationale: "<copy the supplied/approved SDD rationale>"   # required
 - order: after T<m>
 - lane: <n>
 - verify: Confirm task created with correct event parameters
