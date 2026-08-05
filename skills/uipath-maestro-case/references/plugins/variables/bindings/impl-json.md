@@ -136,4 +136,4 @@ IDs use `b` prefix + 8 alphanumeric chars (e.g., `bG0SraLpg`).
 
 ## bindings_v2.json Sync
 
-`bindings_v2.json` must mirror top-level `bindings[]` in SDK format. Regenerated in batch (not per-task) at end of Step 9 and Step 9.7. See [bindings-v2-sync.md](../../../bindings-v2-sync.md).
+`bindings_v2.json` must mirror top-level `bindings[]` in SDK format. Regenerated in batch (not per-task) at end of Step 9, Step 9.7, and Step 10.5. See [bindings-v2-sync.md](../../../bindings-v2-sync.md).

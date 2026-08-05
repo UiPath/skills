@@ -134,7 +134,7 @@
         "The confirmation's Decisions I Made table discloses every assumption with plain-language provenance",
         "On the Build answer, the transition line is announced and sdd.md is written in the same batch as the first build actions — never as a standalone blocking turn",
         "One line reports the design doc path as a reference artifact",
-        "No blocking prompt between the confirmation and Phase 4 validation on the straight-through path — the Phase 2 boundary prints the skeleton counts line and continues",
+        "No blocking prompt between the confirmation and Phase 4 validation on the straight-through path — the Phase 2 boundary prints the case-shape counts line (including condition-rule, SLA, and escalation counts, and naming the resolved gate validate profile) and continues",
         "The build proceeds from the in-memory model without re-reading the just-written sdd.md, and Phase 1 reuses this session's successful registry pull instead of re-pulling",
         "Posts an expectation-setting line before long silent work and one-line business-language milestones during the build — no internal phase or mode names",
         "Still stops at the debug-consent gate and the publish gate — those are never bypassed",

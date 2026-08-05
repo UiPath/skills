@@ -1,6 +1,6 @@
 # stage-exit-conditions — Implementation (Direct JSON Write)
 
-> **Phase split.** Phase 3 only. Phase 2 does not write conditions. See [`../../../phased-execution.md`](../../../phased-execution.md).
+> **Phase split.** Written in Phase 2 (Step 10) — every StageId / TaskId / variable ID a condition references exists by then. `wait-for-connector` is the one exception: Phase 2 writes it with a stub `uipath`; Phase 3 Step 10.5 upgrades the stub in place. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
 Write the stage-exit condition directly to the target stage's `data.exitConditions[]`. No CLI command needed.
 
@@ -70,9 +70,9 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 ### wait-for-connector — bind a connector event
 
-Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) (canonical rule JSON + procedure there) — a bare rule (no `uipath`) is rejected by Studio Web. **Stage-scoped: `elementId = <stageId>-<ruleId>`.** Place it in the exit condition with `type` / `marksStageComplete` like the other exit rules above. `conditionExpression` optional. If `type-id` / `connection-id` / `connector-key` is `<UNRESOLVED>`, emit the **stub `uipath` placeholder** (2 `"placeholder"` context fields: `connectorKey` + `operation` — see [connector-trigger-common.md § Placeholder fallback](../../../connector-trigger-common.md#placeholder-fallback)).
+Phase contract (stub at Step 10, real at Step 10.5, brownfield one-pass, output dispatch, two verification passes): [connector-trigger-common.md § Condition-rule phase contract](../../../connector-trigger-common.md#condition-rule-phase-contract).
 
-**Rule output binding.** If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) **as the last step — after rule write, before root bindings**. `elementId` stays `<stageId>-<ruleId>` on every output entry. Skip when the rule has no `uipath.outputs[]` (stub placeholder).
+**Stage-scoped:** `elementId = <stageId>-<ruleId>`. Place the rule in the exit condition with `type` / `marksStageComplete` like the other exit rules above. Valid at both `marksStageComplete: true` (completer) and `false` (exit-only routing). `conditionExpression` optional.
 
 ### wait-for-user — manual decision gate
 
@@ -115,7 +115,7 @@ To route the **origin** stage into a decision/signal-routed exception lane (the 
     "conditionExpression": "=js:(vars.<signal> !== <exception-value>)" } ]] }
 ```
 
-The exception lane's entry is `selected-stage-exited("<origin>") + IF =js:(vars.<signal> === <exception-value>)`, `Interrupting: Yes`, exiting via `return-to-origin`. The two origin exits MUST be mutually exclusive: an ungated completion → dual-fire (next stage + lane both enter); a gated completion with no divert → deadlock (escalate path has no exit). `<signal>` is read directly from the producing task's output (no §1.5 relay var). See [`sdd-generation-rules.md` § Logical integrity step 5](../../../sdd-generation-rules.md#logical-integrity--stage-graph).
+The exception lane's entry is `selected-stage-exited("<origin>") + IF =js:(vars.<signal> === <exception-value>)`, `Interrupting: Yes`, exiting via `return-to-origin`. The two origin exits MUST be mutually exclusive: an ungated completion → dual-fire (next stage + lane both enter); a gated completion with no divert → deadlock (escalate path has no exit). `<signal>` is the producing task's own output — no §1.5 relay var. Inside the `=js:` expression it is written as the marker `vars.$xref('<Stage>','<Task>','<output>')` and resolved at Step 11.5, never as a bare `=vars.<id>`. See [`sdd-generation-rules.md` § Logical integrity step 5](../../../sdd-generation-rules.md#logical-integrity--stage-graph).
 
 ## Rule-Type × marksStageComplete Matrix
 
@@ -128,6 +128,8 @@ The exception lane's entry is `selected-stage-exited("<origin>") + IF =js:(vars.
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. Use bare `=js:<expr>` (no outer parens); for combined boolean expressions wrap each sub-clause in parens: `=js:(vars.X === 'foo') && (vars.Y > 5)`. **Use strict `===` / `!==`, never loose `==` / `!=` — normalize SDD shorthand like `approved == true` to `=js:vars.approved === true` (do not transcribe `==` verbatim).** Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
+> **Cross-task output references inside a `=js:` expression use the marker, always.** Write `vars.$xref('Stage','Task','output')`, never a bare `=vars.<id>` — Step 11.5 resolves every marker once all outputs are minted and deduped (SKILL.md Rule 10, [bindings-and-expressions.md](../../../bindings-and-expressions.md)). This holds for connector and non-connector producers alike; a rule's own outputs are not addressable by a marker at all — bind them to a case variable with `->` and reference the variable.
+
 ## Post-Write Verification
 
-Confirm target stage's `data.exitConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksStageComplete`), `type`, `exitToStageId` (if set), `marksStageComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated (placeholders substituted), inputs/outputs `elementId` is `<stageId>-<ruleId>`, and the ConnectionId + FolderKey root bindings exist.
+Confirm target stage's `data.exitConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksStageComplete`), `type`, `exitToStageId` (if set), `marksStageComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `wait-for-connector`, use the two-pass check in [connector-trigger-common.md § Condition-rule phase contract](../../../connector-trigger-common.md#condition-rule-phase-contract).

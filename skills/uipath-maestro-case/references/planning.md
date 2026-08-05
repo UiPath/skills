@@ -291,7 +291,7 @@ Do **not** collapse the unresolved trigger into a note on T02 or omit it entirel
 
 Title format: `Create stage "<name>"` or `Create secondary stage "<name>"`
 
-One task per stage. Consult [`plugins/stages/planning.md`](plugins/stages/planning.md) for required fields and the `stage` vs `secondary` decision. Basic properties only — SLA and escalation come later (§4.7).
+One task per stage. Consult [`plugins/stages/planning.md`](plugins/stages/planning.md) for required fields and the `stage` vs `secondary` decision. Basic properties only — SLA and escalation come later (§4.8).
 
 Every stage T-entry includes `rationale:` copied from the SDD. It must explain the stage-kind decision and routing shape, especially when one interrupting secondary-stage entry handles a global event.
 

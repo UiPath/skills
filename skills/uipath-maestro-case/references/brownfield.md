@@ -59,6 +59,7 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 | Move a task to a different stage or lane | [case-editing-operations.md § Move a task to a different stage or lane](case-editing-operations.md#move-a-task-to-a-different-stage-or-lane) |
 | Remove / delete a task | [case-editing-operations.md § Delete a task](case-editing-operations.md#delete-a-task) |
 | Add / change a condition (4 scopes) | the matching [plugins/conditions/<scope>/impl-json.md](plugins/conditions/) |
+| Add a connector-bound (`wait-for-connector`) condition rule | [connector-trigger-common.md § Condition-rule phase contract](connector-trigger-common.md#condition-rule-phase-contract) — follow its **Brownfield (no phases)** paragraph: write the real `uipath` in one pass. There is no Step 10.5 here; a stub left behind validates clean and faults at run time. |
 | Modify a condition rule in place (operator / expression / type) | [case-editing-operations.md § Modify a condition rule in place](case-editing-operations.md#modify-a-condition-rule-in-place) |
 | Delete a condition rule (plain or connector, any scope) | [case-editing-operations.md § Delete a condition rule](case-editing-operations.md#delete-a-condition-rule) |
 | Remove a case-exit completion / exit rule | [case-editing-operations.md § Delete a case-exit completion rule](case-editing-operations.md#delete-a-case-exit-completion-rule) |
@@ -72,6 +73,7 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 | Delete a trigger (prune `entry-points.json` + In-arg variable cascade) | [case-editing-operations.md § Delete a node](case-editing-operations.md#delete-a-node) (Trigger branch, steps 5–6) |
 | Delete a connector condition rule | [case-editing-operations.md § Delete a condition rule](case-editing-operations.md#delete-a-condition-rule) (connector cascade, steps 4–6) |
 | Add SLA / escalation | [plugins/sla/impl-json.md](plugins/sla/impl-json.md) |
+| Add or repair an SLA **response** (at-risk / breach rule) | Write the SLA/escalation clock FIRST, then the `sla-status-change` rule that references it — [plugins/sla/impl-json.md](plugins/sla/impl-json.md) then the matching conditions plugin. Brownfield has no Step 9.9 preallocation and no §4.7 expected-error carve-out, so a rule written before its SLA fails validate with `The SLA referenced by rule '<name>' no longer exists` and burns the 3-retry budget. |
 | Modify / remove an SLA or escalation | [case-editing-operations.md § Modify or remove an SLA or escalation](case-editing-operations.md#modify-or-remove-an-sla-or-escalation) |
 | Add a global variable / argument | [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
 | Rename / delete a global variable or argument | [case-editing-operations.md § Rename or delete a global variable or argument](case-editing-operations.md#rename-or-delete-a-global-variable-or-argument) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |

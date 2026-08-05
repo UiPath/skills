@@ -176,7 +176,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan has a first event-triggered task with wait-for-connector-only entry semantics and a RESOLVED wait-for-connector task (serviceType Intsvc.WaitForEvent, real typeId + connectionId, not a skeleton)"
+    description: "Caseplan has a first event-triggered task with wait-for-connector-only entry semantics; its entry RULE is upgraded past the Phase 2 stub (context populated, no \"placeholder\" values); and the wait-for-connector task is RESOLVED (serviceType Intsvc.WaitForEvent, real typeId + connectionId, not a skeleton)"
     command: "python3 $TASK_DIR/check_connector_wait.py"
     timeout: 60
     expected_exit_code: 0

@@ -8,13 +8,15 @@ Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per 
 >
 > **Input:** `tasks/tasks.md` — the complete handoff artifact.
 
-> **Five phases follow planning.** Execution splits into **Phase 2 — Prototyping** (skeleton build), **Phase 3 — Implementation** (detail build), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Debug** (optional CLI debug run), **Phase 6 — Publish** (optional Studio Web upload). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, and Phase 6 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbering below marks phase boundaries.
+> **Five phases follow planning.** Execution splits into **Phase 2 — Prototyping** (everything writable from data already in hand: structure, conditions, SLA), **Phase 3 — Implementation** (everything needing a `case spec` round-trip: connector schemas, task input values, connector rule upgrade), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Debug** (optional CLI debug run), **Phase 6 — Publish** (optional Studio Web upload). The Phase 2/3 line is the **CLI-gather line**, not a structure/detail line. Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, and Phase 6 entry.
+>
+> **Reading step numbers.** They are stable labels, not an ordering — each phase header carries an explicit `Step order` line; follow that. Two consequences to know: Phase 2 owns 9.9/10/11 while Phase 3 owns the numerically-earlier 9.6–9.8 and the adjacent 10.5/11.5; and **two different steps are both numbered 12** — the end-of-Phase-3 validator pass, and Phase 4's full validate. Always name the phase when citing Step 12. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbering below marks phase boundaries.
 
 ## Per-plugin execution
 
 Every plugin uses direct JSON writes via its `impl-json.md`. Cross-cutting mechanics (ID generation, Pre-flight Checklist, primitive ops, the canonical write contract) are in [case-editing-operations.md](case-editing-operations.md).
 
-**Per-section batched writes — mandatory.** Process `tasks.md` one **section** at a time (§4.2.1 vars, §4.3 triggers, §4.4 stages, §4.6 task-shapes, §9.7 connector schema, §9.8 I/O binding, §10 conditions, §11 SLA):
+**Per-section batched writes — mandatory.** Process `tasks.md` one **section** at a time (Phase 2: §4.2.1 vars, §4.3 triggers, §4.4 stages, §4.6 task-shapes, §4.7 conditions, §4.8 SLA — then Phase 3: §9.7 connector schema, §9.8 I/O binding, §10.5 connector rule upgrade):
 
 1. **One Read** of `caseplan.json` at section entry.
 2. **Writes sized to section** — pick by T-entry count:
@@ -26,9 +28,9 @@ TaskUpdate items keyed by T-number are the audit trail — mark each `in_progres
 
 **Bundle status text with tool_use.** Any progress text emitted alongside writes MUST share the same assistant turn as the next tool_use (text block + tool_use block in one content array). Standalone text-only turns between Edits are forbidden — they each cost ~5s inference + full cache replay for no work. Cap inline status to ≤1 sentence / ~20 tokens. **Hard token cap:** any single text block >200 tokens (or >500 tokens for allow-listed exceptions — completion reports, AskUserQuestion preambles, validate result summaries) is a planning monologue, forbidden regardless of content. **Forbidden announcement verbs** at any length: text blocks starting with `Building`, `Composing`, `Writing`, `Drafting`, `Generating`, `Now I'll`, `Next:`, `Approach:`, `Strategy:`, `Plan:`, `Caveman push:`, `Big single Write:`, `Let me`, or any other narration of the imminent tool call. The tool_use input IS the announcement.
 
-**Cap single Write at ~15K out tok / ~40KB.** When a section's whole-section Write would exceed this, split into Phase 2 skeleton (root + nodes + vars, `edges` stays `[]`, empty task `data`) → Phase 3 fill (per-section Edits onto populated nodes). For cases with ≥40 tasks or ≥8 stages, NEVER emit the full populated caseplan.json in one Write — always Phase 2 → Phase 3 split. A single 15K-out-tok Write turn pays ~150s inference; smaller turns let validate gates catch field drops between phases. Build-assembler helper scripts (`/tmp/build-caseplan.js` etc.) are forbidden — they violate Rule 13 regardless of `/tmp` placement or framing.
+**Cap single Write at ~15K out tok / ~40KB.** When a section's whole-section Write would exceed this, do NOT collapse it — keep the per-section cadence (root + nodes + vars first, then conditions and `slaRules[]` as their own Phase 2 sections, then the Phase 3 fill as per-section Edits onto populated nodes). For cases with ≥40 tasks or ≥8 stages, NEVER emit the full populated caseplan.json in one Write. A single 15K-out-tok Write turn pays ~150s inference; smaller turns let validate gates catch field drops between phases. Build-assembler helper scripts (`/tmp/build-caseplan.js` etc.) are forbidden — they violate Rule 13 regardless of `/tmp` placement or framing.
 
-For CLI-gated sections (§4.6 non-connector schema, §9.7 connector schema), use **gather-then-write**: run all CLI calls first, collect results in reasoning, then enter the Read → writes → validate batch.
+For CLI-gated sections (§4.3 resolved event triggers, §4.6 non-connector schema, §9.7 connector schema, §10.5 connector condition rule schema), use **gather-then-write**: run all CLI calls first, collect results in reasoning, then enter the Read → writes → validate batch. §4.7 conditions and §4.8 SLA are not CLI-gated — write them straight from `tasks.md`.
 
 Full contract — recovery, tool primitive selection (Edit default, whole-section Write at ≥10 T-entries), audit trail, scope — in [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical). Phase 1 `tasks.md` building uses the same section-batched contract per [planning.md §4.0a](planning.md).
 
@@ -67,7 +69,10 @@ Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_
 5. Add stages (Step 7)
 6. Write task shapes (Step 9)
 7. Regenerate bindings_v2.json (Step 9.4)
-8. Skeleton validate + hard stop (Step 9.5)
+8. Preallocate SLA + escalation IDs (Step 9.9)
+9. Add conditions, all 4 scopes (Step 10)
+10. Configure SLA + escalation (Step 11)
+11. Gate validate + hard stop (Step 11.9)
 
 (No edge step — Rule 20; see Step 8.)
 
@@ -75,9 +80,13 @@ Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_
 
 ---
 
-# Phase 2 — Prototyping (Steps 6 – 9.5)
+# Phase 2 — Prototyping (Steps 6 – 11.9)
 
-Steps 6 through 9.5 build structural skeleton: solution, project, root case, global variables, stages, triggers, and tasks without value binding. Full contract in [phased-execution.md § Phase 2](phased-execution.md#phase-2--prototyping).
+Steps 6 through 11.9 build: solution, project, root case, global variables, stages, triggers, tasks without value binding, conditions in all 4 scopes, and SLA + escalation. Everything needing a connector `case spec` gather — connector task schemas, task input `value`s, connector rule `uipath` blocks — is Phase 3. **One exception in the other direction:** a resolved event trigger runs its own `case spec --type trigger` inside Phase 2 at Step 6.1, because Step 6.2's In-arg `elementId` needs the TriggerId. Full contract in [phased-execution.md § Phase 2](phased-execution.md#phase-2--prototyping).
+
+Step order: 6 → 6.1 → 6.2 → 6.3 → 7 → 9 → 9.1 → 9.4 → 9.9 → 10 → 11 → 11.9.
+
+> **Step numbers are stable labels, not an ordering.** Read the `Step order` line, never the numeric sequence. Phase 2 owns 9.9/10/11 while Phase 3 owns the numerically-earlier 9.6–9.8 and the numerically-adjacent 10.5/11.5/12 — a number tells you which step, not which phase or when.
 
 ## Step 6 — Create the Case project structure
 
@@ -117,20 +126,20 @@ For each stage in `tasks.md §4.4`, execute per [`plugins/stages/impl-json.md`](
 
 ## Step 8 — (RETIRED — no edges)
 
-No edge-building step (Rule 20) — stage transitions are entry/exit conditions, written in Phase 3 Step 10. Multi-trigger cases: add extra triggers via the trigger plugin (Step 6.1); any trigger entering the case activates the first stage's `case-entered` condition.
+No edge-building step (Rule 20) — stage transitions are entry/exit conditions, written at Step 10 later in this phase. Multi-trigger cases: add extra triggers via the trigger plugin (Step 6.1); any trigger entering the case activates the first stage's `case-entered` condition.
 
 ## Step 9 — Add tasks (Phase 2 shape, gather-then-write)
 
 **Phase A — gather.** For each non-connector task in `tasks.md §4.6`, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` and collect the input schema in reasoning. Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1. **Inline-built siblings (agent / api-workflow, Rule 17 Create) also skip the gather** — they were resolved + bound in Phase 1 with I/O read from the sibling's on-disk `entry-points.json`; their `taskTypeId` is a local audit-only key with no tenant resource, so tenant `tasks describe` does not apply. See the per-type Built-inline notes: [`plugins/tasks/agent/impl-json.md`](plugins/tasks/agent/impl-json.md), [`plugins/tasks/api-workflow/impl-json.md`](plugins/tasks/api-workflow/impl-json.md).
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in §4.6 order, appending the task node to its stage's `data.tasks` structure per the matching plugin's `impl-json.md` and the placement contract below. **Capture each `TaskId`** — cross-task references and conditions in Phase 3 need it. Skip the re-Read between sibling Edits. One validate at section end.
+**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in §4.6 order, appending the task node to its stage's `data.tasks` structure per the matching plugin's `impl-json.md` and the placement contract below. **Capture each `TaskId`** — conditions at Step 10 (same phase) and cross-task references at Step 9.8 both need it. Skip the re-Read between sibling Edits. One validate at section end.
 
 Per-class shape inside each Edit:
 
 | Task class | Phase 2 `data` content |
 |---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | Full `data.inputs[]` schema from the Phase A gather. Each input's `value` is `""`. Outputs populated per plugin. |
-| Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `case spec` in Phase 2** — schema discovery happens in Phase 3. |
+| Connector (`connector-activity`, `connector-trigger`) | `data.typeId` + `data.connectionId` set. `data.inputs` omitted. **Do NOT call `case spec` here** — connector task schema discovery happens at Phase 3 Step 9.7. (Same applies to `wait-for-connector` condition rules at Step 10: stub now, spec at Step 10.5.) |
 | Unresolved (any class) | Placeholder task per Step 9.1 — empty `data: {}` plus action-only extras. |
 
 **Do NOT bind input `value` fields in Step 9.** All literals, expressions, and cross-task references written in Phase 3 Step 9.8 per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md).
@@ -168,44 +177,90 @@ Placeholder tasks integrate with the rest of the graph:
 
 After all non-connector tasks are written (Step 9), regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md). This single pass converts all root bindings accumulated during Step 9 — no per-task regeneration needed.
 
-## Step 9.5 — Placeholder-mode validate + HARD STOP
+## Step 9.9 — Preallocate SLA and escalation IDs
+
+Before writing conditions, read `tasks.md §4.8`, `caseplan.json`, and `id-map.json`. Preallocate stable IDs for every SLA rule and escalation so a Step 10 `sla-status-change` condition — stage entry for an `enter-stage` response, task entry for `start-task` — can reference objects that Step 11 writes later:
+
+1. Resolve each SLA target: `root`, or the stage ID for the named stage.
+2. Allocate `sla_` + 8 chars for every default/conditional SLA T-entry not already in `id-map.json`.
+3. If a target has escalation T-entries but no explicit default SLA T-entry, allocate one synthetic default SLA ID for that target.
+4. Allocate `esc_` + 6 chars for every escalation T-entry not already in `id-map.json`.
+5. Record target, display name, parent SLA T-number/default, and ID using the shapes in [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Reject duplicate display names within a target.
+6. Check all new IDs against existing caseplan IDs and `id-map.json`; regenerate collisions before continuing.
+
+This step changes only `id-map.json`; Step 11 emits the objects and MUST reuse these IDs. A condition T-entry resolves its `sla-display-name` — and, for an at-risk row only, its `escalation-display-name` — within the declared target, never by array index. A breach T-entry carries no escalation name and needs none.
+
+## Step 10 — Add conditions (per (scope, target) Edit batch)
+
+One Read of `caseplan.json` at Step 10 entry. Group `tasks.md §4.7` entries by `(scope, target)` pair: each pair becomes one Edit replacing the relevant conditions array on its target node.
+
+| Scope | Target | Edit replaces |
+|---|---|---|
+| Stage entry | one stage | `nodes[stage].data.entryConditions` |
+| Stage exit | one stage | `nodes[stage].data.exitConditions` |
+| Task entry | one task | `data.entryConditions` on the task object |
+| Case exit | root | `metadata.caseExitRules` |
+
+Skip the re-Read between sibling Edits. One validate at section end. Per-scope composition rules live in the matching plugin's `impl-json.md`:
+
+- Stage entry → [`plugins/conditions/stage-entry-conditions/impl-json.md`](plugins/conditions/stage-entry-conditions/impl-json.md)
+- Stage exit → [`plugins/conditions/stage-exit-conditions/impl-json.md`](plugins/conditions/stage-exit-conditions/impl-json.md)
+- Task entry → [`plugins/conditions/task-entry-conditions/impl-json.md`](plugins/conditions/task-entry-conditions/impl-json.md)
+- Case exit → [`plugins/conditions/case-exit-conditions/impl-json.md`](plugins/conditions/case-exit-conditions/impl-json.md)
+
+> **`wait-for-connector` rules: write the stub here, upgrade at Step 10.5.** This rule-type is the one condition that is not a pure JSON write — its `uipath` block comes from a `uip maestro case spec --type trigger` call. Do NOT make that call here. Write the rule now with the **stub `uipath`** (`serviceType` + the two `"placeholder"` context entries `connectorKey` and `operation`, empty `inputs` / `outputs` / `bindings`) per [connector-trigger-common.md § Placeholder fallback](connector-trigger-common.md#placeholder-fallback). The stub clears `validate` (which checks that `rule.uipath` + `context` are *present*, not their internals), so the rule is reviewable in the Phase 2 preview at its correct position. Phase 3 [Step 10.5](#step-105--upgrade-connector-bound-condition-rules-gather-then-write) replaces the stub with the spec-minted block. A rule whose connector is `<UNRESOLVED>` keeps the stub permanently — same shape, no upgrade.
+
+> **Expressions that read a connector task's output must use a marker.** Those output IDs are minted at Step 9.7, after this step. Write `vars.$xref('Stage','Task','output')` inside the `=js:` expression, never a bare `=vars.<id>`; Step 11.5 resolves it. This is unconditional (SKILL.md Rule 10): it holds for non-connector producers too, even though their outputs are already minted at Step 9 — one code path, not two. Case variables and In/Out arguments are not task outputs and are referenced directly as `=vars.<id>`.
+
+> **No `bindings_v2` sync in this step.** Stub rules introduce no Connection or Folder bindings. The rule-scope sync runs at Step 10.5, once real connector rules exist — see [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run) (point 3).
+
+## Step 11 — SLA and escalation (per-target Edit batch)
+
+One Read of `caseplan.json` at Step 11 entry. Group `tasks.md §4.8` entries by target (root or stage). For each target, one Edit replacing that target's full `slaRules[]` array per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Skip the re-Read between sibling Edits. Supports per-conditional-rule escalations, secondary-stage SLA, and multi-recipient single rules. One validate at section end.
+
+An SLA `expression` that reads a connector task output takes the same `vars.$xref(...)` marker as a condition expression (Step 10) — resolved at Step 11.5.
+
+## Step 11.9 — Gate validate + HARD STOP
 
 End of Phase 2. Full contract (summary content, prompt options, publish branch, abort cleanup, continue branch) in [phased-execution.md § Phase 2 hard stop](phased-execution.md#phase-2-hard-stop). This section is a bridge — do NOT duplicate contract here.
 
-1. Run placeholder-profile validate:
+1. Run gate validate. Resolve the profile once per [case-commands.md § Phase 2 gate profile](case-commands.md#phase-2-gate-profile--probe-once-cache-fall-back-to-full-mode) and cache it:
 
    ```bash
-   uip maestro case validate "<caseplan.json path>" --skeleton --output json
+   uip maestro case validate "<caseplan.json path>" --skeleton-v2 --output json
    ```
 
-   `--skeleton` skips tasks, SLAs, escalations, and entry/exit rules — those are filled in Phase 3. Structural checks (nodes, edges, identity, types, topology) still run.
+   `--skeleton-v2` is specified to run structural checks (nodes, edges, identity, types) **plus** entry/exit rules, SLAs, and escalations — matching what Phase 2 wrote — skipping task input `value` binding and connector task schemas. **No released CLI has it yet, so expect full mode in practice.**
 
-   **Do NOT halt on errors or warnings.** Capture error + warning counts for summary; remaining errors are structural and surfaced to user via the hard-stop prompt.
+   **Fallback is FULL mode, not `--skeleton`.** If the CLI rejects the flag at argument parse (`ErrorCode: "invalid_argument"` / `unknown option` / exit 3), re-run once with no profile flag. Legacy `--skeleton` is never the fallback — it omits the exact rules and SLA this gate exists to check. Full mode validates a complete Phase-2 caseplan clean (unbound task inputs, connector tasks without `data.inputs`, and stub `wait-for-connector` rules all pass), so nothing is lost. Report the resolved profile in the summary line.
 
-2. Print hard-stop summary, including captured validate counts ([phased-execution.md § Summary content](phased-execution.md#summary-content)).
+   **Do NOT halt on errors or warnings.** Capture error + warning counts for summary; remaining errors are surfaced to the user via the hard-stop prompt.
 
-3. Execute hard-stop prompt + branches per [phased-execution.md § Prompt](phased-execution.md#prompt) and following sections. Unconditional — SKILL.md Rule 11.
+2. Print hard-stop summary, including captured validate counts and the resolved profile ([phased-execution.md § Summary content](phased-execution.md#summary-content)).
+
+3. Execute hard-stop prompt + branches per [phased-execution.md § Prompt](phased-execution.md#prompt-pause-at-preview-branch-only) and following sections. Unconditional — SKILL.md Rule 11.
 
 On continue (either `Skip publish and continue` or `Continue to implementation` after publish): proceed to Step 9.6.
 
 ---
 
-# Phase 3 — Implementation (Steps 9.6 – 11.5)
+# Phase 3 — Implementation (Steps 9.6 – 9.8, 10.5, 11.5, 12)
 
-Steps 9.6 onwards wire connector task schemas, input/output values, conditions, SLA, and in-expression marker resolution. Full contract in [phased-execution.md § Phase 3](phased-execution.md#phase-3--implementation).
+Phase 3 wires everything that needs a `uip maestro case spec` round-trip: connector task schemas, task input/output values, the connector-bound condition rule upgrade, and in-expression marker resolution. Conditions and SLA were authored in Phase 2 — Phase 3 only edits `rule.uipath` (Step 10.5) and `$xref` markers (Step 11.5) inside them. Full contract in [phased-execution.md § Phase 3](phased-execution.md#phase-3--implementation).
+
+Step order: 9.6 → 9.7 → 9.8 → 10.5 → 11.5 → 12.
 
 ## Step 9.6 — Phase 3 re-entry
 
 Before any Phase 3 mutation:
 
 1. **Re-read `tasks.md`** — per Rule 7 of `SKILL.md`.
-2. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index.
+2. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index. **Also build the Step 10.5 worklist:** scan all four condition scopes (`nodes[stage].data.entryConditions`, `nodes[stage].data.exitConditions`, task `data.entryConditions`, `metadata.caseExitRules`) for every `wait-for-connector` rule whose `uipath.context` still holds the two `"placeholder"` entries, recording `(scope, stageId, taskId?, ruleId)` — `taskId` only for a task-entry rule, which a `(scope, stageId, ruleId)` triple cannot locate since a stage holds many tasks. **This worklist is an optimization only; Step 10.5 re-scans and owns the skip decision.** Never skip Step 10.5 on the strength of an empty worklist here.
 3. **Seed Phase 3 progress todos** — call TodoWrite with the section-level items below. Mark each `in_progress` on entry, `completed` on exit. Phase 2 todos (if any) are stale — replace, do not append.
    1. Wire connector task schemas (Step 9.7)
    2. Bind task I/O values (Step 9.8)
-   3. Add conditions (Step 10)
-   4. Configure SLA + escalation (Step 11)
-   5. Resolve in-expression `vars.$xref` markers (Step 11.5)
+   3. Upgrade connector-bound condition rules (Step 10.5) — omit only when Step 10.5's own four-scope scan finds no `"placeholder"` context entries
+   4. Resolve in-expression `vars.$xref` markers (Step 11.5)
 
    Inside each section, also seed per-T-entry sub-items (one per T-entry that section will Edit). Mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit returns success. Per-T-entry items are the audit trail under the per-section batched contract (per [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical)).
 
@@ -240,54 +295,39 @@ If a cross-task reference points to a task that does not exist in the just-Read 
 
 One validate at section end.
 
-## Step 9.9 — Preallocate SLA and escalation IDs
+## Step 10.5 — Upgrade connector-bound condition rules (gather-then-write)
 
-Before writing conditions, read `tasks.md §4.8`, `caseplan.json`, and `id-map.json`. Preallocate stable IDs for every SLA rule and escalation so a Step 10 `sla-status-change` condition — stage entry for an `enter-stage` response, task entry for `start-task` — can reference objects that Step 11 writes later:
+Phase 2 Step 10 wrote every `wait-for-connector` rule with a stub `uipath`. This step replaces each stub with the spec-minted block.
 
-1. Resolve each SLA target: `root`, or the stage ID for the named stage.
-2. Allocate `sla_` + 8 chars for every default/conditional SLA T-entry not already in `id-map.json`.
-3. If a target has escalation T-entries but no explicit default SLA T-entry, allocate one synthetic default SLA ID for that target.
-4. Allocate `esc_` + 6 chars for every escalation T-entry not already in `id-map.json`.
-5. Record target, display name, parent SLA T-number/default, and ID using the shapes in [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Reject duplicate display names within a target.
-6. Check all new IDs against existing caseplan IDs and `id-map.json`; regenerate collisions before continuing.
+**Phase A step 0 — scan, unconditionally.** Read `caseplan.json` and scan all four condition scopes (`nodes[stage].data.entryConditions`, `nodes[stage].data.exitConditions`, task `data.entryConditions`, `metadata.caseExitRules`) for every rule whose `uipath.context` still holds the two `"placeholder"` entries. **Skip this step only when that fresh scan returns empty** — never on the strength of the Step 9.6 worklist alone. A skipped-but-needed Step 10.5 ships `connectorKey: "placeholder"` in a case that passes `validate` and faults only at debug/run, so the skip predicate must be evidence, not assumption. The Step 9.6 worklist is an optimization; this scan is the authority, and re-running it is also the compaction-recovery path.
 
-This step changes only `id-map.json`; Step 11 emits the objects and MUST reuse these IDs. A condition T-entry resolves its `sla-display-name` — and, for an at-risk row only, its `escalation-display-name` — within the declared target, never by array index. A breach T-entry carries no escalation name and needs none.
+**Phase A — gather.** For each stub rule the scan found whose `type-id` / `connection-id` / `connector-key` resolved in planning:
 
-## Step 10 — Add conditions (per (scope, target) Edit batch)
+1. Run `get-connection` (each rule runs its own — never reuse).
+2. Run `uip maestro case spec --type trigger --activity-type-id <id> --connection-id <id> --input-details '<json>' --output json` per [connector-trigger-common.md § Target: connector-bound condition rule](connector-trigger-common.md#target-connector-bound-condition-rule).
+3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` (and `{{TRIGGER_REGISTRATION_KEY}}` when present) in `caseShape.context`; mint `var` / `id` / `elementId` on `caseShape.inputs` / `outputs` with `elementId = <ownerNodeId>-<ruleId>` — the stage id for stage-entry / stage-exit / task-entry rules, `root` for case-exit rules.
 
-One Read of `caseplan.json` at Step 10 entry. Group `tasks.md §4.7` entries by `(scope, target)` pair: each pair becomes one Edit replacing the relevant conditions array on its target node.
+Apply the output dedup rule against the pool that already holds every trigger, non-connector task, and connector task output (Step 9.7 ran first, so connector task outputs are already in it).
 
-| Scope | Target | Edit replaces |
-|---|---|---|
-| Stage entry | one stage | `nodes[stage].data.entryConditions` |
-| Stage exit | one stage | `nodes[stage].data.exitConditions` |
-| Task entry | one task | `data.entryConditions` on the task object |
-| Case exit | root | `metadata.caseExitRules` |
+Leave a rule stubbed when its connector is `<UNRESOLVED>` or its `case spec` call fails — that is the documented permanent-placeholder state, not an error. Log it and list it in the completion report.
 
-Skip the re-Read between sibling Edits. One validate at section end. Per-scope composition rules live in the matching plugin's `impl-json.md`:
+**Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per gathered rule setting **only that rule's `uipath`** — `serviceType`, `context`, `inputs`, `outputs`, `bindings` — plus the matching root-level Connection + FolderKey binding entries. Do not touch the rule's `id`, `rule`, or `conditionExpression`, and **never replace the enclosing `entryConditions` / `exitConditions` / `caseExitRules` array**: those are committed Phase 2 state. Skip the re-Read between sibling Edits.
 
-- Stage entry → [`plugins/conditions/stage-entry-conditions/impl-json.md`](plugins/conditions/stage-entry-conditions/impl-json.md)
-- Stage exit → [`plugins/conditions/stage-exit-conditions/impl-json.md`](plugins/conditions/stage-exit-conditions/impl-json.md)
-- Task entry → [`plugins/conditions/task-entry-conditions/impl-json.md`](plugins/conditions/task-entry-conditions/impl-json.md)
-- Case exit → [`plugins/conditions/case-exit-conditions/impl-json.md`](plugins/conditions/case-exit-conditions/impl-json.md)
+If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) after the rule write, before root bindings.
 
-> **Connector-bound rules need a CLI gather.** A `wait-for-connector` rule in any scope is NOT a pure JSON write — it requires a `uip maestro case spec --type trigger` call (like Step 9.7 connector tasks) to mint its `uipath` block, plus root bindings + IS-cache + deferred `bindings_v2` sync. Gather per `(scope, target)`, then write. See [connector-trigger-common.md § Target: connector-bound condition rule](connector-trigger-common.md#target-connector-bound-condition-rule). Full `validate` flags a missing `rule.uipath`/`context` (`connector activity missing`), not its internals.
+**Phase C — sync + validate.** Populate the IS connection cache and run the third batched `bindings_v2.json` regeneration per [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run) (point 3). Without it, rule-introduced Connection/Folder bindings and IS-cache entries don't land until the post-Phase-3 catch-all and `resource refresh` misses them. One validate at section end.
 
-> **Step 10 ends with a `bindings_v2` sync.** After all connector rules across the 4 scopes are written, run the third batched `bindings_v2.json` regeneration + IS-cache population — see [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run) (point 3). Without this third sync, rule-introduced Connection/Folder bindings + IS-cache entries don't land until the post-Phase-3 catch-all and `resource refresh` misses them.
-
-## Step 11 — SLA and escalation (per-target Edit batch)
-
-One Read of `caseplan.json` at Step 11 entry. Group `tasks.md §4.8` entries by target (root or stage). For each target, one Edit replacing that target's full `slaRules[]` array per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Skip the re-Read between sibling Edits. Supports per-conditional-rule escalations, secondary-stage SLA, and multi-recipient single rules. One validate at section end.
+On context-compaction mid-gather: re-Read `caseplan.json`, re-scan all four scopes for rules whose `uipath.context` still holds the two `"placeholder"` entries, re-run Phase A for those only. The stub marker makes this step idempotent and resumable.
 
 ## Step 11.5 — Resolve in-expression `vars.$xref` markers (whole-file pass)
 
-Runs after bindings (9.8), conditions (10), and SLA (11) — when every task / trigger / rule output is minted and deduped (the dedup pool spans tasks ∪ triggers ∪ rules, so a marker's source `.id` is not final until Step 10's rule outputs are minted). Resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` in ONE pass: one Read, then Edit each string value holding a marker — resolve the source through the common output-reference-ID algorithm and substitute bare `vars.<outputReferenceId>` (no leading `=`; the marker already sits inside `=js:`). Sink-blind: covers composite input payloads, `conditionExpression`, SLA `expression`, computed `=` outputs, and connector body fields in one place. An unresolved name-triple or reference ID is an ERROR (Check 4 below). Algorithm + pseudocode: [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115). One validate at section end.
+Runs after task I/O binding (9.8) and the connector rule upgrade (10.5) — when every task / trigger / rule output is minted and deduped (rule outputs mint last and take any collision suffix themselves, so a marker's task/trigger source `.id` is already final; 11.5 runs here because it is the last mutation before the validator). Conditions (Step 10) and SLA (Step 11) were authored back in Phase 2 with their markers left literal; this pass is where those resolve. Resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` in ONE pass: one Read, then Edit each string value holding a marker — resolve the source through the common output-reference-ID algorithm and substitute bare `vars.<outputReferenceId>` (no leading `=`; the marker already sits inside `=js:`). Sink-blind: covers composite input payloads, `conditionExpression`, SLA `expression`, computed `=` outputs, and connector body fields in one place. An unresolved name-triple or reference ID is an ERROR (Check 4 below). Algorithm + pseudocode: [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115). One validate at section end.
 
 ## Step 12 — End-of-Phase-3 validator pass
 
 > **Algorithm reference:** the per-check pseudocode + AskUserQuestion prompt templates + skill-response-per-pick details all live in [`plugins/variables/io-binding/impl-json.md § Binding Procedure`](plugins/variables/io-binding/impl-json.md#binding-procedure). This step is the orchestration hook; that doc is the algorithm. When in doubt, follow the impl-json doc.
 
-After all value bindings (Step 9.8), conditions (Step 10), SLA (Step 11), and marker resolution (Step 11.5) are written, invoke the end-of-Phase-3 validator — Checks 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11.
+After all value bindings (Step 9.8), the connector rule upgrade (Step 10.5), and marker resolution (Step 11.5) are written — with conditions (Step 10) and SLA (Step 11) already committed in Phase 2 — invoke the end-of-Phase-3 validator: Checks 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11.
 
 - **Check 1** — Resolve every `=vars.X` reference against `variables.{inputs, inputOutputs}[].id`. Scan all task input `value` fields, entry/exit condition expressions (stage and task), case-exit and trigger rule expressions, SLA expressions, and `=js:` expressions anywhere they appear. On unresolved → **AskUserQuestion** offering: (a) name the intended variable, (b) remove the reference, (c) continue with best-effort emit (entry logged under Open Items, runtime returns undefined).
 - **Check 2 — Out-arg producer presence** — For every formal Out-arg in `variables.outputs[]`, verify the producer/Default situation per [`io-binding/impl-json.md` § Check 2](plugins/variables/io-binding/impl-json.md):

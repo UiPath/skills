@@ -12,7 +12,7 @@ The skill emits the `23.0.0` top-level shape (`{ id, version, name, metadata, bi
 
 | Phase | Behavior |
 |---|---|
-| 2 — Prototyping | Informational validate, no halt on errors. |
+| 2 — Prototyping | Informational gate validate — `--skeleton-v2`, falling back to **full mode** ([case-commands.md § Phase 2 gate profile](case-commands.md#phase-2-gate-profile--probe-once-cache-fall-back-to-full-mode)), no halt on errors. |
 | 4 — Validate | Authoritative — `uip maestro case validate` accepts the top-level shape. Retry-and-fix on failure, 3-retry cap, hard stop on 3rd failure. |
 | 5 — Debug | Before the AskUserQuestion, print plain-text warning: `> uip maestro case debug may reject the top-level shape. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject schema — failure may be schema-related not case-bug-related` in build-issues.md. |
 | 6 — Publish | Before the AskUserQuestion, print plain-text warning: `> uip solution upload may reject the top-level shape until the CLI catches up. Failure non-fatal — caseplan.json still valid.` On failure, dump response to `tasks/upload-response.json`, re-show Phase 6 prompt. |
@@ -21,7 +21,9 @@ Skill stays emit-honest: JSON-shape correctness is the skill's job, downstream C
 
 ## Why phased
 
-Once `tasks.md` is generated, skill does **not** build full case in one pass. It builds **placeholder** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then wires detail (Phase 3 Implementation). Whether the boundary pauses is the user's up-front build-review preference (SKILL.md Rule 11): pause-at-preview stops for the visual review; straight-through narrates the milestone and continues. Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) follow; the debug and publish gates are unconditional. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
+Once `tasks.md` is generated, skill does **not** build full case in one pass. It builds the reviewable shape first (Phase 2 Prototyping) — stages, tasks, triggers, variables, **and the conditions and SLA that make the graph a flow** — then wires the connector detail and value bindings (Phase 3 Implementation). Whether the boundary pauses is the user's up-front build-review preference (SKILL.md Rule 11): pause-at-preview stops for the visual review; straight-through narrates the milestone and continues. Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) follow; the debug and publish gates are unconditional. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
+
+**The boundary sits at the CLI-gather line, not at a complexity line.** Phase 2 holds what the agent can write from data already in hand; Phase 3 holds the connector gathers — connector task schemas, task input `value`s, and connector rule `uipath` blocks — and the IDs those `uip maestro case spec` round-trips mint. The line is not absolute: a resolved event trigger runs its own `case spec` at Phase 2 Step 6.1, since the TriggerId it produces is a Step 6.2 prerequisite. Conditions and SLA/escalation reference only StageIds, TaskIds, and variable IDs — all minted in Phase 2 — so they are authored in Phase 2. This matters for the preview: edges are retired (Rule 20), so **conditions *are* the flow**. A preview without them shows disconnected boxes. The one exception is the `wait-for-connector` rule, whose `uipath` block requires `case spec`; Phase 2 writes it with a stub `uipath` and Phase 3 upgrades the stub in place.
 
 Decisions are front-loaded so the build can run unattended; the gates that remain protect real-world side effects (debug executes the case, publish ships it).
 
@@ -29,8 +31,8 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 
 | Phase | What gets built | Output | Hard stop on exit |
 |---|---|---|---|
-| **2 — Prototyping** | Solution + project, root case, global variables, stages, triggers (full), tasks (name + type, no value binding), placeholder tasks for unresolved | `caseplan.json` emitted; placeholder-profile validate run (structural errors only) | Pause-at-preview runs: `Publish for review` / `Skip publish and continue` / `Abort`. Straight-through runs: none — counts line, continue (Rule 11) |
-| **3 — Implementation** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
+| **2 — Prototyping** | Solution + project, root case, global variables, stages, triggers (full), tasks (name + type, no value binding), placeholder tasks for unresolved, **conditions (all 4 scopes; `wait-for-connector` rules as stub `uipath`)**, **SLA + escalation** | `caseplan.json` emitted; gate validate run | Pause-at-preview runs: `Publish for review` / `Skip publish and continue` / `Abort`. Straight-through runs: none — counts line, continue (Rule 11) |
+| **3 — Implementation** | Connector task schemas, task I/O value binding, connector-bound condition rule upgrade (stub → real `uipath`), `$xref` marker resolution | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Skip to Publish` |
 | **6 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Done` |
@@ -43,16 +45,31 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 - Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.
 - Stages — all StageIds generated and captured.
-- Edges — none authored (Rule 20); `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
+- Edges — none authored (Rule 20); `schema.edges` stays `[]`. Stage transitions are condition-driven (written at Step 10, below).
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
 - Entry-points input/output — `entry-points.json` `input`/`output` schemas refreshed from the declared In/Out arguments (Step 6.3, per [entry-points-sync.md](entry-points-sync.md)). Makes the Phase-2 publish-for-review contract correct; idempotent.
+
+### Conditions and SLA (full detail)
+
+Authored in Phase 2 — every reference they need exists by the time it is needed: StageIds (Step 7), TaskIds (Step 9), variable IDs (Step 6.2), and SLA/escalation IDs (Step 9.9, immediately below).
+
+- **SLA / escalation ID preallocation** (Step 9.9) — every `sla_` / `esc_` ID allocated into `id-map.json` so a `sla-status-change` condition can name the exact object Step 11 emits. Touches `id-map.json` only.
+- **Conditions, all 4 scopes** (Step 10) — stage-entry, stage-exit, task-entry, case-exit. Written per the matching `plugins/conditions/<scope>/impl-json.md`.
+- **SLA + escalation** (Step 11) — full `slaRules[]` per target (root or stage), reusing the Step 9.9 IDs.
+
+**`wait-for-connector` rules are the one exception.** Their `uipath` block needs a `case spec --type trigger` round-trip, so Phase 2 writes the rule with the **stub `uipath`** — `serviceType` plus the two `"placeholder"` context entries (`connectorKey`, `operation`), empty `inputs` / `outputs` / `bindings` — per [connector-trigger-common.md § Placeholder fallback](connector-trigger-common.md#placeholder-fallback). The rule is present, positioned, and validates; Phase 3 Step 10.5 replaces the stub with the spec-minted block. This is the same stub shape an unresolved connector keeps permanently, so there is one code path, not two.
+
+Consequences of writing rules before connector detail:
+
+- **Expressions referencing a connector task's output** must use the in-expression marker `vars.$xref('Stage','Task','output')`, not a bare `=vars.<id>` — those output IDs are minted at Step 9.7. Step 11.5 resolves every marker after all outputs exist. This is already the required form inside any `=js:` sink ([bindings-and-expressions.md](bindings-and-expressions.md)); nothing new is needed for it.
+- **Output-ID uniqueness ordering is unchanged.** Only `wait-for-connector` rules mint outputs, and those stay in Phase 3 Step 10.5 — after Step 9.7. The Check 8 dedup pool is still filled in the order triggers → non-connector tasks → connector tasks → rules.
 
 ### Tasks (shape depends on resolution state + task class)
 
 | Task class | Resolved resources | Phase 2 shape |
 |---|---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields (e.g. `action`'s `taskTitle`/`priority`/`recipient`/`labels`) populated per plugin — these are final at Step 2; only input `value`s defer to Phase 3. |
-| Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call in Phase 2** — schema discovery is deferred to Phase 3. |
+| Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call for connector TASKS in Phase 2** — task schema discovery is deferred to Step 9.7. (`wait-for-connector` condition rules are also spec-free in Phase 2 — stubbed at Step 10, upgraded at Step 10.5.) |
 | Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Placeholder task per Rule 8 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
 | `agent` / `api-workflow` built inline | Built + bound in Phase 1 at the Rule 17 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
 
@@ -60,20 +77,22 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 
 - Task input `value` bindings (literals, expressions, cross-task references).
 - Connector task input/output schemas.
-- Conditions of any scope (stage-entry, stage-exit, task-entry, case-exit).
-- SLA rules (default, conditional) and escalation rules.
+- The real `uipath` block on a `wait-for-connector` condition rule — the rule itself IS written, carrying a stub `uipath`.
+- Resolved `vars.$xref(...)` markers — written literally, resolved at Step 11.5.
 
 ### Phase 2 informational validate
 
-End of Phase 2 mutations, run placeholder-profile validate:
+End of Phase 2 mutations, run the gate validate. Resolve the profile per [case-commands.md § Phase 2 gate profile](case-commands.md#phase-2-gate-profile--probe-once-cache-fall-back-to-full-mode) — `--skeleton-v2` preferred, **full mode** as the fallback:
 
 ```bash
-uip maestro case validate "<caseplan.json path>" --skeleton --output json
+uip maestro case validate "<caseplan.json path>" --skeleton-v2 --output json
 ```
 
-`--skeleton` runs structural checks only (nodes, edges, identity, types, topology). Skips tasks, SLAs, escalations, and entry/exit rules — all unbound at this gate, filled in Phase 3.
+`--skeleton-v2` is specified to run structural checks (nodes, edges, identity, types) **plus** entry/exit rules, SLAs, and escalations — what Phase 2 now writes — while skipping task input `value` binding and connector task schemas. **It ships in no released CLI yet, so full mode is the live path today**; the probe exists so the gate adopts the narrower profile automatically once it lands.
 
-**Informational — do NOT halt on errors or warnings.** Capture error and warning counts (and optionally first few messages); include in hard-stop summary. Errors that remain are structural (unreachable/orphan stage, missing trigger, duplicate names) and meaningful — user inspects via the existing `Abort` option before continuing.
+On a CLI that rejects the flag, fall back once to **full mode** (no profile flag) — never to legacy `--skeleton`, which omits exactly the rules and SLA this gate exists to check. Full mode does not false-positive on Phase 2 state: a complete Phase-2 caseplan validates clean with unbound task inputs, connector tasks lacking `data.inputs`, and stub `wait-for-connector` rules. The fallback costs a little extra validation work and loses no coverage.
+
+**Informational — do NOT halt on errors or warnings.** Capture error and warning counts (and optionally first few messages); include in hard-stop summary. Remaining errors are structural or rule-level (unreachable/orphan stage, missing trigger, duplicate names, a stage with no completing exit, a case with no completion rule) and meaningful — user inspects via the existing `Abort` option before continuing.
 
 ### Phase 2 hard stop
 
@@ -91,12 +110,12 @@ The Phase 4 retry-cap, Phase 5 debug-consent, and Phase 6 publish stops below ar
 
 Print (before the prompt on the pause branch; as the continuation line otherwise):
 
-1. Counts: stages / primary stages / secondary stages / triggers / tasks total / placeholder tasks / unresolved resources.
-2. Validate result (placeholder-profile): `<N> errors, <M> warnings` — remaining errors are structural (unreachable/orphan stage, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
+1. Counts: stages / primary stages / secondary stages / triggers / tasks total / placeholder tasks / unresolved resources / condition rules / SLA rules / escalations / stub `wait-for-connector` rules awaiting Phase 3.
+2. Validate result — use the exact line for the resolved profile from [case-commands.md § Phase 2 gate profile](case-commands.md#phase-2-gate-profile--probe-once-cache-fall-back-to-full-mode). Name the profile so the reader knows what was covered. Surfacing counts is enough; do not dump the full error list unless the user asks.
 3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
 4. Suggested next steps:
-   - Straight-through: `Suggested next steps: I'll continue wiring the implementation now; say stop if you want to inspect the skeleton first.`
-   - Pause-at-preview: `Suggested next steps: publish the skeleton for visual review, continue locally without preview, or abort and inspect the files.`
+   - Straight-through: `Suggested next steps: I'll continue wiring the implementation now; say stop if you want to inspect the case shape first.`
+   - Pause-at-preview: `Suggested next steps: publish the case shape for visual review, continue locally without preview, or abort and inspect the files.`
 
 Do not enumerate every task. Studio Web visualization fills that role after publish.
 
@@ -104,7 +123,7 @@ Do not enumerate every task. Studio Web visualization fills that role after publ
 
 Use **AskUserQuestion** with three options:
 
-- `Publish for review` — upload skeleton to Studio Web for visual review.
+- `Publish for review` — upload the case shape to Studio Web for visual review.
 - `Skip publish and continue` — proceed directly to Phase 3.
 - `Abort` — stop the skill; leave artifacts in place.
 
@@ -113,9 +132,16 @@ Use **AskUserQuestion** with three options:
 1. Run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Capture full upload response.
 2. Parse `DesignerUrl` from response.
 3. **MUST emit DesignerUrl as plain-text output to user BEFORE invoking AskUserQuestion**, on its own line:
-   `Skeleton published. Review at: <DesignerUrl>`
+   `Case shape published. Review at: <DesignerUrl>`
+
+   When the count of stub `wait-for-connector` rules is non-zero, print one further line of its own — do NOT append to the URL line, which would break auto-linking:
+
+   `Connector-bound rules show as unresolved in this preview; they are wired in the next step.`
+
+   Studio Web flags the unresolved connector, so a reviewer who is not told will read it as a defect.
+
    Never bundle URL only into question body — some renderers display question before surrounding prose, leaving user without URL until after they answer.
-4. Print `Suggested next steps: inspect the skeleton in Studio Web, then continue implementation here or abort and keep the artifacts for manual review.`
+4. Print `Suggested next steps: inspect the case shape in Studio Web, then continue implementation here or abort and keep the artifacts for manual review.`
 5. Only after URL line and suggested next steps are emitted, invoke **AskUserQuestion** (second prompt): `Continue to implementation` / `Abort`.
 
 If `DesignerUrl` missing from response, dump full upload response to `tasks/upload-response.json`, print path, continue to prompt — user can recover URL from file.
@@ -147,31 +173,28 @@ Phase 3 begins after the straight-through continuation, or after the user select
    - Trigger ID (from `schema.nodes[]` where `type === "case-management:Trigger"`).
    - Task name → TaskId per stage (from `schema.nodes[<stage>].data.tasks[][]`).
    - Variable name → `var` ID (from top-level `variables.{inputs,outputs,inputOutputs}`).
+   - Stub `wait-for-connector` rule → `(scope, stageId, taskId?, ruleId)` — every rule whose `uipath.context` still holds the two `"placeholder"` entries. `taskId` is needed for a task-entry rule (a stage holds many tasks); note `elementId` still uses `stageId` even there. A head start for Step 10.5, which re-scans and owns the skip decision. Scan all four scopes: `nodes[stage].data.entryConditions`, `nodes[stage].data.exitConditions`, task `data.entryConditions`, and `metadata.caseExitRules`.
 3. Optionally cross-check against `id-map.json` if JSON-strategy plugins wrote one. `caseplan.json` is source of truth; `id-map.json` is speed-up.
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
+
+> **Phase 2 wrote conditions and SLA — do not rebuild them.** `caseplan.json` at Phase 3 entry already carries every condition rule and `slaRules[]` entry. Phase 3 touches them in exactly two places: Step 10.5 replaces a stub `rule.uipath` in place, and Step 11.5 substitutes `$xref` markers in place. Any Phase 3 write that replaces a whole `entryConditions` / `exitConditions` / `caseExitRules` / `slaRules` array is a defect — it re-derives from `tasks.md` state the build already committed and risks dropping Phase 2 repairs. The repair-preservation contract in [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical) applies.
 
 ### Phase 3 — Execution order
 
 After re-entry:
 
-1. **Connector task detail** — for each connector task in `tasks.md`, run plugin's `impl-json.md` detail steps: `case spec --type {activity,trigger} --input-details`, then mint `data.context[]` / `data.inputs[]` / `data.outputs[]` from the populated `caseShape` (placeholder substitution + var/id minting).
-2. **Task I/O value binding (all task classes)** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Applies to both non-connector and connector tasks. For each task's inputs in `tasks.md` order, write literal, expression, or cross-task reference (resolved to `=vars.<outputReferenceId>` through the common `.id`-based resolver) into `task.data.inputs[i].value`. Connector tasks have `data.inputs[]` schema written in step 1; value binding happens here in step 2, same as non-connector tasks.
-3. **SLA/escalation ID preallocation** — Step 9.9 allocates every `sla_`/`esc_` ID in `id-map.json` before conditions. This lets `sla-status-change` rules — stage entry (`enter-stage`) or task entry (`start-task`) — reference the exact SLA object, plus the escalation object for an at-risk rule, that Step 11 emits.
-4. **Conditions** — per-scope plugin `impl-json.md`:
-   - Stage entry conditions
-   - Stage exit conditions
-   - Task entry conditions (depends on TaskIds from Phase 2)
-   - Case exit conditions
-5. **SLA + escalation** — per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Group `tasks.md §4.8` by target (root or stage); write full `slaRules[]` in one mutation per target, reusing Step 9.9 IDs.
-6. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped and bindings/conditions/SLA are written, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<outputReferenceId>` through the same resolver in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple or reference ID → ERROR.
-7. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-11 (=vars.X resolution, Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness, entry-point schema parity, bindings sidecar parity, output-ID uniqueness, resolved-resource emission and repair preservation, formal-arg slot ID format, resourceKey self-consistency). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Checks 6-11 are non-interactive: on mismatch auto re-run/regenerate/re-mint once where the check permits it; Check 6 logs if still divergent, while Checks 7, 9, 10, and 11 halt before Phase 4 if still divergent. Never HALT otherwise.
+1. **Connector task detail (Step 9.7)** — for each connector task in `tasks.md`, run plugin's `impl-json.md` detail steps: `case spec --type {activity,trigger} --input-details`, then mint `data.context[]` / `data.inputs[]` / `data.outputs[]` from the populated `caseShape` (placeholder substitution + var/id minting).
+2. **Task I/O value binding (all task classes) (Step 9.8)** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Applies to both non-connector and connector tasks. For each task's inputs in `tasks.md` order, write literal, expression, or cross-task reference (resolved to `=vars.<outputReferenceId>` through the common `.id`-based resolver) into `task.data.inputs[i].value`. Connector tasks have `data.inputs[]` schema written in step 1; value binding happens here in step 2, same as non-connector tasks.
+3. **Connector-bound condition rule upgrade (Step 10.5)** — for each `wait-for-connector` rule that Phase 2 Step 10 wrote with a stub `uipath`, run `case spec --type trigger --input-details`, replace the stub with the spec-minted block, append the root Connection + FolderKey bindings, and run the rule-scope `bindings_v2` sync. The rule's `id`, `conditionExpression`, scope, and position are already correct from Step 10 — **only `rule.uipath` changes; never rewrite the surrounding conditions array.** Rules whose connector is genuinely `<UNRESOLVED>` keep the stub permanently. Runs after Step 9.7 so rule outputs dedup against connector task outputs already in the pool.
+4. **In-expression marker resolution (Step 11.5)** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<outputReferenceId>` through the same resolver in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Conditions and SLA were authored in Phase 2 with their markers left literal — this pass is where they resolve. Unresolved triple or reference ID → ERROR.
+5. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-11 (=vars.X resolution, Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness, entry-point schema parity, bindings sidecar parity, output-ID uniqueness, resolved-resource emission and repair preservation, formal-arg slot ID format, resourceKey self-consistency). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Checks 6-11 are non-interactive: on mismatch auto re-run/regenerate/re-mint once where the check permits it; Check 6 logs if still divergent, while Checks 7, 9, 10, and 11 halt before Phase 4 if still divergent. Never HALT otherwise.
 
 Phase 3 produces a `caseplan.json` that should pass authoritative validation. No hard stop (no AskUserQuestion gate) on Phase 3 exit — agent proceeds directly to Phase 4. Sole blockers: Check 7 parity still divergent after regeneration, any Check 9 resolved-resource emission/preservation failure, any Check 10 formal-arg slot id still malformed after the repair pass, or any Check 11 resourceKey still self-inconsistent after the repair pass (halt per [`implementation.md § Step 12`](implementation.md)).
 
 ## Phase 4 — Validate
 
-End of detail mutations. Run full-mode validate (omit `--skeleton`; defaults to full):
+End of detail mutations. Run full-mode validate (omit every skeleton flag — `--skeleton-v2` and `--skeleton` both narrow the profile; full is the default):
 
 ```bash
 uip maestro case validate "<caseplan.json path>" --output json

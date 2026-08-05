@@ -382,7 +382,21 @@ Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of
 
 After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Skip if `case spec` failed.
 
-> **`bindings_v2.json` regeneration is deferred and batched.** Runs at three points, not per-target: end of Phase 2 Step 9 (non-connector tasks), end of Phase 3 Step 9.7 (connector tasks + triggers), and end of Phase 3 **Step 10** (connector condition rules across all 4 scopes). See [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run).
+> **`bindings_v2.json` regeneration is deferred and batched.** Runs at three points, not per-target: end of Phase 2 Step 9 (non-connector tasks), end of Phase 3 Step 9.7 (connector tasks + triggers), and end of Phase 3 **Step 10.5** (connector condition rules across all 4 scopes). See [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run).
+
+---
+
+## Condition-rule phase contract
+
+Shared by all four condition plugins. Each plugin's `wait-for-connector` section links here rather than restating it.
+
+**Greenfield Phase 2 Step 10 — always write the stub `uipath`. Do NOT call `case spec`.** The stub is `serviceType` + the two `"placeholder"` context entries (`connectorKey`, `operation`) + empty `inputs` / `outputs` / `bindings` ([§ Placeholder fallback](#placeholder-fallback)). This applies to **every** connector, resolved or not: a resolved one is minted at Phase 3 Step 10.5; an `<UNRESOLVED>` one keeps the stub permanently. A *bare* rule with no `uipath` at all is invalid either way — full `validate` errors `connector activity missing` and Studio Web rejects it. The enclosing condition object's own fields (`type`, `marksStageComplete` / `marksCaseComplete`, `exitToStageId`, `displayName`, `isInterrupting`) are written here and are final; Step 10.5 never touches them.
+
+**Brownfield (no phases) — write the real `uipath` in one pass.** A targeted edit to an existing `caseplan.json` ([brownfield.md](brownfield.md)) never reaches a Step 10.5, so run [§ Procedure](#procedure-phase-3) immediately, including root bindings and the `bindings_v2` sync. Stub only when the connector is genuinely `<UNRESOLVED>`.
+
+**Rule output binding is never entered at Phase 2 Step 10.** The stub's `outputs[]` is empty by construction, so there is nothing to dispatch and nothing to log. The dispatch in [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) runs after the real `uipath` exists — Step 10.5 (greenfield) or inline (brownfield) — as the last step before root bindings.
+
+**Post-write verification has two passes.** After Step 10 (stub): `rule.uipath` exists with `serviceType` `"Intsvc.WaitForEvent"`, exactly the two `"placeholder"` context entries, `inputs` / `outputs` / `bindings` empty, and **no** ConnectionId/FolderKey root bindings — expecting populated context or bindings here is wrong and must not trigger a `case spec` call. After Step 10.5 or a brownfield write (real): `context[]` populated (placeholders substituted), inputs/outputs `elementId` in the scope's form, and the ConnectionId + FolderKey root bindings present.
 
 ---
 
@@ -403,6 +417,10 @@ A `wait-for-connector` rule inside a condition (`…conditions[].rules[i][j]`) b
 `<ownerNodeId>` = the **stage id** for stage-entry / stage-exit / task-entry rules (all stage-scoped); **`root`** for case-exit rules (which live under `metadata.caseExitRules`).
 
 ### Procedure (Phase 3)
+
+> **Two-phase split.** Phase 2 Step 10 writes the rule with a **stub `uipath`** — its position, `id`, `conditionExpression`, and scope are final there, and the stub clears `validate`. This procedure is the Phase 3 **Step 10.5** upgrade: it replaces `rule.uipath` in place. Steps 1 (planning resolution) and 5 (the rule JSON) describe the whole rule for reference; at Step 10.5 only the `uipath` block changes — never rewrite the enclosing conditions array. A rule whose connector stays `<UNRESOLVED>` never reaches this procedure and keeps its stub ([§ Placeholder fallback](#placeholder-fallback)).
+>
+> **Brownfield has no phases — run this procedure in one pass.** A targeted edit to an existing `caseplan.json` ([brownfield.md](brownfield.md)) never reaches a Step 10.5, so write the real `uipath`, root bindings, and `bindings_v2` sync immediately. The stub-then-upgrade split is greenfield-only; a stub left in a live case validates clean and faults at run time.
 
 1. Resolve the connector in planning exactly as the task does — [§ Planning Pipeline](#planning-pipeline). The condition plugin's `planning.md` records the same fields (`type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter`). **Event parameters and filter accept `=vars.X` / `=js:` expressions exactly like the task** — they compile into `rule.uipath.context` / filter via `case spec --type trigger --input-details` (`input-values` + filter). Only the literal request `body` input is value-less (an event sends no body).
 2. Run `case spec --type trigger --input-details` ([§ Phase 3 Implementation](#phase-3-implementation--single-cli-call)) to mint the populated `caseShape`.
@@ -456,7 +474,7 @@ Rule `id`s are opaque to the FE (no format validation on import) — `Rule_xxxxx
 ### Caveats
 
 - **Not a case-start trigger.** A connector rule compiles to an in-flight wait (ReceiveTask / event subprocess), so it gets **no entry-points.json entry** and **no rule-specific registration key** — FE `PackagingUtil` trigger registration is gated on `Intsvc.EventTrigger` start events only, which a rule is not. If the `case spec` caseShape carries a `metadata.body.bindings[Property]` registration entry (event-parameter connectors), substitute it exactly as the task does (Step 3 / Step 4); there is nothing rule-specific.
-- **Full `validate` requires `rule.uipath` + `context`** — absent → `connector activity missing`. It does NOT check the `uipath` *internals* (a wrong `serviceType` passes), so a clean validate confirms the block is *present*, not that the connector *resolves* — confirm in Studio Web. Unresolved → stub placeholder (§ Placeholder fallback). `--skeleton` (Phase 2) skips condition rules.
+- **Full `validate` requires `rule.uipath` + `context`** — absent → `connector activity missing`. It does NOT check the `uipath` *internals* (a wrong `serviceType` passes), so a clean validate confirms the block is *present*, not that the connector *resolves* — confirm in Studio Web. Unresolved → stub placeholder (§ Placeholder fallback). Legacy `--skeleton` skips condition rules entirely; `--skeleton-v2` and full mode both check them, which is why the Phase 2 gate uses one of those two — see [case-commands.md § Phase 2 gate profile](case-commands.md#phase-2-gate-profile--probe-once-cache-fall-back-to-full-mode).
 
 ### Placeholder fallback
 
@@ -482,7 +500,12 @@ On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connecto
 }
 ```
 
-This stub is a **deliberate mock** — it clears `validate` only. Studio Web flags the unresolved connector, and the rule **fails at debug/run until resolved** (it cannot wait on a `"placeholder"` connector). It still skips the dependent subsystems: io-binding has no real `outputs[]` to wire, no Connection/Folder bindings, no IS-cache entry, no `bindings_v2` regen for this rule. Stamp the `tasks.md` entry with `<UNRESOLVED>` markers per Rule 8, log per [logging/impl-json.md](plugins/logging/impl-json.md), and list it in the completion report as **"replace the `placeholder` connector values before debug / publish-to-run."** Upgrade by re-running the [§ Procedure](#procedure-phase-3) once the connector resolves; same upgrade flow as `placeholder-tasks.md § Upgrade Procedure` for connector tasks.
+**The stub has two lifetimes — do not conflate them.**
+
+- **Transient (the normal path).** Every `wait-for-connector` rule is stubbed at Phase 2 Step 10 so the rule is present and reviewable in the preview without a CLI round-trip. Phase 3 Step 10.5 upgrades it. Nothing is logged and nothing goes in the completion report — this is routine build sequencing, not a defect.
+- **Permanent (the fallback path).** The connector is `<UNRESOLVED>` or its `case spec` call failed, so Step 10.5 leaves the stub in place. Only this case is a deliberate mock: it clears `validate` only. Studio Web flags the unresolved connector, and the rule **fails at debug/run until resolved** (it cannot wait on a `"placeholder"` connector). It skips the dependent subsystems too: io-binding has no real `outputs[]` to wire, no Connection/Folder bindings, no IS-cache entry, no `bindings_v2` regen for this rule. Stamp the `tasks.md` entry with `<UNRESOLVED>` markers per Rule 8, log per [logging/impl-json.md](plugins/logging/impl-json.md), and list it in the completion report as **"replace the `placeholder` connector values before debug / publish-to-run."**
+
+Both lifetimes share one shape, so the upgrade is the same operation either way — re-run the [§ Procedure](#procedure-phase-3). Step 10.5 does it automatically for resolvable connectors; a user re-runs it after registering a resource that was missing. Same upgrade flow as `placeholder-tasks.md § Upgrade Procedure` for connector tasks. Because the stub's two `"placeholder"` context entries are the marker, the scan is idempotent: whatever is still stubbed is still pending.
 
 ---
 

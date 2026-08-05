@@ -128,16 +128,54 @@ uip maestro case pack ./my-case-project ./dist --name MyCase --version 2.0.0
 Validate a case management JSON file against case management rules.
 
 ```bash
+# full mode — Phase 4, and the Phase 2 gate on every CLI shipping today
 uip maestro case validate <file> --output json
+# narrower Phase 2 gate profile — not in any released CLI yet; probed for, adopted when it lands
+uip maestro case validate <file> --skeleton-v2 --output json
+# legacy structural profile — never the Phase 2 gate (skips rules + SLA)
 uip maestro case validate <file> --skeleton --output json
 ```
 
 | Flag | Description |
 |------|-------------|
 | `<file>` | **(required)** Path to the case management JSON file |
-| `--skeleton` | Skeleton profile — runs structural checks only (nodes, edges, identity, types, topology). Skips tasks, SLAs, escalations, and entry/exit rules. Use during skeleton-phase authoring before tasks/conditions/SLA are wired. |
+| `--skeleton-v2` | **Preferred profile for the Phase 2 gate.** Structural checks (nodes, edges, identity, types) **plus** entry/exit rules, SLAs, and escalations. Skips task input `value` binding and connector task schemas. Matches what Phase 2 writes. **Not in any published CLI as of uip 1.199 — treat full mode as the working default until it ships.** |
+| `--skeleton` | **Legacy skeleton profile.** Structural checks only. Skips tasks, SLAs, escalations, and entry/exit rules. Never the Phase 2 gate profile — it omits exactly what Phase 2 writes. |
 
 Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported inline.
+
+### Phase 2 gate profile — probe once, cache, fall back to FULL mode
+
+The Phase 2 gate needs a profile that checks conditions and SLA. Two do: `--skeleton-v2` (once it ships) and plain **full mode**. Legacy `--skeleton` does not, so it is never the fallback.
+
+Resolve the profile at the gate validate and cache the answer in reasoning. There is normally one gate call per build, so the cache matters only on a re-entered or resumed run — never probe twice.
+
+1. Run with `--skeleton-v2`.
+2. **Supported** — the command validated: envelope has `"Code": "CaseValidate"` (success), or any envelope whose `ErrorCode` is `"unknown_error"` (it ran and reported a problem — `Instructions` usually carries `[error]` / `[warning]` lines, but a plain message like `File not found` is the same branch). Cache `profile = skeleton-v2`.
+3. **Unsupported — the default branch.** Anything that does not match step 2 is treated as unsupported. Typically `"ErrorCode": "invalid_argument"`, a `Message` containing `unknown option`, or exit code 3. Re-run **once** with **no profile flag** (full mode). Cache `profile = full`. **Do not log an issue** — until `--skeleton-v2` ships this is the normal path, and the logging schema's `WARNING` severity would misdescribe it. Naming the profile in the summary line is the whole disclosure.
+4. **Neither works** — full mode also fails to produce a parseable envelope. Cache `profile = none`, skip the gate, continue. The gate is advisory; its absence never halts a build.
+
+**Discriminate on the failure envelope, not on `Code`.** The three real shapes:
+
+| Outcome | Envelope | Exit |
+|---|---|---|
+| Valid | `{"Result":"Success","Code":"CaseValidate","Data":{…,"Status":"Valid"}}` | 0 |
+| Found errors | `{"Result":"Failure","Message":"Validation failed for <path>","Instructions":"Found N error(s)…\n  - [error] …","ErrorCode":"unknown_error"}` — **no `Code` field** | 1 |
+| Flag unsupported | `{"Result":"ValidationError","ErrorCode":"invalid_argument","Message":"error: unknown option '--skeleton-v2'…"}` | 3 |
+
+Two traps here. A genuine validation failure carries **no** `Code` field, so testing for `Code == "CaseValidate"` misses the case it looks like it covers. And the unsupported-flag envelope's `Result` is literally `"ValidationError"` — do **not** read that as "the profile ran and found problems." Test `ErrorCode`: `invalid_argument` means the flag is unsupported; `unknown_error` means it validated and found real errors.
+
+**Full mode is a safe gate profile — it does not false-positive on Phase 2 state.** Verified on uip 1.199: a complete Phase-2 caseplan returns `Status: Valid` with a connector task carrying only `typeId` + `connectionId` and no `data.inputs`, non-connector tasks with `value: ""`, root `slaRules` + escalation, an `sla-status-change` entry rule, and stub `wait-for-connector` rules. Full mode also catches the rule defects `--skeleton` reports as `Valid` — a dangling `selectedStageId` (`[error] Entry rule … stage selection invalid`) and an all-`marksCaseComplete:false` case (`[error] Case has no completion rules`). So the fallback loses nothing at the gate; it only spends a little more validation work.
+
+**Name the resolved profile in every user-visible summary line:**
+
+| Profile | Summary line |
+|---|---|
+| `skeleton-v2` | `Validate (skeleton-v2): <N> errors, <M> warnings — structure, conditions, and SLA checked. Task input values and connector schemas are checked at Phase 4.` |
+| `full` | `Validate (full mode — skeleton-v2 unavailable on this CLI): <N> errors, <M> warnings — structure, conditions, and SLA checked.` |
+| `none` | `Validate unavailable — structure, conditions, and SLA are all checked at Phase 4.` |
+
+Both working profiles check the rules, so neither line needs a coverage caveat. Legacy `--skeleton` is not one of them and is never the gate profile.
 
 ---
 
@@ -195,7 +233,7 @@ Returns a `ConnectorTaskSpec` with `identity`, `operation`, `connection`, `input
 
 ## uip maestro case tasks describe
 
-Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution for **non-connector tasks** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`). For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
+Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 2 Step 9 execution for **non-connector tasks** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`). For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
 
 ```bash
 uip maestro case tasks describe --type <type> --id <id> --output json

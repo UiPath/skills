@@ -4,7 +4,9 @@ direct-json: supported
 
 # sla — JSON Implementation
 
-> **Phase split.** Phase 3 only. Phase 2 does not write SLA or escalation rules. See [`../../phased-execution.md`](../../phased-execution.md).
+> **Phase split.** Written in Phase 2 (Step 11), reusing the IDs preallocated at Step 9.9. No connector dependency — targets are `root` or a StageId, and expressions read case variables. See [`../../phased-execution.md`](../../phased-execution.md).
+>
+> **Brownfield (no phases).** A targeted edit to an existing `caseplan.json` ([`../../brownfield.md`](../../brownfield.md)) has no Step 9.9, and `id-map.json` may be absent — do not synthesize one. Mint each `sla_` / `esc_` ID inline at write time and check it against the IDs already present in the caseplan before use. The "reuse the preallocated IDs" rule below is greenfield-only.
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).
 
@@ -125,7 +127,7 @@ Phase 1 runs the identity resolver (see [`planning.md` § Identity Resolution](p
 { "scope": "User", "target": "<UNRESOLVED: user-uuid for manager@corp.com>", "value": "manager@corp.com" }
 ```
 
-List every unresolved recipient in the completion report (per SKILL.md § Completion Output step 4) so the user can patch externally. Do not call an identity service from the JSON path — resolution is Phase 1's responsibility; Phase 3 just transcribes whatever `tasks.md` carries.
+List every unresolved recipient in the completion report (per SKILL.md § Completion Output step 4) so the user can patch externally. Do not call an identity service from the JSON path — resolution is Phase 1's responsibility; Step 11 just transcribes whatever `tasks.md` carries.
 
 ## Expression translation
 
@@ -140,6 +142,8 @@ This file writes the SLA **clock** and its escalation notifications. The **respo
 - **exit-stage / exit-case** — a stage-exit or `metadata.caseExitRules[]` row.
 
 A breach rule references the SLA alone (`slaId`, no `escalationId`), so a breach response does **not** require an escalation to exist here. An at-risk response does: it needs a concrete at-risk escalation on that same SLA.
+
+> **Cross-task output references inside an SLA `expression` use the marker, always.** Write `vars.$xref('Stage','Task','output')`, never a bare `=vars.<id>` — Step 11.5 resolves every marker once all outputs are minted and deduped (SKILL.md Rule 10, [bindings-and-expressions.md](../../bindings-and-expressions.md)). This holds for connector and non-connector producers alike.
 
 ## Post-write validation
 

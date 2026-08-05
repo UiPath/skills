@@ -69,6 +69,9 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 12. **Validate after every section's batch — with exceptions.** Run `uip maestro case validate <file> --output json` after each `tasks.md` section batch completes (per § Per-section batch write contract below). One validate per section, not one per T-entry. Fixing errors at the section boundary is cheaper than chasing a cascade.
     - **Exception — case plugin (T01):** A case-only caseplan is known-invalid by design (no stage nodes, so the case cannot be entered). Skip `uip maestro case validate` after T01; a cheap `JSON.parse` + root/trigger shape check is the substitute — see [plugins/case/impl-json.md § Post-write validation](plugins/case/impl-json.md#post-write-validation).
     - **Exception — stages plugin (pilot):** A stages-only caseplan is also known-invalid (stages have no entry conditions yet). The plugin's validation parity is captured in the fixture instead.
+    - **Exception — every Phase 2 section boundary BEFORE §4.7 / §4.8.** Conditions arrive at Step 10 (§4.7) and `slaRules[]` at Step 11 (§4.8), so until then the caseplan legitimately has no rules and full validate reports it. Expected at these boundaries and NOT to be repaired: `Case has no completion rules`, `Case has no stage with a Case Entered entry rule`, `Stage has no entry rules`, `Task has no entry rules`. **Every available "fix" is explicitly forbidden** — injecting stage conditions at Step 7 or a task `entryCondition` at Step 9 duplicates the Step 10 write and corrupts `displayName` indexing (§ What NOT to Do, and Pre-flight Item 10). Record and continue.
+    - **Exception — §4.7 conditions:** an `sla-status-change` rule's `slaId` resolves only after Step 11 emits `slaRules[]`, so `The SLA referenced by rule '<name>' no longer exists` is expected at this boundary (that error alone — with `slaRules[]` absent the escalation error does not fire). Record and continue; never repair it. Dropping `escalationId` or the rule to silence it silently converts at-risk to breach ([sla-response-shapes.md](sla-response-shapes.md)).
+    - **None of these consume a retry.** An expected error is recorded and passed over — it never triggers a repair attempt and never counts toward the 3-retry cap.
 
 ---
 
@@ -208,7 +211,9 @@ Procedure per section:
 
 **Audit trail via TaskUpdate.** Reviewers see T-by-T progress in the todo log, not in the file diff. Each plugin seeds TaskCreate items keyed by T-number; mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit/Write returns success. The transcript shows one or N writes per section — what changes is the dropped re-Read between siblings and the dropped standalone narration turns.
 
-**CLI-gated sections — gather-then-write.** Where each T-entry needs its own CLI call before its JSON shape is known (Phase 2 §4.6 non-connector `tasks describe`; Phase 3 §9.7 connector `case spec`): run all CLI calls first, collect results in reasoning, then enter the Read → N-Edits → validate batch.
+**CLI-gated sections — gather-then-write.** Where each T-entry needs its own CLI call before its JSON shape is known (Phase 2 §4.3 resolved event trigger `case spec`, §4.6 non-connector `tasks describe`; Phase 3 §9.7 connector `case spec`; Phase 3 §10.5 connector condition rule `case spec`): run all CLI calls first, collect results in reasoning, then enter the Read → N-Edits → validate batch.
+
+Phase 2 §4.7 conditions and §4.8 SLA are **not** CLI-gated — write them straight from `tasks.md`. A `wait-for-connector` rule is written with a stub `uipath` there and its CLI gather happens later, at §10.5.
 
 **Recovery.** On any mid-batch interruption (Edit failure, context compact, abort): re-Read `caseplan.json` + `tasks.md`, scan for next un-applied T-entry, resume from there. No sidecar checkpoint file. For CLI-gated sections, re-run the CLI calls for un-applied entries — typically cheap.
 
@@ -216,9 +221,9 @@ Procedure per section:
 
 **Whole-file Write outside T01.** Permitted only at section boundaries for sections with ≥10 T-entries, per the procedure above. Forbidden mid-section (between T-entries within the same section) — that bypasses the Read snapshot and risks field drops.
 
-**Cap single Write output at ~15K tokens / ~40KB.** When a section's combined output would exceed this, do NOT collapse into one Write — split by phase: Phase 2 emits the skeleton (root + nodes + variables, `edges` stays `[]`, empty `data` on tasks); Phase 3 then fills `data.context` / `data.inputs` / `data.outputs` / conditions / SLA via per-section Edits onto the already-populated nodes. A single Write turn beyond ~15K out tok pays ~150s inference latency and concentrates field-drop risk; the Phase 2 → Phase 3 split spreads the same work across smaller turns with intermediate validate gates. Concretely, for a case with ≥40 tasks or ≥8 stages: never emit the full populated caseplan.json in one Write — always Phase 2 skeleton (small Write) → Phase 3 fill (per-section Edits on populated nodes).
+**Cap single Write output at ~15K tokens / ~40KB.** When a section's combined output would exceed this, do NOT collapse into one Write — keep the per-section cadence: Phase 2 emits the structural skeleton first (root + nodes + variables, `edges` stays `[]`, empty `data` on tasks), then conditions and `slaRules[]` as their own Phase 2 sections; Phase 3 then fills `data.context` / `data.inputs` / `data.outputs` and upgrades stub `rule.uipath` blocks via per-section Edits onto the already-populated nodes. A single Write turn beyond ~15K out tok pays ~150s inference latency and concentrates field-drop risk; the per-section split spreads the same work across smaller turns with intermediate validate gates. Concretely, for a case with ≥40 tasks or ≥8 stages: never emit the full populated caseplan.json in one Write.
 
-**Forbidden: build-assembler helper scripts.** Writing `/tmp/build-caseplan.js`, `/tmp/gen-tasks.py`, or any script that assembles a skill artifact and pipes/writes it to disk is a Rule 13 violation — regardless of `/tmp` placement, "mechanical copy" framing, or "avoid Read+Write churn" rationale. The script-write + script-run + script-output-to-file pattern bypasses the tool-call audit trail Rule 13 protects. If the artifact is too large for a single Write turn, apply the ~15K-token Write cap and Phase 2 → Phase 3 split above. There is no helper-script escape hatch.
+**Forbidden: build-assembler helper scripts.** Writing `/tmp/build-caseplan.js`, `/tmp/gen-tasks.py`, or any script that assembles a skill artifact and pipes/writes it to disk is a Rule 13 violation — regardless of `/tmp` placement, "mechanical copy" framing, or "avoid Read+Write churn" rationale. The script-write + script-run + script-output-to-file pattern bypasses the tool-call audit trail Rule 13 protects. If the artifact is too large for a single Write turn, apply the ~15K-token Write cap and per-section cadence above. There is no helper-script escape hatch.
 
 ### Generate a fresh ID
 
@@ -485,6 +490,8 @@ Run `uip maestro case validate <file> --output json` after each `tasks.md` secti
 
 On failure: fix the reported issue (usually a missing field, malformed ID, or orphan reference) and re-validate. Up to 3 retries per section; if still failing, halt and AskUserQuestion the user with the remaining errors and options to retry, pause, or abort.
 
+**Expected-error exceptions do not count as failures.** See Pre-flight Item 12 for the full list: T01, the stages plugin, the missing-rule errors at every Phase 2 boundary before §4.7/§4.8, and the §4.7 dangling-SLA error. Each is recorded and passed over — never repaired, never counted toward the 3-retry cap. Attempting to satisfy them early is forbidden by § What NOT to Do.
+
 ---
 
 ## Anti-Patterns
@@ -493,7 +500,7 @@ On failure: fix the reported issue (usually a missing field, malformed ID, or or
 - **Do NOT write helper scripts (`.py`, `.js`, `.sh`) that open / parse / modify / save JSON files.** Even one-shot scripts are forbidden — the agent is the processor, Read/Write/Edit are the only I/O primitives.
 - **Do NOT hand-edit IDs with human-readable patterns** (e.g., `my_stage_1`). The frontend's `generateNextId` expects CLI's format.
 - **Do NOT emit node-level layout fields** (`position`, `style`, `measured`, `width`, `height`, `zIndex`) — these belong in top-level `layout`, not on the node (Rule 18).
-- **Do NOT put `entryConditions`/`exitConditions` on primary Stages.** Only secondary stages (`data.stageType: "secondary"`) have them.
+- **Do NOT put `entryConditions`/`exitConditions` on a stage at stage-creation time (Step 7).** The conditions plugins own those arrays and write them at Step 10, for primary and secondary stages alike — every regular stage needs at least one entry condition, and with edges retired (Rule 20) these arrays ARE the flow. Emitting them early duplicates the Step 10 write and corrupts `displayName` indexing.
 - **Do NOT auto-inject a task `entryCondition` at task-creation time based on task type.** Entry conditions come from the SDD via the task-entry-conditions plugin (Step 10), uniformly across task types. Injecting one early duplicates the Step 10 write and corrupts `displayName` indexing.
 - **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → reason → Edit per the per-section batch contract.
 - **Do NOT run validation after every single Edit.** Validate at section boundaries, not per-T-entry.

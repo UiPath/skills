@@ -100,7 +100,7 @@ Rationale: the formal In-arg slot id surfaces in the case BPMN as `<uipath:input
 
 **Anti-pattern:** do not copy the companion's readable name into the formal slot id (e.g. `variables.inputs[].id: "applicantName"`). That satisfies the companion's naming convention but violates the formal slot's mint-as-`v`+8-chars requirement — the two ids are deliberately different values, not the same value written twice.
 
-## Inputs the plugin reads at Phase 3 Step 6.2
+## Inputs the plugin reads at Phase 2 Step 6.2
 
 1. **`tasks.md`** variable T-entries — for category, type, default, sourceTrigger(s), sourceField(s). On `Category=In` rows, `sourceTriggers` is a single T-number selecting the bound trigger (blank → primary trigger)
 2. **`tasks/trigger-spec-cache.json`** — for each trigger's `caseShape.outputs[]` (un-minted), keyed by T-number. Written by trigger plugin at Step 6.1; see [`../../triggers/event/impl-json.md` § Step 8](../../triggers/event/impl-json.md) for the writer-side schema. Top-level keys are T-numbers (e.g., `T02`, `T03`); values have `context`, `inputs`, `outputs` from the trigger's `caseShape`, un-minted (no `var` / `id` / `elementId` synthesized).
@@ -109,7 +109,7 @@ Rationale: the formal In-arg slot id surfaces in the case BPMN as `<uipath:input
 
 ## Dispatcher — two loops
 
-The plugin runs **two iterations** at Phase 3 Step 6.2. Both write into the same root variable arrays but iterate over different inputs.
+The plugin runs **two iterations** at Phase 2 Step 6.2. Both write into the same root variable arrays but iterate over different inputs.
 
 ### Loop A — Trigger spec output dispatch (for trigger-sourced rows)
 
@@ -312,9 +312,9 @@ Combines In + Out. One shared companion serves both:
 
 Caller writes value; bridge copies to companion at trigger fire; task body updates `vars.claimId`; case end returns updated value to caller.
 
-## Phase 3 Spec-dependent Validation
+## Spec-dependent validation (Step 6.2 — consumes the Step 6.1 sidecar)
 
-These checks need the `trigger-spec-cache.json` to exist (Phase 3 product), so they live here (not in Phase 2 planning). Run during the dispatcher loop.
+These checks need `trigger-spec-cache.json`, written at Step 6.1 earlier in this phase, so they live here rather than in Phase 1 planning. Run during the dispatcher loop.
 
 | Check | Severity | Action |
 |---|---|---|

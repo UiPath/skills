@@ -58,6 +58,19 @@ It passes on all four, so they are on the author:
 3. **`escalationId: "any"` repaired by repointing.** Removing the key is the fix; substituting a concrete escalation also turns `validate` green but converts a Breached rule into an at-risk rule — a behavior change the user never asked for. The same conversion happens when a correct breach rule is "completed" by adding an escalation because a checklist looked like it required one: a breach rule carrying only `slaId` is finished, not missing a field.
 4. **`start-task` authored as stage re-entry** (§3) — re-runs every `shouldRunOnlyOnce: false` task in the breached stage, not just the follow-up.
 
+## 6. Post-write check for an `sla-status-change` rule
+
+Shared by the two condition scopes that support the rule-type — [stage-entry](plugins/conditions/stage-entry-conditions/impl-json.md) (the `enter-stage` response) and [task-entry](plugins/conditions/task-entry-conditions/impl-json.md) (the `start-task` response). Each links here; only the scope-specific clause lives in the plugin.
+
+**Resolving `slaId` depends on the journey.**
+
+- **Greenfield Step 10** — verify `slaId` matches the `id-map.json` entry preallocated at Step 9.9. `slaRules[]` does not exist yet, so do NOT resolve against it, and the §4.7 boundary validate's `The SLA referenced by rule '<name>' no longer exists` is expected ([case-editing-operations.md](case-editing-operations.md#per-section-batch-write-contract--canonical) Pre-flight Item 12). Never repair it; never let it consume a retry.
+- **Brownfield** — `id-map.json` may be absent while `slaRules[]` already exists, so verify `slaId` (and `escalationId` when present) resolve against the target's existing `slaRules[]`. Write the SLA before the rule that references it, or the same error fires with no carve-out ([brownfield.md](brownfield.md)).
+
+**`escalationId` is checked against the T-entry's status, not for its presence.** An at-risk T-entry must carry one declared on that same SLA; a breach T-entry must carry **none**. A missing `escalationId` on a breach rule is correct and complete — do **not** "repair" it by adding one, which silently converts the rule to at-risk (§ 5 above).
+
+---
+
 ## Verified
 
 Probed with `uip maestro case validate` on **uip 1.198.0-preview.102** (2026-07-31):
