@@ -41,9 +41,24 @@ uip pm apps model fields remove <app-id> <field-id>
   `dataType` **must match** the data kind of what it's compared to (see below). Reference a field
   with `{type:"reference","referenceType":"field","reference":"<field-id>"}`.
 
-Every edit is **ETag-safe** and applies on `dev`. `fields set/remove`/`update` do a read-modify-write
-under `If-Match`, returning the new edit `Versions`. After editing, `publish` to reach the dashboards,
-and re-ingest if a data kind changed.
+Every edit is `If-Match`-guarded and applies on `dev`, returning the new edit `Versions` — but the two
+routes differ in who supplies the ETag:
+
+- **`fields set` / `fields remove` take no `--etag`.** They read the model and merge your change into
+  exactly that version, so the read's own ETag is a real compare-and-swap. On a lost race, **just
+  re-run** — they re-read and re-apply. (They refuse to write at all if the read came back without an
+  ETag, rather than writing unguarded.)
+- **`apps model update` REQUIRES `--etag`** — it replaces a document you edited locally, so it must
+  carry the `Data.ETag` that `apps model get` returned. On 409/412, re-`get` for the latest model
+  **and its new ETag**, re-apply your change on top, then update again with the new `--etag`.
+
+```bash
+uip pm apps model get <app> --destination model.json     # prints Data.ETag
+uip pm apps model update <app> --file model.json --etag 'W/"3"'
+```
+
+Prefer `fields set` for a targeted change: no ETag to thread, and it can't clobber unrelated parts of
+the model. After editing, `publish` to reach the dashboards, and re-ingest if a data kind changed.
 
 ## The data-kind rule
 

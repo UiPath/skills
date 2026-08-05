@@ -40,17 +40,47 @@ Every command prints a stable envelope and sets a branchable exit code:
 - **`--output json|table|…`** picks the rendering; **`--output-filter <JMESPath>`**
   projects/reshapes `Data` (e.g. `"[].{Key:AppTypeKey,Version:Version}"`). `list`
   commands unwrap the API's `{ Data: [...] }` so the shape matches across commands.
+- **`--output-filter` on a command whose `--limit` has a default requires an explicit
+  `--limit`** — otherwise it exits `3` rather than silently filtering only the first
+  page. In `pm` that is **`ingestions logs`** alone (default `100`): pair them, e.g.
+  `ingestions logs <app> --limit 200 --output-filter "[?contains(Message,'error')]"`.
+  `app-types list` / `apps list` / `query run` declare no `--limit` default, so
+  filtering them needs nothing extra.
 
 ## The ETag get-modify-put pattern
 
-Every editable resource — `data-mapping`, `model`, `data-model`, and
-`transformations update` — is edited read-modify-write and **guarded by an ETag you
-never pass yourself**. The `update`/edit command GETs the current resource (reading its
-ETag), applies your change, and PUTs it back `If-Match`-guarded. A concurrent edit
-(someone in the UI between your read and write) is rejected — `409
-UserError_ETagFileConflict` (mapping) / `412` (data-model) — just re-run. `fields
-set`/`remove` and `model update` return the new edit `Versions`; `data-mapping`/`data-model`
-edits return `IngestionNeeded: true` (see below), not an ETag.
+Every editable resource — `data-mapping`, `model`, `data-model`, `transformations` — is
+written `If-Match`-guarded, so a concurrent edit (someone in the UI between your read and
+your write) is rejected instead of silently overwritten. **Which side supplies the ETag
+splits the commands into two groups — get this wrong and the command won't run.**
+
+| | Commands | ETag |
+|---|---|---|
+| **You edited the file locally** | `apps data-mapping update`, `apps model update`, `transformations update` | **`--etag` REQUIRED** — the one the matching `get` returned |
+| **The command reads and merges in one go** | `apps data-model add-table`, `apps model fields set\|remove` | **No `--etag`** — it guards with the ETag of the read it just did |
+
+```bash
+uip pm apps model get <app> --destination model.json      # prints Data.ETag
+#   ...edit model.json...
+uip pm apps model update <app> --file model.json --etag 'W/"3"'
+```
+
+- **Get the ETag from the `get`.** Every `get` of an editable resource returns
+  `Data.ETag` (also with `--destination`, which writes only the document to disk).
+  Project it with `--output-filter ETag`.
+- **The CLI never re-reads the ETag just before writing** — that would make the
+  precondition pass no matter who wrote in between, defeating the guard. Do not work
+  around a rejected write by re-`get`ting only for a fresh ETag.
+- **On a conflict, recovery differs by group.** `update` (409
+  `UserError_ETagFileConflict` / 412): re-run the `get` for the latest version **and its
+  new ETag**, re-apply your change on top of *that* version, then update again with the
+  new `--etag` — a blind re-run just fails again. `add-table` / `fields set|remove`:
+  **just re-run** — they re-read and re-apply on top of the other write. `Instructions`
+  states which applies.
+- `fields set`/`remove` and `model update` return the new edit `Versions`;
+  `data-mapping`/`data-model` edits return `IngestionNeeded: true` (see below).
+- A resource returned **without** an ETag fails the command rather than writing
+  unguarded.
 
 ## Async work — always `--wait`
 
@@ -98,15 +128,15 @@ uip pm files upload <appId> ./data.csv --input-table Event_log
 uip pm ingestions create <appId> --file-format csv --field-delimiter ";" --encoding utf-8 --wait
 
 # 4. If the transform failed on Cases.sql: pull → patch → apply (transformations.md)
-uip pm transformations get <appId> models/Cases.sql --destination Cases.sql
+uip pm transformations get <appId> models/Cases.sql --destination Cases.sql   # note Data.ETag
 #   ...edit...
-uip pm transformations update <appId> models/Cases.sql --file Cases.sql
+uip pm transformations update <appId> models/Cases.sql --file Cases.sql --etag 'W/"639…"'
 uip pm transformations apply <appId> --wait
 
 # 4b. If the MAPPING was wrong instead — fix it in place, don't recreate (pre-flight.md)
-uip pm apps data-mapping get <appId> --destination mapping.json
+uip pm apps data-mapping get <appId> --destination mapping.json              # note Data.ETag
 #   ...edit...
-uip pm apps data-mapping update <appId> --file mapping.json
+uip pm apps data-mapping update <appId> --file mapping.json --etag 'W/"639…"'
 uip pm ingestions create <appId> --wait          # a mapping change needs a re-ingest
 
 # 5. Query it

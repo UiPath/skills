@@ -8,8 +8,8 @@ editor surface:
 | Operation | Command |
 |-----------|---------|
 | List the model tree | `transformations list <app>` |
-| Read a file (or save locally) | `transformations get <app> <path> [--destination <file>]` |
-| Edit an existing file (ETag-safe) | `transformations update <app> <path> --file <local>` |
+| Read a file (or save locally) + its ETag | `transformations get <app> <path> [--destination <file>]` |
+| Edit an existing file (ETag-guarded) | `transformations update <app> <path> --file <local> --etag '<etag>'` |
 | Create a new model file | `transformations create <app> <path> --file <local>` |
 | Re-run the **full** transform on loaded data | `transformations apply <app> --wait` |
 | Rebuild **one** dev model + dependents | `transformations run <app> --model models/X.sql` |
@@ -56,10 +56,13 @@ A successful run then reports `SUCCESS_WITH_WARNINGS` with repeated
 - **`apply`** re-runs the **full** transform on already-loaded data — the fix-loop
   verb after a transform-only failure. **Do not re-ingest** for a SQL-only change.
 - **`run --model models/X.sql`** rebuilds one dev model and its dependents.
-- **`create <path> --file`** adds a **new** model file (PUT without ETag);
-  **`update <path> --file`** edits an **existing** file (ETag-safe). `update` on a
-  missing path 404s — use `create`. You can also inline intermediate logic as CTEs
-  inside one model instead of many files.
+- **`create <path> --file`** adds a **new** model file (PUT without ETag — there is no
+  prior version to guard); **`update <path> --file`** edits an **existing** file and
+  **requires `--etag`**: the `Data.ETag` the `get` you edited from returned. `update` on
+  a missing path 404s — use `create`. A 409/412 means someone replaced the file after
+  your `get`: re-`get` for the new content **and** ETag, re-apply your edit on top, then
+  `update` with the new `--etag`. You can also inline intermediate logic as CTEs inside
+  one model instead of many files.
 - Use **`apply --wait`** to block to a terminal state and auto-print the dbt error.
 
 ## Snowflake / dbt notes

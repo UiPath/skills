@@ -114,7 +114,12 @@ flows through.
 
 `add-table` GETs `/dev/dataModel` (with its ETag), **upserts** the table by name
 (replace if present, else append), PUTs it back `If-Match`-guarded, then POSTs
-`applyCurrentDatamodel`. A concurrent edit surfaces as `412`. It returns
+`applyCurrentDatamodel`. Because it merges into exactly the document it just read,
+that ETag is a genuine compare-and-swap — so **`add-table` takes no `--etag`**, unlike
+`data-mapping update` / `model update` / `transformations update`, which replace a file
+you edited locally and therefore require it. A concurrent edit surfaces as `412`; **just
+re-run** — `add-table` re-reads and re-applies on top of the other write. (A data model
+returned without an ETag fails the command rather than writing unguarded.) It returns
 `IngestionNeeded: true` — the entity is not queryable until the re-ingest completes.
 
 ## Publish vs re-ingest
