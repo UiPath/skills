@@ -52,6 +52,21 @@ Three failure modes observed in agent-generated `.flow` files:
 
 ---
 
+## Routing Nodes (Decision / Switch) Have No `.output`
+
+Unlike data-producing nodes (HTTP, Script, Connector, …), **Decision (`core.logic.decision`) and Switch (`core.logic.switch`) are routing-only** — they steer flow through ports and expose no `.output` object. `$vars.<gateway>.output` is `undefined`, so dereferencing it (e.g. `.matchedCaseId`) throws `Cannot read property '…' of undefined` in the downstream node and **Faults the debug run** — even though `flow validate` passed.
+
+Their registry outputs `matchedCase`/`matchedCaseId` are **top-level vars** (`$vars.<gateway>.matchedCaseId`, never `.output.*`), exist mainly for the Studio debug panel, and come back `null` in backend `uip maestro flow debug` — don't read them. To vary behavior where branches merge, **recompute the condition** in the merged node from the same upstream `$vars` the gateway tested (or set a variable per-branch before the merge).
+
+```javascript
+// WRONG — gateways have no .output; throws "Cannot read property 'matchedCaseId' of undefined"
+const message = $vars.checkTemperature.output.matchedCaseId === 'true' ? 'nice day' : 'bring a jacket';
+// RIGHT — recompute from the same upstream value the gateway tested
+const message = $vars.getWeather.output.body.current.temperature_2m > 60 ? 'nice day' : 'bring a jacket';
+```
+
+---
+
 ## Where the Rule Applies
 
 `=js:` is **required** in every field below when the value references `$vars`, `$metadata`, or `$self`:
@@ -117,6 +132,7 @@ Plugin-specific path fields are not value fields. **Always** follow the plugin r
 3. **Never wrap conditions** (Decision, Switch, HTTP branch) in `=js:`. Those are parsed as JS automatically.
 4. **Never use `{ }` template interpolation in connector or HTTP activity inputs.** The flow-layer template runner skips these fields. The `$` is stripped and `{vars.X}` ships literally to the IS runtime. Use `=js:` and JS template literals (`` `…${$vars.X}…` ``) instead.
 5. **Never quote `=js:` itself in an expression.** `"=js:$vars.X"` is correct. `"\"=js:$vars.X\""` is a string containing the prefix.
+6. **Never read `$vars.<gateway>.output.*`** for Decision/Switch nodes — they are routing-only and have no `.output` object, so this throws `Cannot read property '…' of undefined` at runtime. See [Routing Nodes (Decision / Switch) Have No `.output`](#routing-nodes-decision--switch-have-no-output).
 
 ---
 

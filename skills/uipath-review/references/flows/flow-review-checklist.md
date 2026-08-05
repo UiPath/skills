@@ -84,6 +84,7 @@ uip maestro flow validate "<PROJECT_NAME>.flow" --output json
 | Default branch defined (to avoid runtime faults) | Warning | Check for default path |
 | Condition expression is valid and testable | Warning | Read condition |
 | Fail-fast patterns used (check errors before processing) | Info | Review decision placement |
+| No downstream node reads `$vars.<decision-or-switch>.output.*` — gateways are routing-only and have no `.output`, so this faults at runtime (`Cannot read property … of undefined`). Merged branches must recompute the condition instead | Critical | Grep merged/downstream node inputs and script bodies for `$vars.<gatewayId>.output` |
 
 ### Loop Nodes (`core.logic.loop`)
 

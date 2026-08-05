@@ -60,3 +60,4 @@ Output ports: `true` and `false`. Both branches must be wired. See [editing-oper
 | Expression does not evaluate to boolean | Expression returns non-boolean value | Ensure expression uses comparison operators (`===`, `>`, etc.) |
 | `$vars.nodeId` is undefined | Upstream node not connected or wrong ID | Check edges and node IDs |
 | Only one branch wired | Missing true or false edge | Add the missing edge — both branches are required |
+| `Cannot read property '…' of undefined` in a downstream script (debug Faults) | A downstream node read `$vars.<decision>.output.<field>` — a Decision is routing-only and has no `.output` | Recompute the condition in the downstream node from the same upstream `$vars` the Decision tested; do not read the gateway's result. See [node-output-wiring.md § Routing Nodes](../../../shared/node-output-wiring.md#routing-nodes-decision--switch-have-no-output) |
