@@ -604,7 +604,7 @@ Route each fix to the appropriate skill:
 2. ...
 
 ### Optimization Notes
-- <queue usage, bulk operations, retry/idempotency observations — e.g., partial-failure handling for one-to-many shapes>
+- <queue usage, bulk operations, retry/idempotency observations — e.g., partial-failure handling for one-to-many shapes. Only print section when optimization is relevant and applicable to the project or solution.>
 
 **Final grade: <A–F>**
 ```
