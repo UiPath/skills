@@ -49,7 +49,7 @@ Do not compose connector JSON here. The selected implementation owner reads its 
 
 ## Filter Authoring
 
-Activity input and filter authoring is owned by the activity planning/implementation pair. Trigger FilterTree authoring is owned by `connector-trigger-planning.md`.
+For an activity with array objects, multipart files, or a requested supported server filter, its owner conditionally loads [`complex-inputs-guide.md`](plugins/tasks/connector-activity/complex-inputs-guide.md). Scalar activities without filters do not. Trigger FilterTree authoring stays in `connector-trigger-planning.md`.
 
 ## Output Contract to Tasks.md
 

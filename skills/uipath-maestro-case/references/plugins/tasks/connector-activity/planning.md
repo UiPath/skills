@@ -82,6 +82,8 @@ The response carries everything the planning phase needs:
 | `references[]` | Cross-references (lookups). Each entry includes a pre-built `discoverCommand` runnable string |
 | `diagnostics.fetched` / `fallbacks` | What endpoints succeeded / fell back; surface `fallbacks` to the user when meaningful |
 
+If `inputs.multipart` is non-null, load only [complex inputs § Multipart planning](complex-inputs-guide.md#multipart-planning) for that branch. Otherwise do not load the guide for multipart handling.
+
 ### 4. Resolve reference fields
 
 Check `inputs.{bodyFields, pathParameters, queryParameters}` for entries with a `reference` object. Each carries a pre-built `discoverCommand`:
@@ -135,11 +137,7 @@ Values can be:
 
 ### 7. Optional — author a server-side filter
 
-If `spec.filter` is present (i.e. the operation declares a `FilterBuilder` parameter and supports CEQL), the user can author a filter tree. If `spec.filter` is `undefined`, server-side filtering is not supported on this operation — filter downstream (post-execution) instead.
-
-FilterTree schema, operators, and validation rules: [`case-spec-input-details.md`](../../../case-spec-input-details.md#filtertree-shape).
-
-The filter tree goes into `tasks.md` under `filter:` as a literal JSON object — Phase 3 passes it to `case spec --input-details`. Do NOT pass a raw CEQL string under `queryParameters.where` (or whichever connector-specific name) when authoring a filter — case-tool rejects this at configure time, and the round-trip from Studio Web breaks.
+When the SDD requests a server-side filter and `spec.filter` is present, load [complex inputs § Server-side FilterTree](complex-inputs-guide.md#server-side-filtertree). If either condition is false, do not load the guide; omit `filter:` and filter downstream when needed.
 
 ### 8. Build input-values
 
@@ -157,36 +155,7 @@ Dotted keys (`message.body.content`) get nested into structured objects via `nes
 
 #### Array-of-object body fields — SDD authors business shape; planner translates to wire shape
 
-When `inputs.bodyFields[].name` contains `[*]` (e.g. `toRecipients[*].emailAddress.address`, `attachments[*]`, `blocks[*].text`), the `[*]` is **schema notation** meaning "array of" — borrowed from JSONPath. The SDD describes the input at a **business level**; the planner translates to wire shape using the spec's flat field-name metadata.
-
-**Translation algorithm.** Group spec body fields by parent (the prefix before `[*]`). For each parent:
-
-| Spec — fields with `[*]` for this parent | SDD value form | Planner output (wire shape into `tasks.md input-values.bodyParameters[<parent>]`) |
-|---|---|---|
-| Exactly one sub-field `<parent>[*].<leaf>` of `dataType: <T>` | List of scalars matching `<T>` (e.g. `["a@x", "b@y"]`) | `[nestUnder(<leaf>, v) for v in sdd_value]` — each scalar becomes `{<leaf nested>: v}` |
-| One or more sub-fields | List of objects already matching the element shape (e.g. `[{"emailAddress":{"address":"a@x"}}]`) | Pass through unchanged |
-| Two or more sub-fields under the same parent | List of scalars | **Halt + AskUserQuestion** — scalars are ambiguous (which sub-field?). Ask user for object list. |
-| Any | Single scalar (not a list) | **Halt + AskUserQuestion** — confirm whether user meant single-element list |
-
-**Worked example — Outlook `Message`:**
-
-Spec exposes `toRecipients[*].emailAddress.address` (one sub-field, dataType `string`) and `bccRecipients[*].emailAddress.address` (same shape). SDD:
-
-```
-| toRecipients  | Array of string | ["a@x"]           |
-| bccRecipients | Array of string | ["b@x", "c@x"]    |
-```
-
-Planner emits to `tasks.md input-values.bodyParameters`:
-
-```json
-{
-    "toRecipients":  [{"emailAddress":{"address":"a@x"}}],
-    "bccRecipients": [{"emailAddress":{"address":"b@x"}}, {"emailAddress":{"address":"c@x"}}]
-}
-```
-
-**Never** emit a key with literal `[*]` in `bodyParameters`. The CLI accepts it (well-formed JSON) and validate passes; runtime APIs (Microsoft Graph, Slack, etc.) reject with HTTP 400 `UnableToDeserializePostBody`. Pre-input scan in [`impl-json.md` § Step 1.b](impl-json.md#step-1b--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
+If any resolved `inputs.bodyFields[].name` contains `[*]`, load [complex inputs § Array-of-object body fields](complex-inputs-guide.md#array-of-object-body-fields) before emitting `bodyParameters`. Otherwise do not load the guide for array translation.
 
 ## tasks.md Entry Format
 
@@ -199,6 +168,7 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
 - connector-key: <connectorKey>
 - object-name: <objectName>
 - input-values: {"bodyParameters":{...},"queryParameters":{...},"pathParameters":{...}}
+- file-inputs: {"<multipart parameter name>":"=vars.<file Case-variable id>"}   # multipart only; omit otherwise; authored by the conditional guide
 - filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Active\"","value":"Active"},"uiId":null}]}
 - outputs:                            # optional; omit only when the SDD declares none
   - <SDD output row, copied verbatim>
