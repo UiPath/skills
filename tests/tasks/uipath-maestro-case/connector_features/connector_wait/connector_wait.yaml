@@ -3,17 +3,20 @@ description: >
   Build a Case Management definition from an sdd.md whose first task is
   event-triggered via a `wait-for-connector` task-entry rule, followed by a
   `wait-for-connector` task (the 2nd previously-untested task type) that
-  suspends until an external Integration Service connector event arrives.
+  suspends until an external Integration Service connector event arrives while
+  preserving its supplied positional `current-stage-entered` activation rule.
   Exercises the connector-trigger plugin: `case spec --type trigger
   --input-details`, direct caseplan.json write of a resolved
   `type: "wait-for-connector"` node (`data.serviceType:
   "Intsvc.WaitForEvent"`, real `data.typeId` + `data.connectionId`), and the
   frontend event-triggered task mode where a first task keeps only
-  `wait-for-connector` and does not also get `current-stage-entered`. Stops at
-  validate + resolution assertions — NOT debug: a wait-for-connector suspends
-  waiting for a real event and validate cannot catch a mis-bound connector rule
-  (the skill's documented silent-failure surface). Requires cloud auth + a
-  healthy Integration Service connection for the named connector.
+  `wait-for-connector` and does not also get `current-stage-entered`, while the
+  typed connector-wait task keeps exactly one positional entry rule without a
+  connector payload. Stops at validate + resolution assertions — NOT debug: a
+  wait-for-connector suspends waiting for a real event and validate cannot catch
+  a mis-bound connector rule (the skill's documented silent-failure surface).
+  Requires cloud auth + a healthy Integration Service connection for the named
+  connector.
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, connector, feature:connector-trigger]
 max_iterations: 1
 
@@ -95,6 +98,7 @@ initial_prompt: |
   ##### Task 1.1: Process reply event
 
   **Type:** process
+  **Activation Mode:** event-triggered
   **Description:** Placeholder process that is started by the inbound email event. This is the first task in the stage and is event-triggered, so its only task-entry rule is `wait-for-connector`; do not add `current-stage-entered`.
 
   **Entry Condition:**
@@ -122,6 +126,7 @@ initial_prompt: |
   ##### Task 1.2: Wait for reply email
 
   **Type:** wait-for-connector
+  **Activation Mode:** parallel
   **Description:** Suspend until an email is received on the Outlook 365 mailbox.
 
   **Entry Condition:**
@@ -175,7 +180,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan has a first event-triggered task with wait-for-connector-only entry semantics and a RESOLVED wait-for-connector task (serviceType Intsvc.WaitForEvent, real typeId + connectionId, not a skeleton)"
+    description: "Caseplan has a first event-triggered task with wait-for-connector-only entry semantics and a RESOLVED wait-for-connector task whose sole entry rule remains current-stage-entered without a connector uipath payload; tasks/tasks.md preserves event-triggered/wait-for-connector for the process task and parallel/current-stage-entered for the typed connector wait (serviceType Intsvc.WaitForEvent, real typeId + connectionId, not a skeleton)"
     command: "python3 $TASK_DIR/check_connector_wait.py"
     timeout: 60
     expected_exit_code: 0
