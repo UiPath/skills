@@ -22,7 +22,7 @@ Compose the `slaRules[]` array for each target (root or stage) in one write. Gro
 
 ## ID generation
 
-- SLA rule (default and conditional): `sla_` + 8 chars.
+- SLA rule (default and conditional): `sla_` + 8 chars. **Required** on every entry.
 - Escalation: `esc_` + 6 chars. Per [`case-editing-operations.md § ID Generation`](../../case-editing-operations.md#id-generation).
 
 Step 9.9 preallocates these IDs before conditions so `sla-status-change` rules can reference them. Record every SLA T-entry under `{kind: "sla-rule", displayName: "<title>", target: "root" | "<stageId>"}` and every escalation T-entry under `{kind: "escalation", displayName: "<title>", parentSlaTask: "T<m>", target: "root" | "<stageId>"}`. Step 11 MUST reuse the preallocated IDs; never regenerate them while composing `slaRules[]`.
@@ -67,7 +67,7 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "23.0.0",
+  "version": "27.0.0",
   "metadata": {
     "caseIdentifier": "<...>",
     "caseUnifiedSchemaEnabled": true,
@@ -91,13 +91,14 @@ Emission rules:
 3. **Escalation-only default rule is legal, but it still needs an ID and title.** If a target has escalations but no default SLA T-entry, Step 9.9 preallocates a synthetic default SLA ID and Step 11 emits `{id:"sla_...", displayName:"SLA Rule 1", expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`.
 4. **Always emit `escalationRule` on every rule.** Use `"escalationRule": []` when a rule has no attached escalations. Never omit the key.
 5. **Omit `slaRules` key entirely** on targets with no SLA T-entries.
+6. **Emit a unique `id` on every SlaRuleEntry.** `sla_` + 8 chars — **required** (schema v26). `displayName` is optional (`"Default"` for the trailing `=js:true` entry).
 
 ## Recipe — one escalation entry
 
 ```json
 {
   "id": "esc_xxxxxx",
-  "displayName": "<from T-entry or deterministic fallback>",
+  "displayName": "<from T-entry, or generated: Escalation rule <N> - <parent SLA displayName>>",
   "action": {
     "type": "notification",
     "recipients": [
@@ -111,9 +112,7 @@ Emission rules:
 }
 ```
 
-- `displayName` is required for every SLA rule and escalation in the current Case App contract. Use the authored value or deterministic fallback; never emit blank/undefined. It must be unique within the target and MUST NOT contain `:`; reject the T-entry before writing JSON if it does.
-- Reject a non-positive `count`; for `unit: "min"`, reject values below 15 or above 1000.
-- Reject a non-default rule with an empty expression, an escalation with no recipients, or an `at-risk` escalation without `atRiskPercentage`.
+- `displayName` is **required** (schema v27). Use the T-entry's `display-name` when supplied; otherwise generate `Escalation rule <N> - <parent SLA displayName>` (N = 1-based index within the parent rule's `escalationRule[]`).
 - `atRiskPercentage` included only when `triggerInfo.type === "at-risk"`.
 - `recipients` is an array — **one entry per sdd-declared recipient**.
 
