@@ -154,6 +154,8 @@ After publish, `.uipath/app.config.json` stores the registration:
 
 This file is consumed by `deploy` to resolve the app name automatically. **Do not delete `.uipath/` between publish and deploy.**
 
+> **`appUrl` may stay `null` here even after a successful deploy** (known gap, [APPS-35784](https://uipath.atlassian.net/browse/APPS-35784)). Read the deployed URL from the `deploy` command's stdout, not from this file.
+
 ### Multiple Packages
 
 If multiple `.nupkg` files exist in `.uipath/`, the command will prompt for selection unless `--name` is provided:
