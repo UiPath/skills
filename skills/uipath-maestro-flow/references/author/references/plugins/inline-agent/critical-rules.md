@@ -30,7 +30,7 @@ Canonical rules for authoring inline agents in `.flow` files. Capability files c
 
 13. **Guardrails live ONLY on the agent node's `inputs.guardrails[]`** — read [capabilities/guardrails.md](capabilities/guardrails.md) before writing any guardrail JSON (discriminator fields cannot be guessed) and run `uip agent guardrails list --output json` before any `builtInValidator`. `flow validate` is silent on guardrail content — the reference is the only gate. Default `[]` when none are requested.
 
-14. **Legacy shells are migrated in the `.flow`, never edited in the sidecar.** A node whose `systemPrompt`/`userPrompt` is absent or non-string is a legacy shell — embed per [impl.md § 11](impl.md#11-legacy-flows--detect-and-migrate); leave the sidecar in place.
+14. **Legacy shells are migrated in the `.flow`, never edited in the sidecar.** A node whose `systemPrompt`/`userPrompt` is absent or non-string is a legacy shell — embed per [impl.md § 11](impl.md#11-legacy-flows--detect-and-migrate); leave the sidecar in place. `flow validate` reports `Valid` for a shell (it hydrates from the sidecar), so check `inputs` yourself before any edit; port every stored field, then apply the change on the node.
 
 15. **Do not publish or deploy without user consent** — ask before `uip solution upload`, `uip solution publish`, or `uip solution deploy`.
 

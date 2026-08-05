@@ -1,0 +1,113 @@
+task_id: skill-flow-inline-agent-legacy-shell
+description: >
+  Brownfield test: the sandbox is seeded with a LEGACY-SHELL inline agent — the
+  `uipath.agent.autonomous` node carries only structural `inputs` (`source` +
+  the two variables arrays) and its definition (prompts, settings, guardrail,
+  schemas) lives in the stored UUID sidecar `<GUID>/agent.json`. A
+  behaviour-change request stated in pure business terms (no pattern words:
+  never says inline / embedded / node / sidecar / migrate) must land IN THE
+  FLOW FILE: the agent recognizes the shell, ports the stored definition into
+  the node's `inputs` (reverse-mapping `{{input.<flat>}}` tokens to
+  `{{ $vars.<dotted.path> }}`, keeping the existing `source` GUID, the stored
+  model/limits and the PII guardrail), applies the edit there, and leaves the
+  derived sidecar untouched. `uip maestro flow validate` PASSES on the seeded
+  shell as-is (the CLI hydrates from the sidecar), so validation is a
+  regression guard here and the checker is the migration gate — the same
+  posture as the connector (M6) and guardrail (M9) surfaces where validate is
+  silent. Validate-only by design, no `flow debug`: debug cannot run flow-only
+  inline agents (no sidecar synthesis — known CLI gap pinned at roadmap M0), so
+  `flow validate` is the execution ceiling for every inline-agent task. Fully
+  local otherwise: no upload, publish, or tenant mutation.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, node:inline-agent, shape:multi-node]
+
+run_limits:
+  expected_turns: 28
+  turn_timeout: 1200
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/inline_agent/legacy_shell_migration/setup_fixture.py"
+    timeout: 30
+
+initial_prompt: |
+  The billing team's dispute-analyst automation is already in this workspace at
+  `BillingSol/DisputeAnalyst`. Two changes, both about what the analyst reports:
+
+  1. Reviewers can't tell which SOP rule a verdict came from. The analyst must
+     name the exact SOP section it applied and return that section id as a
+     string called `sopSection`.
+  2. Surface `sopSection` as a flow output too, alongside the existing
+     `determination` and `rationale`.
+
+  Everything else about the analyst stays as it is today: same language model,
+  same response limits, same safety controls, and the same dispute details it
+  already reads from the trigger.
+
+  The task is NOT complete until `uip maestro flow validate` passes for the
+  flow file.
+
+  Do NOT create a new solution or a new project — change the one that is
+  already here. Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and implementation.
+  Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "Legacy shell migrated into the node: self-contained inputs, preserved identity, ported prompts/settings/guardrail, reverse-mapped tokens, new typed output surfaced"
+    command: 'python3 "$TASK_DIR/check_legacy_shell_migration.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the edited flow"
+    command: 'python3 "$TASK_DIR/../../_shared/validate_flow.py"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow file itself carries the agent definition and the new output"
+    path: "BillingSol/DisputeAnalyst/DisputeAnalyst.flow"
+    includes:
+      - '"systemPrompt"'
+      - '"sopSection"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Derived sidecar left untouched (still present, content unchanged)"
+    command: 'python3 "$TASK_DIR/check_sidecar_untouched.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No agent-project lifecycle commands (the definition lives in the .flow)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+(init|refresh|validate)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Brownfield: did not scaffold a replacement solution or flow project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+init|(maestro\s+)?flow\s+init)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No Write into the derived sidecar directory"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*e5715a3f-0d31-4ad8-9c70-91df180760e6'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No Edit into the derived sidecar directory"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*e5715a3f-0d31-4ad8-9c70-91df180760e6'
+    weight: 1.0
+    pass_threshold: 1.0
