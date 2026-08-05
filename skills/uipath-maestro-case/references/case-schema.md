@@ -94,7 +94,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
-| `version` | string | Schema version — `"23.0.0"`. Emitted by the `case` plugin at T01. |
+| `version` | string | Schema version — `"23.0.0"`. Emitted by the `case` plugin at T01. **Never hand-edit.** See § Schema version contract. |
 | `name` | string | Human-readable name |
 | `description` | string? | Case description |
 | `metadata.caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
@@ -106,6 +106,26 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | `metadata.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
 | `metadata.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Every rule has a non-empty target-unique `displayName` without `:`; default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
 | `metadata.caseExitRules` | CaseExitCondition[]? | Conditions that mark the case as complete |
+
+### Schema version contract
+
+`version` is a **schema selector**, not a label. Studio Web pins one exact literal per schema (`z.literal("23.0.0")`, `"27.0.0"`, `"30.0.0"`, …) and resolves the document by exact match, then migrates it forward in memory. A document therefore only ever validates against the schema its `version` names.
+
+Two consequences:
+
+1. **Emit `23.0.0` and never change it.** Studio Web opens a `23.0.0` document by migrating it up; the CLI validator accepts `23.0.0` and migrates it to its own ceiling. Both paths work.
+2. **Never bump `version` to match a tenant export.** Raising the literal (e.g. to `"30.0.0"`) opts the document into that schema's field names while the rest of this skill still writes the `23.0.0` names. Every chain entry then fails — the older ones on the version literal, the named one on the renamed fields — and the designer reports `JSON is not a valid Case Management JSON of any previous version`.
+
+**Renamed fields.** Only relevant when editing a `caseplan.json` that already declares a version above `27.0.0` (i.e. downloaded from a tenant). Confirmed against `30.0.0`; the exact release that renamed them is not established, so read the shapes already in the file rather than assuming. Do not use these names in a `23.0.0` document:
+
+| `23.0.0` (this skill emits) | `30.0.0` equivalent | Where |
+|---|---|---|
+| `selectedStageId: "<stageId>"` | `selectedStageIds: ["<stageId>"]` | `selected-stage-completed` / `selected-stage-exited` rules — stage-entry, stage-exit, and `metadata.caseExitRules` |
+| `data.timerType: "<timeX>"` | `data.timer: "<timeX>"` | `wait-for-timer` task `data` only — the timer *trigger* (`data.uipath.timerType`) and the `timer` *condition rule* (`timer.timerType`) keep `timerType` at every version |
+
+In v30 `selectedStageId` is bound to a rejecting type, so a stray singular key is a hard parse error, not a warning. `data.timerType` is merely unknown to v30 and is silently dropped, leaving the timer unconfigured — no error either way.
+
+> **CLI validator ceiling.** `uip maestro case validate` (`@uipath/maestro-tool` 1.198.1) tops out at `27.0.0` and fails any document declaring `28.0.0`+ with `[error] [version] Invalid input: expected "27.0.0"` — including a pristine Studio Web export. That is a validator limitation, not a defect in the document. See [case-editing-operations.md § Editing a tenant-exported caseplan](case-editing-operations.md#editing-a-tenant-exported-caseplan).
 
 ### Case identifier (constant vs external)
 
