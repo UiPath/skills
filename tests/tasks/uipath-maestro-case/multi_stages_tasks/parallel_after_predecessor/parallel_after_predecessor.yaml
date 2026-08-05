@@ -188,7 +188,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Issuing Permit emits [[Collect Fees], [Wait For Payment Confirmation, Track Payment Deadline], [Generate Permit]]: the two independent siblings share one task set, that set comes after the Collect Fees set, Collect Fees is alone in its set, Generate Permit follows the sibling set, every task carries exactly one runs-sequentially entry rule, and neither sibling uses a selected-tasks-completed gate naming the predecessor"
+    description: "Issuing Permit emits [[Collect Fees], [Wait For Payment Confirmation, Track Payment Deadline], [Generate Permit]] with the two siblings grouped after Collect Fees, runs-sequentially throughout, and no duplicate selected-task gates; tasks/tasks.md gives both siblings activation-mode parallel-after-predecessor, entry-rule runs-sequentially, the same numeric lane matching the emitted sibling task-set index, and a non-empty rationale explaining the shared predecessor/grouping"
     command: "python3 $TASK_DIR/check_parallel_after_predecessor.py"
     timeout: 300
     expected_exit_code: 0
