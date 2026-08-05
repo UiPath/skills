@@ -5,8 +5,9 @@ This repository contains self-contained AI agent skills for UiPath automation de
 ## Architecture
 
 - **Skills are self-contained.** Each skill under `skills/` must function on its own: it MUST NOT import, inline, or read another skill's files, and MUST still deliver its core value if sibling skills are absent. A skill MAY delegate a task to a sibling skill in this same plugin at runtime (e.g., spawn a subagent that hands an artifact edit to the artifact's owning domain skill) when that work is the sibling's domain — provided the delegation degrades gracefully (the skill still presents an actionable result when the sibling is unavailable).
-- **SKILL.md is the contract.** Every skill folder must have a `SKILL.md` with valid YAML frontmatter. This is the only file the plugin system reads to discover and activate skills.
-- **No build system.** This repo contains only markdown documentation and scripts. There is no compilation or packaging step.
+- **SKILL.md is the canonical default contract.** Every skill folder must have a complete `SKILL.md` with valid YAML frontmatter. Local/default consumers can understand it without a flavor manifest or runtime resolver. Shared guidance stays there; only genuinely different passages may be enclosed by named flavor-block comments.
+- **Custom flavors are sparse exceptions.** Files under `skill-flavors/<flavor>/<skill>/` mirror canonical skill paths and contain only complete replacement blocks. Do not duplicate a whole skill merely to change a few paragraphs. A flavor's `skills.allowlist` is an explicit review boundary, not a fragment map.
+- **Build files before packages.** Build complete `default` and custom-flavor skill trees, validate those final files, and only then stage packages. Consumers must copy a finished tree; they must not interpret flavor markers or compose Markdown at runtime.
 - **Twin hook scripts — keep in sync.** Every session hook exists twice: `hooks/<name>.sh` (bash — macOS, Linux, Windows with Git Bash) and `hooks/<name>.ps1` (PowerShell 5.1/7+ — Windows without Git Bash). The two files are behavioral twins: **any change to one REQUIRES the equivalent change to the other in the same PR.** `hooks/hooks.json` registers a single bash/PowerShell polyglot command per event that dispatches to the twin matching the executing shell — do not add a `shell` field to these entries; the polyglot depends on Claude Code's default shell selection.
 
 ## Contribution Rules
@@ -20,6 +21,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 5. **No structural cross-skill dependencies** — a skill must work in isolation (never import or read another skill's files); runtime delegation to a same-plugin sibling skill is allowed when it degrades gracefully
 6. **No secrets or personal paths** in committed files
 7. **CLI commands must use `--output json`** when output is parsed programmatically
+8. **Review new skills for every custom flavor** and update that flavor's `skills.allowlist` only when the complete built skill is safe for the target environment
 
 ## File Conventions
 
@@ -27,6 +29,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 |------|-----------|
 | `SKILL.md` | Required. Uppercase. YAML frontmatter + markdown body. |
 | `references/*.md` | Kebab-case. Guides end with `-guide.md`. |
+| `skill-flavors/<flavor>/skills.allowlist` | One reviewed canonical skill directory name per line. |
+| `skill-flavors/<flavor>/<skill>/**/*.md` | Optional sparse overrides at paths relative to `skills/`; contain only named replacement blocks. |
+| `<!-- skill-flavor:<name>:start\|end -->` | Boundary around the smallest canonical passage that differs by flavor. Names are lowercase kebab-case and unique within a file. |
 | `assets/templates/*` | Templates end with `-template.md` or `-template.<ext>`. |
 | `hooks/*.sh` + `hooks/*.ps1` | Session hooks ship as twin implementations with the same basename — bash and PowerShell (5.1 and 7+ compatible). The twins MUST stay behaviorally identical: a change to one requires the same change to the other in the same PR. Dispatched by the polyglot commands in `hooks/hooks.json`. |
 
@@ -36,6 +41,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 - Preserve the Critical Rules section — these prevent expensive agent mistakes
 - Validate YAML frontmatter — broken frontmatter breaks skill discovery
 - Ensure `description` field has both TRIGGER and DO NOT TRIGGER conditions
+- When canonical flavor blocks or custom overrides change, run `npm run skills:validate`, then build both complete file trees with `npm run skills:build` before packaging
 
 ## When Writing or Modifying Tests
 
