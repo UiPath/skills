@@ -110,7 +110,7 @@ Use **AskUserQuestion** with three options:
 
 #### On `Publish for review`
 
-1. Run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"`. `--output-filter` is mandatory — without it the response is large enough to be truncated and `DesignerUrl` is lost.
+1. Run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"`. `--output-filter` is mandatory (see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload)).
 2. Parse `DesignerUrl` from response.
 3. **MUST emit DesignerUrl as plain-text output to user BEFORE invoking AskUserQuestion**, on its own line:
    `Skeleton published. Review at: <DesignerUrl>`
@@ -235,7 +235,7 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 ### Publish notes
 
 - `uip solution upload` accepts solution directory (folder containing `.uipx`) directly — no intermediate bundling step.
-- **`--output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` is mandatory on every `uip solution upload` call.** The unfiltered response is large enough that the agent truncates it and `DesignerUrl` never reaches the user. The JMESPath projection (applied to the envelope's `Data` field) keeps only the three fields the skill reads. On a missing `DesignerUrl`, re-run once without the filter and dump the unfiltered response to `tasks/upload-response.json`.
+- **`--output-filter` is mandatory on every `uip solution upload` call** — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload) for the projection and fallback procedure.
 - `uip solution resources refresh` MUST run before upload — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
 - Do **NOT** run `uip maestro case pack` + `uip solution publish` unless user explicitly asks for Orchestrator deployment. That path puts case directly into Orchestrator, bypassing Studio Web. Default is always Studio Web.
 
