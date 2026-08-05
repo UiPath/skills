@@ -97,12 +97,95 @@ jobs:
           node scripts/sync-version.mjs
           echo "Publishing $DEV to dist-tag dev"
 
+      # Build after version stamping so the default and every discovered
+      # flavor package receive the exact published prerelease version.
+      - name: Build marker-free npm packages
+        run: npm run skills:pack
+
       # setup-node wrote `@uipath:registry=https://npm.pkg.github.com/` + auth;
-      # the scoped registry routes this scoped package to GitHub Packages. The
+      # the scoped registry routes every generated package to GitHub Packages. The
       # built-in GITHUB_TOKEN suffices given the job's `packages: write`
       # permission above. No --provenance: GitHub Packages does not support it.
-      - name: Publish
-        run: npm publish --tag dev
+      - name: Publish every verified tarball
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          read_manifest() {
+            tar -xOf "$1" package/package.json | node -e '
+              let input = "";
+              process.stdin.on("data", chunk => input += chunk);
+              process.stdin.on("end", () => {
+                const manifest = JSON.parse(input);
+                console.log([
+                  manifest.name,
+                  manifest.version,
+                  manifest.uipathSkillsFlavor,
+                ].join("\t"));
+              });
+            '
+          }
+
+          local_integrity() {
+            node -e '
+              const { createHash } = require("node:crypto");
+              const { readFileSync } = require("node:fs");
+              const bytes = readFileSync(process.argv[1]);
+              console.log(`sha512-${createHash("sha512").update(bytes).digest("base64")}`);
+            ' "$1"
+          }
+
+          VIEW_ERROR=$(mktemp)
+          trap 'rm -f "$VIEW_ERROR"' EXIT
+
+          existing_version_state() {
+            local package_spec="$1"
+            local tarball="$2"
+            local registry_integrity
+            local tarball_integrity
+            : > "$VIEW_ERROR"
+
+            if registry_integrity=$(npm view "$package_spec" dist.integrity 2>"$VIEW_ERROR"); then
+              tarball_integrity=$(local_integrity "$tarball")
+              if [ "$registry_integrity" != "$tarball_integrity" ]; then
+                echo "::error title=Published package collision::${package_spec} exists, but its registry integrity differs from the verified local tarball."
+                return 2
+              fi
+              echo "${package_spec} already exists with matching integrity; skipping retry"
+              return 0
+            fi
+            if grep -Eiq 'E404|404 Not Found' "$VIEW_ERROR"; then
+              return 1
+            fi
+
+            cat "$VIEW_ERROR" >&2
+            echo "::error title=Registry lookup failed::Could not safely query ${package_spec}; refusing to treat the failure as an unpublished version."
+            return 2
+          }
+
+          # Publish custom flavors before default. Together with the exact-version
+          # check, this makes a partially completed release safe to retry.
+          for phase in flavor default; do
+            for tarball in build/npm/*.tgz; do
+              read -r PACKAGE_NAME PACKAGE_VERSION PACKAGE_FLAVOR < <(read_manifest "$tarball")
+              if { [ "$phase" = flavor ] && [ "$PACKAGE_FLAVOR" = default ]; } \
+                || { [ "$phase" = default ] && [ "$PACKAGE_FLAVOR" != default ]; }; then
+                continue
+              fi
+
+              if existing_version_state "${PACKAGE_NAME}@${PACKAGE_VERSION}" "$tarball"; then
+                continue
+              else
+                LOOKUP_STATUS=$?
+                if [ "$LOOKUP_STATUS" -ne 1 ]; then
+                  exit "$LOOKUP_STATUS"
+                fi
+              fi
+
+              echo "Publishing verified ${PACKAGE_NAME} tarball to dist-tag dev"
+              npm publish "$tarball" --tag dev
+            done
+          done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -162,12 +245,123 @@ jobs:
             echo "Publishing $(node -p "require('./package.json').version") to dist-tag latest"
           fi
 
+      # Build after version stamping so all generated manifests and tarballs
+      # carry the resolved latest/preview version.
+      - name: Build marker-free npm packages
+        run: npm run skills:pack
+
       # No auth token and no setup-node registry-url — a token would make npm
       # use token auth and bypass OIDC. We only pin the scoped package to
       # npmjs; credentials come from the OIDC exchange. `--provenance` attaches
       # a signed build attestation (allowed because the repo is public and the
       # job has id-token: write); package.json `repository.url` must match.
-      - name: Publish to npmjs (OIDC trusted publishing)
+      - name: Publish every registered verified tarball to npmjs (OIDC)
+        shell: bash
         run: |
+          set -euo pipefail
           npm config set @uipath:registry https://registry.npmjs.org/
-          npm publish --access public --provenance --tag ${{ steps.dist.outputs.tag }}
+
+          read_manifest() {
+            tar -xOf "$1" package/package.json | node -e '
+              let input = "";
+              process.stdin.on("data", chunk => input += chunk);
+              process.stdin.on("end", () => {
+                const manifest = JSON.parse(input);
+                console.log([
+                  manifest.name,
+                  manifest.version,
+                  manifest.uipathSkillsFlavor,
+                ].join("\t"));
+              });
+            '
+          }
+
+          local_integrity() {
+            node -e '
+              const { createHash } = require("node:crypto");
+              const { readFileSync } = require("node:fs");
+              const bytes = readFileSync(process.argv[1]);
+              console.log(`sha512-${createHash("sha512").update(bytes).digest("base64")}`);
+            ' "$1"
+          }
+
+          VIEW_ERROR=$(mktemp)
+          trap 'rm -f "$VIEW_ERROR"' EXIT
+
+          existing_version_state() {
+            local package_spec="$1"
+            local tarball="$2"
+            local registry_integrity
+            local tarball_integrity
+            : > "$VIEW_ERROR"
+
+            if registry_integrity=$(npm view "$package_spec" dist.integrity 2>"$VIEW_ERROR"); then
+              tarball_integrity=$(local_integrity "$tarball")
+              if [ "$registry_integrity" != "$tarball_integrity" ]; then
+                echo "::error title=Published package collision::${package_spec} exists, but its registry integrity differs from the verified local tarball."
+                return 2
+              fi
+              echo "${package_spec} already exists with matching integrity; skipping retry"
+              return 0
+            fi
+            if grep -Eiq 'E404|404 Not Found' "$VIEW_ERROR"; then
+              return 1
+            fi
+
+            cat "$VIEW_ERROR" >&2
+            echo "::error title=Registry lookup failed::Could not safely query ${package_spec}; refusing to treat the failure as an unpublished version."
+            return 2
+          }
+
+          package_registration_state() {
+            local package_name="$1"
+            : > "$VIEW_ERROR"
+            if npm view "$package_name" name >/dev/null 2>"$VIEW_ERROR"; then
+              return 0
+            fi
+            if grep -Eiq 'E404|404 Not Found' "$VIEW_ERROR"; then
+              return 1
+            fi
+
+            cat "$VIEW_ERROR" >&2
+            echo "::error title=Registry lookup failed::Could not determine whether ${package_name} is registered; refusing to skip it."
+            return 2
+          }
+
+          # A new npmjs package must be bootstrapped before OIDC can publish it.
+          # Custom packages run first so a configuration failure cannot publish
+          # the default package and leave the release only partly complete.
+          for phase in flavor default; do
+            for tarball in build/npm/*.tgz; do
+              read -r PACKAGE_NAME PACKAGE_VERSION PACKAGE_FLAVOR < <(read_manifest "$tarball")
+              if { [ "$phase" = flavor ] && [ "$PACKAGE_FLAVOR" = default ]; } \
+                || { [ "$phase" = default ] && [ "$PACKAGE_FLAVOR" != default ]; }; then
+                continue
+              fi
+
+              if existing_version_state "${PACKAGE_NAME}@${PACKAGE_VERSION}" "$tarball"; then
+                continue
+              else
+                LOOKUP_STATUS=$?
+                if [ "$LOOKUP_STATUS" -ne 1 ]; then
+                  exit "$LOOKUP_STATUS"
+                fi
+              fi
+
+              if [ "$PACKAGE_FLAVOR" != default ]; then
+                if package_registration_state "$PACKAGE_NAME"; then
+                  :
+                else
+                  LOOKUP_STATUS=$?
+                  if [ "$LOOKUP_STATUS" -eq 1 ]; then
+                    echo "::warning title=Flavor package bootstrap required::Skipping ${PACKAGE_NAME}; pre-create it on npmjs and configure publish.yml as its trusted publisher."
+                    continue
+                  fi
+                  exit "$LOOKUP_STATUS"
+                fi
+              fi
+
+              echo "Publishing verified ${PACKAGE_NAME} tarball to dist-tag ${{ steps.dist.outputs.tag }}"
+              npm publish "$tarball" --access public --provenance --tag ${{ steps.dist.outputs.tag }}
+            done
+          done

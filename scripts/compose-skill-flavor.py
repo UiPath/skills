@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compose a complete skill tree from canonical files and sparse flavor blocks.
+"""Compose complete skill trees and npm packages from sparse flavor blocks.
 
 Flavor directories use this deliberately small layout::
 
@@ -23,33 +23,51 @@ The canonical file remains complete and contains the same marked block. The
 composer replaces that entire block while retaining all unmarked canonical
 content. Generated trees are build outputs; this script never edits sources.
 
-Build both complete trees from the repository root::
+Validate and build every discovered flavor from the repository root::
 
-    python3 scripts/compose-skill-flavor.py validate skill-flavors/studioweb
-    python3 scripts/compose-skill-flavor.py build skill-flavors/studioweb
+    python3 scripts/compose-skill-flavor.py validate
+    python3 scripts/compose-skill-flavor.py build
+    python3 scripts/compose-skill-flavor.py pack
 
-The build command writes ``build/skills/default`` and
-``build/skills/studioweb`` by default. Marker boundary comments are source
-syntax and are removed from every built Markdown file. Each artifact directory
-is itself a complete skills tree (for example,
-``build/skills/default/uipath-example/SKILL.md``); packaging may later place
-that tree under a package-level ``skills/`` directory.
+The no-argument commands discover every direct directory under
+``skill-flavors/``. ``build`` writes complete trees under ``build/skills``.
+``pack`` rebuilds those trees, stages one npm package per variant under
+``build/packages``, and creates real tarballs under ``build/npm``. The default
+package keeps the root name (``@uipath/skills``); a flavor named ``studioweb``
+becomes ``@uipath/skills-studioweb``. Adding a flavor directory needs no script,
+workflow, or package-manifest registration.
+
+Marker boundary comments are source syntax. They are removed from every built
+tree and verified absent from every staged package and tarball. Generated
+artifacts are replaced only after every flavor validates and every tarball is
+successfully inspected. The legacy explicit-flavor commands remain available
+for focused debugging and never overwrite a non-empty output directory.
 """
 
 from __future__ import annotations
 
 import argparse
+import copy
+import json
+import os
 import re
 import shutil
+import subprocess
 import sys
+import tarfile
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ALLOWLIST_FILENAME = "skills.allowlist"
+FLAVORS_DIRNAME = "skill-flavors"
+DEFAULT_VARIANT = "default"
+PACKAGE_NAME_MAX_LENGTH = 214
 SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MARKER_TOKEN = "<!-- skill-flavor:"
+MARKER_BYTES = MARKER_TOKEN.encode("utf-8")
 MARKER_LINE_RE = re.compile(
     r"^[ \t]*<!-- skill-flavor:"
     r"([a-z0-9]+(?:-[a-z0-9]+)*):(start|end) -->"
@@ -93,6 +111,25 @@ class CompositionPlan:
     files: tuple[ComposedFile, ...]
     overridden_files: tuple[PurePosixPath, ...]
     replacement_count: int
+
+
+@dataclass(frozen=True)
+class SkillVariant:
+    """One complete output variant and its validated composition plan."""
+
+    name: str
+    plan: CompositionPlan
+
+
+@dataclass(frozen=True)
+class PackedPackage:
+    """A staged npm package and the tarball created from it."""
+
+    variant: str
+    package_name: str
+    version: str
+    package_dir: Path
+    tarball: Path
 
 
 def _read_utf8(path: Path, findings: list[str], kind: str) -> str | None:
@@ -454,6 +491,86 @@ def create_composition_plan(
     )
 
 
+def discover_flavor_roots(repo_root: Path = REPO_ROOT) -> tuple[Path, ...]:
+    """Discover custom flavors by directory convention, in stable name order."""
+
+    repo_root = repo_root.resolve()
+    flavors_root = repo_root / FLAVORS_DIRNAME
+    if not flavors_root.exists():
+        return ()
+    if flavors_root.is_symlink():
+        raise FlavorCompositionError(
+            [f"{flavors_root}: flavor root cannot be a symlink"]
+        )
+    if not flavors_root.is_dir():
+        raise FlavorCompositionError(
+            [f"{flavors_root}: flavor root is not a directory"]
+        )
+
+    findings: list[str] = []
+    flavor_roots: list[Path] = []
+    for child in sorted(flavors_root.iterdir(), key=lambda path: path.name):
+        if child.is_symlink():
+            findings.append(f"{child}: flavor entries cannot be symlinks")
+            continue
+        if not child.is_dir():
+            continue
+        if not SKILL_NAME_RE.fullmatch(child.name):
+            findings.append(
+                f"{child}: invalid flavor name {child.name!r}; "
+                "use a lowercase kebab-case directory name"
+            )
+            continue
+        if child.name == DEFAULT_VARIANT:
+            findings.append(
+                f"{child}: {DEFAULT_VARIANT!r} is reserved for the canonical package"
+            )
+            continue
+        flavor_roots.append(child)
+
+    if findings:
+        raise FlavorCompositionError(findings)
+    return tuple(flavor_roots)
+
+
+def create_all_variants(repo_root: Path = REPO_ROOT) -> tuple[SkillVariant, ...]:
+    """Validate the default and every convention-discovered custom flavor."""
+
+    repo_root = repo_root.resolve()
+    findings: list[str] = []
+    variants: list[SkillVariant] = []
+
+    try:
+        variants.append(
+            SkillVariant(DEFAULT_VARIANT, create_default_plan(repo_root))
+        )
+    except FlavorCompositionError as exc:
+        findings.extend(exc.findings)
+
+    flavor_roots: tuple[Path, ...] = ()
+    try:
+        flavor_roots = discover_flavor_roots(repo_root)
+    except FlavorCompositionError as exc:
+        findings.extend(exc.findings)
+
+    for flavor_root in flavor_roots:
+        try:
+            variants.append(
+                SkillVariant(
+                    flavor_root.name,
+                    create_composition_plan(repo_root, flavor_root),
+                )
+            )
+        except FlavorCompositionError as exc:
+            findings.extend(exc.findings)
+
+    if findings:
+        # The same malformed canonical block can be observed through multiple
+        # flavor plans. Keep diagnostics comprehensive without repeating lines.
+        raise FlavorCompositionError(list(dict.fromkeys(findings)))
+    return tuple(variants)
+
+
 def _validate_output_directory(output_dir: Path) -> Path:
     output_dir = output_dir.resolve()
     if output_dir.exists() and not output_dir.is_dir():
@@ -477,6 +594,470 @@ def materialize_composition(plan: CompositionPlan, output_dir: Path) -> None:
             destination.write_bytes(item.composed_bytes)
 
 
+def _prepare_build_root(repo_root: Path) -> Path:
+    """Return the repository-owned build root after basic safety checks."""
+
+    build_root = repo_root.resolve() / "build"
+    if build_root.is_symlink():
+        raise ValueError(f"generated build root cannot be a symlink: {build_root}")
+    if build_root.exists() and not build_root.is_dir():
+        raise ValueError(f"generated build root is not a directory: {build_root}")
+    build_root.mkdir(parents=True, exist_ok=True)
+    return build_root
+
+
+def _materialize_variants(
+    variants: tuple[SkillVariant, ...], output_root: Path
+) -> None:
+    output_root.mkdir(parents=True, exist_ok=False)
+    for variant in variants:
+        materialize_composition(variant.plan, output_root / variant.name)
+
+
+def _marker_findings(root: Path, label: str) -> list[str]:
+    findings: list[str] = []
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            findings.append(f"{path}: {label} cannot contain symlinks")
+            continue
+        if not path.is_file():
+            continue
+        if MARKER_BYTES in path.read_bytes():
+            findings.append(f"{path}: flavor marker leaked into {label}")
+    return findings
+
+
+def _replace_generated_directories(
+    replacements: tuple[tuple[Path, Path], ...]
+) -> None:
+    """Swap validated temporary directories into their generated locations."""
+
+    if not replacements:
+        return
+    parents = {target.parent.resolve() for _, target in replacements}
+    if len(parents) != 1:
+        raise ValueError("generated outputs must share one build directory")
+    parent = next(iter(parents))
+
+    seen_targets: set[Path] = set()
+    for source, target in replacements:
+        if not source.is_dir() or source.is_symlink():
+            raise ValueError(f"generated source is not a real directory: {source}")
+        target = target.absolute()
+        if target in seen_targets:
+            raise ValueError(f"duplicate generated output target: {target}")
+        seen_targets.add(target)
+        if target.is_symlink():
+            raise ValueError(f"generated output cannot replace a symlink: {target}")
+        if target.exists() and not target.is_dir():
+            raise ValueError(f"generated output is not a directory: {target}")
+
+    backup_root = Path(
+        tempfile.mkdtemp(prefix=".skill-flavor-backup-", dir=parent)
+    )
+    backed_up: list[tuple[Path, Path]] = []
+    installed: list[Path] = []
+    try:
+        for _, target in replacements:
+            if not target.exists():
+                continue
+            backup = backup_root / target.name
+            os.replace(target, backup)
+            backed_up.append((target, backup))
+
+        for source, target in replacements:
+            os.replace(source, target)
+            installed.append(target)
+    except Exception:
+        for target in reversed(installed):
+            if target.is_dir() and not target.is_symlink():
+                shutil.rmtree(target)
+            elif target.exists() or target.is_symlink():
+                target.unlink()
+        for target, backup in reversed(backed_up):
+            if backup.exists():
+                os.replace(backup, target)
+        raise
+    finally:
+        shutil.rmtree(backup_root, ignore_errors=True)
+
+
+def build_all_skill_trees(
+    repo_root: Path = REPO_ROOT,
+) -> tuple[tuple[SkillVariant, ...], Path]:
+    """Build every complete tree, replacing only generated ``build/skills``."""
+
+    repo_root = repo_root.resolve()
+    variants = create_all_variants(repo_root)
+    build_root = _prepare_build_root(repo_root)
+    temporary_root = Path(
+        tempfile.mkdtemp(prefix=".skill-flavor-build-", dir=build_root)
+    )
+    temporary_skills = temporary_root / "skills"
+    try:
+        _materialize_variants(variants, temporary_skills)
+        findings = _marker_findings(temporary_skills, "built skill tree")
+        if findings:
+            raise FlavorCompositionError(findings)
+        final_skills = build_root / "skills"
+        _replace_generated_directories(((temporary_skills, final_skills),))
+        return variants, final_skills
+    finally:
+        shutil.rmtree(temporary_root, ignore_errors=True)
+
+
+def _load_package_manifest(repo_root: Path) -> dict[str, object]:
+    path = repo_root / "package.json"
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise ValueError(f"npm package manifest is missing: {path}") from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"npm package manifest is invalid JSON: {path}: {exc}") from exc
+
+    if not isinstance(manifest, dict):
+        raise ValueError(f"npm package manifest must be an object: {path}")
+    for key in ("name", "version"):
+        if not isinstance(manifest.get(key), str) or not manifest[key]:
+            raise ValueError(f"npm package manifest requires a non-empty {key!r}: {path}")
+    files = manifest.get("files")
+    if not isinstance(files, list) or not all(
+        isinstance(entry, str) and entry for entry in files
+    ):
+        raise ValueError(f"npm package manifest requires a string 'files' list: {path}")
+    return manifest
+
+
+def _package_name(base_name: str, variant: str) -> str:
+    if variant == DEFAULT_VARIANT:
+        return base_name
+    if base_name.startswith("@"):
+        if "/" not in base_name:
+            raise ValueError(f"invalid scoped npm package name: {base_name!r}")
+        scope, package = base_name.split("/", 1)
+        result = f"{scope}/{package}-{variant}"
+    else:
+        result = f"{base_name}-{variant}"
+    if len(result) > PACKAGE_NAME_MAX_LENGTH:
+        raise ValueError(
+            f"derived npm package name is too long ({len(result)} characters): {result}"
+        )
+    return result
+
+
+def _checked_payload_path(repo_root: Path, entry: str) -> tuple[Path, Path]:
+    relative = PurePosixPath(entry)
+    if (
+        relative.is_absolute()
+        or ".." in relative.parts
+        or any(character in entry for character in "*?[]\\")
+    ):
+        raise ValueError(f"unsupported npm package 'files' entry: {entry!r}")
+    source = repo_root.joinpath(*relative.parts)
+    return source, Path(*relative.parts)
+
+
+def _assert_tree_has_no_symlinks(root: Path, label: str) -> None:
+    if root.is_symlink():
+        raise ValueError(f"{label} cannot be a symlink: {root}")
+    if root.is_dir():
+        for path in root.rglob("*"):
+            if path.is_symlink():
+                raise ValueError(f"{label} cannot contain symlinks: {path}")
+
+
+def _copy_payload(source: Path, destination: Path, label: str) -> None:
+    _assert_tree_has_no_symlinks(source, label)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if source.is_dir():
+        shutil.copytree(source, destination)
+    elif source.is_file():
+        shutil.copy2(source, destination)
+    else:
+        raise ValueError(f"{label} is neither a file nor directory: {source}")
+
+
+def _generated_package_manifest(
+    source_manifest: dict[str, object], variant: str, custom_files: list[str]
+) -> dict[str, object]:
+    manifest = copy.deepcopy(source_manifest)
+    base_name = str(source_manifest["name"])
+    manifest["name"] = _package_name(base_name, variant)
+    manifest["uipathSkillsFlavor"] = variant
+    # Repository-only lifecycle commands must never run from a published package.
+    manifest.pop("scripts", None)
+
+    if variant != DEFAULT_VARIANT:
+        manifest["description"] = (
+            f"UiPath agent skills composed for the {variant} host environment."
+        )
+        keywords = [
+            item
+            for item in source_manifest.get("keywords", [])
+            if isinstance(item, str)
+        ]
+        for keyword in ("skill-flavor", variant):
+            if keyword not in keywords:
+                keywords.append(keyword)
+        manifest["keywords"] = keywords
+        manifest["files"] = custom_files
+    return manifest
+
+
+def _custom_package_readme(package_name: str, variant: str) -> str:
+    return (
+        f"# {package_name}\n\n"
+        f"This package is the generated **{variant}** flavor of "
+        "[UiPath skills](https://github.com/UiPath/skills).\n\n"
+        "It contains complete, marker-free skill files selected and reviewed "
+        f"for the `{variant}` host. Consumers should copy the files under "
+        "`skills/` directly; no runtime composition is required.\n\n"
+        "This package is generated from the canonical repository. Do not edit "
+        "its contents directly.\n"
+    )
+
+
+def _stage_packages(
+    repo_root: Path,
+    variants: tuple[SkillVariant, ...],
+    skill_trees_root: Path,
+    packages_root: Path,
+) -> dict[str, tuple[str, str, Path]]:
+    source_manifest = _load_package_manifest(repo_root)
+    base_name = str(source_manifest["name"])
+    version = str(source_manifest["version"])
+    source_files = list(source_manifest["files"])
+    # Validate every derived name and every source payload entry before writing.
+    for variant in variants:
+        _package_name(base_name, variant.name)
+    checked_payload = [
+        (entry, *_checked_payload_path(repo_root, entry)) for entry in source_files
+    ]
+
+    packages_root.mkdir(parents=True, exist_ok=False)
+    staged: dict[str, tuple[str, str, Path]] = {}
+    for variant in variants:
+        package_dir = packages_root / variant.name
+        package_dir.mkdir()
+        built_skills = skill_trees_root / variant.name
+        if not built_skills.is_dir() or built_skills.is_symlink():
+            raise ValueError(
+                f"complete built skill tree is missing for {variant.name}: {built_skills}"
+            )
+
+        if variant.name == DEFAULT_VARIANT:
+            for entry, source, relative in checked_payload:
+                if PurePosixPath(entry).parts == ("skills",):
+                    continue
+                if not source.exists():
+                    # npm itself ignores absent entries in the root `files` list.
+                    continue
+                _copy_payload(source, package_dir / relative, "default package payload")
+            custom_files: list[str] = []
+        else:
+            custom_files = ["skills", "README.md", "LICENSE"]
+            license_path = repo_root / "LICENSE"
+            if not license_path.is_file():
+                raise ValueError(f"custom packages require a LICENSE file: {license_path}")
+            _copy_payload(license_path, package_dir / "LICENSE", "package license")
+            version_manifest = repo_root / "version-manifest.json"
+            if version_manifest.is_file():
+                _copy_payload(
+                    version_manifest,
+                    package_dir / "version-manifest.json",
+                    "package version manifest",
+                )
+                custom_files.append("version-manifest.json")
+
+        _copy_payload(built_skills, package_dir / "skills", "built skill tree")
+        package_name = _package_name(base_name, variant.name)
+        if variant.name != DEFAULT_VARIANT:
+            (package_dir / "README.md").write_text(
+                _custom_package_readme(package_name, variant.name),
+                encoding="utf-8",
+            )
+        manifest = _generated_package_manifest(
+            source_manifest, variant.name, custom_files
+        )
+        (package_dir / "package.json").write_text(
+            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        staged[variant.name] = (package_name, version, package_dir)
+
+    findings = _marker_findings(packages_root, "staged npm package")
+    if findings:
+        raise FlavorCompositionError(findings)
+    return staged
+
+
+def _tree_file_bytes(root: Path) -> dict[str, bytes]:
+    return {
+        path.relative_to(root).as_posix(): path.read_bytes()
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and not path.is_symlink()
+    }
+
+
+def _verify_tarball(
+    tarball: Path, package_dir: Path, package_name: str, version: str
+) -> None:
+    with tarfile.open(tarball, mode="r:gz") as archive:
+        members = {
+            member.name: member for member in archive.getmembers() if member.isfile()
+        }
+        manifest_member = members.get("package/package.json")
+        if manifest_member is None:
+            raise ValueError(f"npm tarball has no package.json: {tarball}")
+        manifest_stream = archive.extractfile(manifest_member)
+        if manifest_stream is None:
+            raise ValueError(f"could not read package.json from npm tarball: {tarball}")
+        packed_manifest = json.loads(manifest_stream.read().decode("utf-8"))
+        if packed_manifest.get("name") != package_name:
+            raise ValueError(
+                f"npm tarball name mismatch: expected {package_name!r}, "
+                f"got {packed_manifest.get('name')!r}"
+            )
+        if packed_manifest.get("version") != version:
+            raise ValueError(
+                f"npm tarball version mismatch: expected {version!r}, "
+                f"got {packed_manifest.get('version')!r}"
+            )
+
+        packed_skills: dict[str, bytes] = {}
+        for name, member in members.items():
+            if not name.startswith("package/skills/"):
+                continue
+            stream = archive.extractfile(member)
+            if stream is None:
+                raise ValueError(f"could not read {name} from npm tarball: {tarball}")
+            relative = name.removeprefix("package/skills/")
+            data = stream.read()
+            if MARKER_BYTES in data:
+                raise ValueError(f"flavor marker leaked into npm tarball: {name}")
+            packed_skills[relative] = data
+
+        staged_skills = _tree_file_bytes(package_dir / "skills")
+        if packed_skills != staged_skills:
+            raise ValueError(
+                f"npm tarball skill tree differs from staged package: {tarball}"
+            )
+        forbidden = [
+            name
+            for name in members
+            if name.startswith("package/skill-flavors/")
+            or name.startswith("package/tests/")
+            or name.startswith("package/scripts/")
+        ]
+        if forbidden:
+            raise ValueError(
+                f"npm tarball contains source-only paths: {', '.join(forbidden[:5])}"
+            )
+
+
+def _pack_staged_packages(
+    staged: dict[str, tuple[str, str, Path]], npm_root: Path
+) -> tuple[PackedPackage, ...]:
+    npm_executable = shutil.which("npm")
+    if npm_executable is None:
+        raise ValueError("npm is required to build skill package tarballs")
+    npm_root.mkdir(parents=True, exist_ok=False)
+
+    packed: list[PackedPackage] = []
+    for variant in sorted(staged, key=lambda name: (name != DEFAULT_VARIANT, name)):
+        package_name, version, package_dir = staged[variant]
+        completed = subprocess.run(
+            [
+                npm_executable,
+                "pack",
+                str(package_dir),
+                "--json",
+                "--pack-destination",
+                str(npm_root),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if completed.returncode != 0:
+            detail = completed.stderr.strip() or completed.stdout.strip()
+            raise ValueError(f"npm pack failed for {package_name}: {detail}")
+        try:
+            result = json.loads(completed.stdout)
+            if not isinstance(result, list) or len(result) != 1:
+                raise ValueError("expected one npm pack result")
+            filename = result[0]["filename"]
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            raise ValueError(
+                f"could not parse npm pack output for {package_name}: "
+                f"{completed.stdout.strip()}"
+            ) from exc
+        tarball = npm_root / filename
+        if not tarball.is_file():
+            raise ValueError(f"npm pack did not create its reported tarball: {tarball}")
+        _verify_tarball(tarball, package_dir, package_name, version)
+        packed.append(
+            PackedPackage(
+                variant=variant,
+                package_name=package_name,
+                version=version,
+                package_dir=package_dir,
+                tarball=tarball,
+            )
+        )
+    return tuple(packed)
+
+
+def pack_all_variants(
+    repo_root: Path = REPO_ROOT,
+) -> tuple[PackedPackage, ...]:
+    """Build, stage, pack, and verify every convention-discovered variant."""
+
+    repo_root = repo_root.resolve()
+    variants = create_all_variants(repo_root)
+    build_root = _prepare_build_root(repo_root)
+    temporary_root = Path(
+        tempfile.mkdtemp(prefix=".skill-flavor-pack-", dir=build_root)
+    )
+    temporary_skills = temporary_root / "skills"
+    temporary_packages = temporary_root / "packages"
+    temporary_npm = temporary_root / "npm"
+    try:
+        # The phase boundary is intentional: complete files exist and are
+        # validated before any package directory is staged.
+        _materialize_variants(variants, temporary_skills)
+        findings = _marker_findings(temporary_skills, "built skill tree")
+        if findings:
+            raise FlavorCompositionError(findings)
+        staged = _stage_packages(
+            repo_root, variants, temporary_skills, temporary_packages
+        )
+        packed = _pack_staged_packages(staged, temporary_npm)
+
+        final_skills = build_root / "skills"
+        final_packages = build_root / "packages"
+        final_npm = build_root / "npm"
+        _replace_generated_directories(
+            (
+                (temporary_skills, final_skills),
+                (temporary_packages, final_packages),
+                (temporary_npm, final_npm),
+            )
+        )
+        return tuple(
+            PackedPackage(
+                variant=item.variant,
+                package_name=item.package_name,
+                version=item.version,
+                package_dir=final_packages / item.variant,
+                tarball=final_npm / item.tarball.name,
+            )
+            for item in packed
+        )
+    finally:
+        shutil.rmtree(temporary_root, ignore_errors=True)
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -487,9 +1068,10 @@ def _parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
     validate = subparsers.add_parser(
-        "validate", help="validate the default and custom flavor contracts"
+        "validate",
+        help="validate all discovered flavors, or one explicit flavor",
     )
-    validate.add_argument("flavor_root", type=Path)
+    validate.add_argument("flavor_root", type=Path, nargs="?", default=None)
     build_default = subparsers.add_parser(
         "build-default", help="write the complete default skill tree"
     )
@@ -501,15 +1083,24 @@ def _parser() -> argparse.ArgumentParser:
         help="defaults to build/skills/default under the repository root",
     )
     build = subparsers.add_parser(
-        "build", help="write complete default and custom flavor trees"
+        "build",
+        help="build all discovered trees, or the default and one explicit flavor",
     )
-    build.add_argument("flavor_root", type=Path)
+    build.add_argument("flavor_root", type=Path, nargs="?", default=None)
     build.add_argument(
         "output_root",
         type=Path,
         nargs="?",
         default=None,
         help="defaults to build/skills under the repository root",
+    )
+    subparsers.add_parser(
+        "pack",
+        help="build all trees, stage every npm package, and create verified tarballs",
+    )
+    subparsers.add_parser(
+        "guard-root-pack",
+        help="reject unsafe direct npm packaging from the repository root",
     )
     return parser
 
@@ -518,15 +1109,27 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
         if args.command == "validate":
-            default_plan = create_default_plan(args.repo_root)
-            flavor_plan = create_composition_plan(args.repo_root, args.flavor_root)
-            print(
-                f"OK - default: {len(default_plan.skills)} skills, "
-                f"{len(default_plan.files)} files; "
-                f"{args.flavor_root.name}: {len(flavor_plan.skills)} skills, "
-                f"{len(flavor_plan.files)} files, "
-                f"{flavor_plan.replacement_count} replacements."
-            )
+            if args.flavor_root is None:
+                variants = create_all_variants(args.repo_root)
+                summaries = [
+                    f"{variant.name}: {len(variant.plan.skills)} skills, "
+                    f"{len(variant.plan.files)} files, "
+                    f"{variant.plan.replacement_count} replacements"
+                    for variant in variants
+                ]
+                print("OK - " + "; ".join(summaries) + ".")
+            else:
+                default_plan = create_default_plan(args.repo_root)
+                flavor_plan = create_composition_plan(
+                    args.repo_root, args.flavor_root
+                )
+                print(
+                    f"OK - default: {len(default_plan.skills)} skills, "
+                    f"{len(default_plan.files)} files; "
+                    f"{args.flavor_root.name}: {len(flavor_plan.skills)} skills, "
+                    f"{len(flavor_plan.files)} files, "
+                    f"{flavor_plan.replacement_count} replacements."
+                )
         elif args.command == "build-default":
             plan = create_default_plan(args.repo_root)
             output_dir = args.output_dir or args.repo_root / "build/skills/default"
@@ -535,7 +1138,18 @@ def main(argv: list[str] | None = None) -> int:
                 f"Built default: {len(plan.files)} files for {len(plan.skills)} "
                 f"skills at {output_dir.resolve()}."
             )
-        else:
+        elif args.command == "build" and args.flavor_root is None:
+            variants, output_root = build_all_skill_trees(args.repo_root)
+            print(
+                f"Built {len(variants)} complete marker-free skill trees at "
+                f"{output_root.resolve()}: "
+                + ", ".join(
+                    f"{variant.name} ({len(variant.plan.skills)} skills)"
+                    for variant in variants
+                )
+                + "."
+            )
+        elif args.command == "build":
             default_plan = create_default_plan(args.repo_root)
             flavor_plan = create_composition_plan(args.repo_root, args.flavor_root)
             output_root = (args.output_root or args.repo_root / "build/skills").resolve()
@@ -551,12 +1165,28 @@ def main(argv: list[str] | None = None) -> int:
                 f"{args.flavor_root.name} ({len(flavor_plan.files)} files, "
                 f"{flavor_plan.replacement_count} replacements) at {output_root}."
             )
+        elif args.command == "pack":
+            packages = pack_all_variants(args.repo_root)
+            print(f"Built and verified {len(packages)} npm packages:")
+            for package in packages:
+                print(
+                    f"  {package.package_name}@{package.version} "
+                    f"[{package.variant}] -> {package.tarball}"
+                )
+        else:
+            print(
+                "ERROR: direct npm pack/publish from the repository root would "
+                "ship source flavor markers. Run 'npm run skills:pack' and use "
+                "the generated package under build/packages/.",
+                file=sys.stderr,
+            )
+            return 1
         return 0
     except FlavorCompositionError as exc:
         for finding in exc.findings:
             print(f"ERROR: {finding}", file=sys.stderr)
         return 1
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, tarfile.TarError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
