@@ -6,7 +6,7 @@ Canonical rules for authoring inline agents in `.flow` files. Capability files c
 
 1. **The flow file is the source of truth.** The full agent definition lives in the `uipath.agent.autonomous` node's `inputs` (a string `systemPrompt`/`userPrompt` is the embed trigger). The GUID subdirectory is a derived artifact — never create or edit it. Sole exception: `<GUID>/evals/` is authored via `uip maestro flow eval`. See [impl.md § 1](impl.md#1-the-contract--the-node-is-the-agent-definition).
 
-2. **No `uip agent` lifecycle verbs.** Never run `uip agent init` / `refresh` / `validate` (with or without `--inline-in-flow`) — there is no agent project to scaffold or regenerate. The single sanctioned `uip agent` verb is `uip agent model list --output json` (model discovery).
+2. **No `uip agent` lifecycle verbs.** Never run `uip agent init` / `refresh` / `validate` (with or without `--inline-in-flow`) — there is no agent project to scaffold or regenerate. The only sanctioned `uip agent` verbs are the tenant-level discovery reads: `uip agent model list --output json` (model discovery) and `uip agent guardrails list|catalog|llm-as-judge-models --output json` (validator discovery, [capabilities/guardrails.md](capabilities/guardrails.md)).
 
 3. **Validate after every bulk of edits** — `uip maestro flow format "<FILE>.flow"` then `uip maestro flow validate "<FILE>.flow" --output json`. Format back-fills layout and `variables.nodes[]`; validate is the authoring gate for embedded-agent semantics.
 
@@ -28,13 +28,13 @@ Canonical rules for authoring inline agents in `.flow` files. Capability files c
 
 12. **One artifact edge per resource node:** agent `sourcePort ∈ {tool, context, escalation}` → resource `targetPort: "input"`, depth 1, one agent per resource. Resource nodes carry full config in their own `inputs` + their own `inputs.source` UUID.
 
-13. **Author `guardrails: []`** until the guardrails capability doc lands (per roadmap milestone) — the guardrail schema uses discriminator fields that cannot be guessed.
+13. **Guardrails live ONLY on the agent node's `inputs.guardrails[]`** — read [capabilities/guardrails.md](capabilities/guardrails.md) before writing any guardrail JSON (discriminator fields cannot be guessed) and run `uip agent guardrails list --output json` before any `builtInValidator`. `flow validate` is silent on guardrail content — the reference is the only gate. Default `[]` when none are requested.
 
 14. **Legacy shells are migrated in the `.flow`, never edited in the sidecar.** A node whose `systemPrompt`/`userPrompt` is absent or non-string is a legacy shell — embed per [impl.md § 11](impl.md#11-legacy-flows--detect-and-migrate); leave the sidecar in place.
 
 15. **Do not publish or deploy without user consent** — ask before `uip solution upload`, `uip solution publish`, or `uip solution deploy`.
 
-## What NOT to Do (12)
+## What NOT to Do (13)
 
 1. **Do not create or edit sidecar files** (`<GUID>/agent.json`, `resources/**`, `features/**`, `flow-layout.json`) — derived; edits are shadowed on open and overwritten on save.
 2. **Do not hand-write `bindings_v2.json`, `entry-points.json`, or `.agent-builder/`** — packaging artifacts.
@@ -48,3 +48,4 @@ Canonical rules for authoring inline agents in `.flow` files. Capability files c
 10. **Do not read a `.content.` wrapper on typed outputs** — `$vars.<node>.output.content.<field>` resolves to undefined and yields a null flow output; typed fields are flat.
 11. **Do not work around the debug/pack synthesis gap by hand-writing the sidecar** — surface the gap per [impl.md § 9](impl.md#9-validate); a canvas open/save derives it.
 12. **Do not invoke other skills automatically.** Standalone agent projects belong to the `uipath-agents` skill; tell the user rather than switching.
+13. **Do not omit guardrail discriminators (`$guardrailType`/`$actionType`/`$ruleType`/`$selectorType`/`$parameterType`), lowercase scope values, or write `guardrail.policies` on any derived resource** — `flow validate` catches none of these; [capabilities/guardrails.md](capabilities/guardrails.md) is the gate. Fresh UUID per guardrail `id`.

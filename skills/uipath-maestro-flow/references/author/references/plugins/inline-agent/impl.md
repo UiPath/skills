@@ -9,7 +9,7 @@ Mandatory constraints: [critical-rules.md](critical-rules.md). Prompt quality: [
 - **The `.flow` node is the source of truth.** `uipath.agent.autonomous` embeds the full agent definition in `inputs`: prompts, model, generation settings, guardrails, typed outputs, identity.
 - **Embed trigger:** a **string** `inputs.systemPrompt` or `inputs.userPrompt` marks the node self-contained — tooling and the canvas then never read the sidecar. Structural-only inputs (`source` + variables arrays, no string prompts) mark a **legacy shell** (see [§ 11 Legacy Flows](#11-legacy-flows--detect-and-migrate)).
 - **The GUID subdirectory is derived, never authored.** The canvas regenerates `<GUID>/agent.json` + `resources/` + `features/` from the `.flow` on every save; packaging synthesizes the same bytes. Never create or edit sidecar files. Sole exception: `<GUID>/evals/` is authored via `uip maestro flow eval` — the eval tree is never derived.
-- **No `uip agent` lifecycle verbs.** No `init`, `refresh`, or `validate` (with or without `--inline-in-flow`) — there is no agent project to scaffold or refresh. The single `uip agent` verb this plugin uses is `uip agent model list --output json` (model discovery; works from the flow project directory).
+- **No `uip agent` lifecycle verbs.** No `init`, `refresh`, or `validate` (with or without `--inline-in-flow`) — there is no agent project to scaffold or refresh. The only `uip agent` verbs this plugin uses are tenant-level discovery reads that work from the flow project directory: `uip agent model list --output json` (model discovery) and `uip agent guardrails list|catalog|llm-as-judge-models --output json` (validator discovery, [capabilities/guardrails.md](capabilities/guardrails.md)).
 - **Valid under both rollout states.** The embedded node shape is byte-identical to an un-flushed brand-new canvas agent, so a self-contained `.flow` is correct whether or not the tenant's canvas has the self-contained-flow flag enabled.
 
 ## 2. Agent Node `inputs` Spec
@@ -24,7 +24,7 @@ Mandatory constraints: [critical-rules.md](critical-rules.md). Prompt quality: [
 | `temperature` | number | No | 0 for extraction/classification/judgment; raise only when variation is wanted. |
 | `maxTokenPerResponse` | number | No | ≤ the chosen model's `MaxTokens` cap. Derived to `settings.maxTokens`. |
 | `maxIterations` | number | No | Default 25. `≤5` only tool-less single-shot; a looping agent needs a prompt stop rule, not a higher cap. |
-| `guardrails` | array | No | Author `[]`; guardrail authoring doc lands per roadmap milestone. |
+| `guardrails` | array | No | Default `[]`. Guardrail objects (PII/harmful-content/injection validators, custom rules) — [capabilities/guardrails.md](capabilities/guardrails.md); `flow validate` is silent on their content. |
 | `agentInputVariables` | array | Yes | **Author `[]` — entries are derived** (see § 4). |
 | `agentOutputVariables` | array | Yes | Typed output declarations `{id, type, description?}` — see § 5. Default `[{"id": "content", "type": "string"}]` is the untyped fallback; declare real fields. |
 | `byomConnectionId` / `byomConnectorKey` | string | No | Bring-your-own-model connection pair; omit otherwise. |
@@ -357,7 +357,7 @@ Only the first form is ever authored.
    | `settings.maxTokens` | `maxTokenPerResponse` |
    | `settings.byomProperties` | `byomConnectionId` + `byomConnectorKey` |
    | `outputSchema.properties.<field>` | one `agentOutputVariables[]` entry `{id, type, description?}` per field |
-   | `guardrails` | `guardrails` |
+   | `guardrails` | `guardrails` (verbatim — same array shape; [capabilities/guardrails.md](capabilities/guardrails.md)) |
    | `inputSchema` | drop — derived from prompt tokens |
 
 3. **Reverse token mapping:** each `{{input.<flat>}}` in a message becomes `{{ $vars.<dotted-path> }}` — recover the dotted path from the node's existing `agentInputVariables[]` entry whose `id` matches the flat key (its `binding` is `=$vars.<dotted-path>`), or un-flatten mechanically (`__` → `.`): `{{input.start__output__subject}}` → `{{ $vars.start.output.subject }}`. Drop `contentTokens` — never ported.
@@ -433,7 +433,7 @@ uip maestro flow validate "<FILE>.flow" --output json
 ## 14. What NOT to Do
 
 - **Do not create or edit sidecar files** — `<GUID>/agent.json`, `resources/**/resource.json`, `features/**/feature.json`, `flow-layout.json` are derived; edits are shadowed and overwritten (§ 10). Sole exception: `evals/` via `uip maestro flow eval`.
-- **Do not run `uip agent init` / `refresh` / `validate`** (with or without `--inline-in-flow`) — no agent project exists; the flow file is complete. `uip agent model list` is the only `uip agent` verb in scope.
+- **Do not run `uip agent init` / `refresh` / `validate`** (with or without `--inline-in-flow`) — no agent project exists; the flow file is complete. `uip agent model list` and `uip agent guardrails list|catalog|llm-as-judge-models` are the only `uip agent` verbs in scope.
 - **Do not hand-write `bindings_v2.json`, `entry-points.json`, or `.agent-builder/`** — packaging artifacts, not authoring surfaces.
 - **Do not write an instance `model` block** on the agent node or any resource node — identity is `inputs.source`; serviceType/version/context come from `definitions[]`.
 - **Do not write `contentTokens` or `derivedInputDefinition`** into node `inputs` — derived/BPMN-emission artifacts (§ 4).
