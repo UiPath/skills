@@ -45,7 +45,6 @@ uip codedapp pack dist -n my-webapp --version 1.0.0 -a "My Team" --description "
 | `--main-file <file>` | Main entry file | `index.html` |
 | `--content-type <type>` | `webapp`, `library`, or `process` | `webapp` |
 | `--dry-run` | Preview without creating | `false` |
-| `--reuse-client` | Reuse clientId from `uipath.json` | `false` |
 
 ### Content Types
 
@@ -71,7 +70,9 @@ The `.nupkg` includes auto-generated UiPath metadata files:
 
 Pack manages the `uipath.json` SDK config file, which includes the OAuth client ID for the deployed app:
 - First pack: creates a new non-confidential client ID
-- Subsequent packs: use `--reuse-client` to keep the existing client ID from `uipath.json`
+- Subsequent packs: the existing client ID in `uipath.json` is **reused automatically**
+
+> **Do NOT pass `--reuse-client`.** The flag was removed from the CLI — passing it errors `unknown option '--reuse-client'`. Client-ID reuse is now the default; just confirm `uipath.json`'s `clientId` is unchanged after pack (a changed client ID breaks the deployed app's auth). Older docs that tell you to pass `--reuse-client` are stale.
 
 ### Dry Run
 
@@ -188,6 +189,7 @@ uip codedapp deploy -n my-webapp
 | `-n, --name <name>` | App name | From `app.config.json` or prompted |
 | `-v, --version <version>` | Target a **specific published version** (different semantic from `pack`/`publish`'s `-v`). **Prefer omitting it** — let it default to Latest. Passing a version that the catalog hasn't finished indexing yields a misleading `"...has not been published yet"` error. | Latest |
 | `--folder-key <key>` | UiPath folder **key** (GUID, not the name). **Always pass explicitly** — see below. | From `UIPATH_FOLDER_KEY` env var, else interactive (avoid) |
+| `--path-name <slug>` | URL slug for the app. **First deploy ONLY** — omit on upgrades, else `routing name must be unique` (see [Upgrading an existing app](#upgrading-an-existing-app)). Cannot contain reserved words. | App name |
 | `--org-name <name>` | Organization name (for app URL) | From `.env` |
 
 ### Fresh Deploy vs. Upgrade
@@ -201,6 +203,22 @@ The command resolves the app name from:
 1. `--name` flag (highest priority)
 2. `.uipath/app.config.json` (created by `publish`)
 3. Interactive prompt (fallback)
+
+### Upgrading an existing app
+
+An upgrade is just Pack → Publish → Deploy with a **bumped version** — `deploy` auto-detects the existing app and upgrades it in place. Rules that keep an upgrade reliable and on the **same URL the user already shared**:
+
+1. **Bump the version** on `pack`/`publish` (re-using a version fails `Version already exists`).
+2. **Omit `--path-name`.** The URL slug already exists; re-passing it errors `routing name must be unique`. Omitting it upgrades the app **at its current URL** — no new URL is minted. Pass `--path-name` only on the *first* deploy of a brand-new app.
+3. **Omit `-v` / `--version`** on `deploy` — let it default to Latest. Targeting a just-published version the catalog hasn't finished indexing yields a misleading `...has not been published yet`.
+4. **Keep the same `clientId`.** Reuse is automatic (see [OAuth Client ID](#oauth-client-id)); a changed client ID breaks the deployed app's auth.
+5. **Looks stale after upgrade? It's browser cache.** `deploy` prints the canonical `…/<app-name>` URL, but the user's existing vanity path keeps serving — the new build is live. Hard-refresh (Cmd/Ctrl+Shift+R) to confirm.
+
+> **Upgrade auto-detect needs a recent CLI.** The in-place upgrade flow shipped in `codedapp-tool` 1.198. If upgrades behave inconsistently across machines (one upgrades cleanly, another duplicates or fails), the machines are on different tool versions — run `uip tools update` to align them, and compare `uip tools list --output json`.
+
+#### URL reserved words
+
+The **app name** (`-n`) may contain words like `uipath` or `microsoft`, but the **URL slug** (`--path-name`) cannot — the platform rejects reserved words with HTTP 400 `reserved`. If the derived slug is rejected, use a variant (e.g. `microsof-…`). Only relevant on the first deploy (when `--path-name` is set).
 
 ### Folder Key
 
@@ -241,7 +259,7 @@ uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 
 If the name is ambiguous (multiple matches) or not found, surface an error to the user — do NOT fall through to interactive selection.
 
-`uip or folders list` returns folders the **current user** has access to (personal workspaces, solution folders, and standard folders). Add `--all` if you need every folder in the tenant — but for `deploy` resolution, the default view is what you want.
+`uip or folders list` returns folders the **current user** has access to (personal workspaces, solution folders, and standard folders), **paginated at 50 per page**. If the target folder might be beyond the first page — or a name you expect returns no match — pass `--all` to enumerate every accessible folder before matching.
 
 Each folder JSON object includes: `Key` (GUID — pass this to `--folder-key`), `Name`, `Path`, `Description`, `Type` (`Personal` / `Solution` / `Standard`), `ParentKey`.
 
@@ -346,4 +364,8 @@ uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 | `Folder key required` / deploy hangs on prompt | Missing folder key | Resolve via `uip or folders list --output json`, then run `uip codedapp deploy --folder-key <key> ...` (or `UIPATH_FOLDER_KEY=<key>` env-var prefix). |
 | `Missing tenant name` on publish | `UIPATH_TENANT_NAME` not set | Set in `.env` or pass `--tenant-name` |
 | `dist/ not found` | App not built | Run `npm run build` |
-| Pack shows wrong clientId | Stale `uipath.json` | Use `--reuse-client` or delete `uipath.json` |
+| Pack shows wrong clientId | Stale `uipath.json` | Client ID is reused automatically — do NOT pass `--reuse-client` (removed from the CLI). If it's genuinely wrong, delete `uipath.json` and re-pack. |
+| `unknown option '--reuse-client'` | Passing a removed flag | Drop `--reuse-client` — reuse is the default now. |
+| `routing name must be unique` on upgrade | `--path-name` re-passed on an upgrade | Omit `--path-name`; it's first-deploy only (see [Upgrading an existing app](#upgrading-an-existing-app)). |
+| App gets a **new URL** on upgrade | `--path-name` passed on upgrade minted a fresh slug | Omit `--path-name` on upgrades to keep the existing URL the user already shared. |
+| Deployed app looks stale after upgrade | Browser cache on the vanity path | Hard-refresh (Cmd/Ctrl+Shift+R); the new build is already live. |
