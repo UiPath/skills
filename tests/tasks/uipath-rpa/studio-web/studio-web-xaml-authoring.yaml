@@ -1,0 +1,86 @@
+task_id: skill-rpa-studio-web-xaml-authoring
+description: >
+  Regression coverage for destination-aware mode selection: an RPA project
+  containing unit-testable resolver logic and assertions must stay Portable
+  and XAML-only when the user requires every artifact to remain editable in
+  Studio Web.
+tags: [uipath-rpa, windows, smoke, mode:build, lifecycle:generate, feature:test-case]
+
+run_limits:
+  expected_turns: 24
+  max_turns: 50
+  turn_timeout: 1200
+  task_timeout: 1200
+
+initial_prompt: |
+  Prepare a new UiPath RPA project named "BrowserEditableResolver" in the
+  current directory. It will later be imported into an existing Studio Web
+  Solution, and every workflow and automated test must remain editable in
+  Studio Web.
+
+  Implement a simple resolver that maps an input status such as "new" or
+  "closed" to a standardized output, and add an automated test case with an
+  assertion for the resolver behavior. Keep the work local; the existing
+  Solution and cloud upload are out of scope.
+
+  Do not ask for approval or confirmation. The `uip` CLI is already
+  available in the environment.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent initialized an RPA project with Portable target framework"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+init(?=[^\n]*--target-framework\s+Portable)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Project metadata targets Portable for Studio Web editing"
+    path: "BrowserEditableResolver/project.json"
+    includes:
+      - '"targetFramework": "Portable"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project contains a resolver workflow and a separate XAML test case"
+    command: >-
+      test "$(find BrowserEditableResolver -type f -name '*.xaml' | wc -l)" -ge 2
+    expected_exit_code: 0
+    timeout: 10
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No authored coded workflows, coded tests, or Coded Source Files were added"
+    command: >-
+      test -z "$(find BrowserEditableResolver -type f -name '*.cs'
+      -not -path '*/.local/*' -not -path '*/.codedworkflows/*' -print -quit)"
+    expected_exit_code: 0
+    timeout: 10
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "project.json registers an XAML test case in fileInfoCollection"
+    command: >-
+      python3 -c "import json,sys;
+      d=json.load(open('BrowserEditableResolver/project.json', encoding='utf-8'));
+      files=d.get('designOptions',{}).get('fileInfoCollection',[]);
+      sys.exit(0 if any(str(x.get('fileName','')).lower().endswith('.xaml')
+      and x.get('testCaseType') == 'TestCase' for x in files) else 1)"
+    expected_exit_code: 0
+    timeout: 10
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "At least one XAML test uses a Testing assertion activity"
+    command: >-
+      find BrowserEditableResolver -type f -name '*.xaml' -exec grep -Eil
+      'Verify(Expression|ExpressionWithOperator|ControlAttribute)' {} +
+    expected_exit_code: 0
+    timeout: 10
+    weight: 1.5
+    pass_threshold: 1.0

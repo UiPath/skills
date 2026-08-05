@@ -6,11 +6,19 @@ When to use coded workflows (C#), XAML workflows (low-code), Coded Source Files,
 
 `uip rpa init` produces a mode-agnostic project — both `project.uiproj` and `project.json` are scaffolded, and the project can host coded workflows (`.cs`), XAML workflows (`.xaml`), or both. The coded vs XAML decision happens when you add a workflow to the project (or when an existing project's dominant mode dictates the default — see step 1 below).
 
+## Authoring Surface Gate
+
+Resolve the required authoring surface before applying the decision flowchart.
+
+- **Must remain editable in Studio Web** → use **Portable + XAML only** for workflows, helper logic, and test cases. Do not introduce coded workflows, coded test cases, or Coded Source Files (`.cs`).
+- **Only carried or deployed inside a Studio Web Solution** → this does not by itself force XAML. Preserve the project's compatible authoring mode unless browser editability is also required.
+- **Studio Web editability conflicts with an explicit coded request or existing coded/Windows project** → surface the conflict. The user must choose XAML browser editing, Studio Desktop coded authoring, or a separate/new Portable XAML project. Never imply that Solution wrapping makes coded files browser-editable.
+
 ## Decision Flowchart
 
-Follow top-down. Stop at the first match.
+Apply the Authoring Surface Gate first. If it does not decide the mode, follow this flow top-down and stop at the first match.
 
-0. **Did the user specify a mode?** ("coded workflow", "XAML workflow", "create a .cs file", "low-code") → **Use what they asked for. Do not second-guess.**
+0. **Did the user specify a compatible mode?** ("coded workflow", "XAML workflow", "create a .cs file", "low-code") → **Use what they asked for.** If it conflicts with the Authoring Surface Gate, surface the conflict instead.
 1. **Check the project's existing mode.** Match it unless there is a clear reason not to:
    - **XAML-only project** → default to XAML. Only go coded if steps 3-6 below apply.
    - **Coded-only project** → default to coded. Activities (Excel, Mail, UI automation) are available via services on `CodedWorkflow`.
@@ -19,7 +27,7 @@ Follow top-down. Stop at the first match.
 2. **Can existing activities handle the task directly?** (read Excel, send email, move file, UI click/type, queue processing, connector calls) → **XAML.** This covers the bulk of RPA work. No coded mode needed.
 3. **Does it define data models, DTOs, enums, or custom classes?** → **Coded Source File** (plain `.cs`, no `CodedWorkflow` base). XAML cannot define types — this is the one case where going hybrid is always justified.
 4. **Does it involve complex algorithmic logic?** (5+ nested branches, LINQ aggregation, regex extraction, REST API pagination/retry, sorting/dedup/fuzzy matching) → **Coded Workflow** for that step. Standard if/else, simple loops, and connector calls are fine in XAML — only escalate when a single XAML workflow grows past ~50 activities.
-5. **Does it need unit tests or assertions on business logic?** → **Coded Workflow** + **Coded Test Case** for the logic under test. UI/integration tests can stay XAML.
+5. **Does it need unit tests or assertions on business logic?** → **Coded Workflow** + **Coded Test Case** for Studio Desktop authoring. When Studio Web editability is required, keep the workflow and test case in XAML and use Testing activities.
 6. **Is it reusable utility code?** (helpers, formatters, validators, extension methods) → **Coded Source File**.
 7. **Default** → XAML.
 
@@ -41,7 +49,7 @@ Follow top-down. Stop at the first match.
 
 5. **Reusable utility libraries** — Date formatting, validation helpers, encryption, file path manipulation. Define as a Coded Source File, callable from any workflow.
 
-6. **Unit-testable business logic** — Pure functions (input → output, no UI) that need automated assertions. Coded Test Cases can call coded workflows directly.
+6. **Unit-testable business logic** — Pure functions (input → output, no UI) that need automated assertions. Coded Test Cases can call coded workflows directly when Studio Desktop is the authoring surface.
 
 7. **Algorithm-heavy work** — Sorting, deduplication, fuzzy matching, tree traversal — anything that would require dozens of Assign + If activities in XAML.
 
@@ -59,7 +67,9 @@ Follow top-down. Stop at the first match.
 
 4. **Process orchestration** — REFramework, queue-based transaction processing, retry patterns. The XAML templates for these are battle-tested.
 
-5. **Mixed workloads** — When some steps are activity-heavy and others involve light logic. Use XAML for orchestration; extract only the genuinely complex logic into a coded workflow invoked via `Invoke Workflow File`.
+5. **Mixed workloads** — When some steps are activity-heavy and others involve light logic. Use XAML for orchestration; extract only the genuinely complex logic into a coded workflow invoked via `Invoke Workflow File`, unless Studio Web editability requires the project to remain XAML-only.
+
+6. **Studio Web-editable RPA projects** — Keep workflows, helper logic, and test cases in XAML so every authored artifact remains editable in the browser.
 
 ---
 
@@ -72,7 +82,7 @@ InvokeCode embeds C#/VB code inline in a XAML activity. It works for small snipp
 1. **Code exceeds ~15 lines** → extract to a Coded Source File (utility) or Coded Workflow (if it needs `CodedWorkflow` services).
 2. **Code defines classes or types** → extract to a Coded Source File. InvokeCode cannot define reusable types.
 3. **Same code is copy-pasted across multiple XAML files** → extract to a Coded Workflow and invoke it via `Invoke Workflow File`.
-4. **Code needs unit tests** → extract to a Coded Workflow + Coded Test Case.
+4. **Code needs unit tests** → extract to a Coded Workflow + Coded Test Case for Studio Desktop authoring. For a Studio Web-editable project, keep the implementation and test case in XAML and assert with Testing activities.
 5. **Code uses complex .NET APIs** (HttpClient, LINQ, JSON serialization) → extract to a Coded Workflow for better readability and error handling.
 
 ### Comparison Table
@@ -93,6 +103,8 @@ InvokeCode embeds C#/VB code inline in a XAML activity. It works for small snipp
 ## Hybrid Project Patterns
 
 Hybrid projects mix coded and XAML files. The `workflows` property provides strongly-typed access to **all** workflows — both `.cs` and `.xaml` — so there is no friction in cross-invocation.
+
+Do not use these hybrid patterns when the project must remain editable in Studio Web; that authoring surface requires an XAML-only project.
 
 ### Interop Mechanisms
 
@@ -173,8 +185,9 @@ Both XAML workflows (via typed arguments) and coded workflows (via direct refere
 3. **Duplicating logic in both XAML and coded form.** Pick one, invoke it from the other.
 4. **Using `DataTable` or `Dictionary<string, object>` when a typed class would prevent errors.** Create a Coded Source File with a proper class.
 5. **Defaulting to coded for ambiguous requests.** "Create a workflow", "automate X", "build a process" mean XAML. Switch to coded only on explicit coded phrasing or a coded-specific trigger (custom types, complex algorithms, unit tests on business logic).
-6. **Overriding the user's explicit choice.** If the user says "coded workflow", create a coded workflow — do not suggest XAML instead. Same the other way: if the user says "XAML", do not suggest coded.
+6. **Overriding a compatible explicit choice.** If the user says "coded workflow", create a coded workflow unless it conflicts with the required authoring surface. Same the other way: if the user says "XAML", do not suggest coded.
 7. **Picking coded for UI automation by default.** UI automation defaults to XAML. Coded UI automation via the `uiAutomation` service is the exception, not the rule.
+8. **Treating Solution wrapping as browser-editability.** A Studio Web Solution can carry an RPA project without making coded files editable in the browser. Apply the Authoring Surface Gate separately.
 
 ---
 
