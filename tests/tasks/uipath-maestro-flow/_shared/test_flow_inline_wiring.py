@@ -28,6 +28,7 @@ from flow_inline_wiring import (  # noqa: E402
     assert_edge,
     assert_embedded_agent,
     assert_escalation_inputs,
+    assert_mcp_inputs,
     assert_no_derived_resource_fields,
     assert_prompt_tokens,
     assert_resource_inputs,
@@ -1219,3 +1220,142 @@ def test_connector_bindings_ignore_non_connection_rows():
          "resourceKey": "x", "propertyAttribute": "ConnectionId", "default": CONN_ID}
     )
     assert_connector_bindings(flow, CONN_ID)
+
+
+# ---------------------------------------------------------------------------
+# assert_mcp_inputs (M7)
+# ---------------------------------------------------------------------------
+
+MCP_SERVER_KEY = "3f2e1d0c-5b4a-4869-9788-a1b2c3d4e5f6"
+MCP_SLUG = "github-mcp"
+
+
+def _mcp_tool(**overrides):
+    tool = {
+        "name": "create_issue",
+        "description": "Create a GitHub issue",
+        "inputSchema": {"type": "object", "properties": {"repo": {"type": "string"}}},
+        "outputSchema": None,
+        "argumentProperties": {},
+    }
+    tool.update(overrides)
+    return {k: v for k, v in tool.items() if v is not ...}
+
+
+def _mcp_node(**input_overrides):
+    inputs = {
+        "source": "c7d3e9f1-2a4b-4c6d-8e0f-1a3b5c7d9e2f",
+        "name": "GitHubMcp",
+        "description": "GitHub MCP server — issue and repository tools",
+        "slug": MCP_SLUG,
+        "serverUrl": MCP_SLUG,
+        "folderPath": "Shared",
+        "folderKey": "b3c8e1f6-4d2a-4e9b-8a7c-1d5f0e9b2a64",
+        "referenceKey": MCP_SERVER_KEY,
+        "mcpType": "remote",
+        "selectedTools": [_mcp_tool()],
+        "toolCatalog": [],
+        "discoveryMode": {"type": "cached"},
+    }
+    inputs.update(input_overrides)
+    inputs = {k: v for k, v in inputs.items() if v is not ...}
+    return {
+        "id": "githubMcp",
+        "type": f"uipath.agent.resource.tool.mcp.github-mcp.{MCP_SERVER_KEY}",
+        "typeVersion": "1.0.0",
+        "display": {"label": "GitHub MCP"},
+        "inputs": inputs,
+    }
+
+
+def test_mcp_inputs_pass_on_flat_flow_form():
+    inputs = assert_mcp_inputs(_mcp_node(), expected_name="GitHubMcp")
+    assert inputs["slug"] == MCP_SLUG
+
+
+def test_mcp_inputs_optional_fields_may_be_absent():
+    assert_mcp_inputs(
+        _mcp_node(mcpType=..., discoveryMode=..., toolCatalog=..., folderKey=...)
+    )
+
+
+def test_mcp_inputs_reject_wrong_or_missing_name():
+    with pytest.raises(SystemExit, match="name"):
+        assert_mcp_inputs(_mcp_node(name=""))
+    with pytest.raises(SystemExit, match="GitHubMcp"):
+        assert_mcp_inputs(_mcp_node(name="DevTools"), expected_name="GitHubMcp")
+
+
+def test_mcp_inputs_reject_slug_serverurl_drift():
+    with pytest.raises(SystemExit, match="slug"):
+        assert_mcp_inputs(_mcp_node(slug=...))
+    with pytest.raises(SystemExit, match="serverUrl"):
+        assert_mcp_inputs(_mcp_node(serverUrl=""))
+    # serverUrl is the slug carrier, not a URL
+    with pytest.raises(SystemExit, match="canonical server slug"):
+        assert_mcp_inputs(_mcp_node(serverUrl="https://example.com/mcp"))
+
+
+def test_mcp_inputs_reject_solution_folder_path():
+    with pytest.raises(SystemExit, match="solution_folder"):
+        assert_mcp_inputs(_mcp_node(folderPath="solution_folder"))
+    with pytest.raises(SystemExit, match="folderPath"):
+        assert_mcp_inputs(_mcp_node(folderPath=""))
+
+
+def test_mcp_inputs_reject_bad_reference_key():
+    with pytest.raises(SystemExit, match="referenceKey"):
+        assert_mcp_inputs(_mcp_node(referenceKey="github-mcp"))
+    # UUID-shaped but not the type-suffix key
+    with pytest.raises(SystemExit, match="suffix key"):
+        assert_mcp_inputs(
+            _mcp_node(referenceKey="99999999-9999-4999-8999-999999999999")
+        )
+
+
+def test_mcp_inputs_accept_any_case_reference_key():
+    assert_mcp_inputs(_mcp_node(referenceKey=MCP_SERVER_KEY.upper()))
+
+
+def test_mcp_inputs_reject_empty_or_malformed_selected_tools():
+    with pytest.raises(SystemExit, match="selectedTools"):
+        assert_mcp_inputs(_mcp_node(selectedTools=[]))
+    with pytest.raises(SystemExit, match="selectedTools"):
+        assert_mcp_inputs(_mcp_node(selectedTools=...))
+    # nameless entries are silently dropped at projection
+    with pytest.raises(SystemExit, match="nameless"):
+        assert_mcp_inputs(_mcp_node(selectedTools=[_mcp_tool(name="")]))
+    # the escaped-JSON-string schema the spec returns, written unparsed
+    with pytest.raises(SystemExit, match="inputSchema"):
+        assert_mcp_inputs(
+            _mcp_node(selectedTools=[_mcp_tool(inputSchema='{"type": "object"}')])
+        )
+
+
+def test_mcp_inputs_reject_bad_discovery_mode():
+    with pytest.raises(SystemExit, match="discoveryMode"):
+        assert_mcp_inputs(_mcp_node(discoveryMode="cached"))
+    with pytest.raises(SystemExit, match="discoveryMode"):
+        assert_mcp_inputs(_mcp_node(discoveryMode={"type": "runtime"}))
+    assert_mcp_inputs(_mcp_node(discoveryMode={"type": "dynamic", "allowAll": True}))
+
+
+def test_mcp_inputs_reject_unknown_subtype():
+    with pytest.raises(SystemExit, match="mcpType"):
+        assert_mcp_inputs(_mcp_node(mcpType="stdio"))
+    # case-insensitive membership: registered casings pass
+    assert_mcp_inputs(_mcp_node(mcpType="uiPath"))
+    assert_mcp_inputs(_mcp_node(mcpType="Remote"))
+
+
+def test_mcp_inputs_reject_derived_resource_fields():
+    with pytest.raises(SystemExit, match="availableTools"):
+        assert_mcp_inputs(_mcp_node(availableTools=[_mcp_tool()]))
+    with pytest.raises(SystemExit, match="toolsConfiguration"):
+        assert_mcp_inputs(
+            _mcp_node(toolsConfiguration={"discoveryMode": {"type": "cached"}})
+        )
+    with pytest.raises(SystemExit, match="solutionProperties"):
+        assert_mcp_inputs(_mcp_node(solutionProperties={"resourceKey": MCP_SERVER_KEY}))
+    with pytest.raises(SystemExit, match="resourceType"):
+        assert_mcp_inputs(_mcp_node(**{"$resourceType": "mcp"}))
