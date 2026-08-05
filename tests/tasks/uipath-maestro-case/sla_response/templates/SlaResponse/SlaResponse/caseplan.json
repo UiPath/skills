@@ -1,6 +1,6 @@
 {
     "id": "case-SlaRespns1",
-    "version": "23.0.0",
+    "version": "27.0.0",
     "name": "SlaResponse",
     "description": "Three-stage case with a case-level SLA and a Review-stage SLA; SLA responses are added by the task under test.",
     "metadata": {
@@ -320,17 +320,18 @@
         },
         {
             "id": "trigger_1",
-            "type": "case-management:Trigger",
+            "type": "uipath.case.trigger",
             "data": {
                 "parentElement": {
                     "id": "root",
                     "type": "case-management:root"
                 },
-                "label": "Start Manually",
                 "description": "User-initiated trigger that starts the SlaResponse case.",
                 "isInvalidDropTarget": false,
                 "isPendingParent": false,
-                "uipath": {
+                "typeVersion": "1.0.0",
+                "display": { "label": "Start Manually" },
+                "inputs": {
                     "outputs": [
                         {
                             "name": "caseRef",
