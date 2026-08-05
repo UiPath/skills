@@ -1,0 +1,44 @@
+name: Validate Skill Flavors
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+      - 'skill-flavors/**'
+      - 'scripts/compose-skill-flavor.py'
+      - 'tests/scripts/test_skill_flavor_composer.py'
+      - 'package.json'
+      - '.github/workflows/validate-skill-flavors.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Build complete default and Studio Web files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install focused test dependency
+        run: python3 -m pip install pytest
+
+      - name: Test the flavor composer contract
+        run: python3 -m pytest -q tests/scripts/test_skill_flavor_composer.py
+
+      - name: Validate source contracts
+        run: python3 scripts/compose-skill-flavor.py validate skill-flavors/studioweb
+
+      - name: Build complete file trees
+        run: python3 scripts/compose-skill-flavor.py build skill-flavors/studioweb /tmp/built-skill-flavors
+
+      - name: Ensure build-only markers do not reach consumers
+        run: |
+          if rg -n '<!-- skill-flavor:' /tmp/built-skill-flavors; then
+            echo 'Flavor marker leaked into a built skill file.' >&2
+            exit 1
+          fi

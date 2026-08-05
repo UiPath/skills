@@ -42,6 +42,10 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 │       ├── SKILL.md           # Skill definition (required)
 │       ├── references/        # Supporting reference documents (optional)
 │       └── assets/            # Templates, examples, static files (optional)
+├── skill-flavors/             # Sparse build-time exceptions for custom hosts
+│   └── <flavor>/
+│       ├── skills.allowlist   # Reviewed skills shipped by this flavor
+│       └── uipath-<name>/     # Mirrors paths under skills/uipath-<name>/
 ├── tests/                     # Skill evaluation tests (coder_eval)
 │   ├── experiments/           # Experiment configs (smoke, integration, e2e)
 │   ├── tasks/                 # Test tasks organized by skill
@@ -57,9 +61,10 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ### Key Principles
 
 - **Skills are self-contained.** Each skill is an independent folder under `skills/`. Skills cannot reference or depend on other skills.
-- **SKILL.md is the entry point.** The AI agent reads `SKILL.md` first. Everything the agent needs to know must be reachable from there.
+- **SKILL.md is the complete default entry point.** Standard integrations read it directly, and reviewers can understand the default/local behavior without a build manifest.
+- **Custom flavors contain exceptions, not skill copies.** Mark only the canonical passages that actually differ, then provide sparse replacement blocks under `skill-flavors/<flavor>/`.
 - **References are supplementary.** Large reference material goes in `references/` subdirectories, linked from SKILL.md.
-- **No build system.** This is a documentation and skill-definitions repository. There is no compilation, bundling, or package publishing from this repo.
+- **Files are built before packages.** Build and validate complete default/custom skill trees first. Package staging consumes those finished trees; hosts do not resolve variants at runtime.
 
 ### Multi-Tool Compatibility
 
@@ -75,7 +80,10 @@ Tool wiring lives outside `skills/`:
 | Cursor IDE | `.cursor/rules/*.mdc` | Scoped MDC rules: `token-optimization` (always-apply), `skill-structure` + `content-quality` (glob-scoped), `skill-review` + `pr-review` (agent-requested) |
 | GitHub Copilot coding agent | `AGENTS.md` (symlink → `CLAUDE.md`) | Copilot reads `AGENTS.md` natively (since Aug 2025) |
 
-When adding a skill, only touch files under `skills/uipath-<name>/` — the root integration files already wire every tool up automatically.
+When adding a skill, the root integration files already wire the canonical
+`SKILL.md` up automatically. Review the complete skill for each custom flavor;
+add it to that flavor's `skills.allowlist` only when its built output is safe
+for that environment.
 
 ## Adding a New Skill
 
@@ -228,6 +236,45 @@ Reference files go in `references/` and follow these conventions:
 - **Organize by subdomain** when a skill covers multiple areas (e.g., `references/integration-service/`, `references/lifecycle/`)
 - **Link from SKILL.md** so the agent can discover them
 
+### 6a. Add a Custom Flavor Exception (Only When Needed)
+
+Use a flavor exception only when a host's capabilities materially change an
+instruction. Keep the complete default behavior in the canonical file and
+wrap the smallest differing passage with a named block:
+
+```markdown
+<!-- skill-flavor:project-creation:start -->
+Create the project with the default/local workflow.
+<!-- skill-flavor:project-creation:end -->
+```
+
+Create a file at the matching path under
+`skill-flavors/<flavor>/<skill>/` and put only the replacement block in it:
+
+```markdown
+<!-- skill-flavor:project-creation:start -->
+Create the project with the host capability exposed in this environment.
+<!-- skill-flavor:project-creation:end -->
+```
+
+- Use lowercase kebab-case block names and keep each name unique within its file.
+- Keep shared content outside blocks; do not create a second full `SKILL.md`.
+- An override must contain complete marked blocks and no unmarked prose.
+- Mirror the canonical relative path, including nested `references/` paths.
+- Put a reviewed skill in `skills.allowlist` even when it passes through unchanged.
+- Do not check generated flavor trees into source control; build them into the ignored `build/` directory for validation and package staging.
+
+Validate the source contract, then build the final Markdown trees:
+
+```bash
+npm run skills:validate
+npm run skills:build
+```
+
+The build writes complete, marker-free trees to `build/skills/default/` and
+`build/skills/<flavor>/`. Packaging must consume those directories; it must
+not read the sparse override sources directly.
+
 ### 7. Add Templates/Assets (Optional)
 
 Static files like code templates go in `assets/`:
@@ -356,6 +403,14 @@ Before submitting your PR, verify:
 - [ ] Templates use `-template` suffix
 - [ ] No duplicate content already covered in another skill's references
 
+### Skill flavors
+
+- [ ] The canonical `SKILL.md` is still complete and useful as the default/local skill
+- [ ] Only genuinely different passages are enclosed in flavor blocks
+- [ ] Custom override files contain matching complete blocks and no unmarked content
+- [ ] Every custom flavor explicitly includes only skills reviewed for that environment
+- [ ] Complete default and custom file trees build and validate before package staging
+
 ### Tests
 - [ ] At least 1 smoke test in `tests/tasks/<skill-name>/`
 - [ ] At least 1 e2e test in `tests/tasks/<skill-name>/`
@@ -417,8 +472,10 @@ Before submitting your PR, verify:
 | Item | Convention | Example |
 |------|-----------|---------|
 | Skill folder | `uipath-<kebab-case>` | `uipath-rpa` |
-| SKILL.md | Exactly `SKILL.md` (uppercase) | `SKILL.md` |
+| Default entrypoint | Exactly `SKILL.md` (uppercase) | `SKILL.md` |
 | Reference files | `kebab-case.md` | `commands-reference.md` |
+| Flavor override | `skill-flavors/<flavor>/<skill>/<canonical-path>` | `skill-flavors/studioweb/uipath-api-workflow/SKILL.md` |
+| Flavor block | Lowercase kebab-case name | `skill-flavor:project-creation:start` |
 | Guide files | `<topic>-guide.md` | `orchestrator-guide.md` |
 | Template files | `<name>-template.md` | `codedworkflow-template.md` |
 | Reference subdirs | `kebab-case/` | `integration-service/` |
