@@ -44,11 +44,11 @@ Do not inline an agent you intend to reuse. Inline agents are private to the flo
 | `input` | left | target | Flow sequence input |
 | `success` | right | source | Normal flow output |
 | `error` | right | source | Implicit error port (shared with all action nodes) — see [Implicit error port on action nodes](../../../../shared/file-format.md#implicit-error-port-on-action-nodes) |
-| `tool` | bottom | source (artifact) | Tool resource nodes — process-family: [capabilities/process.md](capabilities/process.md); built-in: [capabilities/built-in-tools.md](capabilities/built-in-tools.md); IS connector: [capabilities/integration-service.md](capabilities/integration-service.md) |
+| `tool` | bottom | source (artifact) | Tool resource nodes — process-family: [capabilities/process.md](capabilities/process.md); built-in: [capabilities/built-in-tools.md](capabilities/built-in-tools.md); IS connector: [capabilities/integration-service.md](capabilities/integration-service.md); MCP server: [capabilities/mcp.md](capabilities/mcp.md) |
 | `context` | bottom | source (artifact) | Context resource nodes — [capabilities/context-index.md](capabilities/context-index.md) |
 | `escalation` | top | source (artifact) | Escalation resource nodes — [capabilities/escalation.md](capabilities/escalation.md) |
 
-The current autonomous manifest exposes no `memory` or `mcp` artifact handle — confirm via `registry get` before planning either capability.
+The current autonomous manifest exposes no `memory` artifact handle — confirm via `registry get` before planning memory. There is no `mcp` handle either — MCP servers attach via the `tool` handle ([capabilities/mcp.md](capabilities/mcp.md)); note MCP greenfield authoring is gated on a registry gap (see that doc's callout).
 
 ## Output Variables
 
@@ -64,7 +64,7 @@ Every inline agent node (and, per capability, most resource nodes) carries `inpu
 
 ## Resource Nodes
 
-The agent attaches resource nodes to its artifact ports (tools on `tool`, context on `context`, escalation on `escalation`). Each resource node carries its **full config in its own `inputs`** plus its own identity UUID (`inputs.source` for most kinds; built-ins vary — see [capabilities/built-in-tools.md § Identity](capabilities/built-in-tools.md#identity--two-patterns)), and connects via exactly one artifact edge. Decide which capabilities the agent needs at planning time; wiring mechanics live in [impl.md § Resource Nodes](impl.md#7-resource-nodes). Process-family tools: [capabilities/process.md](capabilities/process.md); built-in tools: [capabilities/built-in-tools.md](capabilities/built-in-tools.md); IS connector tools: [capabilities/integration-service.md](capabilities/integration-service.md); context grounding: [capabilities/context-index.md](capabilities/context-index.md); escalations: [capabilities/escalation.md](capabilities/escalation.md); remaining capability docs land per roadmap milestone.
+The agent attaches resource nodes to its artifact ports (tools on `tool`, context on `context`, escalation on `escalation`). Each resource node carries its **full config in its own `inputs`** plus its own identity UUID (`inputs.source` for most kinds; built-ins vary — see [capabilities/built-in-tools.md § Identity](capabilities/built-in-tools.md#identity--two-patterns)), and connects via exactly one artifact edge. Decide which capabilities the agent needs at planning time; wiring mechanics live in [impl.md § Resource Nodes](impl.md#7-resource-nodes). Process-family tools: [capabilities/process.md](capabilities/process.md); built-in tools: [capabilities/built-in-tools.md](capabilities/built-in-tools.md); IS connector tools: [capabilities/integration-service.md](capabilities/integration-service.md); MCP server tools: [capabilities/mcp.md](capabilities/mcp.md) (greenfield gated on a registry gap — see that doc's callout); context grounding: [capabilities/context-index.md](capabilities/context-index.md); escalations: [capabilities/escalation.md](capabilities/escalation.md); remaining capability docs land per roadmap milestone.
 
 ## Planning Annotation
 
@@ -75,4 +75,5 @@ In the architectural plan:
 - `inline-agent-escalation: <EscalationName> → <AppName> in <folder-path>` — one line per escalation (Action Center HITL) — [capabilities/escalation.md](capabilities/escalation.md).
 - `inline-agent-context: <ContextName> (index) → <IndexName> in <folder-path>` — one line per context resource — [capabilities/context-index.md](capabilities/context-index.md).
 - `inline-agent-builtin-tool: <ToolName> (<node-type suffix>)` — one line per built-in tool (`analyzefiles` | `summarize` | `batchtransform`); no folder (self-contained) — [capabilities/built-in-tools.md](capabilities/built-in-tools.md).
+- `inline-agent-mcp: <ToolName> → <server-slug> in <folder-path>` — one line per MCP server tool — [capabilities/mcp.md](capabilities/mcp.md). Check the registry gap gate at planning time: `uip maestro flow registry search mcp` returning no `tool.mcp.*` entry means greenfield authoring is blocked — plan the canvas-attach path instead (see the doc's callout).
 - If an existing published agent already covers the use case, prefer the [published agent](../agent/planning.md) annotation instead
