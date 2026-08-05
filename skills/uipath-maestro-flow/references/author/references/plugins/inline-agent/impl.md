@@ -172,6 +172,7 @@ Universal recipe, all kinds: discover the node type (`registry search` prefix �
 | MCP server tool | `tool` (no `mcp` handle exists) | `uipath.agent.resource.tool.mcp.<server-name>.<server-key>` | [capabilities/mcp.md](capabilities/mcp.md) — registry gap gates greenfield authoring |
 | Context (index / RAG) | `context` | `uipath.agent.resource.context.index.<name>.<id>` | [capabilities/context-index.md](capabilities/context-index.md) |
 | Escalation (HITL) | `escalation` | `uipath.agent.resource.escalation.<variant>` | [capabilities/escalation.md](capabilities/escalation.md) |
+| Memory space | — **not attachable** (autonomous manifest declares no `memory` handle) | `uipath.agent.resource.memory.<name>.<id>` (canvas-hydrated legacy only) | [capabilities/memory.md](capabilities/memory.md) — STOP and surface; see alternatives there |
 
 Until a kind's capability doc lands, pin its exact `inputs` shape from a canvas-authored flow or the manifest's `inputDefaults` — do not guess field sets. Process-family and connector tools additionally require top-level `bindings[]` rows mirroring the definition's `model.bindings` — process rows are copied by hand ([capabilities/process.md § Bindings](capabilities/process.md#bindings)), connector rows are written by `uip maestro flow node configure` ([capabilities/integration-service.md § Bindings](capabilities/integration-service.md#bindings)); built-ins ([capabilities/built-in-tools.md](capabilities/built-in-tools.md)), MCP servers ([capabilities/mcp.md](capabilities/mcp.md)), contexts ([capabilities/context-index.md](capabilities/context-index.md)), and escalations ([capabilities/escalation.md](capabilities/escalation.md)) require none.
 
@@ -311,7 +312,7 @@ uip maestro flow validate "<FILE>.flow" --output json
 
 Read this to understand what the canvas materializes — never to author it.
 
-**Layout at rest:** `<GUID>/` (= agent `inputs.source`) containing `agent.json`, `flow-layout.json`, `resources/<resourceId>/resource.json`, `features/<featureId>/feature.json` (memory features — not derivable from autonomous agents today; the current autonomous manifest exposes no `memory` handle), `evals/{eval-sets,evaluators}`.
+**Layout at rest:** `<GUID>/` (= agent `inputs.source`) containing `agent.json`, `flow-layout.json`, `resources/<resourceId>/resource.json`, `features/<featureId>/feature.json` (memory features — not derivable from autonomous agents today; the current autonomous manifest exposes no `memory` handle, see [capabilities/memory.md](capabilities/memory.md)), `evals/{eval-sets,evaluators}`.
 
 **Who derives, when:** one projection is used by both the canvas save-flush (400ms debounce; immediate for new agents; forced before publish/debug/eval) and packaging synthesis — flushed bytes ≡ synthesized bytes. Packaging additionally emits `<GUID>/.agent-builder/{agent.json,bindings.json}` (what the `pythonAgent` runtime consumes) and an `Agent` entry point at `content/<GUID>/agent.json`.
 
@@ -371,7 +372,7 @@ Only the first form is ever authored.
 | --- | --- | --- |
 | `flow validate`: `systemPrompt` / `userPrompt` / `model` required | Missing required embedded inputs — node is a shell or half-migrated | Embed the full `inputs` per § 2; migrate per § 11 if a sidecar holds the content |
 | `flow validate`: definitions entry missing for a node type (error names a `registry get` command) | Node instance `(type, typeVersion)` has no `definitions[]` match | Run the suggested `registry get`, copy the definition verbatim, match `typeVersion` to its `version` (§ 3) |
-| `flow validate`: edge rejected, "rewire to one of: escalation, context, tool, success, error" | Edge uses a source handle the manifest doesn't expose (e.g. `memory` on the current autonomous manifest) | Use a declared artifact handle; confirm handles via `registry get` (§ 6) |
+| `flow validate`: edge rejected, "rewire to one of: escalation, context, tool, success, error" | Edge uses a source handle the manifest doesn't expose (e.g. `memory` on the current autonomous manifest) | Use a declared artifact handle; confirm handles via `registry get` (§ 6). A `memory`-port edge on a canvas-hydrated legacy flow is data, not a repair target — see [capabilities/memory.md § Brownfield](capabilities/memory.md#brownfield--recognizing-memory-in-legacy-artifacts) |
 | `flow debug` faults: incident `170002`, "Package resolution failed", `Serverless.PythonAgent.PrepareEnvironmentError` | Known CLI gap — debug does not yet synthesize the derived sidecar for a flow-only agent | Surface the gap (§ 9). Open/save the flow once in a canvas host, then re-debug. Never hand-write the sidecar |
 | Runtime shows the literal token `{{input.some__flat__key}}` | Prompt carries the derived-agent.json namespace (ported sidecar text) | Rewrite as `{{ $vars.<dotted-path> }}` (§ 4, § 11 step 3) |
 | Prompt value empty at run time, validate clean | Referenced trigger field not declared in `variables.globals[]` (`direction: "in"`, `triggerNodeId`), or the `$vars` path names no real node output | Declare the trigger global; verify the node id + field (§ 4) |
