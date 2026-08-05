@@ -131,7 +131,7 @@ A robust agent is more than its prompt. Each field: default, and when to change.
 | `maxIterations` | `25` | `≤5` only if tool-less and single-shot. Kill switch, not a loop fix: without a per-tool cap the agent loops to the ceiling — observed dying at 5 and at 25 alike (`TERMINATION_MAX_ITERATIONS`). |
 | `maxTokenPerResponse` | — | Set ≤ the model's `MaxTokens` cap — see [model-selection-guide.md](../model-selection-guide.md#1-discover-primary-path). |
 | `model` | canvas-seeded / manifest default | **Always set explicitly** — discover + select per [model-selection-guide.md](../model-selection-guide.md). |
-| `guardrails` | `[]` | Keep `[]` until the guardrails capability doc lands (per roadmap milestone). |
+| `guardrails` | `[]` | Input/output policy enforcement is wanted (PII, harmful content, custom rules) — [capabilities/guardrails.md](../capabilities/guardrails.md). |
 
 ## Anti-patterns
 
