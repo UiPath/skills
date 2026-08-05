@@ -25,6 +25,7 @@ from flow_inline_wiring import (  # noqa: E402
     assert_definition_present,
     assert_edge,
     assert_embedded_agent,
+    assert_escalation_inputs,
     assert_no_derived_resource_fields,
     assert_prompt_tokens,
     assert_resource_inputs,
@@ -878,3 +879,171 @@ def test_context_inputs_reject_context_type_and_resource_type():
         assert_context_inputs(_context_node(contextType="index"))
     with pytest.raises(SystemExit, match="resourceType"):
         assert_context_inputs(_context_node(**{"$resourceType": "context"}))
+
+
+# ---------------------------------------------------------------------------
+# assert_escalation_inputs (M5)
+# ---------------------------------------------------------------------------
+
+def _escalation_app(**overrides):
+    app = {
+        "appName": "HumanReviewEscalation",
+        "resourceKey": "1f2e3d4c-5b6a-4978-8899-aabbccddeeff",
+        "folderName": "solution_folder",
+        "appVersion": 1,
+        "inputSchema": {
+            "type": "object",
+            "properties": {"Content": {"type": "string"}, "Comment": {"type": "string"}},
+        },
+        "outputSchema": {
+            "type": "object",
+            "properties": {"Comment": {"type": "string"}},
+        },
+        "inputSchemaDotnetTypeMapping": {"Content": "System.String", "Comment": "System.String"},
+        "outputSchemaDotnetTypeMapping": {"Comment": "System.String"},
+    }
+    app.update(overrides)
+    return {k: v for k, v in app.items() if v is not ...}
+
+
+def _escalation_node(**input_overrides):
+    inputs = {
+        "source": "b4f0d2c8-6a1e-4f7b-9c3d-2e5a8b0d4f61",
+        "name": "HumanReview",
+        "description": "Escalate uncertain cases to a human reviewer",
+        "type": "app-task",
+        "app": _escalation_app(),
+        "recipients": [{"type": 3, "value": "reviewer@example.com"}],
+        "outcomeMapping": {"approve": "continue", "reject": "continue"},
+        "_additionalProps": {"taskTitle": "Review request", "priority": "medium", "labels": []},
+        "_notifications": False,
+        "_appInputs": None,
+    }
+    inputs.update(input_overrides)
+    inputs = {k: v for k, v in inputs.items() if v is not ...}
+    return {
+        "id": "humanReview",
+        "type": "uipath.agent.resource.escalation.coded-action-app",
+        "typeVersion": "1.1",
+        "display": {"label": "HumanReview"},
+        "inputs": inputs,
+    }
+
+
+EXPECTED_ESCALATION_APP = {
+    "appName": "HumanReviewEscalation",
+    "folderName": "solution_folder",
+}
+
+
+def test_escalation_inputs_pass_on_full_flow_form():
+    inputs = assert_escalation_inputs(
+        _escalation_node(), expected_app=EXPECTED_ESCALATION_APP
+    )
+    assert inputs["app"]["appName"] == "HumanReviewEscalation"
+
+
+def test_escalation_inputs_tolerate_absent_type_and_outcome_mapping():
+    # `type` defaults to app-task via the resolver; outcomeMapping is
+    # projection-nullable — absence is legal authoring.
+    assert_escalation_inputs(_escalation_node(type=..., outcomeMapping=...))
+
+
+def test_escalation_inputs_accept_draft_app_version_zero():
+    # Draft apps carry ActionSchema version 0; projection coerces falsy to 1.
+    assert_escalation_inputs(_escalation_node(app=_escalation_app(appVersion=0)))
+
+
+def test_escalation_inputs_reject_quick_form_type_on_app_node():
+    with pytest.raises(SystemExit, match="app-task"):
+        assert_escalation_inputs(_escalation_node(type="quick-form"))
+
+
+def test_escalation_inputs_reject_missing_app():
+    with pytest.raises(SystemExit, match=r"inputs\.app"):
+        assert_escalation_inputs(_escalation_node(app=...))
+
+
+def test_escalation_inputs_reject_wrong_app_binding():
+    with pytest.raises(SystemExit, match="folderName"):
+        assert_escalation_inputs(
+            _escalation_node(app=_escalation_app(folderName="Shared/Wrong")),
+            expected_app=EXPECTED_ESCALATION_APP,
+        )
+
+
+def test_escalation_inputs_reject_non_uuid_resource_key():
+    with pytest.raises(SystemExit, match="resourceKey"):
+        assert_escalation_inputs(
+            _escalation_node(app=_escalation_app(resourceKey="HumanReviewEscalation"))
+        )
+
+
+def test_escalation_inputs_accept_uppercase_resource_key():
+    # Tenant-provided casing — unlike the authored lowercase inputs.source.
+    assert_escalation_inputs(
+        _escalation_node(app=_escalation_app(resourceKey="1F2E3D4C-5B6A-4978-8899-AABBCCDDEEFF"))
+    )
+
+
+def test_escalation_inputs_reject_schema_less_app():
+    # Validate only checks app PRESENCE — a bare {appName, resourceKey,
+    # folderName} passes validate but derives an EMPTY task form.
+    with pytest.raises(SystemExit, match="inputSchema"):
+        assert_escalation_inputs(
+            _escalation_node(app=_escalation_app(inputSchema=..., outputSchema=...))
+        )
+
+
+def test_escalation_inputs_reject_empty_recipients():
+    with pytest.raises(SystemExit, match="recipients"):
+        assert_escalation_inputs(_escalation_node(recipients=[]))
+    with pytest.raises(SystemExit, match="recipients"):
+        assert_escalation_inputs(_escalation_node(recipients=[{"type": 3, "value": ""}]))
+
+
+def test_escalation_inputs_reject_bad_outcome_mapping_value():
+    with pytest.raises(SystemExit, match="outcomeMapping"):
+        assert_escalation_inputs(
+            _escalation_node(outcomeMapping={"approve": "resume"})
+        )
+
+
+def test_escalation_inputs_reject_invalid_priority():
+    # Projection silently degrades unknown priorities to "medium"; validate
+    # does not catch the drift — this checker is the only gate.
+    with pytest.raises(SystemExit, match="priority"):
+        assert_escalation_inputs(
+            _escalation_node(
+                _additionalProps={"taskTitle": "", "priority": "urgent", "labels": []}
+            )
+        )
+
+
+def test_escalation_inputs_reject_derived_channels():
+    with pytest.raises(SystemExit, match="channels"):
+        assert_escalation_inputs(_escalation_node(channels=[{"type": "actionCenter"}]))
+
+
+def test_escalation_inputs_reject_sidecar_resource_fields():
+    with pytest.raises(SystemExit, match="resourceType"):
+        assert_escalation_inputs(_escalation_node(**{"$resourceType": "escalation"}))
+    with pytest.raises(SystemExit, match="escalationType"):
+        assert_escalation_inputs(_escalation_node(escalationType=0))
+    with pytest.raises(SystemExit, match="isEnabled"):
+        assert_escalation_inputs(_escalation_node(isEnabled=True))
+    with pytest.raises(SystemExit, match="taskTitleV2"):
+        assert_escalation_inputs(_escalation_node(taskTitleV2={"type": "textBuilder"}))
+    # Projection-carried fields — hydration never writes them back, so an
+    # authored node carrying them ported a sidecar resource.json.
+    with pytest.raises(SystemExit, match="referenceKey"):
+        assert_escalation_inputs(_escalation_node(referenceKey=""))
+    with pytest.raises(SystemExit, match="folderPath"):
+        assert_escalation_inputs(_escalation_node(folderPath="solution_folder"))
+
+
+def test_escalation_inputs_reject_quick_form_schema_on_app_task():
+    with pytest.raises(SystemExit, match="quick-form-only"):
+        assert_escalation_inputs(
+            _escalation_node(schema={"fields": [], "outcomes": []})
+        )
