@@ -53,7 +53,9 @@ LIVE_MODEL = "gpt-4.1-2025-04-14"
 LIVE_MAX_TOKENS = 4096
 LIVE_MAX_ITERATIONS = 8
 LIVE_TEMPERATURE = 0.1
-LIVE_PROMPT_MARKERS = ("manual-review", "payments playbook", "500")
+# Distinctive phrases only — a fresh rewrite of a refund prompt could plausibly
+# reinvent a bare amount like "500", so it is not a discriminator.
+LIVE_PROMPT_MARKERS = ("manual-review", "payments playbook")
 LIVE_VARS_PATHS = (
     "$vars.start.output.requestDetails",
     "$vars.start.output.amountEur",

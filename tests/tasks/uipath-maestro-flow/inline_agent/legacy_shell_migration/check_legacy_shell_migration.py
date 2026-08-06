@@ -71,11 +71,12 @@ STORED_MAX_ITERATIONS = 12
 STORED_TEMPERATURE = 0.2
 STORED_MODE = "standard"
 # Phrases unique to the stored system prompt — at least one must survive, which
-# is what distinguishes a port from a from-scratch rewrite.
+# is what distinguishes a port from a from-scratch rewrite. Deliberately
+# excludes domain-generic words ("refund", "dispute") a rewrite would plausibly
+# reinvent.
 STORED_PROMPT_MARKERS = (
     "needs-review",
     "accounts-receivable",
-    "refund",
     "contact the customer",
 )
 # The two flat input keys the stored prompt referenced, with the dotted paths
@@ -119,11 +120,15 @@ def check_ported_settings(inputs: dict) -> None:
             f"inputs.maxIterations is {inputs.get('maxIterations')!r}, "
             f"expected the stored {STORED_MAX_ITERATIONS}"
         )
-    # Tolerant on presence (both have manifest defaults), strict on value.
-    if "temperature" in inputs and inputs["temperature"] != STORED_TEMPERATURE:
+    # The fixture stores a NON-default temperature — omitting it falls back to
+    # the manifest default and changes behaviour, so it is required like the
+    # other numeric settings. `mode` stays tolerant-on-presence: the stored
+    # value IS the default, so an omission is behaviour-neutral.
+    if inputs.get("temperature") != STORED_TEMPERATURE:
         errs.append(
-            f"inputs.temperature is {inputs['temperature']!r}, expected the "
-            f"stored {STORED_TEMPERATURE}"
+            f"inputs.temperature is {inputs.get('temperature')!r}, expected "
+            f"the stored {STORED_TEMPERATURE} — dropping it resets the agent "
+            "to the manifest default"
         )
     if "mode" in inputs and inputs["mode"] != STORED_MODE:
         errs.append(
