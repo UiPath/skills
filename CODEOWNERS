@@ -34,7 +34,6 @@
 /tests/tasks/uipath-platform/resources/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-platform/integration-service/ @chandusailella @baishalighosh
 /tests/tasks/uipath-platform/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
-/tests/tasks/uipath-platform/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-platform/traces/ @UiPath/llmops-team
 /tests/fixtures/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-platform/data-fabric/ @UiPath/DatafabricCodingAgent
