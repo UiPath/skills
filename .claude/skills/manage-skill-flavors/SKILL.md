@@ -95,6 +95,19 @@ git diff --check
 
 `skills:build` must produce complete marker-free trees under `build/skills/`. `skills:pack` must rebuild those trees, stage packages under `build/packages/`, run real `npm pack`, and verify tarballs under `build/npm/`. Release workflows must publish those verified `.tgz` files rather than repacking the staging directories.
 
+Normal `npm pack` and `npm publish` at the repository root remain backward
+compatible default-package commands. Their `prepack` lifecycle transactionally
+activates a marker-free default `skills/` tree, and `postpack` restores the
+exact canonical source tree before the command finishes. They produce or
+publish only `@uipath/skills`; they do not replace `npm run skills:pack`, which
+builds every discovered flavor. If npm fails or is interrupted between those
+lifecycle steps and `build/.root-pack-transaction` remains, first confirm the
+original npm process has ended, then run `npm run skills:recover` before
+retrying. Recovery restores canonical sources; if it finds unexpected overlay
+edits, it preserves them under `build/.root-pack-recovery-*` and exits nonzero
+so they cannot be missed. Never use `--ignore-scripts` for root source
+packaging because it intentionally bypasses this composition lifecycle.
+
 Inspect the final package contract, not only sparse sources:
 
 - The default contains every canonical skill and retains canonical block bodies without marker boundaries.
@@ -117,9 +130,10 @@ includes it automatically.
 1. **Keep canonical files complete.** Default/local consumers must understand `SKILL.md` without a build manifest.
 2. **Build files before packages.** Packages consume complete `build/skills/<variant>` trees, never canonical and sparse sources directly.
 3. **Make additions automatic.** A valid new flavor directory must receive a tree and package without code, npm-script, or workflow edits.
-4. **Package the default from generated files.** Direct root `npm pack` or `npm publish` is forbidden because it can leak source markers.
+4. **Preserve root command compatibility.** Normal root `npm pack` and `npm publish` must compose only the marker-free default package and restore canonical sources; `npm run skills:pack` remains the all-flavor command.
 5. **Never edit generated output.** Change canonical files, sparse overrides, or the composer; do not modify or commit `build/`.
 6. **Fail before replacement.** Validate every flavor and inspect every tarball before replacing the last successful generated artifacts.
+7. **Recover without data loss.** Keep root packaging transactional, reject overlapping transactions, and preserve unexpected overlay edits before restoring canonical sources.
 
 ## What Not to Do
 
@@ -129,3 +143,4 @@ includes it automatically.
 - Do not ship default plugin hooks or manifests in a minimal host package.
 - Do not validate only `studioweb`; enumerate every discovered flavor.
 - Do not trust a source-tree scan as proof of package safety; inspect the actual tarballs.
+- Do not remove or bypass the root `prepack`/`postpack` lifecycle; source markers must never reach the default npm package.

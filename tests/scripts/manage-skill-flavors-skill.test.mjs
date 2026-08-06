@@ -91,4 +91,7 @@ test("contributor guidance documents the full-catalog Node flavor contract", () 
   assert.match(source, /npm run skills:test/);
   assert.match(source, /@uipath\/skills-<flavor>/);
   assert.match(source, /verified \.tgz files|verify tarballs/i);
+  assert.match(source, /`npm pack` and `npm publish`.*backward\s+compatible/is);
+  assert.match(source, /npm run skills:recover/);
+  assert.match(source, /`npm run skills:pack`.*all-flavor/is);
 });

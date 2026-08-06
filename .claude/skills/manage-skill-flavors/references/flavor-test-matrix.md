@@ -61,9 +61,12 @@ Inspect staged directories and real `.tgz` archives.
 - Every package version exactly matches the root manifest, including preview or dev suffixes.
 - Default preserves the current non-skill payload but reads `skills/` from the built default tree.
 - Custom packages contain their complete built `skills/`, generated manifest/README, license, and version metadata only.
-- Generated manifests contain no repository lifecycle scripts.
+- The default manifest retains the safe package lifecycle and ships only its small lifecycle driver; custom manifests contain no repository lifecycle scripts.
 - Tarball `package/skills/**` bytes equal the staged `skills/**` bytes.
-- No built tree, stage, or tarball contains marker tokens, sparse override sources, tests, or composer scripts.
+- No built tree, stage, or tarball contains marker tokens, sparse override sources, tests, or composer source.
+- Root `npm pack` creates exactly one default `@uipath/skills` tarball, regardless of how many custom flavors exist.
+- Root `npm publish --dry-run` selects only `@uipath/skills` and restores canonical sources before returning.
+- A generated default package can be repacked safely even though composer source is intentionally absent.
 
 ## Replacement and Failure Cases
 
@@ -73,13 +76,17 @@ Inspect staged directories and real `.tgz` archives.
 - A validation or packing failure leaves the last successful outputs unchanged.
 - A symlinked build root or generated output target fails safely.
 - Legacy explicit-flavor output commands still refuse non-empty arbitrary destinations.
+- Successful root pack and publish lifecycles restore the exact canonical tree and remove transaction state.
+- Root preflight pack failures happen before canonical sources are swapped.
+- A failed or interrupted root lifecycle is recoverable with `npm run skills:recover`; truly simultaneous preparations leave exactly one active transaction and one failure.
+- Unexpected edits made to the temporary packaging tree are preserved for review while canonical sources are restored.
 
 ## Workflow Cases
 
 - Validation CI contains no flavor-specific path or loop.
 - CI runs real `npm pack` and uploads every tarball for inspection.
 - Release packaging happens after version stamping.
-- Publishing uses the verified `build/npm/*.tgz` artifacts, never the repository root or a release-time repack.
+- Multi-package release automation publishes the verified `build/npm/*.tgz` artifacts without a release-time repack; backward-compatible root `npm publish` remains a supported default-only command.
 - Exact package versions already present in the target registry are skipped only when registry and local tarball integrity match; a collision must fail.
 - Custom flavors publish before default; an unregistered npmjs flavor is warned and skipped until its trusted-publisher bootstrap is complete.
 - Only a confirmed package-not-found response may trigger that bootstrap skip; registry, network, or authentication failures must fail the release.

@@ -42,6 +42,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 - Validate YAML frontmatter — broken frontmatter breaks skill discovery
 - Ensure `description` field has both TRIGGER and DO NOT TRIGGER conditions
 - When canonical flavor blocks or custom overrides change, run `npm run skills:validate`, `npm run skills:build`, and `npm run skills:pack`; inspect the actual generated tarballs before publishing
+- Preserve normal root `npm pack` and `npm publish` as backward-compatible default-only commands: they must compose marker-free skills transactionally, restore canonical sources, and never replace the all-flavor `npm run skills:pack` release path
 
 ## When Writing or Modifying Tests
 
