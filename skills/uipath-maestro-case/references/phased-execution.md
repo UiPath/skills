@@ -21,7 +21,7 @@ Skill stays emit-honest: JSON-shape correctness is the skill's job, downstream C
 
 ## Why phased
 
-Once `tasks.md` is generated, skill does **not** build full case in one pass. It builds **placeholder** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then wires detail (Phase 3 Implementation). Whether the boundary pauses is the user's up-front build-review preference (SKILL.md Rule 11): pause-at-preview stops for the visual review; straight-through narrates the milestone and continues. Validate (Phase 4), Publish (Phase 5), and Debug (Phase 6) follow; the publish and debug gates are unconditional. Publish runs before Debug so the debug session exercises the same build the user just shipped to Studio Web (debug uploads there anyway).
+Once `tasks.md` is generated, skill does **not** build the full case in one pass. Phase 2 produces a reviewable preview containing structure, conditions, SLA, and escalation; Phase 3 adds the detail that depends on connector `case spec` calls and task value binding. Whether the boundary pauses is the user's up-front build-review preference (SKILL.md Rule 11): pause-at-preview stops for visual review; straight-through narrates the milestone and continues. Validate (Phase 4), Publish (Phase 5), and Debug (Phase 6) follow; the publish and debug gates are unconditional. Publish runs before Debug so the debug session exercises the same build the user just shipped to Studio Web (debug uploads there anyway).
 
 Decisions are front-loaded so the build can run unattended; the gates that remain protect real-world side effects (publish ships the case, debug executes it).
 
@@ -29,8 +29,8 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 
 | Phase | What gets built | Output | Hard stop on exit |
 |---|---|---|---|
-| **2 — Prototyping** | Solution + project, root case, global variables, stages, triggers (full), tasks (name + type, no value binding), placeholder tasks for unresolved | `caseplan.json` emitted; placeholder-profile validate run (structural errors only) | Pause-at-preview runs: `Publish for review` / `Skip publish and continue` / `Abort`. Straight-through runs: none — counts line, continue (Rule 11) |
-| **3 — Implementation** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
+| **2 — Prototyping** | Solution/project, structure, triggers, task shapes, conditions in all 4 scopes, SLA + escalation; connector-bound rules use canonical stubs | `caseplan.json` emitted; `--skeleton-v2` preview validate attempted, with unsupported-flag fallback to `--skeleton` | Pause-at-preview runs: `Publish for review` / `Skip publish and continue` / `Abort`. Straight-through runs: none — counts line, continue (Rule 11) |
+| **3 — Implementation** | Connector task schemas, task I/O value binding, resolved connector-rule stub upgrades | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Skip to Debug` |
 | **6 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Done` |
@@ -43,7 +43,7 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 - Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.
 - Stages — all StageIds generated and captured.
-- Edges — none authored (Rule 20); `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
+- Edges — none authored (Rule 20); `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 2).
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
 - Entry-points input/output — `entry-points.json` `input`/`output` schemas refreshed from the declared In/Out arguments (Step 6.3, per [entry-points-sync.md](entry-points-sync.md)). Makes the Phase-2 publish-for-review contract correct; idempotent.
 
@@ -56,24 +56,29 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 | Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Placeholder task per Rule 8 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
 | `agent` / `api-workflow` built inline | Built + bound in Phase 1 at the Rule 17 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
 
+### Rules, SLA, and connector-rule stubs
+
+- Write SLA and escalation objects first, minting their stable `sla_*` / `esc_*` IDs with the objects. Conditions that use `sla-status-change` resolve those existing IDs; there is no separate Phase 3 preallocation step.
+- Write stage-entry, stage-exit, task-entry, and case-exit conditions in their final scope and position.
+- Every `wait-for-connector` condition rule gets the canonical stub `uipath` in Phase 2, even when its connector resolved. Phase 3 replaces only `rule.uipath` for resolved connectors. A truly unresolved connector keeps the stub and is reported.
+
 ### What does NOT get written in Phase 2
 
 - Task input `value` bindings (literals, expressions, cross-task references).
 - Connector task input/output schemas.
-- Conditions of any scope (stage-entry, stage-exit, task-entry, case-exit).
-- SLA rules (default, conditional) and escalation rules.
+- Final `uipath.context` / inputs / outputs and Connection bindings for connector-bound condition rules.
 
 ### Phase 2 informational validate
 
-End of Phase 2 mutations, run placeholder-profile validate:
+End of Phase 2 mutations, try the richer preview profile first:
 
 ```bash
-uip maestro case validate "<caseplan.json path>" --skeleton --output json
+uip maestro case validate "<caseplan.json path>" --skeleton-v2 --output json
 ```
 
-`--skeleton` runs structural checks only (nodes, edges, identity, types, topology). Skips tasks, SLAs, escalations, and entry/exit rules — all unbound at this gate, filled in Phase 3.
+If the parser response names `--skeleton-v2` as unknown or unsupported (typically `ErrorCode: "invalid_argument"` and exit 3), re-run once with legacy `--skeleton`. Exit 3 without that flag-specific message is not sufficient. Do not fall back when v2 ran and returned genuine validation findings. Legacy `--skeleton` checks structure only and skips the conditions/SLA present in the preview; Phase 4 full validation remains authoritative.
 
-**Informational — do NOT halt on errors or warnings.** Capture error and warning counts (and optionally first few messages); include in hard-stop summary. Errors that remain are structural (unreachable/orphan stage, missing trigger, duplicate names) and meaningful — user inspects via the existing `Abort` option before continuing.
+**Informational — do NOT halt on errors or warnings.** Capture the selected profile plus error/warning counts (and optionally the first few messages) for the boundary summary.
 
 ### Phase 2 hard stop
 
@@ -92,7 +97,7 @@ The Phase 4 retry-cap, Phase 5 publish, and Phase 6 debug-consent stops below ar
 Print (before the prompt on the pause branch; as the continuation line otherwise):
 
 1. Counts: stages / primary stages / secondary stages / triggers / tasks total / placeholder tasks / unresolved resources.
-2. Validate result (placeholder-profile): `<N> errors, <M> warnings` — remaining errors are structural (unreachable/orphan stage, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
+2. Validate result and profile: `skeleton-v2: <N> errors, <M> warnings` or `skeleton (fallback; rules/SLA deferred to Phase 4): <N> errors, <M> warnings`. Surfacing counts is enough; do not dump the full list unless the user asks.
 3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
 4. Suggested next steps:
    - Straight-through: `Suggested next steps: I'll continue wiring the implementation now; say stop if you want to inspect the skeleton first.`
@@ -147,6 +152,7 @@ Phase 3 begins after the straight-through continuation, or after the user select
    - Trigger ID (from `schema.nodes[]` where `type === "uipath.case.trigger"`).
    - Task name → TaskId per stage (from `schema.nodes[<stage>].data.tasks[][]`).
    - Variable name → `var` ID (from top-level `variables.{inputs,outputs,inputOutputs}`).
+   - SLA/escalation IDs and all condition/rule IDs, including connector rules whose `uipath` still carries the canonical stub.
 3. Optionally cross-check against `id-map.json` if JSON-strategy plugins wrote one. `caseplan.json` is source of truth; `id-map.json` is speed-up.
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
@@ -157,15 +163,9 @@ After re-entry:
 
 1. **Connector task detail** — for each connector task in `tasks.md`, run plugin's `impl-json.md` detail steps: `case spec --type {activity,trigger} --input-details`, then mint `data.context[]` / `data.inputs[]` / `data.outputs[]` from the populated `caseShape` (placeholder substitution + var/id minting).
 2. **Task I/O value binding (all task classes)** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Applies to both non-connector and connector tasks. For each task's inputs in `tasks.md` order, write literal, expression, or cross-task reference (resolved to `=vars.<outputReferenceId>` through the common `.id`-based resolver) into `task.data.inputs[i].value`. Connector tasks have `data.inputs[]` schema written in step 1; value binding happens here in step 2, same as non-connector tasks.
-3. **SLA/escalation ID preallocation** — Step 9.9 allocates every `sla_`/`esc_` ID in `id-map.json` before conditions. This lets `sla-status-change` rules — stage entry (`enter-stage`) or task entry (`start-task`) — reference the exact SLA object, plus the escalation object for an at-risk rule, that Step 11 emits.
-4. **Conditions** — per-scope plugin `impl-json.md`:
-   - Stage entry conditions
-   - Stage exit conditions
-   - Task entry conditions (depends on TaskIds from Phase 2)
-   - Case exit conditions
-5. **SLA + escalation** — per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Group `tasks.md §4.8` by target (root or stage); write full `slaRules[]` in one mutation per target, reusing Step 9.9 IDs.
-6. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped and bindings/conditions/SLA are written, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<outputReferenceId>` through the same resolver in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple or reference ID → ERROR.
-7. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-11 (=vars.X resolution, Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness, entry-point schema parity, bindings sidecar parity, output-ID uniqueness, resolved-resource emission and repair preservation, formal-arg slot ID format, resourceKey self-consistency). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Checks 6-11 are non-interactive: on mismatch auto re-run/regenerate/re-mint once where the check permits it; Check 6 logs if still divergent, while Checks 7, 9, 10, and 11 halt before Phase 4 if still divergent. Never HALT otherwise.
+3. **Connector-bound condition-rule upgrade** — scan all four scopes for canonical stubs. For each resolved connector, run `case spec --type trigger --input-details` and replace only `rule.uipath`, preserving rule/condition IDs, expressions, scope, and placement. Unresolved connectors keep the stub and are reported.
+4. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<outputReferenceId>` in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple or reference ID → ERROR.
+5. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-11 (=vars.X resolution, Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness, entry-point schema parity, bindings sidecar parity, output-ID uniqueness, resolved-resource emission and repair preservation, formal-arg slot ID format, resourceKey self-consistency). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Checks 6-11 are non-interactive: on mismatch auto re-run/regenerate/re-mint once where the check permits it; Check 6 logs if still divergent, while Checks 7, 9, 10, and 11 halt before Phase 4 if still divergent. Never HALT otherwise.
 
 Phase 3 produces a `caseplan.json` that should pass authoritative validation. No hard stop (no AskUserQuestion gate) on Phase 3 exit — agent proceeds directly to Phase 4. Sole blockers: Check 7 parity still divergent after regeneration, any Check 9 resolved-resource emission/preservation failure, any Check 10 formal-arg slot id still malformed after the repair pass, or any Check 11 resourceKey still self-inconsistent after the repair pass (halt per [`implementation.md § Step 12`](implementation.md)).
 

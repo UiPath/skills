@@ -5,7 +5,7 @@ Shared planning and implementation logic for connector-based triggers. Used by t
 - [event trigger](plugins/triggers/event/planning.md) — case-level `Intsvc.EventTrigger` (case start)
 - **connector-bound condition rule** — a `wait-for-connector` rule in any condition scope (stage-entry / stage-exit / case-exit / task-entry). Also called "connector rule" or "connector condition rule" in shorthand; "wait-for-connector rule" when the rule-type is the salient property. All four refer to the same construct. See [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule) and each condition plugin's `impl-json.md`.
 
-All three use the same TypeCache (`typecache-triggers-index.json`), same single-call `case spec` discovery, same FE-canonical `caseShape` consumption. Only the target (task `data` / trigger node `data.inputs` / rule `uipath`), `serviceType`, and a few shape details differ — see each plugin's own docs.
+All three use the same TypeCache (`typecache-triggers-index.json`), same single-call `case spec` discovery, same FE-canonical `caseShape` consumption. Only the target (task `data` / trigger node `data.inputs` / rule `uipath`), `serviceType`, and a few shape details differ — see each plugin's own docs. Connector-bound condition rules additionally use a Phase 2 stub before their Phase 3 `caseShape` upgrade.
 
 > Mirrors the [connector-activity](plugins/tasks/connector-activity/planning.md) flow. Same CLI surface (`uip maestro case spec` with `--skip-case-shape` for planning, `--input-details` for Phase 3); `--type trigger` swaps in trigger-shaped inputs/outputs and, for event-parameter connectors, a `metadata.body.bindings[Property]` registration entry (Step 4).
 
@@ -382,7 +382,7 @@ Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of
 
 After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Skip if `case spec` failed.
 
-> **`bindings_v2.json` regeneration is deferred and batched.** Runs at three points, not per-target: end of Phase 2 Step 9 (non-connector tasks), end of Phase 3 Step 9.7 (connector tasks + triggers), and end of Phase 3 **Step 10** (connector condition rules across all 4 scopes). See [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run).
+> **`bindings_v2.json` regeneration is deferred and batched.** Runs at three points, not per-target: end of Phase 2 Step 9 (non-connector tasks), end of Phase 3 Step 9.7 (connector tasks + triggers), and end of Phase 3 **Step 10.5** (upgraded connector condition rules across all 4 scopes). See [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run).
 
 ---
 
@@ -402,13 +402,20 @@ A `wait-for-connector` rule inside a condition (`…conditions[].rules[i][j]`) b
 
 `<ownerNodeId>` = the **stage id** for stage-entry / stage-exit / task-entry rules (all stage-scoped); **`root`** for case-exit rules (which live under `metadata.caseExitRules`).
 
+### Condition-rule phase contract
+
+- **Phase 2 Step 10:** write every `wait-for-connector` rule with the canonical stub from [§ Placeholder fallback](#placeholder-fallback), even when the connector resolved in planning. The enclosing condition, rule ID, expression, scope, and placement are final at this point. Do not run `case spec`, add connector bindings, or dispatch outputs.
+- **Phase 3 Step 10.5:** for a resolved connector, run the procedure below and replace only `rule.uipath`. Preserve all enclosing Phase 2 state. For an unresolved connector or failed `case spec`, keep the stub, log it, and report it as not runnable.
+
+The same stub therefore has two lifetimes: temporary for a resolved connector awaiting Phase 3, permanent for an unresolved connector. Only the permanent case is an unresolved-resource issue.
+
 ### Procedure (Phase 3)
 
 1. Resolve the connector in planning exactly as the task does — [§ Planning Pipeline](#planning-pipeline). The condition plugin's `planning.md` records the same fields (`type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter`). **Event parameters and filter accept `=vars.X` / `=js:` expressions exactly like the task** — they compile into `rule.uipath.context` / filter via `case spec --type trigger --input-details` (`input-values` + filter). Only the literal request `body` input is value-less (an event sends no body).
 2. Run `case spec --type trigger --input-details` ([§ Phase 3 Implementation](#phase-3-implementation--single-cli-call)) to mint the populated `caseShape`.
 3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` in `caseShape.context` ([§ Step 4](#step-4--substitute-placeholders-in-caseshapecontext)). If the caseShape carries a `{{TRIGGER_REGISTRATION_KEY}}` entry (event-parameter connectors only), substitute it exactly as the task does ([§ Step 3](#step-3--mint-binding-ids-and-when-applicable-trigger-registration-key)) — there is no rule-specific variant.
 4. Mint `var` / `id` / `elementId` on `caseShape.inputs[]` / `outputs[]` ([§ Step 5](#step-5--mint-var--id--elementid-on-inputs-and-outputs)), with `elementId = <ownerNodeId>-<ruleId>`. Apply the output dedup rule.
-5. Write the rule:
+5. Replace the existing stub's `uipath` with the populated block below. The full shape is shown for context; do not rewrite the enclosing rule or condition:
 
 ```json
 {
@@ -427,7 +434,7 @@ A `wait-for-connector` rule inside a condition (`…conditions[].rules[i][j]`) b
 
 5b. If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) — rewrite each already-minted output entry per its `->` / `=` operator. Skip when the rule has no `uipath.outputs[]` (stub placeholder — the stub always emits `uipath`, but with empty `outputs[]`).
 
-6. Append root bindings (ConnectionId + FolderKey) and run the deferred `bindings_v2` sync — identical to the task ([§ Root-level bindings](#root-level-bindings)).
+6. Append root bindings (ConnectionId + FolderKey) and run the deferred Step 10.5 `bindings_v2` sync — identical to the task ([§ Root-level bindings](#root-level-bindings)).
 
 ### tasks.md fields (planning)
 
@@ -456,13 +463,13 @@ Rule `id`s are opaque to the FE (no format validation on import) — `Rule_xxxxx
 ### Caveats
 
 - **Not a case-start trigger.** A connector rule compiles to an in-flight wait (ReceiveTask / event subprocess), so it gets **no entry-points.json entry** and **no rule-specific registration key** — FE `PackagingUtil` trigger registration is gated on `Intsvc.EventTrigger` start events only, which a rule is not. If the `case spec` caseShape carries a `metadata.body.bindings[Property]` registration entry (event-parameter connectors), substitute it exactly as the task does (Step 3 / Step 4); there is nothing rule-specific.
-- **Full `validate` requires `rule.uipath` + `context`** — absent → `connector activity missing`. It does NOT check the `uipath` *internals* (a wrong `serviceType` passes), so a clean validate confirms the block is *present*, not that the connector *resolves* — confirm in Studio Web. Unresolved → stub placeholder (§ Placeholder fallback). `--skeleton` (Phase 2) skips condition rules.
+- **Full `validate` requires `rule.uipath` + `context`** — absent → `connector activity missing`. It does NOT check the `uipath` *internals* (a wrong `serviceType` passes), so a clean validate confirms the block is *present*, not that the connector *resolves* — confirm in Studio Web. `--skeleton-v2` checks rule presence when supported; the legacy Phase 2 fallback `--skeleton` skips condition rules.
 
 ### Placeholder fallback
 
-Two entry paths reach this fallback: **Scenario A** — connector not found in TypeCache (§ 1 No-match, after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the [§ 2 create offer](#2-resolve-the-connection) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight to the placeholder.
+Phase 2 uses this exact shape for every connector-bound condition rule. Two paths make it permanent: **Scenario A** — connector not found in TypeCache (§ 1 No-match, after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the [§ 2 create offer](#2-resolve-the-connection) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight to a permanent placeholder.
 
-On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connector-key`, emit the rule with a **stub `uipath`**. A *bare* rule (no `uipath`) is NOT a valid placeholder — full `validate` errors `connector activity missing` and Studio Web rejects it. The stub is the **minimum that clears `validate`**: `serviceType` plus the two `context` entries the validator checks for — named `connectorKey` + `operation`, each the literal `"placeholder"` — with empty `inputs` / `outputs` / `bindings`. Do NOT pad it with the other resolved context fields (`connection`, `objectName`, …): Studio Web flags the unresolved connector regardless of how complete the stub is, so extra placeholders buy nothing until the connector is real. The full attach checklist lives in the `tasks.md` `<UNRESOLVED>` markers and the completion report, not in the stub.
+Emit a **stub `uipath`**, never a bare rule. The stub is the minimum shape accepted by validation: `serviceType` plus the two `context` entries named `connectorKey` and `operation`, each with literal value `"placeholder"`, and empty `inputs` / `outputs` / `bindings`. Do not pad it with resolved fields (`connection`, `objectName`, …); Phase 3 replaces the entire `uipath` block when resolution succeeds.
 
 ```json
 {
@@ -482,7 +489,7 @@ On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connecto
 }
 ```
 
-This stub is a **deliberate mock** — it clears `validate` only. Studio Web flags the unresolved connector, and the rule **fails at debug/run until resolved** (it cannot wait on a `"placeholder"` connector). It still skips the dependent subsystems: io-binding has no real `outputs[]` to wire, no Connection/Folder bindings, no IS-cache entry, no `bindings_v2` regen for this rule. Stamp the `tasks.md` entry with `<UNRESOLVED>` markers per Rule 8, log per [logging/impl-json.md](plugins/logging/impl-json.md), and list it in the completion report as **"replace the `placeholder` connector values before debug / publish-to-run."** Upgrade by re-running the [§ Procedure](#procedure-phase-3) once the connector resolves; same upgrade flow as `placeholder-tasks.md § Upgrade Procedure` for connector tasks.
+This stub is a **deliberate mock**. While temporary, it is simply Phase 2 build state. If it remains after Phase 3, Studio Web flags it and the rule **fails at debug/run**. A remaining stub has no real outputs, Connection/Folder bindings, IS-cache entry, or rule-specific `bindings_v2` resource. Stamp unresolved `tasks.md` entries with Rule 8 markers, log them, and list them in the completion report as **"replace the `placeholder` connector values before debug / publish-to-run."** Upgrade later by re-running the [§ Procedure](#procedure-phase-3).
 
 ---
 
