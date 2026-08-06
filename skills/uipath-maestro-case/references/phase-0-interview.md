@@ -184,6 +184,8 @@ On a Build answer:
 
 For this no-build path, prefer progress over exhaustive internal auditing: once the case model covers the stated stages, tasks, global interrupts, SLAs, variables, resources, and rationales, write the artifacts. Do not run the full Finalization checklist, do not inspect schema/planning references, and do not spend a separate turn refining optional SDD prose. The artifact contract below plus the template conformance shape are the gate.
 
+Before either Write, make a **literal requirements inventory** from the request: exact stage names, task names, event/system names, SLA durations, stated percentage thresholds, and named roles. Render every inventory item verbatim in the SDD, then project every stage/task item into its own plan T-entry; never rename or paraphrase a requirement-provided stage or task name. A stated at-risk percentage is an **at-risk escalation notification** at that exact percentage, with a concrete display name carried verbatim through the SDD and `tasks/tasks.md`; do not substitute a different percentage or reduce it to generic `notify-only` prose.
+
 Compact `tasks/tasks.md` contract for this no-build path:
 
 - Use T-numbered entries for the case root, triggers, variables/arguments, stages, tasks, entry/exit/condition rules, and SLA/escalation rules that matter to the design.
