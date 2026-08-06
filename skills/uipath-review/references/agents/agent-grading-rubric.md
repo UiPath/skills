@@ -11,7 +11,7 @@ Final grade = min(G_det, G_jud)
 ```
 
 - **G_det** — deterministic sub-grade. **Read it directly from the review CLI** — do not recompute it. `uip agent review` / `uip codedagent review` returns `Data.Grade`, the grade it assigns to its own deterministic checks. That letter **is** G_det.
-- **G_jud** — non-deterministic sub-grade. Driven by judgment: the format-specific agent judgment catalog read in Step 2.5b, the manual agent checklist ([agent-review-checklist.md](agent-review-checklist.md)) in Step 3, and the architecture-principle scores (1–5) from [architecture-assessment-guide.md §4](../architecture-assessment-guide.md).
+- **G_jud** — non-deterministic sub-grade. Driven by judgment: the format-specific agent judgment catalog read in Step 2.5b, the manual review in Step 3, and the architecture-principle scores (1–5) from [architecture-assessment-guide.md §4](../architecture-assessment-guide.md).
 
 `min()` means an agent cannot earn an A from a clean CLI grade if its prompt, tools, and error handling are weak (G_jud gates it down), and cannot earn an A from strong design if the CLI's deterministic grade is poor (G_det gates it down). The grade is bounded by the weaker dimension. Because `min` only ever lowers the CLI grade, the **skill grade is always ≤ `Data.Grade`**.
 

@@ -136,8 +136,8 @@ Record the language per project alongside the type (see solution table below).
 | `project.json` with no `targetFramework` or `targetFramework: "Legacy"` (any expression language — Legacy C# exists) | RPA (Windows-Legacy) | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) §10. Also recommend the user invoke `uipath-rpa` (Legacy mode) for Legacy-specific deep validation. Legacy is supported indefinitely in Studio LTS — do NOT flag as Critical. |
 | `project.json` + both `.cs` and `.xaml` | RPA (Hybrid) | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) |
 | `project.json` + `.xaml` + DU packages in dependencies (`UiPath.IntelligentOCR.Activities`, `UiPath.DocumentUnderstanding.ML.Activities`) | RPA + Document Understanding | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) + [du-review-checklist.md](references/document-understanding/du-review-checklist.md) |
-| `agent.json` with `"type": "lowCode"` | Agent (Low-Code) | Checklist: [agent-review-checklist.md](references/agents/agent-review-checklist.md). Rule catalog (Step 2.5): [agents-lowcode-rules.md](references/agents/agents-lowcode-rules.md) |
-| Python coded-agent project, including `agent.json` with `"type": "coded"` when present | Agent (Coded) | Checklist: [agent-review-checklist.md](references/agents/agent-review-checklist.md). Rule catalog (Step 2.5): [agents-coded-rules.md](references/agents/agents-coded-rules.md) |
+| `agent.json` with `"type": "lowCode"` | Agent (Low-Code) | Rule catalog (Step 2.5): [agents-lowcode-rules.md](references/agents/agents-lowcode-rules.md) |
+| Python coded-agent project, including `agent.json` with `"type": "coded"` when present | Agent (Coded) | Rule catalog (Step 2.5): [agents-coded-rules.md](references/agents/agents-coded-rules.md) |
 | `*.flow` + `project.uiproj` with `"ProjectType": "Flow"` | Flow | [flow-review-checklist.md](references/flows/flow-review-checklist.md) |
 | `*.bpmn` + `project.uiproj` with `"ProjectType": "ProcessOrchestration"` | Maestro BPMN | [bpmn-review-checklist.md](references/bpmn/bpmn-review-checklist.md) |
 | `Workflow.json` (`document.dsl` + `do[]`) + `project.uiproj` with `"ProjectType": "Api"` | API Workflow | [api-workflow-review-checklist.md](references/api-workflows/api-workflow-review-checklist.md) |
@@ -476,7 +476,7 @@ Final grade = min(G_det, G_jud)        where G_det = <review CLI>.Data.Grade
 ```
 
 - **G_det (deterministic)** — **read it from the review CLI; do not recompute.** `uip agent review` / `uip codedagent review` (Step 2.5a) returns `Data.Grade` — that letter **is** G_det. (`Data.Issues[]` are still reported verbatim, but the grade comes from `Data.Grade`, not from tallying them.)
-- **G_jud (non-deterministic)** — the only sub-grade you compute: the architecture-principle scores (1–5) in [architecture-assessment-guide.md §4](references/architecture-assessment-guide.md) + judgment-catalog (2.5b) + manual agent-checklist (Step 3) findings.
+- **G_jud (non-deterministic)** — the only sub-grade you compute: the architecture-principle scores (1–5) in [architecture-assessment-guide.md §4](references/architecture-assessment-guide.md) + judgment-catalog (2.5b) + manual review (Step 3) findings.
 
 CLI findings already shaped `Data.Grade` (G_det); only **judgment** findings feed G_jud — so each finding lands in exactly one sub-grade.
 
@@ -645,7 +645,6 @@ This maps the letter to the verdict word only. The agent grade is `min(G_det, G_
 | Review a solution structure (.uipx) | [solution-review-guide.md](references/solution-review-guide.md) |
 | Review an RPA project (coded or XAML) | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) |
 | Find common RPA issues | [rpa-common-issues.md](references/rpa/rpa-common-issues.md) |
-| Review an agent project | [agent-review-checklist.md](references/agents/agent-review-checklist.md) |
 | Find common agent issues | [agent-common-issues.md](references/agents/agent-common-issues.md) |
 | Review a flow project | [flow-review-checklist.md](references/flows/flow-review-checklist.md) |
 | Find common flow issues | [flow-common-issues.md](references/flows/flow-common-issues.md) |
