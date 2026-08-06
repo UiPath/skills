@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d\",\r\n      \"Name\": \"Finance Operations\",\r\n      \"Path\": \"Finance Operations\",\r\n      \"Description\": \"Folder hosting the ledger posting and reconciliation processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"a7c9e1b3-5d7f-4a2c-8b6d-9e0f1a2b3c4d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [],\r\n  \"Pagination\": {\r\n    \"Returned\": 0,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d",
+        "--state",
+        "Successful",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"BatchLedgerPost\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-30T02:10:01.118Z\",\r\n      \"EndTime\": \"2026-05-30T02:10:06.402Z\",\r\n      \"CreationTime\": \"2026-05-30T02:10:00.904Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"BatchLedgerPost\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-30T02:10:01.118Z\",\r\n      \"EndTime\": \"2026-05-30T02:10:06.402Z\",\r\n      \"CreationTime\": \"2026-05-30T02:10:00.904Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e\",\r\n    \"StartTime\": \"2026-05-30T02:10:01.118Z\",\r\n    \"EndTime\": \"2026-05-30T02:10:06.402Z\",\r\n    \"State\": \"Successful\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"d3f6c4e9-5f7a-4c8d-9e0f-3a4b5c6d7e8f\",\r\n    \"Info\": \"Execution ended.\",\r\n    \"CreationTime\": \"2026-05-30T02:10:00.904Z\",\r\n    \"ReleaseName\": \"BatchLedgerPost\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5048217,\r\n    \"OrganizationUnitId\": 7791624,\r\n    \"FolderKey\": \"b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-30T02:10:06.402Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"\",\r\n    \"TraceId\": \"c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e\",\r\n    \"Id\": 671320514\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-30T02:10:01.402Z\",\r\n      \"Message\": \"BatchLedgerPost execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-30T02:10:02.118Z\",\r\n      \"Message\": \"Start Transaction: opening connection with ProviderName 'Microsoft.Data.SqlClient' and beginning a database transaction on 'Server=sqlfin01;Database=Ledger;Integrated Security=true;Encrypt=true'\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-30T02:10:02.704Z\",\r\n      \"Message\": \"Execute Non Query: inserted header row for batch 'B-20260530-0210' into LedgerBatchHeader (1 row affected)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-30T02:10:03.221Z\",\r\n      \"Message\": \"Execute Non Query: A database error occurred.\\r\\nMicrosoft.Data.SqlClient.SqlException (0x80131904): The INSERT statement conflicted with the FOREIGN KEY constraint \\\"FK_LedgerBatchDetail_Account\\\". The conflict occurred in database \\\"Ledger\\\", table \\\"dbo.Account\\\", column 'AccountId'.\\r\\n   at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection)\\r\\n   at UiPath.Database.DatabaseConnection.ExecuteNonQuery(String sql, Dictionary`2 parameters, Int32 timeout)\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-30T02:10:03.405Z\",\r\n      \"Message\": \"Detail insert failed, caught and continuing: The INSERT statement conflicted with the FOREIGN KEY constraint \\\"FK_LedgerBatchDetail_Account\\\".\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-30T02:10:05.880Z\",\r\n      \"Message\": \"Start Transaction: scope exited normally; committing database transaction\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-30T02:10:06.291Z\",\r\n      \"Message\": \"BatchLedgerPost execution ended\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

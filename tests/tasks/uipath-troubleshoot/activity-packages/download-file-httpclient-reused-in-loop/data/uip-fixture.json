@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"fa010001-d4e5-4f60-8a01-000000000001\",\r\n      \"Name\": \"Batch Downloads\",\r\n      \"Path\": \"Batch Downloads\",\r\n      \"Description\": \"Production folder for bulk file-download processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "fa010001-d4e5-4f60-8a01-000000000001",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"fb010001-e5f6-4071-9b01-000000000001\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"BulkDownloader\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-16T08:14:30.140Z\",\r\n      \"EndTime\": \"2026-06-16T08:14:35.620Z\",\r\n      \"CreationTime\": \"2026-06-16T08:14:29.700Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "fb010001-e5f6-4071-9b01-000000000001",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"fb010001-e5f6-4071-9b01-000000000001\",\r\n    \"StartTime\": \"2026-06-16T08:14:30.140Z\",\r\n    \"EndTime\": \"2026-06-16T08:14:35.620Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"fc010001-a7b8-4192-9c01-000000000001\",\r\n    \"Info\": \"Download File from URL: This instance has already started one or more requests. Properties can only be modified before sending the first request.\\r\\n\\r\\nin Main.xaml\\r\\n    at DownloadFileFromUrl \\\"Download File from URL\\\"\\r\\n    at ForEach<String> \\\"For Each url\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.InvalidOperationException: This instance has already started one or more requests. Properties can only be modified before sending the first request.\",\r\n    \"CreationTime\": \"2026-06-16T08:14:29.700Z\",\r\n    \"ReleaseName\": \"BulkDownloader\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7016001,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"fa010001-d4e5-4f60-8a01-000000000001\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-16T08:14:35.620Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"fb010001-e5f6-4071-9b01-000000000001\",\r\n    \"Id\": 716010101\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "fb010001-e5f6-4071-9b01-000000000001",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T08:14:35.470Z\",\r\n      \"Message\": \"[Download File from URL] This instance has already started one or more requests. Properties can only be modified before sending the first request.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T08:14:35.540Z\",\r\n      \"Message\": \"Download File from URL: This instance has already started one or more requests. Properties can only be modified before sending the first request.\\r\\nin Main.xaml\\r\\n    at DownloadFileFromUrl \\\"Download File from URL\\\"\\r\\n    at ForEach<String> \\\"For Each url\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "fb010001-e5f6-4071-9b01-000000000001",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-16T08:14:30.140Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-16T08:14:32.260Z\",\r\n      \"Message\": \"[Download File from URL] Downloaded report-1.pdf (iteration 1 of 3)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T08:14:35.470Z\",\r\n      \"Message\": \"[Download File from URL] This instance has already started one or more requests. Properties can only be modified before sending the first request. (iteration 2 of 3)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T08:14:35.540Z\",\r\n      \"Message\": \"Download File from URL: This instance has already started one or more requests. Properties can only be modified before sending the first request.\\r\\nin Main.xaml\\r\\n    at DownloadFileFromUrl \\\"Download File from URL\\\"\\r\\n    at ForEach<String> \\\"For Each url\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-16T08:14:35.600Z\",\r\n      \"Message\": \"Execution ended in: 00:00:05\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

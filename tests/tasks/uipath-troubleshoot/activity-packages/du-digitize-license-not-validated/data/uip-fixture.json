@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c5f2a8d1-3e6b-4f9c-8a2d-1b3c4d5e6f70\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T13:47:20.330Z\",\r\n      \"EndTime\": \"2026-06-20T13:47:26.901Z\",\r\n      \"ReleaseName\": \"DocIntake\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50620044\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c5f2a8d1-3e6b-4f9c-8a2d-1b3c4d5e6f70\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T13:47:20.330Z\",\r\n      \"EndTime\": \"2026-06-20T13:47:26.901Z\",\r\n      \"ReleaseName\": \"DocIntake\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50620044\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c5f2a8d1-3e6b-4f9c-8a2d-1b3c4d5e6f70\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T13:47:20.330Z\",\r\n      \"EndTime\": \"2026-06-20T13:47:26.901Z\",\r\n      \"ReleaseName\": \"DocIntake\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50620044\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "c5f2a8d1-3e6b-4f9c-8a2d-1b3c4d5e6f70"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c5f2a8d1-3e6b-4f9c-8a2d-1b3c4d5e6f70\",\r\n    \"StartTime\": \"2026-06-20T13:47:20.330Z\",\r\n    \"EndTime\": \"2026-06-20T13:47:26.901Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"e6f7a8b9-c0d1-4e2f-3a4b-5c6d7e8f9a0b\",\r\n    \"Info\": \"Source: Digitize Document\\r\\nMessage: One or more errors occurred. (Request CorrelationId: 11fe739d-f26f-4631-9a47-8ad14cee388a\\nRequest PredictionId: dxESNP+Cfd/lURIXfBaFd6eHzUvHTZKA7mdpXTRI848=_39ca2d10-d072-4747-b92a-efbe827a1a92\\nServer response: Invalid API key specified Error:UiPathOCRInvalidApiKey CF-RAY: cid-v1:354c7cb9-ae5a-4d16-84a7-f13242bbac6d. AppId: )\\r\\nException Type: System.AggregateException\\r\\nin Main.xaml\\r\\n    at DigitizeDocument \\\"Digitize Document\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n   at UiPath.DocumentUnderstanding.Digitizer.Digitization.PageDigitizer.ApplyOcr(CachingPageRenderer renderer, IOcrEngine ocrEngine, DigitizationSettings settings, String contentId, CancellationToken token)\\r\\n   at UiPath.DocumentUnderstanding.Digitizer.Digitization.PageDigitizer.ProcessPageWithOcr(Content page, IOcrEngine ocrEngine, DigitizationSettings settings, String contentId, CachingPageRenderer renderer, CancellationToken token)\\r\\n   at UiPath.DocumentUnderstanding.Digitizer.Digitization.DocumentDigitizer.Digitize(Content content, DigitizationSettings settings, IOcrEngine ocrEngine, CancellationToken token)\\r\\n   at UiPath.IntelligentOCR.Digitization.IntelligentOcrDigitizer.Digitize(Content content, IOcrEngine ocrEngine, ApplyOcrOnPdf applyOcrOnPdf, Boolean detectCheckboxes, IDigitizationScheduler scheduler, IDigitizerTelemetryService telemetryService, CancellationToken token)\\r\\n   at UiPath.IntelligentOCR.Activities.Digitization.DigitizeDocument.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\",\r\n    \"CreationTime\": \"2026-06-20T13:47:19.100Z\",\r\n    \"ReleaseName\": \"DocIntake\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 1109033,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-20T13:47:26.901Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c5f2a8d13e6b4f9c8a2d1b3c4d5e6f70\",\r\n    \"Id\": 50620044\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "c5f2a8d1-3e6b-4f9c-8a2d-1b3c4d5e6f70",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-20T13:47:26.500Z\",\r\n      \"Message\": \"Digitize Document: One or more errors occurred. (Request CorrelationId: 11fe739d-f26f-4631-9a47-8ad14cee388a\\nRequest PredictionId: dxESNP+Cfd/lURIXfBaFd6eHzUvHTZKA7mdpXTRI848=_39ca2d10-d072-4747-b92a-efbe827a1a92\\nServer response: Invalid API key specified Error:UiPathOCRInvalidApiKey CF-RAY: cid-v1:354c7cb9-ae5a-4d16-84a7-f13242bbac6d. AppId: )\\r\\nException Type: System.AggregateException\\r\\nin Main.xaml\\r\\n    at DigitizeDocument \\\"Digitize Document\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.AggregateException: One or more errors occurred. (Server response: Invalid API key specified Error:UiPathOCRInvalidApiKey)\\r\\n   at UiPath.DocumentUnderstanding.Digitizer.Digitization.PageDigitizer.ApplyOcr(CachingPageRenderer renderer, IOcrEngine ocrEngine, DigitizationSettings settings, String contentId, CancellationToken token)\\r\\n   at UiPath.IntelligentOCR.Activities.Digitization.DigitizeDocument.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "c5f2a8d1-3e6b-4f9c-8a2d-1b3c4d5e6f70"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-20T13:47:26.500Z\",\r\n      \"Message\": \"Digitize Document: One or more errors occurred. (Request CorrelationId: 11fe739d-f26f-4631-9a47-8ad14cee388a\\nRequest PredictionId: dxESNP+Cfd/lURIXfBaFd6eHzUvHTZKA7mdpXTRI848=_39ca2d10-d072-4747-b92a-efbe827a1a92\\nServer response: Invalid API key specified Error:UiPathOCRInvalidApiKey CF-RAY: cid-v1:354c7cb9-ae5a-4d16-84a7-f13242bbac6d. AppId: )\\r\\nException Type: System.AggregateException\\r\\nin Main.xaml\\r\\n    at DigitizeDocument \\\"Digitize Document\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.AggregateException: One or more errors occurred. (Server response: Invalid API key specified Error:UiPathOCRInvalidApiKey)\\r\\n   at UiPath.DocumentUnderstanding.Digitizer.Digitization.PageDigitizer.ApplyOcr(CachingPageRenderer renderer, IOcrEngine ocrEngine, DigitizationSettings settings, String contentId, CancellationToken token)\\r\\n   at UiPath.IntelligentOCR.Activities.Digitization.DigitizeDocument.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "c5f2a8d1-3e6b-4f9c-8a2d-1b3c4d5e6f70"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "c5f2a8d1-3e6b-4f9c-8a2d-1b3c4d5e6f70"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": []\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get c5f2a8d1-3e6b-4f9c-8a2d-1b3c4d5e6f70",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the 'Server response: Invalid API key specified Error:UiPathOCRInvalidApiKey' signature (System.AggregateException) from the Info / Error log."
+    }
+  ]
+}

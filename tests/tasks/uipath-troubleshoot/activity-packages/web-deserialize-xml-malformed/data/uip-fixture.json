@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "9937b232-5a94-44ab-8aee-ce6ea52d3bb4",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-23T17:37:35.266Z\",\r\n      \"Message\": \"Deserialize XML: Data at the root level is invalid. Line 1, position 1.\\r\\nin Wf_ParseDocument.xaml\\r\\n    at DeserializeXml \\\"Deserialize XML\\\"\\r\\n    at Sequence \\\"Parse Document\\\"\\r\\n    at Wf_ParseDocument \\\"Wf_ParseDocument\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.Xml.XmlException\\r\\n   at System.Xml.XmlTextReaderImpl.Throw(Exception e)\\r\\n   at System.Xml.XmlTextReaderImpl.Throw(String res, String arg)\\r\\n   at System.Xml.XmlTextReaderImpl.ParseRootLevelWhitespace()\\r\\n   at System.Xml.XmlTextReaderImpl.ParseDocumentContent()\\r\\n   at System.Xml.Linq.XDocument.Load(XmlReader reader, LoadOptions options)\\r\\n   at System.Xml.Linq.XDocument.Parse(String text, LoadOptions options)\\r\\n   at UiPath.Web.Activities.DeserializeXml.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\"\r\n    }\r\n  ]\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "9937b232-5a94-44ab-8aee-ce6ea52d3bb4"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-23T17:37:36.386Z\",\r\n      \"Message\": \"ParseDocument execution ended\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-23T17:37:35.266Z\",\r\n      \"Message\": \"Deserialize XML: Data at the root level is invalid. Line 1, position 1.\\r\\nin Wf_ParseDocument.xaml\\r\\n    at DeserializeXml \\\"Deserialize XML\\\"\\r\\n    at Sequence \\\"Parse Document\\\"\\r\\n    at Wf_ParseDocument \\\"Wf_ParseDocument\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.Xml.XmlException\\r\\n   at System.Xml.XmlTextReaderImpl.Throw(Exception e)\\r\\n   at System.Xml.XmlTextReaderImpl.Throw(String res, String arg)\\r\\n   at System.Xml.XmlTextReaderImpl.ParseRootLevelWhitespace()\\r\\n   at System.Xml.XmlTextReaderImpl.ParseDocumentContent()\\r\\n   at System.Xml.Linq.XDocument.Load(XmlReader reader, LoadOptions options)\\r\\n   at System.Xml.Linq.XDocument.Parse(String text, LoadOptions options)\\r\\n   at UiPath.Web.Activities.DeserializeXml.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-23T17:37:35.195Z\",\r\n      \"Message\": \"ParseDocument execution started\"\r\n    }\r\n  ]\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "9937b232-5a94-44ab-8aee-ce6ea52d3bb4"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"9937b232-5a94-44ab-8aee-ce6ea52d3bb4\",\r\n    \"StartTime\": \"2026-06-23T17:37:35.027Z\",\r\n    \"EndTime\": \"2026-06-23T17:37:36.453Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"c1281713-e159-46d5-82cc-f0d7ce1981be\",\r\n    \"Info\": \"Data at the root level is invalid. Line 1, position 1.\\r\\n\\r\\nin Wf_ParseDocument.xaml\\r\\n    at DeserializeXml \\\"Deserialize XML\\\"\\r\\n    at Sequence \\\"Parse Document\\\"\\r\\n    at Wf_ParseDocument \\\"Wf_ParseDocument\\\"\\r\\n\\r\\nSystem.Xml.XmlException: Data at the root level is invalid. Line 1, position 1.\\r\\n   at System.Xml.XmlTextReaderImpl.Throw(Exception e)\\r\\n   at System.Xml.XmlTextReaderImpl.Throw(String res, String arg)\\r\\n   at System.Xml.XmlTextReaderImpl.ParseRootLevelWhitespace()\\r\\n   at System.Xml.XmlTextReaderImpl.ParseDocumentContent()\\r\\n   at System.Xml.Linq.XDocument.Load(XmlReader reader, LoadOptions options)\\r\\n   at System.Xml.Linq.XDocument.Parse(String text, LoadOptions options)\\r\\n   at UiPath.Web.Activities.DeserializeXml.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\",\r\n    \"CreationTime\": \"2026-06-23T17:36:33.247Z\",\r\n    \"ReleaseName\": \"ParseDocument\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 21569944,\r\n    \"EntryPointPath\": \"Wf_ParseDocument.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"defb8e05-e36b-4c36-bf11-0b4d08ce6cd1\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-23T17:37:36.453Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"9937b2325a9444ab8aeece6ea52d3bb4\",\r\n    \"Id\": 67889406\r\n  }\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "9937b232-5a94-44ab-8aee-ce6ea52d3bb4"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-06-23T17:37:36.460Z\",\r\n      \"JobId\": 67889406\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-06-23T17:37:35.037Z\",\r\n      \"JobId\": 67889406\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-06-23T17:36:33.287Z\",\r\n      \"JobId\": 67889406\r\n    }\r\n  ]\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "9937b232-5a94-44ab-8aee-ce6ea52d3bb4"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "9937b232-5a94-44ab-8aee-ce6ea52d3bb4"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 1,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Message\": \"Error retrieving trace ID for job\",\r\n  \"Instructions\": \"Response returned an error code\"\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9937b232-5a94-44ab-8aee-ce6ea52d3bb4\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ParseDocument\",\r\n      \"ReleaseName\": \"ParseDocument\",\r\n      \"StartTime\": \"2026-06-23T17:37:35.027Z\",\r\n      \"EndTime\": \"2026-06-23T17:37:36.453Z\",\r\n      \"CreationTime\": \"2026-06-23T17:36:33.247Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9937b232-5a94-44ab-8aee-ce6ea52d3bb4\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ParseDocument\",\r\n      \"ReleaseName\": \"ParseDocument\",\r\n      \"StartTime\": \"2026-06-23T17:37:35.027Z\",\r\n      \"EndTime\": \"2026-06-23T17:37:36.453Z\",\r\n      \"CreationTime\": \"2026-06-23T17:36:33.247Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9937b232-5a94-44ab-8aee-ce6ea52d3bb4\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ParseDocument\",\r\n      \"ReleaseName\": \"ParseDocument\",\r\n      \"StartTime\": \"2026-06-23T17:37:35.027Z\",\r\n      \"EndTime\": \"2026-06-23T17:37:36.453Z\",\r\n      \"CreationTime\": \"2026-06-23T17:36:33.247Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3a1e81c2-07ca-4d6b-bc07-7e0c7b94ea3a\",\r\n      \"Name\": \"automation1@test.com's workspace\",\r\n      \"Path\": \"automation1@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"defb8e05-e36b-4c36-bf11-0b4d08ce6cd1\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"Empty\",\n  \"Data\": []\n}\n"
+  }
+}

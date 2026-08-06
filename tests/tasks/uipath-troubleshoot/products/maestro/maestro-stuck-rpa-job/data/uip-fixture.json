@@ -1,0 +1,219 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "maestro",
+        "bpmn",
+        "instance",
+        "asset",
+        "0fbda085-5c96-4dab-a4b3-012c1914845a",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"InstanceAsset\",\r\n  \"Data\": \"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?>\\n<bpmn:definitions xmlns:bpmn=\\\"http://www.omg.org/spec/BPMN/20100524/MODEL\\\" xmlns:uipath=\\\"http://uipath.org/schema/bpmn\\\" xmlns:bpmndi=\\\"http://www.omg.org/spec/BPMN/20100524/DI\\\" xmlns:dc=\\\"http://www.omg.org/spec/DD/20100524/DC\\\" xmlns:di=\\\"http://www.omg.org/spec/DD/20100524/DI\\\" id=\\\"sample-diagram\\\" targetNamespace=\\\"http://www.omg.org/spec/BPMN/20100524/MODEL\\\" exporter=\\\"UiPath Studio Web (https://uipath.com)\\\" exporterVersion=\\\"8dbb54f3\\\">\\n  <bpmn:process id=\\\"Process_1\\\" isExecutable=\\\"false\\\">\\n    <bpmn:extensionElements>\\n      <uipath:variables version=\\\"v1\\\">\\n        <uipath:inputOutput id=\\\"vjXdnIzqt\\\" name=\\\"Error\\\" type=\\\"jsonSchema\\\" elementId=\\\"Activity_EW6HNH\\\"><![CDATA[{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{\\\"code\\\":{\\\"type\\\":\\\"string\\\"},\\\"message\\\":{\\\"type\\\":\\\"string\\\"},\\\"detail\\\":{\\\"type\\\":\\\"string\\\"},\\\"category\\\":{\\\"type\\\":\\\"string\\\"},\\\"status\\\":{\\\"type\\\":\\\"number\\\"}}}]]></uipath:inputOutput>\\n      </uipath:variables>\\n      <uipath:bindings version=\\\"v1\\\">\\n        <uipath:binding id=\\\"bk65GSZF9\\\" name=\\\"folderPath\\\" type=\\\"string\\\" default=\\\"Solution Folder\\\" resource=\\\"process\\\" resourceKey=\\\"Solution Folder.ProcurAndPay-EcoSupplies\\\" propertyAttribute=\\\"folderPath\\\" />\\n        <uipath:binding id=\\\"b2LqodqCG\\\" name=\\\"name\\\" type=\\\"string\\\" default=\\\"ProcurAndPay-EcoSupplies\\\" resource=\\\"process\\\" resourceKey=\\\"Solution Folder.ProcurAndPay-EcoSupplies\\\" propertyAttribute=\\\"name\\\" />\\n        <uipath:binding id=\\\"bZrqXHghe\\\" name=\\\"folderPath\\\" type=\\\"string\\\" default=\\\"solution_folder\\\" resource=\\\"process\\\" resourceKey=\\\"solution_folder.BlankProcess6\\\" propertyAttribute=\\\"folderPath\\\" />\\n        <uipath:binding id=\\\"b07QzgSmW\\\" name=\\\"name\\\" type=\\\"string\\\" default=\\\"BlankProcess6\\\" resource=\\\"process\\\" resourceKey=\\\"solution_folder.BlankProcess6\\\" propertyAttribute=\\\"name\\\" />\\n      </uipath:bindings>\\n      <uipath:migrationVersion version=\\\"3\\\" />\\n    </bpmn:extensionElements>\\n    <bpmn:startEvent id=\\\"Event_start\\\">\\n      <bpmn:extensionElements>\\n        <uipath:entryPointId value=\\\"5bc26535-91e6-4476-892f-ec6d57ab1e87\\\" />\\n      </bpmn:extensionElements>\\n      <bpmn:outgoing>edge_E5vh5n</bpmn:outgoing>\\n    </bpmn:startEvent>\\n    <bpmn:serviceTask id=\\\"Activity_EW6HNH\\\" name=\\\"BlankProcess6\\\">\\n      <bpmn:extensionElements>\\n        <uipath:activity version=\\\"v1\\\">\\n          <uipath:type value=\\\"Orchestrator.StartJob\\\" version=\\\"v2\\\" />\\n          <uipath:context>\\n            <uipath:input name=\\\"name\\\" type=\\\"string\\\" value=\\\"=bindings.b07QzgSmW\\\" />\\n            <uipath:input name=\\\"folderPath\\\" type=\\\"string\\\" value=\\\"=bindings.bZrqXHghe\\\" />\\n            <uipath:input name=\\\"_label\\\" type=\\\"string\\\" value=\\\"BlankProcess6\\\" />\\n          </uipath:context>\\n          <uipath:output name=\\\"Error\\\" type=\\\"jsonSchema\\\" source=\\\"=Error\\\" var=\\\"vjXdnIzqt\\\" />\\n        </uipath:activity>\\n      </bpmn:extensionElements>\\n      <bpmn:incoming>edge_E5vh5n</bpmn:incoming>\\n      <bpmn:outgoing>edge_jMlE1f</bpmn:outgoing>\\n    </bpmn:serviceTask>\\n    <bpmn:endEvent id=\\\"Event_bYCodV\\\">\\n      <bpmn:incoming>edge_jMlE1f</bpmn:incoming>\\n    </bpmn:endEvent>\\n    <bpmn:sequenceFlow id=\\\"edge_E5vh5n\\\" sourceRef=\\\"Event_start\\\" targetRef=\\\"Activity_EW6HNH\\\" />\\n    <bpmn:sequenceFlow id=\\\"edge_jMlE1f\\\" sourceRef=\\\"Activity_EW6HNH\\\" targetRef=\\\"Event_bYCodV\\\" />\\n  </bpmn:process>\\n  <bpmndi:BPMNDiagram id=\\\"BPMNDiagram_1\\\">\\n    <bpmndi:BPMNPlane id=\\\"BPMNPlane_1\\\" bpmnElement=\\\"Process_1\\\">\\n      <bpmndi:BPMNShape id=\\\"S_Event_start\\\" bpmnElement=\\\"Event_start\\\">\\n        <dc:Bounds x=\\\"260\\\" y=\\\"200\\\" width=\\\"36\\\" height=\\\"36\\\" />\\n        <bpmndi:BPMNLabel>\\n          <dc:Bounds x=\\\"260\\\" y=\\\"241\\\" width=\\\"36\\\" height=\\\"14\\\" />\\n        </bpmndi:BPMNLabel>\\n      </bpmndi:BPMNShape>\\n      <bpmndi:BPMNShape id=\\\"S_Activity_EW6HNH\\\" bpmnElement=\\\"Activity_EW6HNH\\\">\\n        <dc:Bounds x=\\\"389.1999816894531\\\" y=\\\"178\\\" width=\\\"100\\\" height=\\\"80\\\" />\\n        <bpmndi:BPMNLabel>\\n          <dc:Bounds x=\\\"389.1999816894531\\\" y=\\\"263\\\" width=\\\"100\\\" height=\\\"14\\\" />\\n        </bpmndi:BPMNLabel>\\n      </bpmndi:BPMNShape>\\n      <bpmndi:BPMNShape id=\\\"S_Event_bYCodV\\\" bpmnElement=\\\"Event_bYCodV\\\">\\n        <dc:Bounds x=\\\"622.1999816894531\\\" y=\\\"200\\\" width=\\\"36\\\" height=\\\"36\\\" />\\n        <bpmndi:BPMNLabel>\\n          <dc:Bounds x=\\\"622.1999816894531\\\" y=\\\"241\\\" width=\\\"36\\\" height=\\\"14\\\" />\\n        </bpmndi:BPMNLabel>\\n      </bpmndi:BPMNShape>\\n      <bpmndi:BPMNEdge id=\\\"BPMNEdge_edge_E5vh5n\\\" bpmnElement=\\\"edge_E5vh5n\\\">\\n        <di:waypoint x=\\\"296\\\" y=\\\"218\\\" />\\n        <di:waypoint x=\\\"389\\\" y=\\\"218\\\" />\\n      </bpmndi:BPMNEdge>\\n      <bpmndi:BPMNEdge id=\\\"BPMNEdge_edge_jMlE1f\\\" bpmnElement=\\\"edge_jMlE1f\\\">\\n        <di:waypoint x=\\\"489\\\" y=\\\"218\\\" />\\n        <di:waypoint x=\\\"622\\\" y=\\\"218\\\" />\\n      </bpmndi:BPMNEdge>\\n    </bpmndi:BPMNPlane>\\n  </bpmndi:BPMNDiagram>\\n</bpmn:definitions>\\n\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "0fbda085-5c96-4dab-a4b3-012c1914845a",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"0fbda085-5c96-4dab-a4b3-012c1914845a\",\r\n    \"StartTime\": \"2025-09-23T09:45:59.153Z\",\r\n    \"State\": \"Running\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"ResourceOverwrites\": \"{\\\"process.solution_folder.BlankProcess6\\\":{\\\"EntityDisplayName\\\":\\\"BlankProcess6\\\",\\\"Level\\\":0,\\\"Properties\\\":{\\\"folderPath\\\":\\\"original_email@test.com's workspace/Solution 5\\\",\\\"name\\\":\\\"BlankProcess6\\\"}}}\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"ProcessOrchestration\",\r\n    \"BatchExecutionKey\": \"b61d4071-8038-49f5-a45b-68c4b835f215\",\r\n    \"Info\": \"Job running in workflow-id: 0fbda085-5c96-4dab-a4b3-012c1914845a, attempt:1\",\r\n    \"CreationTime\": \"2025-09-23T09:45:55.907Z\",\r\n    \"ReleaseName\": \"Agentic Process\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"HostMachineName\": \"\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"ProcessOrchestration\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 694032,\r\n    \"EntryPointPath\": \"/content/Process.bpmn#Event_start\",\r\n    \"OrganizationUnitId\": 2157426,\r\n    \"FolderKey\": \"36c6d42a-9294-4807-ac48-46781c45fb96\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"ProcessOrchestration\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"uipath\\\\user1\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"ParentJobKey\": \"c5a19942-1985-418e-9f71-675018e80449\",\r\n    \"LastModificationTime\": \"2025-09-23T09:45:59.153Z\",\r\n    \"TraceId\": \"c5a19942-1985-418e-9f71-675018e80449\",\r\n    \"ParentSpanId\": \"e44b454a-215e-4de3-8287-92a74ee37185\",\r\n    \"FpsContext\": \"eyJlbGVtZW50UnVuVG9rZW4iOnsiaW5zdGFuY2VJZCI6ImM1YTE5OTQyLTE5ODUtNDE4ZS05ZjcxLTY3NTAxOGU4MDQ0OS9CcG1uR2VuZXJpY1dvcmtmbG93L0FjdGl2aXR5X0VXNkhOSC9lNDRiNDU0YS0yMTVlLTRkZTMtODI4Ny05MmE3NGVlMzcxODUiLCJydW5JZCI6IjE1OTgwOTVmLTAzMmMtNDE1Ny04YjM1LTM4MzExNWY4YmI1YiIsImVsZW1lbnRJZCI6ImM1YTE5OTQyLTE5ODUtNDE4ZS05ZjcxLTY3NTAxOGU4MDQ0OS9CcG1uR2VuZXJpY1dvcmtmbG93L0FjdGl2aXR5X0VXNkhOSC9lNDRiNDU0YS0yMTVlLTRkZTMtODI4Ny05MmE3NGVlMzcxODUvV2FpdEZvck9yY2hlc3RyYXRvckpvYiJ9LCJQb0NvbnRleHQiOnsiT3JjaGVzdHJhdG9yRm9sZGVyQ29udGV4dCI6eyJGb2xkZXJJZCI6bnVsbCwiRm9sZGVyS2V5IjpudWxsLCJGb2xkZXJQYXRoIjoicmVwbGFjZW1lbnRfZW1haWxAdGVzdC5jb20ncyB3b3Jrc3BhY2UvU29sdXRpb24gNSJ9fX0=\",\r\n    \"Id\": 42792329\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"key\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"displayName\": \"original_email@test.com's workspace\",\r\n      \"fullyQualifiedName\": \"original_email@test.com's workspace\",\r\n      \"folderType\": \"Personal\",\r\n      \"id\": 1321239\r\n    },\r\n    {\r\n      \"key\": \"36c6d42a-9294-4807-ac48-46781c45fb96\",\r\n      \"displayName\": \"Solution 5\",\r\n      \"fullyQualifiedName\": \"original_email@test.com's workspace/Solution 5\",\r\n      \"folderType\": \"Solution\",\r\n      \"parentId\": 1321239,\r\n      \"parentKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"id\": 2157426\r\n    },\r\n    {\r\n      \"key\": \"ea201852-4965-4a5a-bf8a-9854d3a77275\",\r\n      \"displayName\": \"Shared\",\r\n      \"fullyQualifiedName\": \"Shared\",\r\n      \"folderType\": \"Standard\",\r\n      \"id\": 294109\r\n    },\r\n    {\r\n      \"key\": \"37f64013-6d26-4942-865b-cec4df0b700f\",\r\n      \"displayName\": \"Shared2\",\r\n      \"fullyQualifiedName\": \"Shared2\",\r\n      \"folderType\": \"Standard\",\r\n      \"id\": 951575\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "0fbda085-5c96-4dab-a4b3-012c1914845a",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2025-09-23T09:45:59.210Z\",\r\n      \"JobId\": 42792329\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2025-09-23T09:45:55.973Z\",\r\n      \"JobId\": 42792329\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "0fbda085-5c96-4dab-a4b3-012c1914845a",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "maestro",
+        "bpmn",
+        "instance",
+        "get",
+        "0fbda085-5c96-4dab-a4b3-012c1914845a",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"InstanceGet\",\r\n  \"Data\": {\r\n    \"organizationId\": \"27c4be1d-a3fd-4be3-b063-682b88ebee86\",\r\n    \"tenantId\": \"6a0f9306-c553-4c37-9d86-7ab06a158774\",\r\n    \"instanceId\": \"0fbda085-5c96-4dab-a4b3-012c1914845a\",\r\n    \"packageKey\": \"Solution.5.Agentic.Agentic-Process:1.0.0\",\r\n    \"packageId\": \"Solution.5.Agentic.Agentic-Process\",\r\n    \"packageVersion\": \"1.0.0\",\r\n    \"latestRunId\": \"f3a0d71f-663d-4d52-b55b-4c54c7d8eee9\",\r\n    \"latestRunStatus\": \"Faulted\",\r\n    \"processKey\": \"f9b2ddf0-f912-4c67-b634-b64f7c3ea3a8\",\r\n    \"folderKey\": \"36c6d42a-9294-4807-ac48-46781c45fb96\",\r\n    \"userId\": 606790,\r\n    \"instanceDisplayName\": \"Agentic Process-42792329\",\r\n    \"source\": \"Manual\",\r\n    \"startedByUser\": \"Unknown\",\r\n    \"creatorUserKey\": \"67a356f2-1b63-4f9d-8ada-a1cd385f838b\",\r\n    \"createdTimeUtc\": \"2025-09-23T09:45:56.8639217Z\",\r\n    \"startedTimeUtc\": \"2025-09-23T09:46:00.5418245Z\",\r\n    \"completedTimeUtc\": null,\r\n    \"instanceRuns\": [\r\n      {\r\n        \"runId\": \"f3a0d71f-663d-4d52-b55b-4c54c7d8eee9\",\r\n        \"status\": \"Faulted\",\r\n        \"startedTimeUtc\": \"2025-09-23T09:46:00.5418245Z\",\r\n        \"completedTimeUtc\": \"0001-01-01T00:00:00\",\r\n        \"properties\": {}\r\n      }\r\n    ],\r\n    \"incidents\": null,\r\n    \"cursors\": {\r\n      \"elementIds\": [\r\n        \"Activity_EW6HNH\"\r\n      ]\r\n    },\r\n    \"externalId\": \"42792329\",\r\n    \"feedId\": \"432637b3-71e8-413e-92db-74f74011eda4\",\r\n    \"processType\": \"ProcessOrchestration\",\r\n    \"licensingContext\": null\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "maestro",
+        "bpmn",
+        "instance",
+        "incidents",
+        "0fbda085-5c96-4dab-a4b3-012c1914845a",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"InstanceIncidents\",\r\n  \"Data\": [\r\n    {\r\n      \"id\": \"f32ae7e9-fdd4-4978-80a9-101e1496df82\",\r\n      \"tenantId\": \"6a0f9306-c553-4c37-9d86-7ab06a158774\",\r\n      \"organizationId\": \"27c4be1d-a3fd-4be3-b063-682b88ebee86\",\r\n      \"instanceId\": \"0fbda085-5c96-4dab-a4b3-012c1914845a\",\r\n      \"runId\": \"f3a0d71f-663d-4d52-b55b-4c54c7d8eee9\",\r\n      \"elementId\": \"Activity_EW6HNH\",\r\n      \"elementRunId\": \"cddd4d8d-3821-441a-8e1c-eda84d570e49\",\r\n      \"folderKey\": \"36c6d42a-9294-4807-ac48-46781c45fb96\",\r\n      \"processKey\": \"f9b2ddf0-f912-4c67-b634-b64f7c3ea3a8\",\r\n      \"packageVersion\": null,\r\n      \"incidentId\": \"cddd4d8d-3821-441a-8e1c-eda84d570e49\",\r\n      \"incidentStatus\": \"Open\",\r\n      \"incidentType\": \"System\",\r\n      \"errorCode\": \"170002\",\r\n      \"errorMessage\": \"Failure in the Orchestrator Job\",\r\n      \"errorTimeUtc\": \"2025-09-23T09:47:17.154153Z\",\r\n      \"errorDetails\": \"{\\\"Code\\\":\\\"Robot\\\",\\\"Title\\\":\\\"Could not find the user-interface (UI) element for this action.\\\\r\\\\n\\\\r\\\\nPossible solutions:\\\\r\\\\n •  Ensure application is opened and the UI element is visible on the screen at execution time\\\\r\\\\n •  Edit the Target of the UI activity and use Validation to debug the issue.\\\\r\\\\n •  If needed, re-indicate the element as its properties might have changed\\\\r\\\\n •  Use \\\\\\\"Check state\\\\\\\" activity to check the application state before executing the action\\\\r\\\\n •  Increase the \\\\\\\"Delay before\\\\\\\" value to allow time to the application to render entirely and become responsive \\\\r\\\\n\\\\r\\\\n[Target]: Strict selector failure:\\\\r\\\\n<webctrl id='drawerHeader_0' tag='DIV' aaname='set' />\\\\n\\\\r\\\\nThe closest selector matches found are:\\\\r\\\\n[75%] <webctrl aaname='Apps' id='drawerHeader_10' tag='DIV'/>\\\\n[74%] <webctrl aaname='Sales &amp; Marketing' id='drawerHeader_2' tag='DIV'/>\\\\n[73%] <webctrl aaname='UiPath Tools' id='drawerHeader_4' tag='DIV'/>\\\\n[72%] <webctrl aaname='Employees Tools' id='drawerHeader_6' tag='DIV'/>\\\\n[71%] <webctrl aaname='Collaboration' id='drawerHeader_0' tag='DIV'/>\\\\n[70%] <webctrl aaname='Product Development' id='drawerHeader_8' tag='DIV'/>\\\\n[54%] <webctrl aaname='' id='drawerBody_1' tag='DIV'/>\\\\n[54%] <webctrl aaname='' id='drawerBody_3' tag='DIV'/>\\\\n[54%] <webctrl aaname='' id='drawerBody_5' tag='DIV'/>\\\\n[54%] <webctrl aaname='' id='drawerBody_7' tag='DIV'/>)\\\",\\\"Detail\\\":\\\"in Main.xaml\\\\r\\\\n    at NClick \\\\\\\"Click 'Collaboration'\\\\\\\"\\\\r\\\\n    at Sequence \\\\\\\"Do\\\\\\\"\\\\r\\\\n    at NApplicationCard \\\\\\\"Edge My Apps\\\\\\\"\\\\r\\\\n    at Sequence \\\\\\\"Main Sequence\\\\\\\"\\\\r\\\\n    at Main \\\\\\\"Main\\\\\\\"\\\\r\\\\n\\\\r\\\\nUiPath.UIAutomationNext.Exceptions.NodeNotFoundException: Could not find the user-interface (UI) element for this action.\\\\r\\\\n\\\\r\\\\nPossible solutions:\\\\r\\\\n •  Ensure application is opened and the UI element is visible on the screen at execution time\\\\r\\\\n •  Edit the Target of the UI activity and use Validation to debug the issue.\\\\r\\\\n •  If needed, re-indicate the element as its properties might have changed\\\\r\\\\n •  Use \\\\\\\"Check state\\\\\\\" activity to check the application state before executing the action\\\\r\\\\n •  Increase the \\\\\\\"Delay before\\\\\\\" value to allow time to the application to render entirely and become responsive \\\\r\\\\n\\\\r\\\\n[Target]: Strict selector failure:\\\\r\\\\n<webctrl id='drawerHeader_0' tag='DIV' aaname='set' />\\\\n\\\\r\\\\nThe closest selector matches found are:\\\\r\\\\n[75%] <webctrl aaname='Apps' id='drawerHeader_10' tag='DIV'/>\\\\n[74%] <webctrl aaname='Sales &amp; Marketing' id='drawerHeader_2' tag='DIV'/>\\\\n[73%] <webctrl aaname='UiPath Tools' id='drawerHeader_4' tag='DIV'/>\\\\n[72%] <webctrl aaname='Employees Tools' id='drawerHeader_6' tag='DIV'/>\\\\n[71%] <webctrl aaname='Collaboration' id='drawerHeader_0' tag='DIV'/>\\\\n[70%] <webctrl aaname='Product Development' id='drawerHeader_8' tag='DIV'/>\\\\n[54%] <webctrl aaname='' id='drawerBody_1' tag='DIV'/>\\\\n[54%] <webctrl aaname='' id='drawerBody_3' tag='DIV'/>\\\\n[54%] <webctrl aaname='' id='drawerBody_5' tag='DIV'/>\\\\n[54%] <webctrl aaname='' id='drawerBody_7' tag='DIV'/>)\\\\r\\\\n   at UiPath.UIAutomationNext.Activities.Services.RuntimeActivityMonitorService.ActivityFaultedAsync(String activityInstanceId, Exception ex, CancellationToken token)\\\\r\\\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\\\\r\\\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\\\\r\\\\n   at UiPath.Shared.Activities.AsyncTaskNativeImplementation.BookmarkResumptionCallback(NativeActivityContext context, Object value)\\\\r\\\\n   at UiPath.Shared.Activities.AsyncTaskNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\\\r\\\\n   at UiPath.Shared.Activities.ContinuableAsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\\\r\\\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\\\r\\\\n--- End of stack trace from previous location ---\\\\r\\\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.OnFault(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\\\\r\\\\n   at System.Activities.Runtime.FaultCallbackWrapper.FaultWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\\",\\\"Category\\\":null,\\\"Status\\\":null,\\\"Timestamp\\\":null,\\\"AdditionalProperties\\\":{}}\",\r\n      \"comment\": null,\r\n      \"userUpdated\": null,\r\n      \"debugMode\": \"None\",\r\n      \"incidentUpdateTimeUtc\": null,\r\n      \"traceId\": null,\r\n      \"dependentFaultCode\": \"Robot\",\r\n      \"incidentSeverity\": \"Error\",\r\n      \"aiSummary\": null,\r\n      \"aiRecommendations\": null,\r\n      \"processType\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "maestro",
+        "bpmn",
+        "instance",
+        "element-executions",
+        "0fbda085-5c96-4dab-a4b3-012c1914845a",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"InstanceElementExecutions\",\r\n  \"Data\": {\r\n    \"creationUserKey\": \"67a356f2-1b63-4f9d-8ada-a1cd385f838b\",\r\n    \"folderKey\": \"36c6d42a-9294-4807-ac48-46781c45fb96\",\r\n    \"instanceDisplayName\": \"Agentic Process-42792329\",\r\n    \"instanceId\": \"0fbda085-5c96-4dab-a4b3-012c1914845a\",\r\n    \"organizationId\": \"27c4be1d-a3fd-4be3-b063-682b88ebee86\",\r\n    \"packageId\": \"Solution.5.Agentic.Agentic-Process\",\r\n    \"packageKey\": \"Solution.5.Agentic.Agentic-Process:1.0.0\",\r\n    \"packageVersion\": \"1.0.0\",\r\n    \"processKey\": \"f9b2ddf0-f912-4c67-b634-b64f7c3ea3a8\",\r\n    \"source\": \"Manual\",\r\n    \"tenantId\": \"6a0f9306-c553-4c37-9d86-7ab06a158774\",\r\n    \"status\": \"Faulted\",\r\n    \"startedTimeUtc\": \"2025-09-23T09:46:00.5418245Z\",\r\n    \"completedTimeUtc\": null,\r\n    \"elementExecutions\": [\r\n      {\r\n        \"completedTimeUtc\": \"2025-09-23T09:46:01.8397458Z\",\r\n        \"elementId\": \"Event_start\",\r\n        \"elementType\": \"StartEvent\",\r\n        \"elementExtensionType\": null,\r\n        \"parentRunId\": null,\r\n        \"parentElementId\": null,\r\n        \"parentElementRunId\": null,\r\n        \"runId\": \"\",\r\n        \"startedTimeUtc\": \"2025-09-23T09:46:01.3338154Z\",\r\n        \"status\": \"Completed\",\r\n        \"externalLink\": \"\",\r\n        \"maestroLink\": null,\r\n        \"elementRuns\": [\r\n          {\r\n            \"status\": \"Completed\",\r\n            \"startedTimeUtc\": \"2025-09-23T09:46:01.3338154Z\",\r\n            \"completedTimeUtc\": \"2025-09-23T09:46:01.8397458Z\",\r\n            \"incomingFlowId\": null,\r\n            \"incomingFlowIds\": [],\r\n            \"elementRunId\": \"3149376d-cb6c-4c9b-8b50-6e4a41a3d494\",\r\n            \"markerItemIndex\": null,\r\n            \"workflowId\": \"0fbda085-5c96-4dab-a4b3-012c1914845a/BpmnGenericWorkflow\",\r\n            \"temporalExecutionId\": \"0fbda085-5c96-4dab-a4b3-012c1914845a/BpmnGenericWorkflow/Event_start/3149376d-cb6c-4c9b-8b50-6e4a41a3d494\",\r\n            \"version\": 2,\r\n            \"parentElementRunId\": null\r\n          }\r\n        ],\r\n        \"jobKey\": null\r\n      },\r\n      {\r\n        \"completedTimeUtc\": null,\r\n        \"elementId\": \"Activity_EW6HNH\",\r\n        \"elementType\": \"ServiceTask\",\r\n        \"elementExtensionType\": \"Orchestrator.StartJob\",\r\n        \"parentRunId\": null,\r\n        \"parentElementId\": null,\r\n        \"parentElementRunId\": null,\r\n        \"runId\": \"\",\r\n        \"startedTimeUtc\": \"2025-09-23T09:46:04.3956408Z\",\r\n        \"status\": \"Failed\",\r\n        \"externalLink\": \"\",\r\n        \"maestroLink\": null,\r\n        \"elementRuns\": [\r\n          {\r\n            \"status\": \"Failed\",\r\n            \"startedTimeUtc\": \"2025-09-23T09:46:04.3956408Z\",\r\n            \"completedTimeUtc\": \"2025-09-23T09:47:16.5310458Z\",\r\n            \"incomingFlowId\": \"edge_E5vh5n\",\r\n            \"incomingFlowIds\": [\r\n              \"edge_E5vh5n\"\r\n            ],\r\n            \"elementRunId\": \"cddd4d8d-3821-441a-8e1c-eda84d570e49\",\r\n            \"markerItemIndex\": null,\r\n            \"workflowId\": \"0fbda085-5c96-4dab-a4b3-012c1914845a/BpmnGenericWorkflow\",\r\n            \"temporalExecutionId\": \"0fbda085-5c96-4dab-a4b3-012c1914845a/BpmnGenericWorkflow/Activity_EW6HNH/cddd4d8d-3821-441a-8e1c-eda84d570e49\",\r\n            \"version\": 2,\r\n            \"parentElementRunId\": null\r\n          }\r\n        ],\r\n        \"jobKey\": null\r\n      }\r\n    ],\r\n    \"traceId\": \"c5a19942-1985-418e-9f71-675018e80449\"\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "c5a19942-1985-418e-9f71-675018e80449",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 1,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Message\": \"Error getting job\",\r\n  \"Instructions\": \"Job with key 'c5a19942-1985-418e-9f71-675018e80449' not found: HTTP 404: Job does not exist.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "36c6d42a-9294-4807-ac48-46781c45fb96",
+        "--created-after",
+        "2025-09-23T09:45:00Z",
+        "--created-before",
+        "2025-09-23T09:50:00Z",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"0fbda085-5c96-4dab-a4b3-012c1914845a\",\r\n      \"State\": \"Running\",\r\n      \"ProcessName\": \"Agentic Process\",\r\n      \"Source\": \"ProcessOrchestration\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"\",\r\n      \"StartTime\": \"2025-09-23T09:45:59.153Z\",\r\n      \"EndTime\": \"\",\r\n      \"CreationTime\": \"2025-09-23T09:45:55.907Z\",\r\n      \"Id\": 42792329\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "maestro",
+        "bpmn",
+        "instance",
+        "cursors",
+        "0fbda085-5c96-4dab-a4b3-012c1914845a",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"InstanceCursors\",\r\n  \"Data\": {\r\n    \"elementIds\": [\r\n      \"Activity_EW6HNH\"\r\n    ]\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0",
+        "--created-after",
+        "2025-09-23T09:45:00Z",
+        "--created-before",
+        "2025-09-23T09:50:00Z",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "0fbda085-5c96-4dab-a4b3-012c1914845a",
+        "--limit",
+        "20",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "0fbda085-5c96-4dab-a4b3-012c1914845a"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"a43877386419d954\",\r\n      \"TraceId\": \"c5a199421985418e9f71675018e80449\",\r\n      \"ParentId\": null,\r\n      \"Name\": \"Process Instance: c5a19942-1985-418e-9f71-675018e80449\",\r\n      \"StartTime\": \"2025-09-23T09:45:52.1294627Z\",\r\n      \"EndTime\": \"2025-09-23T09:57:40.5808854Z\",\r\n      \"Attributes\": \"{\\\"spanType\\\":\\\"ProcessRun\\\",\\\"status\\\":\\\"Cancelled\\\",\\\"runId\\\":\\\"03496b29-354b-4919-a438-77386419d954\\\",\\\"instanceId\\\":\\\"c5a19942-1985-418e-9f71-675018e80449\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"27c4be1d-a3fd-4be3-b063-682b88ebee86\",\r\n      \"TenantId\": \"6a0f9306-c553-4c37-9d86-7ab06a158774\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"Source\": 2,\r\n      \"SpanType\": \"ProcessRun\",\r\n      \"ProcessKey\": null,\r\n      \"JobKey\": null,\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2025-09-23T09:57:40.7208745Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null\r\n    },\r\n    {\r\n      \"Id\": \"8902277658827b4b\",\r\n      \"TraceId\": \"c5a199421985418e9f71675018e80449\",\r\n      \"ParentId\": \"a43877386419d954\",\r\n      \"Name\": \"Event_start\",\r\n      \"StartTime\": \"2025-09-23T09:45:52.9761443Z\",\r\n      \"EndTime\": \"2025-09-23T09:45:53.6476184Z\",\r\n      \"Attributes\": \"{\\\"spanType\\\":\\\"ElementRun\\\",\\\"status\\\":\\\"Completed\\\",\\\"elementId\\\":\\\"Event_start\\\",\\\"incomingFlowId\\\":\\\"\\\",\\\"agentTraceLink\\\":\\\"\\\",\\\"orchestratorJobLink\\\":\\\"\\\",\\\"actionCenterTaskLink\\\":\\\"\\\",\\\"markerItemIndex\\\":null,\\\"elementRunId\\\":\\\"96de732a-940f-4ed6-8902-277658827b4b\\\",\\\"instanceId\\\":\\\"c5a19942-1985-418e-9f71-675018e80449\\\"}\",\r\n      \"Status\": 1,\r\n      \"OrganizationId\": \"27c4be1d-a3fd-4be3-b063-682b88ebee86\",\r\n      \"TenantId\": \"6a0f9306-c553-4c37-9d86-7ab06a158774\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"Source\": 2,\r\n      \"SpanType\": \"ElementRun\",\r\n      \"ProcessKey\": null,\r\n      \"JobKey\": null,\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2025-09-23T09:45:53.7746218Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null\r\n    },\r\n    {\r\n      \"Id\": \"828792a74ee37185\",\r\n      \"TraceId\": \"c5a199421985418e9f71675018e80449\",\r\n      \"ParentId\": \"a43877386419d954\",\r\n      \"Name\": \"BlankProcess6\",\r\n      \"StartTime\": \"2025-09-23T09:45:56.2691758Z\",\r\n      \"EndTime\": \"2025-09-23T09:57:40.1704937Z\",\r\n      \"Attributes\": \"{\\\"spanType\\\":\\\"ElementRun\\\",\\\"status\\\":\\\"Terminated\\\",\\\"elementId\\\":\\\"Activity_EW6HNH\\\",\\\"incomingFlowId\\\":\\\"edge_E5vh5n\\\",\\\"agentTraceLink\\\":\\\"\\\",\\\"orchestratorJobLink\\\":\\\"\\\",\\\"actionCenterTaskLink\\\":\\\"\\\",\\\"markerItemIndex\\\":null,\\\"elementRunId\\\":\\\"e44b454a-215e-4de3-8287-92a74ee37185\\\",\\\"instanceId\\\":\\\"c5a19942-1985-418e-9f71-675018e80449\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"27c4be1d-a3fd-4be3-b063-682b88ebee86\",\r\n      \"TenantId\": \"6a0f9306-c553-4c37-9d86-7ab06a158774\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"Source\": 2,\r\n      \"SpanType\": \"ElementRun\",\r\n      \"ProcessKey\": null,\r\n      \"JobKey\": null,\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2025-09-23T09:57:40.341736Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null\r\n    },\r\n    {\r\n      \"Id\": \"93d3ce623175eb84\",\r\n      \"TraceId\": \"c5a199421985418e9f71675018e80449\",\r\n      \"ParentId\": \"a43877386419d954\",\r\n      \"Name\": \"__Action=Canceling__\",\r\n      \"StartTime\": \"2025-09-23T09:57:39.7637842Z\",\r\n      \"EndTime\": \"2025-09-23T09:57:39.7637842Z\",\r\n      \"Attributes\": \"{\\\"spanType\\\":\\\"InstanceOperation\\\",\\\"operationType\\\":\\\"Cancel\\\",\\\"comment\\\":\\\"Job type job.stopping in Orchestrator\\\",\\\"userId\\\":\\\"00000000-0000-0000-0000-000000000000\\\"}\",\r\n      \"Status\": 0,\r\n      \"OrganizationId\": \"27c4be1d-a3fd-4be3-b063-682b88ebee86\",\r\n      \"TenantId\": \"6a0f9306-c553-4c37-9d86-7ab06a158774\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"Source\": 2,\r\n      \"SpanType\": \"InstanceOperation\",\r\n      \"ProcessKey\": null,\r\n      \"JobKey\": null,\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2025-09-23T09:57:39.8086521Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null\r\n    },\r\n    {\r\n      \"Id\": \"9fbf345cce3888ef\",\r\n      \"TraceId\": \"c5a199421985418e9f71675018e80449\",\r\n      \"ParentId\": \"a43877386419d954\",\r\n      \"Name\": \"__Action=Canceling__\",\r\n      \"StartTime\": \"2025-09-23T09:57:39.9622638Z\",\r\n      \"EndTime\": \"2025-09-23T09:57:39.9622638Z\",\r\n      \"Attributes\": \"{\\\"spanType\\\":\\\"InstanceOperation\\\",\\\"operationType\\\":\\\"Cancel\\\",\\\"comment\\\":\\\"Job type job.stopping in Orchestrator\\\",\\\"userId\\\":\\\"00000000-0000-0000-0000-000000000000\\\"}\",\r\n      \"Status\": 0,\r\n      \"OrganizationId\": \"27c4be1d-a3fd-4be3-b063-682b88ebee86\",\r\n      \"TenantId\": \"6a0f9306-c553-4c37-9d86-7ab06a158774\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"Source\": 2,\r\n      \"SpanType\": \"InstanceOperation\",\r\n      \"ProcessKey\": null,\r\n      \"JobKey\": null,\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2025-09-23T09:57:39.9889758Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "healing-data",
+        "0fbda085-5c96-4dab-a4b3-012c1914845a"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "[]\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

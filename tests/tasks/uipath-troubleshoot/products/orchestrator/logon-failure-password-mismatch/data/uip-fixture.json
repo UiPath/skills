@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2c8cb22-2ebc-4c27-87f3-05efe701af1c\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\",\r\n      \"Name\": \"UnattendedDemo\",\r\n      \"Path\": \"UnattendedDemo\",\r\n      \"Description\": \"Folder hosting the InvoiceIngestor background unattended process.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"e0772cbe-c19c-4d5f-926c-043c2d2d300a\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f1e2d3c4-b5a6-7890-1234-56789abcdef0",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"JobList\",\n  \"Data\": [\n    {\n      \"Key\": \"aabb1122-3344-5566-7788-99aabbccdd00\",\n      \"State\": \"Faulted\",\n      \"ProcessName\": \"InvoiceIngestor\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Manual\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-12T11:30:00.412Z\",\n      \"EndTime\": \"2026-05-12T11:30:01.118Z\",\n      \"CreationTime\": \"2026-05-12T11:30:00.190Z\"\n    },\n    {\n      \"Key\": \"aabb1100-3344-5566-7788-99aabbccdd11\",\n      \"State\": \"Faulted\",\n      \"ProcessName\": \"InvoiceIngestor\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Schedule\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-12T11:15:00.211Z\",\n      \"EndTime\": \"2026-05-12T11:15:00.987Z\",\n      \"CreationTime\": \"2026-05-12T11:14:59.980Z\"\n    },\n    {\n      \"Key\": \"aabb1099-3344-5566-7788-99aabbccdd22\",\n      \"State\": \"Faulted\",\n      \"ProcessName\": \"InvoiceIngestor\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Schedule\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-12T11:05:00.155Z\",\n      \"EndTime\": \"2026-05-12T11:05:00.901Z\",\n      \"CreationTime\": \"2026-05-12T11:04:59.880Z\"\n    }\n  ]\n}\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f1e2d3c4-b5a6-7890-1234-56789abcdef0",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"JobList\",\n  \"Data\": [\n    {\n      \"Key\": \"aabb1122-3344-5566-7788-99aabbccdd00\",\n      \"State\": \"Faulted\",\n      \"ProcessName\": \"InvoiceIngestor\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Manual\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-12T11:30:00.412Z\",\n      \"EndTime\": \"2026-05-12T11:30:01.118Z\",\n      \"CreationTime\": \"2026-05-12T11:30:00.190Z\"\n    },\n    {\n      \"Key\": \"bbcc2233-4455-6677-8899-aabbccddee22\",\n      \"State\": \"Successful\",\n      \"ProcessName\": \"OrderExporter\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Schedule\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-12T11:20:00.001Z\",\n      \"EndTime\": \"2026-05-12T11:20:12.880Z\",\n      \"CreationTime\": \"2026-05-12T11:19:59.812Z\"\n    },\n    {\n      \"Key\": \"aabb1100-3344-5566-7788-99aabbccdd11\",\n      \"State\": \"Faulted\",\n      \"ProcessName\": \"InvoiceIngestor\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Schedule\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-12T11:15:00.211Z\",\n      \"EndTime\": \"2026-05-12T11:15:00.987Z\",\n      \"CreationTime\": \"2026-05-12T11:14:59.980Z\"\n    },\n    {\n      \"Key\": \"aabb1099-3344-5566-7788-99aabbccdd22\",\n      \"State\": \"Faulted\",\n      \"ProcessName\": \"InvoiceIngestor\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Schedule\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-12T11:05:00.155Z\",\n      \"EndTime\": \"2026-05-12T11:05:00.901Z\",\n      \"CreationTime\": \"2026-05-12T11:04:59.880Z\"\n    },\n    {\n      \"Key\": \"aabb1088-3344-5566-7788-99aabbccdd33\",\n      \"State\": \"Faulted\",\n      \"ProcessName\": \"InvoiceIngestor\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Schedule\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-12T10:55:00.302Z\",\n      \"EndTime\": \"2026-05-12T10:55:01.040Z\",\n      \"CreationTime\": \"2026-05-12T10:54:59.991Z\"\n    },\n    {\n      \"Key\": \"ddee4455-6677-8899-aabb-ccddee001122\",\n      \"State\": \"Successful\",\n      \"ProcessName\": \"InvoiceIngestor\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Schedule\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-12T08:45:00.105Z\",\n      \"EndTime\": \"2026-05-12T08:45:07.211Z\",\n      \"CreationTime\": \"2026-05-12T08:44:59.821Z\"\n    }\n  ]\n}\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "aabb1122-3344-5566-7788-99aabbccdd00",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"JobGet\",\n  \"Data\": {\n    \"Key\": \"aabb1122-3344-5566-7788-99aabbccdd00\",\n    \"StartTime\": \"2026-05-12T11:30:00.412Z\",\n    \"EndTime\": \"2026-05-12T11:30:01.118Z\",\n    \"State\": \"Faulted\",\n    \"JobPriority\": \"Normal\",\n    \"SpecificPriorityValue\": 50,\n    \"Source\": \"Manual\",\n    \"SourceType\": \"Manual\",\n    \"BatchExecutionKey\": \"9e1f8b22-2b3c-4d5e-9f0a-1b2c3d4e5f6a\",\n    \"Info\": \"Could not start executor. Logon failed for user UIPATH\\\\USER1. The user name or password is incorrect. (0x0000052E). Last error: 131092. RDP connection failed.\\r\\n   at UiPath.Robot.Service.SessionManager.CreateSessionAsync(LogonRequest request)\\r\\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)\\r\\n\",\n    \"CreationTime\": \"2026-05-12T11:30:00.190Z\",\n    \"ReleaseName\": \"InvoiceIngestor\",\n    \"Type\": \"Unattended\",\n    \"EnvironmentVariables\": \"\",\n    \"OutputArguments\": \"{}\",\n    \"HostMachineName\": \"MOCK-HOST\",\n    \"HasMediaRecorded\": false,\n    \"HasVideoRecorded\": false,\n    \"RuntimeType\": \"Unattended\",\n    \"RequiresUserInteraction\": false,\n    \"ReleaseVersionId\": 4670077,\n    \"OrganizationUnitId\": 7791617,\n    \"FolderKey\": \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\",\n    \"Reference\": \"\",\n    \"ProcessType\": \"Process\",\n    \"ResumeOnSameContext\": false,\n    \"LocalSystemAccount\": \"UIPATH\\\\USER1\",\n    \"OrchestratorUserIdentity\": \"user1\",\n    \"RemoteControlAccess\": \"None\",\n    \"LastModificationTime\": \"2026-05-12T11:30:01.118Z\",\n    \"JobError\": {},\n    \"ErrorCode\": \"Robot\",\n    \"TraceId\": \"aabb1122-3344-5566-7788-99aabbccdd00\",\n    \"Id\": 670911211\n  }\n}\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "aabb1100-3344-5566-7788-99aabbccdd11",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"JobGet\",\n  \"Data\": {\n    \"Key\": \"aabb1100-3344-5566-7788-99aabbccdd11\",\n    \"StartTime\": \"2026-05-12T11:15:00.211Z\",\n    \"EndTime\": \"2026-05-12T11:15:00.987Z\",\n    \"State\": \"Faulted\",\n    \"JobPriority\": \"Normal\",\n    \"SpecificPriorityValue\": 50,\n    \"Source\": \"Schedule\",\n    \"SourceType\": \"TimeTrigger\",\n    \"BatchExecutionKey\": \"9e1f8b22-2b3c-4d5e-9f0a-1b2c3d4e5f6b\",\n    \"Info\": \"Could not start executor. Logon failed for user UIPATH\\\\USER1. The user name or password is incorrect. (0x0000052E). Last error: 131092. RDP connection failed.\\r\\n   at UiPath.Robot.Service.SessionManager.CreateSessionAsync(LogonRequest request)\\r\\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)\\r\\n\",\n    \"CreationTime\": \"2026-05-12T11:14:59.980Z\",\n    \"ReleaseName\": \"InvoiceIngestor\",\n    \"Type\": \"Unattended\",\n    \"EnvironmentVariables\": \"\",\n    \"OutputArguments\": \"{}\",\n    \"HostMachineName\": \"MOCK-HOST\",\n    \"HasMediaRecorded\": false,\n    \"HasVideoRecorded\": false,\n    \"RuntimeType\": \"Unattended\",\n    \"RequiresUserInteraction\": false,\n    \"ReleaseVersionId\": 4670077,\n    \"OrganizationUnitId\": 7791617,\n    \"FolderKey\": \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\",\n    \"Reference\": \"\",\n    \"ProcessType\": \"Process\",\n    \"ResumeOnSameContext\": false,\n    \"LocalSystemAccount\": \"UIPATH\\\\USER1\",\n    \"OrchestratorUserIdentity\": \"user1\",\n    \"RemoteControlAccess\": \"None\",\n    \"LastModificationTime\": \"2026-05-12T11:15:00.987Z\",\n    \"JobError\": {},\n    \"ErrorCode\": \"Robot\",\n    \"TraceId\": \"aabb1100-3344-5566-7788-99aabbccdd11\",\n    \"Id\": 670911100\n  }\n}\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "bbcc2233-4455-6677-8899-aabbccddee22",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"JobGet\",\n  \"Data\": {\n    \"Key\": \"bbcc2233-4455-6677-8899-aabbccddee22\",\n    \"StartTime\": \"2026-05-12T11:20:00.001Z\",\n    \"EndTime\": \"2026-05-12T11:20:12.880Z\",\n    \"State\": \"Successful\",\n    \"JobPriority\": \"Normal\",\n    \"SpecificPriorityValue\": 50,\n    \"Source\": \"Schedule\",\n    \"SourceType\": \"TimeTrigger\",\n    \"BatchExecutionKey\": \"8c1d6b30-09a2-4b5c-8e7f-1a2b3c4d5e6c\",\n    \"Info\": \"\",\n    \"CreationTime\": \"2026-05-12T11:19:59.812Z\",\n    \"ReleaseName\": \"OrderExporter\",\n    \"Type\": \"Unattended\",\n    \"EnvironmentVariables\": \"\",\n    \"OutputArguments\": \"{}\",\n    \"HostMachineName\": \"MOCK-HOST\",\n    \"HasMediaRecorded\": false,\n    \"HasVideoRecorded\": false,\n    \"RuntimeType\": \"Unattended\",\n    \"RequiresUserInteraction\": false,\n    \"ReleaseVersionId\": 4670099,\n    \"OrganizationUnitId\": 7791617,\n    \"FolderKey\": \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\",\n    \"Reference\": \"\",\n    \"ProcessType\": \"Process\",\n    \"ResumeOnSameContext\": false,\n    \"LocalSystemAccount\": \"UIPATH\\\\USER2\",\n    \"OrchestratorUserIdentity\": \"user2\",\n    \"RemoteControlAccess\": \"None\",\n    \"LastModificationTime\": \"2026-05-12T11:20:12.880Z\",\n    \"JobError\": null,\n    \"ErrorCode\": null,\n    \"TraceId\": \"bbcc2233-4455-6677-8899-aabbccddee22\",\n    \"Id\": 670911180\n  }\n}\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "aabb1122-3344-5566-7788-99aabbccdd00",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-12T11:30:01.110Z\",\r\n      \"Message\": \"Job 'aabb1122-3344-5566-7788-99aabbccdd00' failed to start. Could not start executor. Logon failed for user UIPATH\\\\USER1. The user name or password is incorrect. (0x0000052E). Last error: 131092. RDP connection failed.\\r\\n   at UiPath.Robot.Service.SessionManager.CreateSessionAsync(LogonRequest request)\\r\\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-12T11:30:00.988Z\",\r\n      \"Message\": \"[Robot] Windows logon attempt for UIPATH\\\\USER1 on MOCK-HOST rejected by LSA. NTSTATUS=0xC000006D (STATUS_LOGON_FAILURE). Sub-status=0xC000006A (wrong password). Account is NOT locked. Caller: UiPath Robot service (unattended).\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "aabb1122-3344-5566-7788-99aabbccdd00",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-12T11:30:01.110Z\",\r\n      \"Message\": \"Job 'aabb1122-3344-5566-7788-99aabbccdd00' failed to start. Could not start executor. Logon failed for user UIPATH\\\\USER1. The user name or password is incorrect. (0x0000052E). Last error: 131092. RDP connection failed.\\r\\n   at UiPath.Robot.Service.SessionManager.CreateSessionAsync(LogonRequest request)\\r\\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-12T11:30:00.988Z\",\r\n      \"Message\": \"[Robot] Windows logon attempt for UIPATH\\\\USER1 on MOCK-HOST rejected by LSA. NTSTATUS=0xC000006D (STATUS_LOGON_FAILURE). Sub-status=0xC000006A (wrong password). Account is NOT locked. Caller: UiPath Robot service (unattended).\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-12T11:30:00.620Z\",\r\n      \"Message\": \"[Robot] Resolving credentials for UIPATH\\\\USER1 from Orchestrator unattended-robot record (LoginToConsole=True). Initiating Windows logon.\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-12T11:30:00.205Z\",\r\n      \"Message\": \"Job 'aabb1122-3344-5566-7788-99aabbccdd00' created. Source=Manual, ReleaseName=InvoiceIngestor, RequiresUserInteraction=False, TargetUser=UIPATH\\\\USER1.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "users",
+        "get",
+        "c1d2e3f4-a5b6-c7d8-e9f0-1a2b3c4d5e6f",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"UserGet\",\n  \"Data\": {\n    \"Key\": \"c1d2e3f4-a5b6-c7d8-e9f0-1a2b3c4d5e6f\",\n    \"UserName\": \"user1\",\n    \"EmailAddress\": \"user1@example.invalid\",\n    \"DomainName\": \"UIPATH\",\n    \"FullName\": \"Service Account 1\",\n    \"Type\": \"User\",\n    \"UnattendedRobot\": {\n      \"ExecutionSettings\": {\n        \"LoginToConsole\": true,\n        \"RunOnlyOneJobAtATime\": false,\n        \"ResolutionWidth\": 1920,\n        \"ResolutionHeight\": 1080,\n        \"ResolutionDepth\": 32,\n        \"FontSmoothing\": false\n      },\n      \"UserName\": \"UIPATH\\\\USER1\",\n      \"CredentialStoreId\": null,\n      \"CredentialType\": \"Default\",\n      \"PasswordLastSet\": \"2026-05-04T09:00:00Z\"\n    },\n    \"TenantId\": 1,\n    \"Id\": 7501\n  }\n}\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "b7e3d2a4-5f61-48c9-a0d2-4e9b1c7f8a23"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"b7e3d2a4-5f61-48c9-a0d2-4e9b1c7f8a23\",\r\n    \"StartTime\": \"2026-07-01T14:31:26.380Z\",\r\n    \"EndTime\": \"2026-07-01T14:31:27.777Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"6c1e8f3a-2b4d-4c5e-9a1b-3d7f0c2e4a68\",\r\n    \"Info\": \"HTTP Error\\r\\n\\r\\nCheck HTTP connectivity and verify the response error details\\r\\n\\r\\nin OrderQueueFetch.xaml\\r\\n    at Throw \\\"Fetch order queue item\\\"\\r\\n    at Sequence \\\"Sequence\\\"\\r\\n    at TryCatch \\\"TryCatch\\\"\\r\\n    at GetQueueItem \\\"Fetch order queue item\\\"\\r\\n    at Sequence \\\"Fetch order queue item\\\"\\r\\n    at OrderQueueFetch \\\"OrderQueueFetch\\\"\\r\\n\\r\\nUiPath.Core.Activities.OrchestratorHttpException: Status code: 404 (Not Found). Orchestrator response: \\r\\nOrderIntakeQueue_EU does not exist. Error code: 1002\\r\\n   at System.Activities.Statements.Throw.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\",\r\n    \"CreationTime\": \"2026-07-01T14:31:26.104Z\",\r\n    \"ReleaseName\": \"OrderQueueFetch\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Development\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 5013207,\r\n    \"OrganizationUnitId\": 7792411,\r\n    \"FolderKey\": \"9d4f1b2e-7a3c-4e8f-b5a6-2c1d0e9f8b7a\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"OrchestratorUserIdentity\": \"t.varga\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-07-01T14:31:27.777Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"b7e3d2a4-5f61-48c9-a0d2-4e9b1c7f8a23\",\r\n    \"Id\": 671443902\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "b7e3d2a4-5f61-48c9-a0d2-4e9b1c7f8a23"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-01T14:31:27.143Z\",\r\n      \"Message\": \"Fetch order queue item: Status code: 404 (Not Found). Orchestrator response: \\r\\nOrderIntakeQueue_EU does not exist. Error code: 1002\\r\\nin OrderQueueFetch.xaml\\r\\n    at Throw \\\"Fetch order queue item\\\"\\r\\n    at Sequence \\\"Sequence\\\"\\r\\n    at TryCatch \\\"TryCatch\\\"\\r\\n    at GetQueueItem \\\"Fetch order queue item\\\"\\r\\n    at Sequence \\\"Fetch order queue item\\\"\\r\\n    at OrderQueueFetch \\\"OrderQueueFetch\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.Core.Activities.OrchestratorHttpException\\r\\n   at System.Activities.Statements.Throw.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b7e3d2a4-5f61-48c9-a0d2-4e9b1c7f8a23\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"OrderQueueFetch\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-07-01T14:31:26.380Z\",\r\n      \"EndTime\": \"2026-07-01T14:31:27.777Z\",\r\n      \"CreationTime\": \"2026-07-01T14:31:26.104Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "queues",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"QueueList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 0,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9d4f1b2e-7a3c-4e8f-b5a6-2c1d0e9f8b7a\",\r\n      \"Name\": \"t.varga@meridianlogistics.example's workspace\",\r\n      \"Path\": \"t.varga@meridianlogistics.example's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"4a7b9c1d-2e3f-4a5b-8c7d-6e5f4a3b2c1d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

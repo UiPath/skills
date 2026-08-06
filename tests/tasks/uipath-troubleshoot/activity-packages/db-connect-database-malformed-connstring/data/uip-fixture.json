@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Finance Operations\",\r\n      \"Path\": \"Finance Operations\",\r\n      \"Description\": \"Production folder for finance back-office processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"b8e2c145-7d3a-49b6-a2c8-1f4b5e8a9c01\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d2b3c4e5-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MonthlyReconImport\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-01T07:05:00.142Z\",\r\n      \"EndTime\": \"2026-06-01T07:05:00.948Z\",\r\n      \"CreationTime\": \"2026-06-01T07:04:59.910Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "d2b3c4e5-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"d2b3c4e5-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n    \"StartTime\": \"2026-06-01T07:05:00.142Z\",\r\n    \"EndTime\": \"2026-06-01T07:05:00.948Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"e6f7a8b9-0c1d-4e2f-8a3b-4c5d6e7f8a9b\",\r\n    \"Info\": \"Connect to Database: A database error occurred.\\r\\n\\r\\nin Main.xaml\\r\\n    at DatabaseConnect \\\"Connect to Database\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.ArgumentException: Format of the initialization string does not conform to specification starting at index 47.\\r\\n   at System.Data.Common.DbConnectionOptions.GetKeyValuePair(String connectionString, Int32 currentPosition, StringBuilder buffer, Boolean useOdbcRules, String& keyname, String& keyvalue)\\r\\n   at System.Data.Common.DbConnectionOptions.ParseInternal(Dictionary`2 parsetable, String connectionString, Boolean buildChain, Dictionary`2 synonyms, Boolean firstKey)\\r\\n   at System.Data.Common.DbConnectionOptions..ctor(String connectionString, Dictionary`2 synonyms, Boolean useOdbcRules)\\r\\n   at System.Data.OleDb.OleDbConnectionString..ctor(String connectionString, Boolean validate)\\r\\n   at System.Data.OleDb.OleDbConnectionFactory.CreateConnectionOptions(String connectionString, DbConnectionOptions previous)\\r\\n   at UiPath.Database.DatabaseConnection.Connect(String connectionString, String providerName)\",\r\n    \"CreationTime\": \"2026-06-01T07:04:59.910Z\",\r\n    \"ReleaseName\": \"MonthlyReconImport\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5041902,\r\n    \"OrganizationUnitId\": 7791624,\r\n    \"FolderKey\": \"c1a2b3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-01T07:05:00.948Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"d2b3c4e5-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n    \"Id\": 671059910\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "d2b3c4e5-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-01T07:05:00.910Z\",\r\n      \"Message\": \"[Connect to Database] A database error occurred. Format of the initialization string does not conform to specification starting at index 47.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-01T07:05:00.938Z\",\r\n      \"Message\": \"System.ArgumentException: Format of the initialization string does not conform to specification starting at index 47.\\r\\n   at System.Data.Common.DbConnectionOptions.GetKeyValuePair(String connectionString, Int32 currentPosition, StringBuilder buffer, Boolean useOdbcRules, String& keyname, String& keyvalue)\\r\\n   at System.Data.Common.DbConnectionOptions..ctor(String connectionString, Dictionary`2 synonyms, Boolean useOdbcRules)\\r\\n   at System.Data.OleDb.OleDbConnectionString..ctor(String connectionString, Boolean validate)\\r\\n   at UiPath.Database.DatabaseConnection.Connect(String connectionString, String providerName)\\r\\nin Main.xaml\\r\\n    at DatabaseConnect \\\"Connect to Database\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "d2b3c4e5-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-01T07:05:00.910Z\",\r\n      \"Message\": \"[Connect to Database] A database error occurred. Format of the initialization string does not conform to specification starting at index 47.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-01T07:05:00.938Z\",\r\n      \"Message\": \"System.ArgumentException: Format of the initialization string does not conform to specification starting at index 47.\\r\\n   at System.Data.Common.DbConnectionOptions.GetKeyValuePair(String connectionString, Int32 currentPosition, StringBuilder buffer, Boolean useOdbcRules, String& keyname, String& keyvalue)\\r\\n   at System.Data.Common.DbConnectionOptions..ctor(String connectionString, Dictionary`2 synonyms, Boolean useOdbcRules)\\r\\n   at System.Data.OleDb.OleDbConnectionString..ctor(String connectionString, Boolean validate)\\r\\n   at UiPath.Database.DatabaseConnection.Connect(String connectionString, String providerName)\\r\\nin Main.xaml\\r\\n    at DatabaseConnect \\\"Connect to Database\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

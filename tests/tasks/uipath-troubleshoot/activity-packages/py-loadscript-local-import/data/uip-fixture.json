@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"aa03b2c3-d4e5-4f60-8a03-000000000003\",\r\n      \"Name\": \"Finance Sync\",\r\n      \"Path\": \"Finance Sync\",\r\n      \"Description\": \"Production folder for ledger synchronization processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "aa03b2c3-d4e5-4f60-8a03-000000000003",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"bb03c3d4-e5f6-4071-9b03-000000000003\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"PyLedgerSync\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-11T13:22:48.210Z\",\r\n      \"EndTime\": \"2026-06-11T13:22:50.470Z\",\r\n      \"CreationTime\": \"2026-06-11T13:22:47.800Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "bb03c3d4-e5f6-4071-9b03-000000000003",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"bb03c3d4-e5f6-4071-9b03-000000000003\",\r\n    \"StartTime\": \"2026-06-11T13:22:48.210Z\",\r\n    \"EndTime\": \"2026-06-11T13:22:50.470Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"cc03d4e5-f6a7-4182-9c03-000000000003\",\r\n    \"Info\": \"Load Python Script: One or more errors occurred. ---> Python.Runtime.PythonException: Error loading the python script: ModuleNotFoundError: No module named 'ledger_utils'\\r\\n  File \\\"ledger_sync.py\\\", line 7, in <module>\\r\\n    import ledger_utils\\r\\n\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.AggregateException: One or more errors occurred.\",\r\n    \"CreationTime\": \"2026-06-11T13:22:47.800Z\",\r\n    \"ReleaseName\": \"PyLedgerSync\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7012403,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"aa03b2c3-d4e5-4f60-8a03-000000000003\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-11T13:22:50.470Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"bb03c3d4-e5f6-4071-9b03-000000000003\",\r\n    \"Id\": 712450303\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "bb03c3d4-e5f6-4071-9b03-000000000003",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-11T13:22:50.300Z\",\r\n      \"Message\": \"[Load Python Script] One or more errors occurred. ---> Python.Runtime.PythonException: Error loading the python script: ModuleNotFoundError: No module named 'ledger_utils' (ledger_sync.py, line 7)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-11T13:22:50.380Z\",\r\n      \"Message\": \"One or more errors occurred. ---> Python.Runtime.PythonException: ModuleNotFoundError: No module named 'ledger_utils'\\r\\n  File \\\"ledger_sync.py\\\", line 7, in <module>\\r\\n    import ledger_utils\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "bb03c3d4-e5f6-4071-9b03-000000000003",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-11T13:22:48.240Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-11T13:22:49.160Z\",\r\n      \"Message\": \"[Python Scope] Initializing Python engine (Target: x64, Path: C:\\\\Python39, Version: Python_39)\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-11T13:22:49.610Z\",\r\n      \"Message\": \"[Python Scope] Python engine initialized. WorkingFolder resolved to the package directory (no WorkingFolder set).\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-11T13:22:49.880Z\",\r\n      \"Message\": \"[Load Python Script] Loading scripts\\\\ledger_sync.py\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-11T13:22:50.300Z\",\r\n      \"Message\": \"[Load Python Script] One or more errors occurred. ---> Python.Runtime.PythonException: Error loading the python script: ModuleNotFoundError: No module named 'ledger_utils' (ledger_sync.py, line 7)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-11T13:22:50.380Z\",\r\n      \"Message\": \"One or more errors occurred. ---> Python.Runtime.PythonException: ModuleNotFoundError: No module named 'ledger_utils'\\r\\n  File \\\"ledger_sync.py\\\", line 7, in <module>\\r\\n    import ledger_utils\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-11T13:22:50.450Z\",\r\n      \"Message\": \"Execution ended in: 00:00:02\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

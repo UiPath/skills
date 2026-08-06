@@ -8,17 +8,11 @@ The script never touches files outside the scenario output directory
 unless `--output` is overridden.
 
 NO DIAGNOSIS HINTS IN AGENT-VISIBLE FIXTURES. The sandbox stages `process/`
-and `fixtures/` into the agent's cwd, so the agent CAN read `manifest.json`.
-Any text you add there - especially the `expected_calls[].description` fields
-you fill in after generation - MUST NOT reveal the answer: no exception type,
-no fault location (file / activity / DisplayName), no evidence specifics
-(e.g. `InputArguments={}`), no hypothesis labels. Keep those descriptions
-procedural ("Agent fetches the job's execution details."). The exception and
-stack trace belong ONLY in the recorded `jobs get` / `jobs logs` payloads -
-that is the evidence the agent must diagnose from. `RESOLUTION.md` lives at the
-task root and is NOT staged; `README.md` lives in `data/m/r/`, which IS staged
-but is deleted from the sandbox by `m/seal` before the agent starts. Both may
-therefore describe the root cause freely.
+and `fixtures/` into the agent's cwd. Recorded CLI responses are instead stored
+in `data/uip-fixture.json`, which coder-eval mounts only for the protected mock
+service. The evaluated agent receives a bounded `uip` client and cannot read
+the fixture. `RESOLUTION.md` and `README.md` remain task-authoring files and are
+not staged into the agent workspace.
 
 Usage:
     python generate_scenario.py \
@@ -38,14 +32,14 @@ Read tests/tasks/uipath-troubleshoot/CLAUDE.md before invoking this.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import re
-import shutil
+import shlex
 import subprocess
 import sys
 from collections import OrderedDict
 from pathlib import Path
+
 
 def _find_repo_root() -> Path:
     """Walk up from this file until we find the repo's `.git` marker."""
@@ -108,28 +102,19 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
-  task_timeout: 2400
+  task_timeout: 5400
   max_turns: 60
-  turn_timeout: 1800
+  turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {{}}
-  template_sources:
-    - type: template_dir
-      path: {shared_prefix}_shared/mock_template
-{process_source_block}    - type: template_dir
-      path: data
-  # Prepend ./m to the agent's PATH so bare `uip` resolves to the mock.
-  mock_path_dirs: ["m"]
-
-pre_run:
-  # Seal the mock store before the agent starts: packs m/r/ into an opaque
-  # m/.store and removes m/r/, so the agent cannot read the recorded uip
-  # outputs and reach the diagnosis without investigating.
-  - command: "python m/seal"
-    timeout: 60
-    fail_on_error: true
+{template_sources_block}  protected_mocks:
+    - tool: uip
+      fixture: data/uip-fixture.json
+      max_requests: 100
+      passthrough_argv_prefixes:
+        - [docsai, ask]
 
 reference:
   file: RESOLUTION.md
@@ -149,6 +134,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
+    include_dialog: true
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
@@ -204,10 +190,9 @@ agent reached a verified resolution. The fixtures are the verbatim
 
 | Layer | Source |
 |---|---|
-| `m/uip` + `m/uip.cmd` | shared from the suite `_shared/mock_template/` (manifest-driven dispatcher, shipped as a compressed blob; source in `_shared/mock_src/uip.py`) |
+| Protected `uip` mock | coder-eval's UID/GID-isolated mock service; the agent receives only a bounded client |
 | `process/` | frozen snapshot of the failing UiPath project |
-| `data/m/r/*.json` | real stdout extracted verbatim from the session transcript (filename = sha1[:10] of args; short to keep Windows paths under MAX_PATH) |
-| `data/m/r/manifest.json` | dispatch table mapping each command pattern to its recorded fixture |
+| `data/uip-fixture.json` | finite command map with real stdout extracted from the session transcript; private to the mock service |
 
 ## Success criteria
 
@@ -397,7 +382,7 @@ def _detect_scrub_map(samples: list[str]) -> "OrderedDict[str, str]":
                 placeholder = "replacement_user" if idx == 1 else f"replacement_user{idx}"
                 user_placeholders[lower] = placeholder
         for m in WIN_DOMAIN_USER_RE.finditer(text):
-            domain, user = m.group(1), m.group(2)
+            _domain, user = m.group(1), m.group(2)
             # Skip well-known service accounts.
             if user.upper() in {"SYSTEM", "ADMINISTRATOR", "NETWORKSERVICE", "LOCALSERVICE"}:
                 continue
@@ -432,33 +417,22 @@ def _scrub_path(path: Path, mapping: "OrderedDict[str, str]") -> Path:
     new_parts = [_apply_scrub(p, mapping) for p in parts]
     return Path(*new_parts) if new_parts else path
 
-def _build_manifest_rules(uip_calls: list[dict]) -> tuple[list[dict], dict[str, str]]:
-    """One rule per unique `args`. Returns (rules, fixture_filename_by_args).
-
-    Fixture filenames are derived from a slug of the args. When two distinct
-    args slug-collide (rare), a numeric suffix is appended.
-    """
-    rules: list[dict] = []
-    fixture_by_args: dict[str, str] = {}
-    used_filenames: set[str] = set()
-
+def _build_fixture_responses(uip_calls: list[dict]) -> list[dict]:
+    """Build one normalized finite response per unique recorded argv."""
+    by_args: "OrderedDict[str, dict]" = OrderedDict()
     for call in uip_calls:
         args = call["args"]
-        if args in fixture_by_args:
-            continue
-        slug = hashlib.sha1(args.encode("utf-8")).hexdigest()[:10]
-        candidate = f"{slug}.json"
-        n = 2
-        while candidate in used_filenames:
-            candidate = f"{slug}-{n}.json"
-            n += 1
-        used_filenames.add(candidate)
-        fixture_by_args[args] = candidate
-        rule = {"match": args, "file": candidate}
-        if call.get("exit_code") not in (None, 0):
-            rule["exit_code"] = call["exit_code"]
-        rules.append(rule)
-    return rules, fixture_by_args
+        try:
+            argv = shlex.split(args, posix=True)
+        except ValueError as exc:
+            raise ValueError(f"could not parse recorded uip args {args!r}: {exc}") from exc
+        by_args[args] = {
+            "argv": argv,
+            "match_mode": "normalized",
+            "exit_code": int(call.get("exit_code") or 0),
+            "stdout": call.get("stdout") or "",
+        }
+    return list(by_args.values())
 
 def _snapshot_project(
     src: Path, dst: Path, mapping: "OrderedDict[str, str] | None" = None
@@ -546,13 +520,6 @@ def _build_readme_md(scenario_name: str, summary: str) -> str:
         summary=summary or "_Add a 1–3 sentence summary of the original investigation here._",
     )
 
-def _group_shared_prefix(group: str) -> str:
-    """`_shared` is at the suite root; a scenario nested `group/scenario/` deep
-    reaches it with one `../` per path component plus one for the scenario dir."""
-    depth = len([p for p in group.split("/") if p]) + 1 if group else 1
-    return "../" * depth
-
-
 def _group_domain_tags(group: str) -> str:
     """Default product/domain tag(s) for a group, ready to splice into `tags: [`.
     Empty when no group (caller adds tags manually)."""
@@ -568,14 +535,15 @@ def _group_domain_tags(group: str) -> str:
 def _build_task_yaml(
     scenario_name: str, initial_prompt_indented: str, has_project: bool, group: str = ""
 ) -> str:
-    process_source_block = (
-        "    - type: template_dir\n      path: process\n" if has_project else ""
+    template_sources_block = (
+        "  template_sources:\n    - type: template_dir\n      path: process\n"
+        if has_project
+        else ""
     )
     return TASK_YAML_TEMPLATE.format(
         slug=scenario_name,
         initial_prompt_indented=initial_prompt_indented,
-        process_source_block=process_source_block,
-        shared_prefix=_group_shared_prefix(group),
+        template_sources_block=template_sources_block,
         domain_tags=_group_domain_tags(group),
     )
 
@@ -602,14 +570,8 @@ def plan_scenario(args: argparse.Namespace) -> dict:
     # an empty bash stdout — the real data lives on disk.
     backfill_stats = _backfill_redirect_stdouts(extracted["uip_calls"], investigation)
 
-    # Build manifest + fixtures.
-    rules, fixture_by_args = _build_manifest_rules(extracted["uip_calls"])
-    fixtures: dict[str, str] = {}
-    for call in extracted["uip_calls"]:
-        fname = fixture_by_args[call["args"]]
-        # Last write wins — for duplicate args, we keep the last response,
-        # but in practice the manifest only references args once.
-        fixtures[fname] = call["stdout"]
+    # Build the private finite command map.
+    responses = _build_fixture_responses(extracted["uip_calls"])
 
     # Build resolution.
     resolution_md = _build_resolution_md(
@@ -632,8 +594,8 @@ def plan_scenario(args: argparse.Namespace) -> dict:
 
     # Aggregate sample text for scrub detection.
     samples = [resolution_md, readme_md, task_yaml]
-    samples.extend(fixtures.values())
-    samples.extend(rule["match"] for rule in rules)
+    samples.extend(response["stdout"] for response in responses)
+    samples.extend(" ".join(response["argv"]) for response in responses)
 
     # Snapshot the project (raw — scrub happens after we compute the map).
     if project is not None:
@@ -653,8 +615,14 @@ def plan_scenario(args: argparse.Namespace) -> dict:
     resolution_md = _apply_scrub(resolution_md, scrub_map)
     readme_md = _apply_scrub(readme_md, scrub_map)
     task_yaml = _apply_scrub(task_yaml, scrub_map)
-    fixtures = {fn: _apply_scrub(c, scrub_map) for fn, c in fixtures.items()}
-    rules = [{**r, "match": _apply_scrub(r["match"], scrub_map)} for r in rules]
+    responses = [
+        {
+            **response,
+            "argv": [_apply_scrub(token, scrub_map) for token in response["argv"]],
+            "stdout": _apply_scrub(response["stdout"], scrub_map),
+        }
+        for response in responses
+    ]
     project_plan_scrubbed: list[tuple[Path, str | bytes]] = []
     for rel, content in project_plan:
         rel_scrubbed = _scrub_path(rel, scrub_map)
@@ -676,17 +644,11 @@ def plan_scenario(args: argparse.Namespace) -> dict:
         "extracted_troubleshooting": extracted["troubleshooting"],
         "backfill_stats": backfill_stats,
         "scrub_map": scrub_map,
-        "manifest": {
-            "version": 2,
-            "_doc": "Auto-generated by generate_scenario.py - review fixtures + add expected_calls. This file is agent-visible: keep _doc and expected_calls[].description procedural - no exception type, fault location, or root-cause hints (those belong only in the jobs get/logs payloads).",
-            "rules": rules,
-            "unmocked_default": {
-                "response": "[]\n",
-                "exit_code": 0,
-                "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting.",
-            },
+        "fixture": {
+            "version": 1,
+            "responses": responses,
+            "default": {"stdout": "[]\n", "exit_code": 0},
         },
-        "fixtures": fixtures,
         "resolution_md": resolution_md,
         "readme_md": readme_md,
         "task_yaml": task_yaml,
@@ -715,12 +677,12 @@ def render_dry_run(plan: dict) -> str:
         for k, v in plan["scrub_map"].items():
             out.append(f"  {k!r:<60s} -> {v!r}")
     out.append("")
-    out.append(f"Manifest rules: {len(plan['manifest']['rules'])}")
-    for r in plan["manifest"]["rules"][:20]:
-        suffix = f" exit={r['exit_code']}" if "exit_code" in r else ""
-        out.append(f"  - {r['match']!r:<60s} -> {r['file']}{suffix}")
-    if len(plan["manifest"]["rules"]) > 20:
-        out.append(f"  ... +{len(plan['manifest']['rules']) - 20} more")
+    responses = plan["fixture"]["responses"]
+    out.append(f"Protected fixture responses: {len(responses)}")
+    for response in responses[:20]:
+        out.append(f"  - {' '.join(response['argv'])!r:<60s} exit={response['exit_code']}")
+    if len(responses) > 20:
+        out.append(f"  ... +{len(responses) - 20} more")
     out.append("")
     out.append(f"Project snapshot: {len(plan['project_files'])} files")
     out.append("")
@@ -728,9 +690,8 @@ def render_dry_run(plan: dict) -> str:
     base = plan["output_dir"]
     out.append(f"  {base / 'task.yaml'}                             ({len(plan['task_yaml'])} bytes)")
     out.append(f"  {base / 'RESOLUTION.md'}                         ({len(plan['resolution_md'])} bytes)")
-    out.append(f"  {base / 'data' / 'm' / 'r' / 'README.md'}         ({len(plan['readme_md'])} bytes)")
-    out.append(f"  {base / 'data' / 'm' / 'r' / 'manifest.json'}")
-    out.append(f"  {base / 'data' / 'm' / 'r' / '<hash>.json'} x {len(plan['fixtures'])}")
+    out.append(f"  {base / 'README.md'}                              ({len(plan['readme_md'])} bytes)")
+    out.append(f"  {base / 'data' / 'uip-fixture.json'}")
     out.append(f"  {base / 'process' / '<files>'} x {len(plan['project_files'])}")
     out.append("")
     out.append("(dry-run — no files written. Pass --apply to write.)")
@@ -747,17 +708,12 @@ def apply_plan(plan: dict) -> None:
     (base / "task.yaml").write_text(plan["task_yaml"], encoding="utf-8")
     (base / "RESOLUTION.md").write_text(plan["resolution_md"], encoding="utf-8")
 
-    fixtures_dir = base / "data" / "m" / "r"
-    fixtures_dir.mkdir(parents=True, exist_ok=True)
-    # README sits beside the fixtures on purpose: `m/seal` deletes the whole
-    # `r/` dir from the sandbox, so the scenario write-up never reaches the
-    # agent even though `data/` is staged.
-    (fixtures_dir / "README.md").write_text(plan["readme_md"], encoding="utf-8")
-    (fixtures_dir / "manifest.json").write_text(
-        json.dumps(plan["manifest"], indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    (base / "README.md").write_text(plan["readme_md"], encoding="utf-8")
+    data_dir = base / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    (data_dir / "uip-fixture.json").write_text(
+        json.dumps(plan["fixture"], indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
-    for fname, content in plan["fixtures"].items():
-        (fixtures_dir / fname).write_text(content, encoding="utf-8")
 
     process_dir = base / "process"
     for rel, content in plan["project_files"]:
@@ -813,10 +769,8 @@ def main(argv: list[str]) -> int:
         apply_plan(plan)
         print(f"Wrote scenario: {plan['output_dir']}")
         print(
-            "Next: fill in manifest.json expected_calls, but keep every "
-            "description procedural - NO exception type / fault location / "
-            "root-cause hints (manifest.json is agent-visible). The diagnosis "
-            "lives only in the jobs get/logs payloads."
+            "Next: review data/uip-fixture.json and RESOLUTION.md. The fixture "
+            "is mounted only into coder-eval's protected mock service."
         )
         return 0
 

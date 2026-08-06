@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T07:55:12.240Z\",\r\n      \"EndTime\": \"2026-06-20T07:55:14.760Z\",\r\n      \"ReleaseName\": \"ContractsIntake\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50609921\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T07:55:12.240Z\",\r\n      \"EndTime\": \"2026-06-20T07:55:14.760Z\",\r\n      \"ReleaseName\": \"ContractsIntake\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50609921\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T07:55:12.240Z\",\r\n      \"EndTime\": \"2026-06-20T07:55:14.760Z\",\r\n      \"ReleaseName\": \"ContractsIntake\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50609921\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40\",\r\n    \"StartTime\": \"2026-06-20T07:55:12.240Z\",\r\n    \"EndTime\": \"2026-06-20T07:55:14.760Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"a7b8c9d0-e1f2-4a3b-8c4d-5e6f7a8b9c0d\",\r\n    \"Info\": \"Source: Read document text\\r\\nMessage: The password is incorrect.\\r\\nException Type: UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException\\r\\nin Main.xaml\\r\\n    at ReadPDFText \\\"Read document text\\\"\\r\\n    at Sequence \\\"Read document text\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n   at UiPath.PDF.PdfReader..ctor(String filepath, String password)\\r\\n   at UiPath.PDF.Activities.ReadPDFText.GetFileReader(String fileName, String password)\\r\\n   at UiPath.PDF.Activities.ReadTextBase.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-20T07:55:11.100Z\",\r\n    \"ReleaseName\": \"ContractsIntake\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 1108340,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-20T07:55:14.760Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"8b6d2f041a7c4e93b5d82c9f0a1b3e40\",\r\n    \"Id\": 50609921\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-20T07:55:14.400Z\",\r\n      \"Message\": \"Read document text: The password is incorrect.\\r\\nException Type: UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException\\r\\nin Main.xaml\\r\\n    at ReadPDFText \\\"Read document text\\\"\\r\\n    at Sequence \\\"Read document text\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException: The password is incorrect.\\r\\n   at UiPath.PDF.PdfReader..ctor(String filepath, String password)\\r\\n   at UiPath.PDF.Activities.ReadPDFText.GetFileReader(String fileName, String password)\\r\\n   at UiPath.PDF.Activities.ReadTextBase.Execute(CodeActivityContext context)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-20T07:55:14.400Z\",\r\n      \"Message\": \"Read document text: The password is incorrect.\\r\\nException Type: UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException\\r\\nin Main.xaml\\r\\n    at ReadPDFText \\\"Read document text\\\"\\r\\n    at Sequence \\\"Read document text\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException: The password is incorrect.\\r\\n   at UiPath.PDF.PdfReader..ctor(String filepath, String password)\\r\\n   at UiPath.PDF.Activities.ReadPDFText.GetFileReader(String fileName, String password)\\r\\n   at UiPath.PDF.Activities.ReadTextBase.Execute(CodeActivityContext context)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": []\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in Shared to find the failing job."
+    },
+    {
+      "pattern": "or jobs get 8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the PdfException 'The password is incorrect.' signature."
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\"Key\": \"b2c8cb22-2ebc-4c27-87f3-05efe701af1c\", \"Name\": \"original_email@test.com's workspace\", \"Path\": \"original_email@test.com's workspace\", \"Type\": \"Personal\", \"ParentKey\": \"\"},\r\n    {\"Key\": \"b6c6d7e8-f9a0-1234-5678-9abcdef01234\", \"Name\": \"Billing\", \"Path\": \"Billing\", \"Description\": \"Billing automations (NightlyBilling, InvoiceMatcher).\", \"Type\": \"Standard\", \"ParentKey\": \"\"},\r\n    {\"Key\": \"c6d7e8f9-a0b1-2345-6789-abcdef012345\", \"Name\": \"ClaimsOps\", \"Path\": \"ClaimsOps\", \"Description\": \"Claims automations.\", \"Type\": \"Standard\", \"ParentKey\": \"\"},\r\n    {\"Key\": \"d7e8f9a0-b1c2-3456-789a-bcdef0123456\", \"Name\": \"HRBots\", \"Path\": \"HRBots\", \"Description\": \"HR automations.\", \"Type\": \"Standard\", \"ParentKey\": \"\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\"Key\": \"ddff7788-99aa-00bb-11cc-22dd33445566\", \"State\": \"Faulted\", \"ProcessName\": \"NightlyBilling\", \"FolderName\": \"Billing\", \"Type\": \"Unattended\", \"RuntimeType\": \"Unattended\", \"Machine\": \"MOCK-HOST\", \"StartTime\": \"2026-06-26T08:12:03.100Z\", \"EndTime\": \"2026-06-26T08:12:04.900Z\"},\r\n    {\"Key\": \"ddff7788-99aa-00bb-11cc-22dd33445577\", \"State\": \"Faulted\", \"ProcessName\": \"ClaimIntake\", \"FolderName\": \"ClaimsOps\", \"Type\": \"Unattended\", \"RuntimeType\": \"Serverless\", \"Machine\": \"\", \"StartTime\": \"2026-06-26T08:13:41.220Z\", \"EndTime\": \"2026-06-26T08:13:42.010Z\"},\r\n    {\"Key\": \"ddff7788-99aa-00bb-11cc-22dd33445588\", \"State\": \"Faulted\", \"ProcessName\": \"PayrollSync\", \"FolderName\": \"HRBots\", \"Type\": \"Unattended\", \"RuntimeType\": \"Unattended\", \"Machine\": \"MOCK-HOST-2\", \"StartTime\": \"2026-06-26T08:14:55.640Z\", \"EndTime\": \"2026-06-26T08:14:57.300Z\"},\r\n    {\"Key\": \"ddff7788-99aa-00bb-11cc-22dd33445599\", \"State\": \"Faulted\", \"ProcessName\": \"InvoiceMatcher\", \"FolderName\": \"Billing\", \"Type\": \"Unattended\", \"RuntimeType\": \"Unattended\", \"Machine\": \"MOCK-HOST\", \"StartTime\": \"2026-06-26T08:15:30.880Z\", \"EndTime\": \"2026-06-26T08:15:32.140Z\"},\r\n    {\"Key\": \"ddff7788-99aa-00bb-11cc-22dd334455aa\", \"State\": \"Faulted\", \"ProcessName\": \"OnboardingBot\", \"FolderName\": \"HRBots\", \"Type\": \"Unattended\", \"RuntimeType\": \"Serverless\", \"Machine\": \"\", \"StartTime\": \"2026-06-26T08:16:48.500Z\", \"EndTime\": \"2026-06-26T08:16:49.220Z\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "ddff7788-99aa-00bb-11cc-22dd33445566"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"ddff7788-99aa-00bb-11cc-22dd33445566\",\r\n    \"StartTime\": \"2026-06-26T08:12:03.100Z\",\r\n    \"EndTime\": \"2026-06-26T08:12:04.900Z\",\r\n    \"State\": \"Faulted\",\r\n    \"Source\": \"Schedule\",\r\n    \"Info\": \"The remote server returned an error: (503) Server Unavailable. Orchestrator returned 503 while starting the job.\",\r\n    \"ReleaseName\": \"NightlyBilling\",\r\n    \"Type\": \"Unattended\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"FolderKey\": \"b6c6d7e8-f9a0-1234-5678-9abcdef01234\",\r\n    \"ProcessType\": \"Process\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Orchestrator\",\r\n    \"TraceId\": \"ddff7788-99aa-00bb-11cc-22dd33445566\",\r\n    \"Id\": 671770011\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "ddff7788-99aa-00bb-11cc-22dd33445577"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"ddff7788-99aa-00bb-11cc-22dd33445577\",\r\n    \"StartTime\": \"2026-06-26T08:13:41.220Z\",\r\n    \"EndTime\": \"2026-06-26T08:13:42.010Z\",\r\n    \"State\": \"Faulted\",\r\n    \"Source\": \"Schedule\",\r\n    \"Info\": \"Could not obtain the user token from Orchestrator.\",\r\n    \"ReleaseName\": \"ClaimIntake\",\r\n    \"Type\": \"Unattended\",\r\n    \"RuntimeType\": \"Serverless\",\r\n    \"HostMachineName\": \"\",\r\n    \"FolderKey\": \"c6d7e8f9-a0b1-2345-6789-abcdef012345\",\r\n    \"ProcessType\": \"Process\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Orchestrator\",\r\n    \"TraceId\": \"ddff7788-99aa-00bb-11cc-22dd33445577\",\r\n    \"Id\": 671770022\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "ddff7788-99aa-00bb-11cc-22dd33445566",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\"Level\": \"Error\", \"TimeStamp\": \"2026-06-26T08:12:04.880Z\", \"Message\": \"Job 'ddff7788-99aa-00bb-11cc-22dd33445566' failed to start. The remote server returned an error: (503) Server Unavailable.\"},\r\n    {\"Level\": \"Warn\", \"TimeStamp\": \"2026-06-26T08:12:04.100Z\", \"Message\": \"[Robot] Received HTTP 503 from Orchestrator gateway while requesting job start; upstream service temporarily unavailable.\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "ddff7788-99aa-00bb-11cc-22dd33445566"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\"Level\": \"Error\", \"TimeStamp\": \"2026-06-26T08:12:04.880Z\", \"Message\": \"Job 'ddff7788-99aa-00bb-11cc-22dd33445566' failed to start. The remote server returned an error: (503) Server Unavailable.\"},\r\n    {\"Level\": \"Warn\", \"TimeStamp\": \"2026-06-26T08:12:04.100Z\", \"Message\": \"[Robot] Received HTTP 503 from Orchestrator gateway while requesting job start; upstream service temporarily unavailable.\"}\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

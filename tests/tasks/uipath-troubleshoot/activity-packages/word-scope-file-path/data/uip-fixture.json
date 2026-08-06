@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b8c9d0e1-f2a3-4193-c6d7-e8f901243506\",\r\n      \"Name\": \"Offer Letters\",\r\n      \"Path\": \"Offer Letters\",\r\n      \"Description\": \"Production folder for HR offer-letter generation.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "b8c9d0e1-f2a3-4193-c6d7-e8f901243506",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c9d0e1f2-a3b4-4204-d7e8-f90124354617\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"OfferLetterGen\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Queue\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT-03\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-12T08:20:01.540Z\",\r\n      \"EndTime\": \"2026-06-12T08:20:03.220Z\",\r\n      \"CreationTime\": \"2026-06-12T08:20:01.300Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "c9d0e1f2-a3b4-4204-d7e8-f90124354617",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c9d0e1f2-a3b4-4204-d7e8-f90124354617\",\r\n    \"StartTime\": \"2026-06-12T08:20:01.540Z\",\r\n    \"EndTime\": \"2026-06-12T08:20:03.220Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Queue\",\r\n    \"SourceType\": \"Queue\",\r\n    \"BatchExecutionKey\": \"d0e1f2a3-b4c5-4315-d7e8-f90124354628\",\r\n    \"Info\": \"Word Application Scope: Could not find file 'C:\\\\Windows\\\\System32\\\\config\\\\systemprofile\\\\Output\\\\OfferLetter.docx'.\\r\\n\\r\\nin Main.xaml\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.IO.FileNotFoundException: Could not find file 'C:\\\\Windows\\\\System32\\\\config\\\\systemprofile\\\\Output\\\\OfferLetter.docx'.\",\r\n    \"CreationTime\": \"2026-06-12T08:20:01.300Z\",\r\n    \"ReleaseName\": \"OfferLetterGen\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT-03\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6020901,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b8c9d0e1-f2a3-4193-c6d7-e8f901243506\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"scheduler\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-12T08:20:03.220Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c9d0e1f2-a3b4-4204-d7e8-f90124354617\",\r\n    \"Id\": 682431204\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "c9d0e1f2-a3b4-4204-d7e8-f90124354617",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-12T08:20:03.150Z\",\r\n      \"Message\": \"[Word Application Scope] Could not find file 'C:\\\\Windows\\\\System32\\\\config\\\\systemprofile\\\\Output\\\\OfferLetter.docx'.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-12T08:20:03.190Z\",\r\n      \"Message\": \"Could not find file 'C:\\\\Windows\\\\System32\\\\config\\\\systemprofile\\\\Output\\\\OfferLetter.docx'.\\r\\nin Main.xaml\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "c9d0e1f2-a3b4-4204-d7e8-f90124354617",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-12T08:20:01.590Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-12T08:20:02.870Z\",\r\n      \"Message\": \"[Word Application Scope] Starting Microsoft Word\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-12T08:20:03.150Z\",\r\n      \"Message\": \"[Word Application Scope] Could not find file 'C:\\\\Windows\\\\System32\\\\config\\\\systemprofile\\\\Output\\\\OfferLetter.docx'.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-12T08:20:03.190Z\",\r\n      \"Message\": \"Could not find file 'C:\\\\Windows\\\\System32\\\\config\\\\systemprofile\\\\Output\\\\OfferLetter.docx'.\\r\\nin Main.xaml\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-12T08:20:03.210Z\",\r\n      \"Message\": \"Execution ended in: 00:00:01\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "febd892d-787b-4008-a573-4af66cf710cf",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-23T17:36:01.717Z\",\r\n      \"Message\": \"Deserialize JSON: Unexpected character encountered while parsing value: <. Path '', line 0, position 0.\\r\\nin Wf_ParseResponse.xaml\\r\\n    at DeserializeJson`1 \\\"Deserialize JSON\\\"\\r\\n    at Sequence \\\"Parse Response\\\"\\r\\n    at Wf_ParseResponse \\\"Wf_ParseResponse\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nNewtonsoft.Json.JsonReaderException\\r\\n   at Newtonsoft.Json.JsonTextReader.ParseValue()\\r\\n   at Newtonsoft.Json.JsonReader.ReadForType(JsonContract contract, Boolean hasConverter)\\r\\n   at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.Deserialize(JsonReader reader, Type objectType, Boolean checkAdditionalContent)\\r\\n   at Newtonsoft.Json.JsonSerializer.DeserializeInternal(JsonReader reader, Type objectType)\\r\\n   at Newtonsoft.Json.JsonConvert.DeserializeObject(String value, Type type, JsonSerializerSettings settings)\\r\\n   at Newtonsoft.Json.JsonConvert.DeserializeObject[T](String value, JsonSerializerSettings settings)\\r\\n   at UiPath.Web.Activities.DeserializeJson`1.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\"\r\n    }\r\n  ]\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "febd892d-787b-4008-a573-4af66cf710cf"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-23T17:36:02.168Z\",\r\n      \"Message\": \"ParseResponse execution ended\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-23T17:36:01.717Z\",\r\n      \"Message\": \"Deserialize JSON: Unexpected character encountered while parsing value: <. Path '', line 0, position 0.\\r\\nin Wf_ParseResponse.xaml\\r\\n    at DeserializeJson`1 \\\"Deserialize JSON\\\"\\r\\n    at Sequence \\\"Parse Response\\\"\\r\\n    at Wf_ParseResponse \\\"Wf_ParseResponse\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nNewtonsoft.Json.JsonReaderException\\r\\n   at Newtonsoft.Json.JsonTextReader.ParseValue()\\r\\n   at Newtonsoft.Json.JsonReader.ReadForType(JsonContract contract, Boolean hasConverter)\\r\\n   at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.Deserialize(JsonReader reader, Type objectType, Boolean checkAdditionalContent)\\r\\n   at Newtonsoft.Json.JsonSerializer.DeserializeInternal(JsonReader reader, Type objectType)\\r\\n   at Newtonsoft.Json.JsonConvert.DeserializeObject(String value, Type type, JsonSerializerSettings settings)\\r\\n   at Newtonsoft.Json.JsonConvert.DeserializeObject[T](String value, JsonSerializerSettings settings)\\r\\n   at UiPath.Web.Activities.DeserializeJson`1.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-23T17:36:01.656Z\",\r\n      \"Message\": \"ParseResponse execution started\"\r\n    }\r\n  ]\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "febd892d-787b-4008-a573-4af66cf710cf"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"febd892d-787b-4008-a573-4af66cf710cf\",\r\n    \"StartTime\": \"2026-06-23T17:36:00.477Z\",\r\n    \"EndTime\": \"2026-06-23T17:36:02.253Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"9cc25d1a-75fe-4a5b-9fe9-ec2fad42d8b5\",\r\n    \"Info\": \"Unexpected character encountered while parsing value: <. Path '', line 0, position 0.\\r\\n\\r\\nin Wf_ParseResponse.xaml\\r\\n    at DeserializeJson`1 \\\"Deserialize JSON\\\"\\r\\n    at Sequence \\\"Parse Response\\\"\\r\\n    at Wf_ParseResponse \\\"Wf_ParseResponse\\\"\\r\\n\\r\\nNewtonsoft.Json.JsonReaderException: Unexpected character encountered while parsing value: <. Path '', line 0, position 0.\\r\\n   at Newtonsoft.Json.JsonTextReader.ParseValue()\\r\\n   at Newtonsoft.Json.JsonReader.ReadForType(JsonContract contract, Boolean hasConverter)\\r\\n   at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.Deserialize(JsonReader reader, Type objectType, Boolean checkAdditionalContent)\\r\\n   at Newtonsoft.Json.JsonSerializer.DeserializeInternal(JsonReader reader, Type objectType)\\r\\n   at Newtonsoft.Json.JsonConvert.DeserializeObject(String value, Type type, JsonSerializerSettings settings)\\r\\n   at Newtonsoft.Json.JsonConvert.DeserializeObject[T](String value, JsonSerializerSettings settings)\\r\\n   at UiPath.Web.Activities.DeserializeJson`1.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\",\r\n    \"CreationTime\": \"2026-06-23T17:30:28.293Z\",\r\n    \"ReleaseName\": \"ParseResponse\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 21569941,\r\n    \"EntryPointPath\": \"Wf_ParseResponse.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"defb8e05-e36b-4c36-bf11-0b4d08ce6cd1\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-23T17:36:02.253Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"febd892d787b4008a5734af66cf710cf\",\r\n    \"Id\": 67889091\r\n  }\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "febd892d-787b-4008-a573-4af66cf710cf"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-06-23T17:36:02.260Z\",\r\n      \"JobId\": 67889091\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-06-23T17:36:00.483Z\",\r\n      \"JobId\": 67889091\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-06-23T17:30:28.357Z\",\r\n      \"JobId\": 67889091\r\n    }\r\n  ]\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "febd892d-787b-4008-a573-4af66cf710cf"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "febd892d-787b-4008-a573-4af66cf710cf"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 1,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Message\": \"Error retrieving trace ID for job\",\r\n  \"Instructions\": \"Response returned an error code\"\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"febd892d-787b-4008-a573-4af66cf710cf\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ParseResponse\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-23T17:36:00.477Z\",\r\n      \"EndTime\": \"2026-06-23T17:36:02.253Z\",\r\n      \"CreationTime\": \"2026-06-23T17:30:28.293Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 25,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"febd892d-787b-4008-a573-4af66cf710cf\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ParseResponse\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-23T17:36:00.477Z\",\r\n      \"EndTime\": \"2026-06-23T17:36:02.253Z\",\r\n      \"CreationTime\": \"2026-06-23T17:30:28.293Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 25,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"febd892d-787b-4008-a573-4af66cf710cf\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ParseResponse\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-23T17:36:00.477Z\",\r\n      \"EndTime\": \"2026-06-23T17:36:02.253Z\",\r\n      \"CreationTime\": \"2026-06-23T17:30:28.293Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 25,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3a1e81c2-07ca-4d6b-bc07-7e0c7b94ea3a\",\r\n      \"Name\": \"automation1@test.com's workspace\",\r\n      \"Path\": \"automation1@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"defb8e05-e36b-4c36-bf11-0b4d08ce6cd1\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"Empty\",\n  \"Data\": []\n}\n"
+  }
+}

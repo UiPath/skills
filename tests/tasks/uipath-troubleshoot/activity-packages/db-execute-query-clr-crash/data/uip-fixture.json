@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"5c7e9a2d-4b8f-4e1c-9a3d-6f2b8c4e1a7d\",\r\n      \"Name\": \"Finance Automation\",\r\n      \"Path\": \"Finance Automation\",\r\n      \"Description\": \"Folder hosting the finance export and reconciliation processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"b8e2c145-7d3a-49b6-a2c8-1f4b5e8a9c01\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "5c7e9a2d-4b8f-4e1c-9a3d-6f2b8c4e1a7d",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"TransactionExport\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-22T02:05:11.402Z\",\r\n      \"EndTime\": \"2026-05-22T02:06:48.913Z\",\r\n      \"CreationTime\": \"2026-05-22T02:05:10.870Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b\",\r\n    \"StartTime\": \"2026-05-22T02:05:11.402Z\",\r\n    \"EndTime\": \"2026-05-22T02:06:48.913Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"9a3c1e2f-5b6d-4e7a-8c9f-2d3e4f5a6b7c\",\r\n    \"Info\": \"The job terminated unexpectedly. The robot execution process exited with code 0xE0434352. No activity-level exception was recorded in the workflow log before the process ended.\\r\\n\\r\\nReleaseName: TransactionExport\\r\\nLast logged activity before termination: Execute Query \\\"Execute Query\\\" (Main.xaml).\",\r\n    \"CreationTime\": \"2026-05-22T02:05:10.870Z\",\r\n    \"ReleaseName\": \"TransactionExport\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 5042118,\r\n    \"OrganizationUnitId\": 7791624,\r\n    \"FolderKey\": \"5c7e9a2d-4b8f-4e1c-9a3d-6f2b8c4e1a7d\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER2\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser2\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-22T02:06:48.913Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b\",\r\n    \"Id\": 671209902\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-22T02:06:48.871Z\",\r\n      \"Message\": \"The robot execution process terminated unexpectedly with exit code 0xE0434352. No activity-level exception was caught; the process ended while Execute Query \\\"Execute Query\\\" was materializing its result set.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "2f6a8c4b-1d9e-4f3a-8b7c-5e6d2a1f9c3b",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-22T02:05:12.180Z\",\r\n      \"Message\": \"TransactionExport execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-22T02:05:12.940Z\",\r\n      \"Message\": \"Connect to Database: opened connection 'Server=sqlprod02;Database=Finance' using provider Microsoft.Data.SqlClient\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-22T02:05:13.220Z\",\r\n      \"Message\": \"Execute Query: executing SQL against connection 'Server=sqlprod02;Database=Finance': SELECT * FROM Transactions\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-22T02:05:38.502Z\",\r\n      \"Message\": \"Execute Query: still reading result set into DataTable (no row limit set)...\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-22T02:06:48.871Z\",\r\n      \"Message\": \"The robot execution process terminated unexpectedly with exit code 0xE0434352. No activity-level exception was caught; the process ended while Execute Query \\\"Execute Query\\\" was materializing its result set.\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

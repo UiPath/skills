@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c2a7f3e1-8d49-4b6c-a1f2-7e0d5c3b9a48\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-19T18:27:40.512Z\",\r\n      \"EndTime\": \"2026-06-19T18:27:42.137Z\",\r\n      \"ReleaseName\": \"ContactImport\",\r\n      \"Source\": \"Agent\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 5039518\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "1965a46b-db4e-469e-aaaa-7e0b379cb34d"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c2a7f3e1-8d49-4b6c-a1f2-7e0d5c3b9a48\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-19T18:27:40.512Z\",\r\n      \"EndTime\": \"2026-06-19T18:27:42.137Z\",\r\n      \"ReleaseName\": \"ContactImport\",\r\n      \"Source\": \"Agent\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 5039518\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "c2a7f3e1-8d49-4b6c-a1f2-7e0d5c3b9a48"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c2a7f3e1-8d49-4b6c-a1f2-7e0d5c3b9a48\",\r\n    \"StartTime\": \"2026-06-19T18:27:40.512Z\",\r\n    \"EndTime\": \"2026-06-19T18:27:42.137Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Agent\",\r\n    \"SourceType\": \"Agent\",\r\n    \"BatchExecutionKey\": \"c2a7f3e1-8d49-4b6c-a1f2-7e0d5c3b9a48\",\r\n    \"Info\": \"Object reference not set to an instance of an object.\\r\\n\\r\\nin ContactImport.xaml\\r\\n    at ForEach<Object> \\\"For Each contact\\\"\\r\\n    at Sequence \\\"ContactImport\\\"\\r\\n\\r\\nSystem.NullReferenceException: Object reference not set to an instance of an object.\\r\\n   at UiPath.Core.Activities.ForEachBase`1.ContinueExecuting(NativeActivityContext context)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\",\r\n    \"CreationTime\": \"2026-06-19T18:27:40.512Z\",\r\n    \"ReleaseName\": \"ContactImport\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"ReleaseVersionId\": 14098,\r\n    \"EntryPointPath\": \"ContactImport.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"LastModificationTime\": \"2026-06-19T18:27:42.137Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c2a7f3e18d494b6ca1f27e0d5c3b9a48\",\r\n    \"Id\": 5039518\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "c2a7f3e1-8d49-4b6c-a1f2-7e0d5c3b9a48"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-19T18:27:41.903Z\",\r\n      \"Message\": \"For Each contact: Object reference not set to an instance of an object.\\r\\nin ContactImport.xaml\\r\\n    at ForEach<Object> \\\"For Each contact\\\"\\r\\n    at Sequence \\\"ContactImport\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.NullReferenceException\\r\\n   at UiPath.Core.Activities.ForEachBase`1.ContinueExecuting(NativeActivityContext context)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\\r\\n--- faulted activity: UiPath.Core.Activities.ForEach`1[[UiPath.IntegrationService.Activities.SWEntities.C5D2F5448FB_executeQuery_List_2M9G3QJHWZK66VJ7LPVRC5298DLOP51.Bundle.executeQuery_List, C5D2F5448FB_executeQ.Tm4Yc2tDOTF1jVNpA3ZT8gl2, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]] ---\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get c2a7f3e1-8d49-4b6c-a1f2-7e0d5c3b9a48",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the NullReferenceException and the ForEach-over-connector-output stack frame."
+    },
+    {
+      "pattern": "or jobs logs c2a7f3e1-8d49-4b6c-a1f2-7e0d5c3b9a48",
+      "min": 0,
+      "description": "OPTIONAL — error-level logs expose the SWEntities connector-output type being enumerated. min:0 means tracked-but-not-required."
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"DisplayName\": \"ExcelImports\",\r\n      \"FullyQualifiedName\": \"ExcelImports\",\r\n      \"Description\": \"Folder for daily Excel imports.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6010001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f0011111-2222-3333-4444-555566667777",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ee555555-aaaa-bbbb-cccc-dddddddddddd\",\r\n      \"StartTime\": \"2026-05-20T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-20T08:00:01.812Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelDailyImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"HourlySalesA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"Info\": \"System.IO.DirectoryNotFoundException: Could not find a part of the path 'Z:\\\\Data\\\\sales-2026-05.xlsx'.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "ee555555-aaaa-bbbb-cccc-dddddddddddd",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"ee555555-aaaa-bbbb-cccc-dddddddddddd\",\r\n    \"StartTime\": \"2026-05-20T08:00:01.300Z\",\r\n    \"EndTime\": \"2026-05-20T08:00:01.812Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9ee55555-aaaa-bbbb-cccc-dddddddddddd\",\r\n    \"Info\": \"System.IO.DirectoryNotFoundException: Could not find a part of the path 'Z:\\\\Data\\\\sales-2026-05.xlsx'.\\r\\n   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)\\r\\n   at System.IO.FileStream.Init(String path, FileMode mode, FileAccess access, ...)\\r\\n   at UiPath.Excel.WorkbookOpener.OpenAsync(String path, OpenMode mode, CancellationToken cancellationToken)\\r\\n   at UiPath.Excel.Activities.UseExcelFile.OnExecuteAsync(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-20T08:00:01.005Z\",\r\n    \"ReleaseName\": \"ExcelDailyImport\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5680101,\r\n    \"OrganizationUnitId\": 6010001,\r\n    \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n    \"Reference\": \"HourlySalesA\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-20T08:00:01.812Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"DirectoryNotFoundException\",\r\n      \"ActivityName\": \"UseExcelFile_1\",\r\n      \"ActivityDisplayName\": \"Use Excel File: Z:\\\\Data\\\\sales-2026-05.xlsx\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"ee555555-aaaa-bbbb-cccc-dddddddddddd\",\r\n    \"Id\": 680077005\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "ee555555-aaaa-bbbb-cccc-dddddddddddd",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ee555555-aaaa-bbbb-cccc-dddddddddddd\",\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-05-20T08:00:01.005Z\"\r\n    },\r\n    {\r\n      \"Key\": \"ee555555-aaaa-bbbb-cccc-dddddddddddd\",\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-05-20T08:00:01.300Z\"\r\n    },\r\n    {\r\n      \"Key\": \"ee555555-aaaa-bbbb-cccc-dddddddddddd\",\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-05-20T08:00:01.812Z\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "ee555555-aaaa-bbbb-cccc-dddddddddddd",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-ee5555aa-001\",\r\n      \"JobKey\": \"ee555555-aaaa-bbbb-cccc-dddddddddddd\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-20T08:00:01.310Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ExcelDailyImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee5555aa-002\",\r\n      \"JobKey\": \"ee555555-aaaa-bbbb-cccc-dddddddddddd\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-20T08:00:01.418Z\",\r\n      \"Message\": \"[ExcelDailyImport] Starting daily sales import — reading Z:\\\\Data\\\\sales-2026-05.xlsx\",\r\n      \"ProcessName\": \"ExcelDailyImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee5555aa-003\",\r\n      \"JobKey\": \"ee555555-aaaa-bbbb-cccc-dddddddddddd\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:00:01.510Z\",\r\n      \"Message\": \"Use Excel File: Z:\\\\Data\\\\sales-2026-05.xlsx — opening workbook (WorkbookPath='Z:\\\\Data\\\\sales-2026-05.xlsx')\",\r\n      \"ProcessName\": \"ExcelDailyImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee5555aa-004\",\r\n      \"JobKey\": \"ee555555-aaaa-bbbb-cccc-dddddddddddd\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-20T08:00:01.802Z\",\r\n      \"Message\": \"Use Excel File: Z:\\\\Data\\\\sales-2026-05.xlsx — System.IO.DirectoryNotFoundException: Could not find a part of the path 'Z:\\\\Data\\\\sales-2026-05.xlsx'.\",\r\n      \"ProcessName\": \"ExcelDailyImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 1,
+    "stderr": "protected mock: command is not configured\n"
+  }
+}

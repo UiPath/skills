@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\"Key\": \"b2c8cb22-2ebc-4c27-87f3-05efe701af1c\", \"Name\": \"original_email@test.com's workspace\", \"Path\": \"original_email@test.com's workspace\", \"Type\": \"Personal\", \"ParentKey\": \"\"},\r\n    {\"Key\": \"f4a4b5c6-d7e8-9012-3def-456789012345\", \"Name\": \"FinanceOps\", \"Path\": \"FinanceOps\", \"Description\": \"Folder hosting the InvoiceExtractor process.\", \"Type\": \"Standard\", \"ParentKey\": \"\"},\r\n    {\"Key\": \"e0772cbe-c19c-4d5f-926c-043c2d2d300a\", \"Name\": \"Shared\", \"Path\": \"Shared\", \"Type\": \"Standard\", \"ParentKey\": \"\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f4a4b5c6-d7e8-9012-3def-456789012345",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"bbdd5566-77ee-88ff-99aa-00bb11223344\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceExtractor\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"RuntimeType\": \"Unattended\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"StartTime\": \"2026-06-24T04:00:01.100Z\",\r\n      \"EndTime\": \"2026-06-24T04:03:52.640Z\",\r\n      \"CreationTime\": \"2026-06-24T04:00:01.000Z\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "bbdd5566-77ee-88ff-99aa-00bb11223344"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"bbdd5566-77ee-88ff-99aa-00bb11223344\",\r\n    \"StartTime\": \"2026-06-24T04:00:01.100Z\",\r\n    \"EndTime\": \"2026-06-24T04:03:52.640Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"Info\": \"Could not retrieve the result of the job execution. This might be because a message was too large to process.\",\r\n    \"CreationTime\": \"2026-06-24T04:00:01.000Z\",\r\n    \"ReleaseName\": \"InvoiceExtractor\",\r\n    \"Type\": \"Unattended\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"OutputArguments\": \"\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"OrganizationUnitId\": 7791630,\r\n    \"FolderKey\": \"f4a4b5c6-d7e8-9012-3def-456789012345\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LastModificationTime\": \"2026-06-24T04:03:52.640Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"bbdd5566-77ee-88ff-99aa-00bb11223344\",\r\n    \"Id\": 671550011\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "bbdd5566-77ee-88ff-99aa-00bb11223344",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-24T04:03:52.630Z\",\r\n      \"Message\": \"Job 'bbdd5566-77ee-88ff-99aa-00bb11223344' faulted. Could not retrieve the result of the job execution. This might be because a message was too large to process.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-24T04:03:52.400Z\",\r\n      \"Message\": \"[Robot] Failed to serialize and return the job result: output argument 'Out_AllInvoices' (System.Data.DataTable, ~184000 rows).\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-24T04:03:50.900Z\",\r\n      \"Message\": \"[InvoiceExtractor] Extraction complete; returning DataTable.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "bbdd5566-77ee-88ff-99aa-00bb11223344"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-24T04:03:52.630Z\",\r\n      \"Message\": \"Job 'bbdd5566-77ee-88ff-99aa-00bb11223344' faulted. Could not retrieve the result of the job execution. This might be because a message was too large to process.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-24T04:03:52.400Z\",\r\n      \"Message\": \"[Robot] Failed to serialize and return the job result: output argument 'Out_AllInvoices' (System.Data.DataTable, ~184000 rows).\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-24T04:03:50.900Z\",\r\n      \"Message\": \"[InvoiceExtractor] Extraction complete; returning DataTable.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "bbdd5566-77ee-88ff-99aa-00bb11223344"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": [\r\n    {\"Activity\": \"Main Sequence\", \"Status\": \"Succeeded\", \"StartTime\": \"2026-06-24T04:00:02.010Z\", \"EndTime\": \"2026-06-24T04:03:50.980Z\"},\r\n    {\"Activity\": \"Extract all invoices\", \"Status\": \"Succeeded\", \"StartTime\": \"2026-06-24T04:00:02.220Z\", \"EndTime\": \"2026-06-24T04:03:49.700Z\"},\r\n    {\"Activity\": \"Assign Out_AllInvoices\", \"Status\": \"Succeeded\", \"StartTime\": \"2026-06-24T04:03:49.720Z\", \"EndTime\": \"2026-06-24T04:03:50.960Z\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "bbdd5566-77ee-88ff-99aa-00bb11223344"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": [\r\n    {\"Activity\": \"Main Sequence\", \"Status\": \"Succeeded\", \"StartTime\": \"2026-06-24T04:00:02.010Z\", \"EndTime\": \"2026-06-24T04:03:50.980Z\"},\r\n    {\"Activity\": \"Extract all invoices\", \"Status\": \"Succeeded\", \"StartTime\": \"2026-06-24T04:00:02.220Z\", \"EndTime\": \"2026-06-24T04:03:49.700Z\"},\r\n    {\"Activity\": \"Assign Out_AllInvoices\", \"Status\": \"Succeeded\", \"StartTime\": \"2026-06-24T04:03:49.720Z\", \"EndTime\": \"2026-06-24T04:03:50.960Z\"}\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

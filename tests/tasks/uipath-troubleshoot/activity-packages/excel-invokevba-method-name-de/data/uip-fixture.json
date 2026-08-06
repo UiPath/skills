@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the finance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f7e6d5c4-3b2a-4019-8f7e-6d5c4b3a2019\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceImporter\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-14T08:05:11.110Z\",\r\n      \"EndTime\": \"2026-05-14T08:05:16.420Z\",\r\n      \"CreationTime\": \"2026-05-14T08:05:10.885Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "f7e6d5c4-3b2a-4019-8f7e-6d5c4b3a2019",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"f7e6d5c4-3b2a-4019-8f7e-6d5c4b3a2019\",\r\n    \"StartTime\": \"2026-05-14T08:05:11.110Z\",\r\n    \"EndTime\": \"2026-05-14T08:05:16.420Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"ab1c2d3e-4f5a-46b7-8c9d-0e1f2a3b4c5d\",\r\n    \"Info\": \"Invoke VBA: Das Makro \\\"ProcessInvoces\\\" kann nicht ausgeführt werden. The macro may not be available in this workbook or all macros may be disabled\\r\\n\\r\\nin Main.xaml\\r\\n    at InvokeVBAX \\\"Invoke VBA\\\"\\r\\n    at ExcelApplicationCard \\\"Use Excel File\\\"\\r\\n    at ExcelProcessScope \\\"Excel Process Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Runtime.InteropServices.COMException: Das Makro \\\"ProcessInvoces\\\" kann nicht ausgeführt werden. The macro may not be available in this workbook or all macros may be disabled\",\r\n    \"CreationTime\": \"2026-05-14T08:05:10.885Z\",\r\n    \"ReleaseName\": \"InvoiceImporter\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6018266,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\USER1\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-14T08:05:16.420Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"f7e6d5c4-3b2a-4019-8f7e-6d5c4b3a2019\",\r\n    \"Id\": 682316108\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "f7e6d5c4-3b2a-4019-8f7e-6d5c4b3a2019",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-14T08:05:16.341Z\",\r\n      \"Message\": \"[Invoke VBA] Das Makro \\\"ProcessInvoces\\\" kann nicht ausgeführt werden. Das Makro ist möglicherweise nicht in dieser Arbeitsmappe vorhanden, oder alle Makros wurden deaktiviert.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-14T08:05:16.398Z\",\r\n      \"Message\": \"Das Makro \\\"ProcessInvoces\\\" kann nicht ausgeführt werden. Das Makro ist möglicherweise nicht in dieser Arbeitsmappe vorhanden, oder alle Makros wurden deaktiviert.\\r\\nin Main.xaml\\r\\n    at InvokeVBAX \\\"Invoke VBA\\\"\\r\\n    at ExcelApplicationCard \\\"Use Excel File\\\"\\r\\n    at ExcelProcessScope \\\"Excel Process Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "f7e6d5c4-3b2a-4019-8f7e-6d5c4b3a2019",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-14T08:05:11.140Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-14T08:05:11.722Z\",\r\n      \"Message\": \"[Excel Process Scope] Opening workbook data\\\\Invoices.xlsx\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-14T08:05:15.014Z\",\r\n      \"Message\": \"[Use Excel File] Workbook opened successfully\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-14T08:05:16.341Z\",\r\n      \"Message\": \"[Invoke VBA] Das Makro \\\"ProcessInvoces\\\" kann nicht ausgeführt werden. Das Makro ist möglicherweise nicht in dieser Arbeitsmappe vorhanden, oder alle Makros wurden deaktiviert.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-14T08:05:16.398Z\",\r\n      \"Message\": \"Das Makro \\\"ProcessInvoces\\\" kann nicht ausgeführt werden. Das Makro ist möglicherweise nicht in dieser Arbeitsmappe vorhanden, oder alle Makros wurden deaktiviert.\\r\\nin Main.xaml\\r\\n    at InvokeVBAX \\\"Invoke VBA\\\"\\r\\n    at ExcelApplicationCard \\\"Use Excel File\\\"\\r\\n    at ExcelProcessScope \\\"Excel Process Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-14T08:05:16.415Z\",\r\n      \"Message\": \"Execution ended in: 00:00:05\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

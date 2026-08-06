@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8d1c4b22-7e90-4a3f-9b5d-1f6a2c8e0d34\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n    \"StartTime\": \"2026-06-25T14:22:08.114Z\",\r\n    \"EndTime\": \"2026-06-25T14:22:13.902Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Agent\",\r\n    \"SourceType\": \"Agent\",\r\n    \"BatchExecutionKey\": \"5c0a91d7-2b44-4e0e-9a6c-8d1f0b3e7c52\",\r\n    \"Info\": \"Object reference not set to an instance of an object.\\r\\n\\r\\nin ProcessRequest.xaml\\r\\n    at Assign 'Compute row count'\\r\\n    at Sequence 'Handle request'\\r\\n    at HandleAppRequest\\r\\n\\r\\nSystem.NullReferenceException: Object reference not set to an instance of an object.\\r\\n   at lambda_method(Closure , ActivityContext )\\r\\n   at System.Activities.CodeActivity`1.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\\r\\n   at UiPath.Robot.Activities.Api.WorkflowExecutor.EndExecute(IAsyncResult result)\\r\\n   at UiPath.WorkflowEvents.Activities.HandleAppRequest.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-25T14:22:07.701Z\",\r\n    \"ReleaseName\": \"RequestHandler\",\r\n    \"Type\": \"Attended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Attended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 61204,\r\n    \"EntryPointPath\": \"ProcessRequest.xaml\",\r\n    \"OrganizationUnitId\": 31044,\r\n    \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_user\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-25T14:22:13.902Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"b41d9f072e6a4c8b9d3f5a1e7c0b2d49\",\r\n    \"Id\": 4021583\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-25T14:22:13.402Z\",\r\n      \"Message\": \"Handle Apps Request: Object reference not set to an instance of an object.\\r\\nin ProcessRequest.xaml\\r\\n    at Assign 'Compute row count'\\r\\n    at Sequence 'Handle request'\\r\\n    at HandleAppRequest\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.NullReferenceException\\r\\n   at lambda_method(Closure , ActivityContext )\\r\\n   at System.Activities.CodeActivity`1.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at UiPath.Robot.Activities.Api.WorkflowExecutor.EndExecute(IAsyncResult result)\\r\\n   at UiPath.WorkflowEvents.Activities.HandleAppRequest.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-25T14:22:13.402Z\",\r\n      \"Message\": \"Handle Apps Request: Object reference not set to an instance of an object.\\r\\nin ProcessRequest.xaml\\r\\n    at Assign 'Compute row count'\\r\\n    at Sequence 'Handle request'\\r\\n    at HandleAppRequest\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.NullReferenceException\\r\\n   at lambda_method(Closure , ActivityContext )\\r\\n   at System.Activities.CodeActivity`1.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at UiPath.Robot.Activities.Api.WorkflowExecutor.EndExecute(IAsyncResult result)\\r\\n   at UiPath.WorkflowEvents.Activities.HandleAppRequest.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-06-25T14:22:13.912Z\",\r\n      \"JobId\": 4021583\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-06-25T14:22:08.130Z\",\r\n      \"JobId\": 4021583\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-06-25T14:22:07.751Z\",\r\n      \"JobId\": 4021583\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"a1f0c33d92b46e07\",\r\n      \"TraceId\": \"b41d9f072e6a4c8b9d3f5a1e7c0b2d49\",\r\n      \"ParentId\": null,\r\n      \"Name\": \"Robot Job b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"StartTime\": \"2026-06-25T14:22:11.4012001Z\",\r\n      \"EndTime\": \"2026-06-25T14:22:13.6628110Z\",\r\n      \"Attributes\": \"{\\\"Exception\\\":\\\"System.NullReferenceException: Object reference not set to an instance of an object.\\\\r\\\\n   at lambda_method(Closure , ActivityContext )\\\\r\\\\n   at System.Activities.CodeActivity`1.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\\\r\\\\n   at UiPath.Robot.Activities.Api.WorkflowExecutor.EndExecute(IAsyncResult result)\\\\r\\\\n   at UiPath.WorkflowEvents.Activities.HandleAppRequest.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\\\r\\\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"RobotJob\",\r\n      \"ProcessKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"JobKey\": \"b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T14:22:13.5012110Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    },\r\n    {\r\n      \"Id\": \"b2e1d44ea3c57f18\",\r\n      \"TraceId\": \"b41d9f072e6a4c8b9d3f5a1e7c0b2d49\",\r\n      \"ParentId\": \"a1f0c33d92b46e07\",\r\n      \"Name\": \"Handle Apps Request\",\r\n      \"StartTime\": \"2026-06-25T14:22:11.5320140Z\",\r\n      \"EndTime\": \"2026-06-25T14:22:13.6010522Z\",\r\n      \"Attributes\": \"{\\\"Public.FullTypeName\\\":\\\"UiPath.WorkflowEvents.Activities.HandleAppRequest\\\",\\\"Private.WorkflowFile\\\":\\\"ProcessRequest.xaml\\\",\\\"Public.ConnectionMode\\\":\\\"RobotJS\\\",\\\"Private.DisplayName\\\":\\\"Handle Apps Request\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"Activity\",\r\n      \"ProcessKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"JobKey\": \"b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T14:22:13.5012110Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    },\r\n    {\r\n      \"Id\": \"c3d2e55fb4d68029\",\r\n      \"TraceId\": \"b41d9f072e6a4c8b9d3f5a1e7c0b2d49\",\r\n      \"ParentId\": \"b2e1d44ea3c57f18\",\r\n      \"Name\": \"Compute row count\",\r\n      \"StartTime\": \"2026-06-25T14:22:13.4900274Z\",\r\n      \"EndTime\": \"2026-06-25T14:22:13.4960532Z\",\r\n      \"Attributes\": \"{\\\"Public.FullTypeName\\\":\\\"System.Activities.Statements.Assign\\\",\\\"Private.To\\\":\\\"rowCount\\\",\\\"Private.Value\\\":\\\"io_Records.Rows.Count\\\",\\\"Private.DisplayName\\\":\\\"Compute row count\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"Activity\",\r\n      \"ProcessKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"JobKey\": \"b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T14:22:13.5012110Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"a1f0c33d92b46e07\",\r\n      \"TraceId\": \"b41d9f072e6a4c8b9d3f5a1e7c0b2d49\",\r\n      \"ParentId\": null,\r\n      \"Name\": \"Robot Job b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"StartTime\": \"2026-06-25T14:22:11.4012001Z\",\r\n      \"EndTime\": \"2026-06-25T14:22:13.6628110Z\",\r\n      \"Attributes\": \"{\\\"Exception\\\":\\\"System.NullReferenceException: Object reference not set to an instance of an object.\\\\r\\\\n   at lambda_method(Closure , ActivityContext )\\\\r\\\\n   at System.Activities.CodeActivity`1.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\\\r\\\\n   at UiPath.Robot.Activities.Api.WorkflowExecutor.EndExecute(IAsyncResult result)\\\\r\\\\n   at UiPath.WorkflowEvents.Activities.HandleAppRequest.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\\\r\\\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"RobotJob\",\r\n      \"ProcessKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"JobKey\": \"b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T14:22:13.5012110Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    },\r\n    {\r\n      \"Id\": \"b2e1d44ea3c57f18\",\r\n      \"TraceId\": \"b41d9f072e6a4c8b9d3f5a1e7c0b2d49\",\r\n      \"ParentId\": \"a1f0c33d92b46e07\",\r\n      \"Name\": \"Handle Apps Request\",\r\n      \"StartTime\": \"2026-06-25T14:22:11.5320140Z\",\r\n      \"EndTime\": \"2026-06-25T14:22:13.6010522Z\",\r\n      \"Attributes\": \"{\\\"Public.FullTypeName\\\":\\\"UiPath.WorkflowEvents.Activities.HandleAppRequest\\\",\\\"Private.WorkflowFile\\\":\\\"ProcessRequest.xaml\\\",\\\"Public.ConnectionMode\\\":\\\"RobotJS\\\",\\\"Private.DisplayName\\\":\\\"Handle Apps Request\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"Activity\",\r\n      \"ProcessKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"JobKey\": \"b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T14:22:13.5012110Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    },\r\n    {\r\n      \"Id\": \"c3d2e55fb4d68029\",\r\n      \"TraceId\": \"b41d9f072e6a4c8b9d3f5a1e7c0b2d49\",\r\n      \"ParentId\": \"b2e1d44ea3c57f18\",\r\n      \"Name\": \"Compute row count\",\r\n      \"StartTime\": \"2026-06-25T14:22:13.4900274Z\",\r\n      \"EndTime\": \"2026-06-25T14:22:13.4960532Z\",\r\n      \"Attributes\": \"{\\\"Public.FullTypeName\\\":\\\"System.Activities.Statements.Assign\\\",\\\"Private.To\\\":\\\"rowCount\\\",\\\"Private.Value\\\":\\\"io_Records.Rows.Count\\\",\\\"Private.DisplayName\\\":\\\"Compute row count\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"Activity\",\r\n      \"ProcessKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"JobKey\": \"b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T14:22:13.5012110Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "b41d9f072e6a4c8b9d3f5a1e7c0b2d49"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"a1f0c33d92b46e07\",\r\n      \"TraceId\": \"b41d9f072e6a4c8b9d3f5a1e7c0b2d49\",\r\n      \"ParentId\": null,\r\n      \"Name\": \"Robot Job b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"StartTime\": \"2026-06-25T14:22:11.4012001Z\",\r\n      \"EndTime\": \"2026-06-25T14:22:13.6628110Z\",\r\n      \"Attributes\": \"{\\\"Exception\\\":\\\"System.NullReferenceException: Object reference not set to an instance of an object.\\\\r\\\\n   at lambda_method(Closure , ActivityContext )\\\\r\\\\n   at System.Activities.CodeActivity`1.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\\\r\\\\n   at UiPath.Robot.Activities.Api.WorkflowExecutor.EndExecute(IAsyncResult result)\\\\r\\\\n   at UiPath.WorkflowEvents.Activities.HandleAppRequest.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\\\r\\\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"RobotJob\",\r\n      \"ProcessKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"JobKey\": \"b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T14:22:13.5012110Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    },\r\n    {\r\n      \"Id\": \"b2e1d44ea3c57f18\",\r\n      \"TraceId\": \"b41d9f072e6a4c8b9d3f5a1e7c0b2d49\",\r\n      \"ParentId\": \"a1f0c33d92b46e07\",\r\n      \"Name\": \"Handle Apps Request\",\r\n      \"StartTime\": \"2026-06-25T14:22:11.5320140Z\",\r\n      \"EndTime\": \"2026-06-25T14:22:13.6010522Z\",\r\n      \"Attributes\": \"{\\\"Public.FullTypeName\\\":\\\"UiPath.WorkflowEvents.Activities.HandleAppRequest\\\",\\\"Private.WorkflowFile\\\":\\\"ProcessRequest.xaml\\\",\\\"Public.ConnectionMode\\\":\\\"RobotJS\\\",\\\"Private.DisplayName\\\":\\\"Handle Apps Request\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"Activity\",\r\n      \"ProcessKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"JobKey\": \"b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T14:22:13.5012110Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    },\r\n    {\r\n      \"Id\": \"c3d2e55fb4d68029\",\r\n      \"TraceId\": \"b41d9f072e6a4c8b9d3f5a1e7c0b2d49\",\r\n      \"ParentId\": \"b2e1d44ea3c57f18\",\r\n      \"Name\": \"Compute row count\",\r\n      \"StartTime\": \"2026-06-25T14:22:13.4900274Z\",\r\n      \"EndTime\": \"2026-06-25T14:22:13.4960532Z\",\r\n      \"Attributes\": \"{\\\"Public.FullTypeName\\\":\\\"System.Activities.Statements.Assign\\\",\\\"Private.To\\\":\\\"rowCount\\\",\\\"Private.Value\\\":\\\"io_Records.Rows.Count\\\",\\\"Private.DisplayName\\\":\\\"Compute row count\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"Activity\",\r\n      \"ProcessKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"JobKey\": \"b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T14:22:13.5012110Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"RequestHandler\",\r\n      \"ReleaseKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-25T14:22:08.114Z\",\r\n      \"EndTime\": \"2026-06-25T14:22:13.902Z\",\r\n      \"CreationTime\": \"2026-06-25T14:22:07.701Z\"\r\n    },\r\n    {\r\n      \"Key\": \"f0927ac6-51bd-4e33-8a90-6b2c4e1d70a8\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"RequestHandler\",\r\n      \"ReleaseKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-25T13:55:02.220Z\",\r\n      \"EndTime\": \"2026-06-25T13:55:09.410Z\",\r\n      \"CreationTime\": \"2026-06-25T13:55:01.880Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"RequestHandler\",\r\n      \"ReleaseKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-25T14:22:08.114Z\",\r\n      \"EndTime\": \"2026-06-25T14:22:13.902Z\",\r\n      \"CreationTime\": \"2026-06-25T14:22:07.701Z\"\r\n    },\r\n    {\r\n      \"Key\": \"f0927ac6-51bd-4e33-8a90-6b2c4e1d70a8\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"RequestHandler\",\r\n      \"ReleaseKey\": \"c7e2a9b4-3d10-4f88-a1c6-9e0b5d2f7a31\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-25T13:55:02.220Z\",\r\n      \"EndTime\": \"2026-06-25T13:55:09.410Z\",\r\n      \"CreationTime\": \"2026-06-25T13:55:01.880Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Triage must resolve the Shared folder key before listing jobs."
+    },
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent must list jobs in folder Shared to identify the most recent (faulted) job."
+    },
+    {
+      "pattern": "or jobs get b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
+      "min": 1,
+      "description": "Agent must fetch the failing job to read the System.NullReferenceException surfaced through UiPath.WorkflowEvents.Activities.HandleAppRequest.EndExecute."
+    },
+    {
+      "pattern": "traces",
+      "min": 1,
+      "description": "Cause disambiguation: the Handle Apps Request span carries WorkflowFile=ProcessRequest.xaml and the faulting Assign span carries Value=io_Records.Rows.Count, together pinning the null dereference to the App-invoked workflow rather than the WorkflowEvents package or the SignalR channel."
+    },
+    {
+      "pattern": "or jobs logs b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
+      "min": 0,
+      "description": "OPTIONAL — Error-level log repeats the exception already visible in jobs get."
+    },
+    {
+      "pattern": "or jobs history b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
+      "min": 0,
+      "description": "OPTIONAL — state transitions confirm a clean single execution."
+    }
+  ]
+}

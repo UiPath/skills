@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d9e0f1a2-3b4c-4d5e-8f6a-7b8c9d0e1f2a\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the order-processing RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c1d2e3f4-5a6b-4c7d-9e0f-1a2b3c4d5e6f\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "d9e0f1a2-3b4c-4d5e-8f6a-7b8c9d0e1f2a",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"e0f1a2b3-4c5d-4e6f-9a7b-8c9d0e1f2a3b\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"OrderMailFiler\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-04T07:20:00.140Z\",\r\n      \"EndTime\": \"2026-06-04T07:20:02.260Z\",\r\n      \"CreationTime\": \"2026-06-04T07:19:59.880Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "e0f1a2b3-4c5d-4e6f-9a7b-8c9d0e1f2a3b",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"e0f1a2b3-4c5d-4e6f-9a7b-8c9d0e1f2a3b\",\r\n    \"StartTime\": \"2026-06-04T07:20:00.140Z\",\r\n    \"EndTime\": \"2026-06-04T07:20:02.260Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"f1a2b3c4-5d6e-4f70-8192-a3b4c5d6e7f8\",\r\n    \"Info\": \"Move Outlook Mail Message: The specified folder does not exist.\\r\\n\\r\\nin Main.xaml\\r\\n    at MoveOutlookMessage \\\"Move Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Mail.Exception: The specified folder does not exist. ---> System.Exception: The specified folder does not exist.\",\r\n    \"CreationTime\": \"2026-06-04T07:19:59.880Z\",\r\n    \"ReleaseName\": \"OrderMailFiler\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 7042918,\r\n    \"OrganizationUnitId\": 8810427,\r\n    \"FolderKey\": \"d9e0f1a2-3b4c-4d5e-8f6a-7b8c9d0e1f2a\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-04T07:20:02.260Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"e0f1a2b3-4c5d-4e6f-9a7b-8c9d0e1f2a3b\",\r\n    \"Id\": 703918264\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "e0f1a2b3-4c5d-4e6f-9a7b-8c9d0e1f2a3b",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T07:20:02.205Z\",\r\n      \"Message\": \"[Move Outlook Mail Message] destination folder 'Processed' not found at the mailbox root; no such top-level folder. The specified folder does not exist.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T07:20:02.241Z\",\r\n      \"Message\": \"Move Outlook Mail Message: The specified folder does not exist.\\r\\nin Main.xaml\\r\\n    at MoveOutlookMessage \\\"Move Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "e0f1a2b3-4c5d-4e6f-9a7b-8c9d0e1f2a3b",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T07:20:00.180Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T07:20:00.642Z\",\r\n      \"Message\": \"[Move Outlook Mail Message] Attached to the running Outlook desktop session for profile UIPATH\\\\ROBOTUSER1\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T07:20:01.118Z\",\r\n      \"Message\": \"[Move Outlook Mail Message] Source message resolved (Subject: 'Order #48217 confirmation') in Inbox\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T07:20:01.604Z\",\r\n      \"Message\": \"[Move Outlook Mail Message] Resolving destination folder 'Processed' against the default profile root\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T07:20:02.205Z\",\r\n      \"Message\": \"[Move Outlook Mail Message] destination folder 'Processed' not found at the mailbox root; no such top-level folder. The specified folder does not exist.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T07:20:02.241Z\",\r\n      \"Message\": \"Move Outlook Mail Message: The specified folder does not exist.\\r\\nin Main.xaml\\r\\n    at MoveOutlookMessage \\\"Move Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T07:20:02.255Z\",\r\n      \"Message\": \"Execution ended in: 00:00:02\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

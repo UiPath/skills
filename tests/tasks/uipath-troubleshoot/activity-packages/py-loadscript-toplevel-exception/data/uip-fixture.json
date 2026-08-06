@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"aa01b2c3-d4e5-4f60-8a01-000000000001\",\r\n      \"Name\": \"Order Processing\",\r\n      \"Path\": \"Order Processing\",\r\n      \"Description\": \"Production folder for order-import processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "aa01b2c3-d4e5-4f60-8a01-000000000001",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"bb01c3d4-e5f6-4071-9b01-000000000001\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"PyOrderImport\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-11T08:41:05.210Z\",\r\n      \"EndTime\": \"2026-06-11T08:41:07.480Z\",\r\n      \"CreationTime\": \"2026-06-11T08:41:04.800Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "bb01c3d4-e5f6-4071-9b01-000000000001",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"bb01c3d4-e5f6-4071-9b01-000000000001\",\r\n    \"StartTime\": \"2026-06-11T08:41:05.210Z\",\r\n    \"EndTime\": \"2026-06-11T08:41:07.480Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"cc01d4e5-f6a7-4182-9c01-000000000001\",\r\n    \"Info\": \"Load Python Script: One or more errors occurred. ---> Python.Runtime.PythonException: Error loading the python script: ZeroDivisionError: division by zero\\r\\n  File \\\"order_import.py\\\", line 21, in <module>\\r\\n    DEFAULT_DISCOUNT = 100 / 0\\r\\n\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.AggregateException: One or more errors occurred.\",\r\n    \"CreationTime\": \"2026-06-11T08:41:04.800Z\",\r\n    \"ReleaseName\": \"PyOrderImport\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7012401,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"aa01b2c3-d4e5-4f60-8a01-000000000001\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-11T08:41:07.480Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"bb01c3d4-e5f6-4071-9b01-000000000001\",\r\n    \"Id\": 712450101\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "bb01c3d4-e5f6-4071-9b01-000000000001",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-11T08:41:07.360Z\",\r\n      \"Message\": \"[Load Python Script] One or more errors occurred. ---> Python.Runtime.PythonException: Error loading the python script: ZeroDivisionError: division by zero (order_import.py, line 21)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-11T08:41:07.420Z\",\r\n      \"Message\": \"One or more errors occurred. ---> Python.Runtime.PythonException: ZeroDivisionError: division by zero\\r\\n  File \\\"order_import.py\\\", line 21, in <module>\\r\\n    DEFAULT_DISCOUNT = 100 / 0\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "bb01c3d4-e5f6-4071-9b01-000000000001",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-11T08:41:05.240Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-11T08:41:06.180Z\",\r\n      \"Message\": \"[Python Scope] Initializing Python engine (Target: x64, Path: C:\\\\Python39, Version: Python_39)\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-11T08:41:06.640Z\",\r\n      \"Message\": \"[Python Scope] Python engine initialized.\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-11T08:41:06.900Z\",\r\n      \"Message\": \"[Load Python Script] Loading scripts\\\\order_import.py\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-11T08:41:07.360Z\",\r\n      \"Message\": \"[Load Python Script] One or more errors occurred. ---> Python.Runtime.PythonException: Error loading the python script: ZeroDivisionError: division by zero (order_import.py, line 21)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-11T08:41:07.420Z\",\r\n      \"Message\": \"One or more errors occurred. ---> Python.Runtime.PythonException: ZeroDivisionError: division by zero\\r\\n  File \\\"order_import.py\\\", line 21, in <module>\\r\\n    DEFAULT_DISCOUNT = 100 / 0\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-11T08:41:07.460Z\",\r\n      \"Message\": \"Execution ended in: 00:00:02\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

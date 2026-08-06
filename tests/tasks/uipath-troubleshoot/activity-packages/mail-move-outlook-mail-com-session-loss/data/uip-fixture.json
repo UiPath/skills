@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b7c8d9e0-1f2a-4b3c-8d4e-5f6a7b8c9d0e\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the mailbox triage RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"d0e1f2a3-b4c5-4d6e-8f70-1a2b3c4d5e6f\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "b7c8d9e0-1f2a-4b3c-8d4e-5f6a7b8c9d0e",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c8d9e0f1-2a3b-4c4d-9e5f-6a7b8c9d0e1f\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MailboxTriageMover\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-04T03:00:00.140Z\",\r\n      \"EndTime\": \"2026-06-04T03:00:05.260Z\",\r\n      \"CreationTime\": \"2026-06-04T02:59:59.910Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "c8d9e0f1-2a3b-4c4d-9e5f-6a7b8c9d0e1f",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c8d9e0f1-2a3b-4c4d-9e5f-6a7b8c9d0e1f\",\r\n    \"StartTime\": \"2026-06-04T03:00:00.140Z\",\r\n    \"EndTime\": \"2026-06-04T03:00:05.260Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"e0f1a2b3-c4d5-4e6f-9081-2a3b4c5d6e7f\",\r\n    \"Info\": \"Move Outlook Mail Message: The operation failed.\\r\\n\\r\\nin Main.xaml\\r\\n    at MoveOutlookMessage \\\"Move Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Runtime.InteropServices.COMException: The operation failed. (Exception from HRESULT: 0x800706BA (RPC_S_SERVER_UNAVAILABLE)) The Outlook COM server could not be reached.\",\r\n    \"CreationTime\": \"2026-06-04T02:59:59.910Z\",\r\n    \"ReleaseName\": \"MailboxTriageMover\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 6041922,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b7c8d9e0-1f2a-4b3c-8d4e-5f6a7b8c9d0e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-04T03:00:05.260Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c8d9e0f1-2a3b-4c4d-9e5f-6a7b8c9d0e1f\",\r\n    \"Id\": 690412877\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "c8d9e0f1-2a3b-4c4d-9e5f-6a7b8c9d0e1f",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T03:00:05.190Z\",\r\n      \"Message\": \"[Move Outlook Mail Message] The operation failed.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T03:00:05.231Z\",\r\n      \"Message\": \"The operation failed.\\r\\nin Main.xaml\\r\\n    at MoveOutlookMessage \\\"Move Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Runtime.InteropServices.COMException: The operation failed. (Exception from HRESULT: 0x800706BA (RPC_S_SERVER_UNAVAILABLE))\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "c8d9e0f1-2a3b-4c4d-9e5f-6a7b8c9d0e1f",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T03:00:00.180Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T03:00:00.420Z\",\r\n      \"Message\": \"Running unattended on MOCK-HOST as UIPATH\\\\ROBOTUSER1 (no interactive desktop session)\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T03:00:01.005Z\",\r\n      \"Message\": \"[Move Outlook Mail Message] Configured destination MailFolder: 'Inbox\\\\Processed' (Account: default profile)\"\r\n    },\r\n    {\r\n      \"Level\": \"Warn\",\r\n      \"TimeStamp\": \"2026-06-04T03:00:03.640Z\",\r\n      \"Message\": \"[Move Outlook Mail Message] could not bind to a running Outlook instance for UIPATH\\\\ROBOTUSER1 (no live COM session); the destination folder tree could not be indexed\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T03:00:05.190Z\",\r\n      \"Message\": \"[Move Outlook Mail Message] The operation failed.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T03:00:05.231Z\",\r\n      \"Message\": \"The operation failed.\\r\\nin Main.xaml\\r\\n    at MoveOutlookMessage \\\"Move Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Runtime.InteropServices.COMException: The operation failed. (Exception from HRESULT: 0x800706BA (RPC_S_SERVER_UNAVAILABLE))\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T03:00:05.255Z\",\r\n      \"Message\": \"Execution ended in: 00:00:05\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f4a40004-0000-4000-8000-000000000004\",\r\n      \"Name\": \"Batch Ops\",\r\n      \"Path\": \"Batch Ops\",\r\n      \"Description\": \"Overnight batch automations.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c1d2e3f4-a5b6-4c78-9d0e-1f2a3b4c5d6f\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f4a40004-0000-4000-8000-000000000004",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d4a40001-4444-4444-8444-444444444444\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"NightlyPost\",\r\n      \"ReleaseName\": \"NightlyPost\",\r\n      \"StartTime\": \"2026-07-19T01:30:04.200Z\",\r\n      \"EndTime\": \"2026-07-19T01:31:12.600Z\",\r\n      \"CreationTime\": \"2026-07-19T01:30:03.700Z\",\r\n      \"HostMachineName\": \"BATCH-BOT-02\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f4a40004-0000-4000-8000-000000000004"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d4a40001-4444-4444-8444-444444444444\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"NightlyPost\",\r\n      \"ReleaseName\": \"NightlyPost\",\r\n      \"StartTime\": \"2026-07-19T01:30:04.200Z\",\r\n      \"EndTime\": \"2026-07-19T01:31:12.600Z\",\r\n      \"CreationTime\": \"2026-07-19T01:30:03.700Z\",\r\n      \"HostMachineName\": \"BATCH-BOT-02\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"d4a40002-5555-4555-8555-555555555555\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"NightlyPost\",\r\n      \"ReleaseName\": \"NightlyPost\",\r\n      \"StartTime\": \"2026-07-18T01:30:03.900Z\",\r\n      \"EndTime\": \"2026-07-18T01:52:20.400Z\",\r\n      \"CreationTime\": \"2026-07-18T01:30:03.400Z\",\r\n      \"HostMachineName\": \"BATCH-BOT-02\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"d4a40003-6666-4666-8666-666666666666\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"NightlyPost\",\r\n      \"ReleaseName\": \"NightlyPost\",\r\n      \"StartTime\": \"2026-07-17T01:30:04.100Z\",\r\n      \"EndTime\": \"2026-07-17T01:49:58.900Z\",\r\n      \"CreationTime\": \"2026-07-17T01:30:03.600Z\",\r\n      \"HostMachineName\": \"BATCH-BOT-02\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d4a40001-4444-4444-8444-444444444444\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"NightlyPost\",\r\n      \"ReleaseName\": \"NightlyPost\",\r\n      \"StartTime\": \"2026-07-19T01:30:04.200Z\",\r\n      \"EndTime\": \"2026-07-19T01:31:12.600Z\",\r\n      \"CreationTime\": \"2026-07-19T01:30:03.700Z\",\r\n      \"HostMachineName\": \"BATCH-BOT-02\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d4a40001-4444-4444-8444-444444444444\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"NightlyPost\",\r\n      \"ReleaseName\": \"NightlyPost\",\r\n      \"StartTime\": \"2026-07-19T01:30:04.200Z\",\r\n      \"EndTime\": \"2026-07-19T01:31:12.600Z\",\r\n      \"CreationTime\": \"2026-07-19T01:30:03.700Z\",\r\n      \"HostMachineName\": \"BATCH-BOT-02\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"d4a40002-5555-4555-8555-555555555555\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"NightlyPost\",\r\n      \"ReleaseName\": \"NightlyPost\",\r\n      \"StartTime\": \"2026-07-18T01:30:03.900Z\",\r\n      \"EndTime\": \"2026-07-18T01:52:20.400Z\",\r\n      \"CreationTime\": \"2026-07-18T01:30:03.400Z\",\r\n      \"HostMachineName\": \"BATCH-BOT-02\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"d4a40003-6666-4666-8666-666666666666\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"NightlyPost\",\r\n      \"ReleaseName\": \"NightlyPost\",\r\n      \"StartTime\": \"2026-07-17T01:30:04.100Z\",\r\n      \"EndTime\": \"2026-07-17T01:49:58.900Z\",\r\n      \"CreationTime\": \"2026-07-17T01:30:03.600Z\",\r\n      \"HostMachineName\": \"BATCH-BOT-02\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "d4a40001-4444-4444-8444-444444444444"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"d4a40001-4444-4444-8444-444444444444\",\r\n    \"StartTime\": \"2026-07-19T01:30:04.200Z\",\r\n    \"EndTime\": \"2026-07-19T01:31:12.600Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 50,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"Info\": \"Job faulted due to service shutdown or disconnect.\",\r\n    \"CreationTime\": \"2026-07-19T01:30:03.700Z\",\r\n    \"ReleaseName\": \"NightlyPost\",\r\n    \"Type\": \"Unattended\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"BATCH-BOT-02\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"FolderKey\": \"f4a40004-0000-4000-8000-000000000004\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_BATCH\",\r\n    \"OrchestratorUserIdentity\": \"svc_batch\",\r\n    \"LastModificationTime\": \"2026-07-19T01:31:12.600Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"d4a40001444444448444444444444444\",\r\n    \"Id\": 671660404\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "d4a40001-4444-4444-8444-444444444444",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-19T01:31:12.500Z\",\r\n      \"Message\": \"Job faulted due to service shutdown or disconnect.\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-07-19T01:30:20.100Z\",\r\n      \"Message\": \"NightlyPost execution started\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "d4a40001-4444-4444-8444-444444444444"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-19T01:31:12.500Z\",\r\n      \"Message\": \"Job faulted due to service shutdown or disconnect.\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-07-19T01:30:20.100Z\",\r\n      \"Message\": \"NightlyPost execution started\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "d4a40001-4444-4444-8444-444444444444"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-19T01:31:12.600Z\",\r\n      \"JobId\": 671660404\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-19T01:30:04.210Z\",\r\n      \"JobId\": 671660404\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-07-19T01:30:03.740Z\",\r\n      \"JobId\": 671660404\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "machines",
+        "list",
+        "--all-fields"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"MachineList\",\r\n  \"Data\": [\r\n    {\r\n      \"licenseKey\": \"605b37db-dc58-460f-99ed-93fcfb2f2704\",\r\n      \"name\": \"BATCH-BOT-02\",\r\n      \"description\": \"Overnight batch unattended host.\",\r\n      \"type\": \"Template\",\r\n      \"scope\": \"Default\",\r\n      \"nonProductionSlots\": 0,\r\n      \"unattendedSlots\": 1,\r\n      \"headlessSlots\": 0,\r\n      \"testAutomationSlots\": 0,\r\n      \"hostingSlots\": 0,\r\n      \"appTestSlots\": 0,\r\n      \"performanceTestSlots\": 0,\r\n      \"agentSlots\": 0,\r\n      \"automationCloudSlots\": 0,\r\n      \"automationCloudTestAutomationSlots\": 0,\r\n      \"key\": \"beef4001-2222-4333-8444-555566667704\",\r\n      \"endpointDetectionStatus\": \"Available\",\r\n      \"robotVersions\": [\r\n        {\r\n          \"count\": 1,\r\n          \"version\": \"24.10.4\"\r\n        }\r\n      ],\r\n      \"robotUsers\": [\r\n        { \"userName\": \"UIPATH\\\\SVC_BATCH\" }\r\n      ],\r\n      \"automationType\": \"Any\",\r\n      \"targetFramework\": \"Windows\",\r\n      \"tags\": [],\r\n      \"id\": 1990704\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "machines",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"MachineList\",\r\n  \"Data\": [\r\n    {\r\n      \"name\": \"BATCH-BOT-02\",\r\n      \"description\": \"Overnight batch unattended host.\",\r\n      \"type\": \"Template\",\r\n      \"key\": \"beef4001-2222-4333-8444-555566667704\",\r\n      \"id\": 1990704\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

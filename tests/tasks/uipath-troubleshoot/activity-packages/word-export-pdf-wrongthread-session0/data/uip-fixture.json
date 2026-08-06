@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c3d4e5f6-a7b8-491a-9c3d-4e5f60718293\",\r\n      \"Name\": \"Reports\",\r\n      \"Path\": \"Reports\",\r\n      \"Description\": \"Unattended nightly report generation.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "c3d4e5f6-a7b8-491a-9c3d-4e5f60718293",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"NightlyReportPdf\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-19T02:00:04.110Z\",\r\n      \"EndTime\": \"2026-06-19T02:00:10.530Z\",\r\n      \"CreationTime\": \"2026-06-19T02:00:03.900Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304\",\r\n    \"StartTime\": \"2026-06-19T02:00:04.110Z\",\r\n    \"EndTime\": \"2026-06-19T02:00:10.530Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"d5e6f7a8-b9c0-4b3c-8d5e-6f7182930415\",\r\n    \"Info\": \"Save Document as PDF: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'.\\r\\n\\r\\nin Main.xaml\\r\\n    at WordExportToPdf \\\"Save Document as PDF\\\"\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. This operation failed because the QueryInterface call on the COM component for the interface with IID '{0002096B-0000-0000-C000-000000000046}' failed due to the following error: The application called an interface that was marshalled for a different thread. (0x8001010E (RPC_E_WRONG_THREAD)).\",\r\n    \"CreationTime\": \"2026-06-19T02:00:03.900Z\",\r\n    \"ReleaseName\": \"NightlyReportPdf\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 6044700,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"c3d4e5f6-a7b8-491a-9c3d-4e5f60718293\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"scheduler\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-19T02:00:10.530Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"InvalidCastException\",\r\n      \"ActivityName\": \"WordExportToPdf_1\",\r\n      \"ActivityDisplayName\": \"Save Document as PDF\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304\",\r\n    \"Id\": 682482204\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-19T02:00:10.470Z\",\r\n      \"Message\": \"Save Document as PDF: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. This operation failed because the QueryInterface call on the COM component for the interface with IID '{0002096B-0000-0000-C000-000000000046}' failed due to the following error: The application called an interface that was marshalled for a different thread. (0x8001010E (RPC_E_WRONG_THREAD)).\\r\\nin Main.xaml\\r\\n    at WordExportToPdf \\\"Save Document as PDF\\\"\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-19T02:00:04.160Z\",\r\n      \"Message\": \"Execution started (Unattended, Session 0, non-interactive)\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-19T02:00:05.420Z\",\r\n      \"Message\": \"[Word Application Scope] Starting Microsoft Word\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-19T02:00:07.180Z\",\r\n      \"Message\": \"[Word Application Scope] Document 'data\\\\Report.docx' opened\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-19T02:00:10.470Z\",\r\n      \"Message\": \"Save Document as PDF: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. This operation failed because the QueryInterface call on the COM component for the interface with IID '{0002096B-0000-0000-C000-000000000046}' failed due to the following error: The application called an interface that was marshalled for a different thread. (0x8001010E (RPC_E_WRONG_THREAD)).\\r\\nin Main.xaml\\r\\n    at WordExportToPdf \\\"Save Document as PDF\\\"\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-19T02:00:10.510Z\",\r\n      \"Message\": \"Execution ended in: 00:00:06\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

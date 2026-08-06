@@ -1,6 +1,6 @@
 task_id: skill-troubleshoot-smoke-manifest-commands
 description: >
-  Verify every uip subcommand mocked in any diagnostic scenario's manifest is
+  Verify every uip subcommand mocked in any diagnostic scenario's protected fixture is
   a real subcommand in the locally installed uip CLI. Catches fixture drift
   when CLI tools rename, remove, or reshape subcommands — the kind of breakage
   that previously slipped through because the mock dispatcher's permissive
@@ -30,7 +30,7 @@ run_limits:
 # $env:TASK_DIR), so we resolve TASK_DIR through `python -c` which works the
 # same everywhere.
 pre_run:
-  # 1) Install every per-tool plugin the troubleshoot manifests reference.
+  # 1) Install every per-tool plugin the troubleshoot fixtures reference.
   # The bare `@uipath/cli` install in CI does NOT auto-list subcommands of
   # uninstalled tools in `--help` output, so the validator below would see
   # `or` / `is` / `maestro` / `docsai` / `traces` / `rpa` / `agent` /

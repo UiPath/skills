@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"spanId\": \"ctx-0001\",\r\n      \"traceId\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\r\n      \"name\": \"SupportKnowledge\",\r\n      \"spanType\": \"contextGroundingTool\",\r\n      \"SPANTYPE\": \"contextGroundingTool\",\r\n      \"attributes\": {\r\n        \"error\": \"Unexpected Error Details: An unexpected error occurred during agent execution, please try again later or contact your Administrator. Error Details: ContextGroundingIndex not found Code: AGENT_RUNTIME.UNEXPECTED_ERROR\",\r\n        \"indexName\": \"support-kb-prod\",\r\n        \"folderPath\": \"Shared/Agents\",\r\n        \"contextResourceName\": \"SupportKnowledge\"\r\n      },\r\n      \"ATTRIBUTES\": {\r\n        \"error\": \"Unexpected Error Details: An unexpected error occurred during agent execution, please try again later or contact your Administrator. Error Details: ContextGroundingIndex not found Code: AGENT_RUNTIME.UNEXPECTED_ERROR\",\r\n        \"indexName\": \"support-kb-prod\",\r\n        \"folderPath\": \"Shared/Agents\",\r\n        \"contextResourceName\": \"SupportKnowledge\"\r\n      }\r\n    },\r\n    {\r\n      \"spanId\": \"run-0001\",\r\n      \"traceId\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\r\n      \"name\": \"agentRun\",\r\n      \"spanType\": \"agentRun\",\r\n      \"attributes\": {\r\n        \"state\": \"Faulted\"\r\n      }\r\n    }\r\n  ],\r\n  \"spans\": [\r\n    {\r\n      \"name\": \"SupportKnowledge\",\r\n      \"spanType\": \"contextGroundingTool\",\r\n      \"attributes\": {\r\n        \"error\": \"ContextGroundingIndex not found Code: AGENT_RUNTIME.UNEXPECTED_ERROR\",\r\n        \"indexName\": \"support-kb-prod\",\r\n        \"folderPath\": \"Shared/Agents\"\r\n      }\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "context-grounding",
+        "list",
+        "--folder-path",
+        "Shared/Agents"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ContextGroundingIndexList\",\r\n  \"Data\": [\r\n    {\r\n      \"indexName\": \"legacy-support-kb\",\r\n      \"folderPath\": \"Shared/Agents\",\r\n      \"last_ingestion_status\": \"Successful\",\r\n      \"status\": \"Active\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "context-grounding",
+        "create",
+        "--index-name",
+        "support-kb-prod",
+        "--bucket-source",
+        "support-kb-source",
+        "--folder-path",
+        "Shared/Agents"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run mutating repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "context-grounding",
+        "ingest",
+        "--index-name",
+        "support-kb-prod",
+        "--folder-path",
+        "Shared/Agents"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run mutating repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "context-grounding",
+        "retrieve",
+        "--index-name",
+        "support-kb-prod",
+        "--folder-path",
+        "Shared/Agents"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 1,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ContextGroundingIndexRetrieve\",\r\n  \"Message\": \"Context Grounding index not found\",\r\n  \"Instructions\": \"No index named support-kb-prod exists in folder Shared/Agents. Recreate the index or relink the agent resource to an existing active index.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "agent",
+        "refresh",
+        "process/SupportSolution/SupportAgent"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run mutating repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "agent",
+        "validate",
+        "process/SupportSolution/SupportAgent"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"AgentValidate\",\r\n  \"Data\": {\r\n    \"Status\": \"Valid\",\r\n    \"ProjectDir\": \"process/SupportSolution/SupportAgent\"\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "solution",
+        "resources",
+        "refresh"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run mutating repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "solution",
+        "upload",
+        "."
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run mutating repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "solution",
+        "pack",
+        ".",
+        "./dist",
+        "--version",
+        "1.0.1"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run mutating repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "solution",
+        "publish",
+        "./dist/SupportSolution.1.0.1.zip"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run mutating repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "solution",
+        "deploy",
+        "run",
+        "--name",
+        "SupportAgent-prod",
+        "--package-name",
+        "SupportSolution",
+        "--package-version",
+        "1.0.1",
+        "--folder-name",
+        "Agents",
+        "--parent-folder-path",
+        "Shared"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run mutating repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "traces spans get aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "min": 1,
+      "description": "Agent inspects trace spans for the failing run."
+    },
+    {
+      "pattern": "context-grounding list --folder-path Shared/Agents",
+      "min": 1,
+      "description": "Agent verifies whether the configured index exists in the deployment folder."
+    }
+  ]
+}

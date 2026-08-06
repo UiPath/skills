@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d5e6f7a8-9012-4c3d-8e4f-5a6b7c8d9e0f\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the mailbox-maintenance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "d5e6f7a8-9012-4c3d-8e4f-5a6b7c8d9e0f",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"e6f7a8b9-0123-4d4e-9f5a-6b7c8d9e0f10\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"BulkMailPurger\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-04T13:30:00.140Z\",\r\n      \"EndTime\": \"2026-06-04T13:30:04.470Z\",\r\n      \"CreationTime\": \"2026-06-04T13:29:59.910Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "e6f7a8b9-0123-4d4e-9f5a-6b7c8d9e0f10",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"e6f7a8b9-0123-4d4e-9f5a-6b7c8d9e0f10\",\r\n    \"StartTime\": \"2026-06-04T13:30:00.140Z\",\r\n    \"EndTime\": \"2026-06-04T13:30:04.470Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"a8b9c0d1-2345-4e6f-8a9b-0c1d2e3f4a5b\",\r\n    \"Info\": \"Delete Outlook Mail Message: Collection was modified; enumeration operation may not execute.\\r\\n\\r\\nin Main.xaml\\r\\n    at DeleteOutlookMailMessage \\\"Delete Outlook Mail Message\\\"\\r\\n    at ForEach<MailMessage> \\\"For Each\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.InvalidOperationException: Collection was modified; enumeration operation may not execute.\",\r\n    \"CreationTime\": \"2026-06-04T13:29:59.910Z\",\r\n    \"ReleaseName\": \"BulkMailPurger\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7012044,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"d5e6f7a8-9012-4c3d-8e4f-5a6b7c8d9e0f\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-04T13:30:04.470Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"e6f7a8b9-0123-4d4e-9f5a-6b7c8d9e0f10\",\r\n    \"Id\": 691204503\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "e6f7a8b9-0123-4d4e-9f5a-6b7c8d9e0f10",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T13:30:04.402Z\",\r\n      \"Message\": \"[Delete Outlook Mail Message] Collection was modified; enumeration operation may not execute.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T13:30:04.451Z\",\r\n      \"Message\": \"Collection was modified; enumeration operation may not execute.\\r\\nin Main.xaml\\r\\n    at DeleteOutlookMailMessage \\\"Delete Outlook Mail Message\\\"\\r\\n    at ForEach<MailMessage> \\\"For Each\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "e6f7a8b9-0123-4d4e-9f5a-6b7c8d9e0f10",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T13:30:00.180Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T13:30:02.640Z\",\r\n      \"Message\": \"[Get Outlook Mail Messages] Retrieved 37 messages from folder Inbox into mailList\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T13:30:02.910Z\",\r\n      \"Message\": \"[For Each] Begin iterating mailList (37 items)\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T13:30:03.880Z\",\r\n      \"Message\": \"[Delete Outlook Mail Message] Deleted message 1 of 37 (Subject: 'Weekly status digest')\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T13:30:04.402Z\",\r\n      \"Message\": \"[Delete Outlook Mail Message] Collection was modified; enumeration operation may not execute.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T13:30:04.451Z\",\r\n      \"Message\": \"Collection was modified; enumeration operation may not execute.\\r\\nin Main.xaml\\r\\n    at DeleteOutlookMailMessage \\\"Delete Outlook Mail Message\\\"\\r\\n    at ForEach<MailMessage> \\\"For Each\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T13:30:04.465Z\",\r\n      \"Message\": \"Execution ended in: 00:00:04\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"caf901ab-28a3-4621-bcfa-68a0447e49c8\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T11:08:05.463Z\",\r\n      \"EndTime\": \"2026-06-20T11:08:17.150Z\",\r\n      \"ReleaseName\": \"MainframeInquiry\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50596528\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"caf901ab-28a3-4621-bcfa-68a0447e49c8\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T11:08:05.463Z\",\r\n      \"EndTime\": \"2026-06-20T11:08:17.150Z\",\r\n      \"ReleaseName\": \"MainframeInquiry\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50596528\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"caf901ab-28a3-4621-bcfa-68a0447e49c8\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T11:08:05.463Z\",\r\n      \"EndTime\": \"2026-06-20T11:08:17.150Z\",\r\n      \"ReleaseName\": \"MainframeInquiry\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50596528\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "caf901ab-28a3-4621-bcfa-68a0447e49c8"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"caf901ab-28a3-4621-bcfa-68a0447e49c8\",\r\n    \"StartTime\": \"2026-06-20T11:08:05.463Z\",\r\n    \"EndTime\": \"2026-06-20T11:08:17.150Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"b4d79435-8327-4618-bc70-3db59e7f9d6f\",\r\n    \"Info\": \"One or more errors occurred. (One or more errors occurred. (There was an error connecting to terminal. Error code: UnknownError | ResultCode=UnknownError | ConnectionStatus=Disconnected))\\r\\n\\r\\nin Main.xaml\\r\\n    at TerminalSession \\\"Mainframe Session\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.AggregateException: One or more errors occurred. (One or more errors occurred. (There was an error connecting to terminal. Error code: UnknownError | ResultCode=UnknownError | ConnectionStatus=Disconnected))\\r\\n ---> System.AggregateException: One or more errors occurred. (There was an error connecting to terminal. Error code: UnknownError | ResultCode=UnknownError | ConnectionStatus=Disconnected)\\r\\n ---> UiPath.Terminal.Data.TerminalConnectionException: There was an error connecting to terminal. Error code: UnknownError | ResultCode=UnknownError | ConnectionStatus=Disconnected\\r\\n   at UiPath.Terminal.TerminalConnection.<>c__DisplayClass49_0.<Start>b__0(CancellationToken ct)\\r\\n   at UiPath.Terminal.Helpers.Utils.<>c__DisplayClass3_0.<RunWithTimeoutAsync>b__0()\\r\\n   at System.Threading.Tasks.Task`1.InnerInvoke()\\r\\n   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)\\r\\n--- End of stack trace from previous location ---\\r\\n   at System.Threading.Tasks.Task.ThrowIfExceptional(Boolean includeTaskCanceledExceptions)\\r\\n   at System.Threading.Tasks.Task`1.GetResultCore(Boolean waitCompletionNotification)\\r\\n   at UiPath.Terminal.Helpers.Utils.RunWithTimeoutAsync(Func`2 action, CommandOptions options)\\r\\n   --- End of inner exception stack trace ---\\r\\n   at UiPath.Terminal.Activities.TerminalSession.EndExecute(NativeActivityContext context, IAsyncResult result)\\r\\n   at UiPath.Terminal.Activities.AsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-20T11:08:03.143Z\",\r\n    \"ReleaseName\": \"MainframeInquiry\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 1108515,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-20T11:08:17.150Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"caf901ab28a34621bcfa68a0447e49c8\",\r\n    \"Id\": 50596528\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "caf901ab-28a3-4621-bcfa-68a0447e49c8",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-20T11:08:16.641Z\",\r\n      \"Message\": \"Mainframe Session: One or more errors occurred. (One or more errors occurred. (There was an error connecting to terminal. Error code: UnknownError | ResultCode=UnknownError | ConnectionStatus=Disconnected))\\r\\nin Main.xaml\\r\\n    at TerminalSession \\\"Mainframe Session\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.AggregateException\\r\\n   at UiPath.Terminal.Activities.TerminalSession.EndExecute(NativeActivityContext context, IAsyncResult result)\\r\\n   at UiPath.Terminal.Activities.AsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "caf901ab-28a3-4621-bcfa-68a0447e49c8"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-20T11:08:16.641Z\",\r\n      \"Message\": \"Mainframe Session: One or more errors occurred. (One or more errors occurred. (There was an error connecting to terminal. Error code: UnknownError | ResultCode=UnknownError | ConnectionStatus=Disconnected))\\r\\nin Main.xaml\\r\\n    at TerminalSession \\\"Mainframe Session\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.AggregateException\\r\\n   at UiPath.Terminal.Activities.TerminalSession.EndExecute(NativeActivityContext context, IAsyncResult result)\\r\\n   at UiPath.Terminal.Activities.AsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "caf901ab-28a3-4621-bcfa-68a0447e49c8"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "caf901ab-28a3-4621-bcfa-68a0447e49c8"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": []\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get caf901ab-28a3-4621-bcfa-68a0447e49c8",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read its exception detail."
+    }
+  ]
+}

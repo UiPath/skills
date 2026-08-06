@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"5a02a2b3-d4e5-4f60-8a02-000000000002\",\r\n      \"Name\": \"Reporting\",\r\n      \"Path\": \"Reporting\",\r\n      \"Description\": \"Production folder for Jira reporting processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "5a02a2b3-d4e5-4f60-8a02-000000000002",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"5b02c3d4-e5f6-4071-9b02-000000000002\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"JiraWeeklyReport\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-15T06:00:02.340Z\",\r\n      \"EndTime\": \"2026-06-15T06:00:05.110Z\",\r\n      \"CreationTime\": \"2026-06-15T06:00:01.900Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "5b02c3d4-e5f6-4071-9b02-000000000002",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"5b02c3d4-e5f6-4071-9b02-000000000002\",\r\n    \"StartTime\": \"2026-06-15T06:00:02.340Z\",\r\n    \"EndTime\": \"2026-06-15T06:00:05.110Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"5c02d4e5-f6a7-4182-9c02-000000000002\",\r\n    \"Info\": \"Search Issues: Response was not recognized as JSON.\\r\\n\\r\\nin Main.xaml\\r\\n    at JiraApplicationScope \\\"Jira Scope\\\"\\r\\n    at SearchIssues \\\"Search Issues\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Jira.Activities.JiraException: Response was not recognized as JSON.\",\r\n    \"CreationTime\": \"2026-06-15T06:00:01.900Z\",\r\n    \"ReleaseName\": \"JiraWeeklyReport\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 8013302,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"5a02a2b3-d4e5-4f60-8a02-000000000002\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-15T06:00:05.110Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"5b02c3d4-e5f6-4071-9b02-000000000002\",\r\n    \"Id\": 813302202\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "5b02c3d4-e5f6-4071-9b02-000000000002",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-15T06:00:04.980Z\",\r\n      \"Message\": \"[Search Issues] Response was not recognized as JSON.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-15T06:00:05.060Z\",\r\n      \"Message\": \"UiPath.Jira.Activities.JiraException: Response was not recognized as JSON.\\r\\nin Main.xaml\\r\\n    at JiraApplicationScope \\\"Jira Scope\\\"\\r\\n    at SearchIssues \\\"Search Issues\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "5b02c3d4-e5f6-4071-9b02-000000000002",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-06-15T06:00:02.520Z\",\r\n      \"Message\": \"JiraWeeklyReport execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-15T06:00:03.610Z\",\r\n      \"Message\": \"Jira Scope: session opened to https://acme.atlassian.net/secure/Dashboard.jspa (Authentication Type: Api Token)\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-15T06:00:04.730Z\",\r\n      \"Message\": \"Search Issues: sending request (JQL: project = OPS AND created >= -7d)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-15T06:00:04.980Z\",\r\n      \"Message\": \"[Search Issues] Response was not recognized as JSON.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-15T06:00:05.060Z\",\r\n      \"Message\": \"UiPath.Jira.Activities.JiraException: Response was not recognized as JSON.\\r\\nin Main.xaml\\r\\n    at JiraApplicationScope \\\"Jira Scope\\\"\\r\\n    at SearchIssues \\\"Search Issues\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-06-15T06:00:05.110Z\",\r\n      \"Message\": \"JiraWeeklyReport execution ended\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

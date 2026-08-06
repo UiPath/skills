@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3a1e81c2-07ca-4d6b-bc07-7e0c7b94ea3a\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"defb8e05-e36b-4c36-bf11-0b4d08ce6cd1\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"35c669cb-7f46-4282-b90d-ca7abd52c59f\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"Legacy\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-04T10:50:06.750Z\",\r\n      \"EndTime\": \"2026-06-04T10:50:12.563Z\",\r\n      \"CreationTime\": \"2026-06-04T10:50:06.750Z\"\r\n    },\r\n    {\r\n      \"Key\": \"b1cab28d-5ab7-42f1-98f3-1920b637ea06\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"Legacy\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-04T10:42:10.817Z\",\r\n      \"EndTime\": \"2026-06-04T10:42:43.897Z\",\r\n      \"CreationTime\": \"2026-06-04T10:42:10.817Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T10:50:12.351Z\",\r\n      \"Message\": \"Click 'push button': The target Element was not specified for this activity. You should set its Target property or use this activity inside of a scope activity (Attach Browser, Open Browser, Open Application, Attach Window, Get Active Window, Element Scope activities).\\r\\nin Workflow.xaml\\r\\n    at Click \\\"Click 'push button'\\\"\\r\\n    at Sequence \\\"Do\\\"\\r\\n    at OpenApplication \\\"Open Application 'msedge.exe Google'\\\"\\r\\n    at Sequence \\\"Workflow\\\"\\r\\n    at DynamicActivity \\\"Workflow\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.Core.Activities.ElementNotSetException\\r\\n   at UiPath.Core.Activities.ScopeActivity.OnFaulted(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\\r\\n   at System.Activities.Runtime.FaultCallbackWrapper.Invoke(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\\r\\n   at System.Activities.Runtime.FaultCallbackWrapper.FaultWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-06-04T10:50:12.593Z\",\r\n      \"JobId\": 66068165\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-06-04T10:50:07.033Z\",\r\n      \"JobId\": 66068165\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"35c669cb-7f46-4282-b90d-ca7abd52c59f\",\r\n    \"StartTime\": \"2026-06-04T10:50:06.750Z\",\r\n    \"EndTime\": \"2026-06-04T10:50:12.563Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Agent\",\r\n    \"SourceType\": \"Agent\",\r\n    \"BatchExecutionKey\": \"35c669cb-7f46-4282-b90d-ca7abd52c59f\",\r\n    \"Info\": \"The target Element was not specified for this activity. You should set its Target property or use this activity inside of a scope activity (Attach Browser, Open Browser, Open Application, Attach Window, Get Active Window, Element Scope activities).\\r\\n\\r\\nin Workflow.xaml\\r\\n    at Click \\\"Click 'push button'\\\"\\r\\n    at Sequence \\\"Do\\\"\\r\\n    at OpenApplication \\\"Open Application 'msedge.exe Google'\\\"\\r\\n    at Sequence \\\"Workflow\\\"\\r\\n    at DynamicActivity \\\"Workflow\\\"\\r\\n\\r\\nUiPath.Core.Activities.ElementNotSetException: The target Element was not specified for this activity. You should set its Target property or use this activity inside of a scope activity (Attach Browser, Open Browser, Open Application, Attach Window, Get Active Window, Element Scope activities).\\r\\n ---> UiPath.Core.UninitializedNodeException: The UiElement is not initialized\\r\\n   at UiPath.Core.UiElement.ValidateSearchArgs(FindScope scope, Selector selector)\\r\\n   at UiPath.Core.UiElement.FindFirst(FindScope scope, Selector selector, IPlaceholderResolver placeholderResolver)\\r\\n   at UiPath.Core.Activities.Target.FindByElement(UiElement targetElement, String fromSelector, IPlaceholderResolver placeholderResolver)\\r\\n   at UiPath.Core.Activities.Target.<>c__DisplayClass58_0.<GetFindMethod>b__2()\\r\\n   at UiPath.Core.Activities.Target.<>c__DisplayClass58_0.<GetFindMethod>b__4()\\r\\n   at UiPath.Core.Activities.Target.GetElement(Func`1 findMethod, Nullable`1 delayBefore, Region clippingRegion, Boolean highlight, Boolean isClippingRegionNormalized)\\r\\n   at UiPath.Core.Activities.Target.<>c__DisplayClass56_0.<GetElementAsync>b__0()\\r\\n   at System.Threading.Tasks.Task`1.InnerInvoke()\\r\\n   at System.Threading.Tasks.Task.Execute()\\r\\n--- End of stack trace from previous location where exception was thrown ---\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)\\r\\n   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)\\r\\n   at UiPath.Core.Activities.Target.<GetElementAsync>d__56.MoveNext()\\r\\n   --- End of inner exception stack trace ---\\r\\n   at UiPath.Core.Activities.ScopeActivity.OnFaulted(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\\r\\n   at System.Activities.Runtime.FaultCallbackWrapper.Invoke(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\\r\\n   at System.Activities.Runtime.FaultCallbackWrapper.FaultWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-04T10:50:06.750Z\",\r\n    \"ReleaseName\": \"Legacy\",\r\n    \"Type\": \"Attended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"StudioPro\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 20816350,\r\n    \"EntryPointPath\": \"Workflow.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"defb8e05-e36b-4c36-bf11-0b4d08ce6cd1\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\user1\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-04T10:50:12.563Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"35c669cb7f464282b90dca7abd52c59f\",\r\n    \"AutopilotForRobots\": {\r\n      \"Enabled\": true,\r\n      \"HealingEnabled\": true\r\n    },\r\n    \"Id\": 66068165\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

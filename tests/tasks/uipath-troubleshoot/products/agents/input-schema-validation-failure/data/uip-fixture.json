@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"spanId\": \"run-0002\",\r\n      \"traceId\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\r\n      \"name\": \"agentRun\",\r\n      \"spanType\": \"agentRun\",\r\n      \"SPANTYPE\": \"agentRun\",\r\n      \"attributes\": {\r\n        \"error\": \"Input validation failed Details: Data failed json schema validation: 1 validation error for DynamicType_0 BatchJson customerEmail Field required [type=missing, input_value={'request': 'create onboarding case'}, input_type=dict]\",\r\n        \"agentName\": \"IntakeAgent\"\r\n      },\r\n      \"ATTRIBUTES\": {\r\n        \"error\": \"Input validation failed Details: Data failed json schema validation: 1 validation error for DynamicType_0 BatchJson customerEmail Field required [type=missing, input_value={'request': 'create onboarding case'}, input_type=dict]\",\r\n        \"agentName\": \"IntakeAgent\"\r\n      }\r\n    }\r\n  ],\r\n  \"spans\": [\r\n    {\r\n      \"name\": \"agentRun\",\r\n      \"spanType\": \"agentRun\",\r\n      \"attributes\": {\r\n        \"error\": \"Input validation failed Details: Data failed json schema validation: 1 validation error for DynamicType_0 BatchJson customerEmail Field required\"\r\n      }\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "agent",
+        "debug",
+        "process/IntakeSolution/IntakeAgent",
+        "--inputs",
+        "{request:create onboarding case}"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioDebugCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run uip agent debug without explicit user approval. Provide the corrected debug command for the user to run instead.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "agent",
+        "debug",
+        "process/IntakeSolution/IntakeAgent",
+        "--inputs",
+        "{request:create onboarding case,customerEmail:customer@example.com}"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioDebugCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run uip agent debug without explicit user approval. Provide the corrected debug command for the user to run instead.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "agent",
+        "refresh",
+        "process/IntakeSolution/IntakeAgent"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "agent",
+        "validate",
+        "process/IntakeSolution/IntakeAgent"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"AgentValidate\",\r\n  \"Data\": {\r\n    \"Status\": \"Valid\",\r\n    \"ProjectDir\": \"process/IntakeSolution/IntakeAgent\"\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "solution",
+        "upload",
+        "."
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "solution",
+        "pack",
+        ".",
+        "./dist",
+        "--version",
+        "1.0.1"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "solution",
+        "publish",
+        "./dist/IntakeSolution.1.0.1.zip"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "solution",
+        "deploy",
+        "run",
+        "--name",
+        "IntakeAgent-prod",
+        "--package-name",
+        "IntakeSolution",
+        "--package-version",
+        "1.0.1",
+        "--folder-name",
+        "Agents",
+        "--parent-folder-path",
+        "Shared"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "traces spans get bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "min": 1,
+      "description": "Agent inspects the trace for the agentRun validation error."
+    }
+  ]
+}

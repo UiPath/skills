@@ -13,7 +13,7 @@ Trigger:
 
 Skip:
 
-- Tweaking an existing scenario's manifest or fixtures — edit them directly, no generation pass needed.
+- Tweaking an existing scenario's protected fixture — edit it directly, no generation pass needed.
 - Adding tests for *other* skills — use `.claude/commands/generate-tasks.md` instead.
 
 ## Inputs
@@ -27,7 +27,7 @@ A new scenario needs four sources. Three are mandatory; the fourth is optional.
 | `--transcript <path>` | yes | A `.jsonl` file or a directory. Directory mode walks `*.jsonl` recursively and treats files under `subagents/` as sub-agent transcripts (their `uip` calls count, their final text is ignored). Source of truth for `uip` calls + presenter output. |
 | `--resolution <file>` | no | Pre-written `RESOLUTION.md`. If omitted, the generator extracts the presenter's final assistant message from the transcript. |
 | `--scenario-name <name>` | no | Folder name for the new scenario. If omitted, inferred from project name + failing job key. |
-| `--group <group>` | yes | Group folder — e.g. `activity-packages`, `products/orchestrator`, `runtime-exceptions`, `cross-system`. Sets placement, the depth-correct `_shared` path, and the default domain tag. Activity packages are flat under `activity-packages/`; the `--scenario-name` carries the package token (`db-`, `word-`, …). See [Scenario grouping](#scenario-grouping). |
+| `--group <group>` | yes | Group folder — e.g. `activity-packages`, `products/orchestrator`, `runtime-exceptions`, `cross-system`. Sets placement and the default domain tag. Activity packages are flat under `activity-packages/`; the `--scenario-name` carries the package token (`db-`, `word-`, …). See [Scenario grouping](#scenario-grouping). |
 
 ## Workflow — ask before writing
 
@@ -46,16 +46,16 @@ python tests/tasks/uipath-troubleshoot/_shared/scripts/generate_scenario.py \
   --dry-run
 ```
 
-`--group` is the group folder the scenario belongs to (see [Scenario grouping](#scenario-grouping)). It sets three things at once: where the scenario folder is written, the depth-correct `_shared` path inside `task.yaml`, and the default product/domain tag. Pass it for every new scenario — omitting it falls back to flat placement at the suite root (deprecated).
+`--group` is the group folder the scenario belongs to (see [Scenario grouping](#scenario-grouping)). It sets placement and the default product/domain tag. Pass it for every new scenario — omitting it falls back to flat placement at the suite root (deprecated).
 
-Output: a plan describing every file that would be written (paths + sizes + first lines), the inferred scenario name, the manifest rules extracted, and any scrub substitutions that would be applied.
+Output: a plan describing every file that would be written (paths + sizes + first lines), the inferred scenario name, the finite protected-fixture responses extracted, and any scrub substitutions that would be applied.
 
 ### 2. Confirm with the user
 
 Show the preview. Ask:
 
 - Is the scenario name correct?
-- Are the manifest rules complete (every `uip` arg signature the agent ran)?
+- Are the protected-fixture commands complete (every `uip` argv signature the agent ran)?
 - Does the extracted `RESOLUTION.md` match the agent's final answer? (Or should they supply one explicitly?)
 - Are the scrub substitutions correct (placeholders mapped to the right real values)?
 
@@ -75,15 +75,15 @@ Writes the scenario folder. Prints the path. Exits.
 
 After write:
 
-1. Run the smoke test pattern to confirm the mock dispatcher resolves:
+1. Run the scenario to confirm the protected mock service resolves:
    ```bash
    cd tests
    .venv/bin/coder-eval run tasks/uipath-troubleshoot/<group>/<scenario>/task.yaml -e experiments/default.yaml -v
    ```
 2. The first run should score 1.0 — the test was generated from a known-good resolution.
-3. Confirm every expected call was hit from the run artifact's call log (sealed runs encode each record):
+3. Confirm every expected call was hit from the run artifact's call log:
    ```bash
-   python tests/tasks/uipath-troubleshoot/_shared/scripts/coverage_report.py --dump <artifact>/m/.log
+   python tests/tasks/uipath-troubleshoot/_shared/scripts/coverage_report.py <run-dir>/default/<task-id>
    ```
 
 ## Mandatory scrub list
@@ -110,11 +110,11 @@ Scenarios sit in group folders. Do NOT add a scenario at the flat suite root —
 
 ```
 tests/tasks/uipath-troubleshoot/
-├── _shared/                     # shared mock dispatcher + scripts (never a scenario)
+├── _shared/                     # scenario authoring and validation scripts
 ├── smoke-manifest-commands/     # the sole smoke task (stays at root)
 ├── activity-packages/           # FLAT — scenarios named <token>-<slug>
-│   ├── db-execute-query-timeout-expired/      data/m/r/ …
-│   ├── excel-rr-sheet-bytes/                   data/m/r/ …
+│   ├── db-execute-query-timeout-expired/      data/uip-fixture.json
+│   ├── excel-rr-sheet-bytes/                   data/uip-fixture.json
 │   ├── uia-node-not-found/  word-replace-text-file-locked/  …
 ├── products/
 │   ├── orchestrator/            <scenario>/ …
@@ -137,7 +137,7 @@ tests/tasks/uipath-troubleshoot/
 | Generic .NET workflow exception (null-ref, argument-null) not tied to a package | `runtime-exceptions` | — |
 | Root cause genuinely spans ≥2 systems (e.g. an Excel activity failing on an IS connection) | `cross-system` | — |
 
-The `--group` flag wires up placement, the depth-correct `_shared` path, and the default tag. The `_shared` path depth follows the nesting: `activity-packages/<scenario>/`, `runtime-exceptions/<scenario>/`, and `cross-system/<scenario>/` are one level deep → `../../_shared/mock_template`; `products/<product>/<scenario>/` is two deep → `../../../_shared/mock_template`. For activity packages pass `--group activity-packages` and a `--scenario-name` that already carries the package token (e.g. `db-execute-query-timeout-expired`).
+The `--group` flag wires up placement and the default tag. For activity packages pass `--group activity-packages` and a `--scenario-name` that already carries the package token (e.g. `db-execute-query-timeout-expired`).
 
 ## Scenario folder layout
 
@@ -145,35 +145,56 @@ A single scenario (leaf) under its group folder:
 
 ```
 tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
-├── task.yaml                    # tags, mock_path_dirs, llm_judge criteria
+├── task.yaml                    # tags, protected_mocks, llm_judge criteria
 ├── RESOLUTION.md                # ground truth for the LLM judge
-├── data/                        # short dir names keep Windows paths under MAX_PATH (260)
-│   └── m/
-│       └── r/
-│           ├── README.md        # what the original session uncovered — deleted by `m/seal`
-│           ├── manifest.json    # rules (canned + passthrough) + unmocked_default
-│           └── *.json           # canned stdout per rule with `file:` (name = sha1[:10] of args)
+├── README.md                    # maintainer description; not staged to the agent
+├── data/
+│   └── uip-fixture.json         # private finite argv -> response map
 └── process/                     # snapshot of the failing UiPath project (optional)
     └── ...
 ```
 
-`task.yaml` MUST set `sandbox.mock_path_dirs: ["m"]` and overlay the scenario's `data/` via a `template_dir` source — without it, bare `uip` resolves to the real CLI and the test will try to authenticate. (Dir names are single letters — `data/m/r/` — deliberately: verbose `fixtures/mocks/responses/` paths pushed the plugin's installed file paths past the Windows 260-char `MAX_PATH` limit.)
+`task.yaml` MUST use `sandbox.driver: docker` and a `sandbox.protected_mocks` entry for `uip`. Do not add `data/` as a template source: coder-eval copies `data/uip-fixture.json` into the mock service's private UID/GID boundary and places only a thin `uip` client in the agent workspace.
 
-## Mock dispatch precedence
+## Protected mock contract
 
-The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wins). Matching is token-aware (order-independent, quotes stripped, `--flag=value` split, `--output <v>` ignored) with a substring fallback — see the module docstring in `_shared/mock_src/uip.py` (the dispatcher's source; the template ships it as a compressed docstring-stripped blob). Authoring consequences: list specific rules before generic ones (a rule with fewer tokens matches a superset of invocations), and prefer dropping volatile flags (e.g. `-f` vs `--folder-key`) from match strings when the remaining tokens are unique. Shadow audit: for rules i < j in one manifest, if tokens(match_i) ⊆ tokens(match_j) and they serve different files/exit codes, rule j is unreachable for its canonical invocation.
+Each response in `data/uip-fixture.json` contains `argv`, `exit_code`, and optional `stdout`/`stderr`. Troubleshoot fixtures use `match_mode: normalized`: `--flag=value` and `--flag value` are equivalent, token order does not matter, and `--output <format>` is ignored. Matching is still finite equality. It never performs substring or subset matching, so an invocation with extra semantic arguments receives the fixed `default` response.
 
-Each rule has one of:
+```json
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": ["or", "jobs", "get", "<job-key>"],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\"Result\":\"Success\"}\n"
+    }
+  ],
+  "default": {"exit_code": 0, "stdout": "[]\n"}
+}
+```
 
-- `file: <path>` — return the canned response under `r/<file>`.
-- `passthrough: true` — proxy to the real `uip` CLI installed on the host. Use this for open-ended commands like `docsai ask` whose query strings vary between runs. Responses are cached to the sandbox's `r/_cache/<key>.json` for in-run reuse; the cache is **not** persisted to the source — every run hits the live CLI on its first call for each unique query.
+Duplicate exact or normalized keys are rejected at mock-service startup. Outputs, request size, response size, request count, and passthrough duration are bounded. The mock protocol has no file-read or fixture-dump operation.
 
-When no rule matches:
+The scenario's sandbox block has this shape:
 
-1. `unmocked_default` (if set) — return its `response` + `exit_code`.
-2. Otherwise, error on stderr.
+```yaml
+sandbox:
+  driver: docker
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: process
+  protected_mocks:
+    - tool: uip
+      fixture: data/uip-fixture.json
+      max_requests: 100
+      passthrough_argv_prefixes:
+        - [docsai, ask]
+```
 
-Test runs require valid `uip` auth on the host (set via `.env` or environment) for any rule with `passthrough: true` to succeed.
+`template_sources` is omitted when the scenario has no `process/` snapshot.
 
 ## Task YAML requirements
 
@@ -224,7 +245,7 @@ Every faithful-replay scenario is an end-to-end investigation — tag it **`e2e`
 
 The PR smoke gate (`.github/workflows/smoke-skills.yml`) treats **any** change under `skills/uipath-troubleshoot/` as a skill-source change and runs that skill's **entire `smoke`-tagged set**. A `smoke`-tagged scenario therefore runs on every docs/playbook PR — each scenario is a multi-minute agent run, so the gate becomes slow, expensive, and exposes unrelated PRs to scenario flakiness and CI-infra blips (image-pull, judge variance). That is the wrong signal for a fast PR gate.
 
-**The ONLY troubleshoot task tagged `smoke` is [`smoke-manifest-commands`](./smoke-manifest-commands/task.yaml)** — a fast, deterministic fixture/manifest-command validation (no agent investigation). It is the sole troubleshoot smoke-gate check by design.
+**The ONLY troubleshoot task tagged `smoke` is [`smoke-manifest-commands`](./smoke-manifest-commands/task.yaml)** — a fast, deterministic protected-fixture command validation (no agent investigation). It is the sole troubleshoot smoke-gate check by design. Its historical directory name is retained to avoid changing the task identity.
 
 Rules:
 
@@ -236,39 +257,11 @@ Rules:
 
 The skill writes investigation artifacts to `.local/investigations/` — NOT `.investigations/`. Every `file_exists` criterion path and every post-run script path MUST use `.local/investigations/...`.
 
-### `pre_run` — seal the mock store
-
-Every scenario MUST seal its fixtures before the agent starts:
-
-```yaml
-pre_run:
-  - command: "python m/seal"
-    timeout: 60
-    fail_on_error: true
-```
-
-`data/m/r/` is staged into the agent's working directory so the `m/uip` shim can resolve it — which also lets the agent `cat ./m/r/*.json` and read the recorded `uip` outputs, reaching the root cause without invoking `uip` or the skill at all. `m/seal` packs the manifest + every fixture into an opaque `m/.store` (zlib+base64) and deletes `r/`; the shim reads `.store` transparently. After sealing there is no readable fixture in the sandbox.
-
-The mock machinery itself is never readable in the sandbox — its source would otherwise tell the agent how the test evidence is kept (the dispatcher's docstring documents the manifest schema, the `.store` format, and the annotation-stripping pass). The sources live in `_shared/mock_src/` (`uip.py`, `seal.py`) and are NOT staged; the template ships them as compressed docstring-stripped blobs (`m/.uip.bin`, `m/.seal.bin` — AST-stripped source, zlib+base64, packed by `_shared/scripts/compile_mocks.py`) plus thin loaders at `m/uip` and `m/seal` that decode and exec the blob in memory. A blob shows a single base64 run to `cat`/`strings` (unlike bytecode, which keeps every string literal readable) and runs on ANY host CPython >= 3.10 — no version matrix, no PATH setup for local runs (the sandbox resolves `python` from the host PATH). After editing a source, repack with `uv run --python 3.13 tests/tasks/uipath-troubleshoot/_shared/scripts/compile_mocks.py` (3.13 keeps the output byte-stable) and commit the regenerated blobs. The dispatcher's call log (`m/.log`) is written zlib+base64-encoded on sealed runs — plain records name the matched rule and fixture file, proof the CLI is mocked. Decode it with `coverage_report.py --dump`.
-
-`fail_on_error: true` is deliberate — a silent seal failure restores the leak. `m/seal` is idempotent and no-ops when there is no `r/manifest.json`, so a re-run in a reused sandbox still exits 0.
-
-The passthrough cache moves to `m/_cache` (beside the shim) so `docsai` proxying keeps working after `r/` is gone.
-
-`_build_task_yaml` in `generate_scenario.py` emits this block, so generated scenarios get it automatically. Hand-written scenarios MUST add it.
-
-Sealing also removes the scenario's `README.md`, which lives at `data/m/r/README.md` for exactly that reason — `seal` deletes the whole `r/` directory, so the write-up describing the root cause never reaches the agent even though `data/` is staged. Keep it there; a README at the task root sits in the task dir that coder-eval bind-mounts read-only into the container (`$TASK_DIR`), and one at `data/` root lands in the agent's working directory unsealed.
-
 ### `docsai` mocking
 
-Any rule matching `uip docsai ask ...` in `manifest.json` MUST be `passthrough: true`. Query strings vary between runs and canned responses go stale immediately; the dispatcher caches passthrough responses per query for in-run reuse.
+Open-ended `uip docsai ask ...` calls use the narrowly typed passthrough prefix shown above. Query strings vary between runs and canned responses go stale. The isolated mock service invokes the real `uip` executable without a shell, caches each exact argv response in memory for the run, and never reveals the executable path to the agent. Test runs require valid host `uip` auth.
 
-```json
-{
-  "match": "docsai ask",
-  "passthrough": true
-}
-```
+Do not configure broad passthrough prefixes such as `[or]`, `[auth]`, or `[tools]`. Recorded tenant and job data always stays fixture-backed.
 
 ### `success_criteria`
 
@@ -371,7 +364,7 @@ success_criteria:
 ## Anti-patterns
 
 - **Do not** add `command_executed` criteria. The lean contract is `skill_triggered + llm_judge` only — no `command_executed`, no `file_exists`, no `file_contains`. Asserting a specific CLI command was run encodes one investigation path and false-fails agents that reach the correct conclusion via a different (still valid) route. If a test needs to verify a specific CLI fact, put the fact in `RESOLUTION.md` and let the judge grade it. See the `success_criteria` section above for the full forbidden list.
-- **Do not** hand-edit a generated scenario's `manifest.json` to "make tests pass." If the agent calls a command not in the manifest, that's a coverage gap — add a rule with the verbatim recorded response.
+- **Do not** broaden a response argv to "make tests pass." If the agent calls an unconfigured command, add a finite response with the verbatim recorded stdout or keep the fixed default when empty exploration is intentional.
 - **Do not** include the original `.local/investigations/` outputs in the committed scenario. The fresh run produces its own.
 - **Do not** ship real email addresses, real personal Windows paths, or real machine hostnames. The scrub pass is mandatory.
 - **Do not** keep names that encode the diagnosis. The agent-visible surfaces — process / project / release names, workflow / `.xaml` filenames, `x:Class`, activity `DisplayName`, and the `initial_prompt` — MUST NOT broadcast the failure. Real sessions routinely carry such names (`ERN_O365_MailFolderNotFound`, activity `"Get Mail from nonexistent folder (expect ArgumentNullException)"`); left in, the agent passes by reading the name instead of investigating — or never invokes the skill at all. Neutralize them to realistic business names during generation, exactly like the PII scrub, keeping the fault ONLY in the retrieved log/exception text. A user pasting the *symptom* into the prompt (`faulted with System.IO.FileNotFoundException`) is fine; a *name* that states the cause is not.

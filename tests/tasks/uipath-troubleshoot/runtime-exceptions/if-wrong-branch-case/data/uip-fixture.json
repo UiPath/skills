@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"6a0d3f92-4c81-4e57-9b28-1f5a0c8e3d67\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"a2f18c53-9d07-4b26-8e41-6c0b3a9f7d28\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c9a4e2f1-7b53-4d81-a260-3f8e1c6d0b49\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"OrderApprovalRouter\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"StartTime\": \"2026-07-19T06:20:03.410Z\",\r\n      \"EndTime\": \"2026-07-19T06:20:05.120Z\",\r\n      \"CreationTime\": \"2026-07-19T06:20:03.410Z\"\r\n    },\r\n    {\r\n      \"Key\": \"4b8d1f60-2c37-4a95-8e01-6d3a9c2f7b18\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"OrderApprovalRouter\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"StartTime\": \"2026-07-18T06:20:04.220Z\",\r\n      \"EndTime\": \"2026-07-18T06:20:06.010Z\",\r\n      \"CreationTime\": \"2026-07-18T06:20:04.220Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-07-19T06:20:04.980Z\",\r\n      \"Message\": \"Routing to manual review queue\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-07-19T06:20:04.560Z\",\r\n      \"Message\": \"Decision from source system: APPROVED\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-07-19T06:20:03.910Z\",\r\n      \"Message\": \"OrderApprovalRouter execution started\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Successful\",\r\n      \"Timestamp\": \"2026-07-19T06:20:05.120Z\",\r\n      \"JobId\": 66923456\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-19T06:20:03.870Z\",\r\n      \"JobId\": 66923456\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c9a4e2f1-7b53-4d81-a260-3f8e1c6d0b49\",\r\n    \"StartTime\": \"2026-07-19T06:20:03.410Z\",\r\n    \"EndTime\": \"2026-07-19T06:20:05.120Z\",\r\n    \"State\": \"Successful\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"Info\": \"Job completed\",\r\n    \"CreationTime\": \"2026-07-19T06:20:03.410Z\",\r\n    \"ReleaseName\": \"OrderApprovalRouter\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"a2f18c53-9d07-4b26-8e41-6c0b3a9f7d28\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\svc_robot\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"LastModificationTime\": \"2026-07-19T06:20:05.120Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": null,\r\n    \"TraceId\": \"c9a4e2f17b534d81a2603f8e1c6d0b49\",\r\n    \"Id\": 66923456\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

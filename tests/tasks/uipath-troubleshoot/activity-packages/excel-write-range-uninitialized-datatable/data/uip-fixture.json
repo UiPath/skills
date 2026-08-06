@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0055555-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"DataExports\",\r\n      \"FullyQualifiedName\": \"DataExports\",\r\n      \"Description\": \"Folder for nightly customer-export automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6050001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f0055555-3333-4444-5555-666677778888",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"StartTime\": \"2026-05-24T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-24T08:00:02.812Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelExportProcess\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"NightlyExportA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0055555-3333-4444-5555-666677778888\",\r\n      \"Info\": \"System.NullReferenceException: Object reference not set to an instance of an object.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "ee111111-cccc-dddd-eeee-ffffaaaabbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"StartTime\": \"2026-05-24T08:00:01.300Z\",\r\n    \"EndTime\": \"2026-05-24T08:00:02.812Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9ee11111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Info\": \"System.NullReferenceException: Object reference not set to an instance of an object.\\r\\n   at UiPath.Excel.Activities.Business.WriteRangeX.ResolveSourceTable(NativeActivityContext context)\\r\\n   at UiPath.Excel.Activities.Business.WriteRangeX.OnExecute(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-24T08:00:01.005Z\",\r\n    \"ReleaseName\": \"ExcelExportProcess\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5680501,\r\n    \"OrganizationUnitId\": 6050001,\r\n    \"FolderKey\": \"f0055555-3333-4444-5555-666677778888\",\r\n    \"Reference\": \"NightlyExportA\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-24T08:00:02.812Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"NullReferenceException\",\r\n      \"ActivityName\": \"WriteRange_1\",\r\n      \"ActivityDisplayName\": \"Write Range: export customers\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Id\": 680599001\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "ee111111-cccc-dddd-eeee-ffffaaaabbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\"Key\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Pending\", \"Timestamp\": \"2026-05-24T08:00:01.005Z\"},\r\n    {\"Key\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Running\", \"Timestamp\": \"2026-05-24T08:00:01.300Z\"},\r\n    {\"Key\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Faulted\", \"Timestamp\": \"2026-05-24T08:00:02.812Z\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "ee111111-cccc-dddd-eeee-ffffaaaabbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-ee1111cc-001\",\r\n      \"JobKey\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-24T08:00:01.310Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ExcelExportProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee1111cc-002\",\r\n      \"JobKey\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-24T08:00:01.418Z\",\r\n      \"Message\": \"[ExcelExportProcess] Exporting customer data from source to C:\\\\Robot\\\\Data\\\\customer-export.xlsx\",\r\n      \"ProcessName\": \"ExcelExportProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee1111cc-003\",\r\n      \"JobKey\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-24T08:00:01.510Z\",\r\n      \"Message\": \"If source workbook exists — condition: File.Exists(\\\"C:\\\\Robot\\\\Data\\\\customer-source.xlsx\\\") evaluated to False (file not found on host filesystem). Then-branch skipped.\",\r\n      \"ProcessName\": \"ExcelExportProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee1111cc-004\",\r\n      \"JobKey\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-24T08:00:02.010Z\",\r\n      \"Message\": \"Use Excel File: customer-export.xlsx — workbook opened (OpenXML provider)\",\r\n      \"ProcessName\": \"ExcelExportProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee1111cc-005\",\r\n      \"JobKey\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-24T08:00:02.310Z\",\r\n      \"Message\": \"Write Range: export customers — resolving DataTable argument 'dtSource'\",\r\n      \"ProcessName\": \"ExcelExportProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee1111cc-006\",\r\n      \"JobKey\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-24T08:00:02.510Z\",\r\n      \"Message\": \"Write Range: export customers — DataTable argument 'dtSource' resolved to Nothing (no assignment found in execution path)\",\r\n      \"ProcessName\": \"ExcelExportProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee1111cc-007\",\r\n      \"JobKey\": \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-24T08:00:02.802Z\",\r\n      \"Message\": \"Write Range: export customers — System.NullReferenceException: Object reference not set to an instance of an object.\",\r\n      \"ProcessName\": \"ExcelExportProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 1,
+    "stderr": "protected mock: command is not configured\n"
+  }
+}

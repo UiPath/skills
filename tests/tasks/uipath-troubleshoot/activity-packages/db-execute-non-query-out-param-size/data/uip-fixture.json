@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"7b2e9c4d-3a6f-4d1b-8e5c-2f9a1b3c4d5e\",\r\n      \"Name\": \"Finance Automations\",\r\n      \"Path\": \"Finance Automations\",\r\n      \"Description\": \"Production folder for finance back-office processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c5a1d8f3-4b7e-4a2c-9f6d-1e3b2a4c5d6f\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "7b2e9c4d-3a6f-4d1b-8e5c-2f9a1b3c4d5e",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3f8a1c6d-2b4e-4a9c-9d7b-5e1f2a3b4c6d\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"StoredProcWriteBack\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-21T09:14:31.220Z\",\r\n      \"EndTime\": \"2026-05-21T09:14:32.870Z\",\r\n      \"CreationTime\": \"2026-05-21T09:14:30.991Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "3f8a1c6d-2b4e-4a9c-9d7b-5e1f2a3b4c6d",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"3f8a1c6d-2b4e-4a9c-9d7b-5e1f2a3b4c6d\",\r\n    \"StartTime\": \"2026-05-21T09:14:31.220Z\",\r\n    \"EndTime\": \"2026-05-21T09:14:32.870Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"8d1c2f3a-4b5e-4c6d-9a7b-2e3f4a5b6c7d\",\r\n    \"Info\": \"Execute Non Query - usp_FinalizeOrder: A database error occurred. The Size property has an invalid size of 0.\\r\\n\\r\\nin Main.xaml\\r\\n    at ExecuteNonQuery \\\"Execute Non Query - usp_FinalizeOrder\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.ArgumentException: The Size property has an invalid size of 0.\\r\\n   at System.Data.Odbc.OdbcParameter.GetParameterSize(...)\\r\\n   at System.Data.Odbc.OdbcCommand.ExecuteNonQuery()\",\r\n    \"CreationTime\": \"2026-05-21T09:14:30.991Z\",\r\n    \"ReleaseName\": \"StoredProcWriteBack\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 5048113,\r\n    \"OrganizationUnitId\": 7791624,\r\n    \"FolderKey\": \"7b2e9c4d-3a6f-4d1b-8e5c-2f9a1b3c4d5e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-21T09:14:32.870Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"3f8a1c6d-2b4e-4a9c-9d7b-5e1f2a3b4c6d\",\r\n    \"Id\": 671103847\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "3f8a1c6d-2b4e-4a9c-9d7b-5e1f2a3b4c6d",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-21T09:14:32.840Z\",\r\n      \"Message\": \"[Execute Non Query - usp_FinalizeOrder] A database error occurred. The Size property has an invalid size of 0.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-21T09:14:32.855Z\",\r\n      \"Message\": \"A database error occurred. The Size property has an invalid size of 0.\\r\\nin Main.xaml\\r\\n    at ExecuteNonQuery \\\"Execute Non Query - usp_FinalizeOrder\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "3f8a1c6d-2b4e-4a9c-9d7b-5e1f2a3b4c6d",
+        "--output",
+        "json"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-21T09:14:31.305Z\",\r\n      \"Message\": \"StoredProcWriteBack execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-21T09:14:32.610Z\",\r\n      \"Message\": \"Execute Non Query - usp_FinalizeOrder executing stored procedure 'usp_FinalizeOrder' (CommandType=StoredProcedure) over provider 'System.Data.Odbc'\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-21T09:14:32.840Z\",\r\n      \"Message\": \"[Execute Non Query - usp_FinalizeOrder] A database error occurred. The Size property has an invalid size of 0.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-21T09:14:32.855Z\",\r\n      \"Message\": \"A database error occurred. The Size property has an invalid size of 0.\\r\\nin Main.xaml\\r\\n    at ExecuteNonQuery \\\"Execute Non Query - usp_FinalizeOrder\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

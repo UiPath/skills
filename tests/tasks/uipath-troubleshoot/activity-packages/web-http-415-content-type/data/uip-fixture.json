@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-20T13:02:42.300Z\",\r\n      \"Message\": \"HTTP Request: The remote server returned an error: (415) Unsupported Media Type.\\r\\nin Wf_CreateContact.xaml\\r\\n    at HttpClient \\\"HTTP Request\\\"\\r\\n    at Sequence \\\"Create CRM Contact\\\"\\r\\n    at Wf_CreateContact \\\"Wf_CreateContact\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.Net.WebException\\r\\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-07-20T13:02:42.500Z\",\r\n      \"Message\": \"CrmContactUpload execution ended\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-20T13:02:42.300Z\",\r\n      \"Message\": \"HTTP Request: The remote server returned an error: (415) Unsupported Media Type.\\r\\nin Wf_CreateContact.xaml\\r\\n    at HttpClient \\\"HTTP Request\\\"\\r\\n    at Sequence \\\"Create CRM Contact\\\"\\r\\n    at Wf_CreateContact \\\"Wf_CreateContact\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.Net.WebException\\r\\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-07-20T13:02:41.400Z\",\r\n      \"Message\": \"CrmContactUpload execution started\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75\",\r\n    \"StartTime\": \"2026-07-20T13:02:41.200Z\",\r\n    \"EndTime\": \"2026-07-20T13:02:42.640Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"5d6e7f8a-9b0c-4d1e-8f2a-3b4c5d6e7f80\",\r\n    \"Info\": \"The remote server returned an error: (415) Unsupported Media Type.\\r\\n\\r\\nin Wf_CreateContact.xaml\\r\\n    at HttpClient \\\"HTTP Request\\\"\\r\\n    at Sequence \\\"Create CRM Contact\\\"\\r\\n    at Wf_CreateContact \\\"Wf_CreateContact\\\"\\r\\n\\r\\nSystem.Net.WebException: The remote server returned an error: (415) Unsupported Media Type.\\r\\n ---> System.Net.Http.HttpRequestException: Response status code does not indicate success: 415 (Unsupported Media Type).\\r\\n   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()\\r\\n   at System.Net.HttpWebRequest.SendRequest(Boolean async)\\r\\n   at System.Net.HttpWebRequest.EndGetResponse(IAsyncResult asyncResult)\\r\\n   --- End of inner exception stack trace ---\\r\\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-07-20T13:02:38.100Z\",\r\n    \"ReleaseName\": \"CrmContactUpload\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 21855120,\r\n    \"EntryPointPath\": \"Wf_CreateContact.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"d4e5f6a7-b8c9-4d0e-9f1a-3b4c5d6e7f80\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-07-20T13:02:42.640Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"3f8d5a912b7c4e609a1f6c8e4d2b0a75\",\r\n    \"Id\": 68005512\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-20T13:02:42.644Z\",\r\n      \"JobId\": 68005512\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-20T13:02:41.210Z\",\r\n      \"JobId\": 68005512\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-07-20T13:02:38.140Z\",\r\n      \"JobId\": 68005512\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 1,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Message\": \"Error retrieving trace ID for job\",\r\n  \"Instructions\": \"Response returned an error code\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "d4e5f6a7-b8c9-4d0e-9f1a-3b4c5d6e7f80",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CrmContactUpload\",\r\n      \"ReleaseName\": \"CrmContactUpload\",\r\n      \"StartTime\": \"2026-07-20T13:02:41.200Z\",\r\n      \"EndTime\": \"2026-07-20T13:02:42.640Z\",\r\n      \"CreationTime\": \"2026-07-20T13:02:38.100Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "d4e5f6a7-b8c9-4d0e-9f1a-3b4c5d6e7f80"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CrmContactUpload\",\r\n      \"ReleaseName\": \"CrmContactUpload\",\r\n      \"StartTime\": \"2026-07-20T13:02:41.200Z\",\r\n      \"EndTime\": \"2026-07-20T13:02:42.640Z\",\r\n      \"CreationTime\": \"2026-07-20T13:02:38.100Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CrmContactUpload\",\r\n      \"ReleaseName\": \"CrmContactUpload\",\r\n      \"StartTime\": \"2026-07-20T13:02:41.200Z\",\r\n      \"EndTime\": \"2026-07-20T13:02:42.640Z\",\r\n      \"CreationTime\": \"2026-07-20T13:02:38.100Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "normalized",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"6e7f8a9b-0c1d-4e2f-8a3b-4c5d6e7f8a9b\",\r\n      \"Name\": \"automation1@test.com's workspace\",\r\n      \"Path\": \"automation1@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"d4e5f6a7-b8c9-4d0e-9f1a-3b4c5d6e7f80\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"Empty\",\n  \"Data\": []\n}\n"
+  }
+}
