@@ -243,7 +243,7 @@ Run from inside the flow project directory. Returns the same manifest format as 
    - Edit `edges[]` — wire `trigger → <httpNode> → end`. End-node `outputs` mapping goes here too if you declared an `out` variable in `variables.globals`.
    - Edit `layout.nodes` — placeholder `{ position: { x: 0, y: 0 }, size: { width: 96, height: 96 }, collapsed: false }` per new node; `format` rewrites both position and size (by node shape) in T3.
 
-   `Write` of the whole file is allowed but token-costly on flows >~10 nodes — only fall back to `Write` when ≥70% of nodes change AND the file is small (see [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder)).
+   `Write` of the whole file is allowed but token-costly on flows >~10 nodes — only fall back to `Write` when ≥70% of nodes change AND the file is small (see [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder)). **Never `Write` a flow that already has connector / connector-trigger / managed-HTTP nodes** — a full-file rewrite silently clobbers their CLI-owned `bindings[]` / `inputs.detail`, leaving a corrupted connection binding that `flow validate` passes but `flow debug` fails on. `Edit` the user-owned nodes in place; if a `Write` is unavoidable, re-run `node configure` for every CLI-owned node as the **last** step (a later `Write` re-clobbers what `configure` just fixed).
 
 #### Anchoring parallel `.flow` Edits — anchor on what you Read, not on key order
 
@@ -276,7 +276,7 @@ See [shared/file-format.md — Top-level structure](../../shared/file-format.md#
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-> **Tool selection by ownership.** Use `Edit` for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change. For CLI-owned nodes (above), use `uip maestro flow node add` + `node configure` — see the relevant plugin's `impl.md` for the full configuration workflow. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON (the agent node itself is user-owned).
+> **Tool selection by ownership.** Use `Edit` for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change **and the flow has no CLI-owned nodes** (a full-file `Write` over connector / managed-HTTP nodes clobbers their `bindings[]` — see the Step 4 `Write` note above). For CLI-owned nodes (above), use `uip maestro flow node add` + `node configure` — see the relevant plugin's `impl.md` for the full configuration workflow. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON (the agent node itself is user-owned).
 
 Read [editing-operations.md](editing-operations.md) for strategy selection and per-operation recipes.
 
