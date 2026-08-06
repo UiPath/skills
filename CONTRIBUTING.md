@@ -285,17 +285,22 @@ tarballs under `build/npm/`; it must not read sparse override sources directly.
 The package convention is `default` → `@uipath/skills` and `<flavor>` →
 `@uipath/skills-<flavor>`. Adding a valid flavor directory with sparse
 overrides automatically adds its complete-catalog package—do not add an
-allowlist, registry JSON, flavor-specific npm script, or CI branch.
+allowlist, registry JSON, flavor-specific npm build script, or generic
+validation-CI branch. Registry publication remains an explicit, isolated
+decision per published flavor.
 
 The existing root `npm pack` and `npm publish` commands remain default-only
 entry points. Their npm lifecycle temporarily composes the marker-free default
-tree and restores canonical `skills/` afterward; `npm run skills:pack` is the
-separate all-flavor command used by release automation. If a root package
-operation fails or is interrupted and `build/.root-pack-transaction` remains,
-confirm its npm process has ended and run `npm run skills:recover`. Unexpected
-overlay edits are preserved under `build/.root-pack-recovery-*` for review. Do
-not use `--ignore-scripts` for source-repository packaging because that bypasses
-composition.
+tree and restores canonical `skills/` afterward. The default release jobs keep
+using those root commands. `npm run skills:pack` is the separate all-flavor
+build and verification command used by CI and isolated flavor publishers; a
+publisher must select one exact package by manifest rather than publish a
+tarball wildcard. Adding a flavor makes it buildable but does not publish it
+automatically. If a root package operation fails or is interrupted and
+`build/.root-pack-transaction` remains, confirm its npm process has ended and
+run `npm run skills:recover`. Unexpected overlay edits are preserved under
+`build/.root-pack-recovery-*` for review. Do not use `--ignore-scripts` for
+source-repository packaging because that bypasses composition.
 
 ### 7. Add Templates/Assets (Optional)
 

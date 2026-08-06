@@ -1,0 +1,70 @@
+name: Publish Studio Web skills package
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        description: GitHub Packages dist-tag and prerelease label
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish Studio Web ${{ inputs.channel }} to GitHub Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@uipath"
+
+      - name: Validate channel and stamp version
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          case "$CHANNEL" in
+            dev|preview) ;;
+            *) echo "Unsupported Studio Web channel: $CHANNEL" >&2; exit 1 ;;
+          esac
+          BASE=$(node -p "require('./package.json').version")
+          VERSION="${BASE}-${CHANNEL}.${RUN_NUMBER}"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          node scripts/sync-version.mjs
+          echo "Publishing @uipath/skills-studioweb@$VERSION to dist-tag $CHANNEL"
+
+      - name: Build verified skill packages
+        run: npm run skills:pack
+
+      - name: Select and inspect the Studio Web tarball
+        id: package
+        shell: bash
+        run: |
+          TARBALL=$(node scripts/select-skill-package.mjs \
+            --directory build/npm \
+            --name @uipath/skills-studioweb \
+            --flavor studioweb \
+            --version "$(node -p "require('./package.json').version")")
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+
+      - name: Require the GitHub Packages registry
+        run: |
+          REGISTRY=$(npm config get @uipath:registry)
+          if [ "$REGISTRY" != "https://npm.pkg.github.com/" ]; then
+            echo "Unexpected Studio Web registry: $REGISTRY" >&2
+            exit 1
+          fi
+
+      - name: Publish only the selected Studio Web tarball
+        run: npm publish "${{ steps.package.outputs.tarball }}" --tag "${{ inputs.channel }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

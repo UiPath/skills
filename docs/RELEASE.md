@@ -1,10 +1,10 @@
 # Releasing the skills packages
 
-The complete default tree is published as **`@uipath/skills`**, versioned in lockstep with **`@uipath/cli`** so a given CLI release always resolves to a compatible skills package. Every directory under `skill-flavors/` also builds a marker-free package at the same version and becomes publishable once its registry package is bootstrapped.
+The complete default tree is published as **`@uipath/skills`**, versioned in lockstep with **`@uipath/cli`** so a given CLI release always resolves to a compatible skills package. Every directory under `skill-flavors/` also builds a marker-free package at the same version. Flavor publication is deliberately separate from the established default-package release path.
 
 ## Version model
 
-`package.json` `version` is the **single source of truth** for the npm package. `scripts/sync-version.mjs` derives these manifests from it (do not edit by hand):
+`package.json` `version` is the **single source of truth** for every generated npm package. `scripts/sync-version.mjs` derives these manifests from it (do not edit by hand):
 
 | File | Field | Purpose |
 |------|-------|---------|
@@ -17,12 +17,14 @@ The complete default tree is published as **`@uipath/skills`**, versioned in loc
 
 All channels carry `package.json`'s version; the pre-release channels (`dev`, `preview`) add a stamp that is never committed:
 
-| Channel | Registry | Version | Cadence |
-|---------|----------|---------|---------|
-| npm `latest` | npmjs | `M.N.<release>` | per stable release — what the CLI pins |
-| npm `preview` | npmjs | `M.N.<release>-preview.<run>` | per merge to `release/v*`, or preview dispatch (stamp never committed) |
-| npm `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per merge to `main` (stamp never committed) |
-| plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`) | — | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex plugin auto-update |
+| Package or manifest | Channel | Registry | Version | Cadence |
+|---------------------|---------|----------|---------|---------|
+| `@uipath/skills` | `latest` | npmjs | `M.N.<release>` | per stable release — what the CLI pins |
+| `@uipath/skills` | `preview` | npmjs | `M.N.<release>-preview.<run>` | per push to `release/v*`, or preview dispatch |
+| `@uipath/skills` | `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per push to `main`, or dev dispatch |
+| `@uipath/skills-studioweb` | `preview` | GitHub Packages | `M.N.<release>-preview.<run>` | per push to `release/v*`, or preview dispatch |
+| `@uipath/skills-studioweb` | `dev` | GitHub Packages | `M.N.<release>-dev.<run>` | per push to `main`, or dev dispatch |
+| plugin manifests (`.claude-plugin/plugin.json`, `marketplace.json`, `.codex-plugin/plugin.json`) | — | — | `M.N.<release>` (base version, no pre-release suffix) | per `package.json` bump — drives Claude Code / Codex plugin auto-update |
 
 `sync-version.mjs` enforces the line: the plugin version always equals `package.json`'s base `M.N.P` — there is **no independent plugin patch counter**. It **refuses to downgrade** (plugin auto-update never goes backwards, so a reverted `package.json` would freeze users), and it strips pre-release suffixes so the `dev`/`preview` stamps from `publish.yml` never land in the plugin manifests. The marketplace and Codex versions must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line. To bump the plugin version, bump `package.json` and run the sync — that is the only lever.
 
@@ -51,60 +53,63 @@ There is no package registry file. The source directory is the package identity:
 
 `npm run skills:pack` discovers every flavor, builds complete files first, stages the packages under `build/packages/`, and creates verified tarballs under `build/npm/`. The default package preserves the existing hooks, commands, plugin metadata, and assets, but its `skills/` directory comes from the marker-free `build/skills/default` tree. Every custom package contains the complete canonical skill catalog with its sparse flavor replacements applied, plus minimal package/legal metadata.
 
-The established repository-root commands remain supported. Normal `npm pack` builds exactly one marker-free `@uipath/skills` default tarball, and normal `npm publish` publishes that default package using the caller's registry, tag, access, and provenance flags. A `prepack`/`postpack` transaction temporarily activates the composed default tree and restores the exact canonical `skills/` source afterward. If npm fails or is interrupted between those steps and `build/.root-pack-transaction` remains, confirm the original npm process has ended, run `npm run skills:recover`, and retry. Recovery restores canonical sources; unexpected overlay edits are preserved under `build/.root-pack-recovery-*` and make recovery exit nonzero for explicit review. Do not use `--ignore-scripts` for source-repository packaging because that npm option deliberately bypasses composition. Root commands are for backward-compatible default-only packaging; release automation still uses `npm run skills:pack` and publishes the verified `build/npm/*.tgz` artifacts so every flavor is covered.
+The established repository-root commands remain supported. Normal `npm pack` builds exactly one marker-free `@uipath/skills` default tarball, and normal `npm publish` publishes that default package using the caller's registry, tag, access, and provenance flags. A `prepack`/`postpack` transaction temporarily activates the composed default tree and restores the exact canonical `skills/` source afterward. If npm fails or is interrupted between those steps and `build/.root-pack-transaction` remains, confirm the original npm process has ended, run `npm run skills:recover`, and retry. Recovery restores canonical sources; unexpected overlay edits are preserved under `build/.root-pack-recovery-*` and make recovery exit nonzero for explicit review. Do not use `--ignore-scripts` for source-repository packaging because that npm option deliberately bypasses composition. The default jobs in `publish.yml` retain these root `npm publish` commands and never run the all-flavor package loop.
 
-All generated packages use the root `package.json` version. Adding a valid `skill-flavors/<new-flavor>/` directory with at least one sparse override therefore makes `@uipath/skills-<new-flavor>` buildable without changing scripts or workflows. Release jobs publish the exact tarballs inspected by `skills:pack`, process custom flavors before the default package, and skip an exact version only when its registry integrity matches the local tarball. This makes a partial release safe to retry without hiding a same-version artifact collision.
+All generated packages use the root `package.json` version. Adding a valid `skill-flavors/<new-flavor>/` directory with at least one sparse override therefore makes `@uipath/skills-<new-flavor>` buildable without changing composer code, npm scripts, or validation CI. It does **not** publish the new package automatically. Each published flavor needs an explicit isolated release path so its registry and channel policy can be reviewed independently.
 
-GitHub Packages can create discovered flavor packages with the repository token. npmjs trusted publishing is package-specific and cannot create a package for the first time: a confirmed npmjs `E404` for an unregistered custom flavor is reported and skipped until a maintainer completes the bootstrap in [Required setup](#required-setup). Other registry, network, or authentication lookup failures stop the release rather than silently omitting a package. The default package is still published normally. Once the flavor package exists and trusts `publish.yml`, later preview and latest runs include it automatically.
+Studio Web is the first isolated flavor publisher. `publish.yml` calls `.github/workflows/publish-studioweb.yml` in the same workflow run so both paths derive the same stamped version from `github.run_number`. The called workflow builds all packages but selects exactly one tarball whose manifest has both `name: @uipath/skills-studioweb` and `uipathSkillsFlavor: studioweb`, scans that exact archive for flavor markers, and publishes only the selected path. Studio Web goes only to GitHub Packages: `dev` from `main` and `preview` from `release/v*`; it is never published to npmjs or `latest`.
 
 ## Publishing tracks (`.github/workflows/publish.yml`)
 
 Registry follows channel — you pick a channel, not a registry.
 
-| Trigger | Channel | Registry | dist-tag | Version | Provenance |
-|---------|---------|----------|----------|---------|------------|
-| push to `main` (every merge) | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
-| push to `release/v*` (every merge) | `preview` | npmjs | `preview` | `<base>-preview.<run_number>` | yes |
-| `workflow_dispatch` (channel: `dev`) | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
-| `workflow_dispatch` (channel: `preview`) | `preview` | npmjs | `preview` | `<base>-preview.<run_number>` | yes |
-| `workflow_dispatch` (channel: `latest`) | `latest` | npmjs | `latest` | `package.json` version | yes |
+| Package | Trigger | Channel | Registry | dist-tag | Version | Provenance |
+|---------|---------|---------|----------|----------|---------|------------|
+| default | push to `main` (normally a merge) | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
+| default | push to `release/v*` (normally a merge) | `preview` | npmjs | `preview` | `<base>-preview.<run_number>` | yes |
+| default | `workflow_dispatch` (channel: `dev`) | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
+| default | `workflow_dispatch` (channel: `preview`) | `preview` | npmjs | `preview` | `<base>-preview.<run_number>` | yes |
+| default | `workflow_dispatch` (channel: `latest`) | `latest` | npmjs | `latest` | `package.json` version | yes |
+| Studio Web | push to `main` or dispatch `dev` | `dev` | GitHub Packages | `dev` | `<base>-dev.<run_number>` | no¹ |
+| Studio Web | push to `release/v*` or dispatch `preview` | `preview` | GitHub Packages | `preview` | `<base>-preview.<run_number>` | no¹ |
 
 ¹ GitHub Packages does not support npm provenance attestations; only the npmjs channels are signed.
 
-**Two channels publish automatically** (mirroring `UiPath/cli`): every merge to `main` publishes a `dev` build to GitHub Packages, and every merge to a `release/v*` branch publishes a `preview` build to npmjs. `latest` (stable) is published **only** by an explicit `channel=latest` dispatch — there is no `release:` trigger, so creating a GitHub Release does not publish anything. `npm install @uipath/skills` (no tag, from npmjs) always resolves the last stable release — `preview` (npmjs) and `dev` (GitHub Packages) are pre-release versions under their own dist-tags, so no un-tagged install ever picks them. The `preview`/`dev` version suffix (`<base>-preview.<run_number>` / `<base>-dev.<run_number>`) matches the CLI's stamping scheme exactly.
+**Two default-package channels publish automatically** (mirroring `UiPath/cli`): every push to `main` (normally a merge) publishes a default `dev` build to GitHub Packages, and every push to a `release/v*` branch publishes a default `preview` build to npmjs. The same run invokes the isolated Studio Web publisher for its GitHub Packages `dev` or `preview` counterpart. `latest` (stable) is published **only** for the default package by an explicit `channel=latest` dispatch — there is no `release:` trigger, so creating a GitHub Release does not publish anything. `npm install @uipath/skills` (no tag, from npmjs) always resolves the last stable release. The `preview`/`dev` version suffix (`<base>-preview.<run_number>` / `<base>-dev.<run_number>`) matches the CLI's stamping scheme exactly.
 
 ### Cutting a preview
 
-**Every merge to a `release/v*` branch auto-publishes a preview** to npmjs (see the tracks table) — this is the normal path, mirroring `UiPath/cli`. To cut one ad hoc from any ref, dispatch with channel `preview`:
+**Every push to a `release/v*` branch auto-publishes a preview** (normally after a merge; see the tracks table) — this is the normal path, mirroring `UiPath/cli`. To cut one ad hoc from any ref, dispatch with channel `preview`:
 
 ```bash
 gh workflow run publish.yml --ref release/v<minor> -f channel=preview
 ```
 
-Either way the job stamps `<base>-preview.<run_number>` (never committed), runs `sync-version.mjs`, and publishes to the `preview` dist-tag with `--provenance` via the same OIDC job as `latest`. Consume it with `npm install @uipath/skills@preview`. Each run gets a unique version from `run_number`; the `preview` tag advances to the newest one.
+Either way the default job stamps `<base>-preview.<run_number>` (never committed), runs `sync-version.mjs`, and publishes to the npmjs `preview` dist-tag with `--provenance` via the same OIDC job as `latest`. The isolated Studio Web job derives the identical version and publishes it to the GitHub Packages `preview` tag without provenance. Consume the default with `npm install @uipath/skills@preview`. Each run gets a unique version from `run_number`; the tags advance to the newest one in their respective registries.
 
 ### The `dev` channel (GitHub Packages)
 
-Every merge to `main` publishes `@uipath/skills@<base>-dev.<run_number>` to **GitHub Packages** under the `dev` dist-tag — the internal rolling channel, replacing the retired manual `alpha` track. It uses the built-in `GITHUB_TOKEN` (`packages: write`) and carries no provenance (GitHub Packages does not support it). Consume it from the GitHub Packages registry with `npm install @uipath/skills@dev`. Publishes are serialized by a `concurrency` group so back-to-back merges don't race on the `dev` tag. Re-run a merge's publish manually with `gh workflow run publish.yml --ref main -f channel=dev`. (Release lines publish `preview` to npmjs instead — see [Cutting a preview](#cutting-a-preview).)
+Every push to `main` (normally a merge) publishes both `@uipath/skills@<base>-dev.<run_number>` and `@uipath/skills-studioweb@<base>-dev.<run_number>` to **GitHub Packages** under the `dev` dist-tag. The default package uses the established root publish job; Studio Web uses its isolated called workflow. Both use the built-in `GITHUB_TOKEN` (`packages: write`) and carry no provenance because GitHub Packages does not support it. Consume the default from GitHub Packages with `npm install @uipath/skills@dev`. Publishes are serialized by a `concurrency` group so back-to-back pushes do not race on the `dev` tag. Re-run a publish manually with `gh workflow run publish.yml --ref main -f channel=dev`.
 
 ### Registry routing
 
-Every generated package is under the **`@uipath` scope**, so the publish target is set via the **scoped registry** (`@uipath:registry=<url>`) — not a `--registry` flag (which only sets the *unscoped* default and is ignored for scoped packages). There is **no committed `.npmrc` and no `publishConfig.registry`**: a static scoped-registry line would override the per-job target (and break `npm install` for anyone cloning this public repo).
+Both released packages are under the **`@uipath` scope**, so the publish target is set via the **scoped registry** (`@uipath:registry=<url>`) — not a `--registry` flag (which only sets the *unscoped* default and is ignored for scoped packages). There is **no committed `.npmrc` and no `publishConfig.registry`**: a static scoped-registry line would override the per-job target.
 
 | Job | registry | Auth |
 |-----|----------|------|
 | `publish-dev` | GitHub Packages (`npm.pkg.github.com`) | built-in `GITHUB_TOKEN` |
 | `publish-npmjs` | npmjs (`registry.npmjs.org`) | **OIDC trusted publishing** (no token) + signed `--provenance` |
+| `publish-studioweb.yml` / `publish` | GitHub Packages (`npm.pkg.github.com`) only | built-in `GITHUB_TOKEN` |
 
 ## Promoting a line to stable (manual)
 
-Stable (`latest`) is **not** published automatically — the sprint cut only publishes a preview (below). When a release line has been validated via its `preview` builds, promote it to stable manually:
+Stable (`latest`) is **not** published automatically — the sprint cut publishes only prerelease `dev` and `preview` builds (below). When a release line has been validated via its preview builds, promote it to stable manually:
 
 1. Dispatch the stable publish on the release branch (or its tag):
    ```bash
    gh workflow run publish.yml --ref release/v<minor> -f channel=latest
    ```
-   This publishes the committed `M.N.0` to npm `latest` via OIDC + `--provenance`.
+   This publishes the exact committed `package.json` version to npm `latest` via OIDC + `--provenance`.
 2. (Optional) Create a GitHub Release tagged `v<version>` as a durable changelog record. This is **just a record** — there is no `release:` trigger, so it does **not** publish anything to npm; the dispatch in step 1 is what publishes.
 
 > **Lockstep note.** The CLI resolves `@uipath/skills` from npm `latest` for its own minor line. Because stable is now manual, **promote the matching skills line to stable before the CLI cuts that minor**, or the CLI will resolve the previous skills minor.
@@ -114,8 +119,8 @@ Stable (`latest`) is **not** published automatically — the sprint cut only pub
 `main` carries the line **currently in development** (`M.N.0`). The cut runs **Sunday 06:00 UTC**, gated to the **14-day cadence** anchored at `2026-06-14` — the same cadence as `UiPath/cli`, 6 hours earlier. It never reads the CLI version (skills lead, never follow), so no cross-repo secret is required. On a release Sunday it:
 
 1. cuts `release/v<M.N>` from `main` at the version **already in `main`** (`M.N.0`) — the release branch matches main; it is **not** bumped (no off-by-one);
-2. publishes a **dev build and a preview**, and **waits for both to succeed** — dispatches `publish.yml` twice on the release branch: `channel=dev` (→ `M.N.0-dev.<run>` on GitHub Packages) and `channel=preview` (→ `M.N.0-preview.<run>` on npmjs, `--provenance`), then polls each dispatched run to completion. Both dispatches are explicit because the bot's own branch push can't trigger `publish.yml` (`GITHUB_TOKEN` recursion guard). If either publish fails, the cut fails and step 3 does **not** run. **Stable is not published here** — promote it manually (above);
-3. **opens a PR** bumping `main` to the **next** line (`M.(N+1).0`), only after step 2 succeeds; a maintainer approves + merges it to advance `main` so development continues there while `release/v<M.N>` stabilizes.
+2. publishes a **dev build and a preview**, and waits for both workflow runs — dispatches `publish.yml` twice on the release branch. `channel=dev` publishes default and Studio Web `M.N.0-dev.<run>` packages to GitHub Packages. `channel=preview` publishes the default `M.N.0-preview.<run>` package to npmjs with provenance and the Studio Web package at the identical version to GitHub Packages without provenance. Both dispatches are explicit because the bot's own branch push can't trigger `publish.yml` (`GITHUB_TOKEN` recursion guard). A failed publish keeps the cut run red and is recorded in the bump PR warning. **Stable is not published here** — promote it manually (above);
+3. **opens a PR** bumping `main` to the **next** line (`M.(N+1).0`) whenever the release branch was cut successfully, even if publication failed. A publish failure adds an explicit warning so a maintainer can verify or retry it before approving the bump; merging the PR advances `main` while `release/v<M.N>` stabilizes.
 
 Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`) to cut exactly that line, or `dry_run` to print the plan without pushing, publishing, or opening a PR.
 
@@ -129,9 +134,9 @@ Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`
 
 ## Required setup
 
-- [x] **npmjs Trusted Publishing for the default package** — configure a GitHub Actions trusted publisher on `@uipath/skills` (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the `publish-npmjs` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
-- [ ] **npmjs Trusted Publishing for each flavor package** — pre-create each new `@uipath/skills-<flavor>` package and configure the same `UiPath/skills` + `publish.yml` trusted publisher before its first npmjs publish. Generic build and GitHub Packages publication need no per-flavor source configuration, but npmjs trusts publishers per package. Until this is complete, the npmjs release step logs a warning and skips only that unregistered custom package.
+- [x] **npmjs Trusted Publishing for the default package** — configure a GitHub Actions trusted publisher on `@uipath/skills` (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the default `publish-npmjs` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
+- [x] **Studio Web registry isolation** — `@uipath/skills-studioweb` is released only through `publish-studioweb.yml` to GitHub Packages with `GITHUB_TOKEN`. It requires no npmjs package, trusted publisher, OIDC permission, or provenance configuration.
 - [x] Package name/scope confirmed: **`@uipath/skills`** (published).
-- [x] Seed version confirmed: **`1.197.0`** (current CLI minor line). The ongoing CLI↔skills lockstep is automated by `sprint-release-cut.yml` (Sunday 06:00 UTC, 6 h before the CLI's own cut, on the same 14-day cadence anchored at `2026-06-14`).
+- [x] **Version source confirmed** — `package.json` and `version-manifest.json` are authoritative for the current CLI minor line; do not copy a volatile version number into this checklist. The ongoing CLI↔skills lockstep is automated by `sprint-release-cut.yml` (Sunday 06:00 UTC, 6 h before the CLI's own cut, on the same 14-day cadence anchored at `2026-06-14`).
 
 > The `dev` channel also needs no secret — `publish-dev` uses the built-in `GITHUB_TOKEN` with `packages: write`.
