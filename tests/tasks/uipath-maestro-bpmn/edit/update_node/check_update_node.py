@@ -3,6 +3,8 @@
 
 The Task_Score script threshold must change from 500 to 1000, while the sibling
 Task_Format and all other content stay byte-for-byte / structurally identical.
+Task_Score's older mapping contract must also remain unchanged apart from the
+requested script body.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ from _shared.edit_check import (  # noqa: E402
     assert_preserved,
     assert_uipath_preserved,
     by_id,
+    canonical_ex,
     fail,
     local,
     load_original,
@@ -44,6 +47,15 @@ def main() -> None:
     if "500" in body:
         fail("Task_Score script still contains the old threshold 500")
 
+    original_score = by_id(original, "Task_Score")
+    if original_score is None:
+        fail("fixture bug: Task_Score is missing from the pristine original")
+    if canonical_ex(original_score, {"script"}) != canonical_ex(score, {"script"}):
+        fail(
+            "Task_Score mapping, version, arguments, outputs, or wiring changed; "
+            "only its script body may be edited"
+        )
+
     # Sibling and endpoints must be untouched.
     assert_preserved(original, edited, ["Task_Format", "Start_1", "End_1"])
     assert_uipath_preserved(original, edited, "migrationVersion")
@@ -53,7 +65,7 @@ def main() -> None:
     require_sequence_integrity(edited)
     require_di_for_visible_elements(edited)
     assert_no_orphan_di(edited)
-    print("OK: Task_Score threshold updated, siblings untouched")
+    print("OK: Task_Score threshold updated; older contract and siblings untouched")
 
 
 if __name__ == "__main__":
