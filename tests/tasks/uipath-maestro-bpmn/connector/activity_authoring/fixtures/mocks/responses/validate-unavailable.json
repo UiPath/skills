@@ -1,0 +1,6 @@
+{
+  "Result": "Failure",
+  "Code": "FixtureValidationUnavailable",
+  "Message": "This read-only discovery fixture does not fake BPMN validation.",
+  "Instructions": "The deterministic task checker verifies the authored current V1 source contract; use a CLI containing current V1 validation for product preflight."
+}

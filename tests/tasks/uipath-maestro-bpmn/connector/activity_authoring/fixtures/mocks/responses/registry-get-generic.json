@@ -1,0 +1,56 @@
+{
+  "Result": "Success",
+  "Code": "RegistryGetSuccess",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Intsvc.ActivityExecution",
+      "Label": "Execute connector activity",
+      "BpmnElement": "bpmn:SendTask",
+      "ExtensionTag": "uipath:activity",
+      "BindingPattern": "connection",
+      "RequiresDiscovery": true,
+      "IsDynamic": true,
+      "InputFields": [],
+      "InputPattern": "separateInputs",
+      "OutputSource": "=response",
+      "OutputType": "jsonSchema",
+      "OutputName": "response",
+      "InputNotes": "Add each request field from the selected operation as its own uipath:input. Keep the field's type and target: path, query, body, or file.",
+      "XmlTemplate": "<bpmn:sendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.ActivityExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"connectorKey\" type=\"string\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connection\" type=\"string\" value=\"=bindings.{connectionBindingId}\" />\n        <uipath:input name=\"folderKey\" type=\"string\" value=\"=bindings.{folderBindingId}\" />\n        <uipath:input name=\"operation\" type=\"string\" value=\"{operation}\" />\n        <uipath:input name=\"objectName\" type=\"string\" value=\"{objectName}\" />\n        <uipath:input name=\"method\" type=\"string\" value=\"{method}\" />\n        <uipath:input name=\"path\" type=\"string\" value=\"{path}\" />\n        <uipath:input name=\"activityConfigurationVersion\" type=\"string\" value=\"v1\" />\n        <uipath:input name=\"metadata\" type=\"json\"><![CDATA[{}]]></uipath:input>\n      </uipath:context>\n      <uipath:output name=\"response\" type=\"jsonSchema\" source=\"=response\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:sendTask>"
+    },
+    "ISEnrichment": {
+      "Name": "ledger_entries",
+      "ElementKey": "uipath-synthetic-records",
+      "Metadata": {
+        "Method": {
+          "GET": {
+            "Path": "/v2/tenants/{tenantId}/ledger-entries"
+          }
+        }
+      },
+      "Fields": {
+        "responseItems": {
+          "Name": "items",
+          "DisplayName": "Items",
+          "Type": "array",
+          "Method": {
+            "GET": {
+              "Response": true
+            }
+          }
+        },
+        "requestOnlyTrap": {
+          "Name": "unusedFilter",
+          "DisplayName": "Unused filter",
+          "Type": "string",
+          "Method": {
+            "GET": {
+              "Request": true,
+              "Required": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

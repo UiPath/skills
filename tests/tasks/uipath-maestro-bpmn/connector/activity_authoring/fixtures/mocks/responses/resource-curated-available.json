@@ -1,0 +1,25 @@
+{
+  "Result": "Success",
+  "Code": "ResourceMetadata",
+  "Data": {
+    "name": "curated_submit_artifact",
+    "displayName": "Submit artifact",
+    "elementKey": "uipath-synthetic-records",
+    "availableOperations": [
+      {
+        "method": "POST",
+        "name": "Create",
+        "description": "Submit an artifact",
+        "path": "/v1/artifacts",
+        "curated": "Submit artifact"
+      },
+      {
+        "method": "PATCH",
+        "name": "Update",
+        "description": "Update an artifact",
+        "path": "/v1/artifacts/{artifactId}"
+      }
+    ],
+    "hint": "Use --operation <Create|List|Retrieve|Update|Delete|Replace> to see fields for a specific operation."
+  }
+}
