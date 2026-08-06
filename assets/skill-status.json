@@ -33,6 +33,22 @@
       },
       "last_synced": null
     },
+    "uipath-ah-get-process": {
+      "status": "in-development",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
+    "uipath-ah-publish-process": {
+      "status": "in-development",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-api-workflow": {
       "status": "in-development",
       "confluence": {

@@ -175,3 +175,10 @@
 /skills/uipath-process-mining/ @UiPath/team-backendhoven
 /tests/tasks/uipath-process-mining/ @UiPath/team-backendhoven
 /tests/tasks/activation/uipath-process-mining.jsonl @UiPath/team-backendhoven
+
+# Automation Hub skills (Open API publish/read of processes via the user's cloud token)
+# TODO: confirm AH-owned team handle, then uncomment these two lines with the real owners.
+# Left commented so the paths inherit the default owners above rather than becoming
+# an invalid ownerless rule.
+# /skills/uipath-ah-publish-process/ @UiPath/<AH-team>
+# /skills/uipath-ah-get-process/ @UiPath/<AH-team>
