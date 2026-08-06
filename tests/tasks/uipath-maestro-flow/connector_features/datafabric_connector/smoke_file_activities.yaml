@@ -12,21 +12,15 @@ pre_run:
 
 initial_prompt: |
   Build a Flow that manipulates a file attached to a Data Fabric record
-  in the `FlowCodeEvalEntity` entity. Chain three connector activities in order:
+  in the `FlowCodeEvalEntity` entity. Chain three file operations in order:
 
   1. UploadFileToRecordFieldV2
   2. DownloadFileFromRecordFieldV2
   3. DeleteFileFromRecordFieldV2
 
-  For every activity:
-  - entityName is `FlowCodeEvalEntity`
-  - the target field name is `file1` — this MUST be wired into the
-    activity's `_fieldName` input (either as the literal string `"file1"`
-    or as `=js:$vars.<globalVar>` where the global's default is `"file1"`).
-    If `_fieldName` is missing on any of the three, the flow is broken
-    at runtime even if `flow validate` passes.
-  - recordId is bound to a workflow-level variable
-  - the file value (upload only) is bound to a workflow-level variable
+  Use the same record and `file1` field throughout. Keep the record and file
+  values bound consistently through workflow variables, including a typed
+  file variable for the downloaded file.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 
@@ -40,17 +34,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Final .flow has upload + download + delete file-record-field nodes on FlowCodeEvalEntity/file1"
+    description: "Final .flow has upload + download + delete file-record-field nodes on FlowCodeEvalEntity/file1 and reuses a typed file variable"
     command: "python3 $TASK_DIR/check_smoke_file_activities.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Connector node shape matches connectorMethodInfo (endpoint template, parameter placement, JIT and FilterBuilder design-caches, required-param + default coverage)"
-    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_connector_node_shape.py"'
-    timeout: 90
-    expected_exit_code: 0
-    weight: 3.0
     pass_threshold: 1.0

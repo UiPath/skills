@@ -1,0 +1,44 @@
+task_id: skill-flow-datafabric-trigger-lifecycle
+description: >
+  Integration coverage for Data Fabric Record Created and Record Updated
+  triggers, including trigger-side date filters, downstream Query/Get/Delete
+  wiring, and preservation of entity resources on every activity.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, feature:trigger, feature:records, feature:entities, feature:activities, path-to-ga]
+
+initial_prompt: |
+  Create a new solution named DataFabricTriggerRegression containing two Flow
+  projects using the configured UiPath Data Fabric connection.
+
+  Flow 1: ContractRegistryRecordCreated
+  - Use a Data Fabric Record Created trigger on the ContractRegistry entity.
+  - Add a trigger filter where dueDate is less than 2026-08-04.
+  - Add Query Entity Records immediately after the trigger, also on
+    ContractRegistry, with the same dueDate < 2026-08-04 filter and a maximum
+    of 100 records.
+
+  Flow 2: FileUploadVerifyRecordUpdatedDelete
+  - Use a Data Fabric Record Updated trigger on the
+    FileUploadVerify_20260618 entity.
+  - Get the entity record by ID using the Id from the Record Updated trigger
+    output.
+  - Delete the same record using that Id.
+
+  For both flows, keep the configured connection and correct entity on every
+  trigger and Data Fabric activity. Validate every final flow file.
+
+success_criteria:
+  - type: command_executed
+    description: "Flow validation was run"
+    tool_name: "Bash"
+    command_pattern: '(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Created and updated trigger flows contain filters, downstream activities, and non-null entity bindings"
+    command: "python3 $TASK_DIR/check_trigger_lifecycle.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

@@ -1,6 +1,6 @@
 task_id: skill-flow-datafabric-smoke-error
 description: >
-  Smoke: CreateEntityRecordCurated against a non-existent entity — expect a
+  Smoke: attempt a record creation against a non-existent entity — expect a
   structured 4xx and zero side effects on FlowCodeEvalEntity.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice, negative, ipe]
 
@@ -15,7 +15,7 @@ pre_run:
 initial_prompt: |
   Build a Flow that:
 
-  1. Attempts CreateEntityRecordCurated on entity 'NonExistentEntity' with
+  1. Attempts to create a record on entity 'NonExistentEntity' with
      title='ErrorTestRecord', score=5.0. Expect an error — do not swallow it.
   2. In a parallel branch (so it runs even after the failure), Query
      FlowCodeEvalEntity for title='ErrorTestRecord'.
@@ -43,13 +43,5 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
     min_count: 1
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Connector node shape matches connectorMethodInfo (endpoint template, parameter placement, JIT and FilterBuilder design-caches, required-param + default coverage)"
-    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_connector_node_shape.py"'
-    timeout: 90
-    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

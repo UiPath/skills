@@ -1,0 +1,49 @@
+task_id: skill-flow-datafabric-file-roundtrip-variable
+description: >
+  Integration coverage for downloading a Data Fabric file field into a typed
+  file variable, creating a destination record, and uploading that same file
+  variable to the destination record.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, feature:records, feature:entities, feature:activities, feature:connections]
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/file_upload_verify.entity.json"'
+    timeout: 60
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/verify_file_roundtrip_source.py"'
+    timeout: 120
+
+initial_prompt: |
+  Build a UiPath Flow named DataFabricFileRoundtrip with a manual trigger and
+  the configured UiPath Data Fabric connection. Use the
+  FileUploadVerify_20260618 entity and its `document` field.
+
+  Build this sequence:
+
+  1. Download the file from record ID
+     `ECB05DBE-F76A-F111-AC99-000D3A98AF8F`, field `document`.
+  2. Create a new FileUploadVerify_20260618 record.
+  3. Declare a workflow-level variable with type `file`, assign the download
+     activity response to it, and use that same variable as the multipart file
+     input of Upload File to Record Field.
+  4. Upload to the created record's `document` field, binding recordId to the
+     created record output Id. Do not hard-code the destination record Id.
+
+  Preserve the entity name, file field name, and connection on all three Data
+  Fabric activities. The Flow is not complete until
+  `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: command_executed
+    description: "Flow was validated"
+    tool_name: "Bash"
+    command_pattern: '(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+validate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Download/create/upload chain reuses a typed file variable and the created record Id"
+    command: "python3 $TASK_DIR/check_file_roundtrip_variable.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

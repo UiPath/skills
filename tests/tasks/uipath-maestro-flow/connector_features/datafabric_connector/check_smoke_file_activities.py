@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Verify Upload + Download + Delete file-record-field nodes exist on
-FlowCodeEvalEntity, each with a _fieldName that resolves to "file1".
+FlowCodeEvalEntity, each with a _fieldName that resolves to "file1", and
+that Download -> typed file variable -> Upload wiring is preserved.
 
 Accepts the field value as either the literal string "file1" or a
 `=js:$vars.<var>` expression whose backing global in `variables.globals`
@@ -59,7 +60,12 @@ def main() -> int:
             doc = json.load(f)
         globals_by_id = {g["id"]: g for g in
                          (doc.get("variables", {}).get("globals") or [])}
+        typed_file_ids = {g_id for g_id, g in globals_by_id.items()
+                          if g.get("type") == "file"}
+        variable_updates = doc.get("variables", {}).get("variableUpdates", {}) or {}
         seen = {}
+        download_node = None
+        upload_node = None
         for n in doc.get("nodes", []):
             t = n.get("type", "")
             detail = n.get("inputs", {}).get("detail", {})
@@ -70,6 +76,10 @@ def main() -> int:
             for suffix in REQUIRED:
                 if t.endswith(suffix):
                     seen[suffix] = body.get("_fieldName")
+                    if suffix == ".download-file-from-record-field":
+                        download_node = n
+                    elif suffix == ".upload-file-to-record-field":
+                        upload_node = n
         if not REQUIRED.issubset(seen.keys()):
             continue
         resolved = {s: resolve_field(v, globals_by_id) for s, v in seen.items()}
@@ -77,7 +87,26 @@ def main() -> int:
         if wrong:
             print(f"FAIL: {path} — {[(s, raw, res) for s, raw, res in wrong]} do not resolve to _fieldName={FIELD!r}", file=sys.stderr)
             return 1
-        print(f"OK: {path} — 3 file activities on {ENTITY}/{FIELD} (raw values: {seen})")
+        if not typed_file_ids:
+            print(f"FAIL: {path} — no workflow-level variable with type=file", file=sys.stderr)
+            return 1
+        download_id = download_node.get("id", "")
+        assigned_ids = {
+            item.get("variableId")
+            for entries in variable_updates.values()
+            for item in entries
+            if download_id in str(item.get("expression", ""))
+        }
+        reused_ids = assigned_ids & typed_file_ids
+        if not reused_ids:
+            print(f"FAIL: {path} — download output is not assigned to a typed file variable", file=sys.stderr)
+            return 1
+        multipart = (upload_node.get("inputs", {}).get("detail", {}) or {}).get("multipartParameters") or []
+        upload_values = [p.get("value") for p in multipart if p.get("name") == "file"]
+        if not any(any(var in str(value) for var in reused_ids) for value in upload_values):
+            print(f"FAIL: {path} — upload multipart file is not bound to downloaded file variable: {upload_values}", file=sys.stderr)
+            return 1
+        print(f"OK: {path} — 3 file activities on {ENTITY}/{FIELD}; typed file variable reused (raw values: {seen})")
         return 0
     print(f"FAIL: no .flow has all 3 file activities on {ENTITY}", file=sys.stderr)
     return 1
