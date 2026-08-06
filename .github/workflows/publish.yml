@@ -52,10 +52,10 @@ permissions:
 jobs:
   guard:
     name: Validate version sync
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "22.x"
       # Fails if version-manifest.json has drifted from package.json.
@@ -71,13 +71,13 @@ jobs:
       github.repository == 'UiPath/skills'
       && ((github.event_name == 'push' && github.ref == 'refs/heads/main')
           || (github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'dev'))
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "22.x"
           registry-url: "https://npm.pkg.github.com"
@@ -116,7 +116,7 @@ jobs:
       && ((github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
           || (github.event_name == 'workflow_dispatch'
               && (github.event.inputs.channel == 'latest' || github.event.inputs.channel == 'preview')))
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     permissions:
       contents: read
       # OIDC trusted publishing — no NPM_TOKEN. The npmjs trusted publisher
@@ -125,8 +125,8 @@ jobs:
       # pushes publish through the same OIDC exchange as tags on main.
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "22.x"
 
