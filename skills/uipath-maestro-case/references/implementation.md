@@ -1,6 +1,6 @@
 # Phases 2–6 — Execution: tasks.md → caseplan.json
 
-Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per plugin. Validate, then optionally publish and debug. Five phases: **Phase 2 Prototyping** → **Phase 3 Implementation** → **Phase 4 Validate** → **Phase 5 Publish** → **Phase 6 Debug**.
+Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per plugin. Validate, then optionally publish, debug, and deploy. Six phases: **Phase 2 Prototyping** → **Phase 3 Implementation** → **Phase 4 Validate** → **Phase 5 Publish** → **Phase 6 Debug** → **Phase 7 Orchestrator deploy**.
 
 > **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip this execution pipeline — see [brownfield.md](brownfield.md).
 
@@ -8,7 +8,7 @@ Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per 
 >
 > **Input:** `tasks/tasks.md` — the complete handoff artifact.
 
-> **Five phases follow planning.** Execution splits into **Phase 2 — Prototyping** (reviewable preview: structure, conditions, SLA/escalation, and connector-rule stubs), **Phase 3 — Implementation** (connector schemas, task values, and connector-rule upgrades), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, and Phase 6 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbers are stable labels; follow the order stated by each phase.
+> **Six phases follow planning.** Execution splits into **Phase 2 — Prototyping** (reviewable preview: structure, conditions, SLA/escalation, and connector-rule stubs), **Phase 3 — Implementation** (connector schemas, task values, and connector-rule upgrades), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run), **Phase 7 — Orchestrator deploy** (optional `case pack` + `solution publish`). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, Phase 6 entry, and Phase 7 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbers are stable labels; follow the order stated by each phase.
 
 ## Per-plugin execution
 
@@ -338,7 +338,7 @@ Optional CLI debug run. Full contract — prompt options, debug command, safety 
 
 ## Step 15 — Debug prompt + session
 
-Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). On `Run debug session` → run `uip solution resources refresh` then `uip maestro case debug`, loop until `Done`. On `Done` → exit skill. Never auto-run (Rule 12).
+Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). On `Run debug session` → run `uip solution resources refresh` then `uip maestro case debug`, loop until the user picks `Continue to deploy`. On `Continue to deploy` → Phase 7. Never auto-run (Rule 12).
 
 ## Step 15a — Troubleshoot failed case
 
@@ -357,3 +357,15 @@ When a debug or process run fails, read **[troubleshooting-guide.md](troubleshoo
 **Per-round timeout.** If debug run exceeds 10 minutes wall-clock, treat round as inconclusive and advance to next round (counts toward 3-round limit). Advisory — do not hard-kill subprocess; classify by elapsed time and move on.
 
 After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user with **AskUserQuestion**. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.json` edits without confirmed cause.
+
+---
+
+# Phase 7 — Orchestrator deploy (Step 16)
+
+Optional `case pack` + `solution publish` to the tenant solution feed. Full contract — prompt options, deploy commands, version bumping, publish-failure handling — in [phased-execution.md § Phase 7](phased-execution.md#phase-7--orchestrator-deploy). This section is a bridge — do NOT duplicate contract here.
+
+## Step 16 — Orchestrator deploy prompt + deploy
+
+Run AskUserQuestion per [phased-execution.md § Phase 7](phased-execution.md#phase-7--orchestrator-deploy). On `Deploy to Orchestrator` → run `uip solution resources refresh`, then `uip maestro case pack "<SolutionDir>/<projectName>" "<SolutionDir>/dist" --output json`, then `uip solution publish "<packagePath>" --wait --output json`. Read `<packagePath>` from the pack response — never guess the filename. On `Done` → exit skill. Never auto-run (Rule 12).
+
+Stops at publish — `uip solution deploy run` is out of scope.
