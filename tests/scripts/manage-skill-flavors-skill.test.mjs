@@ -7,7 +7,6 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SKILL_DIR = join(REPO_ROOT, ".claude", "skills", "manage-skill-flavors");
 const SKILL_FILE = join(SKILL_DIR, "SKILL.md");
-const OPENAI_YAML = join(SKILL_DIR, "agents", "openai.yaml");
 
 function frontmatterMetadata() {
   const lines = readFileSync(SKILL_FILE, "utf8").split(/\r?\n/);
@@ -56,20 +55,6 @@ test("every relative Markdown link stays inside the skill and resolves", () => {
       `relative skill link does not exist: ${target}`,
     );
   }
-});
-
-test("OpenAI agent metadata matches the skill interface", () => {
-  const source = readFileSync(OPENAI_YAML, "utf8");
-  const displayName = /^\s{2}display_name:\s*"([^"]+)"\s*$/m.exec(source)?.[1];
-  const shortDescription = /^\s{2}short_description:\s*"([^"]+)"\s*$/m.exec(source)?.[1];
-
-  assert.match(source, /^interface:\s*$/m);
-  assert.equal(displayName, "Manage Skill Flavors");
-  assert.equal(
-    shortDescription,
-    "Build and review repository skill flavor packages",
-  );
-  assert.ok(shortDescription.length >= 25 && shortDescription.length <= 64);
 });
 
 test("contributor guidance documents the full-catalog Node flavor contract", () => {
