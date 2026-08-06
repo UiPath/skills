@@ -36,7 +36,7 @@ Rules:
 
 ## Step 3 — Binding invariants
 
-After the sibling is built, registered, and verified (orchestration §), bind the task by name+folder: two bindings `resource:"process"`, `resourceSubType` per the table below, shared `resourceKey="solution_folder.<Name>"`; `name` default `<Name>`, **`folderPath` default `""` (empty string)**. The sibling ships **inside** the solution `.uipx` (registered as a sibling project), so it co-deploys with the case when the solution is published (Phase 6 `uip solution upload`); it is **not** published separately to the tenant.
+After the sibling is built, registered, and verified (orchestration §), bind the task by name+folder: two bindings `resource:"process"`, `resourceSubType` per the table below, shared `resourceKey="solution_folder.<Name>"`; `name` default `<Name>`, **`folderPath` default `""` (empty string)**. The sibling ships **inside** the solution `.uipx` (registered as a sibling project), so it co-deploys with the case when the solution is published (Phase 5 `uip solution upload`); it is **not** published separately to the tenant.
 
 | Type | `resourceSubType` |
 |------|-------------------|

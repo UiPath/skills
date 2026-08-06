@@ -14,16 +14,16 @@ The skill emits the `27.0.0` top-level shape (`{ id, version, name, metadata, bi
 |---|---|
 | 2 — Prototyping | Informational validate, no halt on errors. |
 | 4 — Validate | Authoritative — `uip maestro case validate` accepts the top-level shape. Retry-and-fix on failure, 3-retry cap, hard stop on 3rd failure. |
-| 5 — Debug | Before the AskUserQuestion, print plain-text warning: `> uip maestro case debug may reject the top-level shape. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject schema — failure may be schema-related not case-bug-related` in build-issues.md. |
-| 6 — Publish | Before the AskUserQuestion, print plain-text warning: `> uip solution upload may reject the top-level shape until the CLI catches up. Failure non-fatal — caseplan.json still valid.` On failure, re-run the upload once without `--output-filter` and dump that unfiltered response to `tasks/upload-response.json`, re-show Phase 6 prompt. |
+| 5 — Publish | Before the AskUserQuestion, print plain-text warning: `> uip solution upload may reject the top-level shape until the CLI catches up. Failure non-fatal — caseplan.json still valid.` On failure, re-run the upload once without `--output-filter` and dump that unfiltered response to `tasks/upload-response.json`, re-show Phase 5 prompt. |
+| 6 — Debug | Before the AskUserQuestion, print plain-text warning: `> uip maestro case debug may reject the top-level shape. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject schema — failure may be schema-related not case-bug-related` in build-issues.md. |
 
 Skill stays emit-honest: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope.
 
 ## Why phased
 
-Once `tasks.md` is generated, skill does **not** build full case in one pass. It builds **placeholder** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then wires detail (Phase 3 Implementation). Whether the boundary pauses is the user's up-front build-review preference (SKILL.md Rule 11): pause-at-preview stops for the visual review; straight-through narrates the milestone and continues. Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) follow; the debug and publish gates are unconditional. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
+Once `tasks.md` is generated, skill does **not** build full case in one pass. It builds **placeholder** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then wires detail (Phase 3 Implementation). Whether the boundary pauses is the user's up-front build-review preference (SKILL.md Rule 11): pause-at-preview stops for the visual review; straight-through narrates the milestone and continues. Validate (Phase 4), Publish (Phase 5), and Debug (Phase 6) follow; the publish and debug gates are unconditional. Publish runs before Debug so the debug session exercises the same build the user just shipped to Studio Web (debug uploads there anyway).
 
-Decisions are front-loaded so the build can run unattended; the gates that remain protect real-world side effects (debug executes the case, publish ships it).
+Decisions are front-loaded so the build can run unattended; the gates that remain protect real-world side effects (publish ships the case, debug executes it).
 
 ## Phase summary
 
@@ -32,8 +32,8 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 | **2 — Prototyping** | Solution + project, root case, global variables, stages, triggers (full), tasks (name + type, no value binding), placeholder tasks for unresolved | `caseplan.json` emitted; placeholder-profile validate run (structural errors only) | Pause-at-preview runs: `Publish for review` / `Skip publish and continue` / `Abort`. Straight-through runs: none — counts line, continue (Rule 11) |
 | **3 — Implementation** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
-| **5 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Skip to Publish` |
-| **6 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Done` |
+| **5 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Skip to Debug` |
+| **6 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Done` |
 
 ## Phase 2 — Prototyping
 
@@ -81,11 +81,11 @@ uip maestro case validate "<caseplan.json path>" --skeleton --output json
 
 - **Straight-through** → continue directly into Phase 3 with no prompt; the summary doubles as the milestone narration line.
 - **Pause-at-preview** → present the §Prompt below; only a user response transitions out of Phase 2.
-- **No recorded preference** (resumed or legacy run): interactive → ask the §Prompt now; non-interactive → straight-through (no publish — Phase 6 remains the only, still-gated, publish point) and say so in one line.
+- **No recorded preference** (resumed or legacy run): interactive → ask the §Prompt now; non-interactive → straight-through (no publish — Phase 5 remains the only, still-gated, publish point) and say so in one line.
 
-The Phase 4 retry-cap, Phase 5 debug-consent, and Phase 6 publish stops below are independent of this preference and are never bypassed.
+The Phase 4 retry-cap, Phase 5 publish, and Phase 6 debug-consent stops below are independent of this preference and are never bypassed.
 
-**Next-step rule.** Every user-visible stop or handoff after build progress must include a short `Suggested next steps` line before the prompt or final exit. Do this after straight-through completion reports, pause-at-preview summaries, published preview URLs, debug results, publish completion, and abort/done exits. Keep it concrete: inspect the preview, continue implementation, run debug, publish, fix listed placeholders/connections, or edit the named artifact and re-run.
+**Next-step rule.** Every user-visible stop or handoff after build progress must include a short `Suggested next steps` line before the prompt or final exit. Do this after straight-through completion reports, pause-at-preview summaries, published preview URLs, publish completion, debug results, and abort/done exits. Keep it concrete: inspect the preview, continue implementation, publish, run debug, fix listed placeholders/connections, or edit the named artifact and re-run.
 
 #### Summary content
 
@@ -120,7 +120,7 @@ Use **AskUserQuestion** with three options:
 
 If `DesignerUrl` missing from the filtered response, re-run the upload once **without** `--output-filter`, dump that unfiltered response to `tasks/upload-response.json`, print path, continue to prompt — user can recover URL from file.
 
-Do not warn user about Studio Web edits being overwritten. Phase 6's re-publish (when chosen) overwrites volatile review-time edits with final local state. User can compare Studio Web state before and after Phase 3 to spot edits they want to preserve.
+Do not warn user about Studio Web edits being overwritten. Phase 5's re-publish (when chosen) overwrites volatile review-time edits with final local state. User can compare Studio Web state before and after Phase 3 to spot edits they want to preserve.
 
 #### On `Skip publish and continue`
 
@@ -195,18 +195,14 @@ After successful validate, write issue list to `tasks/build-issues.md` per [`plu
 
 On Phase 4 success → proceed to Phase 5.
 
-## Phase 5 — Debug
+## Phase 5 — Publish
 
 After Phase 4 success, report results then ask user via **AskUserQuestion**:
 
-- `Run debug session` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json`. Streams results.
-- `Skip to Publish` — proceed to Phase 6 without debugging.
+- `Publish to Studio Web` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"`. Print returned `DesignerUrl` on its own line. Proceed to Phase 6.
+- `Skip to Debug` — proceed to Phase 6 without publishing.
 
-> **Debug executes case for real — sends emails, posts messages, calls APIs, writes to databases. Only run when user explicitly asks. Never auto-run** (Rule 12).
-
-Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams results.
-
-After debug completes, return to Phase 5 prompt so user can re-run or move on. Proceed to Phase 6 only on `Skip to Publish`.
+Before this prompt, include `Suggested next steps: publish to Studio Web when you want a designer-visible version, or skip to debug if the local artifacts are enough for now.` After a successful publish, print `Suggested next steps: open the Designer URL, verify resources and connections, then run a debug session to exercise the case.`
 
 ### Report fields (printed before prompt)
 
@@ -215,22 +211,7 @@ After debug completes, return to Phase 5 prompt so user can re-run or move on. P
 3. Validation status — `validate` pass / remaining warnings.
 4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. Also list **agents / API workflows built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
-6. Suggested next steps — one short line before the prompt, e.g. `Suggested next steps: run a debug session if you are ready to exercise the case, or skip to publish if validation is enough for now.` If placeholders or missing connections exist, mention fixing/registering those before publish.
-
-### Debug notes
-
-- `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
-- Debug verifies the build actually runs end-to-end before the user commits to a publish. If debug surfaces a fixable issue, see [Step 13a — Troubleshoot failed case](implementation.md#step-13a--troubleshoot-failed-case) and re-run.
-- **Inline-built api-workflow siblings are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found") by design; agent siblings do resolve in debug. Verifying that task's runtime needs a full solution deploy (`uip solution pack` → `uip solution publish` → `uip solution deploy run`) — an Orchestrator install, so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`; the Phase 6 no-deploy default applies); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline).
-
-## Phase 6 — Publish
-
-After Phase 5 (whether debugged or skipped), prompt via **AskUserQuestion**:
-
-- `Publish to Studio Web` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"`. Print returned `DesignerUrl` on its own line. Exit skill.
-- `Done` — exit skill without publishing.
-
-Before this prompt, include `Suggested next steps: publish to Studio Web when you want a designer-visible version, or stop here and use the local artifacts for review/editing.` After a successful publish, print `Suggested next steps: open the Designer URL, verify resources and connections, then run any tenant-side smoke checks you need.` On `Done`, print `Suggested next steps: review caseplan.json/tasks.md locally or update sdd.md and re-run when you want changes.`
+6. Suggested next steps — one short line before the prompt (the publish/skip-to-debug line above). If placeholders or missing connections exist, mention fixing/registering those before publish.
 
 ### Publish notes
 
@@ -238,6 +219,28 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 - **`--output-filter` is mandatory on every `uip solution upload` call** — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload) for the projection and fallback procedure.
 - `uip solution resources refresh` MUST run before upload — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
 - Do **NOT** run `uip maestro case pack` + `uip solution publish` unless user explicitly asks for Orchestrator deployment. That path puts case directly into Orchestrator, bypassing Studio Web. Default is always Studio Web.
+- Publish ships a build that has not been exercised — the debug gate follows (Phase 6). If a Phase 6 debug run leads to a fix, re-run this phase's `resources refresh` + `solution upload` so Studio Web holds the fixed build.
+
+## Phase 6 — Debug
+
+After Phase 5 (whether published or skipped), prompt via **AskUserQuestion**:
+
+- `Run debug session` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json`. Streams results.
+- `Done` — exit skill without debugging.
+
+> **Debug executes case for real — sends emails, posts messages, calls APIs, writes to databases. Only run when user explicitly asks. Never auto-run** (Rule 12).
+
+Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams results.
+
+After debug completes, return to Phase 6 prompt so user can re-run or move on. Exit skill only on `Done`.
+
+Before this prompt, include `Suggested next steps: run a debug session if you are ready to exercise the case, or stop here if validation (and publish) is enough for now.` After debug results, print `Suggested next steps: inspect the debug output, fix and re-run, or re-publish with the Phase 5 commands if a fix changed the build.` On `Done`, print `Suggested next steps: review caseplan.json/tasks.md locally or update sdd.md and re-run when you want changes.`
+
+### Debug notes
+
+- `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
+- Debug verifies the build actually runs end-to-end. If debug surfaces a fixable issue, see [Step 15a — Troubleshoot failed case](implementation.md#step-15a--troubleshoot-failed-case) and re-run; if the case was already published, re-publish afterwards so the published build carries the fix.
+- **Inline-built api-workflow siblings are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found") by design; agent siblings do resolve in debug. Verifying that task's runtime needs a full solution deploy (`uip solution pack` → `uip solution publish` → `uip solution deploy run`) — an Orchestrator install, so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`; the Phase 5 no-deploy default applies); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline).
 
 For further authoring changes (add task, tweak condition, etc.), user updates `sdd.md` and re-runs skill from Phase 1 — skill does not offer in-place incremental edits.
 
@@ -271,5 +274,5 @@ No artifact deletion. No rollback. User owns partial state.
 
 ## Out of scope
 
-- **Re-ingesting Studio Web edits.** If user edits published placeholder in Studio Web during review, edits are not round-tripped back into local `caseplan.json`. Phase 3 writes on top of local state; Phase 6 re-publish overwrites Studio Web with completed local build.
+- **Re-ingesting Studio Web edits.** If user edits published placeholder in Studio Web during review, edits are not round-tripped back into local `caseplan.json`. Phase 3 writes on top of local state; Phase 5 re-publish overwrites Studio Web with completed local build.
 - **Resuming aborted session.** Re-running skill regenerates `tasks.md` from scratch (Rule 6) and re-executes Phase 2 onwards.
