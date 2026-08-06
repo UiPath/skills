@@ -11,6 +11,7 @@ on:
       - 'assets/**'
       - '.claude-plugin/**'
       - 'scripts/compose-skill-flavor.mjs'
+      - 'scripts/npm-package-lifecycle.mjs'
       - 'tests/scripts/compose-skill-flavor.test.mjs'
       - 'tests/scripts/manage-skill-flavors-skill.test.mjs'
       - '.claude/skills/manage-skill-flavors/**'
@@ -20,6 +21,8 @@ on:
       - 'README.md'
       - 'LICENSE'
       - 'CODEOWNERS'
+      - 'CLAUDE.md'
+      - 'CONTRIBUTING.md'
       - 'docs/RELEASE.md'
       - '.github/workflows/publish.yml'
       - '.github/workflows/validate-skill-flavors.yml'
@@ -46,6 +49,15 @@ jobs:
 
       - name: Build complete trees and real npm tarballs
         run: npm run skills:pack
+
+      - name: Verify backward-compatible root default packaging
+        run: |
+          mkdir -p build/root-pack-check
+          npm pack --json --pack-destination build/root-pack-check > build/root-pack-check/pack.json
+          npm publish --dry-run --json --access public > build/root-pack-check/publish.json
+          test "$(find build/root-pack-check -maxdepth 1 -name '*.tgz' | wc -l)" -eq 1
+          test ! -e build/.root-pack-transaction
+          git diff --exit-code -- skills
 
       - name: Ensure build-only markers do not reach consumers
         run: |

@@ -80,10 +80,11 @@ Tool wiring lives outside `skills/`:
 | Cursor IDE | `.cursor/rules/*.mdc` | Scoped MDC rules: `token-optimization` (always-apply), `skill-structure` + `content-quality` (glob-scoped), `skill-review` + `pr-review` (agent-requested) |
 | GitHub Copilot coding agent | `AGENTS.md` (symlink → `CLAUDE.md`) | Copilot reads `AGENTS.md` natively (since Aug 2025) |
 
-When adding a skill, the root integration files and every custom flavor include
-it automatically. Review the complete skill for each flavor and add the
-smallest sparse override wherever canonical guidance is not safe for that
-environment. No flavor manifest or inclusion list is required.
+When adding a skill, put its canonical files under `skills/uipath-<name>/`.
+Every custom flavor includes that canonical skill automatically. Review the
+complete skill for each flavor and add the smallest sparse override wherever
+canonical guidance is not safe for that environment. No flavor manifest or
+inclusion list is required.
 
 ## Adding a New Skill
 
@@ -286,6 +287,16 @@ The package convention is `default` → `@uipath/skills` and `<flavor>` →
 overrides automatically adds its complete-catalog package—do not add an
 allowlist, registry JSON, flavor-specific npm script, or CI branch.
 
+The existing root `npm pack` and `npm publish` commands remain default-only
+entry points. Their npm lifecycle temporarily composes the marker-free default
+tree and restores canonical `skills/` afterward; `npm run skills:pack` is the
+separate all-flavor command used by release automation. If a root package
+operation fails or is interrupted and `build/.root-pack-transaction` remains,
+confirm its npm process has ended and run `npm run skills:recover`. Unexpected
+overlay edits are preserved under `build/.root-pack-recovery-*` for review. Do
+not use `--ignore-scripts` for source-repository packaging because that bypasses
+composition.
+
 ### 7. Add Templates/Assets (Optional)
 
 Static files like code templates go in `assets/`:
@@ -422,6 +433,8 @@ Before submitting your PR, verify:
 - [ ] Every canonical skill has been reviewed for every custom flavor; add sparse overrides wherever canonical guidance is unsafe
 - [ ] Complete default and custom file trees build and validate before package staging
 - [ ] `npm run skills:pack` creates one correctly named tarball per discovered flavor
+- [ ] Root `npm pack` creates one marker-free `@uipath/skills` default tarball and leaves canonical sources unchanged
+- [ ] Root `npm publish --dry-run` selects only the default package and leaves canonical sources unchanged
 - [ ] Built trees, staged packages, and actual tarballs contain no flavor marker comments or sparse override sources
 
 ### Tests

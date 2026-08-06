@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   chmodSync,
+  copyFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -20,6 +21,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   FlavorCompositionError,
+  ROOT_PACK_TRANSACTION_DIRNAME,
   buildAllSkillTrees,
   createAllVariants,
   createCompositionPlan,
@@ -28,13 +30,16 @@ import {
   packageName,
   packAllVariants,
   parseMarkerBlocks,
+  prepareRootDefaultPackage,
   readTarballEntries,
+  restoreRootDefaultPackage,
   stripMarkerBoundaries,
   treeFileBytes,
 } from "../../scripts/compose-skill-flavor.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SCRIPT = join(REPO_ROOT, "scripts", "compose-skill-flavor.mjs");
+const LIFECYCLE_DRIVER = join(REPO_ROOT, "scripts", "npm-package-lifecycle.mjs");
 
 function fixtureRepo(t) {
   const repo = mkdtempSync(join(tmpdir(), "skill-flavor-node-test-"));
@@ -91,6 +96,8 @@ function addPackageManifest(repo, version = "1.2.3") {
     license: "MIT",
     repository: { type: "git", url: "https://github.com/UiPath/skills.git" },
     keywords: ["uipath", "skills"],
+    private: false,
+    uipathSkillsFlavor: "default",
     files: [
       "skills",
       "assets",
@@ -98,8 +105,13 @@ function addPackageManifest(repo, version = "1.2.3") {
       "version-manifest.json",
       "README.md",
       "LICENSE",
+      "scripts/npm-package-lifecycle.mjs",
     ],
-    scripts: { prepack: "exit 99" },
+    scripts: {
+      prepack: "node scripts/npm-package-lifecycle.mjs prepare",
+      postpack: "node scripts/npm-package-lifecycle.mjs restore",
+      "skills:recover": "node scripts/npm-package-lifecycle.mjs recover",
+    },
   };
   writeFileSync(join(repo, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`);
   writeFileSync(join(repo, "README.md"), "# Fixture package\n");
@@ -113,6 +125,12 @@ function addPackageManifest(repo, version = "1.2.3") {
   mkdirSync(join(repo, "hooks"));
   writeFileSync(join(repo, "hooks", "tool.sh"), "#!/bin/sh\necho fixture\n");
   chmodSync(join(repo, "hooks", "tool.sh"), 0o755);
+  mkdirSync(join(repo, "scripts"));
+  copyFileSync(SCRIPT, join(repo, "scripts", "compose-skill-flavor.mjs"));
+  copyFileSync(
+    LIFECYCLE_DRIVER,
+    join(repo, "scripts", "npm-package-lifecycle.mjs"),
+  );
 }
 
 function runCli(repo, ...args) {
@@ -122,6 +140,49 @@ function runCli(repo, ...args) {
       ...process.env,
       npm_config_cache: join(repo, ".npm-cache"),
     },
+  });
+}
+
+function runCliAsync(repo, ...args) {
+  return new Promise((resolvePromise) => {
+    const child = spawn(process.execPath, [SCRIPT, "--repo-root", repo, ...args], {
+      env: {
+        ...process.env,
+        npm_config_cache: join(repo, ".npm-cache"),
+      },
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.on("close", (status, signal) => {
+      resolvePromise({ status, signal, stdout, stderr });
+    });
+  });
+}
+
+function runNpm(repo, ...args) {
+  const env = {
+    ...process.env,
+    npm_config_cache: join(repo, ".npm-cache"),
+  };
+  if (process.env.npm_execpath) {
+    return spawnSync(process.execPath, [process.env.npm_execpath, ...args], {
+      cwd: repo,
+      encoding: "utf8",
+      env,
+    });
+  }
+  return spawnSync(process.platform === "win32" ? "npm.cmd" : "npm", args, {
+    cwd: repo,
+    encoding: "utf8",
+    env,
   });
 }
 
@@ -581,7 +642,16 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
     const manifest = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
     assert.equal(manifest.uipathSkillsFlavor, variant);
     assert.equal(manifest.version, "1.2.3-preview.45");
-    assert.ok(!("scripts" in manifest));
+    if (variant === "default") {
+      assert.equal(
+        manifest.scripts.prepack,
+        "node scripts/npm-package-lifecycle.mjs prepare",
+      );
+      assert.ok(existsSync(join(packageDir, "scripts", "npm-package-lifecycle.mjs")));
+    } else {
+      assert.ok(!("scripts" in manifest));
+      assert.ok(!existsSync(join(packageDir, "scripts")));
+    }
     for (const data of treeFileBytes(packageDir).values()) {
       assert.ok(!data.includes(Buffer.from("<!-- skill-flavor:")));
     }
@@ -602,7 +672,11 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
     const entries = readTarballEntries(item.tarball);
     assert.ok(entries.has("package/package.json"));
     assert.ok(![...entries.keys()].some((name) => name.startsWith("package/skill-flavors/")));
-    assert.ok(![...entries.keys()].some((name) => name.startsWith("package/scripts/")));
+    assert.ok(!entries.has("package/scripts/compose-skill-flavor.mjs"));
+    assert.equal(
+      entries.has("package/scripts/npm-package-lifecycle.mjs"),
+      item.variant === "default",
+    );
     const extracted = extractTarball(t, item.tarball);
     assert.ok(
       buffersMapEqual(
@@ -615,6 +689,22 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
   if (process.platform !== "win32") {
     const extractedDefault = extractTarball(t, byVariant.get("default").tarball);
     assert.notEqual(statSync(join(extractedDefault, "hooks", "tool.sh")).mode & 0o111, 0);
+
+    const repackOutput = join(repo, "repacked-generated-default");
+    mkdirSync(repackOutput);
+    const repack = runNpm(
+      extractedDefault,
+      "pack",
+      "--json",
+      "--pack-destination",
+      repackOutput,
+    );
+    assert.equal(repack.status, 0, repack.stderr || repack.stdout);
+    const repacked = JSON.parse(repack.stdout);
+    assert.equal(repacked.length, 1);
+    const repackedEntries = readTarballEntries(join(repackOutput, repacked[0].filename));
+    assert.ok(repackedEntries.has("package/skills/uipath-changed/SKILL.md"));
+    assert.ok(!repackedEntries.has("package/scripts/compose-skill-flavor.mjs"));
   }
 });
 
@@ -722,9 +812,194 @@ test("invalid root package manifests and payload paths fail safely", async (t) =
   }
 });
 
-test("root npm pack guard exits with the safe generated-package command", (t) => {
+test("root npm pack emits one marker-free default package and restores canonical sources", (t) => {
   const repo = fixtureRepo(t);
-  const result = runCli(repo, "guard-root-pack");
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /npm run skills:pack/);
+  addSkill(
+    repo,
+    "uipath-example",
+    `Before.\n\n${block("host", "Canonical default guidance.")}\nAfter.\n`,
+  );
+  addSkill(repo, "uipath-pass-through");
+  writeOverride(
+    repo,
+    "studioweb",
+    "uipath-example/SKILL.md",
+    block("host", "Studio Web guidance."),
+  );
+  addPackageManifest(repo, "1.2.3-preview.7");
+  const canonicalBefore = treeFileBytes(join(repo, "skills"));
+  const output = join(repo, "root-pack-output");
+  mkdirSync(output);
+
+  const result = runNpm(repo, "pack", "--json", "--pack-destination", output);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const packed = JSON.parse(result.stdout);
+  assert.equal(packed.length, 1);
+  const tarball = join(output, packed[0].filename);
+  assert.ok(existsSync(tarball));
+
+  const entries = readTarballEntries(tarball);
+  const manifest = JSON.parse(entries.get("package/package.json").toString("utf8"));
+  assert.equal(manifest.name, "@uipath/skills");
+  assert.equal(manifest.version, "1.2.3-preview.7");
+  assert.equal(manifest.uipathSkillsFlavor, "default");
+  assert.equal(
+    manifest.scripts.prepack,
+    "node scripts/npm-package-lifecycle.mjs prepare",
+  );
+  const skill = entries.get("package/skills/uipath-example/SKILL.md").toString("utf8");
+  assert.match(skill, /Canonical default guidance/);
+  assert.doesNotMatch(skill, /Studio Web guidance|<!-- skill-flavor:/);
+  assert.ok(entries.has("package/skills/uipath-pass-through/SKILL.md"));
+  assert.ok(entries.has("package/scripts/npm-package-lifecycle.mjs"));
+  assert.ok(!entries.has("package/scripts/compose-skill-flavor.mjs"));
+  for (const [name, bytes] of entries) {
+    if (name.startsWith("package/skills/")) {
+      assert.ok(!bytes.includes(Buffer.from("<!-- skill-flavor:")), name);
+    }
+  }
+
+  assert.ok(buffersMapEqual(canonicalBefore, treeFileBytes(join(repo, "skills"))));
+  assert.ok(!existsSync(join(repo, "build", ROOT_PACK_TRANSACTION_DIRNAME)));
+  assert.deepEqual(readdirSync(output), [packed[0].filename]);
+});
+
+test("root npm publish dry-run keeps the old default-only behavior and restores sources", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-example", block("host", "Canonical default guidance."));
+  writeOverride(
+    repo,
+    "studioweb",
+    "uipath-example/SKILL.md",
+    block("host", "Studio Web guidance."),
+  );
+  addPackageManifest(repo);
+  const canonicalBefore = treeFileBytes(join(repo, "skills"));
+
+  const result = runNpm(repo, "publish", "--dry-run", "--json", "--access", "public");
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(`${result.stdout}\n${result.stderr}`, /@uipath\/skills|"name"\s*:\s*"@uipath\/skills"/);
+  assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /skills-studioweb/);
+  assert.ok(buffersMapEqual(canonicalBefore, treeFileBytes(join(repo, "skills"))));
+  assert.ok(!existsSync(join(repo, "build", ROOT_PACK_TRANSACTION_DIRNAME)));
+});
+
+test("root package preflight failure leaves canonical sources active", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-example", block("host", "Canonical default guidance."));
+  addPackageManifest(repo);
+  const canonicalBefore = treeFileBytes(join(repo, "skills"));
+
+  assert.throws(
+    () =>
+      prepareRootDefaultPackage(repo, {
+        runNpmPack: () => ({
+          status: 1,
+          stdout: "",
+          stderr: "simulated npm cache failure",
+        }),
+      }),
+    /simulated npm cache failure/,
+  );
+  assert.ok(buffersMapEqual(canonicalBefore, treeFileBytes(join(repo, "skills"))));
+  assert.ok(!existsSync(join(repo, "build", ROOT_PACK_TRANSACTION_DIRNAME)));
+});
+
+test("an interrupted root package transaction is explicit and recoverable", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-example", block("host", "Canonical default guidance."));
+  addPackageManifest(repo);
+  const canonicalBefore = treeFileBytes(join(repo, "skills"));
+
+  const prepared = withNpmCache(repo, () => prepareRootDefaultPackage(repo));
+  assert.equal(prepared.skillCount, 1);
+  assert.ok(existsSync(join(repo, "build", ROOT_PACK_TRANSACTION_DIRNAME)));
+  assert.doesNotMatch(
+    readFileSync(join(repo, "skills", "uipath-example", "SKILL.md"), "utf8"),
+    /<!-- skill-flavor:/,
+  );
+  assert.throws(
+    () => withNpmCache(repo, () => prepareRootDefaultPackage(repo)),
+    /already active.*skills:recover/s,
+  );
+
+  const restored = restoreRootDefaultPackage(repo);
+  assert.equal(restored.restored, true);
+  assert.ok(buffersMapEqual(canonicalBefore, treeFileBytes(join(repo, "skills"))));
+  assert.ok(!existsSync(join(repo, "build", ROOT_PACK_TRANSACTION_DIRNAME)));
+  assert.equal(restoreRootDefaultPackage(repo).restored, false);
+});
+
+test("simultaneous root package preparation leaves exactly one active transaction", async (t) => {
+  const repo = fixtureRepo(t);
+  const skill = addSkill(
+    repo,
+    "uipath-example",
+    block("host", "Canonical default guidance."),
+  );
+  const references = join(skill, "references");
+  mkdirSync(references);
+  for (let index = 0; index < 600; index += 1) {
+    writeFileSync(join(references, `reference-${index}.md`), `Reference ${index}.\n`);
+  }
+  addPackageManifest(repo);
+  const canonicalBefore = treeFileBytes(join(repo, "skills"));
+
+  const results = await Promise.all([
+    runCliAsync(repo, "prepare-root-pack"),
+    runCliAsync(repo, "prepare-root-pack"),
+  ]);
+  assert.equal(
+    results.filter((result) => result.status === 0).length,
+    1,
+    results.map((result) => result.stderr || result.stdout).join("\n---\n"),
+  );
+  assert.equal(results.filter((result) => result.status !== 0).length, 1);
+  assert.ok(existsSync(join(repo, "build", ROOT_PACK_TRANSACTION_DIRNAME)));
+  assert.doesNotMatch(
+    readFileSync(join(repo, "skills", "uipath-example", "SKILL.md"), "utf8"),
+    /<!-- skill-flavor:/,
+  );
+
+  assert.equal(restoreRootDefaultPackage(repo).restored, true);
+  assert.ok(buffersMapEqual(canonicalBefore, treeFileBytes(join(repo, "skills"))));
+  assert.ok(!existsSync(join(repo, "build", ROOT_PACK_TRANSACTION_DIRNAME)));
+});
+
+test("recovery preserves unexpected overlay edits while restoring canonical sources", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-example", block("host", "Canonical default guidance."));
+  addPackageManifest(repo);
+  const canonicalBefore = treeFileBytes(join(repo, "skills"));
+
+  withNpmCache(repo, () => prepareRootDefaultPackage(repo));
+  writeFileSync(
+    join(repo, "skills", "uipath-example", "SKILL.md"),
+    entrypoint("uipath-example", "Unexpected edit during packaging.\n"),
+  );
+  assert.throws(
+    () => restoreRootDefaultPackage(repo),
+    /unexpected packaging-time changes were preserved/,
+  );
+
+  assert.ok(buffersMapEqual(canonicalBefore, treeFileBytes(join(repo, "skills"))));
+  assert.ok(!existsSync(join(repo, "build", ROOT_PACK_TRANSACTION_DIRNAME)));
+  const recoveries = readdirSync(join(repo, "build")).filter((name) =>
+    name.startsWith(".root-pack-recovery-"),
+  );
+  assert.equal(recoveries.length, 1);
+  assert.match(
+    readFileSync(
+      join(
+        repo,
+        "build",
+        recoveries[0],
+        "modified-packed-skills",
+        "uipath-example",
+        "SKILL.md",
+      ),
+      "utf8",
+    ),
+    /Unexpected edit during packaging/,
+  );
 });

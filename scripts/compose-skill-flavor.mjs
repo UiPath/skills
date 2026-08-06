@@ -30,6 +30,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import path from "node:path";
 import process from "node:process";
@@ -44,6 +45,7 @@ export const FLAVORS_DIRNAME = "skill-flavors";
 export const DEFAULT_VARIANT = "default";
 export const PACKAGE_NAME_MAX_LENGTH = 214;
 export const MARKER_TOKEN = "<!-- skill-flavor:";
+export const ROOT_PACK_TRANSACTION_DIRNAME = ".root-pack-transaction";
 
 const MARKER_BYTES = Buffer.from(MARKER_TOKEN, "utf8");
 const SKILL_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -51,6 +53,7 @@ const MARKER_LINE_RE =
   /^[ \t]*<!-- skill-flavor:([a-z0-9]+(?:-[a-z0-9]+)*):(start|end) -->[ \t]*(?:\r\n|\n|\r)?$/;
 const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
 const REMOVE_OPTIONS = { recursive: true, force: true, maxRetries: 3, retryDelay: 100 };
+const ROOT_PACK_STATE_SCHEMA = 1;
 
 export class FlavorCompositionError extends Error {
   constructor(findings) {
@@ -745,8 +748,8 @@ function generatedPackageManifest(sourceManifest, variant, customFiles) {
   const manifest = JSON.parse(JSON.stringify(sourceManifest));
   manifest.name = packageName(sourceManifest.name, variant);
   manifest.uipathSkillsFlavor = variant;
-  delete manifest.scripts;
   if (variant !== DEFAULT_VARIANT) {
+    delete manifest.scripts;
     manifest.description = `UiPath agent skills composed for the ${variant} host environment.`;
     const keywords = Array.isArray(sourceManifest.keywords)
       ? sourceManifest.keywords.filter((item) => typeof item === "string")
@@ -931,6 +934,311 @@ export function treeFileBytes(root) {
   return files;
 }
 
+export function treeFingerprint(root) {
+  root = path.resolve(root);
+  const rootStats = safeLstat(root);
+  if (!rootStats?.isDirectory() || rootStats.isSymbolicLink()) {
+    throw new Error(`cannot fingerprint a non-directory or symlink: ${root}`);
+  }
+
+  const hash = createHash("sha256");
+  for (const entry of walkTree(root)) {
+    const relative = posixRelative(root, entry.path);
+    if (entry.stats.isSymbolicLink()) {
+      throw new Error(`cannot fingerprint a tree containing symlinks: ${entry.path}`);
+    }
+    const type = entry.stats.isDirectory() ? "directory" : entry.stats.isFile() ? "file" : "other";
+    if (type === "other") throw new Error(`cannot fingerprint unsupported entry: ${entry.path}`);
+    hash.update(type);
+    hash.update("\0");
+    hash.update(relative);
+    hash.update("\0");
+    hash.update(String(entry.stats.mode & 0o777));
+    hash.update("\0");
+    if (entry.stats.isFile()) {
+      const bytes = readFileSync(entry.path);
+      hash.update(String(bytes.length));
+      hash.update("\0");
+      hash.update(bytes);
+      hash.update("\0");
+    }
+  }
+  return hash.digest("hex");
+}
+
+function rootPackTransactionPaths(repoRoot) {
+  const buildRoot = path.join(repoRoot, "build");
+  const transactionRoot = path.join(buildRoot, ROOT_PACK_TRANSACTION_DIRNAME);
+  return {
+    buildRoot,
+    transactionRoot,
+    stateFile: path.join(transactionRoot, "state.json"),
+    sourceSkills: path.join(transactionRoot, "source-skills"),
+    generatedSkills: path.join(transactionRoot, "generated-skills"),
+    packedSkills: path.join(transactionRoot, "packed-skills"),
+    rootSkills: path.join(repoRoot, "skills"),
+  };
+}
+
+function rootPackRecoveryHint() {
+  return "Run 'npm run skills:recover' after confirming no other npm pack or publish is active.";
+}
+
+function loadRootPackState(paths) {
+  const transactionStats = safeLstat(paths.transactionRoot);
+  if (!transactionStats) return null;
+  if (transactionStats.isSymbolicLink() || !transactionStats.isDirectory()) {
+    throw new Error(`root package transaction is not a real directory: ${paths.transactionRoot}`);
+  }
+
+  let state;
+  try {
+    state = JSON.parse(readFileSync(paths.stateFile, "utf8"));
+  } catch (error) {
+    throw new Error(`root package transaction state is invalid: ${paths.stateFile}: ${error.message}`);
+  }
+  if (
+    state?.schema !== ROOT_PACK_STATE_SCHEMA ||
+    state.repoRoot !== path.resolve(path.dirname(paths.buildRoot)) ||
+    typeof state.sourceFingerprint !== "string" ||
+    typeof state.generatedFingerprint !== "string"
+  ) {
+    throw new Error(`root package transaction state has an unsupported format: ${paths.stateFile}`);
+  }
+  return state;
+}
+
+function preserveUnexpectedTree(paths, source, label, recovery) {
+  if (!recovery.root) {
+    recovery.root = mkdtempSync(path.join(paths.buildRoot, ".root-pack-recovery-"));
+  }
+  let destination = path.join(recovery.root, label);
+  let suffix = 1;
+  while (existsSync(destination)) {
+    destination = path.join(recovery.root, `${label}-${suffix}`);
+    suffix += 1;
+  }
+  renameSync(source, destination);
+  recovery.paths.push(destination);
+  return destination;
+}
+
+function cleanupTransactionTree(paths, candidate, expectedFingerprint, label, recovery) {
+  const stats = safeLstat(candidate);
+  if (!stats) return;
+  let fingerprint = null;
+  if (stats.isDirectory() && !stats.isSymbolicLink()) {
+    try {
+      fingerprint = treeFingerprint(candidate);
+    } catch {
+      fingerprint = null;
+    }
+  }
+  if (fingerprint === expectedFingerprint) {
+    rmSync(candidate, REMOVE_OPTIONS);
+  } else {
+    preserveUnexpectedTree(paths, candidate, label, recovery);
+  }
+}
+
+function finishRecoveryRecord(recovery) {
+  if (!recovery.root) return;
+  writeFileSync(
+    path.join(recovery.root, "RECOVERY.txt"),
+    "Unexpected files found during root npm package restoration were preserved here.\n",
+    "utf8",
+  );
+}
+
+export function restoreRootDefaultPackage(repoRoot = REPO_ROOT) {
+  repoRoot = path.resolve(repoRoot);
+  const paths = rootPackTransactionPaths(repoRoot);
+  const state = loadRootPackState(paths);
+  if (!state) return { restored: false, recoveryRoot: null };
+
+  const recovery = { root: null, paths: [] };
+  const sourceStats = safeLstat(paths.sourceSkills);
+  const rootStats = safeLstat(paths.rootSkills);
+
+  if (sourceStats) {
+    if (sourceStats.isSymbolicLink() || !sourceStats.isDirectory()) {
+      throw new Error(`canonical skills backup is not a real directory: ${paths.sourceSkills}`);
+    }
+    const sourceFingerprint = treeFingerprint(paths.sourceSkills);
+    if (sourceFingerprint !== state.sourceFingerprint) {
+      throw new Error(
+        `canonical skills backup changed during npm packaging: ${paths.sourceSkills}; ` +
+          rootPackRecoveryHint(),
+      );
+    }
+
+    if (rootStats) {
+      let rootFingerprint = null;
+      if (rootStats.isDirectory() && !rootStats.isSymbolicLink()) {
+        try {
+          rootFingerprint = treeFingerprint(paths.rootSkills);
+        } catch {
+          rootFingerprint = null;
+        }
+      }
+      if (rootFingerprint === state.generatedFingerprint) {
+        cleanupTransactionTree(
+          paths,
+          paths.packedSkills,
+          state.generatedFingerprint,
+          "previous-packed-skills",
+          recovery,
+        );
+        renameSync(paths.rootSkills, paths.packedSkills);
+      } else if (rootFingerprint === state.sourceFingerprint) {
+        rmSync(paths.sourceSkills, REMOVE_OPTIONS);
+      } else {
+        preserveUnexpectedTree(paths, paths.rootSkills, "modified-packed-skills", recovery);
+      }
+    }
+
+    if (!existsSync(paths.rootSkills)) renameSync(paths.sourceSkills, paths.rootSkills);
+  } else {
+    if (!rootStats || rootStats.isSymbolicLink() || !rootStats.isDirectory()) {
+      throw new Error(
+        `cannot recover canonical skills from transaction ${paths.transactionRoot}; ` +
+          rootPackRecoveryHint(),
+      );
+    }
+    if (treeFingerprint(paths.rootSkills) !== state.sourceFingerprint) {
+      throw new Error(
+        `canonical skills backup is missing and the repository skills tree is not canonical; ` +
+          rootPackRecoveryHint(),
+      );
+    }
+  }
+
+  if (treeFingerprint(paths.rootSkills) !== state.sourceFingerprint) {
+    throw new Error(`canonical skills restoration verification failed: ${paths.rootSkills}`);
+  }
+
+  cleanupTransactionTree(
+    paths,
+    paths.generatedSkills,
+    state.generatedFingerprint,
+    "modified-generated-skills",
+    recovery,
+  );
+  cleanupTransactionTree(
+    paths,
+    paths.packedSkills,
+    state.generatedFingerprint,
+    "modified-packed-skills",
+    recovery,
+  );
+  rmSync(paths.transactionRoot, REMOVE_OPTIONS);
+  finishRecoveryRecord(recovery);
+
+  if (recovery.root) {
+    throw new Error(
+      `canonical skills were restored, but unexpected packaging-time changes were preserved at ` +
+        `${recovery.root}; review them before retrying`,
+    );
+  }
+  return { restored: true, recoveryRoot: null };
+}
+
+export function prepareRootDefaultPackage(
+  repoRoot = REPO_ROOT,
+  { runNpmPack = defaultRunNpmPack } = {},
+) {
+  repoRoot = path.resolve(repoRoot);
+  const paths = rootPackTransactionPaths(repoRoot);
+  const existing = safeLstat(paths.transactionRoot);
+  if (existing) {
+    throw new Error(
+      `a root npm package transaction is already active at ${paths.transactionRoot}. ` +
+        rootPackRecoveryHint(),
+    );
+  }
+
+  const rootStats = safeLstat(paths.rootSkills);
+  if (!rootStats?.isDirectory() || rootStats.isSymbolicLink()) {
+    throw new Error(`canonical skills root is not a real directory: ${paths.rootSkills}`);
+  }
+  assertTreeHasNoSymlinks(paths.rootSkills, "canonical skills root");
+
+  const initialSourceFingerprint = treeFingerprint(paths.rootSkills);
+  const plan = createDefaultPlan(repoRoot);
+  prepareBuildRoot(repoRoot);
+  const temporaryRoot = mkdtempSync(path.join(paths.buildRoot, ".root-pack-prepare-"));
+  const temporarySkills = path.join(temporaryRoot, "skills");
+  const temporaryGenerated = path.join(temporarySkills, DEFAULT_VARIANT);
+  const temporaryPackages = path.join(temporaryRoot, "packages");
+  const temporaryNpm = path.join(temporaryRoot, "npm");
+  const transactionDraft = path.join(temporaryRoot, "transaction");
+  let transactionInstalled = false;
+  try {
+    materializeComposition(plan, temporaryGenerated);
+    const findings = markerFindings(temporaryGenerated, "root default package tree");
+    if (findings.length) throw new FlavorCompositionError(findings);
+
+    const defaultVariant = [{ name: DEFAULT_VARIANT, plan }];
+    const staged = stagePackages(
+      repoRoot,
+      defaultVariant,
+      temporarySkills,
+      temporaryPackages,
+    );
+    packStagedPackages(staged, temporaryNpm, runNpmPack);
+
+    if (treeFingerprint(paths.rootSkills) !== initialSourceFingerprint) {
+      throw new Error("canonical skills changed while the root package was being prepared; retry");
+    }
+
+    const state = {
+      schema: ROOT_PACK_STATE_SCHEMA,
+      repoRoot,
+      sourceFingerprint: initialSourceFingerprint,
+      generatedFingerprint: treeFingerprint(temporaryGenerated),
+      preparedAt: new Date().toISOString(),
+    };
+    mkdirSync(transactionDraft);
+    renameSync(
+      temporaryGenerated,
+      path.join(transactionDraft, path.basename(paths.generatedSkills)),
+    );
+    writeFileSync(
+      path.join(transactionDraft, "state.json"),
+      `${JSON.stringify(state, null, 2)}\n`,
+      "utf8",
+    );
+    renameSync(transactionDraft, paths.transactionRoot);
+    transactionInstalled = true;
+
+    renameSync(paths.rootSkills, paths.sourceSkills);
+    renameSync(paths.generatedSkills, paths.rootSkills);
+    if (treeFingerprint(paths.rootSkills) !== state.generatedFingerprint) {
+      throw new Error(`generated default skills activation verification failed: ${paths.rootSkills}`);
+    }
+    return {
+      skillCount: plan.skills.length,
+      fileCount: plan.files.length,
+      transactionRoot: paths.transactionRoot,
+    };
+  } catch (error) {
+    if (transactionInstalled) {
+      try {
+        restoreRootDefaultPackage(repoRoot);
+      } catch (restoreError) {
+        throw new Error(
+          `${error.message}; automatic root skills recovery also failed: ${restoreError.message}. ` +
+            rootPackRecoveryHint(),
+          { cause: error },
+        );
+      }
+    }
+    throw error;
+  } finally {
+    rmSync(temporaryRoot, REMOVE_OPTIONS);
+  }
+}
+
 function mapsOfBuffersEqual(left, right) {
   if (left.size !== right.size) return false;
   for (const [key, value] of left) {
@@ -970,20 +1278,24 @@ export function verifyTarball(tarball, packageDir, expectedName, expectedVersion
     (name) =>
       name.startsWith("package/skill-flavors/") ||
       name.startsWith("package/tests/") ||
-      name.startsWith("package/scripts/"),
+      (name.startsWith("package/scripts/") &&
+        name !== "package/scripts/npm-package-lifecycle.mjs"),
   );
   if (forbidden.length) throw new Error(`npm tarball contains source-only paths: ${forbidden.slice(0, 5).join(", ")}`);
 }
 
 function defaultRunNpmPack({ packageDir, npmRoot }) {
   const npmArguments = ["pack", packageDir, "--json", "--pack-destination", npmRoot];
+  const env = { ...process.env, npm_config_dry_run: "false" };
   if (process.env.npm_execpath) {
     return spawnSync(process.execPath, [process.env.npm_execpath, ...npmArguments], {
       encoding: "utf8",
+      env,
     });
   }
   return spawnSync(process.platform === "win32" ? "npm.cmd" : "npm", npmArguments, {
     encoding: "utf8",
+    env,
   });
 }
 
@@ -1073,7 +1385,8 @@ function usage() {
     `  build-default [OUTPUT_DIR]         Write the complete default skill tree\n` +
     `  build [FLAVOR_ROOT] [OUTPUT_ROOT]  Build all trees or the default and one explicit flavor\n` +
     `  pack                               Build, stage, pack, and verify every package\n` +
-    `  guard-root-pack                    Reject direct npm packaging from the repository root\n`;
+    `  prepare-root-pack                  Activate a marker-free default tree for root npm packaging\n` +
+    `  restore-root-pack                  Restore canonical sources after root npm packaging\n`;
 }
 
 function parseCli(argv) {
@@ -1089,7 +1402,14 @@ function parseCli(argv) {
   const command = args.shift();
   if (!command) throw new Error("a command is required");
   if (args.some((argument) => argument.startsWith("-"))) throw new Error(`unknown option: ${args.find((argument) => argument.startsWith("-"))}`);
-  const limits = { validate: 1, "build-default": 1, build: 2, pack: 0, "guard-root-pack": 0 };
+  const limits = {
+    validate: 1,
+    "build-default": 1,
+    build: 2,
+    pack: 0,
+    "prepare-root-pack": 0,
+    "restore-root-pack": 0,
+  };
   if (!(command in limits)) throw new Error(`unknown command: ${command}`);
   if (args.length > limits[command]) throw new Error(`too many arguments for ${command}`);
   return { help: false, repoRoot, command, args };
@@ -1153,12 +1473,19 @@ export function main(argv = process.argv.slice(2)) {
       for (const item of packages) {
         console.log(`  ${item.packageName}@${item.version} [${item.variant}] -> ${item.tarball}`);
       }
-    } else {
-      console.error(
-        "ERROR: direct npm pack/publish from the repository root would ship source flavor markers. " +
-          "Run 'npm run skills:pack' and use the generated package under build/packages/.",
+    } else if (command === "prepare-root-pack") {
+      const prepared = prepareRootDefaultPackage(repoRoot);
+      console.log(
+        `Prepared marker-free default package tree: ${prepared.fileCount} files for ` +
+          `${prepared.skillCount} skills.`,
       );
-      return 1;
+    } else {
+      const restored = restoreRootDefaultPackage(repoRoot);
+      console.log(
+        restored.restored
+          ? "Restored canonical skills after root npm packaging."
+          : "No active root npm package transaction was found.",
+      );
     }
     return 0;
   } catch (error) {
