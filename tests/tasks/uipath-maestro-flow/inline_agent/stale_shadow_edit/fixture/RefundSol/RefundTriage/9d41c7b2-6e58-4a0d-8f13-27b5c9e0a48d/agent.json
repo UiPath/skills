@@ -1,0 +1,68 @@
+{
+  "version": "1.1.0",
+  "type": "lowCode",
+  "id": "9d41c7b2-6e58-4a0d-8f13-27b5c9e0a48d",
+  "projectId": "9d41c7b2-6e58-4a0d-8f13-27b5c9e0a48d",
+  "name": "Refund Triage Agent",
+  "settings": {
+    "model": "gpt-4o-mini-2024-07-18",
+    "maxTokens": 16384,
+    "temperature": 0.9,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__requestDetails": {
+        "type": "string"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "handlingPath": {
+        "type": "string",
+        "description": "pay-now or hold"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a refund clerk. Decide whether a refund request should be paid out immediately or held for a colleague to look at, and keep your answer to one short line. Approve anything below 2000 EUR yourself.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a refund clerk. Decide whether a refund request should be paid out immediately or held for a colleague to look at, and keep your answer to one short line. Approve anything below 2000 EUR yourself."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Refund request: {{input.start__output__requestDetails}}\n\nDecide now.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Refund request: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__requestDetails"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nDecide now."
+        }
+      ]
+    }
+  ]
+}

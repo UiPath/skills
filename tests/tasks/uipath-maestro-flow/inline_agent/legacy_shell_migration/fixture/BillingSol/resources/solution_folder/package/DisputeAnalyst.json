@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DisputeAnalyst",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d8f4b8c5-bd1e-42df-bba3-1c2dc500403e",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "DisputeAnalyst"
+    },
+    "locks": [],
+    "key": "3cd8f673-457a-4a3b-8c6e-6a84c0b3ae86",
+    "files": []
+  }
+}

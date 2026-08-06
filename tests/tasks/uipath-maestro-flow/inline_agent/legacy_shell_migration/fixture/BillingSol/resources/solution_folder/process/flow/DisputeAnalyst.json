@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "DisputeAnalyst",
+    "kind": "process",
+    "type": "flow",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "d8f4b8c5-bd1e-42df-bba3-1c2dc500403e",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "DisputeAnalyst"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Flow",
+      "name": "DisputeAnalyst",
+      "package": {
+        "key": "3cd8f673-457a-4a3b-8c6e-6a84c0b3ae86"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "7c35752a-edf3-45f5-8fd5-8c4bc483152f",
+    "files": []
+  }
+}

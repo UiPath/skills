@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "3fa5cacc-70bc-455f-af58-15305a380291",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "RefundTriage/project.uiproj",
+      "Id": "fa56d451-03ee-41b2-bedb-ffd95b4fc920"
+    }
+  ]
+}

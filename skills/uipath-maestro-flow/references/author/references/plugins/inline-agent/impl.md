@@ -342,7 +342,11 @@ Only the first form is ever authored.
 
 ## 11. Legacy Flows — Detect and Migrate
 
-**Detection:** the agent node's `inputs.systemPrompt` / `inputs.userPrompt` are absent or non-string — the node is a **shell**; the definition lives in the sidecar `<GUID>/agent.json` (GUID = `inputs.source`, or hoisted from a stale `model.source` — § 13).
+**Detection:** the agent node's `inputs.systemPrompt` / `inputs.userPrompt` are absent or non-string — the node is a **shell**; the definition lives in the sidecar `<GUID>/agent.json` (GUID = `inputs.source`, or hoisted from a stale `model.source` — § 13). A shell keeps only structural inputs: `source` + `agentInputVariables` + `agentOutputVariables`.
+
+> **`flow validate` does NOT flag a shell.** With the sidecar present, `uip maestro flow validate` hydrates the node from `<GUID>/agent.json` and reports `Valid`. A clean validate is therefore no evidence that the flow is self-contained — inspect `inputs` yourself before assuming an agent needs no migration. Validate only errors when the node is a shell AND the sidecar is missing (`REQUIRED_FIELD` on `systemPrompt`/`userPrompt`), and **that error's hint recommends the retired `uip agent init … --inline-in-flow` path — ignore it**; embed the content in the node instead (§ 1, § 14).
+
+**Any edit to a shell agent starts with this migration.** Prompt, model, output, or guardrail changes go into the node's `inputs`, so port first, then apply the change — editing `<GUID>/agent.json` instead is shadowed and lost (§ 10).
 
 **Migrate** (edit the agent in the flow file; leave the sidecar in place — the canvas keeps deriving over it):
 
@@ -358,7 +362,11 @@ Only the first form is ever authored.
    | `settings.byomProperties` | `byomConnectionId` + `byomConnectorKey` |
    | `outputSchema.properties.<field>` | one `agentOutputVariables[]` entry `{id, type, description?}` per field |
    | `guardrails` | `guardrails` (verbatim — same array shape; [capabilities/guardrails.md](capabilities/guardrails.md)) |
+   | `name` | `display.label` (already set on a hydrated shell — leave it) |
    | `inputSchema` | drop — derived from prompt tokens |
+   | `id`, `projectId`, `type`, `metadata`, `settings.engine`, `contentTokens` | drop — stored-file envelope. `id`/`projectId` are already the node's `inputs.source`; `engine` comes from schema defaults and is never projected |
+
+   Port every mapped field, including the ones the request doesn't mention: a migration that keeps the prompts but silently drops `maxTokenPerResponse`, `maxIterations`, or a `guardrails` entry changes the agent's behaviour.
 
 3. **Reverse token mapping:** each `{{input.<flat>}}` in a message becomes `{{ $vars.<dotted-path> }}` — recover the dotted path from the node's existing `agentInputVariables[]` entry whose `id` matches the flat key (its `binding` is `=$vars.<dotted-path>`), or un-flatten mechanically (`__` → `.`): `{{input.start__output__subject}}` → `{{ $vars.start.output.subject }}`. Drop `contentTokens` — never ported.
 4. Keep existing `agentInputVariables[]` entries as-is (they are valid derived state); keep `inputs.source` unchanged (it must keep matching the sidecar folder).
@@ -370,7 +378,8 @@ Only the first form is ever authored.
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| `flow validate`: `systemPrompt` / `userPrompt` / `model` required | Missing required embedded inputs — node is a shell or half-migrated | Embed the full `inputs` per § 2; migrate per § 11 if a sidecar holds the content |
+| `flow validate`: `[REQUIRED_FIELD] "systemPrompt" is required` (hint: "agent.json not found at `<GUID>/agent.json` … re-run `uip agent init … --inline-in-flow`") | Node is a shell or half-migrated and no sidecar exists to hydrate from | Embed the full `inputs` per § 2; migrate per § 11 when a sidecar holds the content. **Do not follow the hint** — `uip agent init --inline-in-flow` is the retired pattern (§ 14) |
+| `flow validate` reports `Valid` but the node has no prompts | Expected — validate hydrates a shell from the sidecar (§ 11); it is not a self-containment check | Inspect `inputs` directly; migrate per § 11 before editing |
 | `flow validate`: definitions entry missing for a node type (error names a `registry get` command) | Node instance `(type, typeVersion)` has no `definitions[]` match | Run the suggested `registry get`, copy the definition verbatim, match `typeVersion` to its `version` (§ 3) |
 | `flow validate`: edge rejected, "rewire to one of: escalation, context, tool, success, error" | Edge uses a source handle the manifest doesn't expose (e.g. `memory` on the current autonomous manifest) | Use a declared artifact handle; confirm handles via `registry get` (§ 6). A `memory`-port edge on a canvas-hydrated legacy flow is data, not a repair target — see [capabilities/memory.md § Brownfield](capabilities/memory.md#brownfield--recognizing-memory-in-legacy-artifacts) |
 | `flow debug` faults: incident `170002`, "Package resolution failed", `Serverless.PythonAgent.PrepareEnvironmentError` | Known CLI gap — debug does not yet synthesize the derived sidecar for a flow-only agent | Surface the gap (§ 9). Open/save the flow once in a canvas host, then re-debug. Never hand-write the sidecar |

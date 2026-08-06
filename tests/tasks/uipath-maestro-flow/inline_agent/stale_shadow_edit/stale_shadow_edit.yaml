@@ -1,0 +1,109 @@
+task_id: skill-flow-inline-agent-stale-shadow
+description: >
+  Brownfield test for the "the `.flow` wins" half of the self-contained-flow
+  contract: the sandbox is seeded with an ALREADY-EMBEDDED inline agent whose
+  derived sidecar `<GUID>/agent.json` is STALE — an older generation of the same
+  agent (weaker model, looser limits, no guardrail, one typed output instead of
+  two, only one of the two prompt bindings). A behaviour-change request stated
+  in pure business terms (no pattern words) must land on the node, and nothing
+  may regress to the stale copy: an agent that "re-syncs" the node from the
+  derived file silently downgrades the model, drops the prompt-injection
+  guardrail, and loses an output. Sibling of legacy_shell_migration (shared
+  scaffold, opposite starting state: embedded-with-stale-shadow vs
+  shell-with-live-sidecar). `uip maestro flow validate` cannot see any of this —
+  both the regressed and the correct flow validate clean — so the checker is the
+  gate. Validate-only by design, no `flow debug`: debug cannot run flow-only
+  inline agents (no sidecar synthesis — known CLI gap pinned at roadmap M0).
+  Fully local otherwise: no upload, publish, or tenant mutation.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, node:inline-agent, shape:multi-node]
+
+run_limits:
+  expected_turns: 30
+  turn_timeout: 1200
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/inline_agent/stale_shadow_edit/setup_fixture.py"
+    timeout: 30
+
+initial_prompt: |
+  The payments desk's refund-triage automation is already in this workspace at
+  `RefundSol/RefundTriage`. Fraud has asked for one addition:
+
+  1. Every triaged request must also report a fraud-risk tier of `low`,
+     `medium`, or `high`, returned as a string called `riskTier`.
+  2. Surface `riskTier` as a flow output too, alongside the existing
+     `handlingPath` and `summary`.
+
+  Nothing else about the triage behaviour changes: same language model, same
+  response limits, same safety controls, same classification rules, and the same
+  request details it already reads from the trigger.
+
+  The task is NOT complete until `uip maestro flow validate` passes for the flow
+  file.
+
+  Do NOT create a new solution or a new project — change the one that is
+  already here. Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and implementation.
+  Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "Edit landed on the node and nothing regressed to the stale sidecar (model, limits, guardrail, both outputs, both bindings, live prompt text)"
+    command: 'python3 "$TASK_DIR/check_stale_shadow_edit.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the edited flow"
+    command: 'python3 "$TASK_DIR/../../_shared/validate_flow.py"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow file carries the new output and keeps the live model"
+    path: "RefundSol/RefundTriage/RefundTriage.flow"
+    includes:
+      - '"riskTier"'
+      - 'gpt-4.1-2025-04-14'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Stale sidecar left untouched (still present, content unchanged)"
+    command: 'python3 "$TASK_DIR/../../_shared/check_sidecar_untouched.py" "$TASK_DIR/fixture"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No agent-project lifecycle commands (the definition lives in the .flow)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+(init|refresh|validate)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Brownfield: did not scaffold a replacement solution or flow project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+init|(maestro\s+)?flow\s+init)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No Write into the derived sidecar directory"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*9d41c7b2-6e58-4a0d-8f13-27b5c9e0a48d'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No Edit into the derived sidecar directory"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*9d41c7b2-6e58-4a0d-8f13-27b5c9e0a48d'
+    weight: 1.0
+    pass_threshold: 1.0
