@@ -196,6 +196,31 @@ Values are the **uppercase strings** above — `"COUNT"` not `"Count"`.
 - The same `filterGroup`, `sortOptions`, and pagination flags (`--limit`, `--cursor`) work alongside aggregates. Filters are applied **before** grouping (SQL `WHERE`).
 - `groupBy` names the choice-set field. Group keys and filter values use numeric `NumberId` values rather than display labels.
 
+### Post-aggregation filter (havingFilter)
+
+Filters **grouped results after aggregation** (SQL `HAVING`) — the counterpart of `filterGroup`, which filters rows before grouping (SQL `WHERE`).
+
+```json
+{
+  "groupBy": ["Status"],
+  "aggregates": [{ "function": "COUNT", "field": "Id", "alias": "total" }],
+  "havingFilter": {
+    "logicalOperator": 0,
+    "aggregateFilters": [
+      { "aggregateAlias": "total", "operator": ">", "value": "5" }
+    ]
+  }
+}
+```
+
+- **Aggregates-only:** each condition's `aggregateAlias` must match a declared `aggregates[].alias`. Row-level conditions belong in `filterGroup` — the server rejects plain field names in `havingFilter` with 400.
+- Requires both `aggregates` and `groupBy`. Max 5 conditions. `logicalOperator`: `0` = AND, `1` = OR.
+- Operators: `=` `!=` `<>` `>` `>=` `<` `<=`. `value` is a string: integer for `COUNT`, numeric for `SUM`/`AVG`; `MIN`/`MAX` follow the field's type.
+- **Native (LDO) entities only** — federated entities and FQS-routed queries return 400. The tenant needs the `enable-having-on-query` feature flag; without it the server returns 400 naming the flag.
+- `totalCount` reflects the groups remaining **after** the having filter.
+
+> Needs a `@uipath/data-fabric-tool` release with SDK `havingFilter` support; older tool versions mangle the key (sent as `$havingFilter`) and the server ignores it — `uip tools install @uipath/data-fabric-tool@latest`.
+
 ## Insert Records
 
 The CLI routes by body shape: a JSON object (or 1-element array) calls the single-record endpoint; a JSON array with 2+ elements calls the batch endpoint.
