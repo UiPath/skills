@@ -632,7 +632,7 @@ Run `uip agent guardrails list --output json` to get the authoritative list. Onl
 
 ## BYO (bring-your-own) guardrails
 
-A validator can be fulfilled by a tenant-registered **external** provider (a "BYOG" configuration — e.g. Azure AI Content Safety, Databricks AI Guardrails) instead of, or alongside, UiPath's own built-in implementation. A tenant admin registers these at Admin → AI Trust Layer → Guardrails Configurations; see [uipath-platform § BYO Guardrail Configurations](/uipath:uipath-platform) for the admin-side inspection command (`uip guardrails byo-configurations list`).
+A validator can be fulfilled by a tenant-registered **external** provider (a "BYOG" configuration — e.g. Azure AI Content Safety, Databricks AI Guardrails) instead of, or alongside, UiPath's own built-in implementation. A tenant admin registers these at Admin → AI Trust Layer → Guardrails Configurations or via `uip guardrails byo-configurations create`; see [uipath-platform § BYO Guardrail Configurations](/uipath:uipath-platform) for the admin-side lifecycle commands (`uip guardrails byo-configurations list|create|update|delete`).
 
 - **`Validator` is not unique.** A tenant with a BYOG `harmful_content` configuration sees **two** entries named `harmful_content` in `uip agent guardrails list` output — one built-in, one BYO. Use `IsByo` to tell them apart; never assume a single match.
 - **Filter to BYO-only entries** with `uip agent guardrails list --byo --output json` when the user specifically wants to see or target a BYO-backed validator.

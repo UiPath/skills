@@ -94,7 +94,7 @@ uip agent guardrails list --output json
 
 Build a `{ validatorId: status }` lookup from the `Data` array (use only `Status == "Available"`).
 
-> **`Validator` is not unique — key on `(Validator, IsByo)`, not `Validator` alone.** A tenant with a bring-your-own (BYOG) configuration for a validator has two entries sharing the same `Validator` name — one built-in, one BYO (`IsByo: true`). If the code wires a BYO validator construct, match it against the `IsByo: true` entry (by its `ByoValidatorName`/connection id), not the built-in one, before reading `Parameters`/scopes. See [uipath-agents coded guardrails.md § BYO (bring-your-own) validators](/uipath:uipath-agents).
+> **`Validator` is not unique — key on `(Validator, IsByo)`, not `Validator` alone.** A tenant with a bring-your-own (BYOG) configuration for a validator has two entries sharing the same `Validator` name — one built-in, one BYO (`IsByo: true`). If the code wires a BYO validator construct, match it against the `IsByo: true` entry (by its `ByoValidatorName` — tenant-unique; the code passes no connection id), not the built-in one, before reading `Parameters`/scopes. See [uipath-agents coded guardrails.md § BYO (bring-your-own) validators](/uipath:uipath-agents).
 
 ### SDK Docs (required when Step 0 needs Python class names)
 

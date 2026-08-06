@@ -113,7 +113,7 @@ What can cause it:
 
 **Recent rule regression:** Check last-modified date in AgentBuilder or Flow → Guardrails. Restore the prior rule definition or disable the rule temporarily. Document the rollback and review rule scope with the guardrail policy team.
 
-**BYO guardrail connection dead or configuration disabled:** If step 4's BYOG check showed `ValidConnection: false`, the underlying Integration Service connection is broken — repair it directly (`uip is connections get <connection-id>`; see [uipath-platform § BYO Guardrail Configurations § Diagnostics](/uipath:uipath-platform)). If `Enabled: false`, the tenant admin switched the configuration off — confirm with them whether that was intentional before re-enabling it (Admin → AI Trust Layer → Guardrails Configurations; no CLI verb re-enables it). Re-test with the previously blocked input after either fix.
+**BYO guardrail connection dead or configuration disabled:** If step 4's BYOG check showed `ValidConnection: false`, the underlying Integration Service connection is broken — repair it directly (`uip is connections get <connection-id>`; see [uipath-platform § BYO Guardrail Configurations § Diagnostics](/uipath:uipath-platform)). If `Enabled: false`, the tenant admin switched the configuration off — confirm with them whether that was intentional before re-enabling it with `uip guardrails byo-configurations update <configuration-id> --enabled` (or Admin → AI Trust Layer → Guardrails Configurations). Re-test with the previously blocked input after either fix.
 
 Refresh and validate after any rule or agent change:
 

@@ -59,22 +59,22 @@ If the requested validator has `Status != "Available"` → tell the user and sto
 
 ## BYO (bring-your-own) validators
 
-A validator can be fulfilled by a tenant-registered **external** provider (a "BYOG" configuration — e.g. Azure AI Content Safety, Databricks AI Guardrails) instead of UiPath's own built-in implementation. Registration happens Admin-UI-side (Admin → AI Trust Layer → Guardrails Configurations); this section covers wiring an already-registered BYOG configuration into agent code.
+A validator can be fulfilled by a tenant-registered **external** provider (a "BYOG" configuration — e.g. Azure AI Content Safety, Databricks AI Guardrails) instead of UiPath's own built-in implementation. Registration is admin-side — Admin → AI Trust Layer → Guardrails Configurations, or `uip guardrails byo-configurations create` (see [uipath-platform § BYO Guardrail Configurations](/uipath:uipath-platform)); this section covers wiring an already-registered BYOG configuration into agent code.
 
 **Same rule as [Step 0](#step-0--fetch-official-documentation): do not hardcode the BYO validator's class name or constructor signature from memory.** Check the same two fetched SDK doc pages (`langchain/guardrails/`, `core/guardrails/`) for BYO validator support before writing any code. If the fetched docs do not expose a BYO validator construct, **stop and report that BYO guardrails are not available in the current SDK docs/runtime** — do not invent the class, import path, or arguments (same posture as `EscalateAction`, Critical Rule 14).
 
 Discovery steps (in addition to the fetched docs):
 
-1. Confirm a BYOG configuration exists for the desired validator and get its identifying values:
+1. Confirm a BYOG configuration exists for the desired validator and get its identifying value:
    ```bash
    uip agent guardrails list --byo --output json
    ```
-   Read `ByoValidatorName` and `ByoConnectionId` from the matching entry — these are the values the fetched docs' BYO construct expects as name and connection id. Never guess or fabricate them.
+   Read `ByoValidatorName` from the matching entry — the validator name is the **only** value the code passes; it is unique across the tenant, and the platform resolves the underlying connection server-side from the stored configuration. Do not pass a connection id, and never guess or fabricate the name.
 2. Before wiring it in, cross-check the configuration's health on the admin side:
    ```bash
    uip guardrails byo-configurations list --output json
    ```
-   Confirm `Enabled: true` and `ValidConnection: true` for the matching `ValidatorName`/`ConnectionId`. A disabled configuration or a broken connection means the guardrail will fail at runtime (or silently fall back, depending on `FallbackOnUiPath`) — tell the user rather than wiring it in anyway.
+   Confirm `Enabled: true` and `ValidConnection: true` for the matching `ValidatorName`. A disabled configuration or a broken connection means the guardrail will fail at runtime (or silently fall back, depending on `FallbackOnUiPath`) — tell the user rather than wiring it in anyway. The admin-side fix (re-enable via `update <id> --enabled`, repoint the connection via `update <id> --connection-id`) is covered by [uipath-platform § BYO Guardrail Configurations](/uipath:uipath-platform).
 
 ---
 
@@ -419,4 +419,4 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 15. **`EscalateAction` requires a deployed Action App** referenced by `app_name` + `app_folder_path` and declared as an `app` resource in **`bindings.json`** — discover it with `uip solution resources list --kind App`, resolve duplicate names by folder, pass the literal name/folder in code (not env vars), and sync bindings with [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md). Route the task with `TaskRecipient` when the user names a reviewer. See [Escalation action (HITL)](#escalation-action-human-in-the-loop).
 16. **Verify the escalation app schema when tenant access is available** — the app must expose the guardrail review inputs/outputs/outcomes listed in the prerequisite section. If the schema cannot be verified in a local smoke task, say that runtime readiness is unverified.
 17. **A HITL guardrail suspends, it doesn't block.** On violation `EscalateAction` suspends via `interrupt(CreateEscalation(...))`; it terminates **only on Reject** (Approve resumes). Verify by confirming the run suspends + a task is created — never expect a "block" for an escalation guardrail (Rule for the [verification step](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails)).
-18. **Never fabricate a BYO validator's class name or constructor signature from memory** — get it from the fetched SDK docs (same Step 0 fetch), and get its `ByoValidatorName` / `ByoConnectionId` from `uip agent guardrails list --byo`, never invented. If the fetched docs don't expose BYO validator support, stop and report it's unavailable — do not improvise. Cross-check `Enabled`/`ValidConnection` via `uip guardrails byo-configurations list` before wiring one in. See [BYO (bring-your-own) validators](#byo-bring-your-own-validators).
+18. **Never fabricate a BYO validator's class name or constructor signature from memory** — get it from the fetched SDK docs (same Step 0 fetch), and get its `ByoValidatorName` from `uip agent guardrails list --byo`, never invented. The validator name is the only value the code passes — do not pass a connection id; the platform resolves the connection server-side. If the fetched docs don't expose BYO validator support, stop and report it's unavailable — do not improvise. Cross-check `Enabled`/`ValidConnection` via `uip guardrails byo-configurations list` before wiring one in. See [BYO (bring-your-own) validators](#byo-bring-your-own-validators).
