@@ -69,7 +69,7 @@ replace passages that differ for that host.
 
 ## Preserve Generic Discovery and Package Naming
 
-Every direct lowercase kebab-case directory under `skill-flavors/` is a flavor. Never hardcode `studioweb` in the composer, npm build scripts, or generic validation loop. Publication is intentionally different: each released flavor must be named explicitly in an isolated publisher so its registry policy cannot expand implicitly.
+Every direct lowercase kebab-case directory under `skill-flavors/` is a flavor. Never hardcode `studioweb` in the composer, npm build scripts, generic validation loop, or reusable flavor publisher. Publication is intentionally different: each released flavor must opt in through an explicit reviewed caller so its registry policy cannot expand implicitly.
 
 Package names derive mechanically from the root package:
 
@@ -93,7 +93,7 @@ npm run skills:test
 git diff --check
 ```
 
-`skills:build` must produce complete marker-free trees under `build/skills/`. `skills:pack` must rebuild those trees, stage packages under `build/packages/`, run real `npm pack`, and verify tarballs under `build/npm/`. Isolated flavor publishers must select one verified `.tgz` by manifest identity and publish only that exact path; they must never publish a wildcard containing the default or another flavor.
+`skills:build` must produce complete marker-free trees under `build/skills/`. `skills:pack` must rebuild those trees, stage packages under `build/packages/`, run real `npm pack`, and verify tarballs under `build/npm/`. Flavor publishing jobs must select one verified `.tgz` by manifest identity and publish only that exact path; they must never publish a wildcard containing the default or another flavor.
 
 Normal `npm pack` and `npm publish` at the repository root remain backward
 compatible default-package commands. Their `prepack` lifecycle transactionally
@@ -113,7 +113,7 @@ Inspect the final package contract, not only sparse sources:
 - The default contains every canonical skill and retains canonical block bodies without marker boundaries.
 - Each custom package contains every canonical skill and its flavor replacements.
 - Every staged manifest uses the root version and the derived package name.
-- Custom manifests contain neither repository lifecycle scripts nor `publishConfig`; an isolated publisher controls their registry and tag.
+- Custom manifests contain neither repository lifecycle scripts nor `publishConfig`; the publisher workflow controls their registry and tag.
 - No built tree, staged package, or tarball contains `skill-flavor:` comments, `skill-flavors/`, repository tests, or composer source.
 - Binary and template assets remain byte-identical.
 
@@ -122,10 +122,12 @@ Clarify what "available" means before release work: a successful
 an explicit publisher. When publication is in scope, read `docs/RELEASE.md`
 completely and confirm the target registry and channel. Keep `publish.yml`'s
 established default jobs root-only. Give each published flavor an isolated,
-reviewed path that selects one tarball by package name and flavor. Studio Web
-publishes only to GitHub Packages through `publish-studioweb.yml`; never add it
-to the default npmjs path. A future flavor is automatically buildable, not
-automatically publishable.
+reviewed caller that passes its flavor and channel to
+`publish-skill-flavor.yml`. The reusable workflow validates the flavor,
+derives its package name, and publishes one selected tarball to GitHub Packages
+only. Studio Web callers pass `flavor: studioweb`; never add Studio Web to the
+default npmjs path. A future flavor is automatically buildable, not
+automatically publishable, until an explicit caller is added.
 
 ## Critical Rules
 
@@ -142,7 +144,7 @@ automatically publishable.
 
 - Do not copy an entire skill into a flavor to change a few paragraphs.
 - Do not introduce JSON tags, fragment manifests, or runtime composition.
-- Do not add one npm build command or generic validation-CI branch per flavor; an explicitly published flavor still needs an isolated publisher.
+- Do not add one npm build command or generic validation-CI branch per flavor; an explicitly published flavor still needs a reviewed caller of the correct publisher.
 - Do not ship default plugin hooks or manifests in a minimal host package.
 - Do not validate only `studioweb`; enumerate every discovered flavor.
 - Do not trust a source-tree scan as proof of package safety; inspect the actual tarballs.

@@ -87,8 +87,9 @@ Inspect staged directories and real `.tgz` archives.
 - Generic build validation discovers every flavor without a flavor-specific build loop; release guards may name an explicitly published flavor to enforce its registry boundary.
 - CI runs real `npm pack` and uploads every tarball for inspection.
 - The default jobs retain root `npm publish` and never iterate over generated flavor tarballs.
-- Studio Web packaging happens after stamping the same channel and caller `github.run_number` used by the default path.
-- The Studio Web publisher requires exactly one manifest match for `@uipath/skills-studioweb` plus flavor `studioweb`, scans that exact tarball for markers, and publishes only the selected path.
-- The Studio Web publisher has `packages: write` but no npmjs registry, OIDC permission, or provenance flag; it runs only for GitHub Packages `dev` and `preview`.
-- A new flavor remains automatically buildable but needs an explicit isolated publisher before it becomes registry-available.
+- `publish-skill-flavor.yml` accepts only `flavor` and `channel`, validates the lowercase kebab-case flavor, derives its package name, and rejects `default`, missing directories, symlinks, and unsupported channels.
+- The generic publisher requires exactly one matching name/flavor/version tarball, scans that exact tarball for markers, and publishes only the selected path.
+- The generic publisher has `packages: write` but no npmjs registry, OIDC permission, or provenance flag; it supports only GitHub Packages `dev` and `preview`.
+- Studio Web callers pass `flavor: studioweb` after stamping the same channel and caller `github.run_number` used by the default path.
+- A new flavor remains automatically buildable but needs an explicit caller of the generic publisher before it becomes registry-available.
 - Local tarball, Studio Web GitHub Packages `dev`/`preview`, default GitHub Packages `dev`, and default npmjs `preview`/`latest` are distinct availability targets; confirm which one the change requires.

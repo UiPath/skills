@@ -182,8 +182,9 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: ./.github/workflows/publish-studioweb.yml
+    uses: ./.github/workflows/publish-skill-flavor.yml
     with:
+      flavor: studioweb
       channel: dev
 
   publish-studioweb-preview:
@@ -196,6 +197,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: ./.github/workflows/publish-studioweb.yml
+    uses: ./.github/workflows/publish-skill-flavor.yml
     with:
+      flavor: studioweb
       channel: preview

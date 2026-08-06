@@ -296,7 +296,11 @@ using those root commands. `npm run skills:pack` is the separate all-flavor
 build and verification command used by CI and isolated flavor publishers; a
 publisher must select one exact package by manifest rather than publish a
 tarball wildcard. Adding a flavor makes it buildable but does not publish it
-automatically. If a root package operation fails or is interrupted and
+automatically. For a flavor that intentionally uses GitHub Packages `dev` or
+`preview`, add an explicit `publish.yml` caller of
+`.github/workflows/publish-skill-flavor.yml` with that flavor and channel; do
+not hardcode a flavor inside the reusable workflow or matrix-publish every
+discovered flavor. If a root package operation fails or is interrupted and
 `build/.root-pack-transaction` remains, confirm its npm process has ended and
 run `npm run skills:recover`. Unexpected overlay edits are preserved under
 `build/.root-pack-recovery-*` for review. Do not use `--ignore-scripts` for
