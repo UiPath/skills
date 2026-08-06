@@ -436,6 +436,40 @@ def test_source_symlink_is_rejected(tmp_path):
         export_cowork.build_export(repo, ["fixture-skill"])
 
 
+def test_linked_skill_directory_is_rejected(tmp_path):
+    repo = _write_fixture_repo(tmp_path / "repo")
+    outside_skill = tmp_path / "outside-skill"
+    outside_skill.mkdir()
+    (outside_skill / "SKILL.md").write_text(
+        "---\nname: linked-skill\ndescription: External test skill.\n---\n\n# External\n",
+        encoding="utf-8",
+    )
+    link = repo / "skills" / "linked-skill"
+    try:
+        link.symlink_to(outside_skill, target_is_directory=True)
+    except (NotImplementedError, OSError) as exc:
+        pytest.skip(f"directory links are unavailable in this test environment: {exc}")
+
+    with pytest.raises(export_cowork.ExportError, match="skill directory may not"):
+        export_cowork.build_export(repo, None)
+
+
+def test_linked_skills_root_is_rejected(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    outside_skills = tmp_path / "outside-skills"
+    _write_fixture_repo(tmp_path / "source")
+    (tmp_path / "source" / "skills").rename(outside_skills)
+    link = repo / "skills"
+    try:
+        link.symlink_to(outside_skills, target_is_directory=True)
+    except (NotImplementedError, OSError) as exc:
+        pytest.skip(f"directory links are unavailable in this test environment: {exc}")
+
+    with pytest.raises(export_cowork.ExportError, match="skills directory may not"):
+        export_cowork.build_export(repo, None)
+
+
 def test_repository_export_is_deterministic(repository_export):
     first, second = repository_export
     assert first == second

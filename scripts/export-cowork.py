@@ -304,6 +304,10 @@ def _is_hidden_path(path: PurePosixPath) -> bool:
     return any(part.startswith(".") for part in path.parts)
 
 
+def _is_link_like(path: Path) -> bool:
+    return path.is_symlink() or getattr(path, "is_junction", lambda: False)()
+
+
 def _validate_safe_archive_path(path: str) -> None:
     pure = PurePosixPath(path)
     if pure.is_absolute() or ".." in pure.parts or "\\" in path or "\x00" in path:
@@ -778,8 +782,7 @@ def _read_skill_sources(skill_dir: Path) -> tuple[dict[str, bytes], tuple[str, .
     hidden: list[str] = []
     skill_root = skill_dir.resolve()
     for path in sorted(skill_dir.rglob("*")):
-        is_junction = getattr(path, "is_junction", lambda: False)()
-        if path.is_symlink() or is_junction:
+        if _is_link_like(path):
             relative = path.relative_to(skill_dir).as_posix()
             raise ExportError(
                 f"{skill_dir.name}: symbolic links are not exportable: {relative}"
@@ -829,6 +832,8 @@ def _export_skill(skill_dir: Path, version: str) -> ExportedSkill:
     source_skill = skill_dir / "SKILL.md"
     if not source_skill.is_file():
         raise ExportError(f"missing SKILL.md in {skill_dir}")
+    if _is_link_like(source_skill):
+        raise ExportError(f"{skill_dir.name}: SKILL.md may not be a symbolic link")
 
     fields, body = parse_frontmatter(source_skill.read_text(encoding="utf-8"))
     name = fields.get("name", "")
@@ -1042,12 +1047,24 @@ def build_export(
     skills_root = repo_root / "skills"
     if not skills_root.is_dir():
         raise ExportError(f"skills directory not found: {skills_root}")
+    if _is_link_like(skills_root):
+        raise ExportError(f"skills directory may not be a symbolic link: {skills_root}")
 
-    available = {
-        path.name: path
-        for path in sorted(skills_root.iterdir())
-        if path.is_dir() and (path / "SKILL.md").is_file()
-    }
+    resolved_skills_root = skills_root.resolve(strict=True)
+    available: dict[str, Path] = {}
+    for path in sorted(skills_root.iterdir()):
+        if not path.is_dir() or not (path / "SKILL.md").is_file():
+            continue
+        if _is_link_like(path):
+            raise ExportError(f"skill directory may not be a symbolic link: {path}")
+        try:
+            path.resolve(strict=True).relative_to(resolved_skills_root)
+        except (OSError, ValueError) as exc:
+            raise ExportError(
+                f"skill directory resolves outside skills/: {path}"
+            ) from exc
+        available[path.name] = path
+
     selected_mode = bool(selected_skills)
     if selected_skills:
         requested = list(dict.fromkeys(selected_skills))
@@ -1199,7 +1216,7 @@ def _owned_output(path: Path) -> bool:
     actual_dirs: set[str] = set()
     try:
         for child in path.rglob("*"):
-            if child.is_symlink() or getattr(child, "is_junction", lambda: False)():
+            if _is_link_like(child):
                 return False
             relative = child.relative_to(path).as_posix()
             if child.is_file():
