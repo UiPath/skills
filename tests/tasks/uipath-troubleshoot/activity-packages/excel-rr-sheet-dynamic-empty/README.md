@@ -23,7 +23,7 @@ fault is upstream data, not a mistyped sheet name.
 |---|---|
 | `process/` | crafted modern VB project: `Main.xaml` with `Use Excel File` → `Get Workbook Sheets` → Read Range whose `SheetName` is `[in_TargetSheet]`; the project declares the `in_TargetSheet` input argument |
 
-The diagnosis is not leaked in any agent-visible name: the project is `MonthlySalesImport`, the activity
+The diagnosis is not disclosed in any agent-visible name: the project is `MonthlySalesImport`, the activity
 is `Read monthly sales sheet`. The prompt states the observed symptom (the pasted error with the empty
 `''` name and the job key); the cause (empty input argument) is derived from the source + job evidence.
 

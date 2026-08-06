@@ -46,7 +46,7 @@ prompt and a queued Outbox item — the offline fingerprint.
 | `process/` | hand-authored UiPath project; `SendOutlookMail` with literal `To`/`Subject`/`Body` and `TimeoutMS="30000"` on an unattended process |
 
 The user is framed as **off-host** (Orchestrator only), so the correct behavior is to hand a host-side
-check list and stop, not to run host commands. Diagnosis is not leaked in any agent-visible name
+check list and stop, not to run host commands. Diagnosis is not disclosed in any agent-visible name
 (project `NightlyStatementMailer`, activity "Send Outlook Mail Message"); the prompt states only
 observed symptoms (timeout on every run; no popup in an attended test; email left in the Outbox).
 

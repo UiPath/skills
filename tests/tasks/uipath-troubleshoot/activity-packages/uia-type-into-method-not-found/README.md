@@ -20,7 +20,7 @@ XAML.
 |---|---|
 | `process/` | crafted VB project source: `Main.xaml` with an `NTypeInto` typing `invoiceNumber` into a Chromium portal field; `project.json` pins `UiPath.UIAutomation.Activities: [24.10.3]` |
 
-The diagnosis is not leaked in any agent-visible name: the project is `InvoicePortalSubmit`, the
+The diagnosis is not disclosed in any agent-visible name: the project is `InvoicePortalSubmit`, the
 activity is `Enter invoice number`. The prompt states the observed symptom (the pasted error string and
 "works in Debug, faults on the robot"); the cause (version skew) is not named — the agent derives it
 from the `MissingMethodException` signature plus the pinned dependency.

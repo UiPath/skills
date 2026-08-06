@@ -29,7 +29,7 @@ server returned `5.7.139 ... basic authentication is disabled` — transport OK,
 |---|---|
 | `process/` | hand-authored UiPath project; `SmtpSendMail` targeting `smtp.office365.com:587` StartTls with Basic-Auth `Email` |
 
-Diagnosis is not leaked in any agent-visible name (project `AutomatedBillingNotifier`, activity "Send
+Diagnosis is not disclosed in any agent-visible name (project `AutomatedBillingNotifier`, activity "Send
 SMTP Mail Message"); the prompt states only the observed symptom (job faults with the pasted `535`
 error).
 

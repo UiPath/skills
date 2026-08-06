@@ -27,7 +27,7 @@ pairing: **587 + StartTls** or **465 + SSL**.
 |---|---|
 | `process/` | hand-authored UiPath project; `SmtpSendMail` with `Server="smtp.office365.com"`, `Port="465"`, `SecureConnection="StartTls"` |
 
-Diagnosis is not leaked in any agent-visible name (project `WeeklyReportDispatcher`, activity "Send SMTP
+Diagnosis is not disclosed in any agent-visible name (project `WeeklyReportDispatcher`, activity "Send SMTP
 Mail Message"); the prompt states only the observed symptom (job hangs then faults with the pasted
 `Failure sending mail` / socket error).
 

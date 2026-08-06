@@ -42,7 +42,7 @@ never searched, because `Account` was blank — the fix is `Account`, not the fo
 |---|---|
 | `process/` | hand-authored UiPath project; `GetOutlookMailMessages` with `Account=""`, `MailFolder="Invoices"`, no `Filter` |
 
-Diagnosis is not leaked in any agent-visible name (project `PayablesInvoiceReader`, activity "Get
+Diagnosis is not disclosed in any agent-visible name (project `PayablesInvoiceReader`, activity "Get
 Outlook Mail Messages"). The prompt states observed symptoms only: the read fails saying the folder does
 not exist, yet the folder is definitely present — in the Accounts Payable **shared** mailbox the user
 has open alongside their own inbox.

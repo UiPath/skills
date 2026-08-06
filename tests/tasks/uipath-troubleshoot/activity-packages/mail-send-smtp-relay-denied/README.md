@@ -31,7 +31,7 @@ a granted Send-As alias (or relaying via an authorized connector) — NOT an aut
 |---|---|
 | `process/` | hand-authored UiPath project; `SmtpSendMail` authenticating as `svc-billing@contoso-test.com` with `From="noreply@marketing-partner.com"` |
 
-Diagnosis is not leaked in any agent-visible name (project `CustomerAlertSender`, activity "Send SMTP
+Diagnosis is not disclosed in any agent-visible name (project `CustomerAlertSender`, activity "Send SMTP
 Mail Message"); the prompt states only the observed symptom (job faults with the pasted `550 5.7.60`
 error).
 

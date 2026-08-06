@@ -19,7 +19,7 @@ silent no-op (text DID land, just wrong).
 |---|---|
 | `process/` | crafted VB project source: `Main.xaml` with an `NTypeInto` (`HardwareEvents`, `DelayBetweenKeys=0`) typing `accountNumber` into a Chromium portal field, followed by an `NGetText` read-back and Log Messages |
 
-The diagnosis is not leaked in any agent-visible name: the project is `AccountPortalEntry`, the activity
+The diagnosis is not disclosed in any agent-visible name: the project is `AccountPortalEntry`, the activity
 is `Enter account number`, and the prompt states only the symptom (entered value wrong). The cause lives
 only in the `NTypeInto` properties and the corrupted read-back value.
 
