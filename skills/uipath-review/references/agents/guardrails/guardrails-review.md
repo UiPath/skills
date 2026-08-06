@@ -96,6 +96,9 @@ else:
 - **CACHE_MISS**: fetch and save: `uip agent guardrails catalog --output json > .guardrails-catalog-cache.json`
   (the CLI writes both success and error JSON to stdout — do not add `2>&1`).
 
+**Never invoke `uip agent guardrails catalog` a second time in the same review.** Every later read — a quick
+look, a `python3`/`jq` parse, a re-check — goes through `.guardrails-catalog-cache.json`, not a fresh CLI call.
+
 ### Guardrails List (NEVER cached — tenant-specific)
 
 ```bash
