@@ -5,8 +5,11 @@ The default mode validates every legacy scenario without writing. Pass
 ``--apply`` to write ``data/uip-fixture.json``, update ``task.yaml``, move the
 maintainer README out of the old response tree, and remove ``data/m``.
 
-This is intentionally a one-way migration. It rejects ambiguous normalized
-commands instead of silently choosing a legacy first-match rule.
+This is intentionally a one-way migration. It rejects rules whose token sets
+collide with conflicting responses instead of silently choosing a legacy
+first-match rule. Emitted rules use ``match_mode: subset`` (rule tokens must
+all appear in the invocation) and are sorted most-specific-first because
+subset dispatch is first-match-wins in file order.
 """
 
 from __future__ import annotations
@@ -125,7 +128,7 @@ def _build_fixture(manifest_path: Path) -> tuple[dict[str, object], bool]:
             raise ValueError(f"{manifest_path}: missing response file {filename}")
         response: dict[str, object] = {
             "argv": argv,
-            "match_mode": "normalized",
+            "match_mode": "subset",
             "exit_code": int(rule.get("exit_code", 0)),
             "stdout": _strip_doc_keys(_read_response(response_path)),
         }
@@ -136,12 +139,17 @@ def _build_fixture(manifest_path: Path) -> tuple[dict[str, object], bool]:
             previous_comparable = {k: v for k, v in previous.items() if k != "argv"}
             if comparable != previous_comparable:
                 raise ValueError(
-                    f"{manifest_path}: normalized command conflict between "
+                    f"{manifest_path}: command token conflict between "
                     f"{previous['argv']!r} and {argv!r}"
                 )
             continue
         by_key[key] = response
         responses.append(response)
+
+    # Subset dispatch is first-match-wins in file order, so the most specific
+    # rule (largest token set) must come first. Stable sort preserves the
+    # legacy manifest order among rules of equal specificity.
+    responses.sort(key=lambda entry: -len(_normalized_key(entry["argv"])))  # type: ignore[arg-type]
 
     default_raw = manifest.get("unmocked_default")
     if isinstance(default_raw, dict):

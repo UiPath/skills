@@ -4,16 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f2a20002-0000-4000-8000-000000000002\",\r\n      \"Name\": \"HD Automations\",\r\n      \"Path\": \"HD Automations\",\r\n      \"Description\": \"High-density robot pool automations.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c1d2e3f4-a5b6-4c78-9d0e-1f2a3b4c5d6f\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -21,54 +11,9 @@
         "--state",
         "Faulted"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2820001-2222-4222-8222-222222222222\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T10:15:07.200Z\",\r\n      \"EndTime\": \"2026-07-19T10:15:08.050Z\",\r\n      \"CreationTime\": \"2026-07-19T10:15:06.600Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--folder-key",
-        "f2a20002-0000-4000-8000-000000000002"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2820001-2222-4222-8222-222222222222\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T10:15:07.200Z\",\r\n      \"EndTime\": \"2026-07-19T10:15:08.050Z\",\r\n      \"CreationTime\": \"2026-07-19T10:15:06.600Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"b2820002-3333-4333-8333-333333333333\",\r\n      \"State\": \"Running\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T10:15:05.900Z\",\r\n      \"EndTime\": null,\r\n      \"CreationTime\": \"2026-07-19T10:15:05.400Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"b2820003-4444-4444-8444-444444444444\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T09:55:02.100Z\",\r\n      \"EndTime\": \"2026-07-19T09:58:41.700Z\",\r\n      \"CreationTime\": \"2026-07-19T09:55:01.600Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--state",
-        "Faulted"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2820001-2222-4222-8222-222222222222\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T10:15:07.200Z\",\r\n      \"EndTime\": \"2026-07-19T10:15:08.050Z\",\r\n      \"CreationTime\": \"2026-07-19T10:15:06.600Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2820001-2222-4222-8222-222222222222\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T10:15:07.200Z\",\r\n      \"EndTime\": \"2026-07-19T10:15:08.050Z\",\r\n      \"CreationTime\": \"2026-07-19T10:15:06.600Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"b2820002-3333-4333-8333-333333333333\",\r\n      \"State\": \"Running\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T10:15:05.900Z\",\r\n      \"EndTime\": null,\r\n      \"CreationTime\": \"2026-07-19T10:15:05.400Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"b2820003-4444-4444-8444-444444444444\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T09:55:02.100Z\",\r\n      \"EndTime\": \"2026-07-19T09:58:41.700Z\",\r\n      \"CreationTime\": \"2026-07-19T09:55:01.600Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "b2820001-2222-4222-8222-222222222222"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"b2820001-2222-4222-8222-222222222222\",\r\n    \"StartTime\": \"2026-07-19T10:15:07.200Z\",\r\n    \"EndTime\": \"2026-07-19T10:15:08.050Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 50,\r\n    \"Source\": \"Queue\",\r\n    \"SourceType\": \"Queue\",\r\n    \"Info\": \"Another interactive job is using the machine's console. Only one interactive job can use the console at a time.\\r\\n   at UiPath.Robot.Service.SessionManager.AttachToConsoleAsync(LogonRequest request)\\r\\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)\\r\\n\",\r\n    \"CreationTime\": \"2026-07-19T10:15:06.600Z\",\r\n    \"ReleaseName\": \"ClaimsIntake\",\r\n    \"Type\": \"Unattended\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"HD-BOT-POOL\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"FolderKey\": \"f2a20002-0000-4000-8000-000000000002\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_HD2\",\r\n    \"OrchestratorUserIdentity\": \"svc_hd2\",\r\n    \"LastModificationTime\": \"2026-07-19T10:15:08.050Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"b2820001222242228222222222222222\",\r\n    \"Id\": 671440202\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -79,9 +24,44 @@
         "--level",
         "Error"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-19T10:15:07.980Z\",\r\n      \"Message\": \"Another interactive job is using the machine's console. Only one interactive job can use the console at a time.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f2a20002-0000-4000-8000-000000000002"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2820001-2222-4222-8222-222222222222\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T10:15:07.200Z\",\r\n      \"EndTime\": \"2026-07-19T10:15:08.050Z\",\r\n      \"CreationTime\": \"2026-07-19T10:15:06.600Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"b2820002-3333-4333-8333-333333333333\",\r\n      \"State\": \"Running\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T10:15:05.900Z\",\r\n      \"EndTime\": null,\r\n      \"CreationTime\": \"2026-07-19T10:15:05.400Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"b2820003-4444-4444-8444-444444444444\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T09:55:02.100Z\",\r\n      \"EndTime\": \"2026-07-19T09:58:41.700Z\",\r\n      \"CreationTime\": \"2026-07-19T09:55:01.600Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2820001-2222-4222-8222-222222222222\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T10:15:07.200Z\",\r\n      \"EndTime\": \"2026-07-19T10:15:08.050Z\",\r\n      \"CreationTime\": \"2026-07-19T10:15:06.600Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "b2820001-2222-4222-8222-222222222222"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"b2820001-2222-4222-8222-222222222222\",\r\n    \"StartTime\": \"2026-07-19T10:15:07.200Z\",\r\n    \"EndTime\": \"2026-07-19T10:15:08.050Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 50,\r\n    \"Source\": \"Queue\",\r\n    \"SourceType\": \"Queue\",\r\n    \"Info\": \"Another interactive job is using the machine's console. Only one interactive job can use the console at a time.\\r\\n   at UiPath.Robot.Service.SessionManager.AttachToConsoleAsync(LogonRequest request)\\r\\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)\\r\\n\",\r\n    \"CreationTime\": \"2026-07-19T10:15:06.600Z\",\r\n    \"ReleaseName\": \"ClaimsIntake\",\r\n    \"Type\": \"Unattended\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"HD-BOT-POOL\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"FolderKey\": \"f2a20002-0000-4000-8000-000000000002\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_HD2\",\r\n    \"OrchestratorUserIdentity\": \"svc_hd2\",\r\n    \"LastModificationTime\": \"2026-07-19T10:15:08.050Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"b2820001222242228222222222222222\",\r\n    \"Id\": 671440202\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -90,7 +70,7 @@
         "logs",
         "b2820001-2222-4222-8222-222222222222"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-19T10:15:07.980Z\",\r\n      \"Message\": \"Another interactive job is using the machine's console. Only one interactive job can use the console at a time.\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -101,7 +81,7 @@
         "history",
         "b2820001-2222-4222-8222-222222222222"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-19T10:15:08.050Z\",\r\n      \"JobId\": 671440202\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-19T10:15:07.210Z\",\r\n      \"JobId\": 671440202\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-07-19T10:15:06.640Z\",\r\n      \"JobId\": 671440202\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -112,9 +92,29 @@
         "list",
         "--all-fields"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"MachineList\",\r\n  \"Data\": [\r\n    {\r\n      \"licenseKey\": \"605b37db-dc58-460f-99ed-93fcfb2f2702\",\r\n      \"name\": \"HD-BOT-POOL\",\r\n      \"description\": \"High-density robot host (multiple robot users).\",\r\n      \"type\": \"Template\",\r\n      \"scope\": \"Default\",\r\n      \"nonProductionSlots\": 0,\r\n      \"unattendedSlots\": 5,\r\n      \"headlessSlots\": 0,\r\n      \"testAutomationSlots\": 0,\r\n      \"hostingSlots\": 0,\r\n      \"appTestSlots\": 0,\r\n      \"performanceTestSlots\": 0,\r\n      \"agentSlots\": 0,\r\n      \"automationCloudSlots\": 0,\r\n      \"automationCloudTestAutomationSlots\": 0,\r\n      \"key\": \"beef2001-2222-4333-8444-555566667702\",\r\n      \"endpointDetectionStatus\": \"Available\",\r\n      \"robotVersions\": [\r\n        {\r\n          \"count\": 4,\r\n          \"version\": \"24.10.4\"\r\n        }\r\n      ],\r\n      \"robotUsers\": [\r\n        { \"userName\": \"UIPATH\\\\SVC_HD1\" },\r\n        { \"userName\": \"UIPATH\\\\SVC_HD2\" },\r\n        { \"userName\": \"UIPATH\\\\SVC_HD3\" },\r\n        { \"userName\": \"UIPATH\\\\SVC_HD4\" }\r\n      ],\r\n      \"automationType\": \"Any\",\r\n      \"targetFramework\": \"Windows\",\r\n      \"tags\": [],\r\n      \"id\": 1990702\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f2a20002-0000-4000-8000-000000000002\",\r\n      \"Name\": \"HD Automations\",\r\n      \"Path\": \"HD Automations\",\r\n      \"Description\": \"High-density robot pool automations.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c1d2e3f4-a5b6-4c78-9d0e-1f2a3b4c5d6f\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2820001-2222-4222-8222-222222222222\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T10:15:07.200Z\",\r\n      \"EndTime\": \"2026-07-19T10:15:08.050Z\",\r\n      \"CreationTime\": \"2026-07-19T10:15:06.600Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"b2820002-3333-4333-8333-333333333333\",\r\n      \"State\": \"Running\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T10:15:05.900Z\",\r\n      \"EndTime\": null,\r\n      \"CreationTime\": \"2026-07-19T10:15:05.400Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"b2820003-4444-4444-8444-444444444444\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"ClaimsIntake\",\r\n      \"ReleaseName\": \"ClaimsIntake\",\r\n      \"StartTime\": \"2026-07-19T09:55:02.100Z\",\r\n      \"EndTime\": \"2026-07-19T09:58:41.700Z\",\r\n      \"CreationTime\": \"2026-07-19T09:55:01.600Z\",\r\n      \"HostMachineName\": \"HD-BOT-POOL\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Queue\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
     },
     {
       "argv": [
@@ -122,7 +122,7 @@
         "machines",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"MachineList\",\r\n  \"Data\": [\r\n    {\r\n      \"name\": \"HD-BOT-POOL\",\r\n      \"description\": \"High-density robot host (multiple robot users).\",\r\n      \"type\": \"Template\",\r\n      \"key\": \"beef2001-2222-4333-8444-555566667702\",\r\n      \"id\": 1990702\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
     }

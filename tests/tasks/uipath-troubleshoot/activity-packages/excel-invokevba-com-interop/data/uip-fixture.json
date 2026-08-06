@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the finance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,22 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b3c4d5e6-f7a8-4901-2bc3-d4e5f6a78912\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"DailyDigestRunner\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-16T07:00:12.110Z\",\r\n      \"EndTime\": \"2026-05-16T07:00:24.310Z\",\r\n      \"CreationTime\": \"2026-05-16T07:00:11.880Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "b3c4d5e6-f7a8-4901-2bc3-d4e5f6a78912",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"b3c4d5e6-f7a8-4901-2bc3-d4e5f6a78912\",\r\n    \"StartTime\": \"2026-05-16T07:00:12.110Z\",\r\n    \"EndTime\": \"2026-05-16T07:00:24.310Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"cd4e5f60-7182-4839-4051-6f7a8b90c1d2\",\r\n    \"Info\": \"Invoke VBA: The system call failed. (Exception from HRESULT: 0x80010100 (RPC_E_SYS_CALL_FAILED))\\r\\n\\r\\nin Main.xaml\\r\\n    at InvokeVBAX \\\"Invoke VBA\\\"\\r\\n    at ExcelApplicationCard \\\"Use Excel File\\\"\\r\\n    at ExcelProcessScope \\\"Excel Process Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Runtime.InteropServices.COMException: The system call failed. (Exception from HRESULT: 0x80010100 (RPC_E_SYS_CALL_FAILED))\",\r\n    \"CreationTime\": \"2026-05-16T07:00:11.880Z\",\r\n    \"ReleaseName\": \"DailyDigestRunner\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6018311,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\USER1\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-16T07:00:24.310Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"b3c4d5e6-f7a8-4901-2bc3-d4e5f6a78912\",\r\n    \"Id\": 682317602\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -53,9 +28,22 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-16T07:00:24.241Z\",\r\n      \"Message\": \"[Invoke VBA] The system call failed. (Exception from HRESULT: 0x80010100 (RPC_E_SYS_CALL_FAILED))\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-16T07:00:24.292Z\",\r\n      \"Message\": \"The system call failed. (Exception from HRESULT: 0x80010100 (RPC_E_SYS_CALL_FAILED))\\r\\nin Main.xaml\\r\\n    at InvokeVBAX \\\"Invoke VBA\\\"\\r\\n    at ExcelApplicationCard \\\"Use Excel File\\\"\\r\\n    at ExcelProcessScope \\\"Excel Process Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "b3c4d5e6-f7a8-4901-2bc3-d4e5f6a78912",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"b3c4d5e6-f7a8-4901-2bc3-d4e5f6a78912\",\r\n    \"StartTime\": \"2026-05-16T07:00:12.110Z\",\r\n    \"EndTime\": \"2026-05-16T07:00:24.310Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"cd4e5f60-7182-4839-4051-6f7a8b90c1d2\",\r\n    \"Info\": \"Invoke VBA: The system call failed. (Exception from HRESULT: 0x80010100 (RPC_E_SYS_CALL_FAILED))\\r\\n\\r\\nin Main.xaml\\r\\n    at InvokeVBAX \\\"Invoke VBA\\\"\\r\\n    at ExcelApplicationCard \\\"Use Excel File\\\"\\r\\n    at ExcelProcessScope \\\"Excel Process Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Runtime.InteropServices.COMException: The system call failed. (Exception from HRESULT: 0x80010100 (RPC_E_SYS_CALL_FAILED))\",\r\n    \"CreationTime\": \"2026-05-16T07:00:11.880Z\",\r\n    \"ReleaseName\": \"DailyDigestRunner\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6018311,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\USER1\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-16T07:00:24.310Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"b3c4d5e6-f7a8-4901-2bc3-d4e5f6a78912\",\r\n    \"Id\": 682317602\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -66,9 +54,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-16T07:00:12.140Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-16T07:00:12.722Z\",\r\n      \"Message\": \"[Excel Process Scope] Opening workbook reports\\\\DailyDigest.xlsx\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-16T07:00:12.901Z\",\r\n      \"Message\": \"[Excel Process Scope] Cleared 0 residual EXCEL.EXE processes before start (KillExcelProcessesEachIteration=True)\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-16T07:00:18.014Z\",\r\n      \"Message\": \"[Use Excel File] Workbook opened successfully\"\r\n    },\r\n    {\r\n      \"Level\": \"Warn\",\r\n      \"TimeStamp\": \"2026-05-16T07:00:21.502Z\",\r\n      \"Message\": \"[Invoke VBA] COM call to Workbook.VBProject is not responding; the Excel session is not pumping window messages - behaviour consistent with a modal dialog awaiting input on a non-visible Excel instance\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-16T07:00:24.241Z\",\r\n      \"Message\": \"[Invoke VBA] The system call failed. (Exception from HRESULT: 0x80010100 (RPC_E_SYS_CALL_FAILED))\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-16T07:00:24.292Z\",\r\n      \"Message\": \"The system call failed. (Exception from HRESULT: 0x80010100 (RPC_E_SYS_CALL_FAILED))\\r\\nin Main.xaml\\r\\n    at InvokeVBAX \\\"Invoke VBA\\\"\\r\\n    at ExcelApplicationCard \\\"Use Excel File\\\"\\r\\n    at ExcelProcessScope \\\"Excel Process Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-16T07:00:24.305Z\",\r\n      \"Message\": \"Execution ended in: 00:00:12\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the finance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the finance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,22 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"a1b2c3d4-5e6f-4708-8192-a3b4c5d6e7f8\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CatalogLookup\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-27T08:02:33.410Z\",\r\n      \"EndTime\": \"2026-05-27T08:02:37.870Z\",\r\n      \"CreationTime\": \"2026-05-27T08:02:33.180Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "a1b2c3d4-5e6f-4708-8192-a3b4c5d6e7f8",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"a1b2c3d4-5e6f-4708-8192-a3b4c5d6e7f8\",\r\n    \"StartTime\": \"2026-05-27T08:02:33.410Z\",\r\n    \"EndTime\": \"2026-05-27T08:02:37.870Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"b2c3d4e5-6f70-4819-8293-a4b5c6d7e8f9\",\r\n    \"Info\": \"Lookup Range: The range '' is not valid.\\r\\n\\r\\nin Main.xaml\\r\\n    at ExcelLookUpRange \\\"Lookup Range\\\"\\r\\n    at ExcelApplicationScope \\\"Excel Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Excel.ExcelException: The range '' is not valid.\",\r\n    \"CreationTime\": \"2026-05-27T08:02:33.180Z\",\r\n    \"ReleaseName\": \"CatalogLookup\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6020142,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-27T08:02:37.870Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"a1b2c3d4-5e6f-4708-8192-a3b4c5d6e7f8\",\r\n    \"Id\": 682405288\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -53,9 +28,22 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-27T08:02:37.741Z\",\r\n      \"Message\": \"[Lookup Range] The range '' is not valid.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-27T08:02:37.808Z\",\r\n      \"Message\": \"Lookup Range: The range '' is not valid.\\r\\nin Main.xaml\\r\\n    at ExcelLookUpRange \\\"Lookup Range\\\"\\r\\n    at ExcelApplicationScope \\\"Excel Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "a1b2c3d4-5e6f-4708-8192-a3b4c5d6e7f8",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"a1b2c3d4-5e6f-4708-8192-a3b4c5d6e7f8\",\r\n    \"StartTime\": \"2026-05-27T08:02:33.410Z\",\r\n    \"EndTime\": \"2026-05-27T08:02:37.870Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"b2c3d4e5-6f70-4819-8293-a4b5c6d7e8f9\",\r\n    \"Info\": \"Lookup Range: The range '' is not valid.\\r\\n\\r\\nin Main.xaml\\r\\n    at ExcelLookUpRange \\\"Lookup Range\\\"\\r\\n    at ExcelApplicationScope \\\"Excel Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Excel.ExcelException: The range '' is not valid.\",\r\n    \"CreationTime\": \"2026-05-27T08:02:33.180Z\",\r\n    \"ReleaseName\": \"CatalogLookup\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6020142,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-27T08:02:37.870Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"a1b2c3d4-5e6f-4708-8192-a3b4c5d6e7f8\",\r\n    \"Id\": 682405288\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -66,9 +54,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-27T08:02:33.440Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-27T08:02:35.020Z\",\r\n      \"Message\": \"[Excel Application Scope] Opening workbook C:\\\\ProgramData\\\\Automation\\\\Catalog.xlsx\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-27T08:02:36.380Z\",\r\n      \"Message\": \"[Excel Application Scope] Workbook opened\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-27T08:02:37.741Z\",\r\n      \"Message\": \"[Lookup Range] The range '' is not valid.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-27T08:02:37.808Z\",\r\n      \"Message\": \"Lookup Range: The range '' is not valid.\\r\\nin Main.xaml\\r\\n    at ExcelLookUpRange \\\"Lookup Range\\\"\\r\\n    at ExcelApplicationScope \\\"Excel Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-27T08:02:37.855Z\",\r\n      \"Message\": \"Execution ended in: 00:00:04\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the finance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

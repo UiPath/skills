@@ -7,7 +7,7 @@
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"5f2a9c81-6b03-4d27-8e14-9a0f3c7b2d56\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"b7c93a10-2d54-4e88-9a16-3f0e7c2b5d41\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,7 +17,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"7a3f1e08-2b9c-4d51-8e6a-1f0c4b2d9e33\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"PaymentRun\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"StartTime\": \"2026-07-16T09:14:22.101Z\",\r\n      \"EndTime\": \"2026-07-16T09:14:23.640Z\",\r\n      \"CreationTime\": \"2026-07-16T09:14:22.101Z\"\r\n    },\r\n    {\r\n      \"Key\": \"1d5b0c39-8e42-4a77-b013-6c9f2a1e7d80\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"PaymentRun\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"StartTime\": \"2026-07-15T16:02:11.500Z\",\r\n      \"EndTime\": \"2026-07-15T16:02:19.220Z\",\r\n      \"CreationTime\": \"2026-07-15T16:02:11.500Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
     },
@@ -27,7 +27,7 @@
         "jobs",
         "logs"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-16T09:14:23.510Z\",\r\n      \"Message\": \"Invoke ProcessPayments: Object reference not set to an instance of an object.\\r\\nin ProcessPayments.xaml\\r\\n    at Assign \\\"Sum line items\\\"\\r\\n    at Sequence \\\"ProcessPayments\\\"\\r\\n    at InvokeWorkflowFile \\\"Invoke ProcessPayments\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at DynamicActivity \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.NullReferenceException\\r\\n   at lambda_method(Closure , ActivityContext )\\r\\n   at System.Activities.CodeActivity`1.InternalExecuteInResolutionContext(CodeActivityContext context)\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-07-16T09:14:22.300Z\",\r\n      \"Message\": \"PaymentRun execution started\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -37,7 +37,7 @@
         "jobs",
         "history"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-16T09:14:23.640Z\",\r\n      \"JobId\": 66120441\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-16T09:14:22.360Z\",\r\n      \"JobId\": 66120441\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -47,7 +47,7 @@
         "jobs",
         "traces"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
     },
@@ -57,7 +57,7 @@
         "jobs",
         "get"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"7a3f1e08-2b9c-4d51-8e6a-1f0c4b2d9e33\",\r\n    \"StartTime\": \"2026-07-16T09:14:22.101Z\",\r\n    \"EndTime\": \"2026-07-16T09:14:23.640Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Agent\",\r\n    \"SourceType\": \"Agent\",\r\n    \"Info\": \"Object reference not set to an instance of an object.\\r\\n\\r\\nin ProcessPayments.xaml\\r\\n    at Assign \\\"Sum line items\\\"\\r\\n    at Sequence \\\"ProcessPayments\\\"\\r\\n    at InvokeWorkflowFile \\\"Invoke ProcessPayments\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at DynamicActivity \\\"Main\\\"\\r\\n\\r\\nSystem.NullReferenceException: Object reference not set to an instance of an object.\\r\\n   at lambda_method(Closure , ActivityContext )\\r\\n   at System.Activities.CodeActivity`1.InternalExecuteInResolutionContext(CodeActivityContext context)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteInResolutionContextUntyped(ActivityInstance parentInstance, ActivityWithResult expressionActivity)\\r\\n   at UiPath.Core.Activities.InvokeWorkflowFile.<>c__DisplayClass.<ExecuteAsync>b__0()\\r\\n   at UiPath.Core.Activities.InvokeWorkflowFile.EndExecute(NativeActivityContext context, IAsyncResult result)\",\r\n    \"CreationTime\": \"2026-07-16T09:14:22.101Z\",\r\n    \"ReleaseName\": \"PaymentRun\",\r\n    \"Type\": \"Attended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"StudioPro\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"b7c93a10-2d54-4e88-9a16-3f0e7c2b5d41\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\user1\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"LastModificationTime\": \"2026-07-16T09:14:23.640Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"7a3f1e082b9c4d518e6a1f0c4b2d9e33\",\r\n    \"Id\": 66120441\r\n  }\r\n}\r\n"
     }

@@ -4,10 +4,22 @@
     {
       "argv": [
         "or",
+        "jobs",
+        "logs",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-03T02:30:30.680Z\",\r\n      \"Message\": \"[Send Outlook Mail Message] Timeout reached. (30000 ms) Outlook accepted the item into the Outbox but did not transmit it before the timeout elapsed; the COM send did not complete.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-03T02:30:30.712Z\",\r\n      \"Message\": \"Send Outlook Mail Message: Timeout reached. (30000 ms)\\r\\nin Main.xaml\\r\\n    at SendOutlookMail \\\"Send Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.TimeoutException: The operation has timed out.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c9d0e1f2-3a4b-4c5d-8e6f-7a8b9c0d1e2f\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the finance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,7 +29,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d1e2f3a4-5b6c-4d7e-9f80-1a2b3c4d5e6f\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"NightlyStatementMailer\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-03T02:30:00.160Z\",\r\n      \"EndTime\": \"2026-06-03T02:30:30.740Z\",\r\n      \"CreationTime\": \"2026-06-03T02:29:59.920Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
     },
@@ -25,21 +37,9 @@
       "argv": [
         "or",
         "jobs",
-        "logs",
-        "--level",
-        "Error"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-03T02:30:30.680Z\",\r\n      \"Message\": \"[Send Outlook Mail Message] Timeout reached. (30000 ms) Outlook accepted the item into the Outbox but did not transmit it before the timeout elapsed; the COM send did not complete.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-03T02:30:30.712Z\",\r\n      \"Message\": \"Send Outlook Mail Message: Timeout reached. (30000 ms)\\r\\nin Main.xaml\\r\\n    at SendOutlookMail \\\"Send Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.TimeoutException: The operation has timed out.\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
         "logs"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-03T02:30:00.200Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-03T02:30:01.420Z\",\r\n      \"Message\": \"[Send Outlook Mail Message] Attaching to Outlook; launching OUTLOOK.EXE under UIPATH\\\\ROBOTUSER1\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-03T02:30:04.760Z\",\r\n      \"Message\": \"[Send Outlook Mail Message] Outlook profile loaded; composing message to statements-dl@test.com\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-03T02:30:05.910Z\",\r\n      \"Message\": \"[Send Outlook Mail Message] Message composed; item placed in the Outbox for sending\"\r\n    },\r\n    {\r\n      \"Level\": \"Warn\",\r\n      \"TimeStamp\": \"2026-06-03T02:30:26.240Z\",\r\n      \"Message\": \"[Send Outlook Mail Message] The item is still in the Outbox and has not been transmitted; Outlook connectivity state reports Disconnected. Send pending >20s (no dialog or prompt was raised)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-03T02:30:30.680Z\",\r\n      \"Message\": \"[Send Outlook Mail Message] Timeout reached. (30000 ms) Outlook accepted the item into the Outbox but did not transmit it before the timeout elapsed; the COM send did not complete.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-03T02:30:30.712Z\",\r\n      \"Message\": \"Send Outlook Mail Message: Timeout reached. (30000 ms)\\r\\nin Main.xaml\\r\\n    at SendOutlookMail \\\"Send Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.TimeoutException: The operation has timed out.\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-03T02:30:30.730Z\",\r\n      \"Message\": \"Execution ended in: 00:00:30\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -49,7 +49,7 @@
         "jobs",
         "get"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"d1e2f3a4-5b6c-4d7e-9f80-1a2b3c4d5e6f\",\r\n    \"StartTime\": \"2026-06-03T02:30:00.160Z\",\r\n    \"EndTime\": \"2026-06-03T02:30:30.740Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"e2f3a4b5-6c7d-4e8f-a091-2b3c4d5e6f70\",\r\n    \"Info\": \"Send Outlook Mail Message: Timeout reached. (30000 ms) Outlook accepted the item into the Outbox but did not transmit it before the timeout elapsed; the COM send did not complete.\\r\\n\\r\\nin Main.xaml\\r\\n    at SendOutlookMail \\\"Send Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.TimeoutException: The operation has timed out.\",\r\n    \"CreationTime\": \"2026-06-03T02:29:59.920Z\",\r\n    \"ReleaseName\": \"NightlyStatementMailer\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6039418,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"c9d0e1f2-3a4b-4c5d-8e6f-7a8b9c0d1e2f\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-03T02:30:30.740Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"d1e2f3a4-5b6c-4d7e-9f80-1a2b3c4d5e6f\",\r\n    \"Id\": 691530844\r\n  }\r\n}\r\n"
     }

@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d4e5f6a7-b8c9-4193-8a0b-5e6f70819203\",\r\n      \"Name\": \"Address Blocks\",\r\n      \"Path\": \"Address Blocks\",\r\n      \"Description\": \"Production folder for address-block document generation.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,7 +13,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [],\r\n  \"Pagination\": {\r\n    \"Returned\": 0,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
     },
@@ -41,36 +29,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"e5f6a7b8-c9d0-4204-9b1c-6f7081920314\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"AddressBlockFill\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT-09\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-15T10:48:01.250Z\",\r\n      \"EndTime\": \"2026-06-15T10:48:07.640Z\",\r\n      \"CreationTime\": \"2026-06-15T10:48:01.030Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--folder-key",
-        "d4e5f6a7-b8c9-4193-8a0b-5e6f70819203",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"e5f6a7b8-c9d0-4204-9b1c-6f7081920314\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"AddressBlockFill\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT-09\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-15T10:48:01.250Z\",\r\n      \"EndTime\": \"2026-06-15T10:48:07.640Z\",\r\n      \"CreationTime\": \"2026-06-15T10:48:01.030Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "e5f6a7b8-c9d0-4204-9b1c-6f7081920314",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"e5f6a7b8-c9d0-4204-9b1c-6f7081920314\",\r\n    \"StartTime\": \"2026-06-15T10:48:01.250Z\",\r\n    \"EndTime\": \"2026-06-15T10:48:07.640Z\",\r\n    \"State\": \"Successful\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"f6a7b8c9-d0e1-4315-ac22-6f7081920314\",\r\n    \"Info\": \"The job completed successfully.\",\r\n    \"CreationTime\": \"2026-06-15T10:48:01.030Z\",\r\n    \"ReleaseName\": \"AddressBlockFill\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT-09\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6021840,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"d4e5f6a7-b8c9-4193-8a0b-5e6f70819203\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-15T10:48:07.640Z\",\r\n    \"JobError\": null,\r\n    \"ErrorCode\": \"\",\r\n    \"TraceId\": \"e5f6a7b8-c9d0-4204-9b1c-6f7081920314\",\r\n    \"Id\": 682454332\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -83,9 +44,36 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "d4e5f6a7-b8c9-4193-8a0b-5e6f70819203",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"e5f6a7b8-c9d0-4204-9b1c-6f7081920314\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"AddressBlockFill\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT-09\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-15T10:48:01.250Z\",\r\n      \"EndTime\": \"2026-06-15T10:48:07.640Z\",\r\n      \"CreationTime\": \"2026-06-15T10:48:01.030Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "e5f6a7b8-c9d0-4204-9b1c-6f7081920314",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"e5f6a7b8-c9d0-4204-9b1c-6f7081920314\",\r\n    \"StartTime\": \"2026-06-15T10:48:01.250Z\",\r\n    \"EndTime\": \"2026-06-15T10:48:07.640Z\",\r\n    \"State\": \"Successful\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"f6a7b8c9-d0e1-4315-ac22-6f7081920314\",\r\n    \"Info\": \"The job completed successfully.\",\r\n    \"CreationTime\": \"2026-06-15T10:48:01.030Z\",\r\n    \"ReleaseName\": \"AddressBlockFill\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT-09\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6021840,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"d4e5f6a7-b8c9-4193-8a0b-5e6f70819203\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-15T10:48:07.640Z\",\r\n    \"JobError\": null,\r\n    \"ErrorCode\": \"\",\r\n    \"TraceId\": \"e5f6a7b8-c9d0-4204-9b1c-6f7081920314\",\r\n    \"Id\": 682454332\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -96,9 +84,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-15T10:48:01.300Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-15T10:48:03.020Z\",\r\n      \"Message\": \"[Word Application Scope] Starting Microsoft Word\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-15T10:48:04.410Z\",\r\n      \"Message\": \"[Word Application Scope] Document 'data\\\\AddressTemplate.docx' opened\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-15T10:48:05.690Z\",\r\n      \"Message\": \"[Replace Text] Executed. Replaced 1 occurrence(s) of '[AddressBlock]'.\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-15T10:48:07.610Z\",\r\n      \"Message\": \"Execution ended in: 00:00:06\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d4e5f6a7-b8c9-4193-8a0b-5e6f70819203\",\r\n      \"Name\": \"Address Blocks\",\r\n      \"Path\": \"Address Blocks\",\r\n      \"Description\": \"Production folder for address-block document generation.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ca020002-d4e5-4f60-8a02-000000000002\",\r\n      \"Name\": \"Daily Loads\",\r\n      \"Path\": \"Daily Loads\",\r\n      \"Description\": \"Production folder for daily CSV append processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,22 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"cb020002-e5f6-4071-9b02-000000000002\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CsvDailyAppend\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-13T09:30:41.210Z\",\r\n      \"EndTime\": \"2026-06-13T09:30:43.470Z\",\r\n      \"CreationTime\": \"2026-06-13T09:30:40.800Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "cb020002-e5f6-4071-9b02-000000000002",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"cb020002-e5f6-4071-9b02-000000000002\",\r\n    \"StartTime\": \"2026-06-13T09:30:41.210Z\",\r\n    \"EndTime\": \"2026-06-13T09:30:43.470Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"cc020002-f6a7-4182-9c02-000000000002\",\r\n    \"Info\": \"Append To CSV: The process cannot access the file 'C:\\\\ProgramData\\\\UiPath\\\\Packages\\\\CsvDailyAppend\\\\data\\\\daily.csv' because it is being used by another process.\\r\\n\\r\\nin Main.xaml\\r\\n    at AppendToCsvFile \\\"Append To CSV\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.IO.IOException: The process cannot access the file because it is being used by another process.\",\r\n    \"CreationTime\": \"2026-06-13T09:30:40.800Z\",\r\n    \"ReleaseName\": \"CsvDailyAppend\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7013002,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"ca020002-d4e5-4f60-8a02-000000000002\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-13T09:30:43.470Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"cb020002-e5f6-4071-9b02-000000000002\",\r\n    \"Id\": 713010202\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -53,9 +28,22 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-13T09:30:43.360Z\",\r\n      \"Message\": \"[Append To CSV] The process cannot access the file 'C:\\\\ProgramData\\\\UiPath\\\\Packages\\\\CsvDailyAppend\\\\data\\\\daily.csv' because it is being used by another process.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-13T09:30:43.420Z\",\r\n      \"Message\": \"Append To CSV: The process cannot access the file because it is being used by another process.\\r\\nin Main.xaml\\r\\n    at AppendToCsvFile \\\"Append To CSV\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "cb020002-e5f6-4071-9b02-000000000002",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"cb020002-e5f6-4071-9b02-000000000002\",\r\n    \"StartTime\": \"2026-06-13T09:30:41.210Z\",\r\n    \"EndTime\": \"2026-06-13T09:30:43.470Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"cc020002-f6a7-4182-9c02-000000000002\",\r\n    \"Info\": \"Append To CSV: The process cannot access the file 'C:\\\\ProgramData\\\\UiPath\\\\Packages\\\\CsvDailyAppend\\\\data\\\\daily.csv' because it is being used by another process.\\r\\n\\r\\nin Main.xaml\\r\\n    at AppendToCsvFile \\\"Append To CSV\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.IO.IOException: The process cannot access the file because it is being used by another process.\",\r\n    \"CreationTime\": \"2026-06-13T09:30:40.800Z\",\r\n    \"ReleaseName\": \"CsvDailyAppend\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7013002,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"ca020002-d4e5-4f60-8a02-000000000002\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-13T09:30:43.470Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"cb020002-e5f6-4071-9b02-000000000002\",\r\n    \"Id\": 713010202\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -66,9 +54,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-13T09:30:41.240Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-13T09:30:42.480Z\",\r\n      \"Message\": \"[Read CSV] Read 12 rows from data\\\\incoming.csv\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-13T09:30:43.360Z\",\r\n      \"Message\": \"[Append To CSV] The process cannot access the file 'C:\\\\ProgramData\\\\UiPath\\\\Packages\\\\CsvDailyAppend\\\\data\\\\daily.csv' because it is being used by another process.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-13T09:30:43.420Z\",\r\n      \"Message\": \"Append To CSV: The process cannot access the file because it is being used by another process.\\r\\nin Main.xaml\\r\\n    at AppendToCsvFile \\\"Append To CSV\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-13T09:30:43.450Z\",\r\n      \"Message\": \"Execution ended in: 00:00:02\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ca020002-d4e5-4f60-8a02-000000000002\",\r\n      \"Name\": \"Daily Loads\",\r\n      \"Path\": \"Daily Loads\",\r\n      \"Description\": \"Production folder for daily CSV append processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

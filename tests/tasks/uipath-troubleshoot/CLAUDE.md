@@ -48,7 +48,7 @@ python tests/tasks/uipath-troubleshoot/_shared/scripts/generate_scenario.py \
 
 `--group` is the group folder the scenario belongs to (see [Scenario grouping](#scenario-grouping)). It sets placement and the default product/domain tag. Pass it for every new scenario — omitting it falls back to flat placement at the suite root (deprecated).
 
-Output: a plan describing every file that would be written (paths + sizes + first lines), the inferred scenario name, the finite protected-fixture responses extracted, and any scrub substitutions that would be applied.
+Output: a plan describing every file that would be written (paths + sizes + first lines), the inferred scenario name, the recorded protected-fixture responses extracted, and any scrub substitutions that would be applied.
 
 ### 2. Confirm with the user
 
@@ -149,7 +149,7 @@ tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
 ├── RESOLUTION.md                # ground truth for the LLM judge
 ├── README.md                    # maintainer description; not staged to the agent
 ├── data/
-│   └── uip-fixture.json         # private finite argv -> response map
+│   └── uip-fixture.json         # private recorded argv -> response map
 └── process/                     # snapshot of the failing UiPath project (optional)
     └── ...
 ```
@@ -158,7 +158,9 @@ tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
 
 ## Protected mock contract
 
-Each response in `data/uip-fixture.json` contains `argv`, `exit_code`, and optional `stdout`/`stderr`. Troubleshoot fixtures use `match_mode: normalized`: `--flag=value` and `--flag value` are equivalent, token order does not matter, and `--output <format>` is ignored. Matching is still finite equality. It never performs substring or subset matching, so an invocation with extra semantic arguments receives the fixed `default` response.
+Each response in `data/uip-fixture.json` contains `argv`, `exit_code`, and optional `stdout`/`stderr`. Troubleshoot fixtures use `match_mode: subset`: a rule matches when every rule token appears among the invocation's tokens. Token comparison is order-independent, `--flag=value` and `--flag value` are equivalent, and `--output <format>` is ignored on both sides. The agent may therefore add benign extra flags (`--output-filter`, `--limit`, `--level`, `--folder-key`) and still receive the recorded response — this mirrors the run-observed behavior of real investigations. An invocation matching no rule receives the fixed `default` response.
+
+Subset dispatch is first-match-wins in fixture-file order, so generated fixtures sort rules most-specific-first (token count descending). Never hand-append a generic rule above a more specific one.
 
 ```json
 {
@@ -166,7 +168,7 @@ Each response in `data/uip-fixture.json` contains `argv`, `exit_code`, and optio
   "responses": [
     {
       "argv": ["or", "jobs", "get", "<job-key>"],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\"Result\":\"Success\"}\n"
     }
@@ -175,7 +177,7 @@ Each response in `data/uip-fixture.json` contains `argv`, `exit_code`, and optio
 }
 ```
 
-Duplicate exact or normalized keys are rejected at mock-service startup. Outputs, request size, response size, request count, and passthrough duration are bounded. The mock protocol has no file-read or fixture-dump operation.
+Outputs, request size, response size, request count, and passthrough duration are bounded. The mock protocol has no file-read or fixture-dump operation.
 
 The scenario's sandbox block has this shape:
 
@@ -363,7 +365,7 @@ success_criteria:
 ## Anti-patterns
 
 - **Do not** add `command_executed` criteria. The lean contract is `skill_triggered + llm_judge` only — no `command_executed`, no `file_exists`, no `file_contains`. Asserting a specific CLI command was run encodes one investigation path and false-fails agents that reach the correct conclusion via a different (still valid) route. If a test needs to verify a specific CLI fact, put the fact in `RESOLUTION.md` and let the judge grade it. See the `success_criteria` section above for the full forbidden list.
-- **Do not** broaden a response argv to "make tests pass." If the agent calls an unconfigured command, add a finite response with the verbatim recorded stdout or keep the fixed default when empty exploration is intentional.
+- **Do not** broaden a response argv to "make tests pass." If the agent calls an unconfigured command, add a response rule with the verbatim recorded stdout or keep the fixed default when empty exploration is intentional.
 - **Do not** include the original `.local/investigations/` outputs in the committed scenario. The fresh run produces its own.
 - **Do not** ship real email addresses, real personal Windows paths, or real machine hostnames. The scrub pass is mandatory.
 - **Do not** keep names that encode the diagnosis. The agent-visible surfaces — process / project / release names, workflow / `.xaml` filenames, `x:Class`, activity `DisplayName`, and the `initial_prompt` — MUST NOT broadcast the failure. Real sessions routinely carry such names (`ERN_O365_MailFolderNotFound`, activity `"Get Mail from nonexistent folder (expect ArgumentNullException)"`); left in, the agent passes by reading the name instead of investigating — or never invokes the skill at all. Neutralize them to realistic business names during generation, exactly like the PII scrub, keeping the fault ONLY in the retrieved log/exception text. A user pasting the *symptom* into the prompt (`faulted with System.IO.FileNotFoundException`) is fine; a *name* that states the cause is not.

@@ -7,7 +7,7 @@
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0033344-2222-3333-4444-555566667777\",\r\n      \"DisplayName\": \"Shared\",\r\n      \"FullyQualifiedName\": \"Shared\",\r\n      \"Description\": \"Default shared automation folder.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6033001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,7 +17,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"cc335555-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"StartTime\": \"2026-05-23T14:20:02.140Z\",\r\n      \"EndTime\": \"2026-05-23T14:20:04.318Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"WordTemplateFill\",\r\n      \"Source\": \"Manual\",\r\n      \"Reference\": \"TemplateFillRun\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0033344-2222-3333-4444-555566667777\",\r\n      \"Info\": \"UiPath.Word.BusinessException: The bookmark 'LogoAnchor' was not found in the document.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -27,7 +27,7 @@
         "jobs",
         "logs"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-cc335599-001\",\r\n      \"JobKey\": \"cc335555-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-23T14:20:02.180Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"WordTemplateFill\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-cc335599-002\",\r\n      \"JobKey\": \"cc335555-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-23T14:20:02.402Z\",\r\n      \"Message\": \"[WordTemplateFill] Filling offer-letter template — inserting signature logo at the LogoAnchor bookmark.\",\r\n      \"ProcessName\": \"WordTemplateFill\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-cc335599-003\",\r\n      \"JobKey\": \"cc335555-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-23T14:20:03.640Z\",\r\n      \"Message\": \"Use Word File: offer-letter.docx — document opened (Path='C:\\\\Robot\\\\Templates\\\\offer-letter.docx').\",\r\n      \"ProcessName\": \"WordTemplateFill\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-cc335599-004\",\r\n      \"JobKey\": \"cc335555-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-23T14:20:04.110Z\",\r\n      \"Message\": \"Add Picture — resolving insertion point relative to bookmark 'LogoAnchor'.\",\r\n      \"ProcessName\": \"WordTemplateFill\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-cc335599-005\",\r\n      \"JobKey\": \"cc335555-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-23T14:20:04.290Z\",\r\n      \"Message\": \"Add Picture: UiPath.Word.BusinessException: The bookmark 'LogoAnchor' was not found in the document.\",\r\n      \"ProcessName\": \"WordTemplateFill\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -37,7 +37,7 @@
         "jobs",
         "history"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"cc335555-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-05-23T14:20:01.890Z\"\r\n    },\r\n    {\r\n      \"Key\": \"cc335555-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-05-23T14:20:02.140Z\"\r\n    },\r\n    {\r\n      \"Key\": \"cc335555-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-05-23T14:20:04.318Z\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -47,7 +47,7 @@
         "jobs",
         "get"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"cc335555-9999-aaaa-bbbb-ccccddddeeee\",\r\n    \"StartTime\": \"2026-05-23T14:20:02.140Z\",\r\n    \"EndTime\": \"2026-05-23T14:20:04.318Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"9cc33555-9999-aaaa-bbbb-ccccddddeeee\",\r\n    \"Info\": \"UiPath.Word.BusinessException: The bookmark 'LogoAnchor' was not found in the document.\\r\\n   at UiPath.Word.Activities.WordAddImage.ResolveInsertLocation(Document doc)\\r\\n   at UiPath.Word.Activities.WordAddImage.Execute(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-23T14:20:01.890Z\",\r\n    \"ReleaseName\": \"WordTemplateFill\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5680401,\r\n    \"OrganizationUnitId\": 6033001,\r\n    \"FolderKey\": \"f0033344-2222-3333-4444-555566667777\",\r\n    \"Reference\": \"TemplateFillRun\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-23T14:20:04.318Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"BusinessException\",\r\n      \"ActivityName\": \"WordAddImage_1\",\r\n      \"ActivityDisplayName\": \"Add Picture\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"cc335555-9999-aaaa-bbbb-ccccddddeeee\",\r\n    \"Id\": 680077503\r\n  }\r\n}\r\n"
     }

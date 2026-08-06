@@ -1,7 +1,7 @@
 """Report expected vs performed protected `uip` calls per replicate.
 
-Reads the agent workspace's ``cli_mocks/calls.jsonl`` and the scenario's
-source ``data/uip-fixture.json``. Writes ``coverage.json`` and
+Reads each replicate's host-side ``protected_mock_calls.jsonl`` and the
+scenario's source ``data/uip-fixture.json``. Writes ``coverage.json`` and
 ``coverage.txt`` beside each replicate and prints a run-level table.
 """
 
@@ -27,7 +27,8 @@ def _read_calls(path: Path) -> list[dict]:
     return calls
 
 
-def _normalized(argv: list[str]) -> tuple[str, ...]:
+def _match_tokens(argv: list[str]) -> list[str]:
+    """Mirror the mock service's token expansion: split --flag=value, drop noise flags."""
     expanded: list[str] = []
     for raw in argv:
         if raw.startswith("-") and "=" in raw:
@@ -47,7 +48,11 @@ def _normalized(argv: list[str]) -> tuple[str, ...]:
             skip_next = True
             continue
         cleaned.append(token)
-    return tuple(sorted(cleaned))
+    return cleaned
+
+
+def _normalized(argv: list[str]) -> tuple[str, ...]:
+    return tuple(sorted(_match_tokens(argv)))
 
 
 def _task_fixture(task_id: str) -> Path | None:
@@ -63,8 +68,9 @@ def _task_fixture(task_id: str) -> Path | None:
 def analyze_replicate(rep_dir: Path) -> dict:
     """Build a coverage record for one replicate."""
     task_id = rep_dir.parent.name
-    sandbox = rep_dir / "artifacts" / task_id
-    calls_path = sandbox / "cli_mocks" / "calls.jsonl"
+    # Host-side per-replicate invocation log written by the protected mock
+    # client, next to task.json (never inside the agent sandbox).
+    calls_path = rep_dir / "protected_mock_calls.jsonl"
     fixture_path = _task_fixture(task_id)
     rec: dict = {
         "replicate": rep_dir.name,
@@ -99,10 +105,14 @@ def analyze_replicate(rep_dir: Path) -> dict:
 
     exact: dict[tuple[str, ...], str] = {}
     normalized: dict[tuple[str, ...], str] = {}
+    subset_rules: list[tuple[set[str], str]] = []
     for response in fixture.get("responses", []):
         argv = response.get("argv", [])
         rendered = shlex.join(argv)
-        if response.get("match_mode", "exact") == "normalized":
+        mode = response.get("match_mode", "exact")
+        if mode == "subset":
+            subset_rules.append((set(_match_tokens(argv)), rendered))
+        elif mode == "normalized":
             normalized[_normalized(argv)] = rendered
         else:
             exact[tuple(argv)] = rendered
@@ -113,6 +123,14 @@ def analyze_replicate(rep_dir: Path) -> dict:
         argv = call.get("argv", [])
         rendered = shlex.join(argv)
         configured = exact.get(tuple(argv)) or normalized.get(_normalized(argv))
+        if not configured and subset_rules:
+            # Mirror the mock service: subset rules scan in fixture-file order,
+            # first rule whose tokens all appear in the invocation wins.
+            invocation_tokens = set(_match_tokens(argv))
+            for rule_tokens, rendered_rule in subset_rules:
+                if rule_tokens <= invocation_tokens:
+                    configured = rendered_rule
+                    break
         if configured:
             response_counts[configured] += 1
         elif argv[:2] == ["docsai", "ask"]:

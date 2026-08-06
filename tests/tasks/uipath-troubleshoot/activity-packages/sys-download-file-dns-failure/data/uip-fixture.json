@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f\",\r\n      \"Name\": \"Finance\",\r\n      \"Path\": \"Finance\",\r\n      \"Description\": \"Finance department automation processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"b8e2c145-7d3a-49b6-a2c8-1f4b5e8a9c01\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,46 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"VendorPortalSync\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-24T10:02:31.400Z\",\r\n      \"EndTime\": \"2026-06-24T10:02:33.010Z\",\r\n      \"CreationTime\": \"2026-06-24T10:02:31.120Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--process-name",
-        "VendorPortalSync"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"VendorPortalSync\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-24T10:02:31.400Z\",\r\n      \"EndTime\": \"2026-06-24T10:02:33.010Z\",\r\n      \"CreationTime\": \"2026-06-24T10:02:31.120Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--folder-path",
-        "Finance"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"VendorPortalSync\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-24T10:02:31.400Z\",\r\n      \"EndTime\": \"2026-06-24T10:02:33.010Z\",\r\n      \"CreationTime\": \"2026-06-24T10:02:31.120Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34\",\r\n    \"StartTime\": \"2026-06-24T10:02:31.400Z\",\r\n    \"EndTime\": \"2026-06-24T10:02:33.010Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\r\n    \"Info\": \"The requested name is valid, but no data of the requested type was found. (files.acme-vendorportal.example.com:443)\\r\\n\\r\\nin Main.xaml\\r\\n    at DownloadFileFromUrl \\\"Download File from URL\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at VendorPortalSync \\\"VendorPortalSync\\\"\\r\\n\\r\\nSystem.Net.Http.HttpRequestException: The requested name is valid, but no data of the requested type was found. (files.acme-vendorportal.example.com:443)\\r\\n ---> System.Net.Sockets.SocketException: The requested name is valid, but no data of the requested type was found.\\r\\n   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)\\r\\n   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)\\r\\n   --- End of inner exception stack trace ---\\r\\n   at UiPath.Core.Activities.TaskAsyncCodeActivityWithResult`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\",\r\n    \"CreationTime\": \"2026-06-24T10:02:31.120Z\",\r\n    \"ReleaseName\": \"VendorPortalSync\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5102912,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"svc.finance\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-24T10:02:33.010Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34\",\r\n    \"Id\": 671104221\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -77,9 +28,58 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-24T10:02:32.970Z\",\r\n      \"Message\": \"Download File from URL: The requested name is valid, but no data of the requested type was found. (files.acme-vendorportal.example.com:443)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-24T10:02:33.000Z\",\r\n      \"Message\": \"The requested name is valid, but no data of the requested type was found. (files.acme-vendorportal.example.com:443)\\r\\nin Main.xaml\\r\\n    at DownloadFileFromUrl \\\"Download File from URL\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at VendorPortalSync \\\"VendorPortalSync\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--process-name",
+        "VendorPortalSync"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"VendorPortalSync\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-24T10:02:31.400Z\",\r\n      \"EndTime\": \"2026-06-24T10:02:33.010Z\",\r\n      \"CreationTime\": \"2026-06-24T10:02:31.120Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-path",
+        "Finance"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"VendorPortalSync\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-24T10:02:31.400Z\",\r\n      \"EndTime\": \"2026-06-24T10:02:33.010Z\",\r\n      \"CreationTime\": \"2026-06-24T10:02:31.120Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34\",\r\n    \"StartTime\": \"2026-06-24T10:02:31.400Z\",\r\n    \"EndTime\": \"2026-06-24T10:02:33.010Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\r\n    \"Info\": \"The requested name is valid, but no data of the requested type was found. (files.acme-vendorportal.example.com:443)\\r\\n\\r\\nin Main.xaml\\r\\n    at DownloadFileFromUrl \\\"Download File from URL\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at VendorPortalSync \\\"VendorPortalSync\\\"\\r\\n\\r\\nSystem.Net.Http.HttpRequestException: The requested name is valid, but no data of the requested type was found. (files.acme-vendorportal.example.com:443)\\r\\n ---> System.Net.Sockets.SocketException: The requested name is valid, but no data of the requested type was found.\\r\\n   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)\\r\\n   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)\\r\\n   --- End of inner exception stack trace ---\\r\\n   at UiPath.Core.Activities.TaskAsyncCodeActivityWithResult`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\",\r\n    \"CreationTime\": \"2026-06-24T10:02:31.120Z\",\r\n    \"ReleaseName\": \"VendorPortalSync\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5102912,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"svc.finance\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-24T10:02:33.010Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"8b2d5f61-4c3e-4a9d-b7e2-1f6a8c0d9e34\",\r\n    \"Id\": 671104221\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f\",\r\n      \"Name\": \"Finance\",\r\n      \"Path\": \"Finance\",\r\n      \"Description\": \"Finance department automation processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"b8e2c145-7d3a-49b6-a2c8-1f4b5e8a9c01\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

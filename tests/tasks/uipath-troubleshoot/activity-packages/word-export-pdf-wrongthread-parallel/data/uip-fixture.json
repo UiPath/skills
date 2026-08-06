@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"e5f6a7b8-c9d0-4b3c-9e5f-607182930415\",\r\n      \"Name\": \"DocOps\",\r\n      \"Path\": \"DocOps\",\r\n      \"Description\": \"Bulk document operations.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,22 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f6a7b8c9-d0e1-4c4d-8f60-718293041526\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"BulkDocPdf\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-19T10:05:21.330Z\",\r\n      \"EndTime\": \"2026-06-19T10:05:27.910Z\",\r\n      \"CreationTime\": \"2026-06-19T10:05:21.100Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "f6a7b8c9-d0e1-4c4d-8f60-718293041526",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"f6a7b8c9-d0e1-4c4d-8f60-718293041526\",\r\n    \"StartTime\": \"2026-06-19T10:05:21.330Z\",\r\n    \"EndTime\": \"2026-06-19T10:05:27.910Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"Info\": \"Save Document as PDF: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'.\\r\\n\\r\\nin Main.xaml\\r\\n    at WordExportToPdf \\\"Save Document as PDF\\\"\\r\\n    at Parallel \\\"Parallel — export + audit log\\\"\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. This operation failed because the QueryInterface call on the COM component for the interface with IID '{0002096B-0000-0000-C000-000000000046}' failed due to the following error: The application called an interface that was marshalled for a different thread. (0x8001010E (RPC_E_WRONG_THREAD)).\",\r\n    \"CreationTime\": \"2026-06-19T10:05:21.100Z\",\r\n    \"ReleaseName\": \"BulkDocPdf\",\r\n    \"Type\": \"Attended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Attended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6055800,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"e5f6a7b8-c9d0-4b3c-9e5f-607182930415\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"MOCK-HOST\\\\operator\",\r\n    \"OrchestratorUserIdentity\": \"operator\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-19T10:05:27.910Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"InvalidCastException\",\r\n      \"ActivityName\": \"WordExportToPdf_1\",\r\n      \"ActivityDisplayName\": \"Save Document as PDF\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"f6a7b8c9-d0e1-4c4d-8f60-718293041526\",\r\n    \"Id\": 682493307\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -53,9 +28,22 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-19T10:05:27.840Z\",\r\n      \"Message\": \"Save Document as PDF: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. This operation failed because the QueryInterface call on the COM component for the interface with IID '{0002096B-0000-0000-C000-000000000046}' failed due to the following error: The application called an interface that was marshalled for a different thread. (0x8001010E (RPC_E_WRONG_THREAD)).\\r\\nin Main.xaml\\r\\n    at WordExportToPdf \\\"Save Document as PDF\\\"\\r\\n    at Parallel \\\"Parallel — export + audit log\\\"\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "f6a7b8c9-d0e1-4c4d-8f60-718293041526",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"f6a7b8c9-d0e1-4c4d-8f60-718293041526\",\r\n    \"StartTime\": \"2026-06-19T10:05:21.330Z\",\r\n    \"EndTime\": \"2026-06-19T10:05:27.910Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"Info\": \"Save Document as PDF: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'.\\r\\n\\r\\nin Main.xaml\\r\\n    at WordExportToPdf \\\"Save Document as PDF\\\"\\r\\n    at Parallel \\\"Parallel — export + audit log\\\"\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. This operation failed because the QueryInterface call on the COM component for the interface with IID '{0002096B-0000-0000-C000-000000000046}' failed due to the following error: The application called an interface that was marshalled for a different thread. (0x8001010E (RPC_E_WRONG_THREAD)).\",\r\n    \"CreationTime\": \"2026-06-19T10:05:21.100Z\",\r\n    \"ReleaseName\": \"BulkDocPdf\",\r\n    \"Type\": \"Attended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Attended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6055800,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"e5f6a7b8-c9d0-4b3c-9e5f-607182930415\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"MOCK-HOST\\\\operator\",\r\n    \"OrchestratorUserIdentity\": \"operator\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-19T10:05:27.910Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"InvalidCastException\",\r\n      \"ActivityName\": \"WordExportToPdf_1\",\r\n      \"ActivityDisplayName\": \"Save Document as PDF\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"f6a7b8c9-d0e1-4c4d-8f60-718293041526\",\r\n    \"Id\": 682493307\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -66,9 +54,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-19T10:05:21.380Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-19T10:05:22.640Z\",\r\n      \"Message\": \"[Word Application Scope] Starting Microsoft Word\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-19T10:05:24.010Z\",\r\n      \"Message\": \"[Word Application Scope] Document 'data\\\\Invoice.docx' opened\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-19T10:05:24.520Z\",\r\n      \"Message\": \"Dispatching invoice export to PDF\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-19T10:05:27.840Z\",\r\n      \"Message\": \"Save Document as PDF: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. This operation failed because the QueryInterface call on the COM component for the interface with IID '{0002096B-0000-0000-C000-000000000046}' failed due to the following error: The application called an interface that was marshalled for a different thread. (0x8001010E (RPC_E_WRONG_THREAD)).\\r\\nin Main.xaml\\r\\n    at WordExportToPdf \\\"Save Document as PDF\\\"\\r\\n    at Parallel \\\"Parallel — export + audit log\\\"\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-19T10:05:27.890Z\",\r\n      \"Message\": \"Execution ended in: 00:00:06\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"e5f6a7b8-c9d0-4b3c-9e5f-607182930415\",\r\n      \"Name\": \"DocOps\",\r\n      \"Path\": \"DocOps\",\r\n      \"Description\": \"Bulk document operations.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

@@ -5,14 +5,52 @@
       "argv": [
         "or",
         "jobs",
+        "list",
+        "--folder-key",
+        "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"419a6787-6cc6-4b93-bae4-ba985bf6fe67\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CallService\",\r\n      \"ReleaseName\": \"CallService\",\r\n      \"StartTime\": \"2026-06-23T17:36:33.547Z\",\r\n      \"EndTime\": \"2026-06-23T17:36:34.967Z\",\r\n      \"CreationTime\": \"2026-06-23T17:36:30.333Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
         "logs",
         "419a6787-6cc6-4b93-bae4-ba985bf6fe67",
         "--level",
         "Error"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-23T17:36:33.952Z\",\r\n      \"Message\": \"HTTP Request: No such host is known. (service-endpoint-unavailable.invalid:80)\\r\\nin Wf_CallService.xaml\\r\\n    at HttpClient \\\"HTTP Request\\\"\\r\\n    at Sequence \\\"Call Service\\\"\\r\\n    at Wf_CallService \\\"Wf_CallService\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.Net.WebException\\r\\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "419a6787-6cc6-4b93-bae4-ba985bf6fe67"
+      ],
+      "match_mode": "subset",
+      "exit_code": 1,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Message\": \"Error retrieving trace ID for job\",\r\n  \"Instructions\": \"Response returned an error code\"\r\n}\r\n\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"419a6787-6cc6-4b93-bae4-ba985bf6fe67\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CallService\",\r\n      \"ReleaseName\": \"CallService\",\r\n      \"StartTime\": \"2026-06-23T17:36:33.547Z\",\r\n      \"EndTime\": \"2026-06-23T17:36:34.967Z\",\r\n      \"CreationTime\": \"2026-06-23T17:36:30.333Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}"
     },
     {
       "argv": [
@@ -21,7 +59,7 @@
         "logs",
         "419a6787-6cc6-4b93-bae4-ba985bf6fe67"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-23T17:36:34.901Z\",\r\n      \"Message\": \"CallService execution ended\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-23T17:36:33.952Z\",\r\n      \"Message\": \"HTTP Request: No such host is known. (service-endpoint-unavailable.invalid:80)\\r\\nin Wf_CallService.xaml\\r\\n    at HttpClient \\\"HTTP Request\\\"\\r\\n    at Sequence \\\"Call Service\\\"\\r\\n    at Wf_CallService \\\"Wf_CallService\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.Net.WebException\\r\\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-23T17:36:33.747Z\",\r\n      \"Message\": \"CallService execution started\"\r\n    }\r\n  ]\r\n}\r\n\r\n"
     },
@@ -32,7 +70,7 @@
         "get",
         "419a6787-6cc6-4b93-bae4-ba985bf6fe67"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"419a6787-6cc6-4b93-bae4-ba985bf6fe67\",\r\n    \"StartTime\": \"2026-06-23T17:36:33.547Z\",\r\n    \"EndTime\": \"2026-06-23T17:36:34.967Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"766a623e-ffe2-4225-94f2-8d9285f96594\",\r\n    \"Info\": \"No such host is known. (service-endpoint-unavailable.invalid:80)\\r\\n\\r\\nin Wf_CallService.xaml\\r\\n    at HttpClient \\\"HTTP Request\\\"\\r\\n    at Sequence \\\"Call Service\\\"\\r\\n    at Wf_CallService \\\"Wf_CallService\\\"\\r\\n\\r\\nSystem.Net.WebException: No such host is known. (service-endpoint-unavailable.invalid:80)\\r\\n ---> System.Net.Http.HttpRequestException: No such host is known. (service-endpoint-unavailable.invalid:80)\\r\\n ---> System.Net.Sockets.SocketException: No such host is known.\\r\\n   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)\\r\\n   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)\\r\\n   at System.Net.Sockets.Socket.<ConnectAsync>g__WaitForConnectWithCancellation|285_0(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)\\r\\n   at System.Net.HttpWebRequest.<>c__DisplayClass219_0.<<CreateHttpClient>b__1>d.MoveNext()\\r\\n--- End of stack trace from previous location ---\\r\\n   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)\\r\\n   --- End of inner exception stack trace ---\\r\\n   at System.Net.Http.HttpConnectionPool.ConnectToTcpHostAsync(String host, Int32 port, HttpRequestMessage initialRequest, Boolean async, CancellationToken cancellationToken)\\r\\n   at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)\\r\\n   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)\\r\\n   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)\\r\\n   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)\\r\\n   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)\\r\\n   at System.Net.Http.AuthenticationHelper.SendWithAuthAsync(HttpRequestMessage request, Uri authUri, Boolean async, ICredentials credentials, Boolean preAuthenticate, Boolean isProxyAuth, Boolean doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)\\r\\n   at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)\\r\\n   at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)\\r\\n   at System.Net.Http.DecompressionHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)\\r\\n   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)\\r\\n   at System.Net.HttpWebRequest.SendRequest(Boolean async)\\r\\n   at System.Net.HttpWebRequest.EndGetResponse(IAsyncResult asyncResult)\\r\\n   --- End of inner exception stack trace ---\\r\\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-23T17:36:30.333Z\",\r\n    \"ReleaseName\": \"CallService\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 21569942,\r\n    \"EntryPointPath\": \"Wf_CallService.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"defb8e05-e36b-4c36-bf11-0b4d08ce6cd1\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-23T17:36:34.967Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"419a67876cc64b93bae4ba985bf6fe67\",\r\n    \"Id\": 67889404\r\n  }\r\n}\r\n\r\n"
     },
@@ -43,7 +81,7 @@
         "history",
         "419a6787-6cc6-4b93-bae4-ba985bf6fe67"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-06-23T17:36:34.970Z\",\r\n      \"JobId\": 67889404\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-06-23T17:36:33.553Z\",\r\n      \"JobId\": 67889404\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-06-23T17:36:30.373Z\",\r\n      \"JobId\": 67889404\r\n    }\r\n  ]\r\n}\r\n\r\n"
     },
@@ -54,47 +92,9 @@
         "traces",
         "419a6787-6cc6-4b93-bae4-ba985bf6fe67"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n\r\n"
-    },
-    {
-      "argv": [
-        "traces",
-        "spans",
-        "get",
-        "--job-key",
-        "419a6787-6cc6-4b93-bae4-ba985bf6fe67"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 1,
-      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Message\": \"Error retrieving trace ID for job\",\r\n  \"Instructions\": \"Response returned an error code\"\r\n}\r\n\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--folder-key",
-        "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
-        "--state",
-        "Faulted"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"419a6787-6cc6-4b93-bae4-ba985bf6fe67\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CallService\",\r\n      \"ReleaseName\": \"CallService\",\r\n      \"StartTime\": \"2026-06-23T17:36:33.547Z\",\r\n      \"EndTime\": \"2026-06-23T17:36:34.967Z\",\r\n      \"CreationTime\": \"2026-06-23T17:36:30.333Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--folder-key",
-        "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"419a6787-6cc6-4b93-bae4-ba985bf6fe67\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CallService\",\r\n      \"ReleaseName\": \"CallService\",\r\n      \"StartTime\": \"2026-06-23T17:36:33.547Z\",\r\n      \"EndTime\": \"2026-06-23T17:36:34.967Z\",\r\n      \"CreationTime\": \"2026-06-23T17:36:30.333Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}"
     },
     {
       "argv": [
@@ -102,7 +102,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"419a6787-6cc6-4b93-bae4-ba985bf6fe67\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CallService\",\r\n      \"ReleaseName\": \"CallService\",\r\n      \"StartTime\": \"2026-06-23T17:36:33.547Z\",\r\n      \"EndTime\": \"2026-06-23T17:36:34.967Z\",\r\n      \"CreationTime\": \"2026-06-23T17:36:30.333Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}"
     },
@@ -112,7 +112,7 @@
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3a1e81c2-07ca-4d6b-bc07-7e0c7b94ea3a\",\r\n      \"Name\": \"automation1@test.com's workspace\",\r\n      \"Path\": \"automation1@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"defb8e05-e36b-4c36-bf11-0b4d08ce6cd1\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n\r\n"
     }

@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"aa02b2c3-d4e5-4f60-8a02-000000000002\",\r\n      \"Name\": \"Batch Analytics\",\r\n      \"Path\": \"Batch Analytics\",\r\n      \"Description\": \"Production folder for batch aggregation processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,22 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"bb02c3d4-e5f6-4071-9b02-000000000002\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"PyBatchAggregate\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-11T10:15:02.110Z\",\r\n      \"EndTime\": \"2026-06-11T10:15:33.540Z\",\r\n      \"CreationTime\": \"2026-06-11T10:15:01.700Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "bb02c3d4-e5f6-4071-9b02-000000000002",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"bb02c3d4-e5f6-4071-9b02-000000000002\",\r\n    \"StartTime\": \"2026-06-11T10:15:02.110Z\",\r\n    \"EndTime\": \"2026-06-11T10:15:33.540Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"cc02d4e5-f6a7-4182-9c02-000000000002\",\r\n    \"Info\": \"Load Python Script: One or more errors occurred. ---> System.TimeoutException: The Python script did not complete within the configured Timeout (30000 ms). The Python standard output stream may be flooded.\\r\\n\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.AggregateException: One or more errors occurred.\",\r\n    \"CreationTime\": \"2026-06-11T10:15:01.700Z\",\r\n    \"ReleaseName\": \"PyBatchAggregate\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7012402,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"aa02b2c3-d4e5-4f60-8a02-000000000002\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-11T10:15:33.540Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"bb02c3d4-e5f6-4071-9b02-000000000002\",\r\n    \"Id\": 712450202\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -53,9 +28,22 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-11T10:15:33.380Z\",\r\n      \"Message\": \"[Load Python Script] One or more errors occurred. ---> System.TimeoutException: The Python script did not complete within the configured Timeout (30000 ms). The Python standard output stream may be flooded.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-11T10:15:33.470Z\",\r\n      \"Message\": \"One or more errors occurred. ---> System.TimeoutException: The Python script did not complete within the configured Timeout (30000 ms).\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "bb02c3d4-e5f6-4071-9b02-000000000002",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"bb02c3d4-e5f6-4071-9b02-000000000002\",\r\n    \"StartTime\": \"2026-06-11T10:15:02.110Z\",\r\n    \"EndTime\": \"2026-06-11T10:15:33.540Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"cc02d4e5-f6a7-4182-9c02-000000000002\",\r\n    \"Info\": \"Load Python Script: One or more errors occurred. ---> System.TimeoutException: The Python script did not complete within the configured Timeout (30000 ms). The Python standard output stream may be flooded.\\r\\n\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.AggregateException: One or more errors occurred.\",\r\n    \"CreationTime\": \"2026-06-11T10:15:01.700Z\",\r\n    \"ReleaseName\": \"PyBatchAggregate\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7012402,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"aa02b2c3-d4e5-4f60-8a02-000000000002\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-11T10:15:33.540Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"bb02c3d4-e5f6-4071-9b02-000000000002\",\r\n    \"Id\": 712450202\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -66,9 +54,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-11T10:15:02.140Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-11T10:15:03.060Z\",\r\n      \"Message\": \"[Python Scope] Initializing Python engine (Target: x64, Path: C:\\\\Python39, Version: Python_39)\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-11T10:15:03.520Z\",\r\n      \"Message\": \"[Python Scope] Python engine initialized.\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-11T10:15:03.780Z\",\r\n      \"Message\": \"[Load Python Script] Loading scripts\\\\aggregate.py\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-11T10:15:08.940Z\",\r\n      \"Message\": \"[Load Python Script] stdout: warmup row 612344 => 375165... (very large volume of per-row output continuing)\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-11T10:15:20.110Z\",\r\n      \"Message\": \"[Load Python Script] stdout: warmup row 2487051 => 6185... (engine output buffer saturated)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-11T10:15:33.380Z\",\r\n      \"Message\": \"[Load Python Script] One or more errors occurred. ---> System.TimeoutException: The Python script did not complete within the configured Timeout (30000 ms). The Python standard output stream may be flooded.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-11T10:15:33.470Z\",\r\n      \"Message\": \"One or more errors occurred. ---> System.TimeoutException: The Python script did not complete within the configured Timeout (30000 ms).\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-11T10:15:33.520Z\",\r\n      \"Message\": \"Execution ended in: 00:00:31\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"aa02b2c3-d4e5-4f60-8a02-000000000002\",\r\n      \"Name\": \"Batch Analytics\",\r\n      \"Path\": \"Batch Analytics\",\r\n      \"Description\": \"Production folder for batch aggregation processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

@@ -7,7 +7,7 @@
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9d2e6b04-8c15-4f37-a049-1b7f3c0e8d59\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"d4e08b31-5f29-4c48-a163-8a1d2c9f7e60\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,7 +17,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3c8f1a52-7b09-4d64-9e28-1a5c0f3e7b26\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"TaxProcessing\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"StartTime\": \"2026-07-16T13:22:05.410Z\",\r\n      \"EndTime\": \"2026-07-16T13:22:06.220Z\",\r\n      \"CreationTime\": \"2026-07-16T13:22:05.410Z\"\r\n    },\r\n    {\r\n      \"Key\": \"5a2c0e93-8f14-4b67-9d02-3e7a1c5f9b48\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"TaxProcessing\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DEV-STUDIO-01\",\r\n      \"StartTime\": \"2026-07-14T08:11:02.330Z\",\r\n      \"EndTime\": \"2026-07-14T08:11:07.880Z\",\r\n      \"CreationTime\": \"2026-07-14T08:11:02.330Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
     },
@@ -27,7 +27,7 @@
         "jobs",
         "logs"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-16T13:22:06.100Z\",\r\n      \"Message\": \"Invoke CalculateTax: Could not find file 'Helpers\\\\CalculateTax.xaml'.\\r\\nin Main.xaml\\r\\n    at InvokeWorkflowFile \\\"Invoke CalculateTax\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at DynamicActivity \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.IO.FileNotFoundException\\r\\n   at UiPath.Core.Activities.InvokeWorkflowFile.LoadWorkflow(String fileName)\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-07-16T13:22:05.600Z\",\r\n      \"Message\": \"TaxProcessing execution started\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -37,7 +37,7 @@
         "jobs",
         "history"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-16T13:22:06.220Z\",\r\n      \"JobId\": 66122640\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-16T13:22:05.520Z\",\r\n      \"JobId\": 66122640\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -47,7 +47,7 @@
         "jobs",
         "traces"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
     },
@@ -57,7 +57,7 @@
         "jobs",
         "get"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"3c8f1a52-7b09-4d64-9e28-1a5c0f3e7b26\",\r\n    \"StartTime\": \"2026-07-16T13:22:05.410Z\",\r\n    \"EndTime\": \"2026-07-16T13:22:06.220Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"Info\": \"Invoke CalculateTax: Could not find file 'C:\\\\Users\\\\robot\\\\.nuget\\\\packages\\\\taxprocessing\\\\1.0.22\\\\lib\\\\net6.0\\\\Helpers\\\\CalculateTax.xaml'.\\r\\n\\r\\nin Main.xaml\\r\\n    at InvokeWorkflowFile \\\"Invoke CalculateTax\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at DynamicActivity \\\"Main\\\"\\r\\n\\r\\nSystem.IO.FileNotFoundException: Could not find file 'Helpers\\\\CalculateTax.xaml'.\\r\\n   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)\\r\\n   at System.IO.FileStream..ctor(String path, FileMode mode)\\r\\n   at UiPath.Core.Activities.InvokeWorkflowFile.LoadWorkflow(String fileName)\\r\\n   at UiPath.Core.Activities.InvokeWorkflowFile.<ExecuteAsync>d__.MoveNext()\",\r\n    \"CreationTime\": \"2026-07-16T13:22:05.410Z\",\r\n    \"ReleaseName\": \"TaxProcessing\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"d4e08b31-5f29-4c48-a163-8a1d2c9f7e60\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\svc_robot\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"LastModificationTime\": \"2026-07-16T13:22:06.220Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"3c8f1a527b094d649e281a5c0f3e7b26\",\r\n    \"Id\": 66122640\r\n  }\r\n}\r\n"
     }

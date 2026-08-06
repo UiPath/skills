@@ -4,16 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -21,42 +11,9 @@
         "--state",
         "Faulted"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0c8117e-38f1-474a-8c14-81f94c86816c\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T11:08:39.840Z\",\r\n      \"EndTime\": \"2026-06-20T11:08:45.333Z\",\r\n      \"ReleaseName\": \"TeamNotifications\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50596529\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--folder-key",
-        "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0c8117e-38f1-474a-8c14-81f94c86816c\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T11:08:39.840Z\",\r\n      \"EndTime\": \"2026-06-20T11:08:45.333Z\",\r\n      \"ReleaseName\": \"TeamNotifications\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50596529\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0c8117e-38f1-474a-8c14-81f94c86816c\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T11:08:39.840Z\",\r\n      \"EndTime\": \"2026-06-20T11:08:45.333Z\",\r\n      \"ReleaseName\": \"TeamNotifications\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50596529\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "f0c8117e-38f1-474a-8c14-81f94c86816c"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"f0c8117e-38f1-474a-8c14-81f94c86816c\",\r\n    \"StartTime\": \"2026-06-20T11:08:39.840Z\",\r\n    \"EndTime\": \"2026-06-20T11:08:45.333Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"30771724-17d3-4eb0-ba94-f1df799873e0\",\r\n    \"Info\": \"BusinessActivityExecutionException:\\nError Code: [400]\\nMessage: Bad Request - Often due to a missing request parameter\\nRequestId: 6a43a3bce4b0cb1e6eda4378\\nProviderMessage: {\\\"ok\\\":false,\\\"error\\\":\\\"channel_not_found\\\",\\\"warning\\\":\\\"missing_charset\\\",\\\"response_metadata\\\":{\\\"warnings\\\":[\\\"missing_charset\\\"]}}\\n\\r\\n\\r\\nin Main.xaml\\r\\n    at SendMessage \\\"Send Message to Channel\\\"\\r\\n    at Sequence \\\"Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException: BusinessActivityExecutionException:\\nError Code: [400]\\nMessage: Bad Request - Often due to a missing request parameter\\nRequestId: 6a43a3bce4b0cb1e6eda4378\\nProviderMessage: {\\\"ok\\\":false,\\\"error\\\":\\\"channel_not_found\\\",\\\"warning\\\":\\\"missing_charset\\\",\\\"response_metadata\\\":{\\\"warnings\\\":[\\\"missing_charset\\\"]}}\\n\\r\\n   at UiPath.BAF.Activities.BAFAsyncCodeActivity`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-20T11:08:06.137Z\",\r\n    \"ReleaseName\": \"TeamNotifications\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 1108601,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-20T11:08:45.333Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"f0c8117e38f1474a8c1481f94c86816c\",\r\n    \"Id\": 50596529\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -67,7 +24,7 @@
         "--level",
         "Error"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-20T11:08:44.768Z\",\r\n      \"Message\": \"Send Message to Channel: BusinessActivityExecutionException:\\nError Code: [400]\\nMessage: Bad Request - Often due to a missing request parameter\\nRequestId: 6a43a3bce4b0cb1e6eda4378\\nProviderMessage: {\\\"ok\\\":false,\\\"error\\\":\\\"channel_not_found\\\",\\\"warning\\\":\\\"missing_charset\\\",\\\"response_metadata\\\":{\\\"warnings\\\":[\\\"missing_charset\\\"]}}\\n\\r\\nin Main.xaml\\r\\n    at SendMessage \\\"Send Message to Channel\\\"\\r\\n    at Sequence \\\"Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException\\r\\n   at UiPath.BAF.Activities.BAFAsyncCodeActivity`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -75,23 +32,13 @@
       "argv": [
         "or",
         "jobs",
-        "logs",
-        "f0c8117e-38f1-474a-8c14-81f94c86816c"
+        "list",
+        "--folder-key",
+        "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-20T11:08:44.768Z\",\r\n      \"Message\": \"Send Message to Channel: BusinessActivityExecutionException:\\nError Code: [400]\\nMessage: Bad Request - Often due to a missing request parameter\\nRequestId: 6a43a3bce4b0cb1e6eda4378\\nProviderMessage: {\\\"ok\\\":false,\\\"error\\\":\\\"channel_not_found\\\",\\\"warning\\\":\\\"missing_charset\\\",\\\"response_metadata\\\":{\\\"warnings\\\":[\\\"missing_charset\\\"]}}\\n\\r\\nin Main.xaml\\r\\n    at SendMessage \\\"Send Message to Channel\\\"\\r\\n    at Sequence \\\"Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException\\r\\n   at UiPath.BAF.Activities.BAFAsyncCodeActivity`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "traces",
-        "f0c8117e-38f1-474a-8c14-81f94c86816c"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0c8117e-38f1-474a-8c14-81f94c86816c\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T11:08:39.840Z\",\r\n      \"EndTime\": \"2026-06-20T11:08:45.333Z\",\r\n      \"ReleaseName\": \"TeamNotifications\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50596529\r\n    }\r\n  ]\r\n}\r\n"
     },
     {
       "argv": [
@@ -101,9 +48,62 @@
         "--job-key",
         "f0c8117e-38f1-474a-8c14-81f94c86816c"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "f0c8117e-38f1-474a-8c14-81f94c86816c"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"f0c8117e-38f1-474a-8c14-81f94c86816c\",\r\n    \"StartTime\": \"2026-06-20T11:08:39.840Z\",\r\n    \"EndTime\": \"2026-06-20T11:08:45.333Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"30771724-17d3-4eb0-ba94-f1df799873e0\",\r\n    \"Info\": \"BusinessActivityExecutionException:\\nError Code: [400]\\nMessage: Bad Request - Often due to a missing request parameter\\nRequestId: 6a43a3bce4b0cb1e6eda4378\\nProviderMessage: {\\\"ok\\\":false,\\\"error\\\":\\\"channel_not_found\\\",\\\"warning\\\":\\\"missing_charset\\\",\\\"response_metadata\\\":{\\\"warnings\\\":[\\\"missing_charset\\\"]}}\\n\\r\\n\\r\\nin Main.xaml\\r\\n    at SendMessage \\\"Send Message to Channel\\\"\\r\\n    at Sequence \\\"Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException: BusinessActivityExecutionException:\\nError Code: [400]\\nMessage: Bad Request - Often due to a missing request parameter\\nRequestId: 6a43a3bce4b0cb1e6eda4378\\nProviderMessage: {\\\"ok\\\":false,\\\"error\\\":\\\"channel_not_found\\\",\\\"warning\\\":\\\"missing_charset\\\",\\\"response_metadata\\\":{\\\"warnings\\\":[\\\"missing_charset\\\"]}}\\n\\r\\n   at UiPath.BAF.Activities.BAFAsyncCodeActivity`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-20T11:08:06.137Z\",\r\n    \"ReleaseName\": \"TeamNotifications\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 1108601,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-20T11:08:45.333Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"f0c8117e38f1474a8c1481f94c86816c\",\r\n    \"Id\": 50596529\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "f0c8117e-38f1-474a-8c14-81f94c86816c"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-20T11:08:44.768Z\",\r\n      \"Message\": \"Send Message to Channel: BusinessActivityExecutionException:\\nError Code: [400]\\nMessage: Bad Request - Often due to a missing request parameter\\nRequestId: 6a43a3bce4b0cb1e6eda4378\\nProviderMessage: {\\\"ok\\\":false,\\\"error\\\":\\\"channel_not_found\\\",\\\"warning\\\":\\\"missing_charset\\\",\\\"response_metadata\\\":{\\\"warnings\\\":[\\\"missing_charset\\\"]}}\\n\\r\\nin Main.xaml\\r\\n    at SendMessage \\\"Send Message to Channel\\\"\\r\\n    at Sequence \\\"Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException\\r\\n   at UiPath.BAF.Activities.BAFAsyncCodeActivity`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "f0c8117e-38f1-474a-8c14-81f94c86816c"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0c8117e-38f1-474a-8c14-81f94c86816c\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T11:08:39.840Z\",\r\n      \"EndTime\": \"2026-06-20T11:08:45.333Z\",\r\n      \"ReleaseName\": \"TeamNotifications\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50596529\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

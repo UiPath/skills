@@ -4,10 +4,45 @@
     {
       "argv": [
         "or",
+        "jobs",
+        "logs",
+        "3b9c2d1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [],\r\n  \"Pagination\": {\r\n    \"Returned\": 0,\r\n    \"Limit\": 100,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "3b9c2d1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"3b9c2d1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e\",\r\n    \"StartTime\": \"2026-07-15T21:04:12.480Z\",\r\n    \"EndTime\": \"2026-07-15T21:04:49.905Z\",\r\n    \"State\": \"Successful\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"3b9c2d1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e\",\r\n    \"Info\": \"Job completed\",\r\n    \"CreationTime\": \"2026-07-15T21:04:11.900Z\",\r\n    \"ReleaseName\": \"ClassicClaimsSubmit\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 41220876,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 771204,\r\n    \"FolderKey\": \"f1a2b3c4-d5e6-4f70-8a1b-2c3d4e5f6a7b\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\svc_rpa\",\r\n    \"OrchestratorUserIdentity\": \"rpa-service@contoso.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-07-15T21:04:49.905Z\",\r\n    \"Id\": 90551238\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "3b9c2d1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"ClassicClaimsSubmit execution started\",\r\n      \"TimeStamp\": \"2026-07-15T21:04:12.600Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Click 'Submit Claim' execution started\",\r\n      \"TimeStamp\": \"2026-07-15T21:04:15.010Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Click 'Submit Claim' execution ended\",\r\n      \"TimeStamp\": \"2026-07-15T21:04:15.470Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Get Text 'Claim Status' execution ended\",\r\n      \"TimeStamp\": \"2026-07-15T21:04:16.220Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"Claim status after submit: Draft\",\r\n      \"TimeStamp\": \"2026-07-15T21:04:16.300Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"ClassicClaimsSubmit execution ended\",\r\n      \"TimeStamp\": \"2026-07-15T21:04:49.800Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 6,\r\n    \"Limit\": 100,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f1a2b3c4-d5e6-4f70-8a1b-2c3d4e5f6a7b\",\r\n      \"DisplayName\": \"Finance\",\r\n      \"FullyQualifiedName\": \"Finance\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"InheritFromTenant\",\r\n      \"Id\": 771204\r\n    },\r\n    {\r\n      \"Key\": \"c0ffee11-2233-4455-6677-8899aabbccdd\",\r\n      \"DisplayName\": \"Shared\",\r\n      \"FullyQualifiedName\": \"Shared\",\r\n      \"ProvisionType\": \"Automatic\",\r\n      \"PermissionModel\": \"InheritFromTenant\",\r\n      \"Id\": 1500287\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,44 +52,9 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3b9c2d1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-07-15T21:04:12.480Z\",\r\n      \"EndTime\": \"2026-07-15T21:04:49.905Z\",\r\n      \"CreationTime\": \"2026-07-15T21:04:11.900Z\"\r\n    },\r\n    {\r\n      \"Key\": \"8e1d55a2-3c47-4a90-b2f1-60a9c8d7e6f5\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-07-14T21:03:58.100Z\",\r\n      \"EndTime\": \"2026-07-14T21:04:35.640Z\",\r\n      \"CreationTime\": \"2026-07-14T21:03:57.500Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "3b9c2d1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"3b9c2d1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e\",\r\n    \"StartTime\": \"2026-07-15T21:04:12.480Z\",\r\n    \"EndTime\": \"2026-07-15T21:04:49.905Z\",\r\n    \"State\": \"Successful\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"3b9c2d1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e\",\r\n    \"Info\": \"Job completed\",\r\n    \"CreationTime\": \"2026-07-15T21:04:11.900Z\",\r\n    \"ReleaseName\": \"ClassicClaimsSubmit\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 41220876,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 771204,\r\n    \"FolderKey\": \"f1a2b3c4-d5e6-4f70-8a1b-2c3d4e5f6a7b\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\svc_rpa\",\r\n    \"OrchestratorUserIdentity\": \"rpa-service@contoso.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-07-15T21:04:49.905Z\",\r\n    \"Id\": 90551238\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "logs",
-        "3b9c2d1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e",
-        "--level",
-        "Error"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [],\r\n  \"Pagination\": {\r\n    \"Returned\": 0,\r\n    \"Limit\": 100,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "logs",
-        "3b9c2d1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"ClassicClaimsSubmit execution started\",\r\n      \"TimeStamp\": \"2026-07-15T21:04:12.600Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Click 'Submit Claim' execution started\",\r\n      \"TimeStamp\": \"2026-07-15T21:04:15.010Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Click 'Submit Claim' execution ended\",\r\n      \"TimeStamp\": \"2026-07-15T21:04:15.470Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Get Text 'Claim Status' execution ended\",\r\n      \"TimeStamp\": \"2026-07-15T21:04:16.220Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"Claim status after submit: Draft\",\r\n      \"TimeStamp\": \"2026-07-15T21:04:16.300Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"ClassicClaimsSubmit execution ended\",\r\n      \"TimeStamp\": \"2026-07-15T21:04:49.800Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"ClassicClaimsSubmit\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 6,\r\n    \"Limit\": 100,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
     }
   ],
   "default": {

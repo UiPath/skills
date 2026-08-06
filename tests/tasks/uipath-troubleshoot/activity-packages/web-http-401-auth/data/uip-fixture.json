@@ -5,14 +5,52 @@
       "argv": [
         "or",
         "jobs",
+        "list",
+        "--folder-key",
+        "e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceApiClient\",\r\n      \"ReleaseName\": \"InvoiceApiClient\",\r\n      \"StartTime\": \"2026-07-20T08:44:12.300Z\",\r\n      \"EndTime\": \"2026-07-20T08:44:13.780Z\",\r\n      \"CreationTime\": \"2026-07-20T08:44:09.100Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
         "logs",
         "9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90",
         "--level",
         "Error"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-20T08:44:13.450Z\",\r\n      \"Message\": \"HTTP Request: The remote server returned an error: (401) Unauthorized.\\r\\nin Wf_PostInvoice.xaml\\r\\n    at HttpClient \\\"HTTP Request\\\"\\r\\n    at Sequence \\\"Post Invoice\\\"\\r\\n    at Wf_PostInvoice \\\"Wf_PostInvoice\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.Net.WebException\\r\\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90"
+      ],
+      "match_mode": "subset",
+      "exit_code": 1,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Message\": \"Error retrieving trace ID for job\",\r\n  \"Instructions\": \"Response returned an error code\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceApiClient\",\r\n      \"ReleaseName\": \"InvoiceApiClient\",\r\n      \"StartTime\": \"2026-07-20T08:44:12.300Z\",\r\n      \"EndTime\": \"2026-07-20T08:44:13.780Z\",\r\n      \"CreationTime\": \"2026-07-20T08:44:09.100Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
     },
     {
       "argv": [
@@ -21,7 +59,7 @@
         "logs",
         "9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-07-20T08:44:13.640Z\",\r\n      \"Message\": \"InvoiceApiClient execution ended\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-20T08:44:13.450Z\",\r\n      \"Message\": \"HTTP Request: The remote server returned an error: (401) Unauthorized.\\r\\nin Wf_PostInvoice.xaml\\r\\n    at HttpClient \\\"HTTP Request\\\"\\r\\n    at Sequence \\\"Post Invoice\\\"\\r\\n    at Wf_PostInvoice \\\"Wf_PostInvoice\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.Net.WebException\\r\\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-07-20T08:44:12.520Z\",\r\n      \"Message\": \"InvoiceApiClient execution started\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -32,7 +70,7 @@
         "get",
         "9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90\",\r\n    \"StartTime\": \"2026-07-20T08:44:12.300Z\",\r\n    \"EndTime\": \"2026-07-20T08:44:13.780Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b9c\",\r\n    \"Info\": \"The remote server returned an error: (401) Unauthorized.\\r\\n\\r\\nin Wf_PostInvoice.xaml\\r\\n    at HttpClient \\\"HTTP Request\\\"\\r\\n    at Sequence \\\"Post Invoice\\\"\\r\\n    at Wf_PostInvoice \\\"Wf_PostInvoice\\\"\\r\\n\\r\\nSystem.Net.WebException: The remote server returned an error: (401) Unauthorized.\\r\\n ---> System.Net.Http.HttpRequestException: Response status code does not indicate success: 401 (Unauthorized).\\r\\n   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()\\r\\n   at System.Net.HttpWebRequest.SendRequest(Boolean async)\\r\\n   at System.Net.HttpWebRequest.EndGetResponse(IAsyncResult asyncResult)\\r\\n   --- End of inner exception stack trace ---\\r\\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-07-20T08:44:09.100Z\",\r\n    \"ReleaseName\": \"InvoiceApiClient\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 21850044,\r\n    \"EntryPointPath\": \"Wf_PostInvoice.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-07-20T08:44:13.780Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"9d4f2a183c5b4e708a2f1b6c3e5d7a90\",\r\n    \"Id\": 68002233\r\n  }\r\n}\r\n"
     },
@@ -43,7 +81,7 @@
         "history",
         "9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-20T08:44:13.784Z\",\r\n      \"JobId\": 68002233\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-20T08:44:12.310Z\",\r\n      \"JobId\": 68002233\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-07-20T08:44:09.140Z\",\r\n      \"JobId\": 68002233\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -54,47 +92,9 @@
         "traces",
         "9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "traces",
-        "spans",
-        "get",
-        "--job-key",
-        "9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 1,
-      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Message\": \"Error retrieving trace ID for job\",\r\n  \"Instructions\": \"Response returned an error code\"\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--folder-key",
-        "e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b",
-        "--state",
-        "Faulted"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceApiClient\",\r\n      \"ReleaseName\": \"InvoiceApiClient\",\r\n      \"StartTime\": \"2026-07-20T08:44:12.300Z\",\r\n      \"EndTime\": \"2026-07-20T08:44:13.780Z\",\r\n      \"CreationTime\": \"2026-07-20T08:44:09.100Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--folder-key",
-        "e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceApiClient\",\r\n      \"ReleaseName\": \"InvoiceApiClient\",\r\n      \"StartTime\": \"2026-07-20T08:44:12.300Z\",\r\n      \"EndTime\": \"2026-07-20T08:44:13.780Z\",\r\n      \"CreationTime\": \"2026-07-20T08:44:09.100Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
     },
     {
       "argv": [
@@ -102,7 +102,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9d4f2a18-3c5b-4e70-8a2f-1b6c3e5d7a90\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceApiClient\",\r\n      \"ReleaseName\": \"InvoiceApiClient\",\r\n      \"StartTime\": \"2026-07-20T08:44:12.300Z\",\r\n      \"EndTime\": \"2026-07-20T08:44:13.780Z\",\r\n      \"CreationTime\": \"2026-07-20T08:44:09.100Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -112,7 +112,7 @@
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d\",\r\n      \"Name\": \"automation1@test.com's workspace\",\r\n      \"Path\": \"automation1@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }

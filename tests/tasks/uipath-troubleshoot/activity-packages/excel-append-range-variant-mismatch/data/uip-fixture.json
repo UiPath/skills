@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0088888-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"PayrollOps\",\r\n      \"FullyQualifiedName\": \"PayrollOps\",\r\n      \"Description\": \"Folder for weekly payroll-ledger automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6080001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,7 +13,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"StartTime\": \"2026-05-27T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-27T08:00:02.812Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelPayrollProcess\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"WeeklyPayrollA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0088888-3333-4444-5555-666677778888\",\r\n      \"Info\": \"UiPath.Excel.BusinessException: The 'Append Range' activity must be placed inside a 'Use Excel File' container, which manages the workbook context for the activity.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -38,7 +26,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"StartTime\": \"2026-05-27T08:00:01.300Z\",\r\n    \"EndTime\": \"2026-05-27T08:00:02.812Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9ff11111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Info\": \"UiPath.Excel.BusinessException: The 'Append Range' activity must be placed inside a 'Use Excel File' container, which manages the workbook context for the activity.\\r\\n   at UiPath.Excel.Activities.Business.AppendRangeX.ValidateScope(NativeActivityContext context)\\r\\n   at UiPath.Excel.Activities.Business.AppendRangeX.OnExecute(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-27T08:00:01.005Z\",\r\n    \"ReleaseName\": \"ExcelPayrollProcess\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5680801,\r\n    \"OrganizationUnitId\": 6080001,\r\n    \"FolderKey\": \"f0088888-3333-4444-5555-666677778888\",\r\n    \"Reference\": \"WeeklyPayrollA\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-27T08:00:02.812Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"BusinessException\",\r\n      \"ActivityName\": \"AppendRange_1\",\r\n      \"ActivityDisplayName\": \"Append Range: payroll rows\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Id\": 680899001\r\n  }\r\n}\r\n"
     },
@@ -51,7 +39,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\"Key\": \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Pending\", \"Timestamp\": \"2026-05-27T08:00:01.005Z\"},\r\n    {\"Key\": \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Running\", \"Timestamp\": \"2026-05-27T08:00:01.300Z\"},\r\n    {\"Key\": \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Faulted\", \"Timestamp\": \"2026-05-27T08:00:02.812Z\"}\r\n  ]\r\n}\r\n"
     },
@@ -64,9 +52,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-ff1111cc-001\",\r\n      \"JobKey\": \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-27T08:00:01.310Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ExcelPayrollProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ff1111cc-002\",\r\n      \"JobKey\": \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-27T08:00:01.418Z\",\r\n      \"Message\": \"[ExcelPayrollProcess] Appending current pay period rows to C:\\\\Robot\\\\Data\\\\payroll-ledger.xlsx\",\r\n      \"ProcessName\": \"ExcelPayrollProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ff1111cc-003\",\r\n      \"JobKey\": \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-27T08:00:02.010Z\",\r\n      \"Message\": \"Invoke: BuildPayrollRows.xaml — returned dtPayroll with 47 rows, 7 columns (EmployeeId, FullName, Hours, RateUSD, Gross, TaxUSD, NetUSD)\",\r\n      \"ProcessName\": \"ExcelPayrollProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ff1111cc-004\",\r\n      \"JobKey\": \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-27T08:00:02.310Z\",\r\n      \"Message\": \"Append Range: payroll rows — resolved config WorkbookPath='C:\\\\Robot\\\\Data\\\\payroll-ledger.xlsx' Sheet='Payroll' DataTable='dtPayroll' AddHeaders=False\",\r\n      \"ProcessName\": \"ExcelPayrollProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ff1111cc-005\",\r\n      \"JobKey\": \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-27T08:00:02.510Z\",\r\n      \"Message\": \"Append Range: payroll rows — scope validation: no enclosing Use Excel File / Excel Application Scope found; this is the Modern AppendRangeX surface which requires a Use Excel File container\",\r\n      \"ProcessName\": \"ExcelPayrollProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ff1111cc-006\",\r\n      \"JobKey\": \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-27T08:00:02.802Z\",\r\n      \"Message\": \"Append Range: payroll rows — UiPath.Excel.BusinessException: The 'Append Range' activity must be placed inside a 'Use Excel File' container, which manages the workbook context for the activity.\",\r\n      \"ProcessName\": \"ExcelPayrollProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0088888-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"PayrollOps\",\r\n      \"FullyQualifiedName\": \"PayrollOps\",\r\n      \"Description\": \"Folder for weekly payroll-ledger automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6080001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

@@ -4,10 +4,45 @@
     {
       "argv": [
         "or",
+        "jobs",
+        "logs",
+        "9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [],\r\n  \"Pagination\": {\r\n    \"Returned\": 0,\r\n    \"Limit\": 100,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40\",\r\n    \"StartTime\": \"2026-07-16T23:10:02.140Z\",\r\n    \"EndTime\": \"2026-07-16T23:10:39.610Z\",\r\n    \"State\": \"Successful\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40\",\r\n    \"Info\": \"Job completed\",\r\n    \"CreationTime\": \"2026-07-16T23:10:01.700Z\",\r\n    \"ReleaseName\": \"VendorOnboarding\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 51882043,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 771204,\r\n    \"FolderKey\": \"c7e3a9b1-2d64-4f80-9a15-6b8c0d2e4f31\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\svc_rpa\",\r\n    \"OrchestratorUserIdentity\": \"rpa-service@contoso.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-07-16T23:10:39.610Z\",\r\n    \"Id\": 90773115\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"VendorOnboarding execution started\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:02.300Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Get Text 'Current Account' execution ended\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:11.020Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"Current account on file: 0000\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:11.090Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Type Into 'Account Number' execution started\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:12.400Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Type Into 'Account Number' execution ended\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:14.760Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Get Text 'Account After Save' execution ended\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:16.510Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"Account submitted for vendor V-40817: 00008891245\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:16.590Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"VendorOnboarding execution ended\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:39.500Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 8,\r\n    \"Limit\": 100,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3a1e81c2-07ca-4d6b-bc07-7e0c7b94ea3a\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c7e3a9b1-2d64-4f80-9a15-6b8c0d2e4f31\",\r\n      \"Name\": \"Finance\",\r\n      \"Path\": \"Finance\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,44 +52,9 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"VendorOnboarding\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-07-16T23:10:02.140Z\",\r\n      \"EndTime\": \"2026-07-16T23:10:39.610Z\",\r\n      \"CreationTime\": \"2026-07-16T23:10:01.700Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40\",\r\n    \"StartTime\": \"2026-07-16T23:10:02.140Z\",\r\n    \"EndTime\": \"2026-07-16T23:10:39.610Z\",\r\n    \"State\": \"Successful\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40\",\r\n    \"Info\": \"Job completed\",\r\n    \"CreationTime\": \"2026-07-16T23:10:01.700Z\",\r\n    \"ReleaseName\": \"VendorOnboarding\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 51882043,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 771204,\r\n    \"FolderKey\": \"c7e3a9b1-2d64-4f80-9a15-6b8c0d2e4f31\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\svc_rpa\",\r\n    \"OrchestratorUserIdentity\": \"rpa-service@contoso.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-07-16T23:10:39.610Z\",\r\n    \"Id\": 90773115\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "logs",
-        "9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40",
-        "--level",
-        "Error"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [],\r\n  \"Pagination\": {\r\n    \"Returned\": 0,\r\n    \"Limit\": 100,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "logs",
-        "9d2f4a71-6c83-4e15-b0a7-3f8c1e5d9b40"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"VendorOnboarding execution started\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:02.300Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Get Text 'Current Account' execution ended\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:11.020Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"Current account on file: 0000\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:11.090Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Type Into 'Account Number' execution started\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:12.400Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Type Into 'Account Number' execution ended\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:14.760Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Get Text 'Account After Save' execution ended\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:16.510Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"Account submitted for vendor V-40817: 00008891245\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:16.590Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"VendorOnboarding execution ended\",\r\n      \"TimeStamp\": \"2026-07-16T23:10:39.500Z\",\r\n      \"RobotName\": \"svc_rpa\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"VendorOnboarding\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 8,\r\n    \"Limit\": 100,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
     }
   ],
   "default": {

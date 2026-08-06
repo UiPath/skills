@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"7c3e9a1d-5b8f-4a2c-9e6d-3f1a2b4c5d6e\",\r\n      \"Name\": \"Finance Automations\",\r\n      \"Path\": \"Finance Automations\",\r\n      \"Description\": \"Production folder for finance database automations.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"d9a1c245-6e3b-48f7-b1c9-2a4d5e6f7a8b\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,22 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"OracleLedgerSync\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-21T08:15:02.118Z\",\r\n      \"EndTime\": \"2026-05-21T08:15:03.642Z\",\r\n      \"CreationTime\": \"2026-05-21T08:15:01.804Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f\",\r\n    \"StartTime\": \"2026-05-21T08:15:02.118Z\",\r\n    \"EndTime\": \"2026-05-21T08:15:03.642Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"8a3c1e2d-4f6b-49a7-b2c8-1d5e7f3a9b4c\",\r\n    \"Info\": \"Execute Non Query: A database error occurred. ---> System.DllNotFoundException: Unable to load DLL 'OraOps12.dll' or one of its dependencies: Failed to load library (ErrorCode: 126)\\r\\n\\r\\nin Main.xaml\\r\\n    at ExecuteNonQuery \\\"Execute Non Query\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Database.Activities.DatabaseException: A database error occurred. ---> System.DllNotFoundException: Unable to load DLL 'OraOps12.dll' or one of its dependencies: Failed to load library (ErrorCode: 126)\",\r\n    \"CreationTime\": \"2026-05-21T08:15:01.804Z\",\r\n    \"ReleaseName\": \"OracleLedgerSync\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 6041337,\r\n    \"OrganizationUnitId\": 7791624,\r\n    \"FolderKey\": \"7c3e9a1d-5b8f-4a2c-9e6d-3f1a2b4c5d6e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER2\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser2\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-21T08:15:03.642Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f\",\r\n    \"Id\": 671882140\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -53,9 +28,22 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-21T08:15:03.610Z\",\r\n      \"Message\": \"[Execute Non Query] A database error occurred. ---> System.DllNotFoundException: Unable to load DLL 'OraOps12.dll' or one of its dependencies: Failed to load library (ErrorCode: 126)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-21T08:15:03.628Z\",\r\n      \"Message\": \"Execute Non Query: A database error occurred. ---> System.DllNotFoundException: Unable to load DLL 'OraOps12.dll' or one of its dependencies: Failed to load library (ErrorCode: 126)\\r\\nin Main.xaml\\r\\n    at ExecuteNonQuery \\\"Execute Non Query\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-21T08:15:03.640Z\",\r\n      \"Message\": \"OracleLedgerSync execution error: System.DllNotFoundException at OracleInternal.Common.ProviderConfig native client load. The Oracle Data Provider for .NET requires the Oracle Client native libraries to be installed on the host. ErrorCode 126 = the specified module could not be found.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f\",\r\n    \"StartTime\": \"2026-05-21T08:15:02.118Z\",\r\n    \"EndTime\": \"2026-05-21T08:15:03.642Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"8a3c1e2d-4f6b-49a7-b2c8-1d5e7f3a9b4c\",\r\n    \"Info\": \"Execute Non Query: A database error occurred. ---> System.DllNotFoundException: Unable to load DLL 'OraOps12.dll' or one of its dependencies: Failed to load library (ErrorCode: 126)\\r\\n\\r\\nin Main.xaml\\r\\n    at ExecuteNonQuery \\\"Execute Non Query\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Database.Activities.DatabaseException: A database error occurred. ---> System.DllNotFoundException: Unable to load DLL 'OraOps12.dll' or one of its dependencies: Failed to load library (ErrorCode: 126)\",\r\n    \"CreationTime\": \"2026-05-21T08:15:01.804Z\",\r\n    \"ReleaseName\": \"OracleLedgerSync\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 6041337,\r\n    \"OrganizationUnitId\": 7791624,\r\n    \"FolderKey\": \"7c3e9a1d-5b8f-4a2c-9e6d-3f1a2b4c5d6e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER2\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser2\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-21T08:15:03.642Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f\",\r\n    \"Id\": 671882140\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -66,9 +54,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-21T08:15:03.610Z\",\r\n      \"Message\": \"[Execute Non Query] A database error occurred. ---> System.DllNotFoundException: Unable to load DLL 'OraOps12.dll' or one of its dependencies: Failed to load library (ErrorCode: 126)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-21T08:15:03.628Z\",\r\n      \"Message\": \"Execute Non Query: A database error occurred. ---> System.DllNotFoundException: Unable to load DLL 'OraOps12.dll' or one of its dependencies: Failed to load library (ErrorCode: 126)\\r\\nin Main.xaml\\r\\n    at ExecuteNonQuery \\\"Execute Non Query\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-21T08:15:03.640Z\",\r\n      \"Message\": \"OracleLedgerSync execution error: System.DllNotFoundException at OracleInternal.Common.ProviderConfig native client load. The Oracle Data Provider for .NET requires the Oracle Client native libraries to be installed on the host. ErrorCode 126 = the specified module could not be found.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"7c3e9a1d-5b8f-4a2c-9e6d-3f1a2b4c5d6e\",\r\n      \"Name\": \"Finance Automations\",\r\n      \"Path\": \"Finance Automations\",\r\n      \"Description\": \"Production folder for finance database automations.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"d9a1c245-6e3b-48f7-b1c9-2a4d5e6f7a8b\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

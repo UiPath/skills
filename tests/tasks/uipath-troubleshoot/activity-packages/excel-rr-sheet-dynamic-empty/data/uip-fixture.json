@@ -7,7 +7,7 @@
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0022222-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"SalesReporting\",\r\n      \"FullyQualifiedName\": \"SalesReporting\",\r\n      \"Description\": \"Folder for scheduled sales reporting processes.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6020001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,7 +17,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"bb222222-8888-9999-0000-111122223333\",\r\n      \"StartTime\": \"2026-05-20T06:00:01.240Z\",\r\n      \"EndTime\": \"2026-05-20T06:00:02.690Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"MonthlySalesImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"MonthlySalesA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0022222-3333-4444-5555-666677778888\",\r\n      \"Info\": \"UiPath.Excel.BusinessException: The sheet with the name '' does not exist.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -27,7 +27,7 @@
         "jobs",
         "logs"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-bb222288-001\",\r\n      \"JobKey\": \"bb222222-8888-9999-0000-111122223333\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-20T06:00:01.250Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"MonthlySalesImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-bb222288-002\",\r\n      \"JobKey\": \"bb222222-8888-9999-0000-111122223333\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-20T06:00:01.360Z\",\r\n      \"Message\": \"[MonthlySalesImport] Starting monthly sales import — reading C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx\",\r\n      \"ProcessName\": \"MonthlySalesImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-bb222288-003\",\r\n      \"JobKey\": \"bb222222-8888-9999-0000-111122223333\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T06:00:01.470Z\",\r\n      \"Message\": \"Use Excel File: sales-2026-05.xlsx — executing\",\r\n      \"ProcessName\": \"MonthlySalesImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-bb222288-004\",\r\n      \"JobKey\": \"bb222222-8888-9999-0000-111122223333\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T06:00:01.560Z\",\r\n      \"Message\": \"Get Workbook Sheets — executing\",\r\n      \"ProcessName\": \"MonthlySalesImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-bb222288-005\",\r\n      \"JobKey\": \"bb222222-8888-9999-0000-111122223333\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-20T06:00:01.760Z\",\r\n      \"Message\": \"[MonthlySalesImport] Available sheets in workbook: [\\\"Sheet1\\\", \\\"Data\\\", \\\"Summary\\\"]\",\r\n      \"ProcessName\": \"MonthlySalesImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-bb222288-006\",\r\n      \"JobKey\": \"bb222222-8888-9999-0000-111122223333\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-20T06:00:02.010Z\",\r\n      \"Message\": \"[MonthlySalesImport] Target sheet resolved to: ''\",\r\n      \"ProcessName\": \"MonthlySalesImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-bb222288-007\",\r\n      \"JobKey\": \"bb222222-8888-9999-0000-111122223333\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T06:00:02.410Z\",\r\n      \"Message\": \"Read monthly sales sheet — executing (SheetName='')\",\r\n      \"ProcessName\": \"MonthlySalesImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-bb222288-008\",\r\n      \"JobKey\": \"bb222222-8888-9999-0000-111122223333\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-20T06:00:02.680Z\",\r\n      \"Message\": \"Read monthly sales sheet — UiPath.Excel.BusinessException: The sheet with the name '' does not exist.\",\r\n      \"ProcessName\": \"MonthlySalesImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -37,7 +37,7 @@
         "jobs",
         "history"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"bb222222-8888-9999-0000-111122223333\",\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-05-20T06:00:00.900Z\"\r\n    },\r\n    {\r\n      \"Key\": \"bb222222-8888-9999-0000-111122223333\",\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-05-20T06:00:01.240Z\"\r\n    },\r\n    {\r\n      \"Key\": \"bb222222-8888-9999-0000-111122223333\",\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-05-20T06:00:02.690Z\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -47,7 +47,7 @@
         "jobs",
         "get"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"bb222222-8888-9999-0000-111122223333\",\r\n    \"StartTime\": \"2026-05-20T06:00:01.240Z\",\r\n    \"EndTime\": \"2026-05-20T06:00:02.690Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9bb22222-8888-9999-0000-111122223333\",\r\n    \"Info\": \"UiPath.Excel.BusinessException: The sheet with the name '' does not exist.\\r\\n   at UiPath.Excel.WorkbookActivities.ReadRangeImpl.ResolveSheet(IExcelWorkbook workbook, String sheetName)\\r\\n   at UiPath.Excel.Activities.ExcelReadRangeX.ExecuteAsync(NativeActivityContext context)\\r\\n   at System.Activities.NativeActivity.InternalExecuteAsync(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-20T06:00:00.900Z\",\r\n    \"ReleaseName\": \"MonthlySalesImport\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{\\\"in_TargetSheet\\\":\\\"\\\"}\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5690101,\r\n    \"OrganizationUnitId\": 6020001,\r\n    \"FolderKey\": \"f0022222-3333-4444-5555-666677778888\",\r\n    \"Reference\": \"MonthlySalesA\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-20T06:00:02.690Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"BusinessException\",\r\n      \"ActivityName\": \"ExcelReadRangeX_1\",\r\n      \"ActivityDisplayName\": \"Read monthly sales sheet\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"bb222222-8888-9999-0000-111122223333\",\r\n    \"Id\": 690055001\r\n  }\r\n}\r\n"
     }

@@ -191,7 +191,7 @@ agent reached a verified resolution. The fixtures are the verbatim
 |---|---|
 | Protected `uip` mock | coder-eval's host-side protected mock service; the agent receives only a bounded client |
 | `process/` | frozen snapshot of the failing UiPath project |
-| `data/uip-fixture.json` | finite command map with real stdout extracted from the session transcript; private to the mock service |
+| `data/uip-fixture.json` | recorded command map (token-subset matched) with real stdout extracted from the session transcript; private to the mock service |
 
 ## Success criteria
 
@@ -416,8 +416,35 @@ def _scrub_path(path: Path, mapping: "OrderedDict[str, str]") -> Path:
     new_parts = [_apply_scrub(p, mapping) for p in parts]
     return Path(*new_parts) if new_parts else path
 
+_NOISE_VALUE_FLAGS = frozenset({"--output"})
+
+
+def _match_tokens(argv: list[str]) -> list[str]:
+    """Mirror the mock service's token expansion: split --flag=value, drop noise flags."""
+    expanded: list[str] = []
+    for raw in argv:
+        if raw.startswith("-") and "=" in raw:
+            flag, value = raw.split("=", 1)
+            expanded.append(flag)
+            if value:
+                expanded.append(value)
+        else:
+            expanded.append(raw)
+    cleaned: list[str] = []
+    skip_next = False
+    for token in expanded:
+        if skip_next:
+            skip_next = False
+            continue
+        if token in _NOISE_VALUE_FLAGS:
+            skip_next = True
+            continue
+        cleaned.append(token)
+    return cleaned
+
+
 def _build_fixture_responses(uip_calls: list[dict]) -> list[dict]:
-    """Build one normalized finite response per unique recorded argv."""
+    """Build one subset-matched response per unique recorded argv, most specific first."""
     by_args: "OrderedDict[str, dict]" = OrderedDict()
     for call in uip_calls:
         args = call["args"]
@@ -427,11 +454,16 @@ def _build_fixture_responses(uip_calls: list[dict]) -> list[dict]:
             raise ValueError(f"could not parse recorded uip args {args!r}: {exc}") from exc
         by_args[args] = {
             "argv": argv,
-            "match_mode": "normalized",
+            "match_mode": "subset",
             "exit_code": int(call.get("exit_code") or 0),
             "stdout": call.get("stdout") or "",
         }
-    return list(by_args.values())
+    responses = list(by_args.values())
+    # Subset dispatch is first-match-wins in file order, so the most specific
+    # rule (largest token set) must come first. Stable sort keeps recording
+    # order among rules of equal specificity.
+    responses.sort(key=lambda entry: -len(_match_tokens(entry["argv"])))
+    return responses
 
 def _snapshot_project(
     src: Path, dst: Path, mapping: "OrderedDict[str, str] | None" = None
@@ -569,7 +601,7 @@ def plan_scenario(args: argparse.Namespace) -> dict:
     # an empty bash stdout — the real data lives on disk.
     backfill_stats = _backfill_redirect_stdouts(extracted["uip_calls"], investigation)
 
-    # Build the private finite command map.
+    # Build the private recorded command map.
     responses = _build_fixture_responses(extracted["uip_calls"])
 
     # Build resolution.

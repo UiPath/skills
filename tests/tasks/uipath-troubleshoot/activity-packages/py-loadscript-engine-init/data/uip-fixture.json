@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2c3d4e5-f6a7-4182-93a4-b5c6d7e8f902\",\r\n      \"Name\": \"Data Pipelines\",\r\n      \"Path\": \"Data Pipelines\",\r\n      \"Description\": \"Production folder for data-transformation processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,22 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"PyDataTransform\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-10T14:03:11.210Z\",\r\n      \"EndTime\": \"2026-06-10T14:03:13.640Z\",\r\n      \"CreationTime\": \"2026-06-10T14:03:10.800Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123\",\r\n    \"StartTime\": \"2026-06-10T14:03:11.210Z\",\r\n    \"EndTime\": \"2026-06-10T14:03:13.640Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"d4e5f6a7-b8c9-4304-b5c6-d7e8f9012345\",\r\n    \"Info\": \"Load Python Script: One or more errors occurred. ---> System.Exception: Error initializing Python engine 64 bit\\r\\n\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.AggregateException: One or more errors occurred. ---> System.Exception: Error initializing Python engine 64 bit\",\r\n    \"CreationTime\": \"2026-06-10T14:03:10.800Z\",\r\n    \"ReleaseName\": \"PyDataTransform\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7012332,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b2c3d4e5-f6a7-4182-93a4-b5c6d7e8f902\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-10T14:03:13.640Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123\",\r\n    \"Id\": 712440187\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -53,9 +28,22 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-10T14:03:13.560Z\",\r\n      \"Message\": \"[Load Python Script] One or more errors occurred. ---> System.Exception: Error initializing Python engine 64 bit\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-10T14:03:13.600Z\",\r\n      \"Message\": \"One or more errors occurred. ---> System.Exception: Error initializing Python engine 64 bit\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123\",\r\n    \"StartTime\": \"2026-06-10T14:03:11.210Z\",\r\n    \"EndTime\": \"2026-06-10T14:03:13.640Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"d4e5f6a7-b8c9-4304-b5c6-d7e8f9012345\",\r\n    \"Info\": \"Load Python Script: One or more errors occurred. ---> System.Exception: Error initializing Python engine 64 bit\\r\\n\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.AggregateException: One or more errors occurred. ---> System.Exception: Error initializing Python engine 64 bit\",\r\n    \"CreationTime\": \"2026-06-10T14:03:10.800Z\",\r\n    \"ReleaseName\": \"PyDataTransform\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7012332,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b2c3d4e5-f6a7-4182-93a4-b5c6d7e8f902\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-10T14:03:13.640Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123\",\r\n    \"Id\": 712440187\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -66,9 +54,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-10T14:03:11.240Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-10T14:03:12.510Z\",\r\n      \"Message\": \"[Python Scope] Initializing Python engine (Target: x64, Path: C:\\\\Python311, Version: Auto)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-10T14:03:13.560Z\",\r\n      \"Message\": \"[Load Python Script] One or more errors occurred. ---> System.Exception: Error initializing Python engine 64 bit\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-10T14:03:13.600Z\",\r\n      \"Message\": \"One or more errors occurred. ---> System.Exception: Error initializing Python engine 64 bit\\r\\nin Main.xaml\\r\\n    at PythonScope \\\"Python Scope\\\"\\r\\n    at LoadScript \\\"Load Python Script\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-10T14:03:13.620Z\",\r\n      \"Message\": \"Execution ended in: 00:00:02\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2c3d4e5-f6a7-4182-93a4-b5c6d7e8f902\",\r\n      \"Name\": \"Data Pipelines\",\r\n      \"Path\": \"Data Pipelines\",\r\n      \"Description\": \"Production folder for data-transformation processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

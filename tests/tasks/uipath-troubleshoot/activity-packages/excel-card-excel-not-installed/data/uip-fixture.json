@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f00bbbbb-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"InvoiceReports\",\r\n      \"FullyQualifiedName\": \"InvoiceReports\",\r\n      \"Description\": \"Folder for weekly invoice-report automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6110001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,7 +13,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"StartTime\": \"2026-05-30T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-30T08:00:02.512Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelInvoiceReport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"WeeklyInvoiceA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f00bbbbb-3333-4444-5555-666677778888\",\r\n      \"Info\": \"UiPath.Excel.BusinessException: Error opening workbook. Make sure Excel is installed.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -38,7 +26,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"StartTime\": \"2026-05-30T08:00:01.300Z\",\r\n    \"EndTime\": \"2026-05-30T08:00:02.512Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9aa11111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Info\": \"UiPath.Excel.BusinessException: Error opening workbook. Make sure Excel is installed.\\r\\n   at UiPath.Excel.Activities.ExcelApplicationScope.AcquireExcelComServer()\\r\\n   at UiPath.Excel.Activities.ExcelApplicationScope.OnExecute(NativeActivityContext context)\\r\\nInner: System.Runtime.InteropServices.COMException (0x80040154): Retrieving the COM class factory for component with CLSID {00024500-0000-0000-C000-000000000046} failed due to the following error: 80040154 Class not registered (0x80040154 REGDB_E_CLASSNOTREG).\",\r\n    \"CreationTime\": \"2026-05-30T08:00:01.005Z\",\r\n    \"ReleaseName\": \"ExcelInvoiceReport\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5681101,\r\n    \"OrganizationUnitId\": 6110001,\r\n    \"FolderKey\": \"f00bbbbb-3333-4444-5555-666677778888\",\r\n    \"Reference\": \"WeeklyInvoiceA\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-30T08:00:02.512Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"BusinessException\",\r\n      \"ActivityName\": \"ExcelApplicationScope_1\",\r\n      \"ActivityDisplayName\": \"Excel Application Scope: invoice-report.xlsm\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Id\": 681199001\r\n  }\r\n}\r\n"
     },
@@ -51,7 +39,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\"Key\": \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Pending\", \"Timestamp\": \"2026-05-30T08:00:01.005Z\"},\r\n    {\"Key\": \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Running\", \"Timestamp\": \"2026-05-30T08:00:01.300Z\"},\r\n    {\"Key\": \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Faulted\", \"Timestamp\": \"2026-05-30T08:00:02.512Z\"}\r\n  ]\r\n}\r\n"
     },
@@ -64,9 +52,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-aa1111cc-001\",\r\n      \"JobKey\": \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-30T08:00:01.310Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ExcelInvoiceReport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa1111cc-002\",\r\n      \"JobKey\": \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-30T08:00:01.418Z\",\r\n      \"Message\": \"[ExcelInvoiceReport] Opening C:\\\\Robot\\\\Data\\\\invoice-report.xlsm to read this week's invoice data\",\r\n      \"ProcessName\": \"ExcelInvoiceReport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa1111cc-003\",\r\n      \"JobKey\": \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-30T08:00:01.610Z\",\r\n      \"Message\": \"Excel Application Scope: invoice-report.xlsm — surface: Classic ExcelApplicationScope (COM-only). Attempting to acquire Excel.Application COM server.\",\r\n      \"ProcessName\": \"ExcelInvoiceReport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa1111cc-004\",\r\n      \"JobKey\": \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-30T08:00:01.810Z\",\r\n      \"Message\": \"Excel Application Scope: invoice-report.xlsm — CLSID {00024500-0000-0000-C000-000000000046} (Excel.Application) not registered on host. Host: MOCK-HOST. Robot user: UIPATH\\\\AUTOMATION1. Excel install state: NOT INSTALLED (no entry under HKLM:\\\\Software\\\\Microsoft\\\\Office\\\\*\\\\Excel\\\\InstallRoot, no excel.exe on PATH or under Program Files).\",\r\n      \"ProcessName\": \"ExcelInvoiceReport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa1111cc-005\",\r\n      \"JobKey\": \"aa111111-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-30T08:00:02.502Z\",\r\n      \"Message\": \"Excel Application Scope: invoice-report.xlsm — UiPath.Excel.BusinessException: Error opening workbook. Make sure Excel is installed. Inner: COMException 0x80040154 REGDB_E_CLASSNOTREG (Class not registered).\",\r\n      \"ProcessName\": \"ExcelInvoiceReport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f00bbbbb-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"InvoiceReports\",\r\n      \"FullyQualifiedName\": \"InvoiceReports\",\r\n      \"Description\": \"Folder for weekly invoice-report automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6110001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

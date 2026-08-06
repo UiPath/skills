@@ -7,7 +7,7 @@
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"6a0d3f92-4c81-4e57-9b28-1f5a0c8e3d67\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"a2f18c53-9d07-4b26-8e41-6c0b3a9f7d28\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,7 +17,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"4e9d2a71-6c05-4f38-9b12-8a3f0e7c1d59\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"PaymentValidation\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"StartTime\": \"2026-07-16T14:41:08.220Z\",\r\n      \"EndTime\": \"2026-07-16T14:41:09.010Z\",\r\n      \"CreationTime\": \"2026-07-16T14:41:08.220Z\"\r\n    },\r\n    {\r\n      \"Key\": \"9b0e4c22-1a76-4d38-8f05-2c7a1e9b6d43\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"PaymentValidation\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"StartTime\": \"2026-07-10T11:20:33.140Z\",\r\n      \"EndTime\": \"2026-07-10T11:20:41.660Z\",\r\n      \"CreationTime\": \"2026-07-10T11:20:33.140Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
     },
@@ -27,7 +27,7 @@
         "jobs",
         "logs"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-16T14:41:08.900Z\",\r\n      \"Message\": \"Invoke ValidatePayment: The values provided for the root activity's arguments did not satisfy the root activity's requirements: The following keys from the input dictionary do not map to arguments and must be removed: in_Amount.  Please note that argument names are case sensitive.\\r\\nParameter name: rootArgumentValues\\r\\nin Main.xaml\\r\\n    at InvokeWorkflowFile \\\"Invoke ValidatePayment\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at DynamicActivity \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.ArgumentException\\r\\n   at System.Activities.WorkflowApplication.EnsureInitialized()\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-07-16T14:41:08.400Z\",\r\n      \"Message\": \"PaymentValidation execution started\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -37,7 +37,7 @@
         "jobs",
         "history"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-16T14:41:09.010Z\",\r\n      \"JobId\": 66123980\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-16T14:41:08.470Z\",\r\n      \"JobId\": 66123980\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -47,7 +47,7 @@
         "jobs",
         "traces"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
     },
@@ -57,7 +57,7 @@
         "jobs",
         "get"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"4e9d2a71-6c05-4f38-9b12-8a3f0e7c1d59\",\r\n    \"StartTime\": \"2026-07-16T14:41:08.220Z\",\r\n    \"EndTime\": \"2026-07-16T14:41:09.010Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Agent\",\r\n    \"SourceType\": \"Agent\",\r\n    \"Info\": \"Invoke ValidatePayment: The values provided for the root activity's arguments did not satisfy the root activity's requirements: The following keys from the input dictionary do not map to arguments and must be removed: in_Amount.  Please note that argument names are case sensitive.\\r\\nParameter name: rootArgumentValues\\r\\n\\r\\nin Main.xaml\\r\\n    at InvokeWorkflowFile \\\"Invoke ValidatePayment\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at DynamicActivity \\\"Main\\\"\\r\\n\\r\\nSystem.ArgumentException: The values provided for the root activity's arguments did not satisfy the root activity's requirements: The following keys from the input dictionary do not map to arguments and must be removed: in_Amount.  Please note that argument names are case sensitive.\\r\\nParameter name: rootArgumentValues\\r\\n   at System.Activities.Hosting.WorkflowInstance.RegisterExtensionManager(WorkflowInstanceExtensionManager extensionManager)\\r\\n   at System.Activities.WorkflowApplication.EnsureInitialized()\\r\\n   at UiPath.Core.Activities.InvokeWorkflowFile.<ExecuteAsync>d__.MoveNext()\",\r\n    \"CreationTime\": \"2026-07-16T14:41:08.220Z\",\r\n    \"ReleaseName\": \"PaymentValidation\",\r\n    \"Type\": \"Attended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"StudioPro\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"a2f18c53-9d07-4b26-8e41-6c0b3a9f7d28\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\user1\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"LastModificationTime\": \"2026-07-16T14:41:09.010Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"4e9d2a716c054f389b128a3f0e7c1d59\",\r\n    \"Id\": 66123980\r\n  }\r\n}\r\n"
     }

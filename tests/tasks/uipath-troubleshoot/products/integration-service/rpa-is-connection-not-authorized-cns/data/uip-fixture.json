@@ -3,57 +3,15 @@
   "responses": [
     {
       "argv": [
-        "--version"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "1.195.0"
-    },
-    {
-      "argv": [
-        "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Name\": \"CRM\",\r\n      \"ID\": 2982110,\r\n      \"Key\": \"2e4c6a80-1b3d-4f5e-8a90-c1d2e3f4a5b6\",\r\n      \"Path\": \"Shared/CRM\",\r\n      \"Type\": \"Standard\",\r\n      \"Description\": \"\"\r\n    },\r\n    {\r\n      \"Name\": \"Marketing\",\r\n      \"ID\": 2982004,\r\n      \"Key\": \"8f0a1b2c-3d4e-4f50-a1b2-c3d4e5f6a7b8\",\r\n      \"Path\": \"Shared/Marketing\",\r\n      \"Type\": \"Standard\",\r\n      \"Description\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
         "or",
         "jobs",
         "list",
         "--folder-key",
         "2e4c6a80-1b3d-4f5e-8a90-c1d2e3f4a5b6"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9c1d3e5f-7a8b-4c2d-90e1-f2a3b4c5d6e7\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"LeadImport\",\r\n      \"Source\": \"Trigger\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"StartTime\": \"2026-07-08T05:30:04.220Z\",\r\n      \"EndTime\": \"2026-07-08T05:30:11.610Z\",\r\n      \"Id\": 50263417\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "9c1d3e5f-7a8b-4c2d-90e1-f2a3b4c5d6e7"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"9c1d3e5f-7a8b-4c2d-90e1-f2a3b4c5d6e7\",\r\n    \"StartTime\": \"2026-07-08T05:30:04.220Z\",\r\n    \"EndTime\": \"2026-07-08T05:30:11.610Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"ResourceOverwrites\": \"{\\\"Connection.5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4\\\": {\\\"EntityDisplayName\\\": \\\"crm.admin@acmecorp.test\\\", \\\"Level\\\": 0, \\\"Properties\\\": {\\\"connectionId\\\": \\\"5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4\\\", \\\"folderKey\\\": \\\"2e4c6a80-1b3d-4f5e-8a90-c1d2e3f4a5b6\\\", \\\"ConnectionId\\\": \\\"5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4\\\"}}}\",\r\n    \"Source\": \"Trigger\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"Info\": \"Job faulted at activity 'Create Contact': failed to retrieve connection (DAP-GE-3000).\"\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "logs",
-        "9c1d3e5f-7a8b-4c2d-90e1-f2a3b4c5d6e7"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-08T05:30:11.542Z\",\r\n      \"Message\": \"Create Contact: Failed to retrieve connection. Consider using a different connection. - Connection [5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4] is not in an authorized state. Please re-authenticate the connection to continue. Error code: DAP-GE-3000.\\nin Main.xaml\\n    at ConnectorActivity \\\"Create Contact\\\"\\n    at Sequence \\\"Sequence\\\"\\n    at Main \\\"Main\\\"\\n\\n--- .NET stack trace ---\\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken cancellationToken)\\n--- inner ---\\nUiPath.ConnectionClient.Contracts.ConnectionHttpException: Connection Service error reported: [StatusCode: BadRequest, ErrorCode: \\\"CNS1008\\\", ErrorReason: \\\"{\\\\\\\"error\\\\\\\":\\\\\\\"invalid_grant\\\\\\\",\\\\\\\"error_description\\\\\\\":\\\\\\\"expired access/refresh token\\\\\\\"}\\\", TraceId: \\\"3c5e7a9b1d2f46a8c0b2d4f6a8c0e1b3\\\"]\",\r\n      \"ProcessName\": \"LeadImport\"\r\n    }\r\n  ]\r\n}\r\n"
     },
     {
       "argv": [
@@ -63,7 +21,7 @@
         "--folder-key",
         "2e4c6a80-1b3d-4f5e-8a90-c1d2e3f4a5b6"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ConnectionList\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4\",\r\n      \"Name\": \"Salesforce - CRM\",\r\n      \"ConnectorKey\": \"uipath-salesforce-sfdc\",\r\n      \"ConnectorName\": \"Salesforce\",\r\n      \"State\": \"Failed\",\r\n      \"Owner\": \"crm.admin@acmecorp.test\",\r\n      \"IsDefault\": \"Yes\",\r\n      \"Folder\": \"CRM\",\r\n      \"FolderKey\": \"2e4c6a80-1b3d-4f5e-8a90-c1d2e3f4a5b6\",\r\n      \"Created\": \"2026-05-12T09:14:02.950Z\",\r\n      \"Updated\": \"2026-07-06T07:50:51.870Z\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -75,9 +33,31 @@
         "--connection-id",
         "5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ConnectionList\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4\",\r\n      \"Name\": \"Salesforce - CRM\",\r\n      \"ConnectorKey\": \"uipath-salesforce-sfdc\",\r\n      \"ConnectorName\": \"Salesforce\",\r\n      \"State\": \"Failed\",\r\n      \"Owner\": \"crm.admin@acmecorp.test\",\r\n      \"IsDefault\": \"Yes\",\r\n      \"Folder\": \"CRM\",\r\n      \"FolderKey\": \"2e4c6a80-1b3d-4f5e-8a90-c1d2e3f4a5b6\",\r\n      \"Created\": \"2026-05-12T09:14:02.950Z\",\r\n      \"Updated\": \"2026-07-06T07:50:51.870Z\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "9c1d3e5f-7a8b-4c2d-90e1-f2a3b4c5d6e7"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"9c1d3e5f-7a8b-4c2d-90e1-f2a3b4c5d6e7\",\r\n    \"StartTime\": \"2026-07-08T05:30:04.220Z\",\r\n    \"EndTime\": \"2026-07-08T05:30:11.610Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"ResourceOverwrites\": \"{\\\"Connection.5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4\\\": {\\\"EntityDisplayName\\\": \\\"crm.admin@acmecorp.test\\\", \\\"Level\\\": 0, \\\"Properties\\\": {\\\"connectionId\\\": \\\"5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4\\\", \\\"folderKey\\\": \\\"2e4c6a80-1b3d-4f5e-8a90-c1d2e3f4a5b6\\\", \\\"ConnectionId\\\": \\\"5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4\\\"}}}\",\r\n    \"Source\": \"Trigger\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"Info\": \"Job faulted at activity 'Create Contact': failed to retrieve connection (DAP-GE-3000).\"\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "9c1d3e5f-7a8b-4c2d-90e1-f2a3b4c5d6e7"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-08T05:30:11.542Z\",\r\n      \"Message\": \"Create Contact: Failed to retrieve connection. Consider using a different connection. - Connection [5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4] is not in an authorized state. Please re-authenticate the connection to continue. Error code: DAP-GE-3000.\\nin Main.xaml\\n    at ConnectorActivity \\\"Create Contact\\\"\\n    at Sequence \\\"Sequence\\\"\\n    at Main \\\"Main\\\"\\n\\n--- .NET stack trace ---\\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken cancellationToken)\\n--- inner ---\\nUiPath.ConnectionClient.Contracts.ConnectionHttpException: Connection Service error reported: [StatusCode: BadRequest, ErrorCode: \\\"CNS1008\\\", ErrorReason: \\\"{\\\\\\\"error\\\\\\\":\\\\\\\"invalid_grant\\\\\\\",\\\\\\\"error_description\\\\\\\":\\\\\\\"expired access/refresh token\\\\\\\"}\\\", TraceId: \\\"3c5e7a9b1d2f46a8c0b2d4f6a8c0e1b3\\\"]\",\r\n      \"ProcessName\": \"LeadImport\"\r\n    }\r\n  ]\r\n}\r\n"
     },
     {
       "argv": [
@@ -86,9 +66,29 @@
         "ping",
         "5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Message\": \"HTTP 400: Connection [5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4] is not in an authorized state (error code CNS1008). Re-authenticate the connection to continue.\",\r\n  \"Instructions\": \"Run 'uip is connections edit <connection-id>' to re-authenticate the connection.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Name\": \"CRM\",\r\n      \"ID\": 2982110,\r\n      \"Key\": \"2e4c6a80-1b3d-4f5e-8a90-c1d2e3f4a5b6\",\r\n      \"Path\": \"Shared/CRM\",\r\n      \"Type\": \"Standard\",\r\n      \"Description\": \"\"\r\n    },\r\n    {\r\n      \"Name\": \"Marketing\",\r\n      \"ID\": 2982004,\r\n      \"Key\": \"8f0a1b2c-3d4e-4f50-a1b2-c3d4e5f6a7b8\",\r\n      \"Path\": \"Shared/Marketing\",\r\n      \"Type\": \"Standard\",\r\n      \"Description\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "--version"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "1.195.0"
     }
   ],
   "default": {

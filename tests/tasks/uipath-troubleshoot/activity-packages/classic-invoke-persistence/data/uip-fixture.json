@@ -7,7 +7,7 @@
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"a1e07c53-9d28-4f69-b031-2a6f5c0e8d47\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"e5f19c42-6a38-4b57-a274-9b2d3c0f8e71\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,7 +17,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8d2c5f91-4a06-4e73-9b18-3c7f0a2e6d45\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"OrderApproval\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"StartTime\": \"2026-07-16T15:18:33.720Z\",\r\n      \"EndTime\": \"2026-07-16T15:18:34.560Z\",\r\n      \"CreationTime\": \"2026-07-16T15:18:33.720Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
     },
@@ -27,7 +27,7 @@
         "jobs",
         "logs"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-16T15:18:34.440Z\",\r\n      \"Message\": \"Run approval routing job: Persistence is not supported in the current runtime. The workflow attempted to suspend (Run Job in Suspend mode), which requires persistence, but the process is not configured for persistence.\\r\\nin SubmitForApproval.xaml\\r\\n    at RunJob \\\"Run approval routing job\\\"\\r\\n    at Sequence \\\"SubmitForApproval\\\"\\r\\n    at InvokeWorkflowFile \\\"Invoke SubmitForApproval\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at DynamicActivity \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.NotSupportedException\\r\\n   at UiPath.Core.Activities.RunJob.<ExecuteAsync>d__.MoveNext()\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-07-16T15:18:33.900Z\",\r\n      \"Message\": \"OrderApproval execution started\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -37,7 +37,7 @@
         "jobs",
         "history"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-16T15:18:34.560Z\",\r\n      \"JobId\": 66124315\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-16T15:18:33.810Z\",\r\n      \"JobId\": 66124315\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -47,7 +47,7 @@
         "jobs",
         "traces"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
     },
@@ -57,7 +57,7 @@
         "jobs",
         "get"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"8d2c5f91-4a06-4e73-9b18-3c7f0a2e6d45\",\r\n    \"StartTime\": \"2026-07-16T15:18:33.720Z\",\r\n    \"EndTime\": \"2026-07-16T15:18:34.560Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"Info\": \"Run approval routing job: Persistence is not supported in the current runtime. The workflow attempted to suspend (Run Job in Suspend mode), which requires persistence, but the process is not configured for persistence.\\r\\n\\r\\nin SubmitForApproval.xaml\\r\\n    at RunJob \\\"Run approval routing job\\\"\\r\\n    at Sequence \\\"SubmitForApproval\\\"\\r\\n    at InvokeWorkflowFile \\\"Invoke SubmitForApproval\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at DynamicActivity \\\"Main\\\"\\r\\n\\r\\nSystem.NotSupportedException: This workflow instance requires persistence, which is not supported in the current runtime.\\r\\n   at System.Activities.WorkflowApplication.EnsurePersistenceProvider()\\r\\n   at UiPath.Core.Activities.RunJob.<ExecuteAsync>d__.MoveNext()\",\r\n    \"CreationTime\": \"2026-07-16T15:18:33.720Z\",\r\n    \"ReleaseName\": \"OrderApproval\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"e5f19c42-6a38-4b57-a274-9b2d3c0f8e71\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\svc_robot\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"LastModificationTime\": \"2026-07-16T15:18:34.560Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"8d2c5f914a064e739b183c7f0a2e6d45\",\r\n    \"Id\": 66124315\r\n  }\r\n}\r\n"
     }

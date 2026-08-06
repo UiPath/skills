@@ -4,16 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\"Key\": \"b2c8cb22-2ebc-4c27-87f3-05efe701af1c\", \"Name\": \"original_email@test.com's workspace\", \"Path\": \"original_email@test.com's workspace\", \"Type\": \"Personal\", \"ParentKey\": \"\"},\r\n    {\"Key\": \"a7e7f8a9-b0c1-2345-6789-abcdef012345\", \"Name\": \"MonitoringOps\", \"Path\": \"MonitoringOps\", \"Description\": \"Folder hosting the DashboardSnapshotBot unattended process.\", \"Type\": \"Standard\", \"ParentKey\": \"\"},\r\n    {\"Key\": \"e0772cbe-c19c-4d5f-926c-043c2d2d300a\", \"Name\": \"Shared\", \"Path\": \"Shared\", \"Type\": \"Standard\", \"ParentKey\": \"\"}\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -21,20 +11,9 @@
         "--state",
         "Faulted"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\"Key\": \"ccddeeff-3344-5566-7788-99aabbccddee\", \"State\": \"Faulted\", \"ProcessName\": \"DashboardSnapshotBot\", \"Source\": \"Schedule\", \"Type\": \"Unattended\", \"RuntimeType\": \"Unattended\", \"Machine\": \"MOCK-HOST\", \"StartTime\": \"2026-06-29T03:30:01.500Z\", \"EndTime\": \"2026-06-29T03:30:09.220Z\", \"CreationTime\": \"2026-06-29T03:30:01.400Z\"}\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "ccddeeff-3344-5566-7788-99aabbccddee"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"ccddeeff-3344-5566-7788-99aabbccddee\",\r\n    \"StartTime\": \"2026-06-29T03:30:01.500Z\",\r\n    \"EndTime\": \"2026-06-29T03:30:09.220Z\",\r\n    \"State\": \"Faulted\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"Info\": \"System.ComponentModel.Win32Exception (6): The handle is invalid.\\r\\n   at System.Drawing.Graphics.CopyFromScreen(Int32 sourceX, Int32 sourceY, Int32 destinationX, Int32 destinationY, Size blockRegionSize, CopyPixelOperation copyPixelOperation)\",\r\n    \"CreationTime\": \"2026-06-29T03:30:01.400Z\",\r\n    \"ReleaseName\": \"DashboardSnapshotBot\",\r\n    \"Type\": \"Unattended\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"OrganizationUnitId\": 7791650,\r\n    \"FolderKey\": \"a7e7f8a9-b0c1-2345-6789-abcdef012345\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVCMON\",\r\n    \"OrchestratorUserIdentity\": \"svcmonitor\",\r\n    \"LastModificationTime\": \"2026-06-29T03:30:09.220Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"ccddeeff-3344-5566-7788-99aabbccddee\",\r\n    \"Id\": 672000011\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -45,31 +24,9 @@
         "--level",
         "Error"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\"Level\": \"Error\", \"TimeStamp\": \"2026-06-29T03:30:09.200Z\", \"Message\": \"Take Screenshot: System.ComponentModel.Win32Exception (6): The handle is invalid. at System.Drawing.Graphics.CopyFromScreen(...)\"},\r\n    {\"Level\": \"Error\", \"TimeStamp\": \"2026-06-29T03:30:09.050Z\", \"Message\": \"[Robot] Screen capture requested but no active interactive desktop session is available for this unattended run. CopyFromScreen has no valid device context.\"},\r\n    {\"Level\": \"Info\", \"TimeStamp\": \"2026-06-29T03:30:04.100Z\", \"Message\": \"[DashboardSnapshotBot] Capturing dashboard snapshot.\"}\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "logs",
-        "ccddeeff-3344-5566-7788-99aabbccddee"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\"Level\": \"Error\", \"TimeStamp\": \"2026-06-29T03:30:09.200Z\", \"Message\": \"Take Screenshot: System.ComponentModel.Win32Exception (6): The handle is invalid. at System.Drawing.Graphics.CopyFromScreen(...)\"},\r\n    {\"Level\": \"Error\", \"TimeStamp\": \"2026-06-29T03:30:09.050Z\", \"Message\": \"[Robot] Screen capture requested but no active interactive desktop session is available for this unattended run. CopyFromScreen has no valid device context.\"},\r\n    {\"Level\": \"Info\", \"TimeStamp\": \"2026-06-29T03:30:04.100Z\", \"Message\": \"[DashboardSnapshotBot] Capturing dashboard snapshot.\"}\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "traces",
-        "ccddeeff-3344-5566-7788-99aabbccddee"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": [\r\n    {\"Activity\": \"Main Sequence\", \"Status\": \"Faulted\", \"StartTime\": \"2026-06-29T03:30:02.010Z\", \"EndTime\": \"2026-06-29T03:30:09.210Z\"},\r\n    {\"Activity\": \"Open dashboard\", \"Status\": \"Succeeded\", \"StartTime\": \"2026-06-29T03:30:02.220Z\", \"EndTime\": \"2026-06-29T03:30:08.700Z\"},\r\n    {\"Activity\": \"Take Screenshot\", \"Status\": \"Faulted\", \"StartTime\": \"2026-06-29T03:30:08.720Z\", \"EndTime\": \"2026-06-29T03:30:09.200Z\", \"Error\": {\"Type\": \"System.ComponentModel.Win32Exception\", \"Message\": \"The handle is invalid.\", \"Activity\": \"Take Screenshot\", \"StackTrace\": \"at System.Drawing.Graphics.CopyFromScreen(...)\"}}\r\n  ]\r\n}\r\n"
     },
     {
       "argv": [
@@ -79,7 +36,40 @@
         "--job-key",
         "ccddeeff-3344-5566-7788-99aabbccddee"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": [\r\n    {\"Activity\": \"Main Sequence\", \"Status\": \"Faulted\", \"StartTime\": \"2026-06-29T03:30:02.010Z\", \"EndTime\": \"2026-06-29T03:30:09.210Z\"},\r\n    {\"Activity\": \"Open dashboard\", \"Status\": \"Succeeded\", \"StartTime\": \"2026-06-29T03:30:02.220Z\", \"EndTime\": \"2026-06-29T03:30:08.700Z\"},\r\n    {\"Activity\": \"Take Screenshot\", \"Status\": \"Faulted\", \"StartTime\": \"2026-06-29T03:30:08.720Z\", \"EndTime\": \"2026-06-29T03:30:09.200Z\", \"Error\": {\"Type\": \"System.ComponentModel.Win32Exception\", \"Message\": \"The handle is invalid.\", \"Activity\": \"Take Screenshot\", \"StackTrace\": \"at System.Drawing.Graphics.CopyFromScreen(...)\"}}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "ccddeeff-3344-5566-7788-99aabbccddee"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"ccddeeff-3344-5566-7788-99aabbccddee\",\r\n    \"StartTime\": \"2026-06-29T03:30:01.500Z\",\r\n    \"EndTime\": \"2026-06-29T03:30:09.220Z\",\r\n    \"State\": \"Faulted\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"Info\": \"System.ComponentModel.Win32Exception (6): The handle is invalid.\\r\\n   at System.Drawing.Graphics.CopyFromScreen(Int32 sourceX, Int32 sourceY, Int32 destinationX, Int32 destinationY, Size blockRegionSize, CopyPixelOperation copyPixelOperation)\",\r\n    \"CreationTime\": \"2026-06-29T03:30:01.400Z\",\r\n    \"ReleaseName\": \"DashboardSnapshotBot\",\r\n    \"Type\": \"Unattended\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"OrganizationUnitId\": 7791650,\r\n    \"FolderKey\": \"a7e7f8a9-b0c1-2345-6789-abcdef012345\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVCMON\",\r\n    \"OrchestratorUserIdentity\": \"svcmonitor\",\r\n    \"LastModificationTime\": \"2026-06-29T03:30:09.220Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"ccddeeff-3344-5566-7788-99aabbccddee\",\r\n    \"Id\": 672000011\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "ccddeeff-3344-5566-7788-99aabbccddee"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\"Level\": \"Error\", \"TimeStamp\": \"2026-06-29T03:30:09.200Z\", \"Message\": \"Take Screenshot: System.ComponentModel.Win32Exception (6): The handle is invalid. at System.Drawing.Graphics.CopyFromScreen(...)\"},\r\n    {\"Level\": \"Error\", \"TimeStamp\": \"2026-06-29T03:30:09.050Z\", \"Message\": \"[Robot] Screen capture requested but no active interactive desktop session is available for this unattended run. CopyFromScreen has no valid device context.\"},\r\n    {\"Level\": \"Info\", \"TimeStamp\": \"2026-06-29T03:30:04.100Z\", \"Message\": \"[DashboardSnapshotBot] Capturing dashboard snapshot.\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "ccddeeff-3344-5566-7788-99aabbccddee"
+      ],
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": [\r\n    {\"Activity\": \"Main Sequence\", \"Status\": \"Faulted\", \"StartTime\": \"2026-06-29T03:30:02.010Z\", \"EndTime\": \"2026-06-29T03:30:09.210Z\"},\r\n    {\"Activity\": \"Open dashboard\", \"Status\": \"Succeeded\", \"StartTime\": \"2026-06-29T03:30:02.220Z\", \"EndTime\": \"2026-06-29T03:30:08.700Z\"},\r\n    {\"Activity\": \"Take Screenshot\", \"Status\": \"Faulted\", \"StartTime\": \"2026-06-29T03:30:08.720Z\", \"EndTime\": \"2026-06-29T03:30:09.200Z\", \"Error\": {\"Type\": \"System.ComponentModel.Win32Exception\", \"Message\": \"The handle is invalid.\", \"Activity\": \"Take Screenshot\", \"StackTrace\": \"at System.Drawing.Graphics.CopyFromScreen(...)\"}}\r\n  ]\r\n}\r\n"
     },
@@ -90,9 +80,19 @@
         "get",
         "bb22cc33-dd44-ee55-ff66-778899aabbcc"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"UserGet\",\r\n  \"Data\": {\r\n    \"Key\": \"bb22cc33-dd44-ee55-ff66-778899aabbcc\",\r\n    \"UserName\": \"svcmonitor\",\r\n    \"DomainName\": \"UIPATH\",\r\n    \"FullName\": \"Service Account Monitoring\",\r\n    \"Type\": \"User\",\r\n    \"UnattendedRobot\": {\r\n      \"ExecutionSettings\": {\"LoginToConsole\": true, \"RunOnlyOneJobAtATime\": false, \"ResolutionWidth\": 1920, \"ResolutionHeight\": 1080, \"ResolutionDepth\": 32},\r\n      \"UserName\": \"UIPATH\\\\SVCMON\",\r\n      \"CredentialStoreId\": null,\r\n      \"CredentialType\": \"Default\",\r\n      \"PasswordLastSet\": \"2026-06-01T09:00:00Z\"\r\n    },\r\n    \"TenantId\": 1,\r\n    \"Id\": 7510\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\"Key\": \"b2c8cb22-2ebc-4c27-87f3-05efe701af1c\", \"Name\": \"original_email@test.com's workspace\", \"Path\": \"original_email@test.com's workspace\", \"Type\": \"Personal\", \"ParentKey\": \"\"},\r\n    {\"Key\": \"a7e7f8a9-b0c1-2345-6789-abcdef012345\", \"Name\": \"MonitoringOps\", \"Path\": \"MonitoringOps\", \"Description\": \"Folder hosting the DashboardSnapshotBot unattended process.\", \"Type\": \"Standard\", \"ParentKey\": \"\"},\r\n    {\"Key\": \"e0772cbe-c19c-4d5f-926c-043c2d2d300a\", \"Name\": \"Shared\", \"Path\": \"Shared\", \"Type\": \"Standard\", \"ParentKey\": \"\"}\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

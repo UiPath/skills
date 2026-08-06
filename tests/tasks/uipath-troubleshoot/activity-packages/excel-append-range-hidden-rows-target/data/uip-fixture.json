@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f00aaaaa-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"LedgerOps\",\r\n      \"FullyQualifiedName\": \"LedgerOps\",\r\n      \"Description\": \"Folder for daily transaction-ledger append automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6100001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,7 +13,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"StartTime\": \"2026-05-29T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-29T08:00:03.212Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelLedgerProcess\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"DailyLedgerA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f00aaaaa-3333-4444-5555-666677778888\",\r\n      \"Info\": \"UiPath.Excel.BusinessException: Cannot append to a range that contains hidden rows or columns. The target sheet 'Transactions' has hidden rows in the computed append region (rows 4012-4089).\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -38,7 +26,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"StartTime\": \"2026-05-29T08:00:01.300Z\",\r\n    \"EndTime\": \"2026-05-29T08:00:03.212Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9ff33333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Info\": \"UiPath.Excel.BusinessException: Cannot append to a range that contains hidden rows or columns. The target sheet 'Transactions' has hidden rows in the computed append region (rows 4012-4089).\\r\\n   at UiPath.Excel.Activities.Business.AppendRangeX.ValidateTargetRegion(Worksheet sheet, Int32 startRow, Int32 endRow)\\r\\n   at UiPath.Excel.Activities.Business.AppendRangeX.OnExecute(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-29T08:00:01.005Z\",\r\n    \"ReleaseName\": \"ExcelLedgerProcess\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5681001,\r\n    \"OrganizationUnitId\": 6100001,\r\n    \"FolderKey\": \"f00aaaaa-3333-4444-5555-666677778888\",\r\n    \"Reference\": \"DailyLedgerA\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-29T08:00:03.212Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"BusinessException\",\r\n      \"ActivityName\": \"AppendRange_1\",\r\n      \"ActivityDisplayName\": \"Append Range: today's transactions\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Id\": 681099001\r\n  }\r\n}\r\n"
     },
@@ -51,7 +39,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\"Key\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Pending\", \"Timestamp\": \"2026-05-29T08:00:01.005Z\"},\r\n    {\"Key\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Running\", \"Timestamp\": \"2026-05-29T08:00:01.300Z\"},\r\n    {\"Key\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Faulted\", \"Timestamp\": \"2026-05-29T08:00:03.212Z\"}\r\n  ]\r\n}\r\n"
     },
@@ -64,9 +52,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-ff3333cc-001\",\r\n      \"JobKey\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-29T08:00:01.310Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ExcelLedgerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ff3333cc-002\",\r\n      \"JobKey\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-29T08:00:01.418Z\",\r\n      \"Message\": \"[ExcelLedgerProcess] Appending today's transactions to C:\\\\Robot\\\\Data\\\\ledger.xlsx\",\r\n      \"ProcessName\": \"ExcelLedgerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ff3333cc-003\",\r\n      \"JobKey\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-29T08:00:01.910Z\",\r\n      \"Message\": \"Invoke: FetchTransactions.xaml — returned dtTransactions with 78 rows, 6 columns (TxnId, TxnDate, Account, Amount, Currency, Status)\",\r\n      \"ProcessName\": \"ExcelLedgerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ff3333cc-004\",\r\n      \"JobKey\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-29T08:00:02.110Z\",\r\n      \"Message\": \"Use Excel File: ledger.xlsx — workbook opened (OpenXML provider); UiPath.Excel.Activities version 2.24.7 (>= 2.8.5)\",\r\n      \"ProcessName\": \"ExcelLedgerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ff3333cc-005\",\r\n      \"JobKey\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-29T08:00:02.310Z\",\r\n      \"Message\": \"Append Range: today's transactions — target sheet 'Transactions' inspection: AutoFilter active on column 'Status' (hiding rows where Status='Reconciled')\",\r\n      \"ProcessName\": \"ExcelLedgerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ff3333cc-006\",\r\n      \"JobKey\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-29T08:00:02.510Z\",\r\n      \"Message\": \"Append Range: today's transactions — last data row on sheet 'Transactions': row 4100. Computed append region: rows 4101-4178 (78 rows for the dtTransactions payload).\",\r\n      \"ProcessName\": \"ExcelLedgerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ff3333cc-007\",\r\n      \"JobKey\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-29T08:00:02.710Z\",\r\n      \"Message\": \"Append Range: today's transactions — target region validation (v2.8.5+): hidden rows detected in append target — sheet rows 4012-4089 are hidden by the AutoFilter and overlap with the computed append region's lookback. Pre-2.8.5 versions would have silently appended over the hidden region; v2.8.5+ throws to prevent data loss.\",\r\n      \"ProcessName\": \"ExcelLedgerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ff3333cc-008\",\r\n      \"JobKey\": \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-29T08:00:03.202Z\",\r\n      \"Message\": \"Append Range: today's transactions — UiPath.Excel.BusinessException: Cannot append to a range that contains hidden rows or columns. The target sheet 'Transactions' has hidden rows in the computed append region (rows 4012-4089).\",\r\n      \"ProcessName\": \"ExcelLedgerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f00aaaaa-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"LedgerOps\",\r\n      \"FullyQualifiedName\": \"LedgerOps\",\r\n      \"Description\": \"Folder for daily transaction-ledger append automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6100001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

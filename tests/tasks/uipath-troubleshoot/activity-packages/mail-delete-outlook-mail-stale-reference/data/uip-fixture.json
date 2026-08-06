@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b3c4d5e6-7f80-4a1b-8c2d-3e4f5a6b7c8d\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the mailbox automation portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,22 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InboxCleanupBot\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-04T11:00:00.140Z\",\r\n      \"EndTime\": \"2026-06-04T11:00:08.220Z\",\r\n      \"CreationTime\": \"2026-06-04T10:59:59.910Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e\",\r\n    \"StartTime\": \"2026-06-04T11:00:00.140Z\",\r\n    \"EndTime\": \"2026-06-04T11:00:08.220Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"d5e6f708-1923-4a3b-8c4d-5e6f7a8b9c0d\",\r\n    \"Info\": \"Delete Outlook Mail Message: The operation failed. An object could not be found.\\r\\n\\r\\nin Main.xaml\\r\\n    at DeleteOutlookMailMessage \\\"Delete Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Mail.Exception: The operation failed. An object could not be found. ---> System.Runtime.InteropServices.COMException: The operation failed. An object could not be found. (Exception from HRESULT: 0x8004010F)\",\r\n    \"CreationTime\": \"2026-06-04T10:59:59.910Z\",\r\n    \"ReleaseName\": \"InboxCleanupBot\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7042918,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b3c4d5e6-7f80-4a1b-8c2d-3e4f5a6b7c8d\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-04T11:00:08.220Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e\",\r\n    \"Id\": 793428713\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -53,9 +28,22 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:08.150Z\",\r\n      \"Message\": \"[Delete Outlook Mail Message] The operation failed. An object could not be found.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:08.198Z\",\r\n      \"Message\": \"The operation failed. An object could not be found.\\r\\nin Main.xaml\\r\\n    at DeleteOutlookMailMessage \\\"Delete Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e\",\r\n    \"StartTime\": \"2026-06-04T11:00:00.140Z\",\r\n    \"EndTime\": \"2026-06-04T11:00:08.220Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"d5e6f708-1923-4a3b-8c4d-5e6f7a8b9c0d\",\r\n    \"Info\": \"Delete Outlook Mail Message: The operation failed. An object could not be found.\\r\\n\\r\\nin Main.xaml\\r\\n    at DeleteOutlookMailMessage \\\"Delete Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Mail.Exception: The operation failed. An object could not be found. ---> System.Runtime.InteropServices.COMException: The operation failed. An object could not be found. (Exception from HRESULT: 0x8004010F)\",\r\n    \"CreationTime\": \"2026-06-04T10:59:59.910Z\",\r\n    \"ReleaseName\": \"InboxCleanupBot\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7042918,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b3c4d5e6-7f80-4a1b-8c2d-3e4f5a6b7c8d\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-04T11:00:08.220Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e\",\r\n    \"Id\": 793428713\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -66,9 +54,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:00.180Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:03.041Z\",\r\n      \"Message\": \"[Get Outlook Mail Messages] retrieved 24 messages from 'Inbox' at 11:00:03\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:03.120Z\",\r\n      \"Message\": \"[Pick oldest message] target for deletion selected: EntryID 0000004A8F2C1B9D7E3F4A5B6C7D8E9F00112233; Subject 'Daily export - region EMEA'; received 2026-06-04T06:12:00Z; current location 'Inbox'\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:03.260Z\",\r\n      \"Message\": \"[Process each message] Processing message: Daily export - region EMEA\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:04.910Z\",\r\n      \"Message\": \"[Process each message] Processing message: Daily export - region APAC\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:06.380Z\",\r\n      \"Message\": \"[Process each message] Processing message: Weekly reconciliation summary\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:07.840Z\",\r\n      \"Message\": \"[Process each message] processed 24 of 24 messages in 00:00:04.7 (downstream API + attachment save per item)\"\r\n    },\r\n    {\r\n      \"Level\": \"Warn\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:08.060Z\",\r\n      \"Message\": \"[Delete Outlook Mail Message] target message (EntryID 0000004A8F2C1B9D7E3F4A5B6C7D8E9F00112233) not found in 'Inbox'; it appears to have been moved or deleted since retrieval at 11:00:03\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:08.150Z\",\r\n      \"Message\": \"[Delete Outlook Mail Message] The operation failed. An object could not be found.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:08.198Z\",\r\n      \"Message\": \"The operation failed. An object could not be found.\\r\\nin Main.xaml\\r\\n    at DeleteOutlookMailMessage \\\"Delete Outlook Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T11:00:08.210Z\",\r\n      \"Message\": \"Execution ended in: 00:00:08\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b3c4d5e6-7f80-4a1b-8c2d-3e4f5a6b7c8d\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the mailbox automation portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

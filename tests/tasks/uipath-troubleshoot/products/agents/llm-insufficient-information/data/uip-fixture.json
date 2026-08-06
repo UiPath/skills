@@ -3,94 +3,6 @@
   "responses": [
     {
       "argv": [
-        "traces",
-        "spans",
-        "get",
-        "cccccccccccccccccccccccccccccccc"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"spanId\": \"completion-0003\",\r\n      \"traceId\": \"cccccccccccccccccccccccccccccccc\",\r\n      \"name\": \"llm.completion\",\r\n      \"spanType\": \"completion\",\r\n      \"SPANTYPE\": \"completion\",\r\n      \"attributes\": {\r\n        \"error\": \"{\\\"detail\\\":\\\"Insufficient information to send the email: recipient is missing\\\"}\",\r\n        \"model\": \"gpt-5.4\"\r\n      },\r\n      \"ATTRIBUTES\": {\r\n        \"error\": \"{\\\"detail\\\":\\\"Insufficient information to send the email: recipient is missing\\\"}\",\r\n        \"model\": \"gpt-5.4\"\r\n      }\r\n    }\r\n  ],\r\n  \"spans\": [\r\n    {\r\n      \"name\": \"llm.completion\",\r\n      \"spanType\": \"completion\",\r\n      \"attributes\": {\r\n        \"error\": \"{\\\"detail\\\":\\\"Insufficient information to send the email: recipient is missing\\\"}\"\r\n      }\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "agent",
-        "debug",
-        "process/MailerSolution/MailerAgent",
-        "--inputs",
-        "{task:send update}"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 2,
-      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioDebugCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run uip agent debug without explicit user approval. Provide the corrected debug command for the user to run instead.\"\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "agent",
-        "debug",
-        "process/MailerSolution/MailerAgent",
-        "--inputs",
-        "{task:send update,recipient:customer@example.com}"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 2,
-      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioDebugCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run uip agent debug without explicit user approval. Provide the corrected debug command for the user to run instead.\"\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "agent",
-        "refresh",
-        "process/MailerSolution/MailerAgent"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 2,
-      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "agent",
-        "validate",
-        "process/MailerSolution/MailerAgent"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"AgentValidate\",\r\n  \"Data\": {\r\n    \"Status\": \"Valid\",\r\n    \"ProjectDir\": \"process/MailerSolution/MailerAgent\"\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "solution",
-        "upload",
-        "."
-      ],
-      "match_mode": "normalized",
-      "exit_code": 2,
-      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "solution",
-        "pack",
-        ".",
-        "./dist",
-        "--version",
-        "1.0.1"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 2,
-      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "solution",
-        "publish",
-        "./dist/MailerSolution.1.0.1.zip"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 2,
-      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
-    },
-    {
-      "argv": [
         "solution",
         "deploy",
         "run",
@@ -105,7 +17,95 @@
         "--parent-folder-path",
         "Shared"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "solution",
+        "pack",
+        ".",
+        "./dist",
+        "--version",
+        "1.0.1"
+      ],
+      "match_mode": "subset",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "agent",
+        "debug",
+        "process/MailerSolution/MailerAgent",
+        "--inputs",
+        "{task:send update}"
+      ],
+      "match_mode": "subset",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioDebugCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run uip agent debug without explicit user approval. Provide the corrected debug command for the user to run instead.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "agent",
+        "debug",
+        "process/MailerSolution/MailerAgent",
+        "--inputs",
+        "{task:send update,recipient:customer@example.com}"
+      ],
+      "match_mode": "subset",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioDebugCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run uip agent debug without explicit user approval. Provide the corrected debug command for the user to run instead.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "cccccccccccccccccccccccccccccccc"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"spanId\": \"completion-0003\",\r\n      \"traceId\": \"cccccccccccccccccccccccccccccccc\",\r\n      \"name\": \"llm.completion\",\r\n      \"spanType\": \"completion\",\r\n      \"SPANTYPE\": \"completion\",\r\n      \"attributes\": {\r\n        \"error\": \"{\\\"detail\\\":\\\"Insufficient information to send the email: recipient is missing\\\"}\",\r\n        \"model\": \"gpt-5.4\"\r\n      },\r\n      \"ATTRIBUTES\": {\r\n        \"error\": \"{\\\"detail\\\":\\\"Insufficient information to send the email: recipient is missing\\\"}\",\r\n        \"model\": \"gpt-5.4\"\r\n      }\r\n    }\r\n  ],\r\n  \"spans\": [\r\n    {\r\n      \"name\": \"llm.completion\",\r\n      \"spanType\": \"completion\",\r\n      \"attributes\": {\r\n        \"error\": \"{\\\"detail\\\":\\\"Insufficient information to send the email: recipient is missing\\\"}\"\r\n      }\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "agent",
+        "refresh",
+        "process/MailerSolution/MailerAgent"
+      ],
+      "match_mode": "subset",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "agent",
+        "validate",
+        "process/MailerSolution/MailerAgent"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"AgentValidate\",\r\n  \"Data\": {\r\n    \"Status\": \"Valid\",\r\n    \"ProjectDir\": \"process/MailerSolution/MailerAgent\"\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "solution",
+        "upload",
+        "."
+      ],
+      "match_mode": "subset",
+      "exit_code": 2,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "solution",
+        "publish",
+        "./dist/MailerSolution.1.0.1.zip"
+      ],
+      "match_mode": "subset",
       "exit_code": 2,
       "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ScenarioRepairCommandDenied\",\r\n  \"Message\": \"This scenario is diagnose-only.\",\r\n  \"Instructions\": \"Do not run repair, upload, publish, or deploy commands in this replay. Explain the fix and validation steps, then ask before any upload, publish, or deployment action.\"\r\n}\r\n"
     }

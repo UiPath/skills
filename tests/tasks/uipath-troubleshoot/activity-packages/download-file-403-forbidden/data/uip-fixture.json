@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"fa020002-d4e5-4f60-8a02-000000000002\",\r\n      \"Name\": \"Portal Sync\",\r\n      \"Path\": \"Portal Sync\",\r\n      \"Description\": \"Production folder for portal file-sync processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,22 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"fb020002-e5f6-4071-9b02-000000000002\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"PortalFetch\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-16T10:02:19.140Z\",\r\n      \"EndTime\": \"2026-06-16T10:02:21.480Z\",\r\n      \"CreationTime\": \"2026-06-16T10:02:18.700Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "fb020002-e5f6-4071-9b02-000000000002",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"fb020002-e5f6-4071-9b02-000000000002\",\r\n    \"StartTime\": \"2026-06-16T10:02:19.140Z\",\r\n    \"EndTime\": \"2026-06-16T10:02:21.480Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"fc020002-a7b8-4192-9c02-000000000002\",\r\n    \"Info\": \"Download File from URL: The remote server returned an error: (403) Forbidden.\\r\\n\\r\\nin Main.xaml\\r\\n    at DownloadFileFromUrl \\\"Download File from URL\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Net.Http.HttpRequestException: The remote server returned an error: (403) Forbidden. (https://portal.example.com/reports/q3-summary.xlsx)\",\r\n    \"CreationTime\": \"2026-06-16T10:02:18.700Z\",\r\n    \"ReleaseName\": \"PortalFetch\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7016002,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"fa020002-d4e5-4f60-8a02-000000000002\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-16T10:02:21.480Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"fb020002-e5f6-4071-9b02-000000000002\",\r\n    \"Id\": 716010202\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -53,9 +28,22 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T10:02:21.330Z\",\r\n      \"Message\": \"[Download File from URL] The remote server returned an error: (403) Forbidden. (https://portal.example.com/reports/q3-summary.xlsx)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T10:02:21.400Z\",\r\n      \"Message\": \"Download File from URL: The remote server returned an error: (403) Forbidden.\\r\\nin Main.xaml\\r\\n    at DownloadFileFromUrl \\\"Download File from URL\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "fb020002-e5f6-4071-9b02-000000000002",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"fb020002-e5f6-4071-9b02-000000000002\",\r\n    \"StartTime\": \"2026-06-16T10:02:19.140Z\",\r\n    \"EndTime\": \"2026-06-16T10:02:21.480Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"fc020002-a7b8-4192-9c02-000000000002\",\r\n    \"Info\": \"Download File from URL: The remote server returned an error: (403) Forbidden.\\r\\n\\r\\nin Main.xaml\\r\\n    at DownloadFileFromUrl \\\"Download File from URL\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Net.Http.HttpRequestException: The remote server returned an error: (403) Forbidden. (https://portal.example.com/reports/q3-summary.xlsx)\",\r\n    \"CreationTime\": \"2026-06-16T10:02:18.700Z\",\r\n    \"ReleaseName\": \"PortalFetch\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7016002,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"fa020002-d4e5-4f60-8a02-000000000002\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-16T10:02:21.480Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"fb020002-e5f6-4071-9b02-000000000002\",\r\n    \"Id\": 716010202\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -66,9 +54,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-16T10:02:19.140Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-16T10:02:20.260Z\",\r\n      \"Message\": \"[Download File from URL] Requesting https://portal.example.com/reports/q3-summary.xlsx\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T10:02:21.330Z\",\r\n      \"Message\": \"[Download File from URL] The remote server returned an error: (403) Forbidden. (https://portal.example.com/reports/q3-summary.xlsx)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T10:02:21.400Z\",\r\n      \"Message\": \"Download File from URL: The remote server returned an error: (403) Forbidden.\\r\\nin Main.xaml\\r\\n    at DownloadFileFromUrl \\\"Download File from URL\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-16T10:02:21.450Z\",\r\n      \"Message\": \"Execution ended in: 00:00:02\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"fa020002-d4e5-4f60-8a02-000000000002\",\r\n      \"Name\": \"Portal Sync\",\r\n      \"Path\": \"Portal Sync\",\r\n      \"Description\": \"Production folder for portal file-sync processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

@@ -7,7 +7,7 @@
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0022244-2222-3333-4444-555566667777\",\r\n      \"DisplayName\": \"Shared\",\r\n      \"FullyQualifiedName\": \"Shared\",\r\n      \"Description\": \"Default shared automation folder.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6022001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,7 +17,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"cc333333-3333-bbbb-cccc-ddddeeeeffff\",\r\n      \"StartTime\": \"2026-05-22T09:14:02.300Z\",\r\n      \"EndTime\": \"2026-05-22T09:14:08.742Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ResumePhotoStamp\",\r\n      \"Source\": \"Manual\",\r\n      \"Reference\": \"ResumePhotoRun\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0022244-2222-3333-4444-555566667777\",\r\n      \"Info\": \"System.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. ... (Exception from HRESULT: 0x8001010E (RPC_E_WRONG_THREAD)).\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -27,7 +27,7 @@
         "jobs",
         "logs"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-cc333399-001\",\r\n      \"JobKey\": \"cc333333-3333-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-22T09:14:02.360Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ResumePhotoStamp\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-cc333399-002\",\r\n      \"JobKey\": \"cc333333-3333-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-22T09:14:02.640Z\",\r\n      \"Message\": \"[ResumePhotoStamp] Inserting the candidate photo into the resume draft.\",\r\n      \"ProcessName\": \"ResumePhotoStamp\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-cc333399-003\",\r\n      \"JobKey\": \"cc333333-3333-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-22T09:14:04.210Z\",\r\n      \"Message\": \"Use Word File: resume-draft.docx — launching Word via Office Interop (Visible=False) for document 'C:\\\\Robot\\\\Resumes\\\\resume-draft.docx'. Document opened successfully.\",\r\n      \"ProcessName\": \"ResumePhotoStamp\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-cc333399-004\",\r\n      \"JobKey\": \"cc333333-3333-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-22T09:14:07.880Z\",\r\n      \"Message\": \"Add Picture: inserting image 'C:\\\\Robot\\\\Assets\\\\candidate-photo.jpg' relative to Document (Position=End).\",\r\n      \"ProcessName\": \"ResumePhotoStamp\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-cc333399-005\",\r\n      \"JobKey\": \"cc333333-3333-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Warn\",\r\n      \"Timestamp\": \"2026-05-22T09:14:08.520Z\",\r\n      \"Message\": \"Word Application host process (WINWORD.EXE, PID 7864) exited unexpectedly while 'Add Picture' was inserting the image. The Word COM server is no longer available.\",\r\n      \"ProcessName\": \"ResumePhotoStamp\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-cc333399-006\",\r\n      \"JobKey\": \"cc333333-3333-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-22T09:14:08.700Z\",\r\n      \"Message\": \"Add Picture: System.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. ... The application called an interface that was marshalled for a different thread. (Exception from HRESULT: 0x8001010E (RPC_E_WRONG_THREAD)). Thrown from UiPath.Word.Activities.WordInteropActivity.EndExecute.\",\r\n      \"ProcessName\": \"ResumePhotoStamp\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -37,7 +37,7 @@
         "jobs",
         "history"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"cc333333-3333-bbbb-cccc-ddddeeeeffff\",\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-05-22T09:14:01.980Z\"\r\n    },\r\n    {\r\n      \"Key\": \"cc333333-3333-bbbb-cccc-ddddeeeeffff\",\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-05-22T09:14:02.300Z\"\r\n    },\r\n    {\r\n      \"Key\": \"cc333333-3333-bbbb-cccc-ddddeeeeffff\",\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-05-22T09:14:08.742Z\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -47,7 +47,7 @@
         "jobs",
         "get"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"cc333333-3333-bbbb-cccc-ddddeeeeffff\",\r\n    \"StartTime\": \"2026-05-22T09:14:02.300Z\",\r\n    \"EndTime\": \"2026-05-22T09:14:08.742Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"9cc33333-3333-bbbb-cccc-ddddeeeeffff\",\r\n    \"Info\": \"System.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. This operation failed because the QueryInterface call on the COM component for the interface with IID '{0002096B-0000-0000-C000-000000000046}' failed due to the following error: The application called an interface that was marshalled for a different thread. (Exception from HRESULT: 0x8001010E (RPC_E_WRONG_THREAD)).\\r\\n   at UiPath.Word.Activities.WordInteropActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-22T09:14:01.980Z\",\r\n    \"ReleaseName\": \"ResumePhotoStamp\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5680301,\r\n    \"OrganizationUnitId\": 6022001,\r\n    \"FolderKey\": \"f0022244-2222-3333-4444-555566667777\",\r\n    \"Reference\": \"ResumePhotoRun\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-22T09:14:08.742Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"InvalidCastException\",\r\n      \"ActivityName\": \"WordAddImage_1\",\r\n      \"ActivityDisplayName\": \"Add Picture\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"cc333333-3333-bbbb-cccc-ddddeeeeffff\",\r\n    \"Id\": 680077301\r\n  }\r\n}\r\n"
     }

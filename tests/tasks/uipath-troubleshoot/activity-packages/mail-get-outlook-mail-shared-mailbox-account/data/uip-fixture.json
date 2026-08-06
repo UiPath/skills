@@ -4,10 +4,22 @@
     {
       "argv": [
         "or",
+        "jobs",
+        "logs",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T07:10:02.360Z\",\r\n      \"Message\": \"Get Outlook Mail Messages: The specified folder does not exist.\\r\\nin Main.xaml\\r\\n    at GetOutlookMailMessages \\\"Get Outlook Mail Messages\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Mail.Exception: The specified folder does not exist. ---> System.Exception: The specified folder does not exist.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2c3d4e5-6f70-4a81-9b2c-3d4e5f607182\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the finance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"a1b2c3d4-5e6f-4071-8293-a4b5c6d7e8f9\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,7 +29,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c3d4e5f6-7081-4a92-9b3c-4d5e6f708293\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"PayablesInvoiceReader\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-04T07:10:00.150Z\",\r\n      \"EndTime\": \"2026-06-04T07:10:02.410Z\",\r\n      \"CreationTime\": \"2026-06-04T07:09:59.900Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
     },
@@ -25,21 +37,9 @@
       "argv": [
         "or",
         "jobs",
-        "logs",
-        "--level",
-        "Error"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T07:10:02.360Z\",\r\n      \"Message\": \"Get Outlook Mail Messages: The specified folder does not exist.\\r\\nin Main.xaml\\r\\n    at GetOutlookMailMessages \\\"Get Outlook Mail Messages\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Mail.Exception: The specified folder does not exist. ---> System.Exception: The specified folder does not exist.\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
         "logs"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T07:10:00.190Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T07:10:01.020Z\",\r\n      \"Message\": \"[Get Outlook Mail Messages] Attached to running Outlook instance under UIPATH\\\\ROBOTUSER1\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-04T07:10:01.640Z\",\r\n      \"Message\": \"[Get Outlook Mail Messages] No Account specified; resolving folder 'Invoices' against the default profile store (robotuser1@test.com)\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-04T07:10:02.190Z\",\r\n      \"Message\": \"[Get Outlook Mail Messages] Could not find folder 'Invoices' under the default profile store (robotuser1@test.com); stores available to this profile: robotuser1@test.com, accounts-payable@test.com\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-04T07:10:02.360Z\",\r\n      \"Message\": \"Get Outlook Mail Messages: The specified folder does not exist.\\r\\nin Main.xaml\\r\\n    at GetOutlookMailMessages \\\"Get Outlook Mail Messages\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Mail.Exception: The specified folder does not exist. ---> System.Exception: The specified folder does not exist.\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-04T07:10:02.400Z\",\r\n      \"Message\": \"Execution ended in: 00:00:02\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -49,7 +49,7 @@
         "jobs",
         "get"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c3d4e5f6-7081-4a92-9b3c-4d5e6f708293\",\r\n    \"StartTime\": \"2026-06-04T07:10:00.150Z\",\r\n    \"EndTime\": \"2026-06-04T07:10:02.410Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"d4e5f6a7-8192-4b03-9c4d-5e6f70819304\",\r\n    \"Info\": \"Get Outlook Mail Messages: The specified folder does not exist.\\r\\n\\r\\nin Main.xaml\\r\\n    at GetOutlookMailMessages \\\"Get Outlook Mail Messages\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Mail.Exception: The specified folder does not exist. ---> System.Exception: The specified folder does not exist.\",\r\n    \"CreationTime\": \"2026-06-04T07:09:59.900Z\",\r\n    \"ReleaseName\": \"PayablesInvoiceReader\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6041407,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b2c3d4e5-6f70-4a81-9b2c-3d4e5f607182\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-04T07:10:02.410Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c3d4e5f6-7081-4a92-9b3c-4d5e6f708293\",\r\n    \"Id\": 682511884\r\n  }\r\n}\r\n"
     }

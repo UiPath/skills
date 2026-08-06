@@ -4,14 +4,17 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
+        "jobs",
+        "logs",
+        "c1d2e3f4-9011-4abc-9def-000000000011",
+        "--level",
+        "Error",
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"test.user@example.com's workspace\",\r\n      \"Path\": \"test.user@example.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-29T14:22:12.090Z\",\r\n      \"Message\": \"Broadcast Order Ready: Timeout of 3000 ms has passed and no channel was found to send the message to.\\r\\nin Main.xaml\\r\\n    at Broadcast Message \\\"Broadcast Order Ready\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.TimeoutException: Timeout of 3000 ms has passed and no channel was found to send the message to.\\r\\n   at UiPath.IPC.Activities.BroadcastMessage.<ExecuteAsync>d__24.MoveNext()\\r\\n--- End of stack trace from previous location ---\\r\\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.System.Activities.IAsyncCodeActivity.FinishExecution(AsyncCodeActivityContext context, IAsyncResult result)\"\r\n    }\r\n  ]\r\n}\r\n"
     },
     {
       "argv": [
@@ -22,24 +25,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c1d2e3f4-9011-4abc-9def-000000000011\",\r\n    \"StartTime\": \"2026-06-29T14:22:09.000Z\",\r\n    \"EndTime\": \"2026-06-29T14:22:12.140Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"c1d2e3f4-9011-4abc-9def-000000000011\",\r\n    \"Info\": \"Broadcast Order Ready: Timeout of 3000 ms has passed and no channel was found to send the message to.\\r\\n\\r\\nin Main.xaml\\r\\n    at Broadcast Message \\\"Broadcast Order Ready\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.TimeoutException: Timeout of 3000 ms has passed and no channel was found to send the message to.\\r\\n   at UiPath.IPC.Activities.BroadcastMessage.<ExecuteAsync>d__24.MoveNext()\\r\\n--- End of stack trace from previous location ---\\r\\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity`1.<>c__DisplayClass6_0.<<ExecuteAsync>b__0>d.MoveNext()\\r\\n--- End of stack trace from previous location ---\\r\\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.System.Activities.IAsyncCodeActivity.FinishExecution(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-29T14:22:09.000Z\",\r\n    \"ReleaseName\": \"OrderNotifier\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT-22\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 10011,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\svcRobot\",\r\n    \"OrchestratorUserIdentity\": \"test.user@example.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-29T14:22:12.140Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c1d2e3f490114abc9def000000000011\",\r\n    \"Id\": 4016011\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
         "or",
-        "jobs",
-        "logs",
-        "c1d2e3f4-9011-4abc-9def-000000000011",
-        "--level",
-        "Error",
+        "folders",
+        "list",
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-29T14:22:12.090Z\",\r\n      \"Message\": \"Broadcast Order Ready: Timeout of 3000 ms has passed and no channel was found to send the message to.\\r\\nin Main.xaml\\r\\n    at Broadcast Message \\\"Broadcast Order Ready\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.TimeoutException: Timeout of 3000 ms has passed and no channel was found to send the message to.\\r\\n   at UiPath.IPC.Activities.BroadcastMessage.<ExecuteAsync>d__24.MoveNext()\\r\\n--- End of stack trace from previous location ---\\r\\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.System.Activities.IAsyncCodeActivity.FinishExecution(AsyncCodeActivityContext context, IAsyncResult result)\"\r\n    }\r\n  ]\r\n}\r\n"
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"test.user@example.com's workspace\",\r\n      \"Path\": \"test.user@example.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

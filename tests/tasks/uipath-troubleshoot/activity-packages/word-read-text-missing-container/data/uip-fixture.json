@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"e6f7a8b9-c0d1-4193-8b1c-7081920314a5\",\r\n      \"Name\": \"Doc Extract\",\r\n      \"Path\": \"Doc Extract\",\r\n      \"Description\": \"Production folder for document text-extraction processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,22 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f7a8b9c0-d1e2-4204-9c2d-81920314a5b6\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ContractTextExtract\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT-10\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-16T08:05:01.420Z\",\r\n      \"EndTime\": \"2026-06-16T08:05:02.380Z\",\r\n      \"CreationTime\": \"2026-06-16T08:05:01.210Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "f7a8b9c0-d1e2-4204-9c2d-81920314a5b6",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"f7a8b9c0-d1e2-4204-9c2d-81920314a5b6\",\r\n    \"StartTime\": \"2026-06-16T08:05:01.420Z\",\r\n    \"EndTime\": \"2026-06-16T08:05:02.380Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"a8b9c0d1-e2f3-4315-ad3e-920314a5b6c7\",\r\n    \"Info\": \"Validation Error: Activity 'Read Text' is not valid. The 'Read Text' activity must be placed inside a 'Use Word File' or 'Word Application Scope' container.\\r\\n\\r\\nin Main.xaml\\r\\n    at ReadTextInDocument \\\"Read Text\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Word.Activities.WordException: The 'Read Text' activity must be used within a 'Use Word File' or 'Word Application Scope'.\",\r\n    \"CreationTime\": \"2026-06-16T08:05:01.210Z\",\r\n    \"ReleaseName\": \"ContractTextExtract\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT-10\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6021950,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"e6f7a8b9-c0d1-4193-8b1c-7081920314a5\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-16T08:05:02.380Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"f7a8b9c0-d1e2-4204-9c2d-81920314a5b6\",\r\n    \"Id\": 682455443\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -53,9 +28,22 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T08:05:02.310Z\",\r\n      \"Message\": \"Validation Error: The 'Read Text' activity must be placed inside a 'Use Word File' or 'Word Application Scope' container.\\r\\nin Main.xaml\\r\\n    at ReadTextInDocument \\\"Read Text\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "f7a8b9c0-d1e2-4204-9c2d-81920314a5b6",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"f7a8b9c0-d1e2-4204-9c2d-81920314a5b6\",\r\n    \"StartTime\": \"2026-06-16T08:05:01.420Z\",\r\n    \"EndTime\": \"2026-06-16T08:05:02.380Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"a8b9c0d1-e2f3-4315-ad3e-920314a5b6c7\",\r\n    \"Info\": \"Validation Error: Activity 'Read Text' is not valid. The 'Read Text' activity must be placed inside a 'Use Word File' or 'Word Application Scope' container.\\r\\n\\r\\nin Main.xaml\\r\\n    at ReadTextInDocument \\\"Read Text\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Word.Activities.WordException: The 'Read Text' activity must be used within a 'Use Word File' or 'Word Application Scope'.\",\r\n    \"CreationTime\": \"2026-06-16T08:05:01.210Z\",\r\n    \"ReleaseName\": \"ContractTextExtract\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT-10\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6021950,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"e6f7a8b9-c0d1-4193-8b1c-7081920314a5\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-16T08:05:02.380Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"f7a8b9c0-d1e2-4204-9c2d-81920314a5b6\",\r\n    \"Id\": 682455443\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -66,9 +54,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-16T08:05:01.470Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T08:05:02.310Z\",\r\n      \"Message\": \"Validation Error: The 'Read Text' activity must be placed inside a 'Use Word File' or 'Word Application Scope' container.\\r\\nin Main.xaml\\r\\n    at ReadTextInDocument \\\"Read Text\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-16T08:05:02.360Z\",\r\n      \"Message\": \"Execution ended in: 00:00:00\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"e6f7a8b9-c0d1-4193-8b1c-7081920314a5\",\r\n      \"Name\": \"Doc Extract\",\r\n      \"Path\": \"Doc Extract\",\r\n      \"Description\": \"Production folder for document text-extraction processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

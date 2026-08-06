@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"DisplayName\": \"ExcelImports\",\r\n      \"FullyQualifiedName\": \"ExcelImports\",\r\n      \"Description\": \"Folder for daily Excel imports.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6010001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,23 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n      \"StartTime\": \"2026-05-19T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-19T08:00:01.812Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelDailyImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"HourlySalesA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"Info\": \"UiPath.Excel.ExcelException: Error opening workbook 'C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx'. ---> System.IO.IOException: The process cannot access the file 'C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx' because it is being used by another process.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--folder-key",
-        "f0011111-2222-3333-4444-555566667777",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n      \"StartTime\": \"2026-05-19T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-19T08:00:01.812Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelDailyImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"HourlySalesA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"Info\": \"UiPath.Excel.ExcelException: Error opening workbook 'C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx'. ---> System.IO.IOException: The process cannot access the file 'C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx' because it is being used by another process.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    },\r\n    {\r\n      \"Key\": \"ff666666-1111-2222-3333-444455556666\",\r\n      \"StartTime\": \"2026-05-19T07:30:00.500Z\",\r\n      \"EndTime\": \"2026-05-19T07:30:06.700Z\",\r\n      \"State\": \"Successful\",\r\n      \"ReleaseName\": \"ExcelDailyImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"HourlySalesA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"Info\": null,\r\n      \"ErrorCode\": null\r\n    },\r\n    {\r\n      \"Key\": \"ff777777-1111-2222-3333-444455556666\",\r\n      \"StartTime\": \"2026-05-19T07:00:00.500Z\",\r\n      \"EndTime\": \"2026-05-19T07:00:05.900Z\",\r\n      \"State\": \"Successful\",\r\n      \"ReleaseName\": \"ExcelDailyImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"HourlySalesA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"Info\": null,\r\n      \"ErrorCode\": null\r\n    }\r\n  ]\r\n}\r\n"
     },
     {
       "argv": [
@@ -55,9 +29,37 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n      \"StartTime\": \"2026-05-19T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-19T08:00:01.812Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelDailyImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"HourlySalesA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"Info\": \"UiPath.Excel.ExcelException: Error opening workbook 'C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx'. ---> System.IO.IOException: The process cannot access the file 'C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx' because it is being used by another process.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    },\r\n    {\r\n      \"Key\": \"ff666666-1111-2222-3333-444455556666\",\r\n      \"StartTime\": \"2026-05-19T07:30:00.500Z\",\r\n      \"EndTime\": \"2026-05-19T07:30:06.700Z\",\r\n      \"State\": \"Successful\",\r\n      \"ReleaseName\": \"ExcelDailyImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"HourlySalesA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"Info\": null,\r\n      \"ErrorCode\": null\r\n    },\r\n    {\r\n      \"Key\": \"ff777777-1111-2222-3333-444455556666\",\r\n      \"StartTime\": \"2026-05-19T07:00:00.500Z\",\r\n      \"EndTime\": \"2026-05-19T07:00:05.900Z\",\r\n      \"State\": \"Successful\",\r\n      \"ReleaseName\": \"ExcelDailyImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"HourlySalesA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"Info\": null,\r\n      \"ErrorCode\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f0011111-2222-3333-4444-555566667777",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n      \"StartTime\": \"2026-05-19T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-19T08:00:01.812Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelDailyImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"HourlySalesA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"Info\": \"UiPath.Excel.ExcelException: Error opening workbook 'C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx'. ---> System.IO.IOException: The process cannot access the file 'C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx' because it is being used by another process.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    },\r\n    {\r\n      \"Key\": \"ff666666-1111-2222-3333-444455556666\",\r\n      \"StartTime\": \"2026-05-19T07:30:00.500Z\",\r\n      \"EndTime\": \"2026-05-19T07:30:06.700Z\",\r\n      \"State\": \"Successful\",\r\n      \"ReleaseName\": \"ExcelDailyImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"HourlySalesA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"Info\": null,\r\n      \"ErrorCode\": null\r\n    },\r\n    {\r\n      \"Key\": \"ff777777-1111-2222-3333-444455556666\",\r\n      \"StartTime\": \"2026-05-19T07:00:00.500Z\",\r\n      \"EndTime\": \"2026-05-19T07:00:05.900Z\",\r\n      \"State\": \"Successful\",\r\n      \"ReleaseName\": \"ExcelDailyImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"HourlySalesA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"Info\": null,\r\n      \"ErrorCode\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "triggers",
+        "list",
+        "--folder-key",
+        "f0011111-2222-3333-4444-555566667777",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TriggersList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"t1111111-aaaa-bbbb-cccc-ddddeeeeffff\",\r\n      \"Name\": \"HourlySalesA\",\r\n      \"Enabled\": true,\r\n      \"ProcessKey\": \"5680101\",\r\n      \"ProcessName\": \"ExcelDailyImport\",\r\n      \"Cron\": \"0 0/30 * * * ?\",\r\n      \"CronSummary\": \"Every 30 minutes\",\r\n      \"TimeZoneId\": \"UTC\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"FolderName\": \"ExcelImports\",\r\n      \"StartProcessCron\": \"0 0/30 * * * ?\",\r\n      \"StartProcessCronSummary\": \"Every 30 minutes\",\r\n      \"StartProcessCronDetails\": \"Minutes: 0,30; Seconds: 0; Anchor: 2026-05-01T00:00:00Z\",\r\n      \"JobsCount\": 1,\r\n      \"RuntimeType\": \"Unattended\"\r\n    }\r\n  ]\r\n}\r\n"
     },
     {
       "argv": [
@@ -68,7 +70,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n    \"StartTime\": \"2026-05-19T08:00:01.300Z\",\r\n    \"EndTime\": \"2026-05-19T08:00:01.812Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9ee55555-6666-7777-8888-99990000aaaa\",\r\n    \"Info\": \"UiPath.Excel.ExcelException: Error opening workbook 'C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx'.\\r\\n ---> System.IO.IOException: The process cannot access the file 'C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx' because it is being used by another process.\\r\\n   at System.IO.FileStream.OpenHandle(FileMode mode, FileShare share, FileOptions options)\\r\\n   at UiPath.Excel.WorkbookOpener.OpenAsync(String path, OpenMode mode, CancellationToken cancellationToken)\\r\\n   at UiPath.Excel.Activities.UseExcelFile.OnExecuteAsync(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-19T08:00:01.005Z\",\r\n    \"ReleaseName\": \"ExcelDailyImport\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5680101,\r\n    \"OrganizationUnitId\": 6010001,\r\n    \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n    \"Reference\": \"HourlySalesA\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-19T08:00:01.812Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"ApplicationException\",\r\n      \"ActivityName\": \"UseExcelFile_1\",\r\n      \"ActivityDisplayName\": \"Use Excel File: sales-2026-05.xlsx\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n    \"Id\": 680033001\r\n  }\r\n}\r\n"
     },
@@ -81,7 +83,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-05-19T08:00:01.005Z\"\r\n    },\r\n    {\r\n      \"Key\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-05-19T08:00:01.300Z\"\r\n    },\r\n    {\r\n      \"Key\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-05-19T08:00:01.812Z\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -94,23 +96,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-ee555555-001\",\r\n      \"JobKey\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-19T08:00:01.310Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ExcelDailyImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee555555-002\",\r\n      \"JobKey\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-19T08:00:01.418Z\",\r\n      \"Message\": \"[ExcelDailyImport] Starting daily sales import — reading C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx\",\r\n      \"ProcessName\": \"ExcelDailyImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee555555-003\",\r\n      \"JobKey\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-19T08:00:01.512Z\",\r\n      \"Message\": \"Use Excel File: sales-2026-05.xlsx — executing\",\r\n      \"ProcessName\": \"ExcelDailyImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee555555-004\",\r\n      \"JobKey\": \"ee555555-6666-7777-8888-99990000aaaa\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-19T08:00:01.802Z\",\r\n      \"Message\": \"Use Excel File: sales-2026-05.xlsx — UiPath.Excel.ExcelException: Error opening workbook 'C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx'. ---> System.IO.IOException: The process cannot access the file 'C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx' because it is being used by another process.\",\r\n      \"ProcessName\": \"ExcelDailyImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
     },
     {
       "argv": [
         "or",
-        "triggers",
+        "folders",
         "list",
-        "--folder-key",
-        "f0011111-2222-3333-4444-555566667777",
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TriggersList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"t1111111-aaaa-bbbb-cccc-ddddeeeeffff\",\r\n      \"Name\": \"HourlySalesA\",\r\n      \"Enabled\": true,\r\n      \"ProcessKey\": \"5680101\",\r\n      \"ProcessName\": \"ExcelDailyImport\",\r\n      \"Cron\": \"0 0/30 * * * ?\",\r\n      \"CronSummary\": \"Every 30 minutes\",\r\n      \"TimeZoneId\": \"UTC\",\r\n      \"FolderKey\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"FolderName\": \"ExcelImports\",\r\n      \"StartProcessCron\": \"0 0/30 * * * ?\",\r\n      \"StartProcessCronSummary\": \"Every 30 minutes\",\r\n      \"StartProcessCronDetails\": \"Minutes: 0,30; Seconds: 0; Anchor: 2026-05-01T00:00:00Z\",\r\n      \"JobsCount\": 1,\r\n      \"RuntimeType\": \"Unattended\"\r\n    }\r\n  ]\r\n}\r\n"
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0011111-2222-3333-4444-555566667777\",\r\n      \"DisplayName\": \"ExcelImports\",\r\n      \"FullyQualifiedName\": \"ExcelImports\",\r\n      \"Description\": \"Folder for daily Excel imports.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6010001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

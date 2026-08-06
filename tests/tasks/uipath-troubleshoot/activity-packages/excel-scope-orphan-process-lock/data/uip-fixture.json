@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f00fffff-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"OrderImports\",\r\n      \"FullyQualifiedName\": \"OrderImports\",\r\n      \"Description\": \"Folder for the inbound order-import automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6110055,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,7 +13,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"StartTime\": \"2026-05-30T06:00:02.300Z\",\r\n      \"EndTime\": \"2026-05-30T06:00:09.870Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelOrderImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"InboundOrders0600\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f00fffff-3333-4444-5555-666677778888\",\r\n      \"Info\": \"UiPath.Excel.BusinessException: Failed opening the Excel file. Possible reasons: file is corrupt, already used by another process or password protected.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    },\r\n    {\r\n      \"Key\": \"ga5550000-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"StartTime\": \"2026-05-29T22:03:55.100Z\",\r\n      \"EndTime\": \"2026-05-29T22:04:11.540Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelOrderImport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"InboundOrders2200\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f00fffff-3333-4444-5555-666677778888\",\r\n      \"Info\": \"System.Runtime.InteropServices.COMException: The RPC server is unavailable. (Robot session force-terminated mid-scope.)\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -38,7 +26,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"StartTime\": \"2026-05-30T06:00:02.300Z\",\r\n    \"EndTime\": \"2026-05-30T06:00:09.870Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9aa55555-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Info\": \"UiPath.Excel.BusinessException: Failed opening the Excel file. Possible reasons: file is corrupt, already used by another process or password protected.\\r\\n   at UiPath.Excel.Activities.ExcelApplicationScope.OpenWorkbook(String path)\\r\\n   at UiPath.Excel.Activities.ExcelApplicationScope.OnExecute(NativeActivityContext context)\\r\\nInner: System.Runtime.InteropServices.COMException (0x800A03EC): Microsoft Excel cannot access the file 'C:\\\\Robot\\\\Data\\\\orders-inbound.xlsx'. There are several possible reasons: the file name or path does not exist; the file is being used by another program; the workbook you are trying to save has the same name as a currently open workbook.\",\r\n    \"CreationTime\": \"2026-05-30T06:00:02.005Z\",\r\n    \"ReleaseName\": \"ExcelOrderImport\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5681155,\r\n    \"OrganizationUnitId\": 6110055,\r\n    \"FolderKey\": \"f00fffff-3333-4444-5555-666677778888\",\r\n    \"Reference\": \"InboundOrders0600\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-30T06:00:09.870Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"BusinessException\",\r\n      \"ActivityName\": \"ExcelApplicationScope_1\",\r\n      \"ActivityDisplayName\": \"Excel Application Scope: orders-inbound.xlsx\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Id\": 681199055\r\n  }\r\n}\r\n"
     },
@@ -51,7 +39,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\"Key\": \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Pending\", \"Timestamp\": \"2026-05-30T06:00:02.005Z\"},\r\n    {\"Key\": \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Running\", \"Timestamp\": \"2026-05-30T06:00:02.300Z\"},\r\n    {\"Key\": \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Faulted\", \"Timestamp\": \"2026-05-30T06:00:09.870Z\"}\r\n  ]\r\n}\r\n"
     },
@@ -64,9 +52,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-aa5555cc-001\",\r\n      \"JobKey\": \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-30T06:00:02.320Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ExcelOrderImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa5555cc-002\",\r\n      \"JobKey\": \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-30T06:00:02.480Z\",\r\n      \"Message\": \"[ExcelOrderImport] Opening C:\\\\Robot\\\\Data\\\\orders-inbound.xlsx to import inbound orders\",\r\n      \"ProcessName\": \"ExcelOrderImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa5555cc-003\",\r\n      \"JobKey\": \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-30T06:00:02.700Z\",\r\n      \"Message\": \"Excel Application Scope: orders-inbound.xlsx — surface: Classic ExcelApplicationScope (COM-only). Acquiring workbook via Excel COM.\",\r\n      \"ProcessName\": \"ExcelOrderImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa5555cc-004\",\r\n      \"JobKey\": \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-30T06:00:08.900Z\",\r\n      \"Message\": \"Excel Application Scope: orders-inbound.xlsx — workbook open failed: target file is locked. Host: MOCK-HOST. Lock holder: EXCEL.EXE PID 7312, session 0 (Robot session UIPATH\\\\AUTOMATION1), NO main window — orphan instance (not a logged-in user's Excel). Orphan originated from job ga5550000-cccc-dddd-eeee-ffffaaaabbbb (ExcelOrderImport, Faulted 2026-05-29T22:04:11 mid-scope; the Robot session was force-terminated and EXCEL.EXE was left running, still holding the workbook handle). The file itself is well-formed (opens read-only from a copy) and is not password protected.\",\r\n      \"ProcessName\": \"ExcelOrderImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa5555cc-005\",\r\n      \"JobKey\": \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-30T06:00:09.850Z\",\r\n      \"Message\": \"Excel Application Scope: orders-inbound.xlsx — UiPath.Excel.BusinessException: Failed opening the Excel file. Possible reasons: file is corrupt, already used by another process or password protected. Inner: COMException 0x800A03EC (Microsoft Excel cannot access the file; in use by another process).\",\r\n      \"ProcessName\": \"ExcelOrderImport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f00fffff-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"OrderImports\",\r\n      \"FullyQualifiedName\": \"OrderImports\",\r\n      \"Description\": \"Folder for the inbound order-import automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6110055,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

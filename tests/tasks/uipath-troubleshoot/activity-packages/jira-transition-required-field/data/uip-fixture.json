@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"5a05a2b3-d4e5-4f60-8a05-000000000005\",\r\n      \"Name\": \"Service Desk\",\r\n      \"Path\": \"Service Desk\",\r\n      \"Description\": \"Production folder for Jira ticket-closing processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,22 +13,9 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"5b05c3d4-e5f6-4071-9b05-000000000005\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"JiraTicketCloser\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-16T15:40:02.110Z\",\r\n      \"EndTime\": \"2026-06-16T15:40:03.860Z\",\r\n      \"CreationTime\": \"2026-06-16T15:40:01.700Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "5b05c3d4-e5f6-4071-9b05-000000000005",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"5b05c3d4-e5f6-4071-9b05-000000000005\",\r\n    \"StartTime\": \"2026-06-16T15:40:02.110Z\",\r\n    \"EndTime\": \"2026-06-16T15:40:03.860Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"5c05d4e5-f6a7-4182-9c05-000000000005\",\r\n    \"Info\": \"Transition Issue: Response status code does not indicate success: 400 (Bad Request). {\\\"errorMessages\\\":[],\\\"errors\\\":{\\\"resolution\\\":\\\"Field 'resolution' is required\\\"}}\\r\\n\\r\\nin Main.xaml\\r\\n    at JiraApplicationScope \\\"Jira Scope\\\"\\r\\n    at TransitionIssue \\\"Transition Issue\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Jira.Activities.JiraException: Field 'resolution' is required\",\r\n    \"CreationTime\": \"2026-06-16T15:40:01.700Z\",\r\n    \"ReleaseName\": \"JiraTicketCloser\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 8013305,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"5a05a2b3-d4e5-4f60-8a05-000000000005\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-16T15:40:03.860Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"5b05c3d4-e5f6-4071-9b05-000000000005\",\r\n    \"Id\": 813305205\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -53,9 +28,22 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T15:40:03.730Z\",\r\n      \"Message\": \"[Transition Issue] Response status code does not indicate success: 400 (Bad Request). {\\\"errorMessages\\\":[],\\\"errors\\\":{\\\"resolution\\\":\\\"Field 'resolution' is required\\\"}}\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T15:40:03.810Z\",\r\n      \"Message\": \"UiPath.Jira.Activities.JiraException: Field 'resolution' is required\\r\\nin Main.xaml\\r\\n    at JiraApplicationScope \\\"Jira Scope\\\"\\r\\n    at TransitionIssue \\\"Transition Issue\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "5b05c3d4-e5f6-4071-9b05-000000000005",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"5b05c3d4-e5f6-4071-9b05-000000000005\",\r\n    \"StartTime\": \"2026-06-16T15:40:02.110Z\",\r\n    \"EndTime\": \"2026-06-16T15:40:03.860Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"5c05d4e5-f6a7-4182-9c05-000000000005\",\r\n    \"Info\": \"Transition Issue: Response status code does not indicate success: 400 (Bad Request). {\\\"errorMessages\\\":[],\\\"errors\\\":{\\\"resolution\\\":\\\"Field 'resolution' is required\\\"}}\\r\\n\\r\\nin Main.xaml\\r\\n    at JiraApplicationScope \\\"Jira Scope\\\"\\r\\n    at TransitionIssue \\\"Transition Issue\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Jira.Activities.JiraException: Field 'resolution' is required\",\r\n    \"CreationTime\": \"2026-06-16T15:40:01.700Z\",\r\n    \"ReleaseName\": \"JiraTicketCloser\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 8013305,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"5a05a2b3-d4e5-4f60-8a05-000000000005\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-16T15:40:03.860Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"5b05c3d4-e5f6-4071-9b05-000000000005\",\r\n    \"Id\": 813305205\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -66,9 +54,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-06-16T15:40:02.300Z\",\r\n      \"Message\": \"JiraTicketCloser execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-16T15:40:03.050Z\",\r\n      \"Message\": \"Jira Scope: session opened to https://acme.atlassian.net (Authentication Type: Api Token)\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-16T15:40:03.520Z\",\r\n      \"Message\": \"Transition Issue: transitioning issue OPS-1530 to 'Done'\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T15:40:03.730Z\",\r\n      \"Message\": \"[Transition Issue] Response status code does not indicate success: 400 (Bad Request). {\\\"errorMessages\\\":[],\\\"errors\\\":{\\\"resolution\\\":\\\"Field 'resolution' is required\\\"}}\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-16T15:40:03.810Z\",\r\n      \"Message\": \"UiPath.Jira.Activities.JiraException: Field 'resolution' is required\\r\\nin Main.xaml\\r\\n    at JiraApplicationScope \\\"Jira Scope\\\"\\r\\n    at TransitionIssue \\\"Transition Issue\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-06-16T15:40:03.860Z\",\r\n      \"Message\": \"JiraTicketCloser execution ended\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"5a05a2b3-d4e5-4f60-8a05-000000000005\",\r\n      \"Name\": \"Service Desk\",\r\n      \"Path\": \"Service Desk\",\r\n      \"Description\": \"Production folder for Jira ticket-closing processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

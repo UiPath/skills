@@ -4,10 +4,22 @@
     {
       "argv": [
         "or",
+        "jobs",
+        "logs",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-20T08:03:14.870Z\",\r\n      \"Message\": \"InvoicePortalSubmit execution ended with an error: Enter invoice number: Method not found: 'Void UiPath.UIAutomationNext.Activities.NTypeInto.set_DelayBetweenKeys(System.Activities.InArgument`1<System.Int32>)'.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"6a0d3f92-4c81-4e57-9b28-1f5a0c8e3d67\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c4f18b20-5d0e-4a39-b16f-3e7c9d2a5b81\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,7 +29,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f7a2e5c8-9d31-4b62-a074-6c1e3f9b2d58\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoicePortalSubmit\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"StartTime\": \"2026-07-20T08:03:11.410Z\",\r\n      \"EndTime\": \"2026-07-20T08:03:14.980Z\",\r\n      \"CreationTime\": \"2026-07-20T08:03:11.410Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
     },
@@ -25,21 +37,9 @@
       "argv": [
         "or",
         "jobs",
-        "logs",
-        "--level",
-        "Error"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-20T08:03:14.870Z\",\r\n      \"Message\": \"InvoicePortalSubmit execution ended with an error: Enter invoice number: Method not found: 'Void UiPath.UIAutomationNext.Activities.NTypeInto.set_DelayBetweenKeys(System.Activities.InArgument`1<System.Int32>)'.\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
         "logs"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-20T08:03:14.870Z\",\r\n      \"Message\": \"InvoicePortalSubmit execution ended with an error: Enter invoice number: Method not found: 'Void UiPath.UIAutomationNext.Activities.NTypeInto.set_DelayBetweenKeys(System.Activities.InArgument`1<System.Int32>)'.\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-07-20T08:03:12.640Z\",\r\n      \"Message\": \"Invoice submission started\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-07-20T08:03:11.980Z\",\r\n      \"Message\": \"InvoicePortalSubmit execution started\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -49,7 +49,7 @@
         "jobs",
         "history"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-20T08:03:14.980Z\",\r\n      \"JobId\": 67023456\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-20T08:03:11.980Z\",\r\n      \"JobId\": 67023456\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -59,7 +59,7 @@
         "jobs",
         "traces"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
     },
@@ -69,7 +69,7 @@
         "jobs",
         "get"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"f7a2e5c8-9d31-4b62-a074-6c1e3f9b2d58\",\r\n    \"StartTime\": \"2026-07-20T08:03:11.410Z\",\r\n    \"EndTime\": \"2026-07-20T08:03:14.980Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"Info\": \"Job faulted\",\r\n    \"CreationTime\": \"2026-07-20T08:03:11.410Z\",\r\n    \"ReleaseName\": \"InvoicePortalSubmit\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"OutputArguments\": null,\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"c4f18b20-5d0e-4a39-b16f-3e7c9d2a5b81\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\svc_robot\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"LastModificationTime\": \"2026-07-20T08:03:14.980Z\",\r\n    \"JobError\": {\r\n      \"Type\": \"System.MissingMethodException\",\r\n      \"Message\": \"Enter invoice number: Method not found: 'Void UiPath.UIAutomationNext.Activities.NTypeInto.set_DelayBetweenKeys(System.Activities.InArgument`1<System.Int32>)'.\",\r\n      \"RuleId\": null\r\n    },\r\n    \"ErrorCode\": null,\r\n    \"TraceId\": \"f7a2e5c89d314b62a0746c1e3f9b2d58\",\r\n    \"Id\": 67023456\r\n  }\r\n}\r\n"
     }

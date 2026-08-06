@@ -4,18 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list",
-        "--output",
-        "json"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0077777-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"DirectoryOps\",\r\n      \"FullyQualifiedName\": \"DirectoryOps\",\r\n      \"Description\": \"Folder for HR directory-sync automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6070001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -25,7 +13,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"StartTime\": \"2026-05-26T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-26T08:00:04.812Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelDirectoryProcess\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"WeeklyDirectoryA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0077777-3333-4444-5555-666677778888\",\r\n      \"Info\": \"System.Runtime.InteropServices.COMException (0x800A03EC): Application-defined or object-defined error.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -38,7 +26,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"StartTime\": \"2026-05-26T08:00:01.300Z\",\r\n    \"EndTime\": \"2026-05-26T08:00:04.812Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9ee33333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Info\": \"System.Runtime.InteropServices.COMException (0x800A03EC): Application-defined or object-defined error.\\r\\n   at System.RuntimeType.InvokeMember(String name, BindingFlags bindingFlags, Binder binder, Object target, Object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParams)\\r\\n   at Microsoft.Office.Interop.Excel.Range.set_Value(Object RangeValueDataType, Object value)\\r\\n   at UiPath.Excel.Activities.Business.WriteRangeX.WriteCellBlock(Range target, DataTable source)\\r\\n   at UiPath.Excel.Activities.Business.WriteRangeX.OnExecute(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-26T08:00:01.005Z\",\r\n    \"ReleaseName\": \"ExcelDirectoryProcess\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5680701,\r\n    \"OrganizationUnitId\": 6070001,\r\n    \"FolderKey\": \"f0077777-3333-4444-5555-666677778888\",\r\n    \"Reference\": \"WeeklyDirectoryA\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-26T08:00:04.812Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"COMException\",\r\n      \"ActivityName\": \"WriteRange_1\",\r\n      \"ActivityDisplayName\": \"Write Range: employee directory\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Id\": 680799001\r\n  }\r\n}\r\n"
     },
@@ -51,7 +39,7 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\"Key\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Pending\", \"Timestamp\": \"2026-05-26T08:00:01.005Z\"},\r\n    {\"Key\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Running\", \"Timestamp\": \"2026-05-26T08:00:01.300Z\"},\r\n    {\"Key\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Faulted\", \"Timestamp\": \"2026-05-26T08:00:04.812Z\"}\r\n  ]\r\n}\r\n"
     },
@@ -64,9 +52,21 @@
         "--output",
         "json"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-ee3333cc-001\",\r\n      \"JobKey\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-26T08:00:01.310Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ExcelDirectoryProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee3333cc-002\",\r\n      \"JobKey\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-26T08:00:01.418Z\",\r\n      \"Message\": \"[ExcelDirectoryProcess] Scraping employee names from HR system and writing directory to C:\\\\Robot\\\\Data\\\\directory.xlsx\",\r\n      \"ProcessName\": \"ExcelDirectoryProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee3333cc-003\",\r\n      \"JobKey\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-26T08:00:02.010Z\",\r\n      \"Message\": \"Invoke: ScrapeHRDirectory.xaml — returned dtEmployees with 312 rows, 5 columns (Id, FullName, Department, Email, Title)\",\r\n      \"ProcessName\": \"ExcelDirectoryProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee3333cc-004\",\r\n      \"JobKey\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-26T08:00:02.510Z\",\r\n      \"Message\": \"Use Excel File: directory.xlsx — workbook opened (COM provider; OpenXML fallback declined due to cell-format requirements)\",\r\n      \"ProcessName\": \"ExcelDirectoryProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee3333cc-005\",\r\n      \"JobKey\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-26T08:00:02.810Z\",\r\n      \"Message\": \"Write Range: employee directory — resolved config Sheet='Directory' StartingCell='A1' ExcludeHeaders=False DataTable='dtEmployees' (rows=312 cols=5)\",\r\n      \"ProcessName\": \"ExcelDirectoryProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee3333cc-006\",\r\n      \"JobKey\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-26T08:00:03.610Z\",\r\n      \"Message\": \"Write Range: employee directory — marshalling DataTable to Excel COM range A1:E313 (header row + 312 data rows)\",\r\n      \"ProcessName\": \"ExcelDirectoryProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee3333cc-007\",\r\n      \"JobKey\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-26T08:00:04.310Z\",\r\n      \"Message\": \"Write Range: employee directory — COM Range.set_Value rejected cell B44: source row 43 (0-indexed 42) column 'FullName' has value '=Smith, John' (leading '=' interpreted as malformed formula by Excel)\",\r\n      \"ProcessName\": \"ExcelDirectoryProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee3333cc-008\",\r\n      \"JobKey\": \"ee333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-26T08:00:04.802Z\",\r\n      \"Message\": \"Write Range: employee directory — System.Runtime.InteropServices.COMException (0x800A03EC): Application-defined or object-defined error.\",\r\n      \"ProcessName\": \"ExcelDirectoryProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0077777-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"DirectoryOps\",\r\n      \"FullyQualifiedName\": \"DirectoryOps\",\r\n      \"Description\": \"Folder for HR directory-sync automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6070001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
     }
   ],
   "default": {

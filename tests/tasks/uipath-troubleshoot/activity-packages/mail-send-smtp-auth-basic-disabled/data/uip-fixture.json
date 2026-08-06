@@ -4,10 +4,22 @@
     {
       "argv": [
         "or",
+        "jobs",
+        "logs",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-05T05:00:02.760Z\", \"Message\": \"[Send SMTP Mail Message] Server rejected authentication: 535 5.7.139 Authentication unsuccessful, the request did not meet the criteria to be authenticated successfully. Contact your administrator. [basic authentication is disabled]\" },\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-05T05:00:02.900Z\", \"Message\": \"Send SMTP Mail Message: Failure sending mail.\\r\\nin Main.xaml\\r\\n    at SmtpSendMail \\\"Send SMTP Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 535 5.7.139 Authentication unsuccessful ... [basic authentication is disabled]\" }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
         "folders",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d3e4f5a6-7182-4b93-9c4d-5e6f70819304\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the finance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"a1b2c3d4-5e6f-4071-8293-a4b5c6d7e8f9\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -17,7 +29,7 @@
         "jobs",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"a4b5c6d7-8293-4c04-9d5e-6f7081920415\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"AutomatedBillingNotifier\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-05T05:00:00.180Z\",\r\n      \"EndTime\": \"2026-06-05T05:00:03.010Z\",\r\n      \"CreationTime\": \"2026-06-05T04:59:59.910Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": { \"Returned\": 1, \"Limit\": 50, \"Offset\": 0, \"HasMore\": false }\r\n}\r\n"
     },
@@ -25,21 +37,9 @@
       "argv": [
         "or",
         "jobs",
-        "logs",
-        "--level",
-        "Error"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-05T05:00:02.760Z\", \"Message\": \"[Send SMTP Mail Message] Server rejected authentication: 535 5.7.139 Authentication unsuccessful, the request did not meet the criteria to be authenticated successfully. Contact your administrator. [basic authentication is disabled]\" },\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-05T05:00:02.900Z\", \"Message\": \"Send SMTP Mail Message: Failure sending mail.\\r\\nin Main.xaml\\r\\n    at SmtpSendMail \\\"Send SMTP Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 535 5.7.139 Authentication unsuccessful ... [basic authentication is disabled]\" }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
         "logs"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    { \"Level\": \"Info\", \"TimeStamp\": \"2026-06-05T05:00:00.220Z\", \"Message\": \"Execution started\" },\r\n    { \"Level\": \"Trace\", \"TimeStamp\": \"2026-06-05T05:00:01.020Z\", \"Message\": \"[Send SMTP Mail Message] Connecting to smtp.office365.com:587 (SecureConnection=StartTls)\" },\r\n    { \"Level\": \"Trace\", \"TimeStamp\": \"2026-06-05T05:00:01.640Z\", \"Message\": \"[Send SMTP Mail Message] STARTTLS negotiated; authenticating as svc-billing@contoso-test.com (Basic Auth / AUTH LOGIN)\" },\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-05T05:00:02.760Z\", \"Message\": \"[Send SMTP Mail Message] Server rejected authentication: 535 5.7.139 Authentication unsuccessful, the request did not meet the criteria to be authenticated successfully. Contact your administrator. [basic authentication is disabled]\" },\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-05T05:00:02.900Z\", \"Message\": \"Send SMTP Mail Message: Failure sending mail.\\r\\nin Main.xaml\\r\\n    at SmtpSendMail \\\"Send SMTP Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 535 5.7.139 Authentication unsuccessful ... [basic authentication is disabled]\" },\r\n    { \"Level\": \"Info\", \"TimeStamp\": \"2026-06-05T05:00:02.990Z\", \"Message\": \"Execution ended in: 00:00:03\" }\r\n  ]\r\n}\r\n"
     },
@@ -49,7 +49,7 @@
         "jobs",
         "get"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"a4b5c6d7-8293-4c04-9d5e-6f7081920415\",\r\n    \"StartTime\": \"2026-06-05T05:00:00.180Z\",\r\n    \"EndTime\": \"2026-06-05T05:00:03.010Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"b5c6d7e8-9304-4d15-8e6f-708192a30516\",\r\n    \"Info\": \"Send SMTP Mail Message: Failure sending mail.\\r\\n\\r\\nin Main.xaml\\r\\n    at SmtpSendMail \\\"Send SMTP Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Net.Mail.SmtpException: The SMTP server requires a secure connection or the client was not authenticated. The server response was: 535 5.7.139 Authentication unsuccessful, the request did not meet the criteria to be authenticated successfully. Contact your administrator. [basic authentication is disabled]\",\r\n    \"CreationTime\": \"2026-06-05T04:59:59.910Z\",\r\n    \"ReleaseName\": \"AutomatedBillingNotifier\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 6051407,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"d3e4f5a6-7182-4b93-9c4d-5e6f70819304\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-05T05:00:03.010Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"a4b5c6d7-8293-4c04-9d5e-6f7081920415\",\r\n    \"Id\": 682611995\r\n  }\r\n}\r\n"
     }

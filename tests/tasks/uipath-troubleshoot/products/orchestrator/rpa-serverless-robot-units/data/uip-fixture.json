@@ -4,16 +4,6 @@
     {
       "argv": [
         "or",
-        "folders",
-        "list"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f3a30003-0000-4000-8000-000000000003\",\r\n      \"Name\": \"Cloud Robots\",\r\n      \"Path\": \"Cloud Robots\",\r\n      \"Description\": \"Serverless cloud-robot automations.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c1d2e3f4-a5b6-4c78-9d0e-1f2a3b4c5d6f\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
         "jobs",
         "list",
         "--folder-key",
@@ -21,54 +11,9 @@
         "--state",
         "Faulted"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c3930001-3333-4333-8333-333333333333\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceParse\",\r\n      \"ReleaseName\": \"InvoiceParse\",\r\n      \"StartTime\": \"2026-07-19T14:22:11.000Z\",\r\n      \"EndTime\": \"2026-07-19T14:22:11.300Z\",\r\n      \"CreationTime\": \"2026-07-19T14:22:10.700Z\",\r\n      \"HostMachineName\": null,\r\n      \"Type\": \"Unattended\",\r\n      \"RuntimeType\": \"Serverless\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--folder-key",
-        "f3a30003-0000-4000-8000-000000000003"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c3930001-3333-4333-8333-333333333333\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceParse\",\r\n      \"ReleaseName\": \"InvoiceParse\",\r\n      \"StartTime\": \"2026-07-19T14:22:11.000Z\",\r\n      \"EndTime\": \"2026-07-19T14:22:11.300Z\",\r\n      \"CreationTime\": \"2026-07-19T14:22:10.700Z\",\r\n      \"HostMachineName\": null,\r\n      \"Type\": \"Unattended\",\r\n      \"RuntimeType\": \"Serverless\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list",
-        "--state",
-        "Faulted"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c3930001-3333-4333-8333-333333333333\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceParse\",\r\n      \"ReleaseName\": \"InvoiceParse\",\r\n      \"StartTime\": \"2026-07-19T14:22:11.000Z\",\r\n      \"EndTime\": \"2026-07-19T14:22:11.300Z\",\r\n      \"CreationTime\": \"2026-07-19T14:22:10.700Z\",\r\n      \"HostMachineName\": null,\r\n      \"Type\": \"Unattended\",\r\n      \"RuntimeType\": \"Serverless\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "list"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c3930001-3333-4333-8333-333333333333\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceParse\",\r\n      \"ReleaseName\": \"InvoiceParse\",\r\n      \"StartTime\": \"2026-07-19T14:22:11.000Z\",\r\n      \"EndTime\": \"2026-07-19T14:22:11.300Z\",\r\n      \"CreationTime\": \"2026-07-19T14:22:10.700Z\",\r\n      \"HostMachineName\": null,\r\n      \"Type\": \"Unattended\",\r\n      \"RuntimeType\": \"Serverless\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
-    },
-    {
-      "argv": [
-        "or",
-        "jobs",
-        "get",
-        "c3930001-3333-4333-8333-333333333333"
-      ],
-      "match_mode": "normalized",
-      "exit_code": 0,
-      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c3930001-3333-4333-8333-333333333333\",\r\n    \"StartTime\": \"2026-07-19T14:22:11.000Z\",\r\n    \"EndTime\": \"2026-07-19T14:22:11.300Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 50,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"Info\": \"Automation cannot be started. Your tenant's assigned Robot Units have been exceeded. Allocate more Robot Units to your tenant to continue.\",\r\n    \"CreationTime\": \"2026-07-19T14:22:10.700Z\",\r\n    \"ReleaseName\": \"InvoiceParse\",\r\n    \"Type\": \"Unattended\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": null,\r\n    \"RuntimeType\": \"Serverless\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"FolderKey\": \"f3a30003-0000-4000-8000-000000000003\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LastModificationTime\": \"2026-07-19T14:22:11.300Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c3930001333343338333333333333333\",\r\n    \"Id\": 671550303\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -79,9 +24,44 @@
         "--level",
         "Error"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-19T14:22:11.250Z\",\r\n      \"Message\": \"Automation cannot be started. Your tenant's assigned Robot Units have been exceeded. Allocate more Robot Units to your tenant to continue.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f3a30003-0000-4000-8000-000000000003"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c3930001-3333-4333-8333-333333333333\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceParse\",\r\n      \"ReleaseName\": \"InvoiceParse\",\r\n      \"StartTime\": \"2026-07-19T14:22:11.000Z\",\r\n      \"EndTime\": \"2026-07-19T14:22:11.300Z\",\r\n      \"CreationTime\": \"2026-07-19T14:22:10.700Z\",\r\n      \"HostMachineName\": null,\r\n      \"Type\": \"Unattended\",\r\n      \"RuntimeType\": \"Serverless\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c3930001-3333-4333-8333-333333333333\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceParse\",\r\n      \"ReleaseName\": \"InvoiceParse\",\r\n      \"StartTime\": \"2026-07-19T14:22:11.000Z\",\r\n      \"EndTime\": \"2026-07-19T14:22:11.300Z\",\r\n      \"CreationTime\": \"2026-07-19T14:22:10.700Z\",\r\n      \"HostMachineName\": null,\r\n      \"Type\": \"Unattended\",\r\n      \"RuntimeType\": \"Serverless\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "c3930001-3333-4333-8333-333333333333"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c3930001-3333-4333-8333-333333333333\",\r\n    \"StartTime\": \"2026-07-19T14:22:11.000Z\",\r\n    \"EndTime\": \"2026-07-19T14:22:11.300Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 50,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"Info\": \"Automation cannot be started. Your tenant's assigned Robot Units have been exceeded. Allocate more Robot Units to your tenant to continue.\",\r\n    \"CreationTime\": \"2026-07-19T14:22:10.700Z\",\r\n    \"ReleaseName\": \"InvoiceParse\",\r\n    \"Type\": \"Unattended\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": null,\r\n    \"RuntimeType\": \"Serverless\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"FolderKey\": \"f3a30003-0000-4000-8000-000000000003\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LastModificationTime\": \"2026-07-19T14:22:11.300Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c3930001333343338333333333333333\",\r\n    \"Id\": 671550303\r\n  }\r\n}\r\n"
     },
     {
       "argv": [
@@ -90,7 +70,7 @@
         "logs",
         "c3930001-3333-4333-8333-333333333333"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-19T14:22:11.250Z\",\r\n      \"Message\": \"Automation cannot be started. Your tenant's assigned Robot Units have been exceeded. Allocate more Robot Units to your tenant to continue.\"\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -101,7 +81,7 @@
         "history",
         "c3930001-3333-4333-8333-333333333333"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-19T14:22:11.300Z\",\r\n      \"JobId\": 671550303\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-07-19T14:22:10.740Z\",\r\n      \"JobId\": 671550303\r\n    }\r\n  ]\r\n}\r\n"
     },
@@ -112,9 +92,29 @@
         "list",
         "--all-fields"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"MachineList\",\r\n  \"Data\": [],\r\n  \"Pagination\": {\r\n    \"Returned\": 0,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f3a30003-0000-4000-8000-000000000003\",\r\n      \"Name\": \"Cloud Robots\",\r\n      \"Path\": \"Cloud Robots\",\r\n      \"Description\": \"Serverless cloud-robot automations.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c1d2e3f4-a5b6-4c78-9d0e-1f2a3b4c5d6f\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c3930001-3333-4333-8333-333333333333\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoiceParse\",\r\n      \"ReleaseName\": \"InvoiceParse\",\r\n      \"StartTime\": \"2026-07-19T14:22:11.000Z\",\r\n      \"EndTime\": \"2026-07-19T14:22:11.300Z\",\r\n      \"CreationTime\": \"2026-07-19T14:22:10.700Z\",\r\n      \"HostMachineName\": null,\r\n      \"Type\": \"Unattended\",\r\n      \"RuntimeType\": \"Serverless\",\r\n      \"Source\": \"Manual\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
     },
     {
       "argv": [
@@ -122,7 +122,7 @@
         "machines",
         "list"
       ],
-      "match_mode": "normalized",
+      "match_mode": "subset",
       "exit_code": 0,
       "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"MachineList\",\r\n  \"Data\": [],\r\n  \"Pagination\": {\r\n    \"Returned\": 0,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
     }
