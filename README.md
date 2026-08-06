@@ -142,7 +142,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 
 ## Multi-Tool Support
 
-This repository works with **Claude Code**, **Google Gemini CLI**, **OpenAI Codex CLI**, and **Cursor IDE**.
+This repository works with **Claude Code**, **Google Gemini CLI**, **OpenAI Codex CLI**, **Cursor IDE**, and **Microsoft 365 Copilot Cowork**.
 
 ### Claude Code
 
@@ -194,6 +194,18 @@ The marketplace entry currently uses a `plugins/uipath` symlink so Codex can loa
 ### Cursor IDE
 
 Project rules are provided in `.cursor/rules/` and are automatically loaded by Cursor.
+
+### Microsoft 365 Copilot Cowork
+
+Microsoft 365 Copilot Cowork (not GitHub Copilot) accepts Agent Skills and Microsoft 365 plugin packages. Export Cowork-compatible artifacts with:
+
+```bash
+python scripts/export-cowork.py --output dist/cowork
+```
+
+Use the repeatable `--skill uipath-agents` option for a focused export and `--force` to replace an intact prior exporter-owned output. The exporter writes per-skill archives to `skills/<name>.skill`, plugin ZIPs sharded at 20 skills to `plugins/uipath-skills-cowork-<NN>.zip`, and an export report to `report.json`. It consolidates references to meet Cowork's 20-companion limit and adds explicit `When Not to Use`, `Safety and Guardrails`, and `Failure Handling` guidance to generated skill instructions.
+
+Cowork validation is manual: upload a `.skill` from **Customize > Skills > Upload skill**, wait for it to sync, and test it in a new conversation. A Cowork-enabled Microsoft 365 work account and tenant usage-based billing/Copilot Credits are required. See [Exporting skills for Microsoft 365 Copilot Cowork](docs/copilot-cowork.md) for prerequisites, runtime limitations, and the acceptance matrix.
 
 ## Contributing
 
