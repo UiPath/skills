@@ -1,0 +1,28 @@
+name: Test Copilot Cowork Export
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+      - 'scripts/export-cowork.py'
+      - 'tests/scripts/test_export_cowork.py'
+      - 'package.json'
+      - '.github/workflows/test-cowork-export.yml'
+  workflow_dispatch:
+
+jobs:
+  pytest-cowork-export:
+    runs-on: ubuntu-latest
+    name: Copilot Cowork export contract
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run Cowork export tests
+        run: pytest tests/scripts/test_export_cowork.py -v
