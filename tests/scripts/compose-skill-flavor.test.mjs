@@ -1110,6 +1110,27 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
     "publish-studioweb-preview",
   );
 
+  assert.match(
+    defaultWorkflow,
+    /^  group: publish-\$\{\{ github\.event_name == 'workflow_dispatch' && github\.event\.inputs\.channel \|\| \(github\.ref == 'refs\/heads\/main' && 'dev' \|\| 'preview'\) \}\}$/m,
+  );
+  const concurrencyGroup = ({ eventName, ref, channel }) =>
+    `publish-${
+      eventName === "workflow_dispatch"
+        ? channel
+        : ref === "refs/heads/main"
+          ? "dev"
+          : "preview"
+    }`;
+  assert.equal(
+    concurrencyGroup({ eventName: "push", ref: "refs/heads/main" }),
+    concurrencyGroup({ eventName: "workflow_dispatch", channel: "dev" }),
+  );
+  assert.equal(
+    concurrencyGroup({ eventName: "push", ref: "refs/heads/release/v1.200" }),
+    concurrencyGroup({ eventName: "workflow_dispatch", channel: "preview" }),
+  );
+
   assert.match(publishDev, /^\s*run:\s*npm publish --tag dev\s*$/m);
   assert.match(
     publishNpmjs,
