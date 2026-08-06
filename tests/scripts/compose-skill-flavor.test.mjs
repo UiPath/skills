@@ -43,11 +43,11 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SCRIPT = join(REPO_ROOT, "scripts", "compose-skill-flavor.mjs");
 const LIFECYCLE_DRIVER = join(REPO_ROOT, "scripts", "npm-package-lifecycle.mjs");
 const DEFAULT_PUBLISH_WORKFLOW = join(REPO_ROOT, ".github", "workflows", "publish.yml");
-const STUDIOWEB_PUBLISH_WORKFLOW = join(
+const FLAVOR_PUBLISH_WORKFLOW = join(
   REPO_ROOT,
   ".github",
   "workflows",
-  "publish-studioweb.yml",
+  "publish-skill-flavor.yml",
 );
 const SELECT_SKILL_PACKAGE_SCRIPT = join(
   REPO_ROOT,
@@ -682,6 +682,10 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
   const byVariant = new Map(packages.map((item) => [item.variant, item]));
   assert.equal(byVariant.get("default").packageName, "@uipath/skills");
   assert.equal(
+    byVariant.get("future-host").packageName,
+    "@uipath/skills-future-host",
+  );
+  assert.equal(
     byVariant.get("studioweb").packageName,
     "@uipath/skills-studioweb",
   );
@@ -693,9 +697,23 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
     "default",
   );
   assertMarkerFreeSkillTarball(
+    byVariant.get("future-host").tarball,
+    "@uipath/skills-future-host",
+    "future-host",
+  );
+  assertMarkerFreeSkillTarball(
     byVariant.get("studioweb").tarball,
     "@uipath/skills-studioweb",
     "studioweb",
+  );
+  assert.equal(
+    selectSkillPackage({
+      directory: dirname(byVariant.get("future-host").tarball),
+      packageName: "@uipath/skills-future-host",
+      flavor: "future-host",
+      version: "1.2.3-preview.45",
+    }),
+    byVariant.get("future-host").tarball,
   );
   assert.equal(
     selectSkillPackage({
@@ -1080,9 +1098,9 @@ test("root npm publish dry-run keeps the old default-only behavior and restores 
   assert.ok(!existsSync(join(repo, "build", ROOT_PACK_TRANSACTION_DIRNAME)));
 });
 
-test("publishing workflows isolate root default publishing from Studio Web publishing", () => {
+test("publishing workflows isolate root publishing behind a generic flavor publisher", () => {
   const defaultWorkflow = readFileSync(DEFAULT_PUBLISH_WORKFLOW, "utf8");
-  const studioWebWorkflow = readFileSync(STUDIOWEB_PUBLISH_WORKFLOW, "utf8");
+  const flavorWorkflow = readFileSync(FLAVOR_PUBLISH_WORKFLOW, "utf8");
   const selectorScript = readFileSync(SELECT_SKILL_PACKAGE_SCRIPT, "utf8");
   const publishDev = workflowJob(defaultWorkflow, "publish-dev");
   const publishNpmjs = workflowJob(defaultWorkflow, "publish-npmjs");
@@ -1104,8 +1122,9 @@ test("publishing workflows isolate root default publishing from Studio Web publi
   for (const job of [publishStudioWebDev, publishStudioWebPreview]) {
     assert.match(
       job,
-      /^\s*uses:\s*\.\/\.github\/workflows\/publish-studioweb\.yml\s*$/m,
+      /^\s*uses:\s*\.\/\.github\/workflows\/publish-skill-flavor\.yml\s*$/m,
     );
+    assert.match(job, /^\s*flavor:\s*studioweb\s*$/m);
     assert.match(job, /^\s*packages:\s*write\s*$/m);
     assert.doesNotMatch(job, /npm run skills:pack|npm publish|build\/npm/);
     assert.doesNotMatch(job, /npmjs|id-token\s*:|--provenance/i);
@@ -1115,36 +1134,58 @@ test("publishing workflows isolate root default publishing from Studio Web publi
   assert.match(publishStudioWebPreview, /startsWith\(github\.ref, 'refs\/heads\/release\/'\)/);
   assert.match(publishStudioWebPreview, /^\s*channel:\s*preview\s*$/m);
 
-  assert.match(studioWebWorkflow, /^\s*workflow_call:\s*$/m);
-  assert.match(studioWebWorkflow, /https:\/\/npm\.pkg\.github\.com/);
-  assert.match(studioWebWorkflow, /^\s*packages:\s*write\s*$/m);
-  assert.match(studioWebWorkflow, /^\s*run:\s*npm run skills:pack\s*$/m);
+  assert.doesNotMatch(defaultWorkflow, /publish-studioweb\.yml/);
+
+  assert.match(flavorWorkflow, /^\s*workflow_call:\s*$/m);
+  const workflowInputs = flavorWorkflow.match(
+    /^ {4}inputs:\s*\n(?<body>[\s\S]*?)^permissions:/m,
+  )?.groups?.body;
+  assert.ok(workflowInputs, "generic flavor workflow must declare workflow_call inputs");
+  assert.deepEqual(
+    [...workflowInputs.matchAll(/^ {6}([a-z][a-z0-9_-]*):\s*$/gm)].map(
+      (match) => match[1],
+    ),
+    ["flavor", "channel"],
+  );
+  assert.match(flavorWorkflow, /FLAVOR:\s*\$\{\{ inputs\.flavor \}\}/);
+  assert.match(flavorWorkflow, /https:\/\/npm\.pkg\.github\.com/);
+  assert.match(flavorWorkflow, /^\s*packages:\s*write\s*$/m);
+  assert.match(flavorWorkflow, /^\s*run:\s*npm run skills:pack\s*$/m);
   assert.doesNotMatch(
-    studioWebWorkflow,
+    flavorWorkflow,
     /npmjs|id-token\s*:|--provenance/i,
   );
-  assert.match(studioWebWorkflow, /NODE_AUTH_TOKEN:\s*\$\{\{ secrets\.GITHUB_TOKEN \}\}/);
+  assert.match(flavorWorkflow, /NODE_AUTH_TOKEN:\s*\$\{\{ secrets\.GITHUB_TOKEN \}\}/);
   assert.match(
-    studioWebWorkflow,
+    flavorWorkflow,
     /RUN_NUMBER:\s*\$\{\{ github\.run_number \}\}/,
   );
   assert.match(
-    studioWebWorkflow,
+    flavorWorkflow,
     /VERSION="\$\{BASE\}-\$\{CHANNEL\}\.\$\{RUN_NUMBER\}"/,
   );
 
-  assert.match(studioWebWorkflow, /@uipath\/skills-studioweb/);
-  assert.match(studioWebWorkflow, /--flavor\s+studioweb/);
-  assert.match(studioWebWorkflow, /node scripts\/select-skill-package\.mjs/);
-  assert.match(studioWebWorkflow, /npm config get @uipath:registry/);
+  assert.match(flavorWorkflow, /Unsupported skill flavor/);
+  assert.match(flavorWorkflow, /\[ "\$FLAVOR" = "default" \]/);
+  assert.match(flavorWorkflow, /skill-flavors\/\$FLAVOR/);
+  assert.match(flavorWorkflow, /import \{ packageName \} from/);
+  assert.match(flavorWorkflow, /packageName\(manifest\.name, process\.env\.FLAVOR\)/);
+  assert.match(flavorWorkflow, /--name "\$PACKAGE_NAME"/);
+  assert.match(flavorWorkflow, /--flavor "\$FLAVOR"/);
+  assert.match(flavorWorkflow, /--version "\$VERSION"/);
+  assert.doesNotMatch(flavorWorkflow, /skills-studioweb|--flavor\s+studioweb/);
+  assert.match(flavorWorkflow, /node scripts\/select-skill-package\.mjs/);
+  assert.match(flavorWorkflow, /npm config get @uipath:registry/);
   assert.match(
-    studioWebWorkflow,
+    flavorWorkflow,
     /\[ "\$REGISTRY" != "https:\/\/npm\.pkg\.github\.com\/" \]/,
   );
   assert.match(
-    studioWebWorkflow,
-    /npm publish "\$\{\{ steps\.package\.outputs\.tarball \}\}" --tag "\$\{\{ inputs\.channel \}\}"/,
+    flavorWorkflow,
+    /TARBALL:\s*\$\{\{ steps\.package\.outputs\.tarball \}\}/,
   );
+  assert.match(flavorWorkflow, /CHANNEL:\s*\$\{\{ inputs\.channel \}\}/);
+  assert.match(flavorWorkflow, /npm publish "\$TARBALL" --tag "\$CHANNEL"/);
 
   assert.match(selectorScript, /manifest\.name !== packageName/);
   assert.match(selectorScript, /manifest\.uipathSkillsFlavor !== flavor/);
@@ -1152,7 +1193,7 @@ test("publishing workflows isolate root default publishing from Studio Web publi
   assert.match(selectorScript, /<!-- skill-flavor:/);
   assert.match(selectorScript, /selected package must not define publishConfig/);
 
-  const publishCommands = studioWebWorkflow
+  const publishCommands = flavorWorkflow
     .split(/\r?\n/)
     .map((line) => line.trim().replace(/^run:\s*/, ""))
     .filter((line) => line.startsWith("npm publish "));

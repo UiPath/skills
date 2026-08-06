@@ -27,7 +27,7 @@ on:
       - 'CONTRIBUTING.md'
       - 'docs/RELEASE.md'
       - '.github/workflows/publish.yml'
-      - '.github/workflows/publish-studioweb.yml'
+      - '.github/workflows/publish-skill-flavor.yml'
       - '.github/workflows/sprint-release-cut.yml'
       - '.github/workflows/scripts/slack-sprint-cut-notify.mjs'
       - '.github/workflows/validate-skill-flavors.yml'

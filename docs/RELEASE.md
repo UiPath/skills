@@ -55,9 +55,9 @@ There is no package registry file. The source directory is the package identity:
 
 The established repository-root commands remain supported. Normal `npm pack` builds exactly one marker-free `@uipath/skills` default tarball, and normal `npm publish` publishes that default package using the caller's registry, tag, access, and provenance flags. A `prepack`/`postpack` transaction temporarily activates the composed default tree and restores the exact canonical `skills/` source afterward. If npm fails or is interrupted between those steps and `build/.root-pack-transaction` remains, confirm the original npm process has ended, run `npm run skills:recover`, and retry. Recovery restores canonical sources; unexpected overlay edits are preserved under `build/.root-pack-recovery-*` and make recovery exit nonzero for explicit review. Do not use `--ignore-scripts` for source-repository packaging because that npm option deliberately bypasses composition. The default jobs in `publish.yml` retain these root `npm publish` commands and never run the all-flavor package loop.
 
-All generated packages use the root `package.json` version. Adding a valid `skill-flavors/<new-flavor>/` directory with at least one sparse override therefore makes `@uipath/skills-<new-flavor>` buildable without changing composer code, npm scripts, or validation CI. It does **not** publish the new package automatically. Each published flavor needs an explicit isolated release path so its registry and channel policy can be reviewed independently.
+All generated packages use the root `package.json` version. Adding a valid `skill-flavors/<new-flavor>/` directory with at least one sparse override therefore makes `@uipath/skills-<new-flavor>` buildable without changing composer code, npm scripts, or validation CI. It does **not** publish the new package automatically. Each published flavor needs an explicit caller and reviewed registry/channel policy; GitHub Packages `dev`/`preview` callers reuse the generic flavor publisher.
 
-Studio Web is the first isolated flavor publisher. `publish.yml` calls `.github/workflows/publish-studioweb.yml` in the same workflow run so both paths derive the same stamped version from `github.run_number`. The called workflow builds all packages but selects exactly one tarball whose manifest has both `name: @uipath/skills-studioweb` and `uipathSkillsFlavor: studioweb`, scans that exact archive for flavor markers, and publishes only the selected path. Studio Web goes only to GitHub Packages: `dev` from `main` and `preview` from `release/v*`; it is never published to npmjs or `latest`.
+Studio Web is the first explicit caller of the generic flavor publisher. `publish.yml` calls `.github/workflows/publish-skill-flavor.yml` with `flavor: studioweb` in the same workflow run so both paths derive the same stamped version from `github.run_number`. The reusable workflow accepts only a flavor and channel, validates the flavor, derives `@uipath/skills-<flavor>` through the composer package-name contract, builds all packages, and selects exactly one tarball with the expected name, flavor, and version. It scans that exact archive for flavor markers and publishes only the selected path. The reusable workflow is GitHub Packages-only and accepts only `dev` or `preview`; Studio Web is never published to npmjs or `latest`.
 
 ## Publishing tracks (`.github/workflows/publish.yml`)
 
@@ -99,7 +99,7 @@ Both released packages are under the **`@uipath` scope**, so the publish target 
 |-----|----------|------|
 | `publish-dev` | GitHub Packages (`npm.pkg.github.com`) | built-in `GITHUB_TOKEN` |
 | `publish-npmjs` | npmjs (`registry.npmjs.org`) | **OIDC trusted publishing** (no token) + signed `--provenance` |
-| `publish-studioweb.yml` / `publish` | GitHub Packages (`npm.pkg.github.com`) only | built-in `GITHUB_TOKEN` |
+| `publish-skill-flavor.yml` / `publish` | GitHub Packages (`npm.pkg.github.com`) only | built-in `GITHUB_TOKEN` |
 
 ## Promoting a line to stable (manual)
 
@@ -135,7 +135,7 @@ Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`
 ## Required setup
 
 - [x] **npmjs Trusted Publishing for the default package** — configure a GitHub Actions trusted publisher on `@uipath/skills` (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the default `publish-npmjs` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
-- [x] **Studio Web registry isolation** — `@uipath/skills-studioweb` is released only through `publish-studioweb.yml` to GitHub Packages with `GITHUB_TOKEN`. It requires no npmjs package, trusted publisher, OIDC permission, or provenance configuration.
+- [x] **Studio Web registry isolation** — the explicit Studio Web jobs call `publish-skill-flavor.yml` with `flavor: studioweb`; the reusable workflow publishes only to GitHub Packages with `GITHUB_TOKEN`. It requires no npmjs package, trusted publisher, OIDC permission, or provenance configuration.
 - [x] Package name/scope confirmed: **`@uipath/skills`** (published).
 - [x] **Version source confirmed** — `package.json` and `version-manifest.json` are authoritative for the current CLI minor line; do not copy a volatile version number into this checklist. The ongoing CLI↔skills lockstep is automated by `sprint-release-cut.yml` (Sunday 06:00 UTC, 6 h before the CLI's own cut, on the same 14-day cadence anchored at `2026-06-14`).
 
