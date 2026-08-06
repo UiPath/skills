@@ -6,6 +6,8 @@ Catalog of frequently found issues in UiPath agent projects, with detection meth
 
 ### Module-Level LLM Instantiation
 
+> *Rule catalog: `CODED_LLM_CLIENT_IMPORT_TIME_INIT` covers this at Step 2.5.*
+
 **Symptom:** LLM client (e.g., `UiPathAzureChatOpenAI()`, `ChatOpenAI()`, `UiPathChat()`) created at module scope, outside any function.
 
 ```python
@@ -79,6 +81,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 **Fix:** Add `@mockable()` to any function that calls an external service. This enables evaluation mocking via `mockito` type mocking strategy.
 
 ### Infinite Graph Cycles
+
+> *Rule catalog: `LANGGRAPH_CYCLE_NO_EXIT` covers this at Step 2.5.*
 
 **Symptom:** LangGraph `StateGraph` has cycles with no exit condition (e.g., always routes back to the same node).
 
@@ -199,6 +203,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 **Fix:** Add test cases for: empty/null inputs, extra-long inputs, special characters, missing required fields, service unavailability, ambiguous requests.
 
 ### Stale Mock Data
+
+> *Rule catalog: `LC_EVAL_MOCK_CONTRACT_DRIFT`, `CODED_EVAL_MOCK_CONTRACT_DRIFT` cover this at Step 2.5.*
 
 **Symptom:** Mock responses in eval sets don't match current tool output schemas or real-world response patterns.
 
