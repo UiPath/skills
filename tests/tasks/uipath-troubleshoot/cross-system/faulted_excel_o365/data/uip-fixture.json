@@ -170,7 +170,7 @@
   ],
   "default": {
     "exit_code": 1,
-    "stderr": "protected mock: command is not configured\n"
+    "stderr": "{\"error\": \"unmocked command\"}\n"
   },
   "expected_calls": [
     {

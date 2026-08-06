@@ -152,7 +152,7 @@ def _build_fixture(manifest_path: Path) -> tuple[dict[str, object], bool]:
     else:
         default = {
             "exit_code": 1,
-            "stderr": "protected mock: command is not configured\n",
+            "stderr": '{"error": "unmocked command"}\n',
         }
 
     fixture: dict[str, object] = {
