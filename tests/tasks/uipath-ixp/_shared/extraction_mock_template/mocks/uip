@@ -1,0 +1,49 @@
+#!/bin/sh
+# Runtime-extraction `uip` mock for the extract_runtime smoke. Overlays the base
+# mock_template (list it SECOND in template_sources so this file wins).
+#
+# The base mock fails EVERY command, so `extraction start` never returns an
+# operationId and the async second step (`extraction get-result <project-id>
+# <operation-id>`) is unreachable for a correct agent — it has no id to pass.
+# This overlay serves canned JSON for the three verbs of the runtime flow so the
+# agent can actually resolve the project Id, start extraction, and fetch the
+# fields. Anything else fails offline like the base mock.
+#
+# Response shapes follow the skill's cli-reference: {Result, Data} envelope;
+# `projects list` Data is the PAGED envelope { Projects[], Total, Offset, Limit }
+# (not a bare array); a finished `get-result` Data is the field-group array
+# (no `status` field). get-result is terminal on the FIRST call — no mock state,
+# so grading is deterministic.
+#
+# LOGGING CONTRACT — keep identical to the base mock: `uip ` prefix, embedded
+# newlines squashed to spaces, one line per invocation. extract_runtime.yaml
+# grades with ANCHORED regexes (`(?m)^uip\s+ixp\s+…`), so dropping the prefix
+# silently fails every criterion.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Data":{"Projects":[{"Id":"3f2a7c58-9d41-4b6e-8c02-5e91a4d7b6f0","Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","CreatedAt":"2026-04-11T08:22:17Z"},{"Id":"a81c40d6-2b73-4f19-90ae-6c5d3e82f174","Name":"expense_reports-9b31c07d-ixp","Title":"Expense Reports","CreatedAt":"2026-03-18T11:02:51Z"}],"Total":2,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp extraction start")
+cat <<'EOF'
+{"Result":"Success","Data":{"operationId":"d94e1b70-6a35-4c82-b1f7-08e3c56a9d24"}}
+EOF
+exit 0
+;;
+"ixp extraction get-result")
+cat <<'EOF'
+{"Result":"Success","Data":[{"fieldGroupName":"Invoice Header","fields":[{"name":"Invoice Number","value":"0118617-IN"},{"name":"Invoice Date","value":"8/4/2018"},{"name":"Vendor Name","value":"York Solutions, LLC"},{"name":"PO Number","value":"NP95125990"},{"name":"Invoice Total","value":"5,600.00"}]},{"fieldGroupName":"Line Items","fields":[{"name":"Consultant","value":"Krishnan Ramamurthy"},{"name":"Hours","value":"40.000"},{"name":"Hourly Rate","value":"140.000"},{"name":"Amount","value":"5,600.00"}]}]}
+EOF
+exit 0
+;;
+esac
+
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1
