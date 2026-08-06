@@ -236,7 +236,7 @@ uip solution pack . ./build --name MyApiSolution --version 1.0.0 --output json
 
 # 6. Publish
 uip login
-uip solution publish ./build/MyApiSolution.zip --tenant MyTenant --output json
+uip solution publish ./build/MyApiSolution_1.0.0.zip --tenant MyTenant --output json   # pack names the zip <name>_<version>.zip
 ```
 
 ## Reference Navigation
