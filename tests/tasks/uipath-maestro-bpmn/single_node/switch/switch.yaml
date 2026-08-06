@@ -77,5 +77,9 @@ success_criteria:
     prompt: >
       Pass if the agent created only local files and did not run or request
       approval for BPMN debug, process run, upload, publish, pack, or deploy
-      commands. Fail if tool calls or the final answer show any cloud-side
-      lifecycle mutation or any request to perform one.
+      commands. Local-only and read-only commands are always acceptable and
+      must NOT fail this check — e.g. `uip maestro bpmn validate` (offline
+      validation of local files), `uip maestro bpmn registry list/get/pull/search`
+      (read-only catalog fetches), and `--help` invocations. Fail only if tool
+      calls or the final answer show a cloud-side lifecycle mutation or a
+      request to perform one.
