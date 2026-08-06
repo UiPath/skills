@@ -1,0 +1,99 @@
+task_id: skill-bpmn-resource-resolution
+description: >
+  Provider-neutral mocked discovery eval: the agent resolves process, queue,
+  and connection binding requests from registry metadata and the active CLI
+  context using a named profile. It must preserve exact folder-scoped
+  identities, refresh stale connection discovery only once, leave an ambiguous
+  connection unresolved, and keep an intent-only HITL request as a portable
+  draft instead of treating RequiresDiscovery as permission to inventory.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:discover", resource, connector, "feature:registry", "feature:connections"]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 35
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  Resolve the pending BPMN resource requests in `binding-requests.json` using
+  the installed `uip` CLI and the `uipath-maestro-bpmn` skill. The CLI is backed
+  by a local test harness.
+
+  Preserve the input schema in `bindings.resolved.json`. For each request, set
+  its status, selected resource (or null), and viable candidates. Populate the
+  active context from the CLI, and use the requested named profile for every
+  live-context command. Do not choose an ambiguous resource implicitly; leave
+  it blocked instead of asking me.
+
+  Process requests marked `portable-draft` first. Retrieve only their known
+  login-free built-in contract, record them as non-runnable drafts, and do not
+  inspect login status or tenant resources for that phase. Only after that
+  phase, resolve the requests marked `live` in the requested context.
+
+  This is read-only discovery. Do not author BPMN, create or edit connections,
+  invoke connector operations, or inspect `mocks/`, `fixtures/`, or response
+  files directly.
+
+success_criteria:
+  - type: run_command
+    description: "Resolved bindings contain exact live identities and preserve the ambiguous connection boundary"
+    command: "python3 $TASK_DIR/check_resource_resolution.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent established the requested named-profile CLI context"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+login\s+status[\s\S]*--profile(?:=|\s+)resource-review'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved authoritative registry binding contracts"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used the exact supplied folder for queue discovery"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+or\s+queues\s+list[\s\S]*--folder-path\s+["'']?Shared/Operations'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scoped exhaustive connection discovery to the registry connector key"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+connections\s+list\s+uipath-neutral-records[\s\S]*--all-folders'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not mutate connections or invoke a connector operation"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(?:is\s+connections\s+(?:create|edit|delete)|is\s+resources\s+run)'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not read mocked response files directly"
+    tool_name: "Bash"
+    command_pattern: '(cat|less|head|tail|grep|rg|find)\s+[\s\S]*(?:mocks/|fixtures/)'
+    weight: 1.0
+    pass_threshold: 1.0

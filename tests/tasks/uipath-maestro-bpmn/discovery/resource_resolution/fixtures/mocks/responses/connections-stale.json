@@ -1,0 +1,5 @@
+{
+  "Result": "Failure",
+  "ErrorCode": "CATALOG_STALE",
+  "Message": "Cached connection metadata is stale; refresh the connection list."
+}

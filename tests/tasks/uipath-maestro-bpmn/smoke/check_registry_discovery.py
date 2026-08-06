@@ -31,10 +31,11 @@ def main() -> None:
         sys.exit("FAIL: registry-evidence directory has no raw JSON files")
 
     body_parts: list[str] = []
+    payloads: list[object] = []
     for path in files:
         try:
             text = path.read_text(encoding="utf-8", errors="ignore")
-            json.loads(text)
+            payloads.append(json.loads(text))
             body_parts.append(text)
         except json.JSONDecodeError as exc:
             sys.exit(f"FAIL: registry evidence file is not valid JSON: {path}: {exc}")
@@ -50,8 +51,34 @@ def main() -> None:
     if missing:
         sys.exit(f"FAIL: registry evidence missing required extension types: {missing}")
 
+    def contains_template(value: object, extension_type: str) -> bool:
+        if isinstance(value, dict):
+            normalized = {str(key).lower(): item for key, item in value.items()}
+            if (
+                normalized.get("extensiontype") == extension_type
+                and isinstance(normalized.get("xmltemplate"), str)
+                and normalized["xmltemplate"].strip()
+            ):
+                return True
+            return any(contains_template(item, extension_type) for item in value.values())
+        if isinstance(value, list):
+            return any(contains_template(item, extension_type) for item in value)
+        return False
+
+    missing_templates = [
+        f"{label} ({token})"
+        for label, token in REQUIRED_TYPES.items()
+        if not any(contains_template(payload, token) for payload in payloads)
+    ]
+    if missing_templates:
+        sys.exit(
+            "FAIL: registry evidence missing populated templates for required "
+            f"extension types: {missing_templates}"
+        )
+
     print(
-        f"OK: registry-evidence covers {', '.join(REQUIRED_TYPES.values())} "
+        f"OK: registry-evidence covers populated templates for "
+        f"{', '.join(REQUIRED_TYPES.values())} "
         f"across {len(files)} raw output files"
     )
 

@@ -1,10 +1,10 @@
 task_id: skill-bpmn-smoke-registry-discovery
 description: >
-  Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to discover
-  Maestro BPMN extension types via the registry CLI (pull, list/search, get)
-  before authoring anything. Tests that the skill teaches the registry-driven
-  discovery loop instead of hand-authoring uipath:* XML from prose.
-tags: [uipath-maestro-bpmn, smoke, "mode:build"]
+  Skill-guided evaluation: agent honors an explicit raw-evidence request for a
+  registry sync, catalog enumeration, and exact built-in templates before
+  authoring anything. Tests that this explicit request overrides the portable
+  built-in shortcut without authorizing live tenant-resource inventory.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:discover", "feature:registry"]
 
 sandbox:
   python: {}
@@ -15,11 +15,12 @@ initial_prompt: |
   uipath-maestro-bpmn skill and use the registry to discover the right
   extension types and their templates.
 
-  Save the raw JSON output of every registry command you run into a
-  `registry-evidence/` directory (one file per command), for example:
-    - `uip maestro bpmn registry pull --output json > registry-evidence/pull.json`
-    - `uip maestro bpmn registry list --output json > registry-evidence/list.json`
-    - `uip maestro bpmn registry get <type> --output json > registry-evidence/get-<type>.json`
+  For this evidence-only request, I explicitly need raw JSON from all three
+  parts of the discovery loop: a registry sync, a complete registry catalog
+  enumeration, and the exact template lookup for each requested built-in type.
+  Save each command's unmodified output in a separate JSON file under
+  `registry-evidence/`. This explicit sync-and-enumeration request applies even
+  though the target types are portable built-ins.
 
   Do not summarize or paraphrase the output — preserve the raw CLI JSON so the
   RPA-job and receive-message extension types and their templates are present in
@@ -41,19 +42,27 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed or searched registry extension types"
+    description: "Agent enumerated the complete registry catalog"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+(list|search)'
+    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+list(?=[^\r\n;&|]*--limit(?:\s+|=)-1(?:\s|$|[;&|]))'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched a template with registry get"
+    description: "Agent fetched the RPA-job template with registry get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+get'
+    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+get\s+Orchestrator\.StartJob(?:\s|$)'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the receive-message template with registry get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+get\s+Maestro\.ReceiveMessageEvent(?:\s|$)'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
