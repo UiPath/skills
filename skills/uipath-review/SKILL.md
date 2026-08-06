@@ -441,7 +441,6 @@ For deep-dive RPA reviews, also consult:
 
 For common antipatterns per project type, also consult:
 - RPA: [rpa-common-issues.md](references/rpa/rpa-common-issues.md)
-- Agents: [agent-common-issues.md](references/agents/agent-common-issues.md)
 - Flows: [flow-common-issues.md](references/flows/flow-common-issues.md)
 
 ### Step 4 — Evaluate Optimization
@@ -645,7 +644,6 @@ This maps the letter to the verdict word only. The agent grade is `min(G_det, G_
 | Review a solution structure (.uipx) | [solution-review-guide.md](references/solution-review-guide.md) |
 | Review an RPA project (coded or XAML) | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) |
 | Find common RPA issues | [rpa-common-issues.md](references/rpa/rpa-common-issues.md) |
-| Find common agent issues | [agent-common-issues.md](references/agents/agent-common-issues.md) |
 | Review a flow project | [flow-review-checklist.md](references/flows/flow-review-checklist.md) |
 | Find common flow issues | [flow-common-issues.md](references/flows/flow-common-issues.md) |
 | Review a Maestro BPMN project (.bpmn) | [bpmn-review-checklist.md](references/bpmn/bpmn-review-checklist.md) |
