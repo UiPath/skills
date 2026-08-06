@@ -28,15 +28,6 @@ ProjectNameSolution/             ← auto-scaffolded when init runs outside a so
     project.uiproj
 ```
 
-With `--skip-solution-registration`, the project lands bare instead, with no
-solution wrapper:
-
-```text
-ProjectName/
-  ProjectName.bpmn
-  project.uiproj
-```
-
 If a **non-empty** directory already exists at the path you typed, init warns
 and leaves it untouched — the project still lands in
 `<ProjectName>Solution/<ProjectName>/`, not the existing directory.
@@ -59,13 +50,10 @@ For the regeneration and drift-check contract, see [local-metadata-regeneration-
 
 ## Package content
 
-A synthetic local project authored without a CLI generator must still match the
-executable and metadata contract before packing: the BPMN root process includes
-`isExecutable="true"`, `project.uiproj` has lowercase `"main"`,
-`operate.json` has `"main"` plus `"contentType": "ProcessOrchestration"`, and
-`package-descriptor.json` has top-level `"content"` entries under `content/`.
-For the exact minimal JSON, see
-[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
+Create the project with `uip maestro bpmn init` and preserve its generated
+files. For solution registration and metadata ownership, see
+[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
+Do not hand-author generated metadata.
 
 A Process Orchestration package content folder contains:
 
@@ -75,7 +63,10 @@ A Process Orchestration package content folder contains:
 - `operate.json`.
 - `package-descriptor.json`.
 
-The package descriptor maps BPMN and generated JSON files under `content/`. The entry point file path references the BPMN file and start event, using the root start event's unique entry point ID.
+The package descriptor's root `files` object maps the BPMN and generated JSON
+files. Entry-point and operate paths use `/content/<file>.bpmn#<start-event-id>`
+to identify the packaged BPMN entry point, using the root start event's unique
+entry-point ID.
 
 ## Authoring boundary
 
