@@ -4,7 +4,10 @@ import { lstatSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { readTarballEntries } from "./compose-skill-flavor.mjs";
+import {
+  CUSTOM_PACKAGE_PUBLISH_CONFIG,
+  readTarballEntries,
+} from "./compose-skill-flavor.mjs";
 
 const MARKER_BYTES = Buffer.from("<!-- skill-flavor:");
 
@@ -85,8 +88,27 @@ export function selectSkillPackage({ directory, packageName, flavor, version }) 
     const entries = readTarballEntries(tarball);
     const manifest = readManifest(entries, tarball);
     if (manifest.name !== packageName || manifest.uipathSkillsFlavor !== flavor) continue;
-    if (flavor !== "default" && Object.hasOwn(manifest, "publishConfig")) {
-      throw new Error(`selected package must not define publishConfig: ${tarball}`);
+    if (flavor !== "default") {
+      const actualPublishConfig = manifest.publishConfig;
+      const hasExactPublishConfig =
+        actualPublishConfig &&
+        typeof actualPublishConfig === "object" &&
+        !Array.isArray(actualPublishConfig) &&
+        Object.keys(actualPublishConfig).length ===
+          Object.keys(CUSTOM_PACKAGE_PUBLISH_CONFIG).length &&
+        Object.entries(CUSTOM_PACKAGE_PUBLISH_CONFIG).every(
+          ([key, value]) => actualPublishConfig[key] === value,
+        );
+      if (!hasExactPublishConfig) {
+        throw new Error(
+          `selected custom package must use the GitHub Packages-only publish policy: ${tarball}`,
+        );
+      }
+      if (Object.hasOwn(manifest, "repository")) {
+        throw new Error(
+          `selected custom package must not define package.json repository: ${tarball}`,
+        );
+      }
     }
     if (manifest.version !== version) {
       throw new Error(

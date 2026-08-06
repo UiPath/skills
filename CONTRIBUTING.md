@@ -300,7 +300,12 @@ automatically. For a flavor that intentionally uses GitHub Packages `dev` or
 `preview`, add an explicit `publish.yml` caller of
 `.github/workflows/publish-skill-flavor.yml` with that flavor and channel; do
 not hardcode a flavor inside the reusable workflow or matrix-publish every
-discovered flavor. If a root package operation fails or is interrupted and
+discovered flavor. Generated custom manifests pin both the default and
+`@uipath` scoped registry to GitHub Packages and omit the
+`package.json.repository` field, but package
+visibility is an independent administrator setting. Complete the Internal
+package bootstrap and publication-gate steps in `docs/RELEASE.md` before
+enabling a new caller. If a root package operation fails or is interrupted and
 `build/.root-pack-transaction` remains, confirm its npm process has ended and
 run `npm run skills:recover`. Unexpected overlay edits are preserved under
 `build/.root-pack-recovery-*` for review. Do not use `--ignore-scripts` for
@@ -444,6 +449,7 @@ Before submitting your PR, verify:
 - [ ] `npm run skills:pack` creates one correctly named tarball per discovered flavor
 - [ ] Root `npm pack` creates one marker-free `@uipath/skills` default tarball and leaves canonical sources unchanged
 - [ ] Root `npm publish --dry-run` selects only the default package and leaves canonical sources unchanged
+- [ ] Custom tarballs pin both default and scoped publication to GitHub Packages and omit `package.json.repository`
 - [ ] Built trees, staged packages, and actual tarballs contain no flavor marker comments or sparse override sources
 
 ### Tests

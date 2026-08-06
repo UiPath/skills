@@ -39,14 +39,14 @@ const branchLine = cutOk
   : `${WARN} Release branch \`release/v${line}\` cut from \`main\` FAILED (<${runUrl}|see logs>)`;
 
 // Package publication line. The publish step covers both dispatched workflow
-// runs, including the isolated Studio Web GitHub Packages jobs.
+// runs; the isolated Studio Web jobs run only when custom publishing is enabled.
 let previewLine;
 if (publishOk) {
-  previewLine = `${OK} Default preview published to npmjs — ${previewLabel} (<${npmUrl}|view on npmjs>); default dev and Studio Web dev/preview published to GitHub Packages`;
+  previewLine = `${OK} Default preview published to npmjs — ${previewLabel} (<${npmUrl}|view on npmjs>); default dev published to GitHub Packages; Studio Web dev/preview published there when custom publishing was enabled`;
 } else if (!cutOk) {
   previewLine = `${WARN} Dev/preview package publishing skipped`;
 } else {
-  previewLine = `${WARN} A default or Studio Web dev/preview publish FAILED — ${previewLabel} (<${runUrl}|see logs>)`;
+  previewLine = `${WARN} A dev/preview publish FAILED (Studio Web only runs when custom publishing is enabled) — ${previewLabel} (<${runUrl}|see logs>)`;
 }
 
 // Version-bump PR line

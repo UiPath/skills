@@ -61,7 +61,8 @@ Inspect staged directories and real `.tgz` archives.
 - Every package version exactly matches the root manifest, including preview or dev suffixes.
 - Default preserves the current non-skill payload but reads `skills/` from the built default tree.
 - Custom packages contain their complete built `skills/`, generated manifest/README, license, and version metadata only.
-- The default manifest retains the safe package lifecycle and ships only its small lifecycle driver; custom manifests contain no repository lifecycle scripts or `publishConfig` override.
+- The default manifest retains the safe package lifecycle and ships only its small lifecycle driver; custom manifests contain no repository lifecycle scripts or `package.json.repository` field and pin both the default and `@uipath` scoped registry to GitHub Packages in `publishConfig`.
+- A missing or extra custom `publishConfig` key, npmjs registry, public access, or inherited `package.json.repository` field is rejected by final tarball selection.
 - Tarball `package/skills/**` bytes equal the staged `skills/**` bytes.
 - No built tree, stage, or tarball contains marker tokens, sparse override sources, tests, or composer source.
 - Root `npm pack` creates exactly one default `@uipath/skills` tarball, regardless of how many custom flavors exist.
@@ -89,7 +90,9 @@ Inspect staged directories and real `.tgz` archives.
 - The default jobs retain root `npm publish` and never iterate over generated flavor tarballs.
 - `publish-skill-flavor.yml` accepts only `flavor` and `channel`, validates the lowercase kebab-case flavor, derives its package name, and rejects `default`, missing directories, symlinks, and unsupported channels.
 - The generic publisher requires exactly one matching name/flavor/version tarball, scans that exact tarball for markers, and publishes only the selected path.
-- The generic publisher has `packages: write` but no npmjs registry, OIDC permission, or provenance flag; it supports only GitHub Packages `dev` and `preview`.
+- The generic publisher has `packages: write` but no npmjs registry, OIDC permission, provenance flag, or access flag; it validates and explicitly supplies the GitHub Packages registry and supports only `dev` and `preview`. Omitting access preserves the existing Internal visibility.
+- Custom publication is skipped unless `ENABLE_SKILL_FLAVOR_PUBLISH` equals exactly `true`; the default GitHub Packages and npmjs jobs are never gated by that variable.
+- Treat the variable as an operator enablement switch, not a live visibility check. Before enabling it, confirm every explicit flavor caller has an Internal package, does not inherit access from the public source repository, and grants Actions write access. Registry pinning does not establish GitHub visibility.
 - Studio Web callers pass `flavor: studioweb` after stamping the same channel and caller `github.run_number` used by the default path.
 - Publish concurrency is normalized by effective channel: a `main` push shares a group with manual `dev`, and a `release/v*` push shares a group with manual `preview`.
 - A new flavor remains automatically buildable but needs an explicit caller of the generic publisher before it becomes registry-available.
