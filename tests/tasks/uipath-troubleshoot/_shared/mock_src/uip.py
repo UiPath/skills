@@ -33,14 +33,18 @@ Manifest schema (v2):
 
 Each rule has one of:
     - `file: <path>` — return the canned response under r/<file>.
-    - `passthrough: true` — proxy to the real `uip` CLI installed on the
-      host. Responses are cached under r/_cache/<key>.json on
-      first run; subsequent runs replay the cache. Cache files are
-      committed alongside fixtures so tests stay reproducible offline.
+    - `passthrough: true` — replay a pre-recorded response from the cache
+      (`_cache/<key>.json`, written by the operator-only
+      `_shared/scripts/record_passthrough.py`). This dispatcher NEVER
+      invokes the real `uip` CLI: a query without a valid recorded entry
+      falls through to `unmocked_default` (or the unmocked error). Cache
+      entries are schema- and signature-checked before use, so a file the
+      agent plants in the sandbox is rejected.
 
 Dispatch precedence:
     1. First matching rule (first match wins).
     2. `unmocked_default` — if set, return its `response` + `exit_code`.
+       Also the fallback for a passthrough rule with no recorded response.
     3. Otherwise, error on stderr (legacy behavior).
 
 Matching (see `_rule_matches`) is token-aware, with a plain-substring
@@ -61,16 +65,14 @@ This makes rules robust to:
 
 List specific patterns before generic ones — first match still wins, and a
 generic rule with fewer tokens will match a superset of invocations. A
-passthrough rule with `match: "docsai ask"` is the typical way to proxy
-open-ended natural-language commands.
+passthrough rule with `match: "docsai ask"` is the typical way to serve
+recorded responses for open-ended natural-language commands.
 """
 
 import base64
 import hashlib
+import hmac
 import json
-import os
-import shutil
-import subprocess
 import sys
 import time
 import zlib
@@ -84,9 +86,10 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 RESPONSES_DIR = SCRIPT_DIR / "r"
 MANIFEST_PATH = RESPONSES_DIR / "manifest.json"
 CALL_LOG_PATH = SCRIPT_DIR / ".log"
-# Passthrough (docsai) cache. Canonical location is beside the shim so it
-# survives `m/seal` removing `r/`; fall back to the legacy `r/_cache` for
-# unsealed local runs that shipped committed caches under `r/`.
+# Passthrough (docsai) cache of operator-recorded responses. Committed under
+# `r/_cache` (written by `record_passthrough.py`); `m/seal` moves it beside
+# the shim so replay survives `r/` being removed. Check both locations so
+# sealed and unsealed runs behave identically.
 CACHE_DIR = SCRIPT_DIR / "_cache"
 LEGACY_CACHE_DIR = RESPONSES_DIR / "_cache"
 
@@ -125,9 +128,11 @@ def _get_store():
 def _log_call(args: str, rule: dict | None, exit_code: int, error: str | None = None) -> None:
     """Append a structured record of this invocation to the call log.
 
-    Best-effort: any logging error is swallowed so a broken log file never
-    breaks an agent's command. The file is the source of truth for
-    expected-vs-performed coverage analysis after the run.
+    Fail-closed: the file is the source of truth for expected-vs-performed
+    coverage analysis after the run, so a write failure aborts the whole
+    invocation (exit 3) BEFORE any response is emitted. Swallowing the error
+    would let a broken log (e.g. `m/.log` replaced with a directory) look
+    identical to "no calls made" while `uip` keeps answering normally.
 
     On sealed runs the record is zlib+base64-encoded: the log lives in the
     agent's working directory, and plain records (`matched_rule`, `fixture`)
@@ -149,8 +154,9 @@ def _log_call(args: str, rule: dict | None, exit_code: int, error: str | None = 
     try:
         with CALL_LOG_PATH.open("a", encoding="utf-8") as f:
             f.write(line + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        sys.stderr.write(json.dumps({"error": "uip: internal error", "detail": str(exc)}) + "\n")
+        raise SystemExit(3) from exc
 
 
 # Pure-formatting flags that never change WHICH resource an invocation
@@ -273,79 +279,68 @@ def _cache_key(args: str) -> str:
     return hashlib.md5(args.encode("utf-8")).hexdigest()[:16]
 
 
-def _load_cache(args: str) -> dict | None:
-    """Return cached `{stdout, exit_code, args, cached_at}` or None."""
+# Provenance key for recorded passthrough responses, shared with the
+# operator-only recorder (`_shared/scripts/record_passthrough.py`, which
+# imports `_cache_sig` from this module). The sandbox copy of the cache is
+# agent-writable, so entries are accepted on a valid signature, not on
+# their path. Forging one requires unpacking `.uip.bin` first — the same
+# barrier that protects the sealed store; this is tamper-evidence against
+# an agent planting responses, not cryptographic secrecy.
+_CACHE_SIG_KEY = b"uip-mock-cache-v1:9d41c7a2f06b58e3"
+
+
+def _cache_sig(entry: dict) -> str:
+    """HMAC over the response fields of a recorded cache entry."""
+    body = json.dumps(
+        [entry.get("args"), entry.get("stdout"), entry.get("exit_code"), entry.get("cached_at")],
+        ensure_ascii=False,
+    ).encode("utf-8")
+    return hmac.new(_CACHE_SIG_KEY, body, hashlib.sha256).hexdigest()
+
+
+def _cache_entry_valid(entry: object, args: str) -> bool:
+    """True when `entry` is a well-formed recorded response for `args`.
+
+    Schema plus provenance: field types must match what the recorder writes,
+    `args` must equal the invocation (rejects an entry copied from another
+    query's file), and the signature must verify.
+    """
+    if not isinstance(entry, dict):
+        return False
+    if entry.get("args") != args:
+        return False
+    if not isinstance(entry.get("stdout"), str):
+        return False
+    if not isinstance(entry.get("exit_code"), int) or isinstance(entry.get("exit_code"), bool):
+        return False
+    if not isinstance(entry.get("cached_at"), str):
+        return False
+    sig = entry.get("sig")
+    return isinstance(sig, str) and hmac.compare_digest(sig, _cache_sig(entry))
+
+
+def _load_cache(args: str) -> tuple[dict | None, bool]:
+    """Return `(entry, tampered)` for the recorded response to `args`.
+
+    `entry` is the first cache file that passes `_cache_entry_valid`, else
+    None. `tampered` is True when a candidate file existed but failed
+    validation (unreadable, wrong schema, args mismatch, bad signature) —
+    surfaced in the call log so a planted or corrupted entry is visible.
+    """
     key = f"{_cache_key(args)}.json"
+    tampered = False
     for path in (CACHE_DIR / key, LEGACY_CACHE_DIR / key):
         if not path.is_file():
             continue
         try:
-            return json.loads(path.read_text(encoding="utf-8"))
+            entry = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
+            tampered = True
             continue
-    return None
-
-
-def _save_cache(args: str, stdout: str, exit_code: int) -> None:
-    """Persist a passthrough response so subsequent runs replay offline."""
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    path = CACHE_DIR / f"{_cache_key(args)}.json"
-    payload = {
-        "args": args,
-        "stdout": stdout,
-        "exit_code": exit_code,
-        "cached_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-    try:
-        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    except OSError:
-        pass
-
-
-def _find_real_uip() -> str | None:
-    """Locate the real `uip` CLI on PATH, excluding the mock's own dir."""
-    self_dir = str(SCRIPT_DIR.resolve())
-    parts = []
-    for d in os.environ.get("PATH", "").split(os.pathsep):
-        if not d:
-            continue
-        try:
-            if Path(d).resolve() == SCRIPT_DIR.resolve():
-                continue
-        except (OSError, ValueError):
-            pass
-        parts.append(d)
-    return shutil.which("uip", path=os.pathsep.join(parts))
-
-
-def _passthrough(args: str, original_argv: list[str], rule: dict) -> int:
-    """Proxy to the real `uip` CLI; cache the response for subsequent runs."""
-    cached = _load_cache(args)
-    if cached is not None:
-        sys.stdout.write(cached.get("stdout", ""))
-        exit_code = int(cached.get("exit_code", 0))
-        _log_call(args, rule, exit_code, error="passthrough_cached")
-        return exit_code
-
-    real_uip = _find_real_uip()
-    if real_uip is None:
-        _log_call(args, rule, 2, error="passthrough_no_real_uip")
-        return _err(
-            {"error": "passthrough requested but real uip not on PATH", "args": args},
-            2,
-        )
-
-    proc = subprocess.run(
-        [real_uip] + original_argv[1:],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-    )
-    sys.stdout.write(proc.stdout)
-    sys.stderr.write(proc.stderr)
-    _save_cache(args, proc.stdout, proc.returncode)
-    _log_call(args, rule, proc.returncode, error="passthrough_live")
-    return proc.returncode
+        if _cache_entry_valid(entry, args):
+            return entry, False
+        tampered = True
+    return None, tampered
 
 
 def main(argv: list[str]) -> int:
@@ -373,11 +368,23 @@ def main(argv: list[str]) -> int:
 
     # 1. First matching rule wins.
     arg_tokens = set(_tokenize(args))
+    passthrough_miss: str | None = None
     for rule in manifest.get("rules", []):
         if not _rule_matches(rule.get("match", ""), args, arg_tokens):
             continue
         if rule.get("passthrough"):
-            return _passthrough(args, argv, rule)
+            # Replay the recorded response, if the operator committed one.
+            # This dispatcher NEVER starts the real CLI: without a valid
+            # recorded entry the invocation falls through to the manifest's
+            # `unmocked_default` below, like any other unmocked command.
+            cached, tampered = _load_cache(args)
+            if cached is not None:
+                exit_code = int(cached["exit_code"])
+                _log_call(args, rule, exit_code, error="passthrough_cached")
+                sys.stdout.write(cached["stdout"])
+                return exit_code
+            passthrough_miss = "passthrough_cache_invalid" if tampered else "passthrough_cache_miss"
+            break
         # Fetch the fixture bytes from the sealed store or the `r/` directory.
         if store is not _NO_STORE:
             raw = store["files"].get(rule["file"])
@@ -396,22 +403,22 @@ def main(argv: list[str]) -> int:
         else:
             text = raw.decode("utf-8-sig", errors="replace")
         text = _strip_doc_keys(text)
-        sys.stdout.write(text)
         exit_code = int(rule.get("exit_code", 0))
         _log_call(args, rule, exit_code)
+        sys.stdout.write(text)
         return exit_code
 
-    # 2. Unmocked default.
+    # 2. Unmocked default (also the passthrough cache-miss fallback).
     default = manifest.get("unmocked_default")
     if isinstance(default, dict):
         body = _strip_doc_keys(default.get("response", ""))
         exit_code = int(default.get("exit_code", 0))
+        _log_call(args, None, exit_code, error=passthrough_miss or "unmocked_default")
         sys.stdout.write(body)
-        _log_call(args, None, exit_code, error="unmocked_default")
         return exit_code
 
     # 3. Legacy error.
-    _log_call(args, None, 1, error="unmocked")
+    _log_call(args, None, 1, error=passthrough_miss or "unmocked")
     return _err({"error": "unmocked command", "args": args}, 1)
 
 

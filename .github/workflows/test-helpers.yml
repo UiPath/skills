@@ -6,6 +6,7 @@ on:
       - 'tests/tasks/uipath-maestro-flow/**'
       - 'tests/tasks/uipath-maestro-case/**'
       - 'tests/tasks/uipath-agents/**'
+      - 'tests/tasks/uipath-troubleshoot/_shared/**'
       - 'tests/scripts/**'
       - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
       - 'hooks/**'    # telemetry hook has a contract guard in tests/scripts/
@@ -60,6 +61,25 @@ jobs:
 
       - name: Run pytest
         run: pytest tests/tasks/uipath-agents/ -v
+
+  pytest-troubleshoot-mock:
+    runs-on: ubuntu-latest
+    name: troubleshoot mock dispatcher guards
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Guards the hardened mock channels: cache-only passthrough (no live
+      # credentialed CLI from the sandbox), signed-cache validation, and
+      # fail-closed call logging. See _shared/mock_src/uip.py.
+      - name: Run pytest
+        run: pytest tests/tasks/uipath-troubleshoot/_shared/scripts/test_mock_dispatcher.py -v
 
   runtime-payload-casing-guard:
     runs-on: ubuntu-latest

@@ -34,9 +34,9 @@ Blob format (`.store`): base64( zlib( utf-8 json( {
     "files":    { "<name>": "<base64 of the file's raw bytes>", ... }
 } ) ) ). Raw bytes are preserved per file so UTF-16/BOM fixtures survive.
 
-The passthrough cache (`r/_cache`, used only by `docsai ask` proxy rules) is
-moved to `<mock_dir>/_cache` so live-proxy caching keeps working after `r/`
-is removed; it holds docs Q&A, not scenario evidence.
+The passthrough cache (`r/_cache`, operator-recorded responses for `docsai
+ask` rules) is moved to `<mock_dir>/_cache` so recorded-response replay keeps
+working after `r/` is removed; it holds docs Q&A, not scenario evidence.
 """
 
 import base64

@@ -166,14 +166,21 @@ The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wi
 Each rule has one of:
 
 - `file: <path>` — return the canned response under `r/<file>`.
-- `passthrough: true` — proxy to the real `uip` CLI installed on the host. Use this for open-ended commands like `docsai ask` whose query strings vary between runs. Responses are cached to the sandbox's `r/_cache/<key>.json` for in-run reuse; the cache is **not** persisted to the source — every run hits the live CLI on its first call for each unique query.
+- `passthrough: true` — replay an operator-recorded response for open-ended commands like `docsai ask` whose query strings vary between runs. The dispatcher NEVER invokes the real `uip` CLI (an evaluation run must never start a credentialed process with agent-supplied arguments): it looks up `_cache/<md5(args)[:16]>.json` (committed under `data/m/r/_cache/`, written only by `_shared/scripts/record_passthrough.py`), validates schema + args + HMAC signature so an agent-planted or tampered entry is rejected, and on any miss falls through to `unmocked_default` exactly like an unmatched command (logged as `passthrough_cache_miss` / `passthrough_cache_invalid`).
 
-When no rule matches:
+When no rule matches (or a passthrough rule has no valid recorded response):
 
 1. `unmocked_default` (if set) — return its `response` + `exit_code`.
 2. Otherwise, error on stderr.
 
-Test runs require valid `uip` auth on the host (set via `.env` or environment) for any rule with `passthrough: true` to succeed.
+Test runs need no `uip` auth on the host — only recording does. To record a real response for a scenario's passthrough rule, run (from the repo checkout, never staged into a sandbox):
+
+```
+python tests/tasks/uipath-troubleshoot/_shared/scripts/record_passthrough.py \
+    tests/tasks/uipath-troubleshoot/<group>/<scenario> -- docsai ask "..."
+```
+
+and commit the generated `data/m/r/_cache/<key>.json`.
 
 ## Task YAML requirements
 
@@ -253,7 +260,7 @@ The mock machinery itself is never readable in the sandbox — its source would 
 
 `fail_on_error: true` is deliberate — a silent seal failure restores the leak. `m/seal` is idempotent and no-ops when there is no `r/manifest.json`, so a re-run in a reused sandbox still exits 0.
 
-The passthrough cache moves to `m/_cache` (beside the shim) so `docsai` proxying keeps working after `r/` is gone.
+The passthrough cache moves to `m/_cache` (beside the shim) so `docsai` recorded-response replay keeps working after `r/` is gone.
 
 `_build_task_yaml` in `generate_scenario.py` emits this block, so generated scenarios get it automatically. Hand-written scenarios MUST add it.
 
@@ -261,7 +268,7 @@ Sealing also removes the scenario's `README.md`, which lives at `data/m/r/README
 
 ### `docsai` mocking
 
-Any rule matching `uip docsai ask ...` in `manifest.json` MUST be `passthrough: true`. Query strings vary between runs and canned responses go stale immediately; the dispatcher caches passthrough responses per query for in-run reuse.
+Any rule matching `uip docsai ask ...` in `manifest.json` MUST be `passthrough: true`. Query strings vary between runs and canned responses go stale immediately; the dispatcher replays operator-recorded responses per query (see the recording command above) and answers unrecorded queries with the manifest's `unmocked_default`. It never proxies to a live CLI.
 
 ```json
 {
