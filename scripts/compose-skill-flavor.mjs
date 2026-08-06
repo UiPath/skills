@@ -46,6 +46,10 @@ export const DEFAULT_VARIANT = "default";
 export const PACKAGE_NAME_MAX_LENGTH = 214;
 export const MARKER_TOKEN = "<!-- skill-flavor:";
 export const ROOT_PACK_TRANSACTION_DIRNAME = ".root-pack-transaction";
+export const CUSTOM_PACKAGE_PUBLISH_CONFIG = Object.freeze({
+  registry: "https://npm.pkg.github.com/",
+  "@uipath:registry": "https://npm.pkg.github.com/",
+});
 
 const MARKER_BYTES = Buffer.from(MARKER_TOKEN, "utf8");
 const SKILL_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -750,7 +754,8 @@ function generatedPackageManifest(sourceManifest, variant, customFiles) {
   manifest.uipathSkillsFlavor = variant;
   if (variant !== DEFAULT_VARIANT) {
     delete manifest.scripts;
-    delete manifest.publishConfig;
+    delete manifest.repository;
+    manifest.publishConfig = { ...CUSTOM_PACKAGE_PUBLISH_CONFIG };
     manifest.description = `UiPath agent skills composed for the ${variant} host environment.`;
     const keywords = Array.isArray(sourceManifest.keywords)
       ? sourceManifest.keywords.filter((item) => typeof item === "string")

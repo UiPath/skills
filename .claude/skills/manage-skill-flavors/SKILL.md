@@ -113,7 +113,7 @@ Inspect the final package contract, not only sparse sources:
 - The default contains every canonical skill and retains canonical block bodies without marker boundaries.
 - Each custom package contains every canonical skill and its flavor replacements.
 - Every staged manifest uses the root version and the derived package name.
-- Custom manifests contain neither repository lifecycle scripts nor `publishConfig`; the publisher workflow controls their registry and tag.
+- Custom manifests contain no repository lifecycle scripts or `package.json.repository` field. They pin both `publishConfig.registry` and `publishConfig["@uipath:registry"]` to `https://npm.pkg.github.com/`; the scoped pin prevents an ambient `@uipath` npmjs configuration from winning. The publisher still validates the effective scoped registry and supplies the reviewed `dev` or `preview` tag. Do not set an access value during normal publishing because the existing Internal visibility must remain unchanged.
 - No built tree, staged package, or tarball contains `skill-flavor:` comments, `skill-flavors/`, repository tests, or composer source.
 - Binary and template assets remain byte-identical.
 
@@ -127,7 +127,16 @@ reviewed caller that passes its flavor and channel to
 derives its package name, and publishes one selected tarball to GitHub Packages
 only. Studio Web callers pass `flavor: studioweb`; never add Studio Web to the
 default npmjs path. A future flavor is automatically buildable, not
-automatically publishable, until an explicit caller is added.
+automatically publishable, until an explicit caller is added. The reusable
+publisher also requires the repository variable
+`ENABLE_SKILL_FLAVOR_PUBLISH=true`; leave it absent or false until an operator
+has confirmed that every explicitly published custom package has been
+bootstrapped as Internal, does not inherit access from the public repository,
+and grants `UiPath/skills` Actions write access. Registry routing and GitHub
+package visibility are separate controls, and this variable is an enablement
+switch rather than a live visibility check. Follow the one-time procedure in
+`docs/RELEASE.md`, and disable the global gate again before adding a caller for
+another not-yet-bootstrapped flavor.
 
 ## Critical Rules
 
@@ -138,7 +147,7 @@ automatically publishable, until an explicit caller is added.
 5. **Never edit generated output.** Change canonical files, sparse overrides, or the composer; do not modify or commit `build/`.
 6. **Fail before replacement.** Validate every flavor and inspect every tarball before replacing the last successful generated artifacts.
 7. **Recover without data loss.** Keep root packaging transactional, reject overlapping transactions, and preserve unexpected overlay edits before restoring canonical sources.
-8. **Isolate publication.** Keep default root publishing separate from flavor publishing; select one exact flavor tarball and make its registry policy explicit.
+8. **Isolate publication.** Keep default root publishing separate from flavor publishing; registry-lock and select one exact flavor tarball, and keep operator enablement off until every called flavor package is confirmed Internal.
 
 ## What Not to Do
 
@@ -150,3 +159,4 @@ automatically publishable, until an explicit caller is added.
 - Do not trust a source-tree scan as proof of package safety; inspect the actual tarballs.
 - Do not remove or bypass the root `prepack`/`postpack` lifecycle; source markers must never reach the default npm package.
 - Do not make the default publisher iterate over `build/npm/*.tgz`, and do not publish a flavor through an unreviewed registry wildcard.
+- Do not configure npmjs credentials, OIDC trusted publishing, provenance, or public access for a custom flavor package.

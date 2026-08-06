@@ -79,4 +79,7 @@ test("contributor guidance documents the full-catalog Node flavor contract", () 
   assert.match(source, /`npm pack` and `npm publish`.*backward\s+compatible/is);
   assert.match(source, /npm run skills:recover/);
   assert.match(source, /`npm run skills:pack`.*all-flavor/is);
+  assert.match(source, /https:\/\/npm\.pkg\.github\.com\//);
+  assert.match(source, /ENABLE_SKILL_FLAVOR_PUBLISH/);
+  assert.match(source, /confirmed Internal/i);
 });

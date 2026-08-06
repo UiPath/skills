@@ -17,6 +17,12 @@ permissions:
 
 jobs:
   publish:
+    # Operator-controlled fail-closed switch. Enable only after an
+    # administrator has bootstrapped every explicitly published flavor as an
+    # Internal GitHub Package and granted this repository Actions write
+    # access. This switch does not query live package visibility; an absent
+    # variable evaluates false.
+    if: ${{ vars.ENABLE_SKILL_FLAVOR_PUBLISH == 'true' }}
     name: Publish ${{ inputs.flavor }} ${{ inputs.channel }} to GitHub Packages
     runs-on: ubuntu-latest
     permissions:
@@ -98,4 +104,7 @@ jobs:
           TARBALL: ${{ steps.package.outputs.tarball }}
           CHANNEL: ${{ inputs.channel }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm publish "$TARBALL" --tag "$CHANNEL"
+        run: >-
+          npm publish "$TARBALL"
+          --registry https://npm.pkg.github.com/
+          --tag "$CHANNEL"

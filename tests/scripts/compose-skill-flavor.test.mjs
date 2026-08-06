@@ -54,6 +54,10 @@ const SELECT_SKILL_PACKAGE_SCRIPT = join(
   "scripts",
   "select-skill-package.mjs",
 );
+const CUSTOM_PACKAGE_PUBLISH_CONFIG = {
+  registry: "https://npm.pkg.github.com/",
+  "@uipath:registry": "https://npm.pkg.github.com/",
+};
 
 function fixtureRepo(t) {
   const repo = mkdtempSync(join(tmpdir(), "skill-flavor-node-test-"));
@@ -182,10 +186,11 @@ function runCliAsync(repo, ...args) {
   });
 }
 
-function runNpm(repo, ...args) {
+function invokeNpm(repo, args, extraEnv = {}) {
   const env = {
     ...process.env,
     npm_config_cache: join(repo, ".npm-cache"),
+    ...extraEnv,
   };
   if (process.env.npm_execpath) {
     return spawnSync(process.execPath, [process.env.npm_execpath, ...args], {
@@ -199,6 +204,10 @@ function runNpm(repo, ...args) {
     encoding: "utf8",
     env,
   });
+}
+
+function runNpm(repo, ...args) {
+  return invokeNpm(repo, args);
 }
 
 function expectFlavorError(action, pattern) {
@@ -756,70 +765,102 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
   );
   rmSync(duplicateStudioWeb);
 
-  const leakyPackage = join(repo, "leaky-studioweb-package");
-  const unsafeRegistryOutput = join(repo, "unsafe-registry-studioweb-output");
-  const leakyOutput = join(repo, "leaky-studioweb-output");
-  mkdirSync(join(leakyPackage, "skills", "uipath-leaky"), { recursive: true });
-  mkdirSync(unsafeRegistryOutput);
-  mkdirSync(leakyOutput);
-  writeFileSync(
-    join(leakyPackage, "package.json"),
-    `${JSON.stringify({
+  const packCustomPolicyFixture = (
+    label,
+    mutateManifest,
+    skillBody = "Safe content.\n",
+  ) => {
+    const packageDir = join(repo, `${label}-studioweb-package`);
+    const outputDir = join(repo, `${label}-studioweb-output`);
+    mkdirSync(join(packageDir, "skills", "uipath-leaky"), { recursive: true });
+    mkdirSync(outputDir);
+    const manifest = {
       name: "@uipath/skills-studioweb",
       version: "1.2.3-preview.45",
       uipathSkillsFlavor: "studioweb",
       files: ["skills"],
-      publishConfig: { registry: "https://registry.npmjs.org/" },
-    })}\n`,
-  );
-  writeFileSync(
-    join(leakyPackage, "skills", "uipath-leaky", "SKILL.md"),
-    entrypoint("uipath-leaky", "Safe content.\n"),
-  );
-  const unsafeRegistryPack = runNpm(
-    leakyPackage,
-    "pack",
-    "--json",
-    "--pack-destination",
-    unsafeRegistryOutput,
-  );
-  assert.equal(
-    unsafeRegistryPack.status,
-    0,
-    unsafeRegistryPack.stderr || unsafeRegistryPack.stdout,
+      publishConfig: { ...CUSTOM_PACKAGE_PUBLISH_CONFIG },
+    };
+    mutateManifest(manifest);
+    writeFileSync(
+      join(packageDir, "package.json"),
+      `${JSON.stringify(manifest)}\n`,
+    );
+    writeFileSync(
+      join(packageDir, "skills", "uipath-leaky", "SKILL.md"),
+      entrypoint("uipath-leaky", skillBody),
+    );
+    const packed = runNpm(
+      packageDir,
+      "pack",
+      "--json",
+      "--pack-destination",
+      outputDir,
+    );
+    assert.equal(packed.status, 0, packed.stderr || packed.stdout);
+    return outputDir;
+  };
+
+  const unsafePolicyCases = [
+    ["missing-policy", (manifest) => delete manifest.publishConfig],
+    [
+      "npmjs-registry",
+      (manifest) => {
+        manifest.publishConfig.registry = "https://registry.npmjs.org/";
+      },
+    ],
+    [
+      "public-access",
+      (manifest) => {
+        manifest.publishConfig.access = "public";
+      },
+    ],
+    [
+      "extra-setting",
+      (manifest) => {
+        manifest.publishConfig.provenance = true;
+      },
+    ],
+  ];
+  for (const [label, mutateManifest] of unsafePolicyCases) {
+    const outputDir = packCustomPolicyFixture(label, mutateManifest);
+    assert.throws(
+      () =>
+        selectSkillPackage({
+          directory: outputDir,
+          packageName: "@uipath/skills-studioweb",
+          flavor: "studioweb",
+          version: "1.2.3-preview.45",
+        }),
+      /selected custom package must use the GitHub Packages-only publish policy/,
+    );
+  }
+
+  const linkedRepositoryOutput = packCustomPolicyFixture(
+    "linked-repository",
+    (manifest) => {
+      manifest.repository = {
+        type: "git",
+        url: "https://github.com/UiPath/skills.git",
+      };
+    },
   );
   assert.throws(
     () =>
       selectSkillPackage({
-        directory: unsafeRegistryOutput,
+        directory: linkedRepositoryOutput,
         packageName: "@uipath/skills-studioweb",
         flavor: "studioweb",
         version: "1.2.3-preview.45",
       }),
-    /selected package must not define publishConfig/,
+    /selected custom package must not define package\.json repository/,
   );
 
-  writeFileSync(
-    join(leakyPackage, "package.json"),
-    `${JSON.stringify({
-      name: "@uipath/skills-studioweb",
-      version: "1.2.3-preview.45",
-      uipathSkillsFlavor: "studioweb",
-      files: ["skills"],
-    })}\n`,
+  const leakyOutput = packCustomPolicyFixture(
+    "leaky-marker",
+    () => {},
+    block("host", "Leaked marker."),
   );
-  writeFileSync(
-    join(leakyPackage, "skills", "uipath-leaky", "SKILL.md"),
-    entrypoint("uipath-leaky", block("host", "Leaked marker.")),
-  );
-  const leakyPack = runNpm(
-    leakyPackage,
-    "pack",
-    "--json",
-    "--pack-destination",
-    leakyOutput,
-  );
-  assert.equal(leakyPack.status, 0, leakyPack.stderr || leakyPack.stdout);
   assert.throws(
     () =>
       selectSkillPackage({
@@ -850,7 +891,9 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
       assert.ok(existsSync(join(packageDir, "scripts", "npm-package-lifecycle.mjs")));
     } else {
       assert.ok(!("scripts" in manifest));
-      assert.ok(!("publishConfig" in manifest));
+      assert.deepEqual(manifest.publishConfig, CUSTOM_PACKAGE_PUBLISH_CONFIG);
+      assert.ok(!Object.hasOwn(manifest, "repository"));
+      assert.equal(manifest.private, false);
       assert.ok(!existsSync(join(packageDir, "scripts")));
     }
     for (const data of treeFileBytes(packageDir).values()) {
@@ -868,6 +911,31 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
   assert.ok(existsSync(join(byVariant.get("default").packageDir, "assets", "shared.txt")));
   assert.ok(existsSync(join(byVariant.get("default").packageDir, "hooks", "tool.sh")));
 
+  const forcedPublicUserConfig = join(repo, "npmrc-forced-public-registry");
+  writeFileSync(
+    forcedPublicUserConfig,
+    "registry=https://registry.npmjs.org/\n@uipath:registry=https://registry.npmjs.org/\n",
+  );
+  const customPublishDryRun = invokeNpm(
+    repo,
+    ["publish", selectedStudioWeb, "--dry-run"],
+    { npm_config_userconfig: forcedPublicUserConfig },
+  );
+  assert.equal(
+    customPublishDryRun.status,
+    0,
+    customPublishDryRun.stderr || customPublishDryRun.stdout,
+  );
+  const customPublishOutput = [
+    customPublishDryRun.stdout,
+    customPublishDryRun.stderr,
+  ].join("\n");
+  assert.match(customPublishOutput, /Publishing to https:\/\/npm\.pkg\.github\.com\//);
+  assert.doesNotMatch(
+    customPublishOutput,
+    /Publishing to https:\/\/registry\.npmjs\.org\//,
+  );
+
   for (const item of packages) {
     assert.ok(existsSync(item.tarball));
     const entries = readTarballEntries(item.tarball);
@@ -878,6 +946,16 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
       entries.has("package/scripts/npm-package-lifecycle.mjs"),
       item.variant === "default",
     );
+    const tarballManifest = JSON.parse(
+      entries.get("package/package.json").toString("utf8"),
+    );
+    if (item.variant !== "default") {
+      assert.deepEqual(
+        tarballManifest.publishConfig,
+        CUSTOM_PACKAGE_PUBLISH_CONFIG,
+      );
+      assert.ok(!Object.hasOwn(tarballManifest, "repository"));
+    }
     const extracted = extractTarball(t, item.tarball);
     assert.ok(
       buffersMapEqual(
@@ -1109,6 +1187,7 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
     defaultWorkflow,
     "publish-studioweb-preview",
   );
+  const flavorPublish = workflowJob(flavorWorkflow, "publish");
 
   assert.match(
     defaultWorkflow,
@@ -1138,6 +1217,7 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
   );
   for (const job of [publishDev, publishNpmjs]) {
     assert.doesNotMatch(job, /npm run skills:pack|build\/npm|\.tgz/);
+    assert.doesNotMatch(job, /ENABLE_SKILL_FLAVOR_PUBLISH/);
   }
   assert.doesNotMatch(defaultWorkflow, /npm run skills:pack|build\/npm\/\*\.tgz/);
   for (const job of [publishStudioWebDev, publishStudioWebPreview]) {
@@ -1158,6 +1238,10 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
   assert.doesNotMatch(defaultWorkflow, /publish-studioweb\.yml/);
 
   assert.match(flavorWorkflow, /^\s*workflow_call:\s*$/m);
+  assert.match(
+    flavorPublish,
+    /^    if: \$\{\{ vars\.ENABLE_SKILL_FLAVOR_PUBLISH == 'true' \}\}$/m,
+  );
   const workflowInputs = flavorWorkflow.match(
     /^ {4}inputs:\s*\n(?<body>[\s\S]*?)^permissions:/m,
   )?.groups?.body;
@@ -1206,13 +1290,24 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
     /TARBALL:\s*\$\{\{ steps\.package\.outputs\.tarball \}\}/,
   );
   assert.match(flavorWorkflow, /CHANNEL:\s*\$\{\{ inputs\.channel \}\}/);
-  assert.match(flavorWorkflow, /npm publish "\$TARBALL" --tag "\$CHANNEL"/);
+  assert.match(
+    flavorWorkflow,
+    /npm publish "\$TARBALL"[\s\S]*--registry https:\/\/npm\.pkg\.github\.com\/[\s\S]*--tag "\$CHANNEL"/,
+  );
+  assert.doesNotMatch(flavorWorkflow, /--access (?:public|restricted)/);
 
   assert.match(selectorScript, /manifest\.name !== packageName/);
   assert.match(selectorScript, /manifest\.uipathSkillsFlavor !== flavor/);
   assert.match(selectorScript, /matches\.length !== 1/);
   assert.match(selectorScript, /<!-- skill-flavor:/);
-  assert.match(selectorScript, /selected package must not define publishConfig/);
+  assert.match(
+    selectorScript,
+    /selected custom package must use the GitHub Packages-only publish policy/,
+  );
+  assert.match(
+    selectorScript,
+    /selected custom package must not define package\.json repository/,
+  );
 
   const publishCommands = flavorWorkflow
     .split(/\r?\n/)
