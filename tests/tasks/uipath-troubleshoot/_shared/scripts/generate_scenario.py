@@ -107,7 +107,6 @@ run_limits:
   turn_timeout: 3600
 
 sandbox:
-  driver: docker
   python: {{}}
 {template_sources_block}  protected_mocks:
     - tool: uip
@@ -190,7 +189,7 @@ agent reached a verified resolution. The fixtures are the verbatim
 
 | Layer | Source |
 |---|---|
-| Protected `uip` mock | coder-eval's UID/GID-isolated mock service; the agent receives only a bounded client |
+| Protected `uip` mock | coder-eval's host-side protected mock service; the agent receives only a bounded client |
 | `process/` | frozen snapshot of the failing UiPath project |
 | `data/uip-fixture.json` | finite command map with real stdout extracted from the session transcript; private to the mock service |
 

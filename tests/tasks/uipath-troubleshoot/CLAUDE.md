@@ -154,7 +154,7 @@ tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
     └── ...
 ```
 
-`task.yaml` MUST use `sandbox.driver: docker` and a `sandbox.protected_mocks` entry for `uip`. Do not add `data/` as a template source: coder-eval copies `data/uip-fixture.json` into the mock service's private UID/GID boundary and places only a thin `uip` client in the agent workspace.
+`task.yaml` MUST declare a `sandbox.protected_mocks` entry for `uip` and MUST NOT pin `sandbox.driver` (the experiment config decides; protected mocks are driver-independent). Do not add `data/` as a template source: coder-eval serves `data/uip-fixture.json` from a host-side mock service outside the agent workspace and places only a thin `uip` client shim in the workspace.
 
 ## Protected mock contract
 
@@ -181,7 +181,6 @@ The scenario's sandbox block has this shape:
 
 ```yaml
 sandbox:
-  driver: docker
   python: {}
   template_sources:
     - type: template_dir

@@ -237,7 +237,7 @@ def _rewrite_task_yaml(text: str, docsai_passthrough: bool) -> str:
                 f"        - [docsai, ask]{newline}",
             ]
         )
-    sandbox = [f"sandbox:{newline}", f"  driver: docker{newline}", *cleaned, *protected, newline]
+    sandbox = [f"sandbox:{newline}", *cleaned, *protected, newline]
     lines[sandbox_start:sandbox_end] = sandbox
 
     pre_start, pre_end = _section_bounds(lines, "pre_run")
@@ -329,7 +329,7 @@ def _repair_readmes(root: Path, *, apply: bool) -> int:
     note = (
         "\n## Fixture isolation\n\n"
         "`data/uip-fixture.json` is a finite command/response map mounted only into "
-        "coder-eval's UID/GID-isolated mock service. The evaluated agent receives a "
+        "coder-eval's host-side protected mock service. The evaluated agent receives a "
         "bounded `uip` client and cannot read the fixture or mock implementation.\n"
     )
     repaired = 0

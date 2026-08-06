@@ -24,7 +24,6 @@ run_limits:
   turn_timeout: 1800
 
 sandbox:
-  driver: docker
   protected_mocks:
     - tool: uip
       fixture: data/uip-fixture.json
