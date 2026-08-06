@@ -92,7 +92,7 @@ You are generating an **SDD — a case definition blueprint** (NOT a traditional
    - `wait-for-connector` — waits for an Integration Service event from an external system (in-stage trigger).
    - `execute-connector-activity` — executes a pre-built IS connector operation. Prefer over `api-workflow` when a connector exists.
    - `case-management` — starts a child case with its own lifecycle.
-   - `external-workflow` — a workflow owned and executed by an EXTERNAL system (Power Automate flow, ServiceNow workflow), reached through an Integration Service connection. Use only when the other system runs a multi-step workflow of its own; a single operation against that system is `execute-connector-activity`. Always lands as a placeholder — its resources are not reachable from the CLI.
+   - `external-workflow` — a workflow owned and executed by an EXTERNAL system (Power Automate flow, ServiceNow workflow), reached through an Integration Service connection. Use only when the other system runs a multi-step workflow of its own; a single operation against that system is `execute-connector-activity`.
 
    **A well-designed SDD uses a MIX of types.** If all tasks are `action`, the SDD is wrong — most processes have automated steps. If no tasks are `agent`, consider whether any task involves classification, criteria application, or document analysis.
 

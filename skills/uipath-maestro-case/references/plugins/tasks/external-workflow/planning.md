@@ -4,35 +4,60 @@ Integration Service **external automation**: a workflow that runs in an external
 
 Use for an sdd.md task whose `Type:` is `external-workflow`. For a UiPath API workflow → [api-workflow](../api-workflow/planning.md). For a single connector operation → [connector-activity](../connector-activity/planning.md). For an inbound event the case waits on → [connector-trigger](../connector-trigger/planning.md).
 
-## Registry Resolution — there is none
+> **CLI dependency.** Resolution below requires a `uip` build that indexes the external-automation connector catalog. Where it does not, the index file is absent and every external-workflow task falls back to a placeholder — see [§ Unindexed CLI](#unindexed-cli--placeholder-fallback).
 
-**Do not search the cache. There is no cache file to search.**
+## Registry Resolution
 
-External automations are catalogued in TypeCache under project type `IntsvcExternalAutomation`. `uip maestro case registry pull` fetches a different TypeCache slice, so no `IntsvcExternalAutomation` entry exists in `typecache-packages-index.json` or `typecache-activities-index.json` — verified against a `--force`-refreshed cache. `external-workflow` is also absent from `uip maestro case tasks describe --type` and from `uip maestro case registry search --type`.
+External automations are connector activities served from a separate TypeCache slice (`projectType=IntsvcExternalAutomation`). They resolve through the **standard connector pipeline**, just against their own index.
 
-This is a **CLI coverage gap, not an empty tenant**. Consequences for planning:
+**Primary cache file:** `~/.uip/case-resources/typecache-external-automation-activities-index.json`
 
-1. **Skip the cache lookup entirely.** Do not run a search that will return 0 and then report "0 resources on this tenant" — that statement would be false and sends the user hunting for a resource that is already published.
-2. **Do not route this through the Rule 17 empty-lookup gate.** That gate distinguishes creatable from non-creatable types after a genuine 0-match. This is not a 0-match; it is an unreachable index. Go straight to placeholder.
-3. **Record the entry in `registry-resolved.json` anyway** (Rule 9 — one object per task), with:
-   - `cacheFile: null`
-   - `matches: []`
-   - `selected: null`
-   - `rationale` naming the gap explicitly, e.g. `"external-workflow resources live in the IntsvcExternalAutomation TypeCache slice, which registry pull does not fetch. Not searched — no cache file exists. CLI coverage gap, not a missing tenant resource."`
-4. **Report it in the completion output** under external resources, phrased as *attach in Studio Web* rather than *register the resource* — the resource may well already exist.
+Sibling indexes exist for triggers and packages (`…-external-automation-triggers-index.json`, `…-external-automation-packages-index.json`). The three external-automation indexes are disjoint from the regular `typecache-*` ones — an `uiPathActivityTypeId` in one never appears in another — so **do not cross-type fallback** into `typecache-activities-index.json`.
 
-## When the SDD supplies identity
+### Step 1 — find the activity
 
-An sdd.md may carry concrete connector identity for the automation (connection, operation, execution mode). When **all** of the following are present and concrete, plan a resolved task instead of a placeholder:
+Search the external-automation index by the SDD's automation name:
 
-| Field | sdd.md source |
-|---|---|
-| `Resolved Resource` | the automation's name |
-| `Folder Path` | its folder |
-| `Operation` | the external-automation operation (e.g. `RunWorkflow`) |
-| `Connection ID` | the IS connection UUID |
+```bash
+uip maestro case registry search "<name>" --type typecache-external-automation-activities --output json
+```
 
-Any one of these `<UNRESOLVED>` → placeholder. Partial identity is not bindable; do not half-emit.
+Capture `Resource.UiPathActivityTypeId` and `Resource.Configuration` (a JSON **string** — parse it) which carries `connectorKey`, `objectName`, and `subType`.
+
+### Step 2 — pick a connection
+
+```bash
+uip maestro case registry get-connection --type typecache-external-automation-activities --activity-type-id <uiPathActivityTypeId> --output json
+```
+
+`Data.Connections[]` lists candidates. **Check `State`** — a connection in `State: "Failed"` still resolves metadata but cannot execute. Record the state in `registry-resolved.json`; if every candidate is `Failed`, resolve the task but flag it in `build-issues.md` rather than silently binding a broken connection. If more than one connection is healthy and the SDD does not name one, use AskUserQuestion.
+
+### Step 3 — fetch the contract
+
+```bash
+uip maestro case tasks describe --type external-workflow --id <uiPathActivityTypeId> --connection-id <connectionId> --output json
+```
+
+`--connection-id` is **required** — omitting it fails with `--connection-id is required for external-workflow type`. The response carries `Inputs[]` and `Outputs[]` in the same shape as any connector activity. Typical Power Automate contract:
+
+- `pathParameters` (`json`) and `queryParameters` (`json`) — the latter carries `FieldDefinitions` naming the real user-facing fields (e.g. `WorkflowId` → wire name `workflow_id`, display `Flow`, required)
+- `response` (`jsonSchema`) — the flow's return payload
+
+**Never fabricate this contract.** The field names are connector-specific; read them from `describe`.
+
+### Step 4 — persist
+
+Record in `registry-resolved.json` (Rule 9) with `cacheFile: "typecache-external-automation-activities-index.json"`, the full exact-name match set, and `selected` carrying the `uiPathActivityTypeId`, `connectionId`, and connection `State`.
+
+## Unindexed CLI — placeholder fallback
+
+When `typecache-external-automation-activities-index.json` does not exist **after a successful `registry pull`**, this CLI does not index the external-automation catalog. This is a **CLI coverage gap, not an empty tenant** — the automation may well be published.
+
+1. Skip the lookup; do not report "0 resources on this tenant."
+2. Do not route through the Rule 17 empty-lookup gate — that gate is for genuine 0-match results, not an unreachable index.
+3. Emit the placeholder per [impl-json.md § Placeholder shape](impl-json.md#placeholder-shape-fallback).
+4. Record the entry in `registry-resolved.json` with `cacheFile: null`, `matches: []`, `selected: null`, and a rationale naming the missing index and the CLI dependency.
+5. In the completion report, phrase it as *upgrade the CLI, or attach in Studio Web* — not *register the resource*.
 
 ## Execution mode — capture it explicitly
 
@@ -49,19 +74,41 @@ Record `execution-mode:` on the T-entry **even when it is the default** (Rule 6 
 
 ## `tasks.md` T-entry shape
 
-Placeholder (the normal outcome):
+Resolved (the normal outcome on a current CLI):
+
+```markdown
+## T14: Add external-workflow task "Sync order to fulfilment system" to "Fulfilment"
+- type: external-workflow
+- activity-type-id: 5286269b-e305-3e83-9ac9-342bbdc4274d
+- connector-key: uipath-microsoft-powerautomate
+- object-name: triggerFlow
+- connection-id: b7d7d2bf-02a8-4651-b82b-9c3f84b2c13d
+- name: "OrderSyncFlow"
+- folder-path: "Shared/Fulfilment"
+- execution-mode: async
+- isRequired: true
+- runOnlyOnce: false
+- activation-mode: sequential
+- entry-rule: runs-sequentially
+- lane: 2
+- inputs:
+  - queryParameters.WorkflowId = "<flow id>"
+- rationale: "..."
+```
+
+Placeholder (older CLI, or automation genuinely absent):
 
 ````markdown
 ## T14: Add external-workflow task "Sync order to fulfilment system" to "Fulfilment"
 ```text
 <UNRESOLVED: external-workflow "OrderSyncFlow">
-Not searched — external automations live in the IntsvcExternalAutomation TypeCache slice,
-which `uip maestro case registry pull` does not fetch. No cache file exists to search.
-Attach in Studio Web (the automation may already be published).
+typecache-external-automation-activities-index.json not present after registry pull —
+this CLI does not index the external-automation catalog.
+Upgrade the CLI and re-run planning, or attach in Studio Web.
 Wiring notes for upgrade — inputs:
   orderId    = "=vars.orderId"
   customerId = "=vars.customerId"
-outputs expected: fulfilmentRef
+outputs expected: response
 ```
 - type: external-workflow
 - isRequired: true
@@ -72,27 +119,6 @@ outputs expected: fulfilmentRef
 - lane: 2
 - rationale: "..."
 ````
-
-Resolved (SDD supplied full identity):
-
-```markdown
-## T14: Add external-workflow task "Sync order to fulfilment system" to "Fulfilment"
-- type: external-workflow
-- name: "OrderSyncFlow"
-- folder-path: "Shared/Fulfilment"
-- operation: RunWorkflow
-- connection-id: 3f2a91c4-8b17-4d5e-9a02-77c1e4b8d310
-- execution-mode: async
-- isRequired: true
-- runOnlyOnce: false
-- activation-mode: sequential
-- entry-rule: runs-sequentially
-- lane: 2
-- inputs:
-  - orderId = "=vars.orderId"
-  - customerId = "=vars.customerId"
-- rationale: "..."
-```
 
 Keep `- type: external-workflow` on both shapes — Rule 16's enum value, not the folder name.
 

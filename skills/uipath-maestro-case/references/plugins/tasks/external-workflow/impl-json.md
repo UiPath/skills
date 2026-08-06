@@ -2,28 +2,9 @@
 
 > **Phase split.** Phase 2 writes shape with empty input values. Phase 3 binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md). See [phased-execution.md](../../../phased-execution.md).
 
-> **Placeholder is the normal outcome.** External automations are not reachable from the CLI ([planning.md § Registry Resolution](planning.md#registry-resolution--there-is-none)). Emit the resolved shape only when `tasks.md` carries `name`, `folder-path`, `operation`, and `connection-id` — all four concrete.
+> **CLI dependency.** The resolved shape requires a `uip` build that indexes the external-automation connector catalog. Without it the index is absent and the task falls back to a placeholder — see [planning.md § Unindexed CLI](planning.md#unindexed-cli--placeholder-fallback).
 
-## Placeholder shape (default)
-
-Per [placeholder-tasks.md](../../../placeholder-tasks.md) — structural fields only, `data: {}`, no `data.*` keys of any kind:
-
-```json
-{
-  "id": "tK3mNp9Qx",
-  "elementId": "Stage_aB3kL9-tK3mNp9Qx",
-  "displayName": "Sync order to fulfilment system",
-  "isRequired": true,
-  "shouldRunOnlyOnce": false,
-  "type": "external-workflow",
-  "data": {},
-  "entryConditions": [ ... ]
-}
-```
-
-`entryConditions` is still written (Rule 8 — conditions are structural and reference the TaskId). Skip the io-binding plugin: there is no `data.inputs[]` to write into.
-
-## Resolved shape
+## Resolved shape (normal outcome)
 
 ```json
 {
@@ -53,6 +34,26 @@ Per [placeholder-tasks.md](../../../placeholder-tasks.md) — structural fields 
 - `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
 - `isRequired` / `shouldRunOnlyOnce` from the SDD task envelope; default `shouldRunOnlyOnce` to `false`.
 - `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
+- `data.inputs[]` / `data.outputs[]` come from `tasks describe` (planning Step 3), never from guesswork.
+
+## Placeholder shape (fallback)
+
+Per [placeholder-tasks.md](../../../placeholder-tasks.md) — structural fields only, `data: {}`, no `data.*` keys of any kind:
+
+```json
+{
+  "id": "tK3mNp9Qx",
+  "elementId": "Stage_aB3kL9-tK3mNp9Qx",
+  "displayName": "Sync order to fulfilment system",
+  "isRequired": true,
+  "shouldRunOnlyOnce": false,
+  "type": "external-workflow",
+  "data": {},
+  "entryConditions": [ ... ]
+}
+```
+
+`entryConditions` is still written (Rule 8 — conditions are structural and reference the TaskId). Skip the io-binding plugin: there is no `data.inputs[]` to write into.
 
 ## `serviceType` — always write it
 
@@ -76,20 +77,20 @@ Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../..
 
 Dedup per [§ Deduplication](../../variables/bindings/impl-json.md). Placeholders create **no** bindings.
 
-> **Connection is not a root binding here.** Unlike `execute-connector-activity` / `wait-for-connector`, the external-automation shape carries its connection through `data.context[]`, not through a `Connection` binding pair. Do not emit ConnectionId / FolderKey bindings for this task type.
+> **Connection is not a root binding here.** Although this resolves through the connector pipeline, the emitted shape carries its connection through `data.context[]`, not through a `Connection` binding pair. Do **not** emit ConnectionId / FolderKey bindings for this task type — that is the `execute-connector-activity` / `wait-for-connector` shape, not this one.
 
 ## Procedure
 
-**Step 0 — Schema:** none available. There is no `tasks describe --type external-workflow` and no `case spec` path (the activity is not in the pulled TypeCache). Take `data.inputs[]` / `data.outputs[]` names from the `tasks.md` wiring notes only; never fabricate a contract.
+**Step 0 — Schema:** from planning Step 3 (`uip maestro case tasks describe --type external-workflow --id <activityTypeId> --connection-id <connId> --output json`). Map `Inputs[]` / `Outputs[]` verbatim. For Power Automate the inputs are `pathParameters` and `queryParameters`, the latter carrying `FieldDefinitions` with the real wire names — bind against those, not the display labels.
 
 **Step 1 — Root bindings** (resolved only): create the `name` + `folderPath` pair per above.
 
 **Step 2 — Write task:**
 1. Generate `id` (`t` + 8) and `elementId` (`<stageId>-<taskId>`).
 2. Write `data.serviceType` from `execution-mode:` — explicitly, always.
-3. Write the `data.context[]` triplet (`operation`, `eventMode`, `executionType`).
+3. Write the `data.context[]` triplet (`operation`, `eventMode`, `executionType`). `operation` comes from the activity's parsed `Configuration.objectName` (e.g. `triggerFlow` → the SDD's declared operation name).
 4. Set `data.name` / `data.folderPath` to `=bindings.<id>`.
-5. Write `data.inputs[]` from the SDD Inputs rows, each `value: ""`; bind in Phase 3 per [io-binding](../../variables/io-binding/impl-json.md). Write `data.outputs[]` only for outputs the SDD declares.
+5. Write `data.inputs[]` from the Step 0 schema, each `value: ""`; bind in Phase 3 per [io-binding](../../variables/io-binding/impl-json.md). Write `data.outputs[]` for outputs the SDD consumes.
 6. Append to the stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone (same rule as every other task plugin).
 
 **Step 3 — Entry conditions:** added in Step 10 by [task-entry-conditions](../../conditions/task-entry-conditions/impl-json.md).
@@ -97,17 +98,19 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md). Placeholder
 ## Post-Write Verification
 
 - `type: "external-workflow"` (schema-kebab, not the folder name)
-- Placeholder: `data` is exactly `{}` — no `serviceType`, no `context`, no `name`/`folderPath`
 - Resolved: `data.serviceType` present and matching `execution-mode:`; `context[]` carries all three fields and agrees with `serviceType`
 - Resolved: `data.name` and `data.folderPath` start with `=bindings.`, and the pair's `resourceKey` is `<folderPath>.<name>` (Step 12 Check 11)
+- Resolved: every `data.inputs[].name` appears in the `tasks describe` response — no invented fields
+- Placeholder: `data` is exactly `{}` — no `serviceType`, no `context`, no `name`/`folderPath`
 - No ConnectionId / FolderKey bindings created for this task
 - `entryConditions` present and non-empty — `validate` accepts an empty array and a missing key, so check it explicitly
 - `id` captured in `id-map.json`
 
 ## Anti-patterns
 
-- **Do NOT report "0 resources on this tenant"** after failing to find an external automation. Nothing was searched — there is no cache file. Say the index is not pulled.
 - **Do NOT omit `data.serviceType`** to "let the default apply." The default is the wrong one.
 - **Do NOT emit Connection/FolderKey root bindings.** Connection travels in `data.context[]` for this type.
-- **Do NOT run the Rule 17 create-offer gate.** External automations are not creatable inline, and this is not a genuine 0-match.
-- **Do NOT substitute `api-workflow`.** That is a UiPath API workflow with a real registry entry and a different `serviceType`; swapping types to get a resolvable resource changes what the case does.
+- **Do NOT cross-type fallback into `typecache-activities-index.json`.** The external-automation and regular catalogs are disjoint; a same-named regular activity is not a substitute.
+- **Do NOT bind a connection in `State: "Failed"` without flagging it.** Metadata resolves fine against a failed connection, so `describe` succeeding is not evidence the automation can actually run.
+- **Do NOT report "0 resources on this tenant"** when the external-automation index is missing. Nothing was searched — say the CLI does not index that catalog.
+- **Do NOT substitute `api-workflow`.** That is a UiPath API workflow with a different registry entry and `serviceType`; swapping types to get a resolvable resource changes what the case does.

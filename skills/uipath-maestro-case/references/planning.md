@@ -129,7 +129,7 @@ When the plan-only / no-build exception is not active, continue with the normal 
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 | `external-workflow` | `plugins/tasks/external-workflow/` |
 
-> **`external-workflow` — placeholder-only today.** The type is valid and packages correctly, but its resources live in a TypeCache slice (`IntsvcExternalAutomation`) that `uip maestro case registry pull` does not fetch, so there is no cache to search. Plan it as a placeholder unless the SDD supplies concrete connector identity. See [external-workflow/planning.md](plugins/tasks/external-workflow/planning.md).
+> **`external-workflow` — resolves against its own index.** Its resources come from a separate TypeCache slice (`IntsvcExternalAutomation`) and land in `typecache-external-automation-activities-index.json`, disjoint from `typecache-activities-index.json` — never cross-type fallback between them. Resolution then follows the standard connector pipeline (search → `get-connection` → `tasks describe --type external-workflow --connection-id …`). When a CLI does not index that catalog the file is absent and the task falls back to a placeholder. See [external-workflow/planning.md](plugins/tasks/external-workflow/planning.md).
 
 > **`agent` & `api-workflow` — create-on-missing.** Both kinds can be built inline at the Rule 17 gate — flow in [§ 3.4](#34-unresolved-resources); type specifics: [agent](plugins/tasks/agent/planning.md#creating-an-agent-inline) / [api-workflow](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline). All other kinds (regular RPA `process`, action, connectors, agentic process) use the §3.4 placeholder path.
 
