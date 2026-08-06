@@ -5,7 +5,7 @@
 ## Authentication
 
 Identical to the publish skill. Resolve the cloud token + base + org + tenant in priority order:
-1. `UIPATH_ACCESS_TOKEN` (+ `UIPATH_URL`) from the environment.
+1. **Runtime env-auth (preferred — how UiPath Delegate provides it):** `UIPATH_CLI_AUTH_TOKEN` (bearer) + `UIPATH_CLI_ORGANIZATION_NAME` / `UIPATH_CLI_TENANT_NAME`, set when the runtime runs `uip` with `UIPATH_CLI_ENABLE_ENV_AUTH=true`. Base URL defaults to `https://cloud.uipath.com`. *(Or `UIPATH_ACCESS_TOKEN` + `UIPATH_URL` if a parent `uip` process exported them.)*
 2. `~/.uipath/.auth` (JSON: `accessToken`, `baseUrl`, `organizationName`, `tenantName`) after `uip login`.
 3. User-provided token + org + tenant.
 

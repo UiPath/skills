@@ -15,7 +15,7 @@ Read `references/api-endpoints.md` first — cloud-token auth, base URL, headers
 
 ## Step 1: Authenticate (cloud token)
 
-Resolve the cloud token + base URL + org + tenant in priority order: `UIPATH_ACCESS_TOKEN` (+ `UIPATH_URL`) → `~/.uipath/.auth` (after `uip login`) → ask the user to paste a token + org + tenant. Never fall back to an admin OpenAPI token, and never send `x-ah-openapi-auth`.
+Resolve the cloud token + base URL + org + tenant in priority order: **runtime env-auth** (`UIPATH_CLI_AUTH_TOKEN` + `UIPATH_CLI_ORGANIZATION_NAME`/`UIPATH_CLI_TENANT_NAME` — how UiPath Delegate provides it; or `UIPATH_ACCESS_TOKEN`/`UIPATH_URL`) → `~/.uipath/.auth` (after `uip login`) → ask the user to paste a token + org + tenant. Never fall back to an admin OpenAPI token, and never send `x-ah-openapi-auth`.
 
 ## Step 2: Resolve the process
 

@@ -6,7 +6,7 @@
 
 ### Getting the cloud token + org/tenant (in priority order)
 
-1. **Host / environment (preferred).** If `UIPATH_ACCESS_TOKEN` is set, use it — the UiPath runtime (or a parent `uip` process) provides the logged-in user's cloud token. Base URL + org + tenant come from `UIPATH_URL` (shape `{base}/{org}/{tenant}`), falling back to `UIPATH_ORGANIZATION_NAME` / `UIPATH_TENANT_NAME`.
+1. **Runtime env-auth (preferred — this is how UiPath Delegate provides it).** The runtime runs `uip` in a virtual shell with `UIPATH_CLI_ENABLE_ENV_AUTH=true` and sets `UIPATH_CLI_AUTH_TOKEN` (the user's cloud bearer token) plus `UIPATH_CLI_ORGANIZATION_NAME` / `UIPATH_CLI_TENANT_NAME` (and `..._ID` variants). If `UIPATH_CLI_AUTH_TOKEN` is set, use it as the bearer and take org/tenant from those vars. Base URL defaults to `https://cloud.uipath.com` unless the environment specifies another. *(If a parent `uip` process instead exported `UIPATH_ACCESS_TOKEN` + `UIPATH_URL` — the `{base}/{org}/{tenant}` shape — use those.)*
 2. **Logged-in `uip` session.** Otherwise, if the user has run `uip login`, read `~/.uipath/.auth` (JSON). Use its `accessToken`, `baseUrl`, `organizationName`, `tenantName`. If the file is missing or has no `accessToken`, tell the user to run `uip login` (and `uip login tenant set <name>` to pick the tenant).
 3. **User-provided (last resort).** Ask the user to paste a cloud bearer token plus their **org** and **tenant** slugs (the two path segments after the host in their AH URL).
 

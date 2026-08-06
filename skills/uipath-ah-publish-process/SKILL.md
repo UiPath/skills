@@ -16,9 +16,11 @@ Read `references/api-endpoints.md` first. It defines the cloud-token auth model,
 ## Step 1: Authenticate (cloud token)
 
 Resolve the cloud token + base URL + org + tenant using the priority order in the reference:
-1. `UIPATH_ACCESS_TOKEN` (+ `UIPATH_URL`) from the environment, else
+1. **Runtime env-auth** — `UIPATH_CLI_AUTH_TOKEN` + `UIPATH_CLI_ORGANIZATION_NAME`/`UIPATH_CLI_TENANT_NAME` (how UiPath Delegate provides it; or `UIPATH_ACCESS_TOKEN`/`UIPATH_URL` from a parent `uip`), else
 2. `~/.uipath/.auth` (after `uip login`), else
 3. ask the user to paste a cloud token + org + tenant.
+
+Use whichever token you resolved as `$ACCESS_TOKEN` below.
 
 Then verify connectivity with a cheap call (this also fetches the idea flows you need next):
 
