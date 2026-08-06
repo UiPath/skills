@@ -41,10 +41,19 @@ and leaves it untouched — the project still lands in
 
 Treat these JSON files as derived unless a CLI contract explicitly identifies a field as user-authored. For source fixes, edit BPMN or rerun CLI enrichment rather than patching generated output by hand.
 
-Local packaging requires the generated metadata set to exist. In particular,
-`uip maestro bpmn pack <project-path> <OutputDir> --output json` consumes
-`package-descriptor.json`; it does not create a missing descriptor from only
-the BPMN and `project.uiproj`.
+After source validation, generate the complete set with:
+
+```bash
+uip maestro bpmn \
+  refresh <project-path> --output json
+```
+
+Refresh is the offline, provider-neutral source-to-derived boundary. It
+regenerates all four files as one atomic set from the authored BPMN and
+`project.uiproj`; it does not discover or import tenant resources. Local
+packaging then consumes that generated set. In particular,
+`uip maestro bpmn pack <project-path> <OutputDir> --output json` does not create
+a missing descriptor from only the BPMN and `project.uiproj`.
 
 For the regeneration and drift-check contract, see [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
 
