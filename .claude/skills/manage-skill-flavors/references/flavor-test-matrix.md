@@ -61,11 +61,12 @@ Inspect staged directories and real `.tgz` archives.
 - Every package version exactly matches the root manifest, including preview or dev suffixes.
 - Default preserves the current non-skill payload but reads `skills/` from the built default tree.
 - Custom packages contain their complete built `skills/`, generated manifest/README, license, and version metadata only.
-- The default manifest retains the safe package lifecycle and ships only its small lifecycle driver; custom manifests contain no repository lifecycle scripts.
+- The default manifest retains the safe package lifecycle and ships only its small lifecycle driver; custom manifests contain no repository lifecycle scripts or `publishConfig` override.
 - Tarball `package/skills/**` bytes equal the staged `skills/**` bytes.
 - No built tree, stage, or tarball contains marker tokens, sparse override sources, tests, or composer source.
 - Root `npm pack` creates exactly one default `@uipath/skills` tarball, regardless of how many custom flavors exist.
 - Root `npm publish --dry-run` selects only `@uipath/skills` and restores canonical sources before returning.
+- Root `npm pack` and the generated default tarball have identical SHA-512 digests.
 - A generated default package can be repacked safely even though composer source is intentionally absent.
 
 ## Replacement and Failure Cases
@@ -83,12 +84,11 @@ Inspect staged directories and real `.tgz` archives.
 
 ## Workflow Cases
 
-- Validation CI contains no flavor-specific path or loop.
+- Generic build validation discovers every flavor without a flavor-specific build loop; release guards may name an explicitly published flavor to enforce its registry boundary.
 - CI runs real `npm pack` and uploads every tarball for inspection.
-- Release packaging happens after version stamping.
-- Multi-package release automation publishes the verified `build/npm/*.tgz` artifacts without a release-time repack; backward-compatible root `npm publish` remains a supported default-only command.
-- Exact package versions already present in the target registry are skipped only when registry and local tarball integrity match; a collision must fail.
-- Custom flavors publish before default; an unregistered npmjs flavor is warned and skipped until its trusted-publisher bootstrap is complete.
-- Only a confirmed package-not-found response may trigger that bootstrap skip; registry, network, or authentication failures must fail the release.
-- Each new npmjs flavor package has its trusted publisher configured before first publication.
-- Local tarball, GitHub Packages `dev`, npmjs `preview`, and npmjs `latest` are distinct availability targets; confirm which one the change requires.
+- The default jobs retain root `npm publish` and never iterate over generated flavor tarballs.
+- Studio Web packaging happens after stamping the same channel and caller `github.run_number` used by the default path.
+- The Studio Web publisher requires exactly one manifest match for `@uipath/skills-studioweb` plus flavor `studioweb`, scans that exact tarball for markers, and publishes only the selected path.
+- The Studio Web publisher has `packages: write` but no npmjs registry, OIDC permission, or provenance flag; it runs only for GitHub Packages `dev` and `preview`.
+- A new flavor remains automatically buildable but needs an explicit isolated publisher before it becomes registry-available.
+- Local tarball, Studio Web GitHub Packages `dev`/`preview`, default GitHub Packages `dev`, and default npmjs `preview`/`latest` are distinct availability targets; confirm which one the change requires.

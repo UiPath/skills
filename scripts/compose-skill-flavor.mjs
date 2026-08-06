@@ -750,6 +750,7 @@ function generatedPackageManifest(sourceManifest, variant, customFiles) {
   manifest.uipathSkillsFlavor = variant;
   if (variant !== DEFAULT_VARIANT) {
     delete manifest.scripts;
+    delete manifest.publishConfig;
     manifest.description = `UiPath agent skills composed for the ${variant} host environment.`;
     const keywords = Array.isArray(sourceManifest.keywords)
       ? sourceManifest.keywords.filter((item) => typeof item === "string")

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   chmodSync,
   copyFileSync,
@@ -36,10 +37,23 @@ import {
   stripMarkerBoundaries,
   treeFileBytes,
 } from "../../scripts/compose-skill-flavor.mjs";
+import { selectSkillPackage } from "../../scripts/select-skill-package.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SCRIPT = join(REPO_ROOT, "scripts", "compose-skill-flavor.mjs");
 const LIFECYCLE_DRIVER = join(REPO_ROOT, "scripts", "npm-package-lifecycle.mjs");
+const DEFAULT_PUBLISH_WORKFLOW = join(REPO_ROOT, ".github", "workflows", "publish.yml");
+const STUDIOWEB_PUBLISH_WORKFLOW = join(
+  REPO_ROOT,
+  ".github",
+  "workflows",
+  "publish-studioweb.yml",
+);
+const SELECT_SKILL_PACKAGE_SCRIPT = join(
+  REPO_ROOT,
+  "scripts",
+  "select-skill-package.mjs",
+);
 
 function fixtureRepo(t) {
   const repo = mkdtempSync(join(tmpdir(), "skill-flavor-node-test-"));
@@ -88,7 +102,7 @@ function writeOverride(repo, flavor, relativePath, text) {
   return root;
 }
 
-function addPackageManifest(repo, version = "1.2.3") {
+function addPackageManifest(repo, version = "1.2.3", overrides = {}) {
   const manifest = {
     name: "@uipath/skills",
     version,
@@ -112,6 +126,7 @@ function addPackageManifest(repo, version = "1.2.3") {
       postpack: "node scripts/npm-package-lifecycle.mjs restore",
       "skills:recover": "node scripts/npm-package-lifecycle.mjs recover",
     },
+    ...overrides,
   };
   writeFileSync(join(repo, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`);
   writeFileSync(join(repo, "README.md"), "# Fixture package\n");
@@ -200,6 +215,38 @@ function buffersMapEqual(left, right) {
     if (!right.get(name)?.equals(data)) return false;
   }
   return true;
+}
+
+function sha512File(file) {
+  return createHash("sha512").update(readFileSync(file)).digest("hex");
+}
+
+function assertMarkerFreeSkillTarball(tarball, expectedName, expectedFlavor) {
+  const entries = readTarballEntries(tarball);
+  const manifestBytes = entries.get("package/package.json");
+  assert.ok(manifestBytes, `${tarball} must contain package/package.json`);
+  const manifest = JSON.parse(manifestBytes.toString("utf8"));
+  assert.equal(manifest.name, expectedName);
+  assert.equal(manifest.uipathSkillsFlavor, expectedFlavor);
+
+  let skillFileCount = 0;
+  for (const [name, bytes] of entries) {
+    if (name.startsWith("package/skills/")) skillFileCount += 1;
+    assert.ok(
+      !bytes.includes(Buffer.from("<!-- skill-flavor:")),
+      `${tarball} leaked a flavor marker in ${name}`,
+    );
+  }
+  assert.ok(skillFileCount > 0, `${tarball} must contain packaged skill files`);
+}
+
+function workflowJob(workflow, jobName) {
+  const escapedName = jobName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = workflow.match(
+    new RegExp(`^  ${escapedName}:\\s*\\n([\\s\\S]*?)(?=^  [a-zA-Z0-9_-]+:\\s*\\n|$(?![\\s\\S]))`, "m"),
+  );
+  assert.ok(match, `workflow must contain the ${jobName} job`);
+  return match[0];
 }
 
 function withNpmCache(repo, action) {
@@ -619,7 +666,12 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
     "uipath-changed/SKILL.md",
     block("project", "Future host project tool."),
   );
-  addPackageManifest(repo, "1.2.3-preview.45");
+  addPackageManifest(repo, "1.2.3-preview.45", {
+    publishConfig: {
+      registry: "https://registry.npmjs.org/",
+      tag: "latest",
+    },
+  });
 
   const packages = withNpmCache(repo, () => packAllVariants(repo));
   assert.deepEqual(packages.map(({ variant }) => variant), [
@@ -635,6 +687,132 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
   );
   assert.deepEqual(new Set(packages.map(({ version }) => version)), new Set(["1.2.3-preview.45"]));
 
+  assertMarkerFreeSkillTarball(
+    byVariant.get("default").tarball,
+    "@uipath/skills",
+    "default",
+  );
+  assertMarkerFreeSkillTarball(
+    byVariant.get("studioweb").tarball,
+    "@uipath/skills-studioweb",
+    "studioweb",
+  );
+  assert.equal(
+    selectSkillPackage({
+      directory: dirname(byVariant.get("default").tarball),
+      packageName: "@uipath/skills",
+      flavor: "default",
+      version: "1.2.3-preview.45",
+    }),
+    byVariant.get("default").tarball,
+  );
+  const selectedStudioWeb = selectSkillPackage({
+    directory: dirname(byVariant.get("studioweb").tarball),
+    packageName: "@uipath/skills-studioweb",
+    flavor: "studioweb",
+    version: "1.2.3-preview.45",
+  });
+  assert.equal(selectedStudioWeb, byVariant.get("studioweb").tarball);
+  assert.throws(
+    () =>
+      selectSkillPackage({
+        directory: dirname(selectedStudioWeb),
+        packageName: "@uipath/skills-studioweb",
+        flavor: "studioweb",
+        version: "1.2.3-preview.46",
+      }),
+    /selected package version mismatch/,
+  );
+
+  const duplicateStudioWeb = join(dirname(selectedStudioWeb), "duplicate-studioweb.tgz");
+  copyFileSync(selectedStudioWeb, duplicateStudioWeb);
+  assert.throws(
+    () =>
+      selectSkillPackage({
+        directory: dirname(selectedStudioWeb),
+        packageName: "@uipath/skills-studioweb",
+        flavor: "studioweb",
+        version: "1.2.3-preview.45",
+      }),
+    /expected exactly one @uipath\/skills-studioweb tarball/,
+  );
+  rmSync(duplicateStudioWeb);
+
+  const leakyPackage = join(repo, "leaky-studioweb-package");
+  const unsafeRegistryOutput = join(repo, "unsafe-registry-studioweb-output");
+  const leakyOutput = join(repo, "leaky-studioweb-output");
+  mkdirSync(join(leakyPackage, "skills", "uipath-leaky"), { recursive: true });
+  mkdirSync(unsafeRegistryOutput);
+  mkdirSync(leakyOutput);
+  writeFileSync(
+    join(leakyPackage, "package.json"),
+    `${JSON.stringify({
+      name: "@uipath/skills-studioweb",
+      version: "1.2.3-preview.45",
+      uipathSkillsFlavor: "studioweb",
+      files: ["skills"],
+      publishConfig: { registry: "https://registry.npmjs.org/" },
+    })}\n`,
+  );
+  writeFileSync(
+    join(leakyPackage, "skills", "uipath-leaky", "SKILL.md"),
+    entrypoint("uipath-leaky", "Safe content.\n"),
+  );
+  const unsafeRegistryPack = runNpm(
+    leakyPackage,
+    "pack",
+    "--json",
+    "--pack-destination",
+    unsafeRegistryOutput,
+  );
+  assert.equal(
+    unsafeRegistryPack.status,
+    0,
+    unsafeRegistryPack.stderr || unsafeRegistryPack.stdout,
+  );
+  assert.throws(
+    () =>
+      selectSkillPackage({
+        directory: unsafeRegistryOutput,
+        packageName: "@uipath/skills-studioweb",
+        flavor: "studioweb",
+        version: "1.2.3-preview.45",
+      }),
+    /selected package must not define publishConfig/,
+  );
+
+  writeFileSync(
+    join(leakyPackage, "package.json"),
+    `${JSON.stringify({
+      name: "@uipath/skills-studioweb",
+      version: "1.2.3-preview.45",
+      uipathSkillsFlavor: "studioweb",
+      files: ["skills"],
+    })}\n`,
+  );
+  writeFileSync(
+    join(leakyPackage, "skills", "uipath-leaky", "SKILL.md"),
+    entrypoint("uipath-leaky", block("host", "Leaked marker.")),
+  );
+  const leakyPack = runNpm(
+    leakyPackage,
+    "pack",
+    "--json",
+    "--pack-destination",
+    leakyOutput,
+  );
+  assert.equal(leakyPack.status, 0, leakyPack.stderr || leakyPack.stdout);
+  assert.throws(
+    () =>
+      selectSkillPackage({
+        directory: leakyOutput,
+        packageName: "@uipath/skills-studioweb",
+        flavor: "studioweb",
+        version: "1.2.3-preview.45",
+      }),
+    /flavor marker leaked into selected npm tarball/,
+  );
+
   for (const variant of ["default", "future-host", "studioweb"]) {
     const packageDir = byVariant.get(variant).packageDir;
     assert.ok(existsSync(join(packageDir, "skills", "uipath-changed", "SKILL.md")));
@@ -643,6 +821,10 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
     assert.equal(manifest.uipathSkillsFlavor, variant);
     assert.equal(manifest.version, "1.2.3-preview.45");
     if (variant === "default") {
+      assert.deepEqual(manifest.publishConfig, {
+        registry: "https://registry.npmjs.org/",
+        tag: "latest",
+      });
       assert.equal(
         manifest.scripts.prepack,
         "node scripts/npm-package-lifecycle.mjs prepare",
@@ -650,6 +832,7 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
       assert.ok(existsSync(join(packageDir, "scripts", "npm-package-lifecycle.mjs")));
     } else {
       assert.ok(!("scripts" in manifest));
+      assert.ok(!("publishConfig" in manifest));
       assert.ok(!existsSync(join(packageDir, "scripts")));
     }
     for (const data of treeFileBytes(packageDir).values()) {
@@ -828,6 +1011,14 @@ test("root npm pack emits one marker-free default package and restores canonical
   );
   addPackageManifest(repo, "1.2.3-preview.7");
   const canonicalBefore = treeFileBytes(join(repo, "skills"));
+  const generatedPackages = withNpmCache(repo, () => packAllVariants(repo));
+  const generatedDefault = generatedPackages.find(({ variant }) => variant === "default");
+  assert.ok(generatedDefault, "the all-flavor build must emit the default package");
+  assertMarkerFreeSkillTarball(
+    generatedDefault.tarball,
+    "@uipath/skills",
+    "default",
+  );
   const output = join(repo, "root-pack-output");
   mkdirSync(output);
 
@@ -837,6 +1028,11 @@ test("root npm pack emits one marker-free default package and restores canonical
   assert.equal(packed.length, 1);
   const tarball = join(output, packed[0].filename);
   assert.ok(existsSync(tarball));
+  assert.equal(
+    sha512File(tarball),
+    sha512File(generatedDefault.tarball),
+    "root npm pack and the generated default tarball must be byte-identical",
+  );
 
   const entries = readTarballEntries(tarball);
   const manifest = JSON.parse(entries.get("package/package.json").toString("utf8"));
@@ -882,6 +1078,86 @@ test("root npm publish dry-run keeps the old default-only behavior and restores 
   assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /skills-studioweb/);
   assert.ok(buffersMapEqual(canonicalBefore, treeFileBytes(join(repo, "skills"))));
   assert.ok(!existsSync(join(repo, "build", ROOT_PACK_TRANSACTION_DIRNAME)));
+});
+
+test("publishing workflows isolate root default publishing from Studio Web publishing", () => {
+  const defaultWorkflow = readFileSync(DEFAULT_PUBLISH_WORKFLOW, "utf8");
+  const studioWebWorkflow = readFileSync(STUDIOWEB_PUBLISH_WORKFLOW, "utf8");
+  const selectorScript = readFileSync(SELECT_SKILL_PACKAGE_SCRIPT, "utf8");
+  const publishDev = workflowJob(defaultWorkflow, "publish-dev");
+  const publishNpmjs = workflowJob(defaultWorkflow, "publish-npmjs");
+  const publishStudioWebDev = workflowJob(defaultWorkflow, "publish-studioweb-dev");
+  const publishStudioWebPreview = workflowJob(
+    defaultWorkflow,
+    "publish-studioweb-preview",
+  );
+
+  assert.match(publishDev, /^\s*run:\s*npm publish --tag dev\s*$/m);
+  assert.match(
+    publishNpmjs,
+    /^\s*npm publish --access public --provenance --tag \$\{\{ steps\.dist\.outputs\.tag \}\}\s*$/m,
+  );
+  for (const job of [publishDev, publishNpmjs]) {
+    assert.doesNotMatch(job, /npm run skills:pack|build\/npm|\.tgz/);
+  }
+  assert.doesNotMatch(defaultWorkflow, /npm run skills:pack|build\/npm\/\*\.tgz/);
+  for (const job of [publishStudioWebDev, publishStudioWebPreview]) {
+    assert.match(
+      job,
+      /^\s*uses:\s*\.\/\.github\/workflows\/publish-studioweb\.yml\s*$/m,
+    );
+    assert.match(job, /^\s*packages:\s*write\s*$/m);
+    assert.doesNotMatch(job, /npm run skills:pack|npm publish|build\/npm/);
+    assert.doesNotMatch(job, /npmjs|id-token\s*:|--provenance/i);
+  }
+  assert.match(publishStudioWebDev, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(publishStudioWebDev, /^\s*channel:\s*dev\s*$/m);
+  assert.match(publishStudioWebPreview, /startsWith\(github\.ref, 'refs\/heads\/release\/'\)/);
+  assert.match(publishStudioWebPreview, /^\s*channel:\s*preview\s*$/m);
+
+  assert.match(studioWebWorkflow, /^\s*workflow_call:\s*$/m);
+  assert.match(studioWebWorkflow, /https:\/\/npm\.pkg\.github\.com/);
+  assert.match(studioWebWorkflow, /^\s*packages:\s*write\s*$/m);
+  assert.match(studioWebWorkflow, /^\s*run:\s*npm run skills:pack\s*$/m);
+  assert.doesNotMatch(
+    studioWebWorkflow,
+    /npmjs|id-token\s*:|--provenance/i,
+  );
+  assert.match(studioWebWorkflow, /NODE_AUTH_TOKEN:\s*\$\{\{ secrets\.GITHUB_TOKEN \}\}/);
+  assert.match(
+    studioWebWorkflow,
+    /RUN_NUMBER:\s*\$\{\{ github\.run_number \}\}/,
+  );
+  assert.match(
+    studioWebWorkflow,
+    /VERSION="\$\{BASE\}-\$\{CHANNEL\}\.\$\{RUN_NUMBER\}"/,
+  );
+
+  assert.match(studioWebWorkflow, /@uipath\/skills-studioweb/);
+  assert.match(studioWebWorkflow, /--flavor\s+studioweb/);
+  assert.match(studioWebWorkflow, /node scripts\/select-skill-package\.mjs/);
+  assert.match(studioWebWorkflow, /npm config get @uipath:registry/);
+  assert.match(
+    studioWebWorkflow,
+    /\[ "\$REGISTRY" != "https:\/\/npm\.pkg\.github\.com\/" \]/,
+  );
+  assert.match(
+    studioWebWorkflow,
+    /npm publish "\$\{\{ steps\.package\.outputs\.tarball \}\}" --tag "\$\{\{ inputs\.channel \}\}"/,
+  );
+
+  assert.match(selectorScript, /manifest\.name !== packageName/);
+  assert.match(selectorScript, /manifest\.uipathSkillsFlavor !== flavor/);
+  assert.match(selectorScript, /matches\.length !== 1/);
+  assert.match(selectorScript, /<!-- skill-flavor:/);
+  assert.match(selectorScript, /selected package must not define publishConfig/);
+
+  const publishCommands = studioWebWorkflow
+    .split(/\r?\n/)
+    .map((line) => line.trim().replace(/^run:\s*/, ""))
+    .filter((line) => line.startsWith("npm publish "));
+  assert.equal(publishCommands.length, 1);
+  assert.doesNotMatch(publishCommands[0], /build\/npm\/\*|\*\.tgz/);
 });
 
 test("root package preflight failure leaves canonical sources active", (t) => {
