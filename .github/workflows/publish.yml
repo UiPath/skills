@@ -39,11 +39,13 @@ on:
           - dev
           - latest
 
-# Serialize publishes so rapid merges don't race on a shared dist-tag: each
-# run stamps a unique version, the group just orders the tag moves. Never
-# cancel an in-flight publish.
+# Serialize publishes by effective channel so equivalent automatic and manual
+# runs cannot race on the same dist-tag. A main push and manual dev dispatch
+# share `publish-dev`; a release push and manual preview dispatch share
+# `publish-preview`; manual latest uses `publish-latest`. Never cancel an
+# in-flight publish.
 concurrency:
-  group: publish-${{ github.event_name }}
+  group: publish-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.channel || (github.ref == 'refs/heads/main' && 'dev' || 'preview') }}
   cancel-in-progress: false
 
 permissions:

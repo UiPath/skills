@@ -91,5 +91,6 @@ Inspect staged directories and real `.tgz` archives.
 - The generic publisher requires exactly one matching name/flavor/version tarball, scans that exact tarball for markers, and publishes only the selected path.
 - The generic publisher has `packages: write` but no npmjs registry, OIDC permission, or provenance flag; it supports only GitHub Packages `dev` and `preview`.
 - Studio Web callers pass `flavor: studioweb` after stamping the same channel and caller `github.run_number` used by the default path.
+- Publish concurrency is normalized by effective channel: a `main` push shares a group with manual `dev`, and a `release/v*` push shares a group with manual `preview`.
 - A new flavor remains automatically buildable but needs an explicit caller of the generic publisher before it becomes registry-available.
 - Local tarball, Studio Web GitHub Packages `dev`/`preview`, default GitHub Packages `dev`, and default npmjs `preview`/`latest` are distinct availability targets; confirm which one the change requires.

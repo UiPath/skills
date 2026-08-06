@@ -89,7 +89,7 @@ Either way the default job stamps `<base>-preview.<run_number>` (never committed
 
 ### The `dev` channel (GitHub Packages)
 
-Every push to `main` (normally a merge) publishes both `@uipath/skills@<base>-dev.<run_number>` and `@uipath/skills-studioweb@<base>-dev.<run_number>` to **GitHub Packages** under the `dev` dist-tag. The default package uses the established root publish job; Studio Web uses its isolated called workflow. Both use the built-in `GITHUB_TOKEN` (`packages: write`) and carry no provenance because GitHub Packages does not support it. Consume the default from GitHub Packages with `npm install @uipath/skills@dev`. Publishes are serialized by a `concurrency` group so back-to-back pushes do not race on the `dev` tag. Re-run a publish manually with `gh workflow run publish.yml --ref main -f channel=dev`.
+Every push to `main` (normally a merge) publishes both `@uipath/skills@<base>-dev.<run_number>` and `@uipath/skills-studioweb@<base>-dev.<run_number>` to **GitHub Packages** under the `dev` dist-tag. The default package uses the established root publish job; Studio Web uses its isolated called workflow. Both use the built-in `GITHUB_TOKEN` (`packages: write`) and carry no provenance because GitHub Packages does not support it. Consume the default from GitHub Packages with `npm install @uipath/skills@dev`. Publishes are serialized by effective channel: a `main` push and manual `dev` dispatch share `publish-dev`, a `release/v*` push and manual `preview` dispatch share `publish-preview`, and manual `latest` uses `publish-latest`. Equivalent automatic and manual runs therefore cannot race on the same dist-tag. Re-run a publish manually with `gh workflow run publish.yml --ref main -f channel=dev`.
 
 ### Registry routing
 
