@@ -55,9 +55,8 @@ on:
           - codex
           - antigravity
         default: claude
-      # Overrides the model for ANY agent. Blank keeps the per-agent default:
-      # claude → experiment YAML's sonnet (override e.g. opus / haiku),
-      # codex → gpt-5.6-terra, antigravity → gemini-3.5-flash.
+      # Overrides the model for ANY agent. Blank keeps that harness's own repo
+      # variable (CLAUDE_CODE_MODEL / CODEX_MODEL / ANTIGRAVITY_MODEL).
       agent_model:
         description: 'Model override (blank = default).'
         type: string
@@ -249,6 +248,12 @@ jobs:
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
           AGENT:                    ${{ inputs.agent }}
           AGENT_MODEL:              ${{ inputs.agent_model }}
+          # The model when agent_model is blank: one repo variable per harness, named the
+          # same as the nightly runner's, and no hardcoded fallback — an unset variable
+          # fails the run (guard below) rather than evaluating a model nobody chose.
+          CLAUDE_CODE_MODEL:        ${{ vars.CLAUDE_CODE_MODEL }}
+          CODEX_MODEL:              ${{ vars.CODEX_MODEL }}
+          ANTIGRAVITY_MODEL:        ${{ vars.ANTIGRAVITY_MODEL }}
           CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
           CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
           GEMINI_API_KEY:           ${{ secrets.GEMINI_API_KEY }}
@@ -258,19 +263,21 @@ jobs:
           # Guard the empty case (e.g. a future non-dispatch trigger): the
           # `parallelism` input default (4) only applies on workflow_dispatch.
           j="${TASK_PARALLELISM:-4}"
-          # Agent selection. claude (default) takes the experiment YAML's
-          # claude-code/sonnet config; codex overrides to 5.6-terra (auth via
-          # CODEX_API_KEY/CODEX_BASE_URL); antigravity overrides to
-          # gemini-3.5-flash (auth via GEMINI_API_KEY; SDK baked into the
-          # agent image). AGENT_MODEL overrides the model for any agent (e.g.
-          # opus / haiku for claude). Driver is unchanged (docker here).
-          agent_flags=""
+          # Agent selection. claude is the default; codex authenticates via
+          # CODEX_API_KEY/CODEX_BASE_URL, antigravity via GEMINI_API_KEY (SDK baked into
+          # the agent image). The model always comes from the harness's own variable
+          # above, with the agent_model input overriding any of them for a one-off run.
+          # Passed explicitly because the experiment YAML pins no model (it is shared by
+          # all three harnesses). Driver is unchanged (docker here).
           if [ "$AGENT" = "codex" ]; then
-            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.6-terra}"
+            model="${AGENT_MODEL:-${CODEX_MODEL:?unset — set the CODEX_MODEL repo variable}}"
+            agent_flags="--type codex --model $model"
           elif [ "$AGENT" = "antigravity" ]; then
-            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.5-flash}"
-          elif [ -n "$AGENT_MODEL" ]; then
-            agent_flags="--model $AGENT_MODEL"
+            model="${AGENT_MODEL:-${ANTIGRAVITY_MODEL:?unset — set the ANTIGRAVITY_MODEL repo variable}}"
+            agent_flags="--type antigravity --model $model"
+          else
+            model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
+            agent_flags="--model $model"
           fi
           echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml $agent_flags -j $j ($TASK_COUNT task files)"
           coder-eval run $TASK_GLOBS \
@@ -522,6 +529,12 @@ jobs:
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
           AGENT:                    ${{ inputs.agent }}
           AGENT_MODEL:              ${{ inputs.agent_model }}
+          # The model when agent_model is blank: one repo variable per harness, named the
+          # same as the nightly runner's, and no hardcoded fallback — an unset variable
+          # fails the run (guard below) rather than evaluating a model nobody chose.
+          CLAUDE_CODE_MODEL:        ${{ vars.CLAUDE_CODE_MODEL }}
+          CODEX_MODEL:              ${{ vars.CODEX_MODEL }}
+          ANTIGRAVITY_MODEL:        ${{ vars.ANTIGRAVITY_MODEL }}
           CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
           CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
           GEMINI_API_KEY:           ${{ secrets.GEMINI_API_KEY }}
@@ -543,18 +556,19 @@ jobs:
           shopt -s globstar nullglob
           # Create the tilde-free temp root pinned via TMP/TEMP above.
           mkdir -p /c/cetmp
-          # Agent selection. claude (default) takes the experiment YAML config;
-          # codex overrides to gpt-5.6-terra (auth via CODEX_API_KEY/CODEX_BASE_URL);
-          # antigravity overrides to gemini-3.5-flash (auth via
-          # GEMINI_API_KEY). AGENT_MODEL overrides the model for any agent (e.g.
-          # opus / haiku for claude). Driver is unchanged (tempdir here).
-          agent_flags=""
+          # Agent selection (mirror of the Linux job): the model always comes from the
+          # harness's own variable above, with the agent_model input overriding it for a
+          # one-off run. Passed explicitly because the experiment YAML pins no model.
+          # Driver is unchanged (tempdir here).
           if [ "$AGENT" = "codex" ]; then
-            agent_flags="--type codex --model ${AGENT_MODEL:-gpt-5.6-terra}"
+            model="${AGENT_MODEL:-${CODEX_MODEL:?unset — set the CODEX_MODEL repo variable}}"
+            agent_flags="--type codex --model $model"
           elif [ "$AGENT" = "antigravity" ]; then
-            agent_flags="--type antigravity --model ${AGENT_MODEL:-gemini-3.5-flash}"
-          elif [ -n "$AGENT_MODEL" ]; then
-            agent_flags="--model $AGENT_MODEL"
+            model="${AGENT_MODEL:-${ANTIGRAVITY_MODEL:?unset — set the ANTIGRAVITY_MODEL repo variable}}"
+            agent_flags="--type antigravity --model $model"
+          else
+            model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
+            agent_flags="--model $model"
           fi
           overall_exit=0
           for task in $TASK_GLOBS; do
