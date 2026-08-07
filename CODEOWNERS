@@ -175,3 +175,7 @@
 /skills/uipath-process-mining/ @UiPath/team-backendhoven
 /tests/tasks/uipath-process-mining/ @UiPath/team-backendhoven
 /tests/tasks/activation/uipath-process-mining.jsonl @UiPath/team-backendhoven
+
+# Automation Hub skills (Open API publish/read of processes via the user's cloud token)
+/skills/uipath-ah-publish-process/ @parth-patil-uipath @abhiram-vad
+/skills/uipath-ah-get-process/ @parth-patil-uipath @abhiram-vad
