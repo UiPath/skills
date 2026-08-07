@@ -52,14 +52,13 @@ Every node inside the loop body **must** have `"parentId"` set to the loop node'
 
 ### CLI-owned nodes inside a loop
 
-The example above is a **user-owned** node (Script), so you set `parentId` directly in the JSON. **CLI-owned nodes** — managed HTTP (`core.action.http.v2`), connector activities (`uipath.connector.*`), and connector triggers — must **not** be hand-edited to add `parentId` (see [Node ownership](../../CAPABILITY.md#node-ownership--who-authors-the-node)). Nest them by passing `--parent <loopId>` when you add the node, so the CLI writes `parentId` for you:
+The example above is a **user-owned** node (Script), so you set `parentId` directly in the JSON. A **CLI-owned** body node (managed HTTP, connector activity/trigger) must not be hand-edited — pass `--parent <loopId>` when you add it, so the CLI writes `parentId` for you:
 
 ```bash
-uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
-  --label "Fetch data" --parent <loopId> --output json
+uip maestro flow node add <ProjectName>.flow core.action.http.v2 --label "Fetch data" --parent <loopId> --output json
 ```
 
-The loop node must already exist in the file (add or author it first) — `--parent` validates the id against the current nodes and errors if it is not found. Without `--parent`, `node add` places the node at the top level with no `parentId`; it then executes **outside** the loop, so a per-iteration HTTP/connector call never fires and every downstream reference to its `output` resolves to `null` on every iteration — even though `flow validate` still passes (a missing `parentId` is structurally valid, just semantically wrong).
+The loop must already exist. Omitting `--parent` leaves the node outside the loop, where its per-iteration `output` resolves to `null` (and `flow validate` still passes). Full rule and rationale: [author/CAPABILITY.md — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node).
 
 ## Adding / Editing
 

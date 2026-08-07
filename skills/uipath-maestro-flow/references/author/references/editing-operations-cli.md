@@ -36,7 +36,7 @@ uip maestro flow node add <ProjectName>.flow <node-type> --output json \
 
 **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write it to a temp file and pass `--input "$(cat /tmp/input.json)"`.
 
-> **Nesting a CLI-owned node in a loop:** managed HTTP and connector nodes enter a loop body via `--parent <loopId>` on `node add` — never by hand-editing `parentId` (rule #9). Author/add the loop node first, then add the body node with `--parent`. Omitting it leaves the node at the top level, where it executes outside the loop and its per-iteration `output` resolves to `null`. See [loop/impl.md](plugins/loop/impl.md#cli-owned-nodes-inside-a-loop).
+> **Nesting a CLI-owned node in a loop:** add it with `--parent <loopId>` (the loop must already exist); never hand-edit `parentId`. Canonical rule and failure mode: [author/CAPABILITY.md — Node ownership](../CAPABILITY.md#node-ownership--who-authors-the-node).
 
 ### Remove a node
 

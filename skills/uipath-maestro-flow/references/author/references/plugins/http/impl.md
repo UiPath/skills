@@ -46,14 +46,7 @@ uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
 
 The CLI copies the manifest into `definitions[]`, adds the node instance to `nodes[]`, registers the `variables.nodes` entries, and inserts a placeholder in `layout.nodes` — all in code, byte-for-byte from the registry (including `typeVersion`, which the CLI pulls from the manifest's `version` field; do not hardcode it). Save the returned node ID — both walkthroughs reuse it.
 
-> **HTTP node inside a loop — add it with `--parent`.** If this call runs per-iteration inside a `core.logic.loop`, pass `--parent <loopId>` so the CLI nests the node in the loop body (writing `parentId` for you):
->
-> ```bash
-> uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
->   --label "<HTTP node label>" --parent <loopId> --output json
-> ```
->
-> The loop node must already exist. Without `--parent` the node lands at the top level and executes **outside** the loop — the per-iteration request never fires and `$vars.<nodeId>.output` is `null` for every iteration (yet `flow validate` still passes). Do not hand-edit `parentId` on this node; it is CLI-owned. See [loop/impl.md](../loop/impl.md#cli-owned-nodes-inside-a-loop).
+> **HTTP node inside a loop — add it with `--parent <loopId>`** so the CLI nests it in the loop body (the loop must already exist): `uip maestro flow node add <Project>.flow core.action.http.v2 --label "..." --parent <loopId>`. Omitting it runs the call outside the loop, so `$vars.<nodeId>.output` is `null` every iteration (yet `flow validate` passes); don't hand-edit `parentId`. See [author/CAPABILITY.md — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node).
 
 The CLI initializes `inputs` from the manifest's `inputDefaults`:
 
