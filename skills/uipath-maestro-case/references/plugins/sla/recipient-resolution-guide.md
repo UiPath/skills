@@ -41,7 +41,7 @@ Options: Retry | Skip resolution for this build | Abort planning
 - **Skip resolution for this build:** set skip; current and later non-UUID recipients remain unresolved, make no directory call, audit `cli-failed-skipped`, and bypass cache.
 - **Abort planning:** halt before the current T-entry; cache nothing.
 
-On skip, send one `SKIPPED` SLA issue through the [logging owner](../logging/impl-json.md) to `tasks/build-issues.md`; the completion warning lists every affected recipient. A successful retry resumes the decision with observed candidates retained.
+On skip, retain one deduplicated pending `SKIPPED` SLA issue in memory using the [logging owner](../logging/impl-json.md) format, updating it to list every affected recipient. Seed it into the shared implementation issue list when that list initializes before Step 6; defer `tasks/build-issues.md` emission to the canonical Phase-4 dump. A successful retry resumes the decision with observed candidates retained.
 
 ## Recipient Audit — `tasks/recipients-resolved.json`
 

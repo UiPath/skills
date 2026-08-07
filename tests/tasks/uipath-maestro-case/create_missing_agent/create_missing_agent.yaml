@@ -101,7 +101,7 @@ simulation:
     - "Approve the generated tasks.md plan without requesting design changes."
     - "At the Phase 2 review gate, choose Skip publish and continue."
     - "If asked to reconcile the pinned customerName/greeting contract, approve the minimal repair."
-    - "At the Phase 5 gate, choose Skip to Publish; this eval intentionally omits runtime execution."
+    - "At the Phase 5 gate, choose Skip to Debug; this eval intentionally omits runtime execution."
     - "At the Phase 6 gate, choose Done. Never publish, upload, or deploy."
     - "Do not choose placeholders, rename the resource, or add more I/O."
     - "Keep replies short: one sentence or the requested option selection."

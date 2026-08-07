@@ -300,8 +300,13 @@ def assert_workflow_valid(workflow: Path) -> None:
             f"uip api-workflow validate exit {result.returncode}\n"
             f"stdout: {result.stdout}\nstderr: {result.stderr}"
         )
-    if "valid" not in result.stdout.lower():
-        fail(f"API workflow validation did not report Valid: {result.stdout[:1000]}")
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        fail(f"inline API workflow validation returned invalid JSON: {exc}")
+    data = payload.get("Data") or {}
+    if payload.get("Result") != "Success" or data.get("Status") != "Valid":
+        fail(f"inline API workflow validation did not report Valid: {payload!r}")
 
 
 def load_and_validate_case() -> tuple[dict, dict]:
