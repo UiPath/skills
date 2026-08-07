@@ -70,6 +70,60 @@ def _load_exporter():
 export_cowork = _load_exporter()
 
 
+def test_npm_publish_builds_and_includes_cowork_artifacts():
+    package = json.loads((REPO_ROOT / "package.json").read_text(encoding="utf-8"))
+    assert "cowork" in package["files"]
+    assert package["scripts"]["cowork:build"] == (
+        "python scripts/export-cowork.py --output cowork --force"
+    )
+
+    workflow = (REPO_ROOT / ".github" / "workflows" / "publish.yml").read_text(
+        encoding="utf-8"
+    )
+    publish_dev, publish_npmjs = workflow.split("  publish-npmjs:", maxsplit=1)
+    assert "  publish-dev:" in publish_dev
+    assert "actions/setup-python@v5" in publish_dev
+    assert "run: npm run cowork:build" in publish_dev
+    assert "actions/setup-python@v5" in publish_npmjs
+    assert "run: npm run cowork:build" in publish_npmjs
+
+
+def test_prerelease_report_preserves_exact_package_version(tmp_path):
+    repo = _write_fixture_repo(tmp_path / "repo")
+    package_path = repo / "package.json"
+    package = json.loads(package_path.read_text(encoding="utf-8"))
+    package["version"] = "1.2.3-preview.42"
+    package_path.write_text(json.dumps(package), encoding="utf-8")
+
+    artifacts = export_cowork.build_export(repo)
+    report = json.loads(artifacts["report.json"])
+    assert report["source_package_version"] == "1.2.3-preview.42"
+    assert report["source_version"] == "1.2.42"
+
+    plugin = json.loads(
+        _zip_files(artifacts["plugins/uipath-skills-cowork.zip"])["manifest.json"]
+    )
+    assert plugin["version"] == "1.2.42"
+
+    package["version"] = "1.2.3-preview.43"
+    package_path.write_text(json.dumps(package), encoding="utf-8")
+    next_preview = export_cowork.build_export(repo)
+    next_plugin = json.loads(
+        _zip_files(next_preview["plugins/uipath-skills-cowork.zip"])["manifest.json"]
+    )
+    assert next_plugin["id"] == plugin["id"]
+    assert next_plugin["version"] == "1.2.43"
+
+    package["version"] = "1.2.3"
+    package_path.write_text(json.dumps(package), encoding="utf-8")
+    stable = export_cowork.build_export(repo)
+    stable_plugin = json.loads(
+        _zip_files(stable["plugins/uipath-skills-cowork.zip"])["manifest.json"]
+    )
+    assert stable_plugin["id"] != plugin["id"]
+    assert stable_plugin["version"] == "1.2.3"
+
+
 def _zip_files(payload: bytes) -> dict[str, bytes]:
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
         assert archive.testzip() is None
@@ -627,3 +681,25 @@ def test_main_writes_artifacts_and_force_only_replaces_owned_output(tmp_path):
     ancestor_argv = [*argv]
     ancestor_argv[ancestor_argv.index(str(output))] = str(repo.parent)
     assert export_cowork.main([*ancestor_argv, "--force"]) != 0
+
+
+def test_exact_repository_cowork_directory_is_allowed_for_npm_packaging(tmp_path):
+    repo = _write_fixture_repo(tmp_path / "repo")
+    output = repo / "cowork"
+
+    assert (
+        export_cowork.main(
+            [
+                "--repo-root",
+                str(repo),
+                "--output",
+                str(output),
+                "--skill",
+                "fixture-skill",
+            ]
+        )
+        == 0
+    )
+    assert (output / "skills" / "fixture-skill.skill").is_file()
+    assert (output / "plugins" / "uipath-skills-cowork.zip").is_file()
+    assert (output / "report.json").is_file()

@@ -7,6 +7,8 @@ on:
       - 'scripts/export-cowork.py'
       - 'tests/scripts/test_export_cowork.py'
       - 'package.json'
+      - '.gitignore'
+      - '.github/workflows/publish.yml'
       - '.github/workflows/test-cowork-export.yml'
   workflow_dispatch:
 

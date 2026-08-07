@@ -32,6 +32,7 @@
     "commands",
     "hooks",
     "assets",
+    "cowork",
     ".claude-plugin",
     "version-manifest.json",
     "README.md",
@@ -47,6 +48,7 @@
     "skills:recover": "node scripts/npm-package-lifecycle.mjs recover",
     "prepack": "node scripts/npm-package-lifecycle.mjs prepare",
     "postpack": "node scripts/npm-package-lifecycle.mjs restore",
+    "cowork:build": "python scripts/export-cowork.py --output cowork --force",
     "version:sync": "node scripts/sync-version.mjs",
     "version:check": "node scripts/sync-version.mjs --check"
   }

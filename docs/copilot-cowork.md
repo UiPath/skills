@@ -36,6 +36,18 @@ For Cowork compatibility, the exporter consolidates Markdown reference material 
 
 The per-skill `.skill` archive is the fastest artifact for focused manual testing. Use the plugin ZIPs to exercise multi-skill discovery and plugin packaging.
 
+## Published npm artifacts
+
+Every `@uipath/skills` publish builds the complete export after its release version is resolved and includes it under `cowork/` in the npm package:
+
+- `cowork/skills/*.skill`
+- `cowork/plugins/*.zip`
+- `cowork/report.json`
+
+The generated directory is intentionally ignored by Git. Consumers such as the UiPath CLI should resolve the version-matched `@uipath/skills` package and copy these prebuilt artifacts; they do not need Python or a skills repository checkout at runtime.
+
+`report.json` records both `source_package_version` (the exact npm version, including a `dev` or `preview` suffix) and `source_version` (the numeric version required by Microsoft 365 manifests). Stable, `dev`, and `preview` plugin packages use separate deterministic app IDs. Within a prerelease channel, the publish run number becomes the manifest patch version so a later package can update an earlier upload without colliding with the stable app.
+
 ## Prerequisites for manual validation
 
 You need all of the following:

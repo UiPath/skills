@@ -84,6 +84,9 @@ jobs:
           node-version: "22.x"
           registry-url: "https://npm.pkg.github.com"
           scope: "@uipath"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
 
       # Stamp a prerelease suffix: <base>-dev.<run_number>. Dot-separated so
       # semver orders the run number numerically. Never committed — only the
@@ -98,6 +101,12 @@ jobs:
           npm version "$DEV" --no-git-tag-version --allow-same-version
           node scripts/sync-version.mjs
           echo "Publishing $DEV to dist-tag dev"
+
+      # Cowork archives are derived from the exact versioned source being
+      # published. They are generated in CI and included through package.json
+      # rather than committed to the repository.
+      - name: Build Copilot Cowork artifacts
+        run: npm run cowork:build
 
       # setup-node wrote `@uipath:registry=https://npm.pkg.github.com/` + auth;
       # the scoped registry routes this scoped package to GitHub Packages. The
@@ -131,6 +140,9 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "22.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
 
       # Node 22 ships npm 10.x; OIDC trusted publishing needs npm >= 11.5.1.
       - name: Upgrade npm for trusted publishing
@@ -163,6 +175,11 @@ jobs:
             echo "tag=latest" >> "$GITHUB_OUTPUT"
             echo "Publishing $(node -p "require('./package.json').version") to dist-tag latest"
           fi
+
+      # Build after any preview version stamp so the generated manifests match
+      # the package contents that npm publishes.
+      - name: Build Copilot Cowork artifacts
+        run: npm run cowork:build
 
       # No auth token and no setup-node registry-url — a token would make npm
       # use token auth and bypass OIDC. We only pin the scoped package to

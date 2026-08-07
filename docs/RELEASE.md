@@ -98,6 +98,8 @@ Registry follows channel — you pick a channel, not a registry.
 
 **Two default-package channels publish automatically** (mirroring `UiPath/cli`): every push to `main` (normally a merge) publishes a default `dev` build to GitHub Packages, and every push to a `release/v*` branch publishes a default `preview` build to npmjs. When the custom-package gate is enabled after bootstrap, the same run invokes the isolated Studio Web publisher for its GitHub Packages `dev` or `preview` counterpart. `latest` (stable) is published **only** for the default package by an explicit `channel=latest` dispatch — there is no `release:` trigger, so creating a GitHub Release does not publish anything. `npm install @uipath/skills` (no tag, from npmjs) always resolves the last stable release. The `preview`/`dev` version suffix (`<base>-preview.<run_number>` / `<base>-dev.<run_number>`) matches the CLI's stamping scheme exactly.
 
+Before every publish, the workflow runs `npm run cowork:build`. This generates the versioned Microsoft 365 Copilot Cowork projection under `cowork/`, and `package.json` includes that directory in the tarball. The generated directory is not committed. See [the Cowork export guide](copilot-cowork.md#published-npm-artifacts) for its package layout.
+
 ### Cutting a preview
 
 **Every push to a `release/v*` branch auto-publishes a preview** (normally after a merge; see the tracks table) — this is the normal path, mirroring `UiPath/cli`. To cut one ad hoc from any ref, dispatch with channel `preview`:

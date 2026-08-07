@@ -755,7 +755,7 @@ def _cowork_sections(
     return body.rstrip() + "\n\n" + "\n\n".join(sections) + "\n"
 
 
-def _load_version(repo_root: Path) -> str:
+def _load_package_version(repo_root: Path) -> str:
     package_path = repo_root / "package.json"
     if not package_path.is_file():
         return "0.0.0"
@@ -767,14 +767,60 @@ def _load_version(repo_root: Path) -> str:
         raise ExportError(
             f"cannot read package version from {package_path}: {exc}"
         ) from exc
-    if not re.fullmatch(r"\d+\.\d+\.\d+", str(value)):
-        # M365 manifests require a numeric dotted version.  Development suffixes
-        # describe the source, but are not legal in the app package.
-        match = re.match(r"(\d+\.\d+\.\d+)", str(value))
-        if not match:
-            raise ExportError(f"package.json version is not M365-compatible: {value!r}")
-        return match.group(1)
-    return str(value)
+    package_version = str(value)
+    if not re.fullmatch(
+        r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?",
+        package_version,
+    ):
+        raise ExportError(
+            f"package.json version is not SemVer-compatible: {package_version!r}"
+        )
+    return package_version
+
+
+def _m365_version(package_version: str) -> str:
+    match = re.fullmatch(
+        r"(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)"
+        r"(?:-(?P<prerelease>[0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?",
+        package_version,
+    )
+    if not match:
+        raise ExportError(
+            f"package.json version is not M365-compatible: {package_version!r}"
+        )
+
+    # Store updates require a strictly increasing MAJOR.MINOR.PATCH version,
+    # while npm dev/preview builds carry a non-numeric suffix.  Their GitHub
+    # workflow run number is monotonic, so use it as the patch within the
+    # channel-specific app identity produced by _m365_identity_channel().
+    prerelease = match.group("prerelease")
+    channel = (
+        re.fullmatch(r"(?:dev|preview)\.(?P<run>\d+)", prerelease)
+        if prerelease
+        else None
+    )
+    patch = str(int(channel.group("run"))) if channel else match.group("patch")
+    return f"{match.group('major')}.{match.group('minor')}.{patch}"
+
+
+def _m365_identity_channel(package_version: str) -> str | None:
+    match = re.fullmatch(
+        r"\d+\.\d+\.\d+(?:-(?P<prerelease>[0-9A-Za-z.-]+))?"
+        r"(?:\+[0-9A-Za-z.-]+)?",
+        package_version,
+    )
+    prerelease = match.group("prerelease") if match else None
+    if not prerelease:
+        return None
+    channel = re.fullmatch(r"(?P<name>dev|preview)\.\d+", prerelease)
+    if channel:
+        return channel.group("name")
+
+    # Other prerelease schemes don't promise a monotonic numeric component.
+    # Give each exact build a distinct identity instead of letting two
+    # different packages collide at the same stripped manifest version.
+    digest = hashlib.sha256(package_version.encode("utf-8")).hexdigest()[:12]
+    return f"prerelease-{digest}"
 
 
 def _read_skill_sources(skill_dir: Path) -> tuple[dict[str, bytes], tuple[str, ...]]:
@@ -1077,7 +1123,8 @@ def build_export(
     if not names:
         raise ExportError("no skills selected")
 
-    version = _load_version(repo_root)
+    package_version = _load_package_version(repo_root)
+    version = _m365_version(package_version)
     skills = [_export_skill(available[name], version) for name in names]
     artifacts: dict[str, bytes] = {}
 
@@ -1091,6 +1138,9 @@ def build_export(
         identity_scope = f"selection-{selection_digest}"
     else:
         identity_scope = "catalog"
+    identity_channel = _m365_identity_channel(package_version)
+    if identity_channel:
+        identity_scope = f"{identity_scope}-{identity_channel}"
 
     for skill in skills:
         payload = _zip_bytes(skill.files)
@@ -1126,6 +1176,7 @@ def build_export(
     report = {
         "format_version": 1,
         "generator": GENERATOR,
+        "source_package_version": package_version,
         "source_version": version,
         "skill_count": len(skills),
         "plugin_package_count": len(shards),
@@ -1242,11 +1293,14 @@ def _safe_output_target(output: Path, repo_root: Path) -> bool:
     if resolved in home.parents or resolved in repo.parents:
         return False
 
-    # Generated content inside this repository belongs only under dist/. This
-    # prevents a typo such as --output skills/cowork from contaminating source.
+    # Generated content inside this repository belongs under dist/, except for
+    # the exact ignored cowork/ directory used to assemble the npm package.
+    # This prevents a typo such as --output skills/cowork from contaminating
+    # source while allowing the release workflow's explicit package target.
     if repo in resolved.parents:
         dist = (repo / "dist").resolve()
-        if resolved != dist and dist not in resolved.parents:
+        npm_cowork = (repo / "cowork").resolve()
+        if resolved != npm_cowork and resolved != dist and dist not in resolved.parents:
             return False
     return True
 
