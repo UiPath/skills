@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""Flow-file-first check: inline agent + external RPA tool.
+
+Grades the `.flow` as the source of truth (sidecar neither required nor
+forbidden):
+
+  1. Self-contained `uipath.agent.autonomous` node (string prompts, real
+     system prompt, overridden model, lowercase-UUID `inputs.source`, no
+     never-author artifacts) with canvas-form prompt tokens and a
+     contract-conformant `agentInputVariables`.
+  2. Typed output: `agentOutputVariables` declares `value: number` (the
+     prompt's required output contract).
+  3. Agent definition present at the exact (type, typeVersion) with the
+     inline-agent serviceType.
+  4. A `uipath.agent.resource.tool.process.<key>` node wired to the agent's
+     `tool` handle, type keyed by the target's resource-key GUID
+     (discovered via registry search, not hand-constructed).
+  5. Tool node carries its config in `inputs`: UUID `source`, non-empty
+     `name`/`description`, `properties.processName == "FibonacciRPA"`,
+     `properties.folderPath` == the real deployed Orchestrator folder.
+  6. Tool definition present at the exact (type, typeVersion).
+  7. Flow data reaches the cluster: at least one `$vars.`/`$metadata.` ref
+     across the agent prompts or the tool's structured inputs (the prompt
+     mandates a required `index` input).
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+from _shared.flow_inline_wiring import (  # noqa: E402
+    load_json,
+    find_autonomous_agent_node,
+    assert_embedded_agent,
+    assert_prompt_tokens,
+    assert_agent_input_vars,
+    assert_agent_output_vars,
+    assert_agent_sequence_wiring,
+    assert_bindings_rows,
+    assert_definition_present,
+    assert_no_derived_resource_fields,
+    find_flow_file,
+    find_wired_resource,
+    assert_resource_source_uuid,
+    assert_resource_inputs,
+    assert_tool_type_key_uuid,
+    assert_cluster_vars_ref,
+)
+
+INLINE_AGENT_SERVICE_TYPE = "Orchestrator.StartInlineAgentJob"
+FLOW_PATH = Path(os.getcwd()) / "FibonacciFlowSol" / "FibonacciFlow" / "FibonacciFlow.flow"
+TOOL_TYPE_PREFIX = "uipath.agent.resource.tool.process."
+EXPECTED_PROPERTIES = {
+    "processName": "FibonacciRPA",
+    "folderPath": "Shared/uipath-agents/FibonacciRPA",
+}
+EXPECTED_OUTPUTS = {"value": "number"}
+
+
+def main() -> None:
+    flow = load_json(find_flow_file(FLOW_PATH))
+    agent_node = find_autonomous_agent_node(flow)
+
+    assert_embedded_agent(agent_node)
+    assert_prompt_tokens(agent_node)
+    assert_agent_input_vars(agent_node)
+    assert_agent_sequence_wiring(flow, agent_node)
+    assert_agent_output_vars(agent_node, EXPECTED_OUTPUTS)
+    print(
+        f"OK: {agent_node['id']} is self-contained with typed output "
+        f"{sorted(EXPECTED_OUTPUTS)}"
+    )
+
+    definition = assert_definition_present(flow, agent_node)
+    service_type = (definition.get("model") or {}).get("serviceType")
+    if service_type != INLINE_AGENT_SERVICE_TYPE:
+        sys.exit(
+            f"FAIL: agent definitions[] entry has model.serviceType "
+            f"{service_type!r}, expected {INLINE_AGENT_SERVICE_TYPE!r} — a "
+            "missing serviceType means the definition was not copied verbatim "
+            "from registry get"
+        )
+    print(f"OK: agent definition present with serviceType {INLINE_AGENT_SERVICE_TYPE!r}")
+
+    tool_node = find_wired_resource(
+        flow, agent_node, type_prefix=TOOL_TYPE_PREFIX, source_port="tool"
+    )
+    print(f"OK: {tool_node['type']} is wired to the agent's 'tool' handle")
+
+    assert_tool_type_key_uuid(tool_node)
+    assert_resource_source_uuid(tool_node)
+    assert_no_derived_resource_fields(tool_node)
+    assert_resource_inputs(tool_node, expected_properties=EXPECTED_PROPERTIES)
+    print(
+        'OK: tool inputs carry processName="FibonacciRPA", the real deployed '
+        "folderPath, UUID source"
+    )
+
+    assert_definition_present(flow, tool_node)
+    assert_bindings_rows(flow)
+    print("OK: top-level bindings[] rows present for the tool")
+    print("OK: tool definition present at the exact (type, typeVersion)")
+
+    assert_cluster_vars_ref([agent_node, tool_node])
+    print("OK: flow data is wired into the agent cluster")
+
+
+if __name__ == "__main__":
+    main()

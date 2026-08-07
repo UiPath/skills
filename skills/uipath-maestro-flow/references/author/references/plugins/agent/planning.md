@@ -2,7 +2,7 @@
 
 Agent nodes invoke UiPath AI agents from within a flow. Published agents appear in the registry after `uip login` + `uip maestro flow registry pull`. **In-solution** (unpublished) agents in sibling projects are discovered via `--local` — no login or publish required. Both **coded** (Python) and **low-code** (agent.json) agents appear here once deployed — the flow treats them identically.
 
-> **Related plugin:** [inline-agent](../inline-agent/planning.md) covers low-code agents embedded as a UUID subdirectory **inside** the flow project (`uipath.agent.autonomous`). Coded agents always use this `agent` plugin, not `inline-agent`.
+> **Related plugin:** [inline-agent](../inline-agent/planning.md) covers low-code agents defined **directly in the flow file** (`uipath.agent.autonomous`, full definition in node `inputs`). Coded agents always use this `agent` plugin, not `inline-agent`.
 
 > **Choosing between coded and low-code, or wiring them into a flow:** see the `uipath-agents` skill — [coded-vs-lowcode-guide.md](../../../../../../uipath-agents/references/coded-vs-lowcode-guide.md) for the comparison, [coded/flow-integration.md](../../../../../../uipath-agents/references/coded/flow-integration.md) for coded-agent Flow patterns.
 

@@ -327,6 +327,31 @@ uip maestro flow eval run compare <run_a> --compare-to <run_b> --set <set> --pat
 
 For full flag tables, evaluator type details, eval set JSON shape, and the run-safety rule, see the [Evaluate capability](../evaluate/CAPABILITY.md).
 
+## uip agent model list
+
+Model discovery for inline agents (inline agents have no `uip agent` lifecycle; never run `init`/`refresh`/`validate` for them — the only `uip agent` verbs used with flows are this and the guardrail discovery reads below). Requires `uip login`; works from a flow project directory (no agent project needed).
+
+```bash
+uip agent model list --output json
+# GA-only projection:
+uip agent model list --output json \
+  --output-filter "[?IsByo==\`false\` && IsPreview==\`false\`].{Name:Name,Provider:Provider,MaxTokens:MaxTokens}"
+```
+
+`Data` is a flat array of PascalCase objects (`Provider`, `Name`, `IsByo`, `IsPreview`, `MaxTokens`). Selection guidance: [author/references/plugins/inline-agent/model-selection-guide.md](../author/references/plugins/inline-agent/model-selection-guide.md).
+
+## uip agent guardrails
+
+Validator discovery for inline-agent guardrails — tenant-level reads, no agent project needed. Requires `uip login`:
+
+```bash
+uip agent guardrails list --output json                # tenant validators: status, scopes, stages, parameter shapes
+uip agent guardrails catalog --output json             # platform catalog: when_to_use / use_cases metadata (cacheable 30 min)
+uip agent guardrails llm-as-judge-models --output json # LLM Gateway models for the llm_as_judge `model` parameter
+```
+
+Authoring guidance: [author/references/plugins/inline-agent/capabilities/guardrails.md](../author/references/plugins/inline-agent/capabilities/guardrails.md).
+
 ## uip maestro flow registry
 
 Manage the local node type cache. No auth required for OOTB nodes; login for tenant-specific connector nodes.

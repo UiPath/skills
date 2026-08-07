@@ -1,0 +1,136 @@
+task_id: skill-flow-inline-context-index
+description: >
+  Context grounding for an inline agent — flow-file-first. End-to-end
+  test: scaffold a flow project whose inline low-code agent (full
+  definition embedded in the `uipath.agent.autonomous` node's `inputs`)
+  grounds its answers in the existing external
+  "UiPathAgentsProductKnowledge" semantic index. Verifies a
+  `uipath.agent.resource.context.index.<name>.<id>` node carries the
+  flat flow-form config in its `inputs` (UUID `source`, identity copied
+  from the manifest's `inputDefaults` — `indexName` + the real
+  `folderPath`, all-lowercase `retrievalMode`, no derived
+  `settings`/`contextType` contamination), is wired to the agent's
+  `context` handle with its registry definition present, flow data is
+  wired into the cluster, the agent declares the typed `answer` output,
+  and the flow validates. No sidecar authored, no `uip agent` lifecycle
+  commands. Validate-only by design: `uip maestro flow debug` cannot
+  yet run flow-only inline agents (no sidecar synthesis — known CLI gap
+  pinned at roadmap M0), so `flow validate` is the grading ceiling.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, node:inline-agent, shape:multi-node, resource]
+
+run_limits:
+  expected_turns: 65
+  turn_timeout: 1200
+
+# Explicitly mentioning "autonomous" since the "question"/"answer" prompt may
+# cause the coding agent to assume the conversational low-code agent variant.
+initial_prompt: |
+  Create a UiPath Flow project "KnowledgeFlow" that runs an autonomous inline
+  low-code agent which answers a user's `question` (string) and returns an
+  `answer` (string). It should base its answers on our existing
+  "UiPathAgentsProductKnowledge" knowledge index — which is already set up in
+  our tenant — instead of answering from general knowledge. Wire it into the
+  flow. The solution should be named "KnowledgeFlowSol".
+
+  The task is NOT complete until `uip maestro flow validate` passes for the
+  flow file.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+
+  # Global transform (roadmap §7): the sidecar lifecycle verbs must not run —
+  # the definition lives in the .flow.
+  - type: command_not_executed
+    description: "No legacy inline-agent lifecycle commands (definition lives in the .flow)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+(init|refresh|validate)\s+.*--inline-in-flow'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent cross-checked the index identity with uip solution resources list (informational)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources\s+list\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0  # advisory: the registry manifest's inputDefaults carry the full index identity, so resources list is outcome-invisible
+
+  # Outcome-necessary (unlike the static builtin types): the registry mints one
+  # dynamic node type per tenant index — the exact type string (index-GUID
+  # suffix) is only discoverable via registry search.
+  - type: command_executed
+    description: "Agent searched the flow registry for the context index node type"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+search\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the context index node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.resource\.context\.index\.'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the inline autonomous agent node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.autonomous'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "KnowledgeFlowSol/KnowledgeFlowSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "KnowledgeFlowSol/KnowledgeFlow/KnowledgeFlow.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow embeds the inline agent and the context index node types"
+    path: "KnowledgeFlowSol/KnowledgeFlow/KnowledgeFlow.flow"
+    includes:
+      - '"uipath.agent.autonomous"'
+      - 'uipath.agent.resource.context.index.'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline context index: embedded agent + flat context node inputs (indexName/real folderPath, lowercase retrievalMode) + context-handle edge + definitions + typed output"
+    command: 'python3 "$TASK_DIR/check_context_index.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the authored flow"
+    command: 'python3 "$TASK_DIR/../../_shared/validate_flow.py"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

@@ -4,7 +4,7 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 
 ## When to Use
 
-- Create a new low-code agent project (standalone or inline in a flow)
+- Create a new **standalone** low-code agent project (inline-in-flow agents are embedded in the `.flow` and owned by the `uipath-maestro-flow` skill)
 - Edit `agent.json` — prompts, model, schemas, settings
 - Add tools, contexts, escalations, or MCP servers as files in `resources/{Name}/resource.json`
 - Add memory spaces or seed memory items with `uip agent memory`
@@ -18,18 +18,18 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 
 UiPath low-code agents come in **two variants**, both sharing this skill.
 
-1. Autonomous agents are intended for any general use-cases involving execution from input → output. They may be standalone or inline in a flow.
+1. Autonomous agents are intended for any general use-cases involving execution from input → output. They may be standalone (this skill) or inline in a flow (embedded in the `.flow`; owned by `uipath-maestro-flow`).
    
 2. Conversational agents are intended for use-cases involving multi-turn conversations / fast latency with real-time user-interaction / streamed responses.
 
-> Currently, conversational agents are only standalone and not yet supported to be inline in a flow, so inline-in-flow use-cases should always use an autonomous agent.
+> Currently, conversational agents are only standalone and not yet supported to be inline in a flow — inline-in-flow use-cases always use an autonomous agent (and belong to the `uipath-maestro-flow` skill).
 > After deployment, conversational agents are interacted with through the UiPath Conversation Service, which manages conversation history and exposes a CLI/SDK for client UIs. Each user-initiated exchange invokes the agent for a single turn, streaming events back to the client.
 
 In summary:
 | Signal | Variant |
 |---|---|
 | User wants general input → output execution | **Autonomous** |
-| User wants inline-in-flow | **Autonomous** |
+| User wants inline-in-flow | **Autonomous** — embedded in the `.flow`; tell the user to use `uipath-maestro-flow` |
 | `agent.json` has `metadata.isConversational: false` or unset | **Autonomous** |
 | User wants multi-turn chat / fast latency with real-time user-interaction / streamed responses | **Conversational** |
 | Existing `agent.json` has `metadata.isConversational: true` | **Conversational** |
@@ -105,7 +105,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Add a memory space or seed memory items | [capabilities/memory/memory.md](capabilities/memory/memory.md) | |
 | Add an Action Center escalation (HITL) | [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md) | |
 | Add guardrails (PII, harmful content, custom rules) | [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) | |
-| Embed an autonomous agent inline in a flow | [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) | |
+| Embed an autonomous agent inline in a flow | Tell the user to use the `uipath-maestro-flow` skill (agent is embedded in the `.flow`) | [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) |
 | Set up Orchestrator resources | Tell the user to use the `uipath-platform` skill | |
 | Wire agent into a flow | Tell the user to use the `uipath-maestro-flow` skill | |
 

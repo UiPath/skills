@@ -30,22 +30,7 @@ The `<path>` argument is relative or absolute; the command can run from any dire
 - `--model <model>` — LLM model to use (default: `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational). This default is stale; override it post-init — discover current tenant models with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md). Pass `--model` at init or edit `settings.model` after.
 - `--system-prompt <prompt>` — Initial system prompt for the agent
 - `--force` — Overwrite existing directory if non-empty
-- `--inline-in-flow` — Scaffold an inline agent inside a flow project (see below). Only applicable for autonomous agents, since adding inline conversational-agents within a flow project is currently not an enabled feature.
-
-#### Inline mode: `--inline-in-flow`
-
-When `--inline-in-flow` is passed, the `<path>` argument is treated as the flow project directory. The command creates a UUID-named subdirectory containing `agent.json`, `flow-layout.json` (`{}`), and empty `evals/eval-sets/`, `features/`, `resources/` directories. No `entry-points.json`, `project.uiproj`, or evaluator files are created.
-
-```bash
-uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json
-```
-
-**Success output:**
-```json
-{ "Result": "Success", "Code": "LowCodeAgentInitInline", "Data": { "Status": "Inline agent created inside flow project", "Path": "/path/to/FlowProject/<uuid>", "ProjectId": "<uuid>", "Model": "gpt-4o-2024-11-20" } }
-```
-
-After scaffolding, add a `uipath.agent.autonomous` node to the flow with `inputs.source = <ProjectId>` and no node instance `model` block. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) for the full structure.
+- `--inline-in-flow` — **Legacy; not part of any recipe.** Inline agents are defined directly in the `.flow` file (owned by the `uipath-maestro-flow` skill) — the subdirectory this flag scaffolds is a derived artifact under the current architecture. See [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md).
 
 ### `uip agent guardrails list`
 
@@ -75,7 +60,7 @@ uip agent validate [path] --output json
 `path` is optional — defaults to the current directory.
 
 **Options:**
-- `--inline-in-flow` — Validate an inline agent inside a flow project. Skips `entry-points.json` and `project.uiproj` checks.
+- `--inline-in-flow` — **Legacy; not part of any recipe** (inline agents validate via `uip maestro flow validate` — see [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md)).
 
 **What it does (standalone mode):**
 1. Checks `agent.json` structure: `version === "1.1.0"`, type, UUID, settings (including `mode`), messages, contentTokens consistency.
@@ -86,8 +71,6 @@ uip agent validate [path] --output json
 6. Dry-run derived-files generation — compares generated `entry-points.json` and `bindings_v2.json` against on-disk files. Fails with `AgentValidationDrift` if they are out of sync. Run `uip agent refresh` to regenerate.
 
 **Does NOT write files.** Strict read-only. Run `uip agent refresh` before validate to apply migrations and regenerate derived files.
-
-**With `--inline-in-flow`:** Steps 2, 3, and entry-points drift check are skipped.
 
 **Success output:**
 ```json
@@ -112,8 +95,6 @@ uip agent refresh [path] --output json
 2. Writes migrated `agent.json` (and related files) to disk if migration is needed.
 3. Regenerates `entry-points.json` from `agent.json` inputSchema/outputSchema (preserving the existing `uniqueId`).
 4. Regenerates `bindings_v2.json` from `resources/{ResourceName}/resource.json` files, features, and guardrail escalations.
-
-**With `--inline-in-flow`:** Skips `entry-points.json`/`project.uiproj` checks. Agent capability bindings are merged into the parent flow project's `bindings_v2.json`.
 
 **Workflow:** run `uip agent refresh` to apply writes and regenerate derived files, then `uip agent validate` to verify the project is clean. For routine edits with no schema migration pending, refresh is still needed to keep `entry-points.json` and `bindings_v2.json` in sync.
 
@@ -426,7 +407,6 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Login check | `uip login status --output json` | Any directory | — |
 | Create solution | `uip solution init "<NAME>" --output json` | Any directory | — |
 | Scaffold agent | `uip agent init "<NAME>" --output json` | Any directory (auto-scaffolds `<NAME>Solution/` if outside a solution) | — |
-| Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
 | Verify project registration | Check `Data.SolutionRegistration.Status` from `agent init` response (`Registered` / `AlreadyRegistered` = done; `OptedOut` = `--skip-solution-registration` passed) | Solution directory | — |
 | Register project (fallback) | `uip solution projects add "<PATH>" --output json` — when `agent init` returned `Skipped` / `Failed` / `NotInSolution` | Solution directory | — |
 | Refresh + regenerate derived files | `uip agent refresh [path] --output json` | Agent dir or any with path | — |

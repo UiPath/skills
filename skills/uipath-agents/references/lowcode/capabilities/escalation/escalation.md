@@ -11,7 +11,7 @@ The only channel type currently supported end-to-end by `uip solution resources 
 
 **Key pattern:** the skill writes only the agent-level `resources/{EscalationName}/resource.json`. `uip solution resources refresh` emits an App binding into `bindings_v2.json` and then hand-writes the four solution-level files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus two `debug_overwrites.json` entries (`kind: "app"`, `kind: "process"`) automatically. No manual solution-level authoring is required for `actionCenter` channels.
 
-**Inline agents (escalation inside a flow):** still run the full discovery below (including `uip solution resources list --kind App`) and author the `resource.json` the same way — then **also** wire an escalation flow node, type `uipath.agent.resource.escalation.<variant>` (see Step 6b). Without the node the escalation is never reached at runtime.
+**Inline agents (escalation inside a flow):** embedded in the `.flow`; owned by the `uipath-maestro-flow` skill — this file covers standalone agents only.
 
 ## Discovery
 
@@ -227,9 +227,9 @@ The fourth file (`process/webApp/...`) backs the app resource's `dependencies[1]
 
 Use the full shape from § Agent-Level Resource Shape above. Generate fresh UUIDs for the top-level `id` AND the channel `id` — do not reuse.
 
-### Step 6b — Inline agents only: wire the escalation flow node
+### Step 6b — Inline agents
 
-**Skip if the agent is standalone.** If the escalation is on an **inline** agent (embedded in a flow), the `resource.json` alone is never reached at runtime — you MUST also add an escalation flow node connected to the autonomous node's `escalation` handle. The registry exposes the escalation node as concrete variants (e.g. `uipath.agent.resource.escalation.coded-action-app` for an Action Center / Workflow Action app) — there is no bare `uipath.agent.resource.escalation` node. Discover the available variant with `uip maestro flow registry search "escalation" --output json` (pick the one with `AvailableOnTenant: true`), fetch its manifest with `uip maestro flow registry get <NodeType> --output json`, then hand the node + edge authoring to the `uipath-maestro-flow` skill (Critical Rule 16 — this skill does not author `.flow` graphs directly). Run Step 7's refresh/validate with `--inline-in-flow` plus `--bindings-target <FlowProjectDir>/bindings_v2.json`. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
+Escalations on **inline** agents are embedded in the `.flow` (an escalation node carrying its full config); owned by the `uipath-maestro-flow` skill — see [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md). Steps here apply to standalone agents only.
 
 ### Step 7 — Refresh, validate, and refresh solution resources
 
