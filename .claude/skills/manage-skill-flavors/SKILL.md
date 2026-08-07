@@ -31,9 +31,9 @@ Do not create an exception merely to reword shared guidance.
 Keep the canonical `SKILL.md` or reference complete. Put standalone boundaries around only the passage that differs:
 
 ```markdown
-<!-- skill-flavor:project-creation:start -->
+<!--skill-flavor:project-creation:start-->
 Create the project with the default local workflow.
-<!-- skill-flavor:project-creation:end -->
+<!--skill-flavor:project-creation:end-->
 ```
 
 Mirror the canonical path below the flavor root and write only complete replacement blocks plus whitespace:
@@ -44,21 +44,22 @@ skill-flavors/studioweb/uipath-example/references/setup.md
 ```
 
 ```markdown
-<!-- skill-flavor:project-creation:start -->
+<!--skill-flavor:project-creation:start-->
 Create the project with the host project-creation tool.
-<!-- skill-flavor:project-creation:end -->
+<!--skill-flavor:project-creation:end-->
 ```
 
 Marker names must be lowercase kebab-case, unique within a file, unnested, and identical in canonical and override files. An override cannot add an unmarked introduction, heading, or note.
 
-Start every marker boundary at column 1 with no leading spaces or tabs. Keep
-the Markdown indentation on the content inside the block instead. For example,
-wrap a nested list item like this:
+Use the compact marker form with no whitespace inside the HTML comment, and
+start every boundary at column 1 with no leading or trailing spaces or tabs.
+Keep the Markdown indentation on the content inside the block instead. For
+example, wrap a nested list item like this:
 
 ```markdown
-<!-- skill-flavor:connector-registration:start -->
+<!--skill-flavor:connector-registration:start-->
     - Nested host-specific instruction.
-<!-- skill-flavor:connector-registration:end -->
+<!--skill-flavor:connector-registration:end-->
 ```
 
 If a new flavor needs a smaller exception than an existing multi-paragraph
@@ -78,9 +79,9 @@ content unmarked and put an empty extension block next to it:
 | Shared reference | Shared purpose |
 |---|---|
 | references/common.md | Used by every host |
-<!-- skill-flavor:reference-navigation-extra:start -->
+<!--skill-flavor:reference-navigation-extra:start-->
 
-<!-- skill-flavor:reference-navigation-extra:end -->
+<!--skill-flavor:reference-navigation-extra:end-->
 ```
 
 Fill only that extension in the sparse override. The default emits nothing at

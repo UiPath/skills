@@ -248,22 +248,22 @@ instruction. Keep the complete default behavior in the canonical file and
 wrap the smallest differing passage with a named block:
 
 ```markdown
-<!-- skill-flavor:project-creation:start -->
+<!--skill-flavor:project-creation:start-->
 Create the project with the default/local workflow.
-<!-- skill-flavor:project-creation:end -->
+<!--skill-flavor:project-creation:end-->
 ```
 
 Create a file at the matching path under
 `skill-flavors/<flavor>/<skill>/` and put only the replacement block in it:
 
 ```markdown
-<!-- skill-flavor:project-creation:start -->
+<!--skill-flavor:project-creation:start-->
 Create the project with the host capability exposed in this environment.
-<!-- skill-flavor:project-creation:end -->
+<!--skill-flavor:project-creation:end-->
 ```
 
 - Use lowercase kebab-case block names and keep each name unique within its file.
-- Start marker boundaries at column 1 with no leading whitespace; keep Markdown indentation on the content inside the block.
+- Use compact `<!--skill-flavor:<name>:start|end-->` boundaries with no internal, leading, or trailing whitespace; keep Markdown indentation on the content inside the block.
 - Keep shared content outside blocks; do not create a second full `SKILL.md`.
 - For a host-only addition to a shared table, list, or navigation section, keep the shared content unmarked and add an empty canonical `<name>-extra` block for the flavor to fill. If one existing item differs, mark only that item.
 - An override must contain complete marked blocks and no unmarked prose.
@@ -445,7 +445,7 @@ Before submitting your PR, verify:
 
 - [ ] The canonical `SKILL.md` is still complete and useful as the default/local skill
 - [ ] Only genuinely different passages are enclosed in flavor blocks
-- [ ] Every marker boundary starts at column 1, with any required indentation kept on its enclosed Markdown
+- [ ] Every marker boundary uses the compact whitespace-free form at column 1, with any required indentation kept on its enclosed Markdown
 - [ ] Host-only additions use an additive empty canonical block instead of copying a shared table, list, or navigation section
 - [ ] Custom override files contain matching complete blocks and no unmarked content
 - [ ] Every canonical skill has been reviewed for every custom flavor; add sparse overrides wherever canonical guidance is unsafe

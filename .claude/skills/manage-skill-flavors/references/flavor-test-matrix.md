@@ -23,8 +23,10 @@ block:     canonical name == override name
 inclusion: every canonical skill is present in every flavor
 ```
 
-Every marker boundary starts at column 1 with no leading spaces or tabs.
-Indented Markdown content stays indented inside those column-one boundaries.
+Every marker boundary uses the compact
+`<!--skill-flavor:<name>:start|end-->` form at column 1, with no internal,
+leading, or trailing whitespace. Indented Markdown content stays indented
+inside those column-one boundaries.
 The override may contain multiple complete blocks separated by whitespace. Canonical block order controls the built file; override order must not affect it.
 
 When splitting an existing broad block into smaller sibling blocks, capture

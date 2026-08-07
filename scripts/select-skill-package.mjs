@@ -6,10 +6,9 @@ import { pathToFileURL } from "node:url";
 
 import {
   CUSTOM_PACKAGE_PUBLISH_CONFIG,
+  containsFlavorMarker,
   readTarballEntries,
 } from "./compose-skill-flavor.mjs";
-
-const MARKER_BYTES = Buffer.from("<!-- skill-flavor:");
 
 function usage() {
   return (
@@ -60,7 +59,7 @@ function assertMarkerFree(entries, tarball) {
   let skillFileCount = 0;
   for (const [name, bytes] of entries) {
     if (name.startsWith("package/skills/") && bytes.length > 0) skillFileCount += 1;
-    if (bytes.includes(MARKER_BYTES)) {
+    if (containsFlavorMarker(bytes)) {
       throw new Error(`flavor marker leaked into selected npm tarball ${tarball}: ${name}`);
     }
   }

@@ -88,6 +88,8 @@ test("contributor guidance documents the full-catalog Node flavor contract", () 
   assert.match(source, /ENABLE_SKILL_FLAVOR_PUBLISH/);
   assert.match(source, /confirmed Internal/i);
   assert.match(flavorGuidance, /column 1/i);
+  assert.match(flavorGuidance, /compact marker form|compact.*whitespace-free/is);
+  assert.match(flavorGuidance, /no (?:internal, )?leading,? or trailing whitespace/i);
   assert.match(
     flavorGuidance,
     /empty (?:canonical )?(?:<name>-extra|extension) block/i,
