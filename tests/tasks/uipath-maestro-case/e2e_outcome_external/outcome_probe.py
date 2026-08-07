@@ -1,0 +1,278 @@
+#!/usr/bin/env python3
+"""Shared plumbing for the outcome-based graders.
+
+Three separate criteria need the case to have RUN, but coder_eval does not
+guarantee the order criteria are evaluated in (and may run them concurrently).
+``ensure_debug_ran`` therefore makes execution idempotent: the first grader to
+arrive runs ``uip solution resources refresh`` + ``uip maestro case debug`` and
+publishes the payload to ``debug_result.json``; the others reuse it. An
+exclusive lock file keeps two concurrent graders from launching two debug runs.
+
+The external reads go to the vendor's real API (Microsoft Graph, Atlassian) but
+authenticate through the tenant's existing Integration Service connection, so no
+third-party credentials are needed in CI.
+"""
+
+from __future__ import annotations
+
+import glob
+import json
+import os
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+
+OUTLOOK_CONN = "dd657127-91f5-4568-a3a3-c024bc03fb0f"
+JIRA_CONN = "f5273a4d-d492-4bcd-a106-5a20bf89a3ef"
+JIRA_PROJECT = "SJP"
+MAILBOX_FOLDER = "Inbox"
+
+DEBUG_RESULT = "debug_result.json"
+DEBUG_LOCK = "debug_result.lock"
+
+# Two independent sources of lag, so the budget is generous (~10 min):
+#   1. Graph is not immediately consistent — a delivered message can take minutes
+#      to become searchable.
+#   2. `uip maestro case debug` gives up polling after a fixed 600 s, but the case
+#      keeps running server-side. Measured 2026-08-07: the CLI timed out at 600 s
+#      and the case's effects landed ~7 min later. A short probe budget reports a
+#      false negative for a case that did its job.
+POLL_ATTEMPTS = 20
+POLL_SLEEP = 30
+
+# Terminal instance states, used when falling back to instance polling.
+TERMINAL_STATES = {"Completed", "Successful", "Faulted", "Cancelled", "Canceled", "Stopped"}
+INSTANCE_WAIT_SECONDS = 1200
+INSTANCE_POLL_SLEEP = 20
+
+# Waiting for a peer grader's debug run; must exceed a cold debug (pack + deploy
+# + execute), which measured ~60s but can be far slower on a loaded tenant.
+PEER_WAIT_SECONDS = 900
+
+
+def precondition_failed(msg: str) -> None:
+    """Abort as an ENVIRONMENT gap, not a skill regression."""
+    sys.exit(f"test precondition failed: {msg} — this is an ENVIRONMENT gap "
+             "(unhealthy connection / missing sandbox fixture), NOT a skill regression")
+
+
+def fail(msg: str) -> None:
+    sys.exit(f"FAIL: {msg}")
+
+
+def run_token() -> str:
+    if not os.path.exists("seed.json"):
+        precondition_failed("seed.json is missing; pre_run seed_outcome.py did not run")
+    with open("seed.json") as fh:
+        token = (json.load(fh) or {}).get("run_token")
+    if not token:
+        precondition_failed("seed.json carries no run_token")
+    return token
+
+
+def _uip_json(args: list[str], timeout: int = 180) -> dict:
+    r = subprocess.run(["uip", *args, "--output", "json"],
+                       capture_output=True, text=True, timeout=timeout)
+    try:
+        return json.loads(r.stdout)
+    except Exception:
+        return {"Result": "ParseError", "raw": (r.stdout or "")[-1500:],
+                "err": (r.stderr or "")[-800:]}
+
+
+def _items(payload: dict) -> list:
+    d = payload.get("Data") or {}
+    if isinstance(d, list):
+        return d
+    return d.get("items") or d.get("Items") or []
+
+
+def _find_dir(pattern: str) -> str:
+    hits = glob.glob(pattern, recursive=True)
+    if not hits:
+        fail(f"nothing matching {pattern} — the agent did not produce a case solution")
+    return os.path.dirname(sorted(hits, key=len)[0])
+
+
+def _newest_debug_instance(since_iso: str) -> dict | None:
+    """The most recent Studio Web Debug instance started after ``since_iso``.
+
+    Deliberately does not filter by folder: debug lands the instance in the
+    invoking user's personal workspace, whose key differs per user and per CI
+    identity.
+    """
+    payload = _uip_json(["maestro", "case", "instance", "list"])
+    data = payload.get("Data") or {}
+    instances = data if isinstance(data, list) else (
+        data.get("Items") or data.get("items") or [])
+    candidates = [
+        i for i in instances
+        if str(i.get("Source") or "") == "Studio Web Debug"
+        and str(i.get("CreatedTimeUtc") or "") >= since_iso
+    ]
+    if not candidates:
+        return None
+    if len(candidates) > 1:
+        # The CLI gives no instanceId when it times out, so the only handle is
+        # "newest debug instance in this window". With tasks run in parallel
+        # (-j > 1) a sibling case task's instance can land in the same window,
+        # and attaching to it would report someone else's success. Refuse to
+        # guess: the outcome probes carry the real signal anyway.
+        ids = ", ".join(str(i.get("InstanceId")) for i in candidates)
+        print(f"  refusing to follow an instance — {len(candidates)} debug instances "
+              f"started in this window, cannot tell which is ours: {ids}")
+        return None
+    return candidates[0]
+
+
+def _await_instance(since_iso: str) -> dict:
+    """Poll the instance to a terminal state after the CLI stopped waiting.
+
+    ``uip maestro case debug`` abandons its own polling at a fixed 600 s, but the
+    case keeps executing. Treating that as a failure mis-reports a case that
+    completes a minute later, so the instance itself is the source of truth.
+    """
+    instance = _newest_debug_instance(since_iso)
+    if not instance:
+        return {}
+    instance_id = instance.get("InstanceId")
+    folder_key = instance.get("FolderKey")
+    print(f"  debug CLI stopped polling; following instance {instance_id}")
+
+    waited = 0
+    status = instance.get("LatestRunStatus")
+    while waited < INSTANCE_WAIT_SECONDS:
+        if status in TERMINAL_STATES:
+            break
+        time.sleep(INSTANCE_POLL_SLEEP)
+        waited += INSTANCE_POLL_SLEEP
+        got = _uip_json(["maestro", "case", "instance", "get", str(instance_id),
+                         "--folder-key", str(folder_key)])
+        status = ((got.get("Data") or {}).get("LatestRunStatus")) or status
+
+    print(f"  instance {instance_id} reached status={status} after {waited}s")
+    return {"finalStatus": status, "instanceId": instance_id,
+            "followedInstance": True}
+
+
+def _do_debug() -> dict:
+    solution_dir = _find_dir("**/*.uipx")
+    project_dir = _find_dir("**/project.uiproj")
+
+    # Resource refresh is mandatory: without it the connector resources are not
+    # resolvable at runtime and debug reports "Resource is not configured".
+    r = _uip_json(["solution", "resources", "refresh",
+                   "--solution-folder", solution_dir])
+    if r.get("Result") != "Success":
+        blob = json.dumps(r)
+        # Refresh is not idempotent — re-running it over its own output fails.
+        # When the agent already refreshed, the resource docs are on disk and
+        # debug can proceed; only that exact failure is tolerated.
+        if "Node already added to the graph" not in blob:
+            fail(f"solution resources refresh failed: {blob[:600]}")
+
+    since = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    payload = _uip_json(["maestro", "case", "debug", project_dir], timeout=1500)
+    data = payload.get("Data") if isinstance(payload, dict) else None
+    data = data if isinstance(data, dict) else {}
+
+    if not any(data.get(k) for k in ("finalStatus", "FinalStatus", "status", "Status")):
+        data = {**data, **_await_instance(since)}
+
+    return {"envelope": {k: v for k, v in payload.items() if k != "Data"},
+            "data": data}
+
+
+def ensure_debug_ran() -> dict:
+    """Run the case once per task, no matter how many graders ask for it."""
+    if os.path.exists(DEBUG_RESULT):
+        with open(DEBUG_RESULT) as fh:
+            return json.load(fh)
+
+    try:
+        fd = os.open(DEBUG_LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(fd)
+    except FileExistsError:
+        # A peer grader owns the debug run — wait for it to publish.
+        waited = 0
+        while waited < PEER_WAIT_SECONDS:
+            if os.path.exists(DEBUG_RESULT):
+                with open(DEBUG_RESULT) as fh:
+                    return json.load(fh)
+            time.sleep(5)
+            waited += 5
+        fail("timed out waiting for a peer grader's case debug run")
+
+    result = _do_debug()
+    with open(DEBUG_RESULT, "w") as fh:
+        json.dump(result, fh, indent=1, default=str)
+    return result
+
+
+def final_status(result: dict) -> str | None:
+    data = result.get("data") or {}
+    for key in ("finalStatus", "FinalStatus", "status", "Status"):
+        if data.get(key):
+            return data[key]
+    return None
+
+
+def probe_email(token: str) -> list:
+    """Messages in the shared sandbox mailbox whose subject carries the token.
+
+    Pages recent messages and matches CLIENT-SIDE. A server-side
+    ``contains(subject,…)`` filter is available but is backed by an index that
+    lags delivery, so it can report zero for a message that already arrived.
+    """
+    payload = _uip_json([
+        "is", "resources", "run", "list",
+        "uipath-microsoft-outlook365", "ListEmails",
+        "--connection-id", OUTLOOK_CONN,
+        "--query", f"parentFolderId={MAILBOX_FOLDER}&limit=100",
+    ])
+    if payload.get("Result") != "Success":
+        blob = json.dumps(payload)
+        if any(s in blob for s in ("Unauthorized", "invalid_grant", "401", "403")):
+            precondition_failed(f"cannot read the sandbox mailbox: {blob[:400]}")
+        return []
+    return [
+        {"subject": m.get("subject"), "received": m.get("receivedDateTime")}
+        for m in _items(payload)
+        if token in (m.get("subject") or "")
+    ]
+
+
+def probe_issue(token: str) -> list:
+    """Issues in the shared sandbox project whose summary carries the token."""
+    payload = _uip_json([
+        "is", "resources", "run", "list",
+        "uipath-atlassian-jira", "issue_search_get",
+        "--connection-id", JIRA_CONN,
+        "--query", (f'jql=project={JIRA_PROJECT} AND summary~"{token}"'
+                    "&fields=key,summary,created"),
+    ])
+    if payload.get("Result") != "Success":
+        blob = json.dumps(payload)
+        if any(s in blob for s in ("Unauthorized", "invalid_grant", "401", "403")):
+            precondition_failed(f"cannot read the sandbox Jira project: {blob[:400]}")
+        return []
+    out = []
+    for issue in _items(payload):
+        fields = issue.get("fields") or {}
+        if token in (fields.get("summary") or ""):
+            out.append({"key": issue.get("key"),
+                        "summary": fields.get("summary"),
+                        "created": fields.get("created")})
+    return out
+
+
+def poll(label: str, probe, token: str) -> list:
+    for attempt in range(1, POLL_ATTEMPTS + 1):
+        hits = probe(token)
+        if hits:
+            print(f"  [{label}] found on attempt {attempt}")
+            return hits
+        if attempt < POLL_ATTEMPTS:
+            time.sleep(POLL_SLEEP)
+    return []
