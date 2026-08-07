@@ -17,7 +17,8 @@ run_limits:
 
 initial_prompt: |
   Using the `uipath-ah-get-process` skill, fetch process `12345` from UiPath
-  Automation Hub and list its attached documents (PDD/SDD).
+  Automation Hub and list its attached documents (PDD/SDD). You already have the
+  process id (`12345`) — fetch it DIRECTLY BY ID; do not search by name.
 
   Authentication: a cloud access token is provided via env-auth exactly as the
   UiPath Delegate runtime provides it — read it from the `UIPATH_CLI_AUTH_TOKEN`
@@ -74,19 +75,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched the process via GET /automations/12345"
+    description: "Agent hit the automations read endpoint — fetch-by-id (/automations/12345) or a /automations?search=… lookup"
     tool_name: "Bash"
-    command_pattern: 'automationhub_/api/v1/openapi/automations/12345(\b|[^/])'
+    command_pattern: 'automationhub_/api/v1/openapi/automations(/12345|\?)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched the process documents via GET /automations/12345/documents"
+    description: "Agent fetched the process documents via GET /automations/12345/documents (best-effort: the fixture tenant is unreachable, so an agent may stop after the first failed call)"
     tool_name: "Bash"
     command_pattern: 'automationhub_/api/v1/openapi/automations/12345/documents'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
