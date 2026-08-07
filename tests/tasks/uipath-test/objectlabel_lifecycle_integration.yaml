@@ -28,8 +28,11 @@ initial_prompt: |
   Once that's done, take "eval-smoke" back off the three but keep
   "eval-regression" on them.
 
-  Then just scribble a one-liner on where the tags ended up into
-  ./health-labels.md.
+  Then write a one-liner on where the tags ended up into ./health-labels.md.
+
+  Not done until ./health-labels.md actually exists on disk and names the
+  labels left on the three cases — writing that file is part of the job, not
+  an optional flourish.
 
 success_criteria:
   - type: command_executed

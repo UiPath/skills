@@ -13,8 +13,86 @@ run_limits:
   expected_turns: 10
   max_turns: 35
 
+# Dedicated fixture — see tests/fixtures/README.md for the EVFX- contract.
+#
+# This task is a PURE READER of "the latest execution", which makes it hostage
+# to whatever sits at the head of a shared suite's list. On run 31067357876 the
+# newest execution of CLAIM's "UAT Smoke Suite" was still Pending, so the agent
+# blocked on `uip tm wait --timeout 60` and never reached `result download`
+# (0.60).
+#
+# That suite accumulated Pending executions because execution_rerun's post_run
+# used to sweep them, and that hook was removed when execution_rerun stopped
+# owning the suite. Rather than restore a cross-task janitor -- one task
+# cleaning up after another is the coupling this contract exists to remove --
+# give this task its own set whose newest execution is always Finished.
+pre_run:
+  - command: |
+      python3 - <<'EOF' || true
+      import json, subprocess
+      P, SET = "CLAIM", "EVFX-JUNIT-SET"
+      CASES = ["EVFX-JUNIT-TC1", "EVFX-JUNIT-TC2", "EVFX-JUNIT-TC3"]
+      RESULTS = ["Passed", "Failed", "Passed"]
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:200]} err={err[:140]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def by_name(label, kind, name):
+          for x in call(label, "tm", kind, "list", "--project-key", P,
+                        "--filter", name).get("Data") or []:
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          print("FIXTURE: could not create", SET); raise SystemExit(0)
+
+      keys = []
+      for name in CASES:
+          tc = by_name(f"tc.{name}", "testcases", name)
+          if not tc:
+              call(f"tc.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"tc.re.{name}", "testcases", name)
+          if tc:
+              keys.append(tc["TestCaseKey"])
+      if keys:
+          call("set.add", "tm", "testcases", "add", "--test-set-key", ts["TestSetKey"],
+               "--test-case-keys", *keys)
+
+      # Append a run and close every log, so the newest execution is Finished
+      # and a reader taking "the latest" never blocks on a Pending one.
+      r = call("run", "tm", "testsets", "run", "--test-set-key", ts["TestSetKey"],
+               "--execution-type", "manual")
+      eid = (r.get("Data") or {}).get("ExecutionId")
+      if not eid:
+          print("FIXTURE: could not start execution"); raise SystemExit(0)
+      logs = call("logs", "tm", "executions", "testcaselogs", "list",
+                  "--project-key", P, "--execution-id", eid).get("Data") or []
+      for i, l in enumerate(logs):
+          res = RESULTS[i % len(RESULTS)]
+          call(f"finish.{i}", "tm", "testcaselog", "finish", "--project-key", P,
+               "--execution-id", eid, "--test-case-id", l["TestCaseId"],
+               "--result", res, "--has-error", "true" if res == "Failed" else "false",
+               "--executed-by", "eval-fixture@uipath.com")
+      print(f"FIXTURE: seeded finished execution {eid} with {len(logs)} logs", flush=True)
+      EOF
+    timeout: 280
+
 initial_prompt: |
-  Export the results of the latest execution of my test set 'UAT Smoke Suite' in UiPath Test
+  Export the results of the latest execution of my test set 'EVFX-JUNIT-SET' in UiPath Test
   Manager project CLAIM as a JUnit report XML.
 
 success_criteria:

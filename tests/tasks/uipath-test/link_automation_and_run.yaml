@@ -32,9 +32,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered folder key with `folders list -n <folder-name> --all`"
+    # `-n` and `--name` are the same flag. Grading the short spelling docked a
+    # run that discovered the folder correctly with `--name` (run 31065507900).
+    description: "Agent discovered folder key with `folders list -n|--name <folder-name> --all`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+list\s+-n\s+\S+'
+    # Order-independent: the agent may write `folders list --all --name X` or
+    # `folders list --name X --all`. Requiring the flag to sit immediately
+    # after `list` graded word order -- pass A matched, pass B did not, on
+    # identical code (runs 31068949798 / 31069532438).
+    command_pattern: '(?=[^&;|\r\n]*(-n|--name)\s+\S)uip\s+(or|orchestrator)\s+folders\s+list\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

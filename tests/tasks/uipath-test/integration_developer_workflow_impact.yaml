@@ -24,7 +24,8 @@ initial_prompt: |
   break before I hit "merge". Please query the **SHIP** project in Test
   Manager and tell me:
 
-  - Which test sets contain test cases that exercise these two workflows
+  - Which test sets contain test cases that exercise these two workflows —
+    go through the project's test sets and check what's in each one
     (look for names mentioning "Shipment Creation", "Route Optimization",
     "Carrier Selection", or "Delivery Routing")
   - The full list of test cases in those affected test sets, with their
@@ -71,9 +72,13 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent retrieved execution history (`executions list --project-key`)"
+    # Three commands retrieve execution history and the task cares that the
+    # agent got it, not which one it used. Run 31068384782 pulled results with
+    # `testsets list --include-last-execution` then `executions get-stats` --
+    # fewer calls than `executions list`, and was docked for it.
+    description: "Agent retrieved execution history (`executions list`, `executions get-stats`, or `testsets list --include-last-execution`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions\s+list\s+.*--project-key'
+    command_pattern: '(?:uip\s+tm\s+executions\s+(list|get-stats)\s+[\s\S]*--project-key|uip\s+tm\s+testsets\s+list\s+[\s\S]*--include-last-execution)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

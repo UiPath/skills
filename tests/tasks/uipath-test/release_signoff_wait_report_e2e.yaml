@@ -20,14 +20,105 @@ run_limits:
   turn_timeout: 1500
   task_timeout: 1800
 
+# Dedicated fixture — see tests/fixtures/README.md for the EVFX- contract.
+#
+# This task WRITES: it starts a run on whatever suite it is pointed at. While
+# that was CLAIM's shared "UAT Smoke Suite" it added executions to a suite three
+# read-only tasks depend on. It now owns EVFX-SIGNOFF-SET.
+#
+# Creating the set here also removes the agent's need to touch Orchestrator
+# folder configuration. In the 2026-08-05 nightly the agent followed the old
+# Critical Rule 10, picked a folder off `or folders list`, and
+# `project set-default-folder` returned HTTP 500 — killing the run before
+# `testsets run` and taking all three downstream criteria with it (score 0.12).
+# Rule 10 now says to attempt the run first and leave a working default alone.
+#
+# NOTE: EVFX-SIGNOFF-TC1 has no automation link, so a run cannot complete on
+# this robot-less tenant. That is within the task's design — the prompt asks
+# the agent to cap its wait and report a non-finish — but the automated
+# execution path stays ungraded until a package and robot exist. See
+# tests/fixtures/README.md § Automation-linked fixtures.
+pre_run:
+  - command: |
+      python3 - <<'EOF' || true
+      import json, subprocess
+      P, SET = "CLAIM", "EVFX-SIGNOFF-SET"
+      CASES = ["EVFX-SIGNOFF-TC1", "EVFX-SIGNOFF-TC2"]
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:220]} err={err[:150]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def by_name(label, kind, name):
+          for x in call(label, "tm", kind, "list", "--project-key", P,
+                        "--filter", name).get("Data") or []:
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          print("FIXTURE: could not create", SET); raise SystemExit(0)
+
+      keys = []
+      for name in CASES:
+          tc = by_name(f"tc.{name}", "testcases", name)
+          if not tc:
+              call(f"tc.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"tc.re.{name}", "testcases", name)
+          if tc:
+              keys.append(tc["TestCaseKey"])
+      if keys:
+          call("set.add", "tm", "testcases", "add", "--test-set-key", ts["TestSetKey"],
+               "--test-case-keys", *keys)
+
+      # `testsets run` defaults to --execution-type automated, which errors
+      # outright when no case in the set carries an automation link — that is
+      # what left run 31065507900 at 0.25 with nothing for wait/report to act
+      # on. Link the cases to the Orchestrator package this tenant already
+      # publishes, so the run starts. Linking needs no robot; only COMPLETING
+      # the run does, and the task already tolerates a non-finish.
+      FOLDER = "fc225050-4ad9-45dc-a98e-c50eb9ce09a3"
+      PACKAGE = "Testcases.with.parameters"
+      autos = call("automations", "tm", "testcases", "list-automations",
+                   "--project-key", P, "--folder-key", FOLDER,
+                   "--package-name", PACKAGE).get("Data") or []
+      test_name = (autos[0].get("Name") or autos[0].get("TestName")) if autos else None
+      if test_name:
+          for k in keys:
+              call(f"link.{k}", "tm", "testcases", "link-automation", "--project-key", P,
+                   "--test-case-key", k, "--folder-key", FOLDER,
+                   "--package-name", PACKAGE, "--test-name", test_name)
+      else:
+          print("FIXTURE: no automation found in", PACKAGE,
+                "- run will stay manual-only", flush=True)
+
+      print(f"FIXTURE: {SET} ready ({ts['TestSetKey']}) with {len(keys)} cases, "
+            f"automation={test_name!r}", flush=True)
+      EOF
+    timeout: 240
+
 initial_prompt: |
-  I need a quick go/no-go on our UAT Smoke Suite in the CLAIM project (Test
+  I need a quick go/no-go on our EVFX-SIGNOFF-SET suite in the CLAIM project (Test
   Manager) before we cut the release. Can you kick off a run of that suite and
   wait for it to actually finish — but don't sit there forever, put a sensible
-  cap on how long you wait. Once it comes back, pull the summary report for that
-  run and just tell me straight whether we're clear to ship based on the
-  pass/fail outcome (and if it hasn't wrapped up by the time your wait is up,
-  say so). Run it straight through, no need to loop back to me.
+  cap on how long you wait. Then pull the summary report for that run either
+  way — I want it even if the wait timed out and the run is still going, since
+  a partial report still tells me where we stand. Give me the go/no-go straight,
+  based on the pass/fail outcome, and say so plainly if the run hadn't wrapped
+  up by the time your wait was up. Run it straight through, no need to loop
+  back to me.
 
 success_criteria:
   - type: command_executed
