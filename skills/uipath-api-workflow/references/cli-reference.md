@@ -154,7 +154,7 @@ uip api-workflow run ./greet.json \
 
 ## `uip api-workflow registry`
 
-Look up DAP / connector activities (StudioWeb TypeCache, `projectType=Api`) and emit api-workflow-shaped activity stubs. Replaces the old `uip case registry` flow for api-workflow authoring.
+Look up DAP / connector activities (StudioWeb TypeCache, `projectType=Api`) and emit api-workflow-shaped activity stubs. Replaces the former Case-registry flow for api-workflow authoring.
 <!--skill-flavor:registry-auth:start-->
 Both subcommands require `uip login`. <!-- uip-check-skip -->
 <!--skill-flavor:registry-auth:end-->
