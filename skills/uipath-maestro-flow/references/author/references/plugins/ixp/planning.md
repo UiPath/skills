@@ -64,6 +64,8 @@ Requires `uip login`. Only published IxP models from your tenant appear. The ret
 
 If the search returns no `uipath.ixp.*` nodes, no IxP extraction model is published on this tenant. Plan the architecture around a `core.logic.mock` placeholder for the extraction step, and surface the missing model in **Open Questions** so the user can train and publish it. Do not iterate on registry searches — the mock is the planning answer until the model exists. See [impl.md — If the Model Does Not Exist Yet](impl.md#if-the-model-does-not-exist-yet) for the implementer-side procedure.
 
+The converse — the search returned entries but the node type will not resolve — is **not** a mock case: it is a wrong string, and the plan still carries a real extraction node. See [impl.md — If the type will not resolve](impl.md#if-the-type-will-not-resolve--the-string-is-wrong-not-the-tenant).
+
 ## Listing Available Models / Runtime Projects
 
 Q&A use case from a Maestro-flow context: user asks "what IxP models can I access in Maestro?", "what IxP models / runtime projects can I use in this flow?", "what document extractors can I add here?", "which document extractors are published?". Answer from the `uipath-maestro-flow` Skill via the flow registry — do not switch to the `uipath-ixp` Skill (`uip ixp projects ...` enumerates IxP-product projects, not what is published into the Maestro registry).

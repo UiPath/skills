@@ -14,7 +14,7 @@ Examples (verified against the live registry):
 - `"birth_certificates_oob-6252526a-ixp"` + FQN `Shared/birth_certificates_oob-6252526a-ixp` → `uipath.ixp.birth-certificates-oob-6252526a-ixp.shared-birth-certificates-oob-6252526a-ixp` (underscores and slash both → `-`).
 - `"idp-benchmark---invoices-c735405a-ixp"` + FQN `Shared/idp-benchmark---invoices-c735405a-ixp` → `uipath.ixp.idp-benchmark-invoices-c735405a-ixp.shared-idp-benchmark-invoices-c735405a-ixp` (run of `---` → single `-`).
 
-Always prefer the `nodeType` returned by `uip maestro flow registry search` over constructing one by hand.
+Always prefer the `nodeType` returned by `uip maestro flow registry search` over constructing one by hand — and never retype one you already have: tenant deployment tails are often two raw GUIDs, so re-derive the string in the shell call that uses it (see [If the type will not resolve](#if-the-type-will-not-resolve--the-string-is-wrong-not-the-tenant)).
 
 ## Discovery
 
@@ -62,6 +62,16 @@ The fallback is `core.logic.mock`, full stop. At most run one broader `registry 
 
 > A `uipath.agent.resource.tool.ixp.*` hit on the broader `"ixp"` search is the *agent-tool* variant — not a flow extraction node. Treat it as "no extraction model published" and fall back to mock.
 
+### If the type will not resolve → the string is wrong, not the tenant
+
+Opposite case to the one above: the search **did** return entries, but `registry get` answers `Node not found`, or `node add` answers `Node type not found: <type>`. The model IS published — the string you passed is not the string the search returned. Tenant deployment tails are frequently two raw GUIDs (`uipath.ixp.employment-agreements-d4ee40a0-ixp.97f6f1c4-2b0d-8044-8892-c8809e742924-c4359cde-55f0-4f0e-9322-c6cdce74ab4c`), and one drifted hex digit is still a well-formed GUID, so nothing catches it. `Retry: "RetryWillNotFix"` is true of *that string* only — it is not a reason to drop the extraction node or to downgrade to `core.logic.mock`. **Never retype a node type: re-derive it in the shell call that uses it** (every Bash call is a fresh shell, so an earlier `cd` or shell variable is gone):
+
+```bash
+NODE_TYPE=$(uip maestro flow registry search "uipath.ixp" --output plain --output-filter "[?DisplayName=='<exact DisplayName from the search>'].NodeType")   # empty ⇒ the filter missed, not the model
+```
+
+> Both tails the CLI appends to `Node type not found` are dead ends: `In-solution lookup failed: No .uipx solution file found …` is a *secondary* lookup that ran only because the primary registry lookup already missed — not a working-directory fault — and the suggested `registry list` sweep is the fallback forbidden above. Re-derive and re-issue **once**; if it still misses, land the extraction node anyway and put the unresolved type under **Open Questions** — never ship a trigger-only flow.
+
 ## Listing Published Models
 
 When the user is working with a Maestro flow and asks what IxP models are available — "what IxP models can I access in Maestro?", "what IxP models / runtime projects can I use in this flow?", "what document extractors can I add here?", "list published extractors", "what extraction nodes are in the registry?" — answer with the same registry search **from the `uipath-maestro-flow` Skill**, not by switching to the `uipath-ixp` Skill (`uip ixp projects ...` lists IxP-product projects, not what is wired up for Maestro). Each `Data[]` entry corresponds to one published model (a.k.a. runtime project) visible to the flow registry on this tenant.
@@ -106,7 +116,7 @@ Confirm:
 
 ## Adding / Editing
 
-For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `outputs` fields. Author CAPABILITY rule #15 (no top-level `model` block on the instance) and rule #14 (`variables.nodes[]` entry for every data-producing node) both apply. One IxP-specific difference: general action-node guidance treats the instance `outputs` block as optional, but on `uipath.ixp.*` it is required — see [Authoring rule #4](#authoring-rules).
+For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `outputs` fields. Author CAPABILITY rule #15 (no top-level `model` block on the instance) and rule #14 (`variables.nodes[]` entry for every data-producing node) both apply. One IxP-specific difference: general action-node guidance treats the instance `outputs` block as optional, but on `uipath.ixp.*` it is required — see [Authoring rule #4](#authoring-rules). `uipath.ixp.*` is **user-owned**: `node add` works but only lands a skeleton, and `node configure` rejects the node afterwards, so you author `inputs` from the `registry get` response either way — a `node add` failure is a path to route around, never a blocker.
 
 ## JSON Structure
 
@@ -192,11 +202,7 @@ If you find yourself typing any of those five field names while authoring an IxP
 }
 ```
 
-**`outputs` is a fixed literal — copy the block above as-is.** It is the same for
-every IxP node regardless of model; nothing in it is derived from `registry get`.
-Copying `outputDefinition.output` verbatim instead also validates, but that drags
-in an ~18KB `schema` blob the runtime does not need — the four fields above are
-sufficient. There is no version of this node where omitting `outputs` is correct.
+**`outputs` is a fixed literal — copy the block above as-is.** It is identical for every IxP node and nothing in it is derived from `registry get`. (Copying `outputDefinition.output` verbatim also validates, but drags in an ~18KB `schema` blob the runtime does not need.) There is no version of this node where omitting `outputs` is correct.
 
 ### Authoring rules
 
@@ -361,7 +367,7 @@ IxP also exposes classifier models (type `Classifier`) that label documents rath
 
 | Error | Cause | Fix |
 | --- | --- | --- |
-| Node type not found in registry | Model not published, or registry cache stale | Run `uip login` then `uip maestro flow registry pull --force` |
+| `Node not found` / `Node type not found: <type>` | (a) the string doesn't match what `registry search` returned — one drifted character in a GUID tail; (b) model not published, or registry cache stale | If `registry search "uipath.ixp"` returns entries it is (a) — re-derive the string, don't retype it ([If the type will not resolve](#if-the-type-will-not-resolve--the-string-is-wrong-not-the-tenant)). Only if the search is empty is it (b): `uip login` then `uip maestro flow registry pull --force` |
 | `model.context` rejected by runtime | `folderKey` or `modelName` missing from `inputs` (the context array is built from these) | Confirm `inputs.modelName` and `inputs.folderKey` are populated. |
 | Empty `$vars.{nodeId}.output` | Model's taxonomy doesn't match the document, or extraction silently returned no fields | Inspect the raw API response via `$vars.{nodeId}.error` first; if no error, run the extraction against the same document on the IxP product UI to compare |
 | `fileRef` not resolving | Expression references an upstream variable that isn't wired, or the upstream node didn't produce a file output | Verify the upstream node exports a file reference and that the `=js:$vars.{upstreamId}.output.<field>` expression matches |
