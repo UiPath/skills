@@ -1,0 +1,17 @@
+task_id: skill-flow-datafabric-smoke-activation-positive
+description: >
+  Activation smoke: representative Data Fabric prompt routes to the
+  uipath-maestro-flow skill.
+tags: [uipath-maestro-flow, smoke, mode:build, feature:activation, connector, uipath-uipath-dataservice]
+
+initial_prompt: |
+  I need to create a record in my DataFabric entity from a UiPath Flow.
+  The entity is called ProductCatalog — build the Flow that does it.
+
+success_criteria:
+  - type: skill_triggered
+    description: "uipath-maestro-flow activates for a DataFabric-in-Flow prompt"
+    skill_name: uipath-maestro-flow
+    expected_skill: uipath-maestro-flow
+    weight: 3.0
+    pass_threshold: 1.0

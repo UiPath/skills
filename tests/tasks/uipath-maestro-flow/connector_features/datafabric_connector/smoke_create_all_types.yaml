@@ -1,0 +1,109 @@
+task_id: skill-flow-datafabric-smoke-create-all-types
+description: >
+  Smoke: full CRUD lifecycle for the UiPath Data Fabric connector in Maestro
+  Flow. Scaffolds a Flow that creates a FlowCodeEvalEntity record populating
+  all 8 supported field types (STRING, MULTILINE_TEXT, DECIMAL, INTEGER,
+  BOOLEAN, DATE, DATETIME, UUID), retrieves it by Id, deletes it, then
+  re-Gets the Id (expect 404) and Queries by title (expect 0 results) to
+  confirm hard-delete propagates to both endpoints. Validate-only — no live
+  tenant in sandbox — presence enforcement lives in the verifier.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice, ipe]
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  I'm adding a record to the FlowCodeEvalEntity entity from my UiPath Flow and
+  want to fill in all the different field types we support. Build a Flow that
+  creates a record with these values:
+
+  * title: "AllTypesTest-Smoke" (STRING)
+  * description: "A sci-fi smoke test record covering all supported field types. A must-watch film." (MULTILINE_TEXT)
+  * score: 7.25 (DECIMAL)
+  * viewCount: 350 (INTEGER)
+  * active: true (BOOLEAN)
+  * releaseDate: "2024-03-10" (DATE)
+  * lastUpdated: "2024-03-10T09:00:00" (DATETIME)
+  * externalId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" (UUID)
+
+  Once created:
+  1. Pull the record back by its Id (expansionLevel=1).
+  2. Delete it.
+  3. Try to Get the same Id — expect a not-found error.
+  4. Query for title='AllTypesTest-Smoke' — expect 0 results.
+
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent added Create Entity Record connector node"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.create-entity-record'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added Get Entity Record By Id connector node"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.get-entity-record-by-id'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added Delete Entity Record connector node"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.delete-entity-record'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added Query Entity Records connector node (post-delete)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.query-entity-records'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked node configure with --detail JSON"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+configure\s+\S+\s+\S+\s+--detail'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Flow file was validated"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow scaffold contains all 8 field values in Create body and pathParameters.entityName=FlowCodeEvalEntity"
+    command: "python3 $TASK_DIR/check_smoke_create_all_types.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final .flow has Create + Delete + Get + Query nodes on FlowCodeEvalEntity"
+    command: "python3 $TASK_DIR/check_ops_present.py FlowCodeEvalEntity create-entity-record delete-entity-record get-entity-record-by-id query-entity-records"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Connector node shape matches connectorMethodInfo (endpoint template, parameter placement, JIT and FilterBuilder design-caches, required-param + default coverage)"
+    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_connector_node_shape.py"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

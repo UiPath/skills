@@ -1,0 +1,56 @@
+task_id: skill-flow-datafabric-smoke-file-activities
+description: >
+  Smoke: DF Flow connector file activities — UploadFileToRecordFieldV2 +
+  DownloadFileFromRecordFieldV2 + DeleteFileFromRecordFieldV2 wired against
+  the `file1` FILE field on FlowCodeEvalEntity. Presence enforcement lives
+  in the verifier.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice, ipe]
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build a Flow that manipulates a file attached to a Data Fabric record
+  in the `FlowCodeEvalEntity` entity. Chain three connector activities in order:
+
+  1. UploadFileToRecordFieldV2
+  2. DownloadFileFromRecordFieldV2
+  3. DeleteFileFromRecordFieldV2
+
+  For every activity:
+  - entityName is `FlowCodeEvalEntity`
+  - the target field name is `file1` — this MUST be wired into the
+    activity's `_fieldName` input (either as the literal string `"file1"`
+    or as `=js:$vars.<globalVar>` where the global's default is `"file1"`).
+    If `_fieldName` is missing on any of the three, the flow is broken
+    at runtime even if `flow validate` passes.
+  - recordId is bound to a workflow-level variable
+  - the file value (upload only) is bound to a workflow-level variable
+
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: run_command
+    description: "Final .flow passes `uip maestro flow validate`"
+    command: 'for f in $(find . -maxdepth 6 -name "*.flow"); do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)" && exit 0; done; exit 1'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final .flow has upload + download + delete file-record-field nodes on FlowCodeEvalEntity/file1"
+    command: "python3 $TASK_DIR/check_smoke_file_activities.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Connector node shape matches connectorMethodInfo (endpoint template, parameter placement, JIT and FilterBuilder design-caches, required-param + default coverage)"
+    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_connector_node_shape.py"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

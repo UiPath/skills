@@ -1,0 +1,55 @@
+task_id: skill-flow-datafabric-smoke-error
+description: >
+  Smoke: CreateEntityRecordCurated against a non-existent entity — expect a
+  structured 4xx and zero side effects on FlowCodeEvalEntity.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice, negative, ipe]
+
+run_limits:
+  turn_timeout: 1500
+  task_timeout: 2400
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build a Flow that:
+
+  1. Attempts CreateEntityRecordCurated on entity 'NonExistentEntity' with
+     title='ErrorTestRecord', score=5.0. Expect an error — do not swallow it.
+  2. In a parallel branch (so it runs even after the failure), Query
+     FlowCodeEvalEntity for title='ErrorTestRecord'.
+  3. In the same parallel branch, Query FlowCodeEvalEntity with no filter.
+
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: command_executed
+    description: "Create attempted on NonExistentEntity"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.create-entity-record'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Two follow-up Query nodes present"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.query-entity-records'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Flow validated"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Connector node shape matches connectorMethodInfo (endpoint template, parameter placement, JIT and FilterBuilder design-caches, required-param + default coverage)"
+    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_connector_node_shape.py"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

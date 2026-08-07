@@ -1,0 +1,87 @@
+task_id: skill-flow-datafabric-integration-create-get
+description: >
+  Integration test for the UiPath Data Fabric connector in Maestro Flow.
+  Covers Create + Get round-trip on FlowCodeEvalEntity (C-01) and
+  expansionLevel comparison across levels 1, 2, and 3 (C-02).
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice, ipe]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
+
+pre_run:
+  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
+    timeout: 60
+
+initial_prompt: |
+  Build a UiPath Flow that exercises FlowCodeEvalEntity in two scenarios:
+
+  C-01 — All eight fields round-trip:
+  Create a record with:
+    * title: 'IntegrationCreateTest'
+    * description: 'A sci-fi integration test record. A must-watch film.'
+    * score: 6.75
+    * viewCount: 420
+    * active: true
+    * releaseDate: '2023-08-20'
+    * lastUpdated: '2023-08-20T14:00:00'
+    * externalId: 'bbbbbbbb-cccc-dddd-eeee-ffffffffffff'
+  Retrieve it by Id and delete when done.
+
+  C-02 — Expansion depth:
+  Create a second record with title='ExpansionTest', score=5.5. Retrieve it
+  at expansionLevel=1, expansionLevel=2, and expansionLevel=3. Delete when
+  done.
+
+  The Flow is not complete until `uip maestro flow validate` passes.
+
+success_criteria:
+  - type: command_executed
+    description: "Create Entity Record node added at least twice (one per scenario)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.create-entity-record'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Entity Record By Id node added at least 4 times (1 for C-01 + 3 expansionLevels for C-02)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.get-entity-record-by-id'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Delete Entity Record node added at least twice"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.delete-entity-record'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Flow file was validated"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow has Create-then-Get chains on FlowCodeEvalEntity, and at least one Get carries expansionLevel=3"
+    command: "python3 $TASK_DIR/check_integration_create_get.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Connector node shape matches connectorMethodInfo (endpoint template, parameter placement, JIT and FilterBuilder design-caches, required-param + default coverage)"
+    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_connector_node_shape.py"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
