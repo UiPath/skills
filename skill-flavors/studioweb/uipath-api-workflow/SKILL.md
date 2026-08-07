@@ -1,5 +1,6 @@
 <!--skill-flavor:surface-summary:start-->
 Author, validate, execute, and publish API Workflow JSON in Studio Web. Use the host's embedded CLI only for allowed authoring operations and the host-intercepted publish bridge; use schema-inspected Studio Web tools for project creation, execution, and other lifecycle operations.
+
 <!--skill-flavor:surface-summary:end-->
 
 <!--skill-flavor:host-command-contract:start-->
@@ -35,12 +36,17 @@ Authentication is inherited from the active Studio Web session. If an allowed co
 <!--skill-flavor:project-creation:end-->
 
 <!--skill-flavor:runtime-validation-contract:start-->
+2. **Start minimal, iterate to correct.** Add one activity at a time. Run the offline static validator after each addition. Fix what breaks and repeat. Run the workflow only after the explicit consent required by rule 21.
 3. **Validate statically, execute through the host.** `uip api-workflow validate` is the autonomous offline pre-flight. Runtime behavior, expressions, connections, and side effects must be tested only through the live `proxy-tools-Api` / `RunProject` host operation after explicit user consent. See rules 20–21.
 <!--skill-flavor:runtime-validation-contract:end-->
 
 <!--skill-flavor:runtime-validation-limit:start-->
     **What validate catches:** malformed JSON; unknown `activityType` values; per-activity required keys; missing activity metadata (warnings); invalid evaluation settings; duplicate or empty-named variables; and empty task lists. **What it does NOT catch:** wrong resource or connection IDs, runtime expression failures, designer normalization faults, and real connector behavior. After explicit consent, test those through the schema-inspected `RunProject` host operation.
 <!--skill-flavor:runtime-validation-limit:end-->
+
+<!--skill-flavor:response-roundtrip-validation:start-->
+    - **On-disk is authoritative.** Even with the single-expression workaround, every StudioWeb designer save can re-trigger normalization passes that may corrupt the Response shape. After any designer roundtrip, re-run the offline static validator. If runtime revalidation is needed, ask for the explicit consent required by rule 21 before running, then inspect the Response and re-apply the workaround if needed. Until the designer fix ships, treat the file on disk as truth, not what the designer renders.
+<!--skill-flavor:response-roundtrip-validation:end-->
 
 <!--skill-flavor:runtime-execution-consent:start-->
 21. **Never start a Studio Web run without an explicit user "yes."** Once static validation passes, ask whether to run now or skip and state concrete external side effects. If the user consents, read `/skills/synthetic/proxy-tools-Api/SKILL.md`, inspect the live `RunProject` schema immediately before invocation, and call it with exactly the declared fields for the target project. Do not guess parameters, reuse a stale schema, or substitute the embedded API Workflow runner. If `RunProject` is absent, report the host capability gap.

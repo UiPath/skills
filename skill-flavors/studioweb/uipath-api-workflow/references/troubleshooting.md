@@ -1,5 +1,6 @@
 <!--skill-flavor:host-command-scope:start-->
 > **Studio Web scope:** use the embedded static validator autonomously. After explicit consent, execute only through the live, schema-inspected `proxy-tools-Api` / `RunProject` host operation. Registry and read-only `uip is` discovery are allowed. Do not use the embedded runner, login, connection-edit, local lifecycle, binding-sync, resource-refresh, Orchestrator/trace CLI, or solution-metadata edits as troubleshooting fallbacks.
+
 <!--skill-flavor:host-command-scope:end-->
 
 <!--skill-flavor:designer-roundtrip-runtime-check:start-->
@@ -70,6 +71,10 @@
 <!--skill-flavor:runtime-validation-pitfall:start-->
 - **Fix:** ALWAYS run `uip api-workflow validate <Workflow.json>` after every edit; it is the autonomous offline schema + semantic check. When runtime validation is still needed, state side effects, obtain explicit consent, inspect the live `RunProject` schema, and execute through that host operation.
 <!--skill-flavor:runtime-validation-pitfall:end-->
+
+<!--skill-flavor:post-edit-validation:start-->
+- **Fix:** Always read the file before editing. After the edit, run static validation. Run the workflow only after explicit user consent.
+<!--skill-flavor:post-edit-validation:end-->
 
 <!--skill-flavor:runtime-debugging-strategy:start-->
 1. **Keep static validation machine-readable** with `--output json` and fix until `Data.Status` is `Valid`.

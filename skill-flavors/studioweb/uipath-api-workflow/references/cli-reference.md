@@ -1,5 +1,6 @@
 <!--skill-flavor:host-command-scope:start-->
 > **Studio Web command scope:** run only the host-registered embedded CLI. Allowed here: `api-workflow validate`; `api-workflow registry resolve` / `stub`; read-only `uip is` discovery (`list`, `describe`, `ping`); read-only `uip solution publish --help`; and approved host-intercepted active-solution publication. Authentication is inherited. Execute workflows through consent-gated, schema-inspected `proxy-tools-Api` / `RunProject`. Project creation, embedded execution, local build/pack/deploy, machine-local or positional-package publication, login/config, binding sync, resource refresh, and solution-metadata edits are forbidden even when this reference documents their default/local syntax.
+
 <!--skill-flavor:host-command-scope:end-->
 
 <!--skill-flavor:local-project-lifecycle:start-->
@@ -22,6 +23,7 @@ After `uip api-workflow validate Workflow.json --output json` returns `Data.Stat
 <!--skill-flavor:runtime-execution:end-->
 
 <!--skill-flavor:registry-auth:start-->
+Look up DAP / connector activities (StudioWeb TypeCache, `projectType=Api`) and emit api-workflow-shaped activity stubs. Replaces the former Case-registry flow for api-workflow authoring.
 Both subcommands use authentication inherited from the active Studio Web session; do not run `uip login`.
 <!--skill-flavor:registry-auth:end-->
 

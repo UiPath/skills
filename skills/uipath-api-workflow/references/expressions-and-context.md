@@ -6,7 +6,9 @@ API workflows use **JavaScript** for all expressions (`evaluate.language: "javas
 
 | Scope | Source | Lifetime |
 |-------|--------|----------|
-| `$workflow.input` | The workflow's input arguments supplied by the execution caller. Constant for the entire run. | Workflow run |
+<!--skill-flavor:workflow-input-source:start-->
+| `$workflow.input` | The workflow's input arguments (from `--input-arguments` JSON or caller). Constant for the entire run. | Workflow run |
+<!--skill-flavor:workflow-input-source:end-->
 | `$workflow` | Workflow runtime info: `{ id, definition, input, startedAt }`. Use `$workflow.input` to read inputs. | Workflow run |
 | `$input` | The **current task's input** = the previous task's `$output`. **NOT the workflow's input arguments.** Only equals workflow input on the very first task. | Per-task |
 | `$context` | Mutable shared state: `$context.variables.<name>`, `$context.outputs.<Activity>` | Workflow run |
@@ -166,7 +168,9 @@ $context.outputs.Javascript_1.tier
 ## Reading Workflow Inputs
 
 ```js
-// The execution caller supplied { "name": "Alice", "count": 3 } as workflow input.
+<!--skill-flavor:workflow-input-example:start-->
+// User ran: uip api-workflow run wf.json --input-arguments '{"name":"Alice","count":3}'
+<!--skill-flavor:workflow-input-example:end-->
 
 $workflow.input.name    // "Alice"
 $workflow.input.count   // 3

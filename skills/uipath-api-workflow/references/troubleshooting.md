@@ -3,9 +3,7 @@
 Common failure modes when authoring, running, packaging, or publishing API workflows. Organized by category — each entry: symptom → cause → fix.
 
 <!--skill-flavor:host-command-scope:start-->
-
 <!--skill-flavor:host-command-scope:end-->
-
 ## Structure Pitfalls
 
 ### Missing `#Wrapper` on If activity
@@ -661,7 +659,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Symptom:** Reported "fixed" but errors remain
 - **Cause:** Skipped re-running the validators after applying a fix
 <!--skill-flavor:runtime-validation-pitfall:start-->
-- **Fix:** ALWAYS run `uip api-workflow validate <Workflow.json>` after every edit; it is the autonomous offline schema + semantic check. When runtime validation is still needed, ask for the explicit consent required by SKILL.md rule 21 before `uip api-workflow run`, including `--no-auth` runs.
+- **Fix:** ALWAYS re-run after every edit. Two validators: `uip api-workflow validate <Workflow.json>` (offline static — schema + semantic checks, autonomous) then `uip api-workflow run --no-auth` (runtime — catches expression/connection errors static analysis can't). See SKILL.md rules 20–21.
 <!--skill-flavor:runtime-validation-pitfall:end-->
 
 ### Fixing in wrong order
@@ -672,7 +670,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### Assuming an edit succeeded
 - **Symptom:** File appears unchanged after edit
 - **Cause:** Edit's `old_string` did not exactly match file content (whitespace, escaping)
-- **Fix:** Always read the file before editing. After the edit, run static validation. Run the workflow only after explicit user consent.
+<!--skill-flavor:post-edit-validation:start-->
+- **Fix:** Always read the file before editing. After edit, re-run the workflow.
+<!--skill-flavor:post-edit-validation:end-->
 
 ---
 
@@ -680,7 +680,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 <!--skill-flavor:runtime-debugging-strategy:start-->
 1. **Always run with `--output json`** so failures are machine-parseable
-2. **After explicit consent, run `--no-auth` first** when runtime validation is needed. If structure passes but the real run fails, the issue is auth, network, or input data — not the workflow shape
+2. **Run `--no-auth` first** to confirm structural validity. If structure passes but the real run fails, the issue is auth, network, or input data — not the workflow shape
 3. **Reduce to minimal repro** — comment out (delete + restore via git) downstream tasks to isolate which task fails
 4. **Check exit code** — `0` = success, `1` = failure
 5. **Read `Instructions` first** — the executor often suggests the fix directly

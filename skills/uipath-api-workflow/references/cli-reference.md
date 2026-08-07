@@ -3,9 +3,7 @@
 All `uip` commands relevant to authoring, running, packaging, and publishing API workflows. The api-workflow-tool ships with `@uipath/cli` (no separate install).
 
 <!--skill-flavor:host-command-scope:start-->
-
 <!--skill-flavor:host-command-scope:end-->
-
 <!--skill-flavor:local-project-lifecycle:start-->
 ## `uip api-workflow init`
 
@@ -154,9 +152,8 @@ uip api-workflow run ./greet.json \
 
 ## `uip api-workflow registry`
 
-Look up DAP / connector activities (StudioWeb TypeCache, `projectType=Api`) and emit api-workflow-shaped activity stubs. Replaces the former Case-registry flow for api-workflow authoring.
 <!--skill-flavor:registry-auth:start-->
-Both subcommands require `uip login`. <!-- uip-check-skip -->
+Look up DAP / connector activities (StudioWeb TypeCache, `projectType=Api`) and emit api-workflow-shaped activity stubs. Replaces the old `uip case registry` flow for api-workflow authoring. Both subcommands require `uip login`. <!-- uip-check-skip -->
 <!--skill-flavor:registry-auth:end-->
 
 ### `uip api-workflow registry resolve`

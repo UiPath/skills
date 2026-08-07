@@ -1,5 +1,6 @@
 <!--skill-flavor:host-command-scope:start-->
 > **Studio Web scope:** run `registry resolve` / `stub` and read-only `uip is` discovery through the host-registered embedded CLI. Authentication is inherited. Do not run login, connection-edit, binding-sync, resource-refresh, local lifecycle, or solution-metadata commands, and do not edit host-owned metadata files.
+
 <!--skill-flavor:host-command-scope:end-->
 
 <!--skill-flavor:registry-auth:start-->

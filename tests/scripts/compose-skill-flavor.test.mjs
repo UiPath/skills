@@ -417,6 +417,14 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
   );
   const canonical = readFileSync(canonicalPath, "utf8");
   const override = readFileSync(overridePath, "utf8");
+  assert.match(
+    canonical,
+    /description: "UiPath API Workflow assistant — author, run, validate, package, publish, deploy, and troubleshoot JSON workflows/,
+  );
+  assert.match(
+    canonical,
+    /Run with `--no-auth --output json` after each addition\. Fix what breaks\. Repeat\./,
+  );
   const findings = [];
   const composed = stripMarkerBoundaries(
     composeText(
@@ -460,6 +468,7 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
       "SKILL.md",
       "references/cli-reference.md",
       "references/connector-activity-discovery.md",
+      "references/expressions-and-context.md",
       "references/troubleshooting.md",
       "references/operating-published-workflows.md",
       "references/workflow-file-format.md",
@@ -514,6 +523,19 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
   assert.match(defaultCliReference, /^uip api-workflow init <name>/m);
   assert.match(defaultCliReference, /^uip api-workflow run <file>/m);
   assert.match(defaultCliReference, /^uip solution publish <packagePath>/m);
+  assert.match(
+    readFileSync(
+      join(
+        REPO_ROOT,
+        "skills",
+        "uipath-api-workflow",
+        "references",
+        "expressions-and-context.md",
+      ),
+      "utf8",
+    ),
+    /--input-arguments '\{"name":"Alice","count":3\}'/,
+  );
 });
 
 test("new canonical skills are automatically included in existing flavors", (t) => {

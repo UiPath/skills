@@ -3,9 +3,7 @@
 How to author an Integration Service connector activity (HTTP Request, Gmail, Outlook, GitHub, Slack, Salesforce, etc.) so it **renders cleanly in StudioWeb's designer** AND **runs from the CLI**. The flow uses `uip api-workflow registry` to resolve a keyword to an activity-type GUID, then build a ready-to-paste activity object with the right shape — `metadata.configuration` (with `unifiedTypesCompatible: true` + `savedJitInputFieldId` so StudioWeb renders the unified activity card), full endpoint path, multipart declarations, stub-computed slot and export-bucket keys — all derived from StudioWeb's TypeCache + Integration Service Elements metadata.
 
 <!--skill-flavor:host-command-scope:start-->
-
 <!--skill-flavor:host-command-scope:end-->
-
 <!--skill-flavor:registry-auth:start-->
 > The `registry` subcommand ships with `@uipath/cli`'s api-workflow tool. No separate install. Both calls require `uip login` (TypeCache + IS Elements are tenant-scoped, served live).
 <!--skill-flavor:registry-auth:end-->
