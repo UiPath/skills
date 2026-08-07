@@ -46,8 +46,6 @@ uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
 
 The CLI copies the manifest into `definitions[]`, adds the node instance to `nodes[]`, registers the `variables.nodes` entries, and inserts a placeholder in `layout.nodes` — all in code, byte-for-byte from the registry (including `typeVersion`, which the CLI pulls from the manifest's `version` field; do not hardcode it). Save the returned node ID — both walkthroughs reuse it.
 
-> **HTTP node inside a loop — add it with `--parent <loopId>`** so the CLI nests it in the loop body (the loop must already exist): `uip maestro flow node add <Project>.flow core.action.http.v2 --label "..." --parent <loopId>`. Omitting it runs the call outside the loop, so `$vars.<nodeId>.output` is `null` every iteration (yet `flow validate` passes); don't hand-edit `parentId`. See [author/CAPABILITY.md — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node).
-
 The CLI initializes `inputs` from the manifest's `inputDefaults`:
 
 ```json
@@ -192,7 +190,6 @@ When an HTTP node has an outgoing `error` edge, the HTTP node instance must also
 | --- | --- | --- |
 | `not_authed` or 401/403 | Wrong node type (v1 instead of v2), missing bindings, or expired connection | Verify node type is `core.action.http.v2`, check `bindings_v2.json` exists, ping the connection |
 | `configuration` field missing | Node not configured via CLI | Run `uip maestro flow node configure` — do not hand-write `inputs.detail` |
-| HTTP node inside a loop never runs; `$vars.<nodeId>.output` is `null` each iteration | Node added without `--parent`, so it sits outside the loop body | Re-add with `uip maestro flow node add ... --parent <loopId>`; do not hand-edit `parentId` (it is CLI-owned). See [loop/impl.md](../loop/impl.md#cli-owned-nodes-inside-a-loop) |
 | `flow validate` errors with `uiPathActivityTypeId` missing on `core.action.http.v2` | Node was hand-authored in `definitions[]` instead of via `uip maestro flow node add` | Remove the node, re-add it via `uip maestro flow node add <file> core.action.http.v2 ...`, then re-run `node configure`. |
 | Connection not found | Wrong connection ID or connector key | Re-run `uip is connections list` for the target connector |
 | Wrong API response | Incorrect `url` or `query` | Check the target service's API documentation |
