@@ -2,6 +2,10 @@
 
 Common failure modes when authoring, running, packaging, or publishing API workflows. Organized by category — each entry: symptom → cause → fix.
 
+<!--skill-flavor:host-command-scope:start-->
+
+<!--skill-flavor:host-command-scope:end-->
+
 ## Structure Pitfalls
 
 ### Missing `#Wrapper` on If activity
@@ -97,6 +101,7 @@ Common failure modes when authoring, running, packaging, or publishing API workf
 - **Cause:** Trying to read context through `arguments[0]`. The runtime does NOT pass arguments to the script. `arguments.length === 0` inside the body. The task's `arguments` field exists for designer roundtrip but is ignored by the runtime.
 - **Fix:** Drop the `arguments[0]` indirection. Reference `$context`, `$workflow`, `$input` directly — they are globals. `return $context.variables.userName.toUpperCase();` instead of `return arguments[0].$context.variables.userName.toUpperCase();`
 
+<!--skill-flavor:workflow-input-runtime:start-->
 ### `$workflow.input.<name>` is undefined (or `$input.<name>` returns the wrong thing)
 - **Symptom:** Read returns `undefined` or wrong value (the previous task's output)
 - **Cause:** Either the input was not declared in `input.schema`, was not passed via `--input-arguments`, no default exists, or the agent used `$input.<name>` instead of `$workflow.input.<name>`
@@ -104,6 +109,7 @@ Common failure modes when authoring, running, packaging, or publishing API workf
   - Use `$workflow.input.<name>` everywhere — `$input.<name>` is the previous task's output for any non-first task
   - Confirm the input is declared in `input.schema` or has a default in `document.metadata.variables.schema.document.properties`
   - Pass the value at runtime via `--input-arguments`
+<!--skill-flavor:workflow-input-runtime:end-->
 
 ---
 
@@ -237,7 +243,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 - **Why it works:** Inside the outer `${{ ... }}` you're already in JS expression scope. The body is a JS object literal where unquoted keys are identifiers (`tier:`, `count:`), references like `$context.variables.tier` evaluate directly, string literals use single quotes (`status: 'ok'`), and numbers/booleans are bare (`count: 0`, `flag: true`). The designer recognizes the whole thing as a single expression and leaves it alone — it doesn't try to reinterpret each field.
 - **Either expression-form works:** `"${ { ... } }"` (single-brace expression containing a JS object literal) and `"${{ ... }}"` (double-brace object-literal-expression form) evaluate to the same value. Pick one convention; this skill standardizes on the double-brace form, but you may see single-brace in the wild and they are interchangeable.
 - **Single-value responses are fine as-is:** `"response": "${$context.outputs.Javascript_1}"` or `"response": "${'done'}"` — the designer only mangles object payloads, not single expressions.
+<!--skill-flavor:designer-roundtrip-runtime-check:start-->
 - **On-disk is authoritative — re-validate after every designer save.** Even with the single-expression workaround, every StudioWeb designer save may re-trigger normalization passes that corrupt the Response shape. Treat the file on disk as the source of truth: after any designer roundtrip, re-run `uip api-workflow run --no-auth --output json` and inspect the Response output. If a field has become the literal text of its expression (a long string instead of the evaluated value), the file was re-corrupted — re-apply the single-expression workaround in the file directly, and consider keeping CLI-authored workflows out of designer save cycles until the designer fix ships.
+<!--skill-flavor:designer-roundtrip-runtime-check:end-->
 - **Upstream:** designer-side StudioWeb bug. Fix lives in the api-workflows translator for Response tasks (needs to preserve object payloads losslessly). Until that ships, the single-expression workaround is required and may need re-applying after each designer roundtrip.
 
 ### Multi-key `Assign.set` silently drops all but one variable
@@ -299,7 +307,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   uip is connections list --all-folders --output json
   # Each row carries Folder / FolderKey. Take an Enabled Id, then ping it.
   ```
+<!--skill-flavor:connection-remediation:start-->
 - **What NOT to do:** do NOT proceed with the failing UUID and "flag for follow-up." A workflow authored against a non-pinging connection will 401 in cloud regardless of how correct the JSON is. Do NOT conclude "no connection exists" from an empty filtered or unfiltered listing — run `--all-folders` first. Only if the filtered, unfiltered, AND `--all-folders` listings all fail to yield a working UUID should you abort and tell the user to re-authenticate (`uip is connections edit <uuid>` opens an OAuth browser flow) or create a fresh connection in the StudioWeb UI.
+<!--skill-flavor:connection-remediation:end-->
 - **See also:** [connector-activity-discovery.md — Step 2](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-kind-only) for the full discovery+fallback flow.
 
 ### IntSvc kind activity output read at the root returns `undefined`
@@ -425,6 +435,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   ```
 - **What the executor does with `multipartParameters`:** `is-utils.js:constructMultipartFormData` walks the array. For `dataType: "string"` parts, it JSON-stringifies the **entire `bodyParameters` object** and stuffs the resulting string into the multipart part with that name. So `bodyParameters` (with its flat-dotted keys) becomes the JSON content of the multipart `body` part. For `dataType: "file"` parts, the part is left empty unless the activity supplies a file reference (rarely needed for the no-attachment case — Outlook accepts an empty `file` part). See [connector-activity-discovery.md#multipart-endpoints--multipartparameters-declaration](connector-activity-discovery.md#multipart-endpoints--multipartparameters-declaration).
 
+<!--skill-flavor:solution-resource-diagnostics:start-->
 ### Properties panel: "to debug this resource, select a connection for it from the resource definition page"
 
 - **Symptom:** The workflow runs locally with `uip api-workflow run` AND from "Run" in StudioWeb. Open the activity card in the designer, click the connection field, and the properties panel renders the connection as invalid with the message **"to debug this resource, select a connection for it from the resource definition page."** `bindings_v2.json` contains a correct `Connection` resource entry; `Workflow.json` has `connectionId` / `connectionResourceId` set to the same pinged UUID.
@@ -477,6 +488,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   Place it at `Solution/resources/solution_folder/connection/<connector-key>/<connection-name>.json`. Reuse the `solution_folder` name from any existing `Solution/resources/<folder>/package/<workflow>.json` (`folders[0].fullyQualifiedName`); default is `"solution_folder"`. One file per unique connection UUID — if the workflow has two activities reusing one connection, write one file; two distinct connections → two files.
 - **Note on the user-profile debug overwrite.** StudioWeb additionally writes `Solution/userProfile/<guid>/debug_overwrites.json` mapping `solutionResourceKey` to a concrete folder + connection at debug time. That file is per-user state, written by the designer the first time you assign a debug connection. The agent does not author it; if it's missing, debug runs from the StudioWeb UI will prompt for a connection but won't 401.
 - **See also:** [connector-activity-discovery.md — Step 5](connector-activity-discovery.md#step-5--solutions-mode-intsvc-kind-declare-the-connection-as-a-solution-resource) for the full flow, including where each field value comes from.
+<!--skill-flavor:solution-resource-diagnostics:end-->
 
 ### Required request field dropped by `registry stub`
 
@@ -500,7 +512,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
     }
   }
   ```
+<!--skill-flavor:resource-lookup-runtime:start-->
 - **Well-known shortcuts.** MS Graph accepts well-known folder names (`"inbox"`, `"sentitems"`, `"drafts"`) as `parentFolderId`. They run, but StudioWeb's FolderPicker only displays the friendly folder name when the value matches an ID from its lookup cache. For exact UI fidelity, fetch the real ID via `uip is resources run list <connector-key> <object-name> --connection-id <uuid>` against the field's `lookup.path` (often `/MailFolders`, `/Folders`, etc.).
+<!--skill-flavor:resource-lookup-runtime:end-->
 - **Heuristic:** when the stub returns empty `queryParameters` / `pathParameters` / `bodyParameters` for a non-trivial vendor operation, treat it as the bug. Real endpoints (CRUD on real objects, list-with-filters operations) almost never have zero required inputs.
 - **Upstream:** the stub IS surfacing the metadata it has — `metadata.configuration` contains the full `inputFields` list — so this is a CLI-side fix where the stub should populate defaults/placeholders from `required: true` fields, not a missing-data issue. Until that ships, the cross-check is mandatory per skill rule 16 step 4.
 - **See also:** [connector-activity-discovery.md — Required-field cross-check](connector-activity-discovery.md#required-field-cross-check--the-stub-drops-required-true-request-fields).
@@ -514,33 +528,46 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - **Fix:** Switch to IntSvc kind (`call: "UiPath.IntSvc"`, `with.connector` = the vendor key, `with.endpoint` = `"/<curated-operation-name>"`). See [connector-activity-discovery.md — IntSvc kind](connector-activity-discovery.md#intsvc-kind--call-uipathintsvc-vendor-curated-activity) — IntSvc kind is for vendor activities, Http kind is only for the `uipath-uipath-http` HTTP Request activity.
 
   **Sub-case B — Connection is in a broken state.** The endpoint is right (e.g. `/getNewestEmail` on an Outlook connection), but the connection's upstream OAuth token is expired, never properly authorized, or the running identity doesn't have access to the connection.
+<!--skill-flavor:connection-auth-diagnostics:start-->
   - **Fix:** Run `uip is connections ping <connection-uuid> --output json`. If it returns `Code: "ConnectionNotEnabled"`, re-authenticate via `uip is connections edit <connection-uuid>` (opens browser for OAuth) or fix in the StudioWeb UI. If it returns `Code: "ConnectionPing"` (success) but the cloud still 401s, check that your CLI login (`uip login status`) is in the same org+tenant your browser is using at cloud.uipath.com — a tenant mismatch will reject the connection ID at the proxy layer.
+<!--skill-flavor:connection-auth-diagnostics:end-->
 
 - **Prevention:** The discovery flow's Step 4b (`uip is connections ping`) is mandatory specifically to catch sub-case B before authoring. Don't author against a connection that doesn't ping — the workflow shape will look right and even run locally, but fail at deployment time.
 
 ---
 
+<!--skill-flavor:runtime-cli-heading:start-->
 ## Run-Time Errors (CLI)
+<!--skill-flavor:runtime-cli-heading:end-->
 
+<!--skill-flavor:runtime-file-not-found-context:start-->
 ### `"File not found: <path>"`
 - **Cause:** The workflow file path passed to `uip api-workflow run` does not resolve
+<!--skill-flavor:runtime-file-not-found-context:end-->
+<!--skill-flavor:file-path-remediation:start-->
 - **Fix:** Use an absolute path or run from the directory containing the workflow
+<!--skill-flavor:file-path-remediation:end-->
 
 ### `"Invalid JSON in workflow file"`
 - **Cause:** Malformed JSON — trailing comma, unquoted key, mismatched brace, comment
+<!--skill-flavor:json-syntax-remediation:start-->
 - **Fix:** Validate before running:
   ```bash
   node -e "JSON.parse(require('fs').readFileSync('./wf.json','utf8'))"
   ```
   JSON does NOT permit comments. Strip them.
+<!--skill-flavor:json-syntax-remediation:end-->
 
+<!--skill-flavor:runtime-input-arguments:start-->
 ### `"Invalid JSON in --input-arguments"`
 - **Cause:** The string passed to `--input-arguments` is not valid JSON
 - **Fix:** Wrap the entire JSON in single quotes; double-quote all keys and string values:
   ```bash
   --input-arguments '{"name":"Alice","count":3}'
   ```
+<!--skill-flavor:runtime-input-arguments:end-->
 
+<!--skill-flavor:runtime-executor-failures:start-->
 ### `Workflow status is not "Successful"` (executor returns failure)
 - **Cause:** A task threw during execution
 - **Fix:** Read `Message` and `Instructions` in the failure output. Common patterns:
@@ -558,7 +585,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - Replace `var` with `const` / `let`
   - Use optional chaining: `$context?.outputs?.Javascript_1?.items`
   - Ensure object literals have unique keys
+<!--skill-flavor:runtime-executor-failures:end-->
 
+<!--skill-flavor:cloud-run-diagnostics:start-->
 ### Failed cloud run after publish (job faulted in Orchestrator)
 
 - **Symptom:** The workflow passed `validate` and `run --no-auth` locally, packed, published, and deployed — but a triggered cloud run faults. Local re-runs still pass.
@@ -571,9 +600,11 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   ```
   (Folder scoping differs: `uip or jobs list` accepts `--folder-path`/`--folder-key`/`--all-folders`; `uip or triggers list` accepts only `--folder-path`/`--folder-key`; `uip or jobs start <process-key>` infers the folder. `uip or jobs traces` is Agent-type-process-only; use `traces spans get` for API-workflow jobs.)
   Map the surfaced error back to a fix with the category order below (Structure > Expression > Activity Config > Logic). If the fault is a 401 / `ConnectionNotEnabled`, `uip is connections ping <uuid>` the bound connection first. Full operate + diagnose command map: [operating-published-workflows.md](operating-published-workflows.md). For deep, multi-signal root-cause (what changed, cross-run comparison, incident correlation), hand off to **uipath-troubleshoot**.
+<!--skill-flavor:cloud-run-diagnostics:end-->
 
 ---
 
+<!--skill-flavor:local-packaging-errors:start-->
 ## Packaging Errors
 
 ### `"No CLI tool mapping found for project type 'X'"`
@@ -602,9 +633,11 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - Edit the `.uipx` `ProjectRelativePath` from `<folder>/project.json` → `<folder>/project.uiproj`, **preserving the project `Id` and `Type`**. Do NOT use `uip solution projects remove`+`add` — it mints a new `Id`.
   - Remove the stray `project.json` / `workflows/` (a mismatched `project.json` triggers `ProjectMetadataMismatchError`).
   - Re-pack, then confirm the project opens in Studio Web (runtime/pack success alone does not prove it).
+<!--skill-flavor:local-packaging-errors:end-->
 
 ---
 
+<!--skill-flavor:local-publish-errors:start-->
 ## Publish Errors
 
 ### `"Invalid file type. Expected a .zip file"`
@@ -618,6 +651,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### Publish 409 / "name conflict"
 - **Cause:** A package with the same name and version already exists
 - **Fix:** Bump version with `--version <newVersion>` and re-pack/publish
+<!--skill-flavor:local-publish-errors:end-->
 
 ---
 
@@ -626,7 +660,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### Not re-validating after a fix
 - **Symptom:** Reported "fixed" but errors remain
 - **Cause:** Skipped re-running the validators after applying a fix
-- **Fix:** ALWAYS re-run after every edit. Two validators: `uip api-workflow validate <Workflow.json>` (offline static — schema + semantic checks, autonomous) then `uip api-workflow run --no-auth` (runtime — catches expression/connection errors static analysis can't). See SKILL.md rules 20–21.
+<!--skill-flavor:runtime-validation-pitfall:start-->
+- **Fix:** ALWAYS run `uip api-workflow validate <Workflow.json>` after every edit; it is the autonomous offline schema + semantic check. When runtime validation is still needed, ask for the explicit consent required by SKILL.md rule 21 before `uip api-workflow run`, including `--no-auth` runs.
+<!--skill-flavor:runtime-validation-pitfall:end-->
 
 ### Fixing in wrong order
 - **Symptom:** Fixing one error creates more errors; thrashing
@@ -636,14 +672,16 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### Assuming an edit succeeded
 - **Symptom:** File appears unchanged after edit
 - **Cause:** Edit's `old_string` did not exactly match file content (whitespace, escaping)
-- **Fix:** Always read the file before editing. After edit, re-run the workflow.
+- **Fix:** Always read the file before editing. After the edit, run static validation. Run the workflow only after explicit user consent.
 
 ---
 
 ## Debugging Strategy
 
+<!--skill-flavor:runtime-debugging-strategy:start-->
 1. **Always run with `--output json`** so failures are machine-parseable
-2. **Run `--no-auth` first** to confirm structural validity. If structure passes but the real run fails, the issue is auth, network, or input data — not the workflow shape
+2. **After explicit consent, run `--no-auth` first** when runtime validation is needed. If structure passes but the real run fails, the issue is auth, network, or input data — not the workflow shape
 3. **Reduce to minimal repro** — comment out (delete + restore via git) downstream tasks to isolate which task fails
 4. **Check exit code** — `0` = success, `1` = failure
 5. **Read `Instructions` first** — the executor often suggests the fix directly
+<!--skill-flavor:runtime-debugging-strategy:end-->

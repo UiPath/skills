@@ -406,7 +406,7 @@ test("empty canonical blocks add flavor guidance without shadowing shared edits"
   assert.ok(!containsFlavorMarker(secondBuilt));
 });
 
-test("Studio Web inherits all API Workflow references and adds only host scope", () => {
+test("Studio Web inherits API Workflow authoring guidance and applies its host command contract", (t) => {
   const canonicalPath = join(REPO_ROOT, "skills", "uipath-api-workflow", "SKILL.md");
   const overridePath = join(
     REPO_ROOT,
@@ -440,7 +440,7 @@ test("Studio Web inherits all API Workflow references and adds only host scope",
   }
   assert.match(
     composed,
-    /CLI operations that Studio Web exposes, including validation and `uip api-workflow registry resolve` \/ `stub`/,
+    /CLI operations that Studio Web exposes, including validation, `uip api-workflow registry resolve` \/ `stub`, and the host-intercepted active-solution publish bridge/,
   );
   assert.match(
     composed,
@@ -448,6 +448,72 @@ test("Studio Web inherits all API Workflow references and adds only host scope",
   );
   assert.match(composed, /Project creation must use the live `proxy-tools-Solution` \/ `CreateProjects` schema/);
   assert.ok(!containsFlavorMarker(composed));
+
+  const studioRoot = join(REPO_ROOT, "skill-flavors", "studioweb");
+  const output = mkdtempSync(join(tmpdir(), "api-workflow-studioweb-contract-"));
+  t.after(() => rmSync(output, { recursive: true, force: true }));
+  materializeComposition(createCompositionPlan(REPO_ROOT, studioRoot), output);
+
+  const builtSkillRoot = join(output, "uipath-api-workflow");
+  const builtFiles = new Map(
+    [
+      "SKILL.md",
+      "references/cli-reference.md",
+      "references/connector-activity-discovery.md",
+      "references/troubleshooting.md",
+      "references/operating-published-workflows.md",
+      "references/workflow-file-format.md",
+    ].map((relativePath) => [
+      relativePath,
+      readFileSync(join(builtSkillRoot, relativePath), "utf8"),
+    ]),
+  );
+  const builtContract = [...builtFiles.values()].join("\n");
+
+  for (const [relativePath, source] of builtFiles) {
+    assert.ok(!containsFlavorMarker(source), `${relativePath} must be marker-free`);
+  }
+  assert.match(builtFiles.get("SKILL.md"), /Studio Web Embedded Command Contract/);
+  assert.match(builtFiles.get("SKILL.md"), /CreateProjects` does not switch the active designer project/);
+  assert.match(builtContract, /\/solution\/<projectName>\/Workflow\.json/);
+  assert.match(builtContract, /uip api-workflow validate Workflow\.json --output json/);
+  assert.match(builtContract, /uip api-workflow registry resolve/);
+  assert.match(builtContract, /uip api-workflow registry stub/);
+  assert.match(builtContract, /uip is connections ping/);
+  assert.match(builtContract, /\/skills\/synthetic\/proxy-tools-Api\/SKILL\.md/);
+  assert.match(builtContract, /RunProject/);
+  assert.match(builtContract, /explicit (?:user )?consent[\s\S]*RunProject/);
+  assert.match(builtContract, /No worker implementation available/);
+  assert.match(builtContract, /Do not expect a desktop CLI `WorkflowRun` envelope/);
+  assert.match(builtContract, /uip solution publish --help/);
+  assert.match(builtContract, /explicit user publish request or approval/);
+  assert.match(builtContract, /active-solution form with no positional package path/);
+  assert.match(
+    builtContract,
+    /uip solution publish \[--description <text>\].*\[--release-notes <text>\].*\[--version <version>\].*\[--location <value>\].*\[--location-name <value>\].*\[--personal-workspace\]/,
+  );
+  assert.match(builtContract, /request was accepted[\s\S]*Publish history/);
+  assert.doesNotMatch(builtContract, /--input-arguments/);
+  assert.doesNotMatch(builtContract, /uip is resources run/);
+  assert.doesNotMatch(builtContract, /^\s*uip solution publish\s+[^\n]*\.zip/m);
+  assert.match(builtFiles.get("references/troubleshooting.md"), /jq empty Workflow\.json/);
+  assert.doesNotMatch(
+    builtContract,
+    /^\s*uip (?:login|logout|auth|config|api-workflow (?:init|build|pack|run|bindings sync)|solution (?:init|pack|deploy|resources refresh)|is connections edit|or |traces )/m,
+  );
+  assert.doesNotMatch(builtContract, /^\s*node -e /m);
+  assert.doesNotMatch(
+    builtFiles.get("references/operating-published-workflows.md"),
+    /uip or jobs (?:start|list|logs|stop)/,
+  );
+
+  const defaultCliReference = readFileSync(
+    join(REPO_ROOT, "skills", "uipath-api-workflow", "references", "cli-reference.md"),
+    "utf8",
+  );
+  assert.match(defaultCliReference, /^uip api-workflow init <name>/m);
+  assert.match(defaultCliReference, /^uip api-workflow run <file>/m);
+  assert.match(defaultCliReference, /^uip solution publish <packagePath>/m);
 });
 
 test("new canonical skills are automatically included in existing flavors", (t) => {
