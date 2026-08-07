@@ -169,9 +169,9 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Publish to Studio 
 | Generate sdd.md interactively when none provided | [references/phase-0-interview.md](references/phase-0-interview.md) |
 | Plan tasks from sdd.md | [Phase 1 router](references/planning.md); at Step 4, [`tasks.md` plan contract](references/tasks-plan-contract-guide.md) |
 | Execute tasks.md into a case | [references/implementation.md](references/implementation.md) |
-| Edit an existing caseplan.json (targeted edits) | [references/brownfield.md](references/brownfield.md) |
+| Edit an existing caseplan.json | [brownfield router](references/brownfield.md) |
 | Phase 2 → 3 → 4 → 5 → 6 split + hard stop contracts | [references/phased-execution.md](references/phased-execution.md) |
-| Cross-cutting edit mechanics (IDs, anchoring, batch contract) | [references/case-editing-operations.md](references/case-editing-operations.md) |
+| Brownfield primitives / conditional composites | [primitives](references/case-editing-operations.md); [composites](references/brownfield-operations-guide.md) when routed |
 | Case JSON schema | [references/case-schema.md](references/case-schema.md) |
 | Surviving CLI commands (registry, validate, debug, runtime) | [references/case-commands.md](references/case-commands.md) |
 | Failed debug/deployed Case run (failure-only) | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
