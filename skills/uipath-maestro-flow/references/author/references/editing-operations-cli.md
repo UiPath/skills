@@ -31,9 +31,12 @@ uip maestro flow node add <ProjectName>.flow <node-type> --output json \
 | `--input` | No | JSON object of node-specific inputs (expression, script, URL, etc.). Omit for nodes with no inputs (merge, end, terminate). |
 | `--label` | No | Display label shown on the canvas |
 | `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow format` rewrites positions on save. |
+| `--parent` | No | Id of an existing container node (typically a `core.logic.loop`) that should contain this node. Sets `parentId` — the supported way to nest a CLI-owned node (managed HTTP, connector activity/trigger) inside a loop body, since those must not be hand-edited. The parent node must already exist or the command errors. |
 | `--output json` | Yes (for parsing) | Structured JSON response with the assigned node `id` |
 
 **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write it to a temp file and pass `--input "$(cat /tmp/input.json)"`.
+
+> **Nesting a CLI-owned node in a loop:** add it with `--parent <loopId>` (the loop must already exist); never hand-edit `parentId`. Canonical rule and failure mode: [author/CAPABILITY.md — Node ownership](../CAPABILITY.md#node-ownership--who-authors-the-node).
 
 ### Remove a node
 

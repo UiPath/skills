@@ -47,9 +47,10 @@ For CLI-owned nodes:
 
 - Use `uip maestro flow node add` to insert the node and copy the definition into `definitions[]`.
 - Use `uip maestro flow node configure --detail '{...}'` to populate `inputs.detail` and `bindings[]`.
+- **Nest a CLI-owned node in a container (loop body) with `uip maestro flow node add ... --parent <containerId>`.** Loop-body membership is set by `parentId`, which you cannot hand-edit on a CLI-owned node — so pass `--parent` at add time (the container must already exist). Omitting it leaves the node at the top level: it runs **outside** the loop and its per-iteration `output` resolves to `null` on every pass — a defect `flow validate` does not catch.
 - Subsequent edits to `inputs.detail` are also CLI-only — re-run `node configure` (it's a full rebuild; see [connector/impl.md](references/plugins/connector/impl.md)).
 - **Never `Write` (full-file rewrite) a flow that contains CLI-owned nodes** — it silently clobbers their `bindings[]` / `inputs.detail`, leaving a corrupted connection binding that `flow validate` passes but `flow debug` fails on. `Edit` user-owned nodes in place; if a `Write` is unavoidable, re-run `node configure` for every CLI-owned node as the **last** write to touch `inputs.detail` / `bindings[]` (a later `Write` re-clobbers what `configure` just fixed).
-- You may still `Edit` the node's `display.label`, edges, layout, and outputs — those are not part of the envelope.
+- You may still `Edit` the node's `display.label`, edges, layout, and outputs — those are not part of the envelope. Containment (`parentId`) is the exception: set it via `--parent` on `node add` (above), never by editing.
 
 If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bindings[]` entries for a connector node — stop. Use the CLI.
 

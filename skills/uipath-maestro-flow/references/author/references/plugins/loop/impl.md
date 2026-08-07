@@ -50,6 +50,16 @@ Every node inside the loop body **must** have `"parentId"` set to the loop node'
 
 > **Critical:** If you omit `parentId`, the node executes outside the loop context. State variables will not update across iterations and loop outputs like `currentItem` will be inaccessible.
 
+### CLI-owned nodes inside a loop
+
+The example above is a **user-owned** node (Script), so you set `parentId` directly in the JSON. A **CLI-owned** body node (managed HTTP, connector activity/trigger) must not be hand-edited — pass `--parent <loopId>` when you add it, so the CLI writes `parentId` for you:
+
+```bash
+uip maestro flow node add <ProjectName>.flow core.action.http.v2 --label "Fetch data" --parent <loopId> --output json
+```
+
+The loop must already exist. Omitting `--parent` leaves the node outside the loop, where its per-iteration `output` resolves to `null` (and `flow validate` still passes). Full rule and rationale: [author/CAPABILITY.md — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node).
+
 ## Adding / Editing
 
 For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `parentId`.
@@ -237,6 +247,7 @@ Key points in this pattern:
 | Collection is empty or null | Expression evaluates to null/undefined | Check `collection` expression and upstream output |
 | `$vars.loop1.currentItem` is undefined | Missing node variable binding or missing `parentId` | Add `loop1.currentItem` to `variables.nodes` and set `parentId` on body nodes |
 | State variable not updating across iterations | Body node missing `parentId` | Add `"parentId": "<loopId>"` to every node inside the loop body |
+| HTTP / connector node inside the loop never runs (`$vars.<nodeId>.output` is `null` every iteration) | A CLI-owned body node was added without `--parent`, so it sits outside the loop | Re-add it with `uip maestro flow node add ... --parent <loopId>` — do not hand-edit `parentId` on CLI-owned nodes ([details](#cli-owned-nodes-inside-a-loop)) |
 | State variable becomes `NaN` | variableUpdate expression uses `$vars.<loopId>.currentItem` | Loop variables are not available in variableUpdate expressions. Do the computation in the script and reference `$vars.<bodyNodeId>.output` in the variableUpdate |
 | Infinite loop | Edges wired incorrectly | Ensure only `loopBack` creates the cycle, not arbitrary edges |
 | No output after loop | Missing `success` edge | Wire the `success` port to the next downstream node |
