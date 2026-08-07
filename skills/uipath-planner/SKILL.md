@@ -1,7 +1,7 @@
 ---
 name: uipath-planner
-description: "UiPath solution planner & designer. Always invoke for PDD / SDD files (`pdd.md`, `*-sdd.md`). Authors a Solution Design Document (SDD) from a Process Design Document (PDD) — or from another process-knowledge source (Confluence page, SOP, BPMN model, meeting transcript) — then derives the multi-skill, multi-project task list from an SDD, emitting live TaskCreate calls. Known-product single-project build, no PDD/SDD→that skill; ambiguous/'what should I build'→here. For `uip solution` lifecycle & `.uipx`→uipath-solution. For non-solution Orchestrator/IS/auth/traces→uipath-platform. For .xaml/.cs→uipath-rpa. For .flow→uipath-maestro-flow. For building/editing .bpmn→uipath-maestro-bpmn (a .bpmn as design input routes here). For agent.json/.py→uipath-agents. Sole author of Case Management SDDs — conversational case design, case `sdd.draft.md` finalization, and runtime delegation from uipath-maestro-case (subagent writes sdd.md). For caseplan.json build→uipath-maestro-case."
-when_to_use: "User provides a PDD/SDD (or another process-knowledge source or a prompt — the planner asks clarifying questions), says 'generate SDD'/'analyze this PDD'/design/architect a UiPath solution, OR makes a non-trivial request spanning SEPARATE buildable projects (a Flow orchestrating RPA processes that must be built, 'build a solution from scratch'). A PDD or SDD ALWAYS routes here (Phase D) — author its SDD even for ONE RPA process; never hand a raw PDD to a specialist. Load BEFORE authoring an SDD or deriving tasks. Case Management SDD design, case draft finalization, and delegated case design route here; the caseplan.json build stays with uipath-maestro-case. Skip ONLY when no PDD/SDD and the request targets one project — even with inline HITL/script/connector nodes — invoke that specialist directly. Flow calling only existing/deployed processes→uipath-maestro-flow."
+description: "UiPath solution planner & designer. Always invoke for PDD / SDD files (`pdd.md`, `*-sdd.md`). Authors a Solution Design Document (SDD) from a Process Design Document (PDD) — or from another process-knowledge source (Confluence page, SOP, BPMN model, meeting transcript) — then derives the multi-skill, multi-project task list from an SDD, emitting live TaskCreate calls. Known-product single-project build, no PDD/SDD→that skill; ambiguous/'what should I build'→here. For `uip solution` lifecycle & `.uipx`→uipath-solution. For non-solution Orchestrator/IS/auth/traces→uipath-platform. For .xaml/.cs→uipath-rpa. For .flow→uipath-maestro-flow. For building/editing .bpmn→uipath-maestro-bpmn (a .bpmn as design input routes here). For agent.json/.py→uipath-agents. Also the sole author of Case Management SDDs (conversational case design + case `sdd.draft.md` finalization). For caseplan.json build→uipath-maestro-case."
+when_to_use: "User provides a PDD/SDD (or another process-knowledge source or a prompt — the planner asks clarifying questions), says 'generate SDD'/'analyze this PDD'/design/architect a UiPath solution, OR makes a non-trivial request spanning SEPARATE buildable projects (a Flow orchestrating RPA processes that must be built, 'build a solution from scratch'). A PDD or SDD ALWAYS routes here (Phase D) — author its SDD even for ONE RPA process; never hand a raw PDD to a specialist. Load BEFORE authoring an SDD or deriving tasks. Skip ONLY when no PDD/SDD and the request targets one project — even with inline HITL/script/connector nodes — invoke that specialist directly. Flow calling only existing/deployed processes→uipath-maestro-flow. Case SDD design and case `sdd.draft.md` finalization also load this skill; only the caseplan.json build stays with uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Glob, Grep, WebFetch, AskUserQuestion, EnterPlanMode, ExitPlanMode, TaskCreate, TaskUpdate, TaskList
 ---
 
@@ -25,8 +25,8 @@ The skill has three paths, decided by the **Entry Guard**:
 - User provides a **PDD or any process-knowledge source** — a PDD, Confluence page, BPMN model, meeting/Zoom transcript, SOP, or requirements doc (as PDF / Word / Markdown / `.txt` / `.bpmn` / pasted) — and asks to design or build from it → Phase D
 - User asks to **design / architect / generate an SDD** for a UiPath automation → Phase D
 - User provides an **SDD path** → Lane A
-- User asks to **design / generate a Case Management SDD** conversationally (no PDD), asks for a reviewable case design draft, or asks to **finalize a case `sdd.draft.md`** → Phase D Case Design Lane
-- **`uipath-maestro-case` delegates at runtime** (spawns this skill in a subagent) because no `sdd.md` exists for a case build request → Phase D Case Design Lane, subagent mode (design best-assumption, write `sdd.md`, return the Case Review + ledger)
+- User asks to **design / generate a Case Management SDD** conversationally (no PDD), asks for a reviewable case design draft, or asks to **finalize a case `sdd.draft.md`** → Phase D — Design (Case Design Lane)
+- **`uipath-maestro-case` delegates at runtime** (spawns this skill in a subagent) because no `sdd.md` exists for a case build request → Phase D — Design (Case Design Lane, subagent mode: design best-assumption, write `sdd.md`, return the Case Review + ledger)
 - The request is **non-trivial** — spans **separate buildable projects** that each need their own specialist (a Flow orchestrating standalone RPA processes or agents that must themselves be built) → Lane B
 - The request is **ambiguous** — no single specialist clearly matches, or "what can I build?"
 
@@ -53,14 +53,17 @@ The skill has three paths, decided by the **Entry Guard**:
 Run this guard before anything else.
 
 ```text
-0. Case Design Lane signals — checked first:
+0. Case Design Lane signals — checked first. These route to Phase D — Design,
+   entering through its Case Design Lane (the path taxonomy stays the three
+   paths above; the lane is Phase D's case-specific entrance):
    - `uipath-maestro-case` delegated this invocation as a subagent (case build
-     request, no sdd.md at its resolved path) → Phase D Case Design Lane,
-     subagent mode: write `sdd.md`, return the Case Review + ledger.
+     request, no sdd.md at its resolved path) → Phase D — Design, Case Design
+     Lane in subagent mode: write `sdd.md`, return the Case Review + ledger.
    - A case-management design request (stages / SLA / case lifecycle language,
-     or the user says "case") with no PDD → Phase D Case Design Lane, direct.
+     or the user says "case") with no PDD → Phase D — Design, Case Design
+     Lane, direct.
    - A case `sdd.draft.md` exists (or is named) and the user asks to finalize
-     it → Phase D Case Design Lane, draft finalization.
+     it → Phase D — Design, Case Design Lane, draft finalization.
 
 1. No document path?
    - Explicit design/architect language ("design this", "architect this",
