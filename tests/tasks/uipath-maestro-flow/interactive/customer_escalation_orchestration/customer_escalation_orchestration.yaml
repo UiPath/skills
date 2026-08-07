@@ -1,0 +1,150 @@
+task_id: skill-flow-interactive-customer-escalation-orchestration
+description: >
+  Interactive end-to-end Flow evaluation for the full customer escalation
+  orchestration from the Slack scenario, modeled deterministically with
+  manual-trigger inputs and planned side-effect outputs: Outlook intake,
+  Salesforce matching, Jira duplicate/create/update decisions, severity and
+  response-draft agent outputs, Drive summary/attachment archival, Slack
+  escalation alerts, Outlook draft acknowledgements, and exception paths. The
+  simulated user supplies every grader-gated business rule in the opening
+  request and ends the dialog after the first completed build. The grader then
+  debugs four seeded paths and verifies business outcomes, not self-reported
+  completion.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, node:switch, feature:trigger, feature:escalation, feature:conversational]
+
+run_limits:
+  expected_turns: 55
+  max_turns: 140
+  turn_timeout: 2400
+  task_timeout: 10800
+
+agent:
+  # allowed_tools uses replace semantics. Keep the default authoring tools and
+  # allow the interactive gate to fire through AskUserQuestion.
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/customer_escalation_orchestration/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120
+
+# No initial_prompt: simulation mode generates the opening request from the
+# persona and goal. All facts gated by the seeded runtime checker are in the
+# opening brief; the simulator stops at the first completed Flow build.
+simulation:
+  enabled: true
+  persona: |
+    You are an experienced support-operations manager designing an escalation
+    automation with a UiPath developer. You know the company's operating
+    policies and exception rules, but you do not know the .flow file format or
+    CLI syntax. Give crisp business answers and let the coding agent choose the
+    implementation.
+  goal: |
+    Ask for a local, deterministic UiPath Maestro Flow project named
+    CustomerEscalationOrchestration, inside a solution of the same name, that
+    models a customer-email escalation process. It must not contact Outlook, Salesforce,
+    Jira, Drive, Slack, or published agents: the manual form supplies already
+    parsed email and lookup results, and the Flow returns the actions it would
+    plan. Say you want a visible, multi-stage orchestration rather than one
+    giant calculation: separate stages for intake, Salesforce, severity, Jira,
+    response drafting, Drive, Slack, and Outlook, with real routing choices.
+
+    Explain the business rules in the opening request. One Salesforce match
+    supplies the account/contact; zero or multiple matches need HumanReview.
+    Severity comes from an agent result: Sev1 and Sev2 need engineering, Sev3
+    does not. A matching Jira issue is a duplicate and must be updated rather
+    than recreated. New Sev1/Sev2 issues are created, Sev3 has no Jira action,
+    and unavailable Jira needs HumanReview only after both the customer and
+    severity are valid. Invalid severity-agent data takes precedence over Jira
+    availability. Drive must return the literal SaveSummaryAndAttachments when
+    attachments exist, SaveSummary otherwise, and SaveExceptionSummary for an
+    exception. Outlook always plans DraftAcknowledgement or DraftNeedsReview;
+    Slack uses PostSev1Alert, PostEngineeringUpdate, or None. Explain that
+    all exception paths need HumanReview defaults, that a matched customer is
+    retained when only severity parsing fails, and that the correlation ID must
+    be returned unchanged. Require each exception responseDraft to include the
+    literal words "Human review" plus the cause: Salesforce for customer-match
+    exceptions, "invalid JSON" for severity parsing, and Jira for availability.
+    State the exact planned-action names and all named
+    outputs the Flow must return. Explain that every declared Flow output must
+    be mapped on the End node for both the normal and exception terminal paths:
+    choose the executed path by checking whether a terminal node's `.output` is
+    non-null, never merely whether `$vars.<node>` exists. Ask for a UiPath
+    Maestro Flow project and say it must validate before sign-off. Give this
+    implementation contract too: the Salesforce script must return `{ valid,
+    accountId, contactId, exceptionCode }`, and the Salesforce decision must
+    read `($vars.salesforce.output || {}).valid === true` (with the inverse
+    branch for exceptions). Every script node referenced by a decision must
+    have a generated `variables.nodes` output declaration, and decision
+    expressions must null-guard their upstream `.output` object. Close by
+    inviting questions.
+  constraints:
+    - "Opening facts: exact-one Salesforce match returns account/contact; zero/multiple match returns HumanReview, SALESFORCE_NO_MATCH/SALESFORCE_MULTIPLE_MATCH, and UNKNOWN IDs. Valid severities are Sev1, Sev2, Sev3. Invalid or missing severity returns HumanReview and INVALID_AGENT_JSON, while retaining matched IDs."
+    - "Opening facts: a Jira match returns DuplicateEscalation, UpdateExisting, and the existing key. Valid new Sev1/Sev2 returns Create and NEW. Sev3 returns None and None. JIRA_UNAVAILABLE applies only after a valid customer and severity; INVALID_AGENT_JSON has precedence."
+    - "Opening facts: exception outputs are severity Unclassified, engineeringHandoff false, jiraAction/jiraIssueKey/slackAction None, driveAction SaveExceptionSummary, outlookAction DraftNeedsReview, and caseKey equal to correlationId. Valid paths use exceptionCode None."
+    - "Opening facts: every exception responseDraft contains the literal words Human review and names its cause: Salesforce for customer matching, invalid JSON for severity parsing, or Jira for availability."
+    - "Opening facts: Sev1 uses PostSev1Alert, Sev2 uses PostEngineeringUpdate, and Sev3 uses None. Valid paths use DraftAcknowledgement. Return draftAgentJson.body, while exception drafts name Salesforce, invalid JSON, or Jira as applicable."
+    - "Opening facts: the project and solution are both named CustomerEscalationOrchestration. Inputs are senderEmail, subject, body, attachmentsJson, salesforceMatchesJson, salesforceOpenCasesJson, jiraMatchesJson, jiraAvailable, severityAgentJson, draftAgentJson, and correlationId. Outputs are accountId, contactId, severity, engineeringHandoff, route, jiraAction, jiraIssueKey, driveAction, outlookAction, slackAction, responseDraft, exceptionCode, and caseKey."
+    - "Opening facts: map every declared output on the End node for normal and exception terminal paths. In conditional End expressions, test `$vars.<terminal>.output` for a non-null value, not `$vars.<terminal>`, because a node object exists even when that branch did not execute."
+    - "Opening facts: the Salesforce script returns `valid`, `accountId`, `contactId`, and `exceptionCode`; its decision tests `($vars.salesforce.output || {}).valid === true` and the inverse. Each script referenced by a decision must have variables.nodes output wiring, and every decision null-guards its upstream `.output`."
+    - "If the agent asks questions before building, answer concisely and then let it build. Do not introduce new requirements after it starts building."
+    - "If it tries live connectors, registry search, upload, publish, or external calls, remind it that this is a local deterministic planned-action Flow."
+    - "If it reports a completed Maestro Flow build, reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-check, or additional confirmation."
+  max_turns: 8
+  stop_token: "<<<END>>>"
+  stop_on_criteria_pass: false
+  check_criteria: end_of_dialog
+  n_trials: 1
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-flow skill"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent left execution to the grader instead of running flow debug"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+debug'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not spend the deterministic eval wiring live connector nodes"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+flow\s+registry\s+search'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the generated Flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Generated customer-escalation orchestration Flow validates without errors"
+    command: "uip maestro flow validate CustomerEscalationOrchestration/CustomerEscalationOrchestration/CustomerEscalationOrchestration.flow --output json"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Seeded Sev1, duplicate Sev2, unknown-customer, and invalid-agent-JSON paths produce the expected orchestration outputs"
+    command: "python3 $TASK_DIR/check_customer_escalation_orchestration.py"
+    timeout: 3000
+    expected_exit_code: 0
+    weight: 10.0
+    pass_threshold: 1.0
