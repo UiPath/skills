@@ -26,6 +26,7 @@ Submit a runtime eval run for a published Orchestrator package.
 ```bash
 uip or eval execute-and-evaluate \
   --process-key <guid> \
+  --workload-id <guid> \
   --items <json> \
   --evaluators <json> \
   [--eval-set-id <guid>] \
@@ -38,6 +39,7 @@ uip or eval execute-and-evaluate \
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--process-key` | Yes | Process key (GUID). Use `uip or processes list` to find keys. |
+| `--workload-id` | Yes | Workload ID (GUID). |
 | `--items` | Yes | JSON array of eval items. See [Evaluations](#evaluation-data-points). |
 | `--evaluators` | Yes | JSON array of evaluator configs. See [Evaluators](#evaluators). |
 | `--eval-set-id` | No | Eval set ID; defaults to zero GUID |
@@ -52,6 +54,7 @@ The folder resolves from your personal workspace automatically. Pass `--folder-k
 ```bash
 uip or eval execute-and-evaluate \
   --process-key "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
+  --workload-id "a1b2c3d4-0000-0000-0000-000000000001" \
   --items '[{"id":"i1","name":"Test","inputs":{"input":"hello"},"expectedOutput":{},"expectedBehavior":""}]' \
   --evaluators '[{"id":"ev-1","version":"","evaluatorTypeId":"5","evaluatorConfig":{"name":"Semantic","category":1,"type":5,"prompt":"Score 0-100...","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}}]' \
   --output json
@@ -364,6 +367,7 @@ uip or eval evaluation create \
 # 4. Run the eval referencing the eval set
 uip or eval execute-and-evaluate \
   --process-key "$PROCESS_KEY" \
+  --workload-id "$WORKLOAD_ID" \
   --eval-set-id "$EVAL_SET_ID" \
   --items '[{"id":"i1","name":"Greeting test","inputs":{"input":"hello"},"expectedOutput":{"content":"Hi there!"},"expectedBehavior":""}]' \
   --evaluators '[{"id":"'"$EVALUATOR_ID"'","version":"","evaluatorTypeId":"5","evaluatorConfig":{"name":"Semantic","type":5,"category":1,"prompt":"Score 0-100...","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}}]' \
@@ -388,6 +392,7 @@ uip or eval schedule create \
 | `Authentication failed` | No active session | Run `uip login` first |
 | `Process not found` | Invalid process key | Verify with `uip or processes list` |
 | `personal workspace not found` | No personal workspace | Pass `--folder-key` explicitly |
+| `WorkloadId must not be equal to zero GUID` | Missing or zero `--workload-id` | Pass a valid workload ID GUID |
 | `--items is not a valid JSON array` | Malformed JSON | Check JSON syntax; must be array of objects |
 | `--evaluator-config is not valid JSON` | Malformed JSON | Pass a valid JSON object |
 
