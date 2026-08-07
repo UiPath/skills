@@ -14,6 +14,8 @@ Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per 
 
 Every plugin uses direct JSON writes via its `impl-json.md`. Cross-cutting mechanics (ID generation, Pre-flight Checklist, primitive ops, the canonical write contract) are in [case-editing-operations.md](case-editing-operations.md).
 
+> **Read each `impl-json.md` once per plugin type, not per T-entry.** Group the section's T-entries by plugin, read that plugin's `impl-json.md` a single time, then execute every T-entry of that type from the one read (this is what the per-section batch write contract already assumes). Re-opening a plugin reference per T-entry is a read-budget defect — observed at up to 26 re-reads of one `impl-json.md` in a single build, each costing a full inference round-trip. After context compaction, re-read only the plugin for the section in progress.
+
 **Per-section batched writes — mandatory.** Process `tasks.md` one **section** at a time (Phase 2: §4.2.1 vars, §4.3 triggers, §4.4 stages, §4.6 task-shapes, §4.8 SLA, §4.7 conditions; Phase 3: §9.7 connector schema, §9.8 I/O binding, §10.5 connector-rule upgrades):
 
 1. **One Read** of `caseplan.json` at section entry.

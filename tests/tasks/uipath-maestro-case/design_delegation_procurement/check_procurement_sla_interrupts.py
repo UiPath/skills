@@ -28,8 +28,10 @@ def has_near(text: str, left: str, right: str, distance: int = 500) -> bool:
 
 def task_section(plan: str, task_name: str, stage_name: str | None = None) -> str:
     heading = (
+        # Accepts the compact plan title (`T21: task "Name"`) AND the canonical
+        # full-form build title (`T21: Add <type> task "Name" to "Stage"`).
         rf"^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])\s*"
-        rf"(?:Task:\s*)?(?:task\s+)?(?:\"{re.escape(task_name)}\"|{re.escape(task_name)}\b)[^\n]*\n"
+        rf"(?:[^\"\n]*?\btask\s+)?(?:Task:\s*)?(?:\"{re.escape(task_name)}\"|{re.escape(task_name)}\b)[^\n]*\n"
     )
     next_heading = rf"^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])"
     matches = list(re.finditer(
@@ -342,7 +344,7 @@ def check_sla_reference_closure(sdd: str) -> None:
 def check_plan_carries_sla_references(sdd: str, plan: str) -> None:
     """tasks.md must carry the SLA interrupt it inherited from the SDD.
 
-    The compact no-build plan contract (phase-0-interview.md § Compact
+    The compact no-build plan contract (planning.md § Compact
     tasks/tasks.md contract) requires the global-event entry to name its rule
     type and, for `sla-status-change`, the SLA it fires off (plus the at-risk
     escalation when the row is at-risk; a breach row names the SLA alone).
