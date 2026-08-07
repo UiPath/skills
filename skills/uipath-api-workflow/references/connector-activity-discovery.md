@@ -1,6 +1,8 @@
 # Connector Activity Discovery
 
+<!--skill-flavor:connector-surface-summary:start-->
 How to author an Integration Service connector activity (HTTP Request, Gmail, Outlook, GitHub, Slack, Salesforce, etc.) so it **renders cleanly in StudioWeb's designer** AND **runs from the CLI**. The flow uses `uip api-workflow registry` to resolve a keyword to an activity-type GUID, then build a ready-to-paste activity object with the right shape — `metadata.configuration` (with `unifiedTypesCompatible: true` + `savedJitInputFieldId` so StudioWeb renders the unified activity card), full endpoint path, multipart declarations, stub-computed slot and export-bucket keys — all derived from StudioWeb's TypeCache + Integration Service Elements metadata.
+<!--skill-flavor:connector-surface-summary:end-->
 
 <!--skill-flavor:host-command-scope:start-->
 <!--skill-flavor:host-command-scope:end-->
@@ -268,7 +270,9 @@ Drop `Data.Activity` into the root sequence after `WorkflowStart`. Replace any o
 | `<REPLACE_WITH_TARGET_URL>` | Http kind, in `bodyParameters.url` | The target API URL — literal `"https://api.example.com/x"` or expression `"${$workflow.input.url}"` |
 | `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` | IntSvc kind, in `with.connectionId` and `with.connectionResourceId` | The pinged UUID from Step 2 (rerun stub with `--connection-id` to avoid the placeholder) |
 
+<!--skill-flavor:required-field-cloud-validation:start-->
 Before validating, run the **Required-field cross-check** above — if any `required: true` field is missing from `queryParameters` / `pathParameters` / `bodyParameters`, the workflow will run locally but fail in cloud (or worse — the StudioWeb FolderPicker / lookup picker will mark the field as invalid without a clear error).
+<!--skill-flavor:required-field-cloud-validation:end-->
 
 <!--skill-flavor:validate-and-run:start-->
 Then validate:
@@ -446,7 +450,9 @@ Generic-specific behavior to know:
 - **`--object-name` is required** unless the activity definition pins its own object (rare, proxy-style generics like `httpRequest`). Without either, `stub` fails with `"Generic activity '<name>' needs a target object"`.
 - **IS metadata is mandatory** — Curated stubs degrade to a fallback `/<objectName>` path when IS is unreachable; Generic stubs hard-fail instead (`"Could not resolve operation …"`), because without metadata there is neither verb nor path to emit. The same error fires when the object doesn't support the operation — check with `uip is resources describe <connector-key> <object-name> --connection-id <uuid> --operation <Op>`.
 - **Operation casing is normalized** — `resolve` shows the TypeCache's capitalized `Operation` (`"List"`), but the stub persists it lowercased (`"list"`) in `metadata.configuration`, matching what StudioWeb writes.
+<!--skill-flavor:export-bucket-stability:start-->
 - **Slot key carries the operation; export bucket does not**: slot `ListUserRepos_1`, export bucket `user_repos_1` (objectName-based, like every Curated example). The bucket intentionally matches the platform's own derivation — solution reconcile (`resource refresh`) regenerates `Workflow.json` and recomputes export buckets from the object name, so a divergent bucket would be renamed on regeneration. As always, copy `Data.ExportBucketKey` verbatim; and after ANY external rewrite of `Workflow.json` (reconcile, designer save), re-check that downstream `$context.outputs.<X>` reads still match the on-disk `export.as` keys — `validate` cannot catch dangling output references; they surface only at run time as `undefined`.
+<!--skill-flavor:export-bucket-stability:end-->
 <!--skill-flavor:generic-resource-runtime-diagnostic:start-->
 - **Path-parameter value formats are connector-specific.** `Retrieve`/`Update`/`Delete` endpoints take an id path param (e.g. `/repos/{repo}`) and the expected value format (name vs full name vs numeric id) varies and is sometimes wrong in the connector's own metadata — `uip is resources describe` shows the parameter's description and lookup hints. If the run 404s, cross-check by executing the same operation via `uip is resources run get <connector-key> <object-name> --connection-id <uuid> --query <param>=<value>`; if that also 404s, the connector's auto-generated metadata is broken upstream — pick a Curated activity or the Http kind instead.
 <!--skill-flavor:generic-resource-runtime-diagnostic:end-->
@@ -501,9 +507,11 @@ Examples:
 // In an If when:
 "when": "${$context.outputs.getNewestEmail_1?.content?.subject?.length > 15}"
 
+<!--skill-flavor:runtime-content-normalization-comment:start-->
 // In a JsInvoke script body — handle both string and parsed forms defensively
 // because the local CLI runtime sometimes returns content as a JSON string and
 // the cloud returns it pre-parsed:
+<!--skill-flavor:runtime-content-normalization-comment:end-->
 const out = $context.outputs.getNewestEmail_1;
 const raw = out && (out.content !== undefined ? out.content : out);
 const body = (typeof raw === 'string') ? JSON.parse(raw) : raw;
@@ -860,7 +868,9 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 - **Do NOT wrap `bodyParameters` / `queryParameters` literals as `${'literal'}` when editing.** Connector params take BARE literals — `${'foo'}` is read as an expression and cleared on save.
 - **Do NOT rename the export bucket key.** The stub emits `Data.ExportBucketKey` correctly — use it verbatim. Renaming it breaks every downstream `$context.outputs.<X>` read.
 - **Do NOT remove `multipartParameters` from a multipart endpoint** — even for an attachment-less email. The executor's multipart wrapper depends on the declaration; without it, the vendor returns `400 "Unable to parse multipart body"`.
+<!--skill-flavor:required-field-antipattern:start-->
 - **Do NOT trust `registry stub`'s `queryParameters` / `pathParameters` / `bodyParameters` as complete.** The stub drops `required: true` fields. After every stub call, cross-check via `uip is resources describe <connector-key> <object-name> --operation <op> --connection-id <uuid> --output json` (or parse `metadata.configuration.optionalConfiguration.fieldsContainer.inputFields` from the stub output itself) and fill in anything required that's missing. Symptom of skipping: workflow runs locally on stale defaults, fails in cloud with a 4xx, or the StudioWeb properties panel marks the field invalid without a clear error.
+<!--skill-flavor:required-field-antipattern:end-->
 - **Do NOT leave `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` (or any `<REPLACE_WITH_*>` placeholder) in a generated workflow.** StudioWeb's properties panel renders the literal placeholder string as if it were a real connection name — the connection pill shows `<REPLACE_WITH_VENDOR_C...>` with a red error, and any subsequent run 401s in cloud. The placeholder is meaningful **only** in the template file under `assets/templates/`; the moment you copy the stub's `Data.Activity` into the user's workflow, every placeholder MUST become a real value (UUID from `uip is connections ping`, URL from `--inputs` or the user's request). If you don't have a working UUID, **stop authoring** and ask the user — do not write the sentinel to disk. Re-stubbing with `--connection-id <uuid>` is the cleanest way to avoid the placeholder ever existing in the output.
 <!--skill-flavor:solution-metadata-antipattern:start-->
 - **Do NOT skip the Solution catalogue sync in Solutions-mode projects.** Two files MUST exist: the catalogue resource (`Solution/resources/solution_folder/connection/<connector-key>/<name>.json`) AND the per-user debug overwrites (`Solution/userProfile/<guid>/debug_overwrites.json`). Without both, the properties panel flags the activity with "to debug this resource, select a connection for it from the resource definition page" and clicking the activity nulls `with.connectionId`. Run `uip api-workflow bindings sync --workflow <Workflow.json>` followed by `uip solution resources refresh --solution-folder <path>` to write both. See [Step 5](#step-5--solutions-mode-intsvc-kind-sync-the-connection-into-the-solution-catalogue).

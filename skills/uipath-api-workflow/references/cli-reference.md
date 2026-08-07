@@ -1,6 +1,8 @@
 # CLI Reference — API Workflows
 
+<!--skill-flavor:reference-surface-summary:start-->
 All `uip` commands relevant to authoring, running, packaging, and publishing API workflows. The api-workflow-tool ships with `@uipath/cli` (no separate install).
+<!--skill-flavor:reference-surface-summary:end-->
 
 <!--skill-flavor:host-command-scope:start-->
 <!--skill-flavor:host-command-scope:end-->
@@ -531,14 +533,18 @@ uip solution publish ./build/MyApiSolution_1.0.0.zip \
 ```
 <!--skill-flavor:local-solution-lifecycle:end-->
 
+<!--skill-flavor:command-surface-heading:start-->
 ## Commands That Do NOT Exist
 
 The agent should not invent these — they are NOT part of the api-workflow-tool surface:
+<!--skill-flavor:command-surface-heading:end-->
 
 <!--skill-flavor:api-workflow-publish-guidance:start-->
 - `uip api-workflow publish` <!-- uip-check-skip --> (publish goes through `uip solution publish`)
 <!--skill-flavor:api-workflow-publish-guidance:end-->
+<!--skill-flavor:api-workflow-alias-guidance:start-->
 - `uip apw <anything>` (no alias) <!-- uip-check-skip -->
+<!--skill-flavor:api-workflow-alias-guidance:end-->
 
 <!--skill-flavor:command-existence-guidance:start-->
 These DO exist (don't route around them): `uip api-workflow init` (scaffold), `uip api-workflow build` (compile one project), `uip api-workflow pack` (one-project `.nupkg`). Solution-level packaging/publishing go through `uip solution pack` / `uip solution publish`. Offline validation is `uip api-workflow validate` (or running with `--no-auth`).

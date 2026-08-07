@@ -190,11 +190,13 @@ Common failure modes when authoring, running, packaging, or publishing API workf
 
 ## StudioWeb Roundtrip Pitfalls
 
+<!--skill-flavor:designer-roundtrip-run-comparison:start-->
 These are issues that surface only when a workflow is opened or run in **StudioWeb** (cloud.uipath.com). Workflows that pass `uip api-workflow run --no-auth` may still fail in cloud for these reasons.
 
 ### `ReferenceError: <literal> is not defined` after opening in StudioWeb
 
 - **Symptom:** Workflow runs cleanly under `uip api-workflow run`. Open it in StudioWeb's designer, run from there, get `Worker operation failed: PASS is not defined` (or `FAIL`, `INVALID`, `done`, etc. — whatever literal string you used).
+<!--skill-flavor:designer-roundtrip-run-comparison:end-->
 - **Cause:** StudioWeb's designer normalizes Assign `set` values and Response `response` literals when it parses or saves the JSON. It treats unwrapped strings (e.g. `"grade": "PASS"`) as expressions typed into the property panel and rewrites them to `"grade": "${PASS}"` — turning the literal into a bare identifier reference. At run time `PASS` has no binding, so the expression evaluator throws `<name> is not defined`.
 - **Fix:** Pre-wrap every string literal in `Assign.set` and `Response.response` (and similar expression-typed slots) as a JS string inside an expression: `"${'literal'}"`. The single-quoted form avoids JSON escaping. Examples:
   ```json
@@ -211,7 +213,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### Object-valued Response gets corrupted; fields evaluate to literal expression text
 
+<!--skill-flavor:response-roundtrip-symptom:start-->
 - **Symptom:** Workflow runs correctly under `uip api-workflow run` and Response returns the expected object (e.g. `{ tier: "GOLD", count: 3 }`). After opening + saving in StudioWeb, the same Response now returns each field's value as the **literal text of its expression** rather than the evaluated value — `tier` becomes the string `"${$context.variables.tier}"` (one long string, often 100+ chars), not `"GOLD"`. StudioWeb's own output-schema validator may flag the mismatch ("Output-ul nu corespunde schemei de output configurate").
+<!--skill-flavor:response-roundtrip-symptom:end-->
 - **Cause:** StudioWeb's designer rewrites Response object payloads on save. Authored `{ "response": { "tier": "${...}", "count": "${...}" } }` is collapsed into a single stringified expression: `"response": "${{\"tier\":\"${...}\",\"count\":\"${...}\"}}"`. The outer `${{ ... }}` is a JS object-literal expression form, but inside it the keys/values are inside JS **double-quoted** strings (`"tier":"${...}"`) — and JS double-quoted strings don't interpolate `${...}`, only template literals do. So each field's value resolves to the literal characters `${...}`, not the evaluated expression.
 - **Fix:** Pre-author the Response in the single-expression `${{ ... }}` form yourself, with raw context references inside (no inner `${...}` wrapping):
   ```json
@@ -248,7 +252,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### Multi-key `Assign.set` silently drops all but one variable
 
+<!--skill-flavor:assign-roundtrip-symptom:start-->
 - **Symptom:** Workflow runs correctly under `uip api-workflow run` and updates several variables in one Assign. Open it in StudioWeb, run from the designer (or after a save+reload), and now only one variable is being updated each iteration. The others stay at their schema default. Loops produce results like `{sum: 10, count: 0, max: 0}` when all three should have been computed.
+<!--skill-flavor:assign-roundtrip-symptom:end-->
 - **Cause:** **StudioWeb's designer collapses multi-key `Assign.set` blocks to a single key on save.** The Assign activity card in the designer represents one variable assignment, and the persistence layer normalizes the JSON to match. After a roundtrip: `"set": { "sum": "${...}", "count": "${...}", "max": "${...}" }` becomes `"set": { "sum": "${...}" }`. The other keys are gone from the file; the runtime executes what's left.
 - **Fix:** Use one Assign per variable. Place them sequentially in the same `do` array. Each Assign has a single-key `set` that StudioWeb's designer leaves intact. Example:
   ```json
@@ -327,7 +333,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - `type: "object"` → `.content` is a single object. Read `.content.<field>`.
 
   Verified shapes: Outlook `ListEmails` → `.content[0].subject` (bare array). Slack `send_message_to_user_v2` → `.content.ok`, `.content.ts` (single object). HTTP Request → `.content.<field>` (single object). For unverified vendors, log the activity output once and inspect.
+<!--skill-flavor:runtime-content-defensive-form:start-->
 - **Defensive form for JsInvoke** (handles the local-CLI quirk where `.content` is sometimes a JSON string):
+<!--skill-flavor:runtime-content-defensive-form:end-->
   ```javascript
   const out = $context.outputs.getNewestEmail_1;
   const raw = out && (out.content !== undefined ? out.content : out);
@@ -340,7 +348,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### Connector `bodyParameters` fields disappear after StudioWeb save (nested objects dropped)
 
+<!--skill-flavor:nested-connector-body-symptom:start-->
 - **Symptom:** Authored a connector activity with nested body — `{ message: { toRecipients: "...", subject: "...", body: { content: "..." } }, saveToSentItems: true }`. Workflow runs locally. Open it in StudioWeb (or save via the designer); the `message` block is gone from the file. Only fields whose names appear at the top level of `bodyParameters` survive (e.g. `saveToSentItems`). The vendor receives a payload missing the actual message data.
+<!--skill-flavor:nested-connector-body-symptom:end-->
 - **Cause:** StudioWeb's connector deserializer (`buildConnectorProperties` in `connector-translator-utils.ts`) scans `bodyParameters` for keys that match the connector's input-field names verbatim. Field names like `message.toRecipients` are flat dotted strings — the dot is a literal character, not a path separator. The deserializer does NOT recurse into nested objects. Nested-object values aren't found, the field model shows them empty, and the next save persists the empty model.
 - **Fix:** Use flat dotted keys matching the schema's `requestFields[].name` verbatim:
   ```json
@@ -367,7 +377,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### Connector `bodyParameters` literal cleared after StudioWeb save (`${'literal'}` read as expression)
 
+<!--skill-flavor:connector-literal-roundtrip-symptom:start-->
 - **Symptom:** Authored connector body with literals wrapped per the Assign rule — `"message.toRecipients": "${'andrei.hodoroaga@uipath.com'}"`. Workflow runs locally. After StudioWeb save, the field becomes empty (or shows a non-literal expression marker in the designer); the email goes out with no recipient.
+<!--skill-flavor:connector-literal-roundtrip-symptom:end-->
 - **Cause:** SKILL.md rule 5 (literal-wrap as `${'foo'}`) applies to **Assign / Response / If `when`**, NOT to connector params. StudioWeb's connector field detector treats `${...}` as a non-literal expression — it's looking for either a bare literal value or a real reference. `${'foo'}` looks like neither (it's a literal-disguised-as-expression), so the value isn't bound as a field literal and is dropped.
 - **Fix:** Bare literals in connector params:
   ```json
@@ -387,7 +399,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### Connector slot key and export-bucket key can differ — use the stub's values
 
+<!--skill-flavor:export-bucket-roundtrip-symptom:start-->
 - **Symptom:** Authored a connector activity using the slot key for the export — `"GetNewestEmail_1"` in the `do` array AND in the `export.as`. Workflow runs locally; downstream `$context.outputs.GetNewestEmail_1.content.subject` returns the correct value. After opening or saving in StudioWeb, downstream reads return `undefined`. The TypeScript linter shows `TS2551: Property 'GetNewestEmail_1' does not exist on type 'typeof outputs'. Did you mean 'getNewestEmail_1'?`. Diff of the file shows the export bucket key was rewritten to `getNewestEmail_1` — the slot key in the `do` array stayed `GetNewestEmail_1`.
+<!--skill-flavor:export-bucket-roundtrip-symptom:end-->
 - **Cause:** Connector activities are the only activity type where the slot key (in the `do` array) and the export-bucket key (what `$context.outputs.<X>` reads as) can differ. Every other type (Assign, JsInvoke, If, ForEach, DoWhile, TryCatch, Wait, Response) keeps "slot key === export key." For connector activities, StudioWeb's serializer normalizes the export bucket to a stub-computed form. The stub returns both keys correctly in `Data.SlotKey` and `Data.ExportBucketKey` — they are sometimes identical (Outlook `ListEmails` → both `ListEmails_1`) and sometimes different (Outlook `getNewestEmail` → slot `GetNewestEmail_1` / bucket `getNewestEmail_1`; HTTP `http-request` → slot `HttpRequest_1` / bucket `http_request_1`). Reconstructing either key from `objectName` by hand is what produces the mismatch.
 - **Fix:** Use `Data.SlotKey` and `Data.ExportBucketKey` from the stub verbatim. The slot key goes in the `do` array; the export-bucket key goes in `export.as` AND in every downstream `$context.outputs.<X>` reference:
   ```json
@@ -490,7 +504,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### Required request field dropped by `registry stub`
 
+<!--skill-flavor:required-field-runtime-symptom:start-->
 - **Symptom:** A vendor curated activity (Outlook `getNewestEmail`, Gmail `searchMessages`, …) runs locally — sometimes returning unexpected results (wrong folder, no filter applied) — and fails in cloud with a 4xx, OR the StudioWeb properties panel marks a field with a red border and an "invalid" badge but no clear error text. `registry stub`'s output shows `queryParameters: {}`, `pathParameters: {}`, or `bodyParameters: {}` for an endpoint that obviously needs inputs.
+<!--skill-flavor:required-field-runtime-symptom:end-->
 - **Cause:** **`uip api-workflow registry stub` only populates `<location>Parameters` from `--inputs`** — a `required: true` field not passed there stays out of the activity. The stub does flag it: `Data.Parameters` / `Data.RequestFields` carry the IS schema's `required` flags, and a missing required field raises a `Data.Warnings` entry (`"Required field(s) not provided via --inputs: parentFolderId"`). The failure mode arises when that warning is ignored.
 - **Prevention:** Follow the documented order — `uip is resources describe <connector-key> <object-name> --operation <Op> --connection-id <pinged-uuid>` BEFORE stubbing, then pass the required values via `--inputs` so the stub is complete on the first run.
 - **Detection:** Read `Data.Warnings` and `Data.Parameters` / `Data.RequestFields` in the stub output — a `"Required field(s) not provided"` entry means the describe step was skipped or a value was missed.
@@ -519,7 +535,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 ### `401 — Failed to execute IS call to /<endpoint>: Invalid Organization or User secret, or invalid Element token provided`
 
+<!--skill-flavor:connection-401-symptom:start-->
 - **Symptom:** The workflow runs locally with `uip api-workflow run` but fails in StudioWeb cloud (or against the real IS proxy) with a 401 status. The error detail says `"Invalid Organization or User secret, or invalid Element token provided."` — sounds like a credential / auth-token issue but is often something else.
+<!--skill-flavor:connection-401-symptom:end-->
 - **Cause:** The IS proxy's auth flow for `/elements_/v3/element/instances/{connectionId}/{operationName}` rejected the call. There are two distinct sub-cases — diagnose by looking at the URL the proxy hit:
 
   **Sub-case A — Wrong endpoint on the connection's element.** The endpoint in the proxy URL doesn't exist on the target connection's connector. Most common when an agent uses Http kind (`call: "UiPath.Http"` with `endpoint: "/http-request"`) but `connectionId` points at a vendor connection (Outlook, Gmail, etc.) instead of a `uipath-uipath-http` connection. The Outlook connector has no `/http-request` operation, only its curated ones (`/getNewestEmail`, `/sendEmail`, …) — so the proxy returns 401 as a generic "I can't service this request" rather than "operation not found."
@@ -530,7 +548,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - **Fix:** Run `uip is connections ping <connection-uuid> --output json`. If it returns `Code: "ConnectionNotEnabled"`, re-authenticate via `uip is connections edit <connection-uuid>` (opens browser for OAuth) or fix in the StudioWeb UI. If it returns `Code: "ConnectionPing"` (success) but the cloud still 401s, check that your CLI login (`uip login status`) is in the same org+tenant your browser is using at cloud.uipath.com — a tenant mismatch will reject the connection ID at the proxy layer.
 <!--skill-flavor:connection-auth-diagnostics:end-->
 
+<!--skill-flavor:connection-health-prevention:start-->
 - **Prevention:** The discovery flow's Step 4b (`uip is connections ping`) is mandatory specifically to catch sub-case B before authoring. Don't author against a connection that doesn't ping — the workflow shape will look right and even run locally, but fail at deployment time.
+<!--skill-flavor:connection-health-prevention:end-->
 
 ---
 

@@ -97,7 +97,9 @@ ${$context.outputs.listEmails_1.content?.length}
 ${$context.outputs?.getNewestEmail_1?.content?.subject ?? "(no subject)"}
 ```
 
+<!--skill-flavor:runtime-content-normalization:start-->
 Inside a JsInvoke script, the local CLI runtime sometimes returns `content` as a JSON string while cloud returns it pre-parsed — handle both:
+<!--skill-flavor:runtime-content-normalization:end-->
 
 ```javascript
 const out = $context.outputs.getNewestEmail_1;

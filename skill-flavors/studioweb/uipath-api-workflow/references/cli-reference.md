@@ -1,38 +1,40 @@
+<!--skill-flavor:reference-surface-summary:start-->
+Studio Web command and tool reference for authoring, static validation, approved execution, and active-solution publication. Apply the capability map below for each operation.
+<!--skill-flavor:reference-surface-summary:end-->
+
 <!--skill-flavor:host-command-scope:start-->
-> **Studio Web command scope:** run only the host-registered embedded CLI. Allowed here: `api-workflow validate`; `api-workflow registry resolve` / `stub`; read-only `uip is` discovery (`list`, `describe`, `ping`); read-only `uip solution publish --help`; and approved host-intercepted active-solution publication. Authentication is inherited. Execute workflows through consent-gated, schema-inspected `proxy-tools-Api` / `RunProject`. Project creation, embedded execution, local build/pack/deploy, machine-local or positional-package publication, login/config, binding sync, resource refresh, and solution-metadata edits are forbidden even when this reference documents their default/local syntax.
+> **Studio Web command surface:** use the host-registered embedded CLI for `api-workflow validate`, `api-workflow registry resolve` / `stub`, read-only `uip is` discovery (`list`, `describe`, `ping`), and `uip solution publish --help` plus approved host-intercepted active-solution publication. Authentication comes from the active Studio Web session. Use consent-gated, schema-inspected `proxy-tools-Api` / `RunProject` for execution and live host schemas for project, resource, and lifecycle operations.
 
 <!--skill-flavor:host-command-scope:end-->
 
 <!--skill-flavor:local-project-lifecycle:start-->
-## Project Creation, Build, and Pack in Studio Web
+## Project Creation and Lifecycle in Studio Web
 
-Do not run `uip api-workflow init`, `build`, or `pack`. Create a project with the live `proxy-tools-Solution` / `CreateProjects` schema. The tool does not switch the active project; after success, verify `/solution/<projectName>` and target `/solution/<projectName>/Workflow.json`. Use a Studio Web lifecycle tool for build or packaging when one is exposed, otherwise report the capability gap.
+Create each project from the freshly inspected `proxy-tools-Solution` / `CreateProjects` schema. After success, verify the returned `/solution/<projectName>` directory and target `/solution/<projectName>/Workflow.json`. For build or packaging requests, inspect the available Studio Web lifecycle capabilities and report the exact host gap when the requested capability is unavailable.
 <!--skill-flavor:local-project-lifecycle:end-->
 
 <!--skill-flavor:runtime-execution:start-->
 ## Execute an API Workflow in Studio Web
 
-The embedded API Workflow runner is not a Studio Web execution surface: it fails before `WorkflowStart` with `No worker implementation available`. Do not use it, with or without authentication flags.
-
 After `uip api-workflow validate Workflow.json --output json` returns `Data.Status: "Valid"`:
 
 1. Explain the concrete external side effects and ask for explicit user consent.
-2. If the user says yes, read `/skills/synthetic/proxy-tools-Api/SKILL.md` and inspect the live `RunProject` operation schema immediately before invocation.
-3. Invoke `RunProject` with exactly the fields declared by that schema for the target project. Do not hardcode the payload, infer optional fields, or reuse parameters from a previous session.
-4. Require the actual host tool result as execution evidence. If `RunProject` is absent or fails, report that host capability/result; do not switch to a local runner.
+2. On approval, read `/skills/synthetic/proxy-tools-Api/SKILL.md` and inspect the live `RunProject` operation schema immediately before invocation.
+3. Invoke `RunProject` with exactly the fields declared by that schema for the target project.
+4. Use the actual host tool result as execution evidence. Report an unavailable operation or failed result with its exact host details.
 <!--skill-flavor:runtime-execution:end-->
 
 <!--skill-flavor:registry-auth:start-->
-Look up DAP / connector activities (StudioWeb TypeCache, `projectType=Api`) and emit api-workflow-shaped activity stubs. Replaces the former Case-registry flow for api-workflow authoring.
-Both subcommands use authentication inherited from the active Studio Web session; do not run `uip login`.
+Look up DAP / connector activities (StudioWeb TypeCache, `projectType=Api`) and emit api-workflow-shaped activity stubs. This is the Studio Web registry flow for API Workflow authoring.
+Both subcommands use authentication inherited from the active Studio Web session.
 <!--skill-flavor:registry-auth:end-->
 
 <!--skill-flavor:registry-auth-remediation:start-->
-- `"Not logged in. Run 'uip login' first."` — report a Studio Web host-authentication blocker; do not run login or retry unchanged.
+- Authentication errors → report the Studio Web host-authentication blocker and retry after the active session or tenant state changes.
 <!--skill-flavor:registry-auth-remediation:end-->
 
 <!--skill-flavor:solution-resource-key:start-->
-| `--resource-key <field>=<key>` | no (repeatable) | Use only when a live Studio Web resource capability exposes the key. Do not discover it by reading or editing solution metadata. If the key is unavailable, report the capability gap. |
+| `--resource-key <field>=<key>` | no (repeatable) | Use the exact key exposed by a live Studio Web resource capability. Report the resource-key capability gap when that field is unavailable. |
 <!--skill-flavor:solution-resource-key:end-->
 
 <!--skill-flavor:connector-typical-sequence:start-->
@@ -50,31 +52,31 @@ uip api-workflow registry stub <activity-type-id> \
   --connection-id <uuid> --inputs '{"parentFolderId":"Inbox"}' --output json
 ```
 
-Insert `Data.Activity` into `Workflow.json`, then run `uip api-workflow validate Workflow.json --output json` autonomously until valid. Ask for explicit consent before execution; on "yes," inspect `/skills/synthetic/proxy-tools-Api/SKILL.md` and invoke its live `RunProject` operation with exactly the schema-declared fields. Do not run binding-sync or resource-refresh commands; Studio Web owns that metadata.
+Insert `Data.Activity` into `Workflow.json`, then run `uip api-workflow validate Workflow.json --output json` until valid. State concrete side effects and ask for explicit consent. On approval, inspect `/skills/synthetic/proxy-tools-Api/SKILL.md` and invoke its live `RunProject` operation with exactly the schema-declared fields.
 
-See [connector-activity-discovery.md](connector-activity-discovery.md) for field-shape rules and worked examples under the same host command scope.
+See [connector-activity-discovery.md](connector-activity-discovery.md) for field-shape rules and worked examples under the same Studio Web capability map.
 <!--skill-flavor:connector-typical-sequence:end-->
 
 <!--skill-flavor:local-solution-metadata:start-->
 ## Connection and Solution Metadata in Studio Web
 
-Do not run `uip api-workflow bindings sync` or `uip solution resources refresh`, and do not edit `bindings_v2.json`, `resources/`, `userProfile/`, or `.uipx`. Studio Web owns those files and backend entities. Use an exposed resource ProxyTool after inspecting its live schema; if no suitable capability exists, report the gap rather than creating local metadata.
+Treat the connection and solution metadata maintained by Studio Web as authoritative. For resource operations, inspect the relevant host ProxyTool's live schema and use exactly its declared fields. Report the exact host capability gap when the requested resource operation is unavailable.
 <!--skill-flavor:local-solution-metadata:end-->
 
 <!--skill-flavor:local-solution-lifecycle:start-->
 ## Solution Lifecycle in Studio Web
 
-Do not run embedded or machine-local `uip solution init`, project add/remove, pack, deploy, login, or logout commands. Use `CreateProjects` for project creation and schema-inspected Studio Web capabilities for lifecycle operations other than publication.
+Use `CreateProjects` for project creation and schema-inspected Studio Web capabilities for lifecycle operations.
 
 ### Publish the active Studio Web solution
 
-Studio Web intercepts `solution:publish` through Unified Build. The help form is read-only and may be inspected without publish approval:
+Studio Web intercepts `solution:publish` through Unified Build. The help form is read-only:
 
 ```bash
 uip solution publish --help
 ```
 
-For an explicit user publish request or approval, run the active-solution form with no positional package path:
+For an explicit user publish request or approval, run the active-solution form:
 
 ```bash
 uip solution publish [--description <text>] [--release-notes <text>] [--version <version>] [--location <value>] [--location-name <value>] [--personal-workspace]
@@ -91,13 +93,23 @@ Supported bridge flags:
 | `--location-name <value>` | Target location name accepted by the Studio Web bridge. |
 | `--personal-workspace` | Publish to the personal workspace target. |
 
-Do not pass a `.zip`, package path, solution directory, or output directory. The active Studio Web solution is implicit. A successful command result means Unified Build accepted the request and background packaging began; it does not prove publication completed. Check Studio Web's Publish history for the final success or failure state. Do not substitute `uip solution pack` or deploy commands.
+The active Studio Web solution is implicit. A successful command result means Unified Build accepted the request and background packaging began. Check Studio Web's Publish history for the final success or failure state.
 <!--skill-flavor:local-solution-lifecycle:end-->
 
 <!--skill-flavor:command-existence-guidance:start-->
-Some default/local commands documented in this reference exist in the desktop CLI but remain forbidden in Studio Web. The embedded API Workflow commands in scope are `validate` and `registry resolve` / `stub`; read-only `uip is` discovery is also in scope. Consent-gated execution uses the schema-inspected host `RunProject` operation. Publication uses only the approved, host-intercepted `uip solution publish` active-solution form above. Existence is not permission to call embedded execution, local pack/deploy, positional-package publication, or metadata commands.
+Treat this Studio Web command surface as the execution map: embedded static validation, registry authoring, read-only Integration Service discovery, consent-gated `RunProject`, and approved active-solution publication. Use live host schemas for every project, resource, runtime, and lifecycle operation.
 <!--skill-flavor:command-existence-guidance:end-->
 
+<!--skill-flavor:command-surface-heading:start-->
+## Studio Web Command Surface
+
+Use the embedded authoring commands and schema-inspected host operations described in this reference.
+<!--skill-flavor:command-surface-heading:end-->
+
 <!--skill-flavor:api-workflow-publish-guidance:start-->
-- `uip api-workflow publish` does not exist. In Studio Web, an explicit publish request uses the host-intercepted `uip solution publish` active-solution form documented above; never invent the nonexistent API Workflow verb.
+- For an explicit publish request, use the approved host-intercepted `uip solution publish` active-solution form documented above.
 <!--skill-flavor:api-workflow-publish-guidance:end-->
+
+<!--skill-flavor:api-workflow-alias-guidance:start-->
+- Use the full command spelling for the embedded authoring surface: `uip api-workflow validate`, `uip api-workflow registry resolve`, and `uip api-workflow registry stub`.
+<!--skill-flavor:api-workflow-alias-guidance:end-->
