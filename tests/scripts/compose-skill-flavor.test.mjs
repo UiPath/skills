@@ -25,6 +25,7 @@ import {
   ROOT_PACK_TRANSACTION_DIRNAME,
   buildAllSkillTrees,
   composeText,
+  containsFlavorMarker,
   createAllVariants,
   createCompositionPlan,
   createDefaultPlan,
@@ -87,9 +88,9 @@ function addSkill(repo, name, body = "Canonical guidance.\n") {
 
 function block(name, body, newline = "\n") {
   return (
-    `<!-- skill-flavor:${name}:start -->${newline}` +
+    `<!--skill-flavor:${name}:start-->${newline}` +
     `${body}${newline}` +
-    `<!-- skill-flavor:${name}:end -->${newline}`
+    `<!--skill-flavor:${name}:end-->${newline}`
   );
 }
 
@@ -243,7 +244,7 @@ function assertMarkerFreeSkillTarball(tarball, expectedName, expectedFlavor) {
   for (const [name, bytes] of entries) {
     if (name.startsWith("package/skills/")) skillFileCount += 1;
     assert.ok(
-      !bytes.includes(Buffer.from("<!-- skill-flavor:")),
+      !containsFlavorMarker(bytes),
       `${tarball} leaked a flavor marker in ${name}`,
     );
   }
@@ -351,7 +352,7 @@ test("a flavor includes the complete catalog and replaces only matching blocks",
   assert.match(composed, /Use Studio Web validation/);
   assert.doesNotMatch(composed, /default project workflow|default validation workflow/);
   assert.ok(composed.indexOf("Studio Web project tool") < composed.indexOf("Studio Web validation"));
-  assert.doesNotMatch(composed, /<!-- skill-flavor:/);
+  assert.ok(!containsFlavorMarker(composed));
   assert.ok(existsSync(join(output, "uipath-another", "SKILL.md")));
   assert.ok(existsSync(join(output, "uipath-pass-through", "SKILL.md")));
   assert.deepEqual(readFileSync(join(output, "uipath-changed", "asset.bin")), Buffer.from([0, 1, 2, 3]));
@@ -402,7 +403,7 @@ test("empty canonical blocks add flavor guidance without shadowing shared edits"
   const secondBuilt = readFileSync(join(secondOutput, skillName, "SKILL.md"), "utf8");
   assert.match(secondBuilt, /Newly shared capability/);
   assert.match(secondBuilt, /Studio Web keeps shared references/);
-  assert.doesNotMatch(secondBuilt, /<!-- skill-flavor:/);
+  assert.ok(!containsFlavorMarker(secondBuilt));
 });
 
 test("Studio Web inherits all API Workflow references and adds only host scope", () => {
@@ -446,7 +447,7 @@ test("Studio Web inherits all API Workflow references and adds only host scope",
     /Authoring HTTP Request \/ Gmail \/ Outlook \/ GitHub \/ Slack \/ etc\. activities via `uip api-workflow registry resolve` \+ `stub`/,
   );
   assert.match(composed, /Project creation must use the live `proxy-tools-Solution` \/ `CreateProjects` schema/);
-  assert.doesNotMatch(composed, /<!-- skill-flavor:/);
+  assert.ok(!containsFlavorMarker(composed));
 });
 
 test("new canonical skills are automatically included in existing flavors", (t) => {
@@ -480,7 +481,7 @@ test("default plan includes every canonical skill and strips CRLF marker boundar
   materializeComposition(plan, output);
   const text = readFileSync(join(output, "uipath-marked", "SKILL.md"), "utf8");
   assert.match(text, /Canonical body/);
-  assert.doesNotMatch(text, /skill-flavor:/);
+  assert.ok(!containsFlavorMarker(text));
   assert.equal(stripMarkerBoundaries(block("x", "body")), "body\n");
 });
 
@@ -529,21 +530,37 @@ test("paired build preflights both destinations before writing either", (t) => {
   assert.equal(readFileSync(join(output, "studioweb", "keep.txt"), "utf8"), "user data\n");
 });
 
+test("marker sentinel catches compact and whitespace-malformed forms", () => {
+  for (const value of [
+    "<!--skill-flavor:x:start-->",
+    "<!-- skill-flavor:x:start -->",
+    "<!--skill-flavor :x:start-->",
+    "<!--skill-flavor\t:x:start-->",
+  ]) {
+    assert.equal(containsFlavorMarker(value), true, value);
+    assert.equal(containsFlavorMarker(Buffer.from(value)), true, value);
+  }
+  assert.equal(containsFlavorMarker("skill-flavors/studioweb"), false);
+});
+
 test("marker parser rejects malformed state and preserves valid canonical order", () => {
   const cases = [
-    ["inline <!-- skill-flavor:x:start -->\n", /malformed flavor marker/],
+    ["inline <!--skill-flavor:x:start-->\n", /malformed flavor marker/],
+    ["<!-- skill-flavor:x:start -->\n", /contain no whitespace/],
+    ["<!--skill-flavor :x:start-->\n", /contain no whitespace/],
+    ["<!--skill-flavor:x:start--> \n", /contain no whitespace/],
     [
-      "    <!-- skill-flavor:x:start -->\nbody\n<!-- skill-flavor:x:end -->\n",
+      "    <!--skill-flavor:x:start-->\nbody\n<!--skill-flavor:x:end-->\n",
       /markers must start at column 1/,
     ],
-    ["<!-- skill-flavor:x:end -->\n", /ends without a start/],
-    ["<!-- skill-flavor:x:start -->\nbody\n", /has no end marker/],
+    ["<!--skill-flavor:x:end-->\n", /ends without a start/],
+    ["<!--skill-flavor:x:start-->\nbody\n", /has no end marker/],
     [
-      "<!-- skill-flavor:x:start -->\n<!-- skill-flavor:y:end -->\n",
+      "<!--skill-flavor:x:start-->\n<!--skill-flavor:y:end-->\n",
       /does not match/,
     ],
     [
-      "<!-- skill-flavor:x:start -->\n<!-- skill-flavor:y:start -->\n",
+      "<!--skill-flavor:x:start-->\n<!--skill-flavor:y:start-->\n",
       /nested flavor marker/,
     ],
   ];
@@ -993,7 +1010,7 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
       assert.ok(!existsSync(join(packageDir, "scripts")));
     }
     for (const data of treeFileBytes(packageDir).values()) {
-      assert.ok(!data.includes(Buffer.from("<!-- skill-flavor:")));
+      assert.ok(!containsFlavorMarker(data));
     }
   }
 
@@ -1138,12 +1155,14 @@ test("a failed npm pack preserves every last successful generated output", (t) =
   );
 });
 
-test("a marker token in a binary canonical asset fails before output replacement", (t) => {
-  const repo = fixtureRepo(t);
-  const skill = addSkill(repo, "uipath-example");
-  writeFileSync(join(skill, "asset.bin"), Buffer.from("prefix <!-- skill-flavor: suffix"));
-  assert.throws(() => buildAllSkillTrees(repo), /marker leaked/);
-  assert.ok(!existsSync(join(repo, "build", "skills")));
+test("compact or malformed marker tokens in binary assets fail before output replacement", (t) => {
+  for (const token of ["<!--skill-flavor:", "<!-- skill-flavor:", "<!--skill-flavor :"]) {
+    const repo = fixtureRepo(t);
+    const skill = addSkill(repo, "uipath-example");
+    writeFileSync(join(skill, "asset.bin"), Buffer.from(`prefix ${token} suffix`));
+    assert.throws(() => buildAllSkillTrees(repo), /marker leaked/);
+    assert.ok(!existsSync(join(repo, "build", "skills")));
+  }
 });
 
 test("repacking removes artifacts for a deleted flavor", (t) => {
@@ -1237,13 +1256,14 @@ test("root npm pack emits one marker-free default package and restores canonical
   );
   const skill = entries.get("package/skills/uipath-example/SKILL.md").toString("utf8");
   assert.match(skill, /Canonical default guidance/);
-  assert.doesNotMatch(skill, /Studio Web guidance|<!-- skill-flavor:/);
+  assert.doesNotMatch(skill, /Studio Web guidance/);
+  assert.ok(!containsFlavorMarker(skill));
   assert.ok(entries.has("package/skills/uipath-pass-through/SKILL.md"));
   assert.ok(entries.has("package/scripts/npm-package-lifecycle.mjs"));
   assert.ok(!entries.has("package/scripts/compose-skill-flavor.mjs"));
   for (const [name, bytes] of entries) {
     if (name.startsWith("package/skills/")) {
-      assert.ok(!bytes.includes(Buffer.from("<!-- skill-flavor:")), name);
+      assert.ok(!containsFlavorMarker(bytes), name);
     }
   }
 
@@ -1395,7 +1415,7 @@ test("publishing workflows isolate root publishing behind a generic flavor publi
   assert.match(selectorScript, /manifest\.name !== packageName/);
   assert.match(selectorScript, /manifest\.uipathSkillsFlavor !== flavor/);
   assert.match(selectorScript, /matches\.length !== 1/);
-  assert.match(selectorScript, /<!-- skill-flavor:/);
+  assert.match(selectorScript, /containsFlavorMarker/);
   assert.match(
     selectorScript,
     /selected custom package must use the GitHub Packages-only publish policy/,
@@ -1443,9 +1463,10 @@ test("an interrupted root package transaction is explicit and recoverable", (t) 
   const prepared = withNpmCache(repo, () => prepareRootDefaultPackage(repo));
   assert.equal(prepared.skillCount, 1);
   assert.ok(existsSync(join(repo, "build", ROOT_PACK_TRANSACTION_DIRNAME)));
-  assert.doesNotMatch(
-    readFileSync(join(repo, "skills", "uipath-example", "SKILL.md"), "utf8"),
-    /<!-- skill-flavor:/,
+  assert.ok(
+    !containsFlavorMarker(
+      readFileSync(join(repo, "skills", "uipath-example", "SKILL.md"), "utf8"),
+    ),
   );
   assert.throws(
     () => withNpmCache(repo, () => prepareRootDefaultPackage(repo)),
@@ -1485,9 +1506,10 @@ test("simultaneous root package preparation leaves exactly one active transactio
   );
   assert.equal(results.filter((result) => result.status !== 0).length, 1);
   assert.ok(existsSync(join(repo, "build", ROOT_PACK_TRANSACTION_DIRNAME)));
-  assert.doesNotMatch(
-    readFileSync(join(repo, "skills", "uipath-example", "SKILL.md"), "utf8"),
-    /<!-- skill-flavor:/,
+  assert.ok(
+    !containsFlavorMarker(
+      readFileSync(join(repo, "skills", "uipath-example", "SKILL.md"), "utf8"),
+    ),
   );
 
   assert.equal(restoreRootDefaultPackage(repo).restored, true);

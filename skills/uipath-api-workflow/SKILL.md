@@ -11,20 +11,20 @@ Build, run, and publish UiPath API Workflows — JSON files conforming to the CN
 ## When to Use This Skill
 
 - User wants to **create or edit** an API workflow JSON file
-<!-- skill-flavor:surface-lifecycle-scope:start -->
+<!--skill-flavor:surface-lifecycle-scope:start-->
 - User wants to **run** an API workflow locally with `uip api-workflow run`
 - User wants to **package** an API workflow project into `.nupkg` / solution `.zip`
 - User wants to **publish** an API workflow to UiPath Cloud / Orchestrator
-<!-- skill-flavor:surface-lifecycle-scope:end -->
+<!--skill-flavor:surface-lifecycle-scope:end-->
 - User asks about **activity types** (Sequence, Assign, JavaScript, If, ForEach, DoWhile, Break, TryCatch, Wait, Response, HTTP Request, Connector)
 - User asks about **nested control flow** — If inside ForEach, TryCatch around a loop, conditional Break, multi-way branching, etc.
 - User asks for an **Integration Service connector activity** (Gmail Send Email, Outlook Get Newest Email, GitHub Search Issues, Slack Send Message, etc.) — follow the discovery flow in [references/connector-activity-discovery.md](references/connector-activity-discovery.md)
 - User asks for a **generic HTTP Request** that needs to render in StudioWeb's designer — same discovery flow
 - User asks about **JavaScript expressions, `$context`, `$input`, `$workflow`, `WorkflowStart`, or the `export.as` pattern**
-<!-- skill-flavor:surface-operations-scope:start -->
+<!--skill-flavor:surface-operations-scope:start-->
 - User asks how to **debug** a failing API workflow run — the local `validate` → `run --no-auth` loop, or a **post-publish cloud run** (job logs/traces). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
 - User wants to **operate** a published workflow — invoke it (HTTP/schedule/Integration Service event trigger), start/list/stop its Orchestrator jobs, or **manage the Integration Service connections** it uses (`uip is connections list`/`ping`/`edit`). See [references/operating-published-workflows.md](references/operating-published-workflows.md)
-<!-- skill-flavor:surface-operations-scope:end -->
+<!--skill-flavor:surface-operations-scope:end-->
 
 Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / coded RPA (→ `uipath-rpa`), coded agents (→ `uipath-agents`), Coded Web Apps (→ `uipath-coded-apps`).
 
@@ -76,12 +76,12 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
     - **After every stub, cross-check required fields** — the stub drops `required: true` request fields (e.g. Outlook `getNewestEmail` needs `parentFolderId`). Confirm via `uip is resources describe ... --operation <op>` or the stub's own `metadata.configuration` inputFields; re-stub with `--inputs` if missing.
     - **Connector params use flat dotted keys and BARE literals.** `"message.toRecipients": "..."`, not nested objects; plain `"x@y.com"`, not `"${'x@y.com'}"` — rule 5's wrap is **inverted** here (`${'...'}` clears the field on save). Real references (`${$context...}`) stay wrapped.
     - **NEVER use Http kind with a vendor connection UUID** (401 "Invalid Element token"). IntSvc output is wrapped: read `$context.outputs.<ExportBucketKey>.content.<field>`.
-<!-- skill-flavor:connector-solution-registration:start -->
+<!--skill-flavor:connector-solution-registration:start-->
     - **(Solutions-mode + IntSvc only)** sync the connection into the catalogue: `uip api-workflow bindings sync --workflow <Workflow.json>` then `uip solution resource refresh --solution-folder <path>`. Skip for Http kind, non-connector activities, and standalone (no `Solution/`) projects.
-<!-- skill-flavor:connector-solution-registration:end -->
+<!--skill-flavor:connector-solution-registration:end-->
 17. **Pass input as a JSON string.** `--input-arguments '{"key":"value"}'`. Invalid JSON exits 1.
 18. **Always `--output json`** when parsing CLI output programmatically. Success → `{ "Result": "Success", "Code": "WorkflowRun", "Data": {...} }`. Failure → `{ "Result": "Failure", "Message": "...", "Instructions": "..." }` with exit 1.
-<!-- skill-flavor:project-creation:start -->
+<!--skill-flavor:project-creation:start-->
 19. **Scaffold with `uip api-workflow init`; publish goes through the solution packager.** Create every API workflow project with `uip api-workflow init <name>` (rule 19a) — never hand-assemble the project files. Project-level CLI commands also exist: `uip api-workflow build <projectDir>` (compile) and `uip api-workflow pack <projectDir> <outputDir>` (single-project `.nupkg`, useful to test one project in isolation). Solution-level build/publish go through `uip solution pack <solutionDir> <outputDir>` + `uip solution publish <package.zip>`. There is NO `uip api-workflow publish` command. Project type must be `"Api"` in the solution `.uipx`.
 
 19a. **Create projects with `uip api-workflow init <name>` — it produces the correct Studio Web editable shape and wires the solution.** Run it from inside the solution directory (the folder containing the `.uipx`):
@@ -95,7 +95,7 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
     **Why it matters:** a legacy `project.json` + `workflows/WF_*.json` layout (no `.uiproj`) passes every runtime gate — `validate`, `run`, `pack`, `publish`, deploy — but Studio Web rejects it as `invalid_project_folder` and never shows it. `init` is the one step that can't produce the wrong shape. Full layout + field rules: [references/workflow-file-format.md](references/workflow-file-format.md#project-structure-studio-web-editable-contract).
 
     To **convert a legacy `project.json` project**, `init` a fresh sibling and move the existing workflow content into its `Workflow.json` (cleanest), or convert in place — see [references/troubleshooting.md](references/troubleshooting.md). Never wire it with `uip solution projects add/remove` (errors on an already-registered name; `remove`+`add` destroys the project `Id`).
-<!-- skill-flavor:project-creation:end -->
+<!--skill-flavor:project-creation:end-->
 
 20. **`uip api-workflow validate <Workflow.json>` is the autonomous closure step for every authoring or edit cycle.** Run it as the LAST command before asking the user anything about runtime. It's offline (no auth, no network, no side effects): JSON Schema + semantic checks on the static file. Output codes:
     - `Result: "Success"`, `Code: "ApiwfValidate"`, `Data.Status: "Valid"` (exit 0) — possibly with `Data.Warnings`. Proceed to rule 21 (ask the user whether to run).
@@ -176,7 +176,7 @@ Workflow skeleton:
 
 ### Phase 3: Validate (static) then Run (with consent)
 
-<!-- skill-flavor:validation-run-lifecycle:start -->
+<!--skill-flavor:validation-run-lifecycle:start-->
 Validate autonomously (rule 20), fixing + re-validating until `Data.Status: "Valid"`:
 
 ```bash
@@ -191,15 +191,15 @@ Once green, **ask before running** (rule 21) — pick the mode from workflow con
 | With auth | (none) | Uses the `uip login` token. Real Integration Service calls — vendor side effects happen. | An IntSvc vendor activity AND the user confirmed the real call is OK (email sent, ticket created, file uploaded). |
 
 State the consequence in the question (e.g. "running with auth WILL send a real email to `<recipient>` — (1) skip, (2) `--no-auth`, (3) run with auth?"), wait for the reply, then run `uip api-workflow run ./my-workflow.json [--no-auth] --output json`. If the user skips, give them the exact command and stop.
-<!-- skill-flavor:validation-run-lifecycle:end -->
+<!--skill-flavor:validation-run-lifecycle:end-->
 
-<!-- skill-flavor:runtime-troubleshooting:start -->
+<!--skill-flavor:runtime-troubleshooting:start-->
 Fix run failures in category order — **Structure > Expression > Activity Config > Logic** (higher categories often resolve lower ones). Full pitfall catalog: [references/troubleshooting.md](references/troubleshooting.md).
-<!-- skill-flavor:runtime-troubleshooting:end -->
+<!--skill-flavor:runtime-troubleshooting:end-->
 
 ### Phase 4: Package, Publish, and Operate
 
-<!-- skill-flavor:deployment-lifecycle:start -->
+<!--skill-flavor:deployment-lifecycle:start-->
 Once the workflow runs locally, deploy via the solution packager. If the project must open in Studio Web, confirm it uses the `init`-produced shape first (rule 19a) — runtime/pack success does not prove it.
 
 **Pack:**
@@ -222,9 +222,9 @@ uip solution publish <outputDir>/<package>.zip \
 Requires `uip login`.
 
 **Operate + diagnose the published workflow.** Once deployed, the workflow is an Orchestrator API process — the local `uip api-workflow` verbs no longer apply to it. Invoke it (HTTP/schedule/Integration Service event trigger), start/list/stop its jobs, manage the Integration Service connections it uses, and read cloud-run logs/traces via `uip or` / `uip is` / `uip traces`. Full command map: [references/operating-published-workflows.md](references/operating-published-workflows.md). These are sibling-skill surfaces (`uipath-platform`, `uipath-troubleshoot`) — delegate there for depth.
-<!-- skill-flavor:deployment-lifecycle:end -->
+<!--skill-flavor:deployment-lifecycle:end-->
 
-<!-- skill-flavor:quick-start-create:start -->
+<!--skill-flavor:quick-start-create:start-->
 ## Quick Start (CREATE from scratch)
 
 ```bash
@@ -253,7 +253,7 @@ uip solution pack . ./build --name MyApiSolution --version 1.0.0 --output json
 uip login
 uip solution publish ./build/MyApiSolution.zip --tenant MyTenant --output json
 ```
-<!-- skill-flavor:quick-start-create:end -->
+<!--skill-flavor:quick-start-create:end-->
 
 ## Reference Navigation
 
@@ -268,9 +268,9 @@ uip solution publish ./build/MyApiSolution.zip --tenant MyTenant --output json
 | [references/cli-reference.md](references/cli-reference.md) | All `uip` commands — `api-workflow init`, `run`, `build`, `pack`, `validate`, `solution init`, `solution pack`, `solution publish`, `login` |
 | [references/operating-published-workflows.md](references/operating-published-workflows.md) | **Operating + diagnosing a published workflow** — invoke via HTTP/schedule/event triggers, manage Integration Service connections (`uip is connections`), start/list/stop Orchestrator jobs (`uip or jobs`), read cloud-run logs/traces (`uip or jobs logs`, `uip traces spans get`). Delegates depth to `uipath-platform` / `uipath-troubleshoot` |
 | [references/troubleshooting.md](references/troubleshooting.md) | Failed runs, structure/expression/loop/nesting/response/validation pitfalls, packaging errors, publish errors, debugging strategy |
-<!-- skill-flavor:reference-navigation-extra:start -->
+<!--skill-flavor:reference-navigation-extra:start-->
 
-<!-- skill-flavor:reference-navigation-extra:end -->
+<!--skill-flavor:reference-navigation-extra:end-->
 
 ## Templates
 
@@ -293,19 +293,19 @@ The mistakes an agent makes most often (each maps to a Critical Rule above — s
 - **Do NOT** ship a `<REPLACE_WITH_*>` placeholder in a workflow — StudioWeb renders it as a broken connection and it 401s. No pinged UUID → ask the user. See rule 16.
 - **Do NOT** read workflow inputs as `$input.<name>` from a non-first activity — use `$workflow.input.<name>`. See rule 13.
 - **Do NOT** invoke `uip api-workflow run` autonomously, and never with auth without an explicit "yes" — vendor calls have irreversible side effects (emails sent, tickets created). See rules 20–21.
-<!-- skill-flavor:project-creation-antipatterns:start -->
+<!--skill-flavor:project-creation-antipatterns:start-->
 - **Do NOT** hand-assemble a project (`project.json` + `main.json`/`workflows/WF_*.json`). Scaffold with `uip api-workflow init <name>` — it writes the correct `project.uiproj` shape and registers it in the `.uipx`. The legacy `project.json`-only shape runs and packs but Studio Web rejects it (`invalid_project_folder`) and never shows it. See rules 19–19a.
 - **Do NOT** emit a lone `Workflow.json` with no project files, even for a quick local run. It runs under `uip api-workflow run` but is not a Studio Web project — can't be edited or shipped. Every workflow lives in an `init`-scaffolded project (`--skip-solution-registration` when no solution is needed). See rule 19a ("Which mode").
 - **Do NOT** wire a project into the solution with `uip solution projects add/remove` — it errors on an already-registered name, and `remove`+`add` destroys the project `Id`. `init` registers it; for an already-built project, edit the `.uipx` `ProjectRelativePath` in place. See rule 19a.
 - **Do NOT** trust "it packed / published / ran" as proof a project opens in Studio Web — every runtime gate passes on the wrong shape. Scaffolding with `init` is what guarantees it (rule 19a).
-<!-- skill-flavor:project-creation-antipatterns:end -->
+<!--skill-flavor:project-creation-antipatterns:end-->
 
 ## Infinite Loop Prevention
 
 If a CLI command fails with the same error 2+ times, do NOT retry it. Investigate the root cause:
-<!-- skill-flavor:authentication-remediation:start -->
+<!--skill-flavor:authentication-remediation:start-->
 - `Not authenticated` / `Organization ID not available` → ask the user to `uip login`, do not retry
-<!-- skill-flavor:authentication-remediation:end -->
+<!--skill-flavor:authentication-remediation:end-->
 - `File not found` → check the path with `ls`
 - Repeated structural errors after fixes → re-read the workflow and the relevant reference section; you may be misreading the file
 

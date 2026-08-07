@@ -30,7 +30,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 | `SKILL.md` | Required. Uppercase. YAML frontmatter + markdown body. |
 | `references/*.md` | Kebab-case. Guides end with `-guide.md`. |
 | `skill-flavors/<flavor>/<skill>/**/*.md` | Optional sparse overrides at paths relative to `skills/`; contain only named replacement blocks. |
-| `<!-- skill-flavor:<name>:start\|end -->` | Column-one boundary around the smallest canonical passage that differs by flavor. Names are lowercase kebab-case and unique within a file; indent the enclosed Markdown, never the boundary. |
+| `<!--skill-flavor:<name>:start\|end-->` | Compact, whitespace-free column-one boundary around the smallest canonical passage that differs by flavor. Names are lowercase kebab-case and unique within a file; indent the enclosed Markdown, never the boundary. |
 | `assets/templates/*` | Templates end with `-template.md` or `-template.<ext>`. |
 | `hooks/*.sh` + `hooks/*.ps1` | Session hooks ship as twin implementations with the same basename — bash and PowerShell (5.1 and 7+ compatible). The twins MUST stay behaviorally identical: a change to one requires the same change to the other in the same PR. Dispatched by the polyglot commands in `hooks/hooks.json`. |
 

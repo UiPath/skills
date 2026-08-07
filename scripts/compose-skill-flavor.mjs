@@ -44,17 +44,16 @@ export const REPO_ROOT = path.resolve(
 export const FLAVORS_DIRNAME = "skill-flavors";
 export const DEFAULT_VARIANT = "default";
 export const PACKAGE_NAME_MAX_LENGTH = 214;
-export const MARKER_TOKEN = "<!-- skill-flavor:";
 export const ROOT_PACK_TRANSACTION_DIRNAME = ".root-pack-transaction";
 export const CUSTOM_PACKAGE_PUBLISH_CONFIG = Object.freeze({
   registry: "https://npm.pkg.github.com/",
   "@uipath:registry": "https://npm.pkg.github.com/",
 });
 
-const MARKER_BYTES = Buffer.from(MARKER_TOKEN, "utf8");
+const MARKER_SHAPE_RE = /skill-flavor[ \t]*:/;
 const SKILL_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const MARKER_LINE_RE =
-  /^<!-- skill-flavor:([a-z0-9]+(?:-[a-z0-9]+)*):(start|end) -->[ \t]*(?:\r\n|\n|\r)?$/;
+  /^<!--skill-flavor:([a-z0-9]+(?:-[a-z0-9]+)*):(start|end)-->(?:\r\n|\n|\r)?$/;
 const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
 const REMOVE_OPTIONS = { recursive: true, force: true, maxRetries: 3, retryDelay: 100 };
 const ROOT_PACK_STATE_SCHEMA = 1;
@@ -65,6 +64,11 @@ export class FlavorCompositionError extends Error {
     this.name = "FlavorCompositionError";
     this.findings = [...findings];
   }
+}
+
+export function containsFlavorMarker(value) {
+  const text = Buffer.isBuffer(value) ? value.toString("latin1") : String(value);
+  return MARKER_SHAPE_RE.test(text);
 }
 
 function quote(value) {
@@ -159,13 +163,14 @@ export function parseMarkerBlocks(filePath, text, findings = []) {
     const lineNumber = index + 1;
     const lineStart = offset;
     offset += line.length;
-    if (!line.includes(MARKER_TOKEN)) return;
+    if (!containsFlavorMarker(line)) return;
 
     const match = MARKER_LINE_RE.exec(line);
     if (!match) {
       findings.push(
         `${filePath}:${lineNumber}: malformed flavor marker; markers must start at column 1, ` +
-          `occupy a line, and use '<!-- skill-flavor:<name>:start|end -->'`,
+          `occupy a line, contain no whitespace, and use ` +
+          `'<!--skill-flavor:<name>:start|end-->'`,
       );
       return;
     }
@@ -583,7 +588,7 @@ function markerFindings(root, label) {
       findings.push(`${entry.path}: ${label} cannot contain symlinks`);
       continue;
     }
-    if (entry.stats.isFile() && readFileSync(entry.path).includes(MARKER_BYTES)) {
+    if (entry.stats.isFile() && containsFlavorMarker(readFileSync(entry.path))) {
       findings.push(`${entry.path}: flavor marker leaked into ${label}`);
     }
   }
@@ -1273,7 +1278,7 @@ export function verifyTarball(tarball, packageDir, expectedName, expectedVersion
   const packedSkills = new Map();
   for (const [name, data] of entries) {
     if (!name.startsWith("package/skills/")) continue;
-    if (data.includes(MARKER_BYTES)) throw new Error(`flavor marker leaked into npm tarball: ${name}`);
+    if (containsFlavorMarker(data)) throw new Error(`flavor marker leaked into npm tarball: ${name}`);
     packedSkills.set(name.slice("package/skills/".length), data);
   }
   const stagedSkills = treeFileBytes(path.join(packageDir, "skills"));

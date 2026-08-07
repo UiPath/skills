@@ -92,7 +92,7 @@ changing any canonical Markdown passage enclosed by a `skill-flavor` block.
 Flavors inherit canonical edits outside replaced blocks, but they do not
 inherit edits inside a block they replace.
 
-- Start every `<!-- skill-flavor:<name>:start|end -->` boundary at column 1; keep required Markdown indentation on the enclosed content.
+- Use the compact `<!--skill-flavor:<name>:start|end-->` form with no internal, leading, or trailing whitespace; keep required Markdown indentation on the enclosed content.
 - Keep shared tables, lists, and navigation outside replacement blocks.
 - For host-only additions, prefer an empty canonical `<name>-extra` block that the flavor fills additively.
 - If one existing row or item differs, mark only that item rather than replacing the complete shared section.

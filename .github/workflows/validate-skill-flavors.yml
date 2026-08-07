@@ -83,7 +83,7 @@ jobs:
 
       - name: Ensure build-only markers do not reach consumers
         run: |
-          if rg -n '<!-- skill-flavor:' build/skills build/packages; then
+          if rg -n 'skill-flavor[ \t]*:' build/skills build/packages; then
             echo 'Flavor marker leaked into a built tree or staged package.' >&2
             exit 1
           fi
