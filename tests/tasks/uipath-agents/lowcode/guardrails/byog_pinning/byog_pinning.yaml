@@ -1,0 +1,95 @@
+task_id: skill-agent-guardrail-byog-pinning
+description: >
+  BYO guardrail pinning. A pre_run script provisions the tenant's BYOG
+  configuration directly via `uip guardrails byo-configurations create`
+  (the admin prerequisite — never the agent's job); the user then asks
+  for an agent guarded by that configuration. Verifies the agent
+  discovers the BYO entry via `uip agent guardrails list --byo` and
+  authors a builtInValidator guardrail pinned to the seeded
+  configuration's id (byoConfigurationId), rather than a plain built-in
+  guardrail or an invented GUID.
+# BLOCKED: the shared smoke tenant does not have the BYOG feature flag
+# enabled yet — seed_byog.py fails with ByoGuardrailsUnavailable. Flip
+# smoke-blocked -> smoke once the flag is on for the smoke org.
+tags: [uipath-agents, smoke-blocked, mode:build, lifecycle:generate, low-code, guardrail]
+
+run_limits:
+  expected_turns: 15
+
+initial_prompt: |
+  Our admin registered a bring-your-own guardrail configuration named
+  `byog-smoke-agent-pin` — PII detection served by our external guardrail
+  provider.
+
+  Create a UiPath low-code agent "ByogPinAgent" that answers customer
+  account questions, in a solution named "ByogPinSol". Add a PII detection
+  guardrail that runs through that BYO configuration — it should block
+  email addresses and phone numbers in the agent's output, with a 0.5
+  threshold for each.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent discovered the BYO entry via uip agent guardrails list --byo"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+list(?=[\s\S]*--byo)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ByogPinAgent/agent.json was created"
+    path: "ByogPinSol/ByogPinAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Guardrail is pinned to the seeded BYOG configuration (byoConfigurationId matches the live record; block action; PascalCase entities)"
+    command: "python3 $TASK_DIR/check_byog_pinning.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Admin prerequisite, done deterministically — the agent under test is
+  # never asked to run byo-configurations CRUD. Reset semantics: deletes
+  # any leftover config with the fixed name, then creates it fresh.
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/guardrails/byog_pinning/seed_byog.py
+    timeout: 180
+    fail_on_error: true
+
+post_run:
+  # Best-effort sweep of the seeded configuration (idempotent, exits 0).
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/guardrails/byog_pinning/cleanup_byog.py
+      --marker byog-smoke-agent-pin
+    timeout: 120
