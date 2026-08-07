@@ -1,6 +1,6 @@
 # Execution Maps — Turn-Budgeted Build Journeys
 
-One dense file, read once per build. Fixes which tool calls go in which assistant turn. Budgets (happy path, incl. final report): **greenfield ≤5 turns, brownfield ≤4**. One repair cycle adds ≤2.
+One dense file, read once per build. Fixes which tool calls go in which assistant turn. Budgets (happy path, incl. final report): **greenfield ≤5 turns, brownfield ≤4**. One repair cycle adds ≤2. Each T-row below is ONE assistant message carrying EVERY listed call — one-tool-call-per-message pacing alone blows the budget.
 
 > **Tool vocabulary.** Tool names use Claude Code conventions: `Edit` = in-place string replacement, `Write` = full-file write, `Read`/`Glob`/`Grep` = file read/search, `Bash` = shell. On another harness, map each to its equivalent. Harness cannot emit parallel tool calls → keep the same per-turn grouping as consecutive calls; the CLI chains still collapse round-trips.
 
@@ -38,7 +38,7 @@ Skip the project-discovery subagent — no project exists (SKILL.md § Precondit
 - `init` can return `success: false` yet create files (partial success) — before retrying, check `project.json` exists ([environment-setup.md](environment-setup.md)).
 - Dependencies land via `packages install` only — never hand-edit `project.json` `dependencies`.
 
-**Repair cycle (validate/build failure):** one turn — `Edit` fixes by error category (Rule 19); next turn — re-run the T3 chain. >2 errors with ambiguous origin → bisect: stub out half the new activities, re-validate. Caps: 5 attempts per loop (Rule 3).
+**Repair cycle (validate/build failure):** one turn — `Edit` fixes by error category (Rule 19 — Package first: a skipped `packages install` fails the gate before any activity issue); a gate failure on a card-covered activity does NOT reopen discovery (`activities find`/`get-default-xaml`) — recheck the card entry; next turn — re-run the T3 chain. >2 errors with ambiguous origin → bisect: stub out half the new activities, re-validate. Caps: 5 attempts per loop (Rule 3).
 
 ## Journey: Brownfield XAML edit
 
