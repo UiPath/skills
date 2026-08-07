@@ -70,7 +70,7 @@
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| caseRef | In | string | | | | External reference supplied by the caller at case start. |
+| caseRef | In | string | | | `""` (empty string) | External reference supplied by the caller at case start. The runnable variant must keep this default so the headless debug harness can activate its manual trigger without an input payload. |
 | employeeName | Variable | string | | | "Jane Smith" | Submitting employee's name. |
 | employeeEmail | Variable | string | | | "jane.smith@acme.com" | Submitting employee's email. |
 | amount | Variable | float | | | 1250.00 | Expense amount. |

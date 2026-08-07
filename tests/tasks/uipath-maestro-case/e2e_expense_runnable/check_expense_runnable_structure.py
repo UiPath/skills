@@ -9,6 +9,8 @@ employee expense reimbursement process, not just a structurally valid case:
   - Rejected and Withdrawn terminal lanes exist and do not route back into the
     happy path
   - the case starts from a Manual trigger (so case debug can start it headlessly)
+  - its ``caseRef`` trigger input has an empty-string default, since the debug
+    harness starts the manual trigger without an input payload
   - the AUTOMATED task-type mix is present (api-workflow, agent, process, rpa,
     wait-for-timer, case-management) and the human/connector types the runnable
     variant deliberately drops (action, execute-connector-activity,
@@ -141,6 +143,29 @@ def _assert_required_external_bindings(bindings: dict) -> None:
             )
 
 
+def _assert_headless_trigger_input(plan: dict, trigger: dict) -> None:
+    """Ensure debug can activate the manual trigger without caller input."""
+    trigger_id = trigger.get("id")
+    inputs = (plan.get("variables") or {}).get("inputs") or []
+    case_ref = next(
+        (
+            variable
+            for variable in inputs
+            if isinstance(variable, dict)
+            and variable.get("name") == "caseRef"
+            and variable.get("elementId") == trigger_id
+        ),
+        None,
+    )
+    if case_ref is None:
+        _fail("manual trigger must declare its caseRef input for the runnable case")
+    if case_ref.get("default") != "":
+        _fail(
+            "manual trigger caseRef input must default to an empty string for "
+            "headless debug; the harness supplies no trigger input payload"
+        )
+
+
 def main():
     plan = read_caseplan(EXPECTED_CASEPLAN if os.path.exists(EXPECTED_CASEPLAN) else None)
     if not os.path.exists(EXPECTED_BINDINGS_V2):
@@ -157,6 +182,7 @@ def main():
     stype = ((triggers[0].get("data") or {}).get("inputs") or {}).get("serviceType")
     if stype not in (None, "", "None"):
         _fail(f"runnable variant must start from a Manual trigger (serviceType None), not {stype}")
+    _assert_headless_trigger_input(plan, triggers[0])
 
     # --- stages present
     stages = find_stages(plan, include_exception=True)
