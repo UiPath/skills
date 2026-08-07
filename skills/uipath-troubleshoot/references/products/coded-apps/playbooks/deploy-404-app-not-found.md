@@ -47,13 +47,14 @@ What to look for:
 
 ## Resolution
 
-- **If `base` is not `'./'`:** set `base: './'` in `vite.config.ts`, then rebuild and redeploy:
+- **If `base` is not `'./'`:** set `base: './'` in `vite.config.ts`, then build and package an explicit new candidate:
 
   ```bash
   npm run build
-  uip codedapp deploy
   ```
 
-- **If the router basename is hardcoded:** replace it with `getAppBase()` from `@uipath/uipath-typescript`, then rebuild and redeploy as above.
+- Before publishing or deploying that candidate, reconcile the authoritative deployment, system name, route, current version, target folder, OAuth client, and package versions. Execute a fresh guarded `create` or `upgrade` operation with the exact candidate; do not resume or repeat the failed write.
 
-- **If `.uipath/app.config.json` has no valid `appUrl`:** the deploy did not finish. Re-run `uip codedapp deploy --output json` and confirm the output reports an `App URL`; resolve any error it prints before re-testing the URL.
+- **If the router basename is hardcoded:** replace it with `getAppBase()` from `@uipath/uipath-typescript`, then build/package a new candidate and follow the same reconciliation boundary.
+
+- **If `.uipath/app.config.json` has no valid `appUrl`:** do not conclude that deploy failed or rerun it. Re-read remote Apps inventory. If the exact candidate is active, use and verify the authoritative hosted URL. If it is published but not deployed, prepare a fresh guarded operation bound to the reconciled deployment and versions. If remote state cannot be proven, stop and escalate.
