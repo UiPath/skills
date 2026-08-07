@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-06T05:06:36Z",
+  "generated_at": "2026-08-07T04:43:58Z",
   "cli_version": "1.200.0-dev.8116",
   "verbs": [
     "admin",
@@ -550,6 +550,9 @@
     "is triggers",
     "is triggers describe",
     "is triggers objects",
+    "is typecache",
+    "is typecache activities",
+    "is typecache packages",
     "is webhooks",
     "is webhooks config",
     "ixp",
