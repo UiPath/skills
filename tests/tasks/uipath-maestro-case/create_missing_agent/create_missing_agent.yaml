@@ -1,0 +1,106 @@
+task_id: skill-case-create-missing-agent-inline-e2e
+description: >
+  Build a one-task Case Management project whose referenced agent is absent
+  from both the tenant and solution registries. Exercises the Rule 17 create
+  gate, Agent-tool delegation to the agent skill, sibling registration, a
+  pinned string input/output contract, case binding, and validation of both
+  the case and sibling agent project.
+tags:
+  - uipath-maestro-case
+  - e2e
+  - lifecycle:generate
+  - mode:build
+  - shape:single-node
+  - resource
+  - feature:registry
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite", "Agent"]
+  sdk_options:
+    max_thinking_tokens: 12000
+
+run_limits:
+  expected_turns: 180
+  task_timeout: 4800
+  max_turns: 260
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  Build the approved `sdd.md` staged in this workspace as a UiPath Case
+  Management solution. The resource name is intentionally unique: exercise
+  the normal create-on-missing workflow and create the selected agent as an
+  in-solution sibling rather than substituting a similarly named tenant
+  resource or fabricating an identity.
+
+  Continue through planning, prototyping, implementation, and full case
+  validation. Do not debug, publish, upload, or deploy the solution. A case
+  with a sibling project cannot be exercised through case debug; the test
+  harness will verify the built sibling project and its wiring locally.
+
+  The `uip` CLI is available and authenticated. Before starting, load the
+  uipath-maestro-case skill and follow its workflow, including its interactive
+  create and phase gates.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Case skill delegated the selected inline build through the Agent tool"
+    tool_name: "Agent"
+    require_success: true
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Generated case validates"
+    command: "uip maestro case validate CreateMissingAgentCase/CreateMissingAgentCase/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline agent exists, validates, is registered, and is wired to the case"
+    command: "python3 $TASK_DIR/check_create_missing_agent.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+simulation:
+  enabled: true
+  persona: |
+    You are the solution designer who approved this tiny greeting case and
+    wants its missing agent built as an in-solution sibling.
+  goal: |
+    Build the case and its low-code greeting agent with customerName:string
+    wired into the agent and greeting:string wired back into the case.
+  constraints:
+    - "At the empty-registry gate, choose Create missing resources inline."
+    - "At the build-selection prompt, select InlineGreetingAgentQ74."
+    - "Choose Low-code when asked for the agent kind."
+    - "Approve the generated tasks.md plan without requesting design changes."
+    - "At the Phase 2 review gate, choose Skip publish and continue."
+    - "If asked to reconcile the pinned customerName/greeting contract, approve the minimal repair."
+    - "At the Phase 5 gate, choose Skip to Publish; do not run debug for a solution with a sibling project."
+    - "At the Phase 6 gate, choose Done. Never publish, upload, or deploy."
+    - "Do not choose placeholders, rename the resource, or add more I/O."
+    - "Keep replies short: one sentence or the requested option selection."
+  max_turns: 20
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120
