@@ -20,7 +20,7 @@ concurrency:
 jobs:
   lint-tasks:
     name: Lint changed task YAMLs
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     timeout-minutes: 15
 
     # Skip drafts (only run when the PR is ready for review) and skip forks
@@ -35,12 +35,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
           fetch-depth: 0
 
       - name: Claude Code Action
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@86180fa9e4d311eed10c9cc49854c53dab5d517a  # v1.0.184
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
