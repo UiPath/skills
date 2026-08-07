@@ -16,7 +16,7 @@ The skill emits the `27.0.0` top-level shape (`{ id, version, name, metadata, bi
 | 4 — Validate | Authoritative — `uip maestro case validate` accepts the top-level shape. Retry-and-fix on failure, 3-retry cap, hard stop on 3rd failure. |
 | 5 — Publish | Before the AskUserQuestion, print plain-text warning: `> uip solution upload may reject the top-level shape until the CLI catches up. Failure non-fatal — caseplan.json still valid.` On failure, re-run the upload once without `--output-filter` and dump that unfiltered response to `tasks/upload-response.json`, re-show Phase 5 prompt. |
 | 6 — Debug | Before the AskUserQuestion, print plain-text warning: `> uip maestro case debug may reject the top-level shape. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject schema — failure may be schema-related not case-bug-related` in build-issues.md. |
-| 7 — Orchestrator deploy | `uip solution publish` documents its `packagePath` argument as *"a .zip package file produced by `solution pack`"*, while `uip maestro case pack` emits a project `.nupkg`. If publish rejects the packed artifact, report the CLI error verbatim, note `caveat: solution publish expects a solution .zip from 'uip solution pack'; case pack emits a project .nupkg` in build-issues.md, and re-show the Phase 7 prompt. Do NOT silently substitute a different pack command. |
+| 7 — Orchestrator deploy | Packs and publishes the whole solution, so the case's top-level shape is carried through unvalidated by this step. On `pack`/`publish` failure, report the CLI error verbatim, note it in build-issues.md, and re-show the Phase 7 prompt. |
 
 Skill stays emit-honest: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope.
 
@@ -35,7 +35,7 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 | **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Skip to Debug` |
 | **6 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Continue to deploy` |
-| **7 — Orchestrator deploy** | Optional `case pack` + `solution publish` to the tenant solution feed | `.nupkg` packed; publish result printed | `Deploy to Orchestrator` / `Done` |
+| **7 — Orchestrator deploy** | Optional `solution pack` + `solution publish` to the tenant solution feed | `.zip` packed; publish result printed | `Deploy to Orchestrator` / `Done` |
 
 ## Phase 2 — Prototyping
 
@@ -220,7 +220,7 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 - `uip solution upload` accepts solution directory (folder containing `.uipx`) directly — no intermediate bundling step.
 - **`--output-filter` is mandatory on every `uip solution upload` call** — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload) for the projection and fallback procedure.
 - `uip solution resources refresh` MUST run before upload — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
-- Do **NOT** run `uip maestro case pack` + `uip solution publish` in this phase. That chain is Phase 7 and has its own consent gate — see [§ Phase 7](#phase-7--orchestrator-deploy). Studio Web (`uip solution upload`) is always the Phase 5 path.
+- Do **NOT** run `uip solution pack` + `uip solution publish` in this phase. That chain is Phase 7 and has its own consent gate — see [§ Phase 7](#phase-7--orchestrator-deploy). Studio Web (`uip solution upload`) is always the Phase 5 path.
 - Publish ships a build that has not been exercised — the debug gate follows (Phase 6). If a Phase 6 debug run leads to a fix, re-run this phase's `resources refresh` + `solution upload` so Studio Web holds the fixed build.
 
 ## Phase 6 — Debug
@@ -259,27 +259,23 @@ Requires `uip login`.
 
 ```bash
 uip solution resources refresh --solution-folder "<SolutionDir>" --output json
-uip maestro case pack "<SolutionDir>/<projectName>" "<SolutionDir>/dist" --output json
+uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json
 uip solution publish "<packagePath>" --wait --output json
 ```
 
-1. **`resources refresh`** — same Rule 14 requirement as publish and debug: syncs resources from `bindings_v2.json` before the project is packed.
-2. **`case pack`** — packs the Case project directory into a `.nupkg` under `<SolutionDir>/dist`. Add `--version <version>` when the user names one; default is `1.0.0`. Republishing an existing `name+version` pair is rejected by the feed — bump `--version` on a re-deploy.
-3. **`solution publish`** — uploads the packed artifact to the tenant solution feed. `--wait` blocks until the package reaches `Ready`/`Active`. Add `--personal-workspace` only when the user asks for their Personal Workspace feed instead of the tenant feed. Flags: [case-commands.md § uip solution publish](case-commands.md#uip-solution-publish).
+1. **`resources refresh`** — same Rule 14 requirement as publish and debug: syncs artefact files and debug overwrites from `bindings_v2.json` before they are bundled into the package.
+2. **`solution pack`** — packs the **solution directory** (the folder containing the `.uipx`), not the case project. It packs each contained project into a `.nupkg` and bundles them into a single `.zip` under `<SolutionDir>/dist`. Add `--version <version>` when the user names one; default is `1.0.0`. Republishing an existing `name+version` pair is rejected by the feed — bump `--version` on a re-deploy.
+3. **`solution publish`** — uploads the packed `.zip` to the tenant solution feed. `--wait` blocks until the package reaches `Ready`/`Active`. Add `--personal-workspace` only when the user asks for their Personal Workspace feed instead of the tenant feed. Flags: [case-commands.md § uip solution publish](case-commands.md#uip-solution-publish).
 
-**Read `<packagePath>` from the `case pack` response `Data`, or list `<SolutionDir>/dist` — never guess the filename.**
+**Read `<packagePath>` from the `solution pack` response `Data.Packages`, or list `<SolutionDir>/dist` — never guess the filename.** The name is `<name>_<version>.zip` — underscore, not dot.
+
+> Do **NOT** use `uip maestro case pack` here. It emits a single project `.nupkg`, which is not what `solution publish` accepts — `solution pack` already produces the project `.nupkg` internally and wraps it in the `.zip`.
 
 Phase 7 stops at publish. `uip solution deploy run` (the step that installs the solution into an Orchestrator folder) is out of scope — report the published package and tell the user to deploy it from Orchestrator.
 
-### On publish failure
+### On failure
 
-`uip solution publish` documents its argument as a `.zip` produced by `uip solution pack`, while `uip maestro case pack` emits a `.nupkg`. If publish rejects the artifact:
-
-1. Print the CLI error verbatim.
-2. Note `caveat: solution publish expects a solution .zip from 'uip solution pack'; case pack emits a project .nupkg` in `build-issues.md`.
-3. Re-show the Phase 7 prompt.
-
-Do not silently swap in `uip solution pack` or any other command.
+If `pack` or `publish` fails, print the CLI error verbatim, note it in `build-issues.md`, and re-show the Phase 7 prompt. Do not retry with a different pack command. A `processKey` collision on publish means the `name+version` pair already exists on the feed — re-run with a bumped `--version`.
 
 ### Suggested next steps
 

@@ -11,7 +11,7 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 | Commands | What | Auth |
 |----------|------|------|
 | `solution init`, `solution projects add`, `solution resources refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
-| `maestro case pack`, `solution publish` | Phase 7 Orchestrator deploy — pack to `.nupkg`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
+| `solution pack`, `solution publish` | Phase 7 Orchestrator deploy — pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
 | `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
@@ -110,11 +110,10 @@ uip solution upload <SolutionDir> --output json --output-filter "{Status: Status
 
 ## uip maestro case pack
 
-Pack a Case project directory into a `.nupkg` file. Phase 7 step 2 — consent-gated, never the default publish path.
+Pack a single Case project directory into a `.nupkg` file.
 
 ```bash
 uip maestro case pack <project-path> <output-path> --output json
-uip maestro case pack ./MySolution/MyCase ./MySolution/dist --version 2.0.0 --output json
 ```
 
 | Flag | Description |
@@ -124,15 +123,37 @@ uip maestro case pack ./MySolution/MyCase ./MySolution/dist --version 2.0.0 --ou
 | `-n, --name <name>` | Package name (default: project folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
 
-> **Read the produced filename from the response `Data`** (or list `<output-path>/`) — do not construct it by hand.
+> **Not the deploy path.** `uip solution publish` accepts a solution `.zip`, not a project `.nupkg`, and `uip solution pack` already produces the project `.nupkg` internally. Phase 7 uses `uip solution pack` — see below.
 
-> `pack` + `uip solution publish` ships to the tenant solution feed, bypassing Studio Web. Default publish path is `uip solution upload`. See [phased-execution.md § Phase 7](phased-execution.md#phase-7--orchestrator-deploy) for the consent gate.
+---
+
+## uip solution pack
+
+Pack the solution directory into a deployable `.zip`. Phase 7 step 2 — consent-gated. Offline.
+
+```bash
+uip solution pack <SolutionDir> <SolutionDir>/dist --output json
+uip solution pack ./MySolution ./MySolution/dist --version 2.0.0 --output json
+```
+
+| Flag | Description |
+|------|-------------|
+| `<solutionPath>` | **(required)** Solution directory (the folder containing the `.uipx`) — **not** the case project directory |
+| `<output-path>` | **(required)** Output directory for the `.zip` |
+| `-n, --name <name>` | Package name (default: solution folder name) |
+| `-v, --version <version>` | Package version (default: `1.0.0`) |
+
+Packs each contained project into a `.nupkg` and bundles them into one `<name>_<version>.zip` — **underscore between name and version, not a dot**.
+
+> **Read the produced filename from the response `Data.Packages`** (or list `<output-path>/`) — do not construct it by hand.
+
+> Run `uip solution resources refresh` first so artefact files and debug overwrites are current before they are bundled (Rule 14).
 
 ---
 
 ## uip solution publish
 
-Publish a packed artifact to the tenant solution feed. **Requires `uip login`.** Phase 7 step 3 — consent-gated.
+Publish a packed solution `.zip` to the tenant solution feed. **Requires `uip login`.** Phase 7 step 3 — consent-gated.
 
 ```bash
 uip solution publish <packagePath> --wait --output json
@@ -140,14 +161,14 @@ uip solution publish <packagePath> --wait --output json
 
 | Flag | Description |
 |------|-------------|
-| `<packagePath>` | **(required)** Path to the packed artifact. CLI help states this must be a `.zip` produced by `uip solution pack`; Phase 7 passes the `.nupkg` from `uip maestro case pack` |
+| `<packagePath>` | **(required)** Path to the `.zip` produced by `uip solution pack` |
 | `--wait` | Block until the published package reaches `Ready` / `Active` |
 | `--timeout <seconds>` | Package-state polling timeout (default: `360`) |
 | `--personal-workspace` | Publish to the current user's Personal Workspace feed instead of the tenant feed |
 
-> The feed rejects duplicate `name+version` pairs. Bump `--version` on `case pack` when re-deploying.
+> The feed rejects duplicate `name+version` pairs. On a `processKey` collision, bump `--version` on `uip solution pack` and re-run.
 
-> **On rejection**, print the CLI error verbatim, log the caveat in `build-issues.md`, and re-show the Phase 7 prompt — do not silently substitute a different pack command. Full contract: [phased-execution.md § Phase 7](phased-execution.md#phase-7--orchestrator-deploy).
+> **On failure**, print the CLI error verbatim, log it in `build-issues.md`, and re-show the Phase 7 prompt. Full contract: [phased-execution.md § Phase 7](phased-execution.md#phase-7--orchestrator-deploy).
 
 > Publish only lists the package on the feed. Installing it into an Orchestrator folder needs `uip solution deploy run` — out of Phase 7 scope.
 
