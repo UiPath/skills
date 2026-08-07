@@ -48,6 +48,27 @@ Detailed instructions for generating persona-tailored test reports from UiPath T
 6. **Validate the report before saving**
    - Check that all required sections for the persona (steps 4–5, 7) are present. Add any missing sections before writing the file.
 
+   Every section below is a real markdown heading (`##` or `###`), not a
+   sentence folded into prose. Reports without them are incomplete:
+
+   | Persona | Required headings |
+   |---|---|
+   | All personas | `## Summary` · `## Test Set` (name and key) · `## Results Breakdown` (counts for passed / failed / none / restricted) · `## Frequently Failing Test Cases` (step 4 requires this metric in every report) |
+   | QA Engineer | plus `## Regressions` |
+   | Developer | plus `## Failed Assertions` (assertion message per failing test case log) |
+   | Release Manager | plus `## Go / No-Go` (success rate, blocker count, risk assessment) |
+
+   Keep the heading wording — downstream readers and graders look for these
+   exact section names. Add a persona-appropriate extra section when the data
+   warrants it, but never drop a required one; write "None" under a heading
+   that has no content rather than omitting the heading.
+
+   Derive the Results Breakdown counts by tallying the test case logs you
+   already fetched in step 1. Do NOT build a `--output-filter` aggregate
+   expression to compute them: a malformed filter aborts the command, and
+   under Critical Rule 11 that stops the whole report for a total you could
+   have counted from data already in hand.
+
 7. **Ask if further details are needed**
    - Follow [Analyse More](#analyse-more).
   
