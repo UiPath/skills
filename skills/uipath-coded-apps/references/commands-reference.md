@@ -26,7 +26,7 @@ uip codedapp push [project-id] [options]
 | `--base-url <url>` | UiPath base URL | From `.env` |
 | `--org-id <id>` | Organization ID | From `.env` |
 | `--tenant-id <id>` | Tenant ID | From `.env` |
-| `--access-token <token>` | Access token | From `.env` |
+| `--access-token <token>` | Supported CLI override; agents must not pass or log tokens manually—use `--profile` | From `.env` |
 
 **Examples:**
 
@@ -74,7 +74,7 @@ uip codedapp pull [project-id] [options]
 | `--base-url <url>` | UiPath base URL | From `.env` |
 | `--org-id <id>` | Organization ID | From `.env` |
 | `--tenant-id <id>` | Tenant ID | From `.env` |
-| `--access-token <token>` | Access token | From `.env` |
+| `--access-token <token>` | Supported CLI override; agents must not pass or log tokens manually—use `--profile` | From `.env` |
 
 **Examples:**
 
@@ -110,16 +110,18 @@ uip codedapp pack <dist> [options]
 | `-n, --name <name>` | Package name | Prompted interactively |
 | `-v, --version <version>` | Package version | `1.0.0` |
 | `-o, --output <dir>` | Output directory for `.nupkg` | `./.uipath` |
-| `-a, --author <author>` | Package author | `UiPath Developer` |
+| `--author <author>` | Package author | `UiPath Developer` |
 | `--description <desc>` | Package description | Prompted |
 | `--main-file <file>` | Main entry file | `index.html` |
 | `--content-type <type>` | Content type: `webapp`, `library`, `process` | `webapp` |
 | `--dry-run` | Preview packaging without creating the file | `false` |
-| `--reuse-client` | Reuse existing clientId from uipath.json | `false` |
-| `--base-url <url>` | UiPath base URL | From `.env` |
-| `--org-id <id>` | Organization ID | From `.env` |
-| `--tenant-id <id>` | Tenant ID | From `.env` |
-| `--access-token <token>` | Access token | From `.env` |
+| `--repository-url <url>` | Source repository recorded for traceability | None |
+| `--repository-commit <sha>` | Source commit recorded for traceability | None |
+| `--repository-branch <branch>` | Source branch recorded for traceability | None |
+| `--repository-type <type>` | Repository type; defaults to `git` with a repository URL | None |
+| `--release-notes <text>` | Package release notes | None |
+| `--project-url <url>` | Automation Hub idea URL | None |
+| `--profile <name>` | Named CLI profile; accepted as a global option but pack does not need cloud authentication | Active/default profile |
 
 **Examples:**
 
@@ -137,7 +139,7 @@ uip codedapp pack dist -o ./packages
 uip codedapp pack dist --dry-run
 
 # Pack with all options
-uip codedapp pack dist -n my-webapp --version 1.0.0 -a "My Team" --description "Production app" --main-file app.html
+uip codedapp pack dist -n my-webapp --version 1.0.0 --author "My Team" --description "Production app" --main-file app.html
 ```
 
 **Output:**
@@ -170,12 +172,14 @@ uip codedapp publish [options]
 | `-n, --name <name>` | Package name (non-interactive selection) | Auto-select or prompted |
 | `-v, --version <version>` | Package version (requires `--name`) | Latest |
 | `-t, --type <type>` | App type: `Web` or `Action` | `Web` |
+| `--personal-workspace` | Publish to the current user's Personal Workspace feed | Tenant feed |
 | `--uipath-dir <dir>` | Directory containing `.nupkg` files | `./.uipath` |
 | `--base-url <url>` | UiPath base URL | From `.env` |
 | `--org-id <id>` | Organization ID | From `.env` |
 | `--tenant-id <id>` | Tenant ID | From `.env` |
 | `--tenant-name <name>` | Tenant name (required for registration) | From `.env` |
-| `--access-token <token>` | Access token | From `.env` |
+| `--access-token <token>` | Supported CLI override; agents must not pass or log tokens manually—use `--profile` | From `.env` |
+| `--profile <name>` | Named authenticated CLI profile | Active/default profile |
 
 **Examples:**
 
@@ -217,12 +221,12 @@ Published App Details:
 
 ## `uip codedapp deploy`
 
-Deploy or upgrade a coded app in UiPath. Automatically detects whether to perform a fresh deployment or upgrade.
+Deploy or upgrade a coded app in UiPath. The CLI can auto-detect, but agents must choose and verify the intent before execution.
 
-- **Fresh deploy**: App has not been deployed before → deploys version 1
-- **Upgrade**: App is already deployed → upgrades to the latest published version
+- **Create**: fresh remote inventory proves the deployment is absent and the exact route is unused; pass `--path-name`.
+- **Upgrade**: fresh remote inventory proves the exact deployment, system name, route, current version, and candidate; omit `--path-name` and preserve the route.
 
-App name is resolved from: `--name` flag → `.uipath/app.config.json` → interactive prompt.
+App name is resolved from: `--name` flag → `.uipath/app.config.json` → interactive prompt. This resolution is convenience, not remote-state proof. Treat local config as a repairable hint and never let it decide create versus upgrade.
 
 ```bash
 uip codedapp deploy [options]
@@ -231,25 +235,30 @@ uip codedapp deploy [options]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-n, --name <name>` | App name | From `.uipath/app.config.json` or prompted |
-| `-v, --version <version>` | Target a specific **published** version (different semantic from `pack`/`publish` `-v`, which is the package version) | Latest |
+| `--path-name <name>` | Permanent hosted route; use only for a proven create | Tool default |
+| `--client-id <id>` | Exact non-confidential OAuth client override | Tool/config default |
+| `-v, --version <version>` | Exact **published** candidate to deploy (different semantic from `pack`/`publish` `-v`) | Latest |
 | `--base-url <url>` | UiPath base URL | From `.env` |
 | `--org-id <id>` | Organization ID | From `.env` |
 | `--org-name <name>` | Organization name (used for app URL) | From `.env` |
 | `--tenant-id <id>` | Tenant ID | From `.env` |
 | `--folder-key <key>` | UiPath folder key | From `UIPATH_FOLDER_KEY` env var |
-| `--access-token <token>` | Access token | From `.env` |
+| `--access-token <token>` | Supported CLI override; agents must not pass or log tokens manually—use `--profile` | From `.env` |
+| `--tags <tags>` | Comma-separated categorization labels | None |
+| `--profile <name>` | Named authenticated CLI profile | Active/default profile |
 
 **Examples:**
 
 ```bash
-# Deploy (uses app name from .uipath/app.config.json)
-uip codedapp deploy
+# Proven create: exact route is unused
+uip codedapp deploy -n my-webapp --version 1.0.0 \
+  --path-name my-webapp --client-id <client-guid> \
+  --folder-key <folder-guid> --profile <profile> --output json
 
-# Deploy with explicit app name
-uip codedapp deploy -n my-webapp
-
-# Deploy with folder key
-uip codedapp deploy -n my-webapp --folder-key my-folder-key
+# Proven upgrade: preserve the route by omitting --path-name
+uip codedapp deploy -n my-webapp --version 1.1.0 \
+  --client-id <client-guid> --folder-key <folder-guid> \
+  --profile <profile> --output json
 ```
 
 **Fresh deploy output:**
@@ -270,15 +279,22 @@ uip codedapp deploy -n my-webapp --folder-key my-folder-key
 - New deploy: `POST /{org}/apps_/default/api/v1/default/models/{systemName}/publish/versions/1/deploy`
 - Upgrade: `POST /{org}/apps_/default/api/v1/default/models/deployed/apps/updateToLatestAppVersionBulk`
 
+### Deployment safety boundary
+
+- Direct CLI deployment without a second approval is testing-only: explicit internal synthetic-data testing in Alpha or Staging, exact candidate/target binding, automatic receipt, and post-deploy verification.
+- Production, customer data, or durable release evidence requires a governed plan and immutable receipt.
+- A publish/deploy timeout, interruption, 5xx, HTML response, or nonzero exit is indeterminate until remote reconciliation. Never blind-retry, auto-bump, randomize or omit the route, delete/recreate, or fall back from upgrade to create.
+
 ---
 
 ## Common Options
 
-All cloud commands accept these override options (values default to `.env` file):
+Cloud commands expose these target/authentication overrides (availability varies by subcommand; prefer an exact named profile):
 
 | Option | Description |
 |--------|-------------|
 | `--base-url <url>` | UiPath base URL |
 | `--org-id <id>` | Organization ID |
 | `--tenant-id <id>` | Tenant ID |
-| `--access-token <token>` | Access token |
+| `--access-token <token>` | Supported CLI override, but agents must not pass or log tokens manually; use `--profile` |
+| `--profile <name>` | Named authenticated CLI profile |

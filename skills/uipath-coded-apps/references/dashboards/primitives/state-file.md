@@ -56,9 +56,10 @@ Per-project metadata. Read at every build start. Written by build script on succ
 2. `widgets` is a map of `{ hash, tier, metric, template, module, intentMetric }` — not a string array.
    - `intentMetric` is pure metadata (no `fnBody`) — title, display hints, tier, name. Used by CHANGE/REBUILD to regenerate without the original `intent.json`.
    - `module` is the relative path to the durable data-fetch code (e.g. `"metrics/agent-health.ts"`). The live source lives at `src/metrics/<name>.ts` in the project.
-3. `routingName` never changes once set. Not even on upgrades.
+3. `routingName` is the intended permanent route once remotely created. A local value does not reserve or prove ownership of that route.
 4. `hash` used for hand-edit detection — compare to current file before CHANGE/REMOVE.
-5. `deployment.systemName` set by deploy plugin on first deploy.
+5. `deployment.*` is a repairable local projection, never remote authority. Before choosing create or upgrade, re-read the remote deployment and verify system name, route, folder, current version, and candidate version. A missing local `systemName` does not prove create; a present value does not prove upgrade.
 6. `buildStatus` is `"in-progress"` from early in the build (so deploy can find app metadata even after a failed build) and `"complete"` on success.
 7. `timeRange` is the dashboard default window — incremental edits fall back to it when a CHANGE delta has no `timeRange`.
 8. `regime` is `"compiler-managed"` (default — declarative, edited via the structured edit-script) or `"ejected"` (full-source, edited free-form by the agent). The edit-script **refuses** to run on an ejected project (emits `EJECTED_PROJECT`). Eject is one-way: the `EJECT` op flips it and it never reverts. A template builds straight to `"ejected"`. Absent/legacy state with no `regime` is treated as `"compiler-managed"`. See [customization.md](customization.md#regimes-compiler-managed-vs-ejected).
+9. `folderKey`/`folderName` may record the user's selected target before deployment, but they remain intent only. Update outcome fields (`systemName`, `deployVersion`, `appUrl`, `lastDeployedAt`) only after remote post-deploy verification confirms the exact deployment, version, route, and URL. Write atomically. A failed or interrupted deploy leaves outcome fields unchanged and requires remote reconciliation before a fresh operation.

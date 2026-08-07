@@ -16,6 +16,8 @@ The only time to fall back to the [manual portal steps](oauth-client-setup.md#ma
 
 **HARD RULE**: Do not edit any file, env var, or external config until **Step 0** has produced a concrete observation — a specific URL, console error, HTTP status, or on-page error text. Guessing at fixes when you don't know the failing layer wastes tool calls and introduces regressions.
 
+**RELEASE-BOUNDARY RULE**: Before changing `uipath.json`, an External Application, a route, or deployment metadata, identify whether the app is an explicit synthetic Alpha/Staging test or a governed release. A configuration change invalidates a governed deployment plan; re-bind and re-approve it. For testing, re-hash the exact configuration and start a new testing receipt. Never patch configuration and blindly resume an interrupted publish/deploy.
+
 ---
 
 ## Step 0: Reproduce the Failure
@@ -252,6 +254,8 @@ Match the observation to the correct fix section. **Jump directly to the matchin
 | App renders, API returns **404** | Wrong endpoint, wrong folder, or resource doesn't exist | Verify base URL, folder, and resource id |
 | Network / CORS error in console | Wrong base URL | *API Calls Fail with CORS Error* |
 | Deployed app URL returns `404` | Vite base path / routing | *`404` After Deploy / App Not Found* |
+| Deploy returns `routing name must be unique` | Route collision or create/upgrade mismatch | *Deploy / Publish Failure Boundary* |
+| Publish/deploy times out, returns 5xx/HTML, or exits nonzero | External write is indeterminate | *Deploy / Publish Failure Boundary* |
 
 **If no row matches or the observation is inconclusive**, continue to Step 1 for config-level diagnosis.
 
@@ -358,6 +362,24 @@ rm ~/.uipath-skills/playwright/clear-state.mjs 2>/dev/null
 
 ## Common Issues and Fixes
 
+### Deploy / Publish Failure Boundary
+
+`publish` and `deploy` are external writes. A timeout, interruption, 5xx, HTML response, or nonzero exit does not prove that nothing changed. Before any new write:
+
+1. Re-read remote package, app, deployment, version, and route state.
+2. Compare it with the exact org, tenant, folder, OAuth client, package/version, deployment/system identity, and intended route.
+3. Choose a fresh explicit operation: `create` only when the deployment is absent and route unused; `upgrade` only when the exact existing deployment and route match.
+4. Re-bind changed evidence. A governed release needs a new reviewed approval; a testing-only Alpha/Staging run needs a new automatic testing receipt.
+
+Never auto-bump/repack after a publish conflict, repeat a possibly completed write, generate a random route, omit a reviewed route to make a create succeed, delete/recreate, or fall back from upgrade to create.
+
+For `routing name must be unique`:
+
+- **Proven create** — the route is occupied. Stop and ask for an intentional plan change; do not invent a suffix.
+- **Proven upgrade** — preserve the existing route and omit `--path-name`. If the error persists, the CLI/local config is not targeting the reconciled deployment; stop rather than retry with different flags.
+
+`.uipath/app.config.json` and `.dashboard/state.json` help locate candidates but never prove remote state.
+
 ### `redirect_uri_mismatch` / Login Loop
 
 **Cause:** The redirect URI the SDK sends (from the `uipath:redirect-uri` meta tag — locally the `redirectUri` in `uipath.json`) is not registered in the UiPath External Application, or does not match the URL the app is actually served from.
@@ -380,7 +402,7 @@ rm ~/.uipath-skills/playwright/clear-state.mjs 2>/dev/null
 
 Fall back to [manual steps](oauth-client-setup.md#add-redirect-uris-to-an-existing-app-1) only if the CLI can't run (not authenticated / `403`).
 
-> Production redirect URIs are registered automatically by `uip codedapp deploy`. If they're missing on the External Application after a deploy, the same CLI update can add them.
+> Hosted redirect URIs are normally registered by `uip codedapp deploy`, but verify them rather than assuming registration completed. If they are missing after a deploy, treat the deployment as incomplete. Updating the External Application invalidates governed approval evidence or requires a new testing receipt before another deployment attempt.
 
 ### `invalid_scope` Error in Auth URL
 
@@ -495,7 +517,7 @@ Check the browser console for the error. Common causes: missing `@uipath/coded-a
 1. `vite.config.ts` must have `base: './'` (not `'/<routing-name>/'` — the platform handles URL routing via its Cloudflare Worker).
 2. If the app uses a client-side router (React Router, Vue Router), the basename must use `getAppBase()` from `@uipath/uipath-typescript` — not a hardcoded path. `getAppBase()` reads the `uipath:app-base` meta tag injected by the platform at runtime and falls back to `'/'` locally.
 
-After fixing, rebuild (`npm run build`) and re-deploy (`uip codedapp deploy`). If 404 persists, check that `deploy` returned a valid `appUrl` in `.uipath/app.config.json`.
+After fixing, rebuild and package an explicit new candidate. Reconcile remote deployment state before publishing or deploying it; do not treat the prior failed deploy as proof that no write occurred. A valid `appUrl` in `.uipath/app.config.json` is a hint, not acceptance — verify the remote deployment, route, and referenced assets.
 
 ---
 
@@ -511,4 +533,4 @@ For any create or update of an External Application (adding redirect URIs, addin
 Key constants to remember:
 - Dev redirect URIs: `http://localhost:5173` and `http://localhost:5173/` (register both)
 - Action apps redirect URI: `https://cloud.uipath.com/<orgName>/<tenantName>/actions_`
-- Production web-app URIs are registered automatically by `uip codedapp deploy` — do not add them manually.
+- Hosted web-app URIs are normally registered by `uip codedapp deploy`. Verify them after deployment; if remediation changes the External Application, re-bind release evidence before another write.
