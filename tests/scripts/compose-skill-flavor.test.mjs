@@ -24,6 +24,7 @@ import {
   FlavorCompositionError,
   ROOT_PACK_TRANSACTION_DIRNAME,
   buildAllSkillTrees,
+  composeText,
   createAllVariants,
   createCompositionPlan,
   createDefaultPlan,
@@ -357,6 +358,97 @@ test("a flavor includes the complete catalog and replaces only matching blocks",
   assert.deepEqual(readFileSync(join(changed, "SKILL.md")), canonicalBefore);
 });
 
+test("empty canonical blocks add flavor guidance without shadowing shared edits", (t) => {
+  const repo = fixtureRepo(t);
+  const skillName = "uipath-additive";
+  const canonicalBody = (sharedRows) =>
+    "## Reference Navigation\n\n" +
+    `${sharedRows}\n` +
+    block("reference-navigation-extra", "") +
+    "\nShared ending.\n";
+  const skill = addSkill(
+    repo,
+    skillName,
+    canonicalBody("| references/cli-reference.md | Shared CLI reference |"),
+  );
+  const studio = writeOverride(
+    repo,
+    "studioweb",
+    `${skillName}/SKILL.md`,
+    block(
+      "reference-navigation-extra",
+      "> Studio Web keeps shared references and adds host scope.",
+    ),
+  );
+
+  const firstOutput = join(repo, "additive-first");
+  materializeComposition(createCompositionPlan(repo, studio), firstOutput);
+  const firstBuilt = readFileSync(join(firstOutput, skillName, "SKILL.md"), "utf8");
+  assert.match(firstBuilt, /Shared CLI reference/);
+  assert.match(firstBuilt, /Studio Web keeps shared references/);
+
+  writeFileSync(
+    join(skill, "SKILL.md"),
+    entrypoint(
+      skillName,
+      canonicalBody(
+        "| references/cli-reference.md | Shared CLI reference |\n" +
+          "| references/new-capability.md | Newly shared capability |",
+      ),
+    ),
+  );
+  const secondOutput = join(repo, "additive-second");
+  materializeComposition(createCompositionPlan(repo, studio), secondOutput);
+  const secondBuilt = readFileSync(join(secondOutput, skillName, "SKILL.md"), "utf8");
+  assert.match(secondBuilt, /Newly shared capability/);
+  assert.match(secondBuilt, /Studio Web keeps shared references/);
+  assert.doesNotMatch(secondBuilt, /<!-- skill-flavor:/);
+});
+
+test("Studio Web inherits all API Workflow references and adds only host scope", () => {
+  const canonicalPath = join(REPO_ROOT, "skills", "uipath-api-workflow", "SKILL.md");
+  const overridePath = join(
+    REPO_ROOT,
+    "skill-flavors",
+    "studioweb",
+    "uipath-api-workflow",
+    "SKILL.md",
+  );
+  const canonical = readFileSync(canonicalPath, "utf8");
+  const override = readFileSync(overridePath, "utf8");
+  const findings = [];
+  const composed = stripMarkerBoundaries(
+    composeText(
+      canonical,
+      parseMarkerBlocks(canonicalPath, canonical, findings),
+      parseMarkerBlocks(overridePath, override, findings),
+    ),
+  );
+
+  assert.deepEqual(findings, []);
+  assert.doesNotMatch(canonical, /skill-flavor:reference-navigation:(?:start|end)/);
+  assert.match(canonical, /skill-flavor:reference-navigation-extra:start/);
+  assert.match(override, /skill-flavor:reference-navigation-extra:start/);
+  for (const reference of [
+    "references/connector-activity-discovery.md",
+    "references/cli-reference.md",
+    "references/operating-published-workflows.md",
+    "references/troubleshooting.md",
+  ]) {
+    assert.match(composed, new RegExp(reference.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(
+    composed,
+    /CLI operations that Studio Web exposes, including validation and `uip api-workflow registry resolve` \/ `stub`/,
+  );
+  assert.match(
+    composed,
+    /Authoring HTTP Request \/ Gmail \/ Outlook \/ GitHub \/ Slack \/ etc\. activities via `uip api-workflow registry resolve` \+ `stub`/,
+  );
+  assert.match(composed, /Project creation must use the live `proxy-tools-Solution` \/ `CreateProjects` schema/);
+  assert.doesNotMatch(composed, /<!-- skill-flavor:/);
+});
+
 test("new canonical skills are automatically included in existing flavors", (t) => {
   const repo = fixtureRepo(t);
   addSkill(repo, "uipath-first", block("host", "Default host guidance."));
@@ -440,6 +532,10 @@ test("paired build preflights both destinations before writing either", (t) => {
 test("marker parser rejects malformed state and preserves valid canonical order", () => {
   const cases = [
     ["inline <!-- skill-flavor:x:start -->\n", /malformed flavor marker/],
+    [
+      "    <!-- skill-flavor:x:start -->\nbody\n<!-- skill-flavor:x:end -->\n",
+      /markers must start at column 1/,
+    ],
     ["<!-- skill-flavor:x:end -->\n", /ends without a start/],
     ["<!-- skill-flavor:x:start -->\nbody\n", /has no end marker/],
     [

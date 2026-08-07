@@ -76,9 +76,9 @@ Do NOT use for: `.flow` Maestro flows (→ `uipath-maestro-flow`), `.xaml` / cod
     - **After every stub, cross-check required fields** — the stub drops `required: true` request fields (e.g. Outlook `getNewestEmail` needs `parentFolderId`). Confirm via `uip is resources describe ... --operation <op>` or the stub's own `metadata.configuration` inputFields; re-stub with `--inputs` if missing.
     - **Connector params use flat dotted keys and BARE literals.** `"message.toRecipients": "..."`, not nested objects; plain `"x@y.com"`, not `"${'x@y.com'}"` — rule 5's wrap is **inverted** here (`${'...'}` clears the field on save). Real references (`${$context...}`) stay wrapped.
     - **NEVER use Http kind with a vendor connection UUID** (401 "Invalid Element token"). IntSvc output is wrapped: read `$context.outputs.<ExportBucketKey>.content.<field>`.
-    <!-- skill-flavor:connector-solution-registration:start -->
+<!-- skill-flavor:connector-solution-registration:start -->
     - **(Solutions-mode + IntSvc only)** sync the connection into the catalogue: `uip api-workflow bindings sync --workflow <Workflow.json>` then `uip solution resource refresh --solution-folder <path>`. Skip for Http kind, non-connector activities, and standalone (no `Solution/`) projects.
-    <!-- skill-flavor:connector-solution-registration:end -->
+<!-- skill-flavor:connector-solution-registration:end -->
 17. **Pass input as a JSON string.** `--input-arguments '{"key":"value"}'`. Invalid JSON exits 1.
 18. **Always `--output json`** when parsing CLI output programmatically. Success → `{ "Result": "Success", "Code": "WorkflowRun", "Data": {...} }`. Failure → `{ "Result": "Failure", "Message": "...", "Instructions": "..." }` with exit 1.
 <!-- skill-flavor:project-creation:start -->
@@ -257,7 +257,6 @@ uip solution publish ./build/MyApiSolution_1.0.0.zip --tenant MyTenant --output 
 
 ## Reference Navigation
 
-<!-- skill-flavor:reference-navigation:start -->
 | File | Use when |
 |------|----------|
 | [references/workflow-file-format.md](references/workflow-file-format.md) | Authoring or editing the JSON skeleton: top-level keys, `document.metadata.variables` schema, `input.schema`/`output.schema`, `WorkflowStart` |
@@ -269,7 +268,9 @@ uip solution publish ./build/MyApiSolution_1.0.0.zip --tenant MyTenant --output 
 | [references/cli-reference.md](references/cli-reference.md) | All `uip` commands — `api-workflow init`, `run`, `build`, `pack`, `validate`, `solution init`, `solution pack`, `solution publish`, `login` |
 | [references/operating-published-workflows.md](references/operating-published-workflows.md) | **Operating + diagnosing a published workflow** — invoke via HTTP/schedule/event triggers, manage Integration Service connections (`uip is connections`), start/list/stop Orchestrator jobs (`uip or jobs`), read cloud-run logs/traces (`uip or jobs logs`, `uip traces spans get`). Delegates depth to `uipath-platform` / `uipath-troubleshoot` |
 | [references/troubleshooting.md](references/troubleshooting.md) | Failed runs, structure/expression/loop/nesting/response/validation pitfalls, packaging errors, publish errors, debugging strategy |
-<!-- skill-flavor:reference-navigation:end -->
+<!-- skill-flavor:reference-navigation-extra:start -->
+
+<!-- skill-flavor:reference-navigation-extra:end -->
 
 ## Templates
 

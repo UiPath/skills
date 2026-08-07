@@ -65,6 +65,11 @@ test("contributor guidance documents the full-catalog Node flavor contract", () 
       "utf8",
     ),
   ].join("\n");
+  const authoringRules = readFileSync(
+    join(REPO_ROOT, ".claude", "rules", "skill-structure.md"),
+    "utf8",
+  );
+  const flavorGuidance = `${source}\n${authoringRules}`;
 
   assert.doesNotMatch(
     source,
@@ -82,4 +87,11 @@ test("contributor guidance documents the full-catalog Node flavor contract", () 
   assert.match(source, /https:\/\/npm\.pkg\.github\.com\//);
   assert.match(source, /ENABLE_SKILL_FLAVOR_PUBLISH/);
   assert.match(source, /confirmed Internal/i);
+  assert.match(flavorGuidance, /column 1/i);
+  assert.match(
+    flavorGuidance,
+    /empty (?:canonical )?(?:<name>-extra|extension) block/i,
+  );
+  assert.match(flavorGuidance, /do not replace a complete shared table/i);
+  assert.match(authoringRules, /inspect the matching sparse override/i);
 });

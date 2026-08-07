@@ -23,6 +23,8 @@ block:     canonical name == override name
 inclusion: every canonical skill is present in every flavor
 ```
 
+Every marker boundary starts at column 1 with no leading spaces or tabs.
+Indented Markdown content stays indented inside those column-one boundaries.
 The override may contain multiple complete blocks separated by whitespace. Canonical block order controls the built file; override order must not affect it.
 
 When splitting an existing broad block into smaller sibling blocks, capture
@@ -48,9 +50,11 @@ Test discovery with temporary flavors created in reverse lexical order.
 - Each flavor contains every canonical skill.
 - Two flavors can replace the same canonical block independently.
 - A skill without overrides passes through byte-for-byte except marker removal.
+- An empty canonical extension block emits nothing in the default and lets a flavor add content without replacing the adjacent shared section.
+- New canonical content outside an additive extension block appears in every flavor without an override edit.
 - Binary assets copy byte-for-byte.
 - Canonical and sparse source files remain unchanged after builds.
-- Malformed, nested, duplicate, unmatched, or unmarked override content fails before output replacement.
+- Leading-whitespace, malformed, nested, duplicate, unmatched, or unmarked override boundaries fail before output replacement.
 
 ## Package Cases
 

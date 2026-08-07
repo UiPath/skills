@@ -51,11 +51,43 @@ Create the project with the host project-creation tool.
 
 Marker names must be lowercase kebab-case, unique within a file, unnested, and identical in canonical and override files. An override cannot add an unmarked introduction, heading, or note.
 
+Start every marker boundary at column 1 with no leading spaces or tabs. Keep
+the Markdown indentation on the content inside the block instead. For example,
+wrap a nested list item like this:
+
+```markdown
+<!-- skill-flavor:connector-registration:start -->
+    - Nested host-specific instruction.
+<!-- skill-flavor:connector-registration:end -->
+```
+
 If a new flavor needs a smaller exception than an existing multi-paragraph
 block, split that block into adjacent sibling blocks. Update every existing
 override that used the old block, and compare its complete built file before
 and after the refactor—the existing flavor's consumer text must remain
 unchanged. Never nest a narrower block inside the old one.
+
+## Prefer Additive Extension Points
+
+Do not replace a complete shared table, list, or navigation section merely to
+add host guidance. A replacement freezes that whole passage for the flavor, so
+later canonical additions inside it no longer propagate. Keep the shared
+content unmarked and put an empty extension block next to it:
+
+```markdown
+| Shared reference | Shared purpose |
+|---|---|
+| references/common.md | Used by every host |
+<!-- skill-flavor:reference-navigation-extra:start -->
+
+<!-- skill-flavor:reference-navigation-extra:end -->
+```
+
+Fill only that extension in the sparse override. The default emits nothing at
+the extension point; the flavor receives the complete shared section plus its
+addition. If one existing row genuinely differs, mark only that row instead
+of copying the whole table. Whenever a canonical marked passage changes, read
+every override for that block because those flavors do not inherit the edit.
 
 ## Treat Missing Overrides as Intentional Inheritance
 
@@ -148,6 +180,7 @@ another not-yet-bootstrapped flavor.
 6. **Fail before replacement.** Validate every flavor and inspect every tarball before replacing the last successful generated artifacts.
 7. **Recover without data loss.** Keep root packaging transactional, reject overlapping transactions, and preserve unexpected overlay edits before restoring canonical sources.
 8. **Isolate publication.** Keep default root publishing separate from flavor publishing; registry-lock and select one exact flavor tarball, and keep operator enablement off until every called flavor package is confirmed Internal.
+9. **Keep shared evolution automatic.** Prefer empty additive extension points for host-only additions; never copy a shared table or list into a broad replacement that can silently hide later canonical changes.
 
 ## What Not to Do
 

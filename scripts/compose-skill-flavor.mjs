@@ -54,7 +54,7 @@ export const CUSTOM_PACKAGE_PUBLISH_CONFIG = Object.freeze({
 const MARKER_BYTES = Buffer.from(MARKER_TOKEN, "utf8");
 const SKILL_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const MARKER_LINE_RE =
-  /^[ \t]*<!-- skill-flavor:([a-z0-9]+(?:-[a-z0-9]+)*):(start|end) -->[ \t]*(?:\r\n|\n|\r)?$/;
+  /^<!-- skill-flavor:([a-z0-9]+(?:-[a-z0-9]+)*):(start|end) -->[ \t]*(?:\r\n|\n|\r)?$/;
 const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
 const REMOVE_OPTIONS = { recursive: true, force: true, maxRetries: 3, retryDelay: 100 };
 const ROOT_PACK_STATE_SCHEMA = 1;
@@ -164,8 +164,8 @@ export function parseMarkerBlocks(filePath, text, findings = []) {
     const match = MARKER_LINE_RE.exec(line);
     if (!match) {
       findings.push(
-        `${filePath}:${lineNumber}: malformed flavor marker; markers must occupy a line ` +
-          `and use '<!-- skill-flavor:<name>:start|end -->'`,
+        `${filePath}:${lineNumber}: malformed flavor marker; markers must start at column 1, ` +
+          `occupy a line, and use '<!-- skill-flavor:<name>:start|end -->'`,
       );
       return;
     }
