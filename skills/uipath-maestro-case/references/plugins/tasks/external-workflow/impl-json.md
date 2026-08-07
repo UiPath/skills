@@ -62,7 +62,7 @@ Per [placeholder-tasks.md](../../../placeholder-tasks.md) — structural fields 
 | `async` (default) | `Intsvc.AsyncWorkflowExecution` | `async` | `async` |
 | `sync` | `Intsvc.SyncWorkflowExecution` | `sync` | `sync` |
 
-> **Never omit `data.serviceType`.** The packager's fallback is `Intsvc.SyncWorkflowExecution` while the designer's default is `Intsvc.AsyncWorkflowExecution`, so an omitted key silently inverts the execution mode. `uip maestro case validate` accepts either and flags neither — this is a write-time-only guarantee.
+> **Never omit `data.serviceType`.** The packager's fallback is `Intsvc.SyncWorkflowExecution` while the designer's default is `Intsvc.AsyncWorkflowExecution`, so an omitted key yields an artifact that differs from the designer's for the same case. `uip maestro case validate` accepts either and flags neither — this is a write-time-only guarantee. For the Power Automate connector the runtime waits for a response regardless (vendor behavior), so this is about artifact fidelity, not a changed execution outcome.
 
 > **All three fields move together.** `serviceType`, `eventMode`, and `executionType` must agree. Nothing validates the pairing; a mismatched trio passes `validate` and misbehaves at runtime.
 

@@ -70,7 +70,9 @@ The automation runs either synchronously (case waits for the result) or asynchro
 
 Record `execution-mode:` on the T-entry **even when it is the default** (Rule 6 — never omit a value that looks like a default). It drives both `data.serviceType` and the `executionType` / `eventMode` context fields, and nothing downstream can re-derive it.
 
-> **Why this matters more than it looks.** If `data.serviceType` is omitted at emission the packager falls back to `Intsvc.SyncWorkflowExecution`, while the Studio Web designer's default is `Intsvc.AsyncWorkflowExecution`. An unrecorded mode therefore silently produces the *opposite* of the designed behavior, and `uip maestro case validate` does not flag it.
+> **Why record it even when defaulted.** If `data.serviceType` is omitted at emission the packager falls back to `Intsvc.SyncWorkflowExecution`, while the Studio Web designer's default is `Intsvc.AsyncWorkflowExecution`. An unrecorded mode therefore produces an artifact that differs from what the designer would have written for the same case, and `uip maestro case validate` does not flag the difference.
+>
+> **Scope of the consequence.** For the Power Automate connector the runtime waits for a response either way — vendor behavior, per the connector's user guide — so the practical impact today is artifact fidelity and round-trip stability, not a changed execution outcome. Treat the mismatch as a correctness issue in what we emit, not as evidence of a runtime defect, and do not report it to users as one.
 
 ## `tasks.md` T-entry shape
 

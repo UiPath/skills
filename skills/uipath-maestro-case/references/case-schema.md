@@ -504,7 +504,7 @@ Integration Service **external automation** call — a workflow running in an ex
 | `data.inputs[]` / `data.outputs[]` | From the resolved activity contract. |
 | `data.bindings[]` | Optional per-task binding array (schema allows; normally empty). |
 
-> **`serviceType` is never omitted.** The packager falls back to `Intsvc.SyncWorkflowExecution` when the key is absent, while the designer's default is `Intsvc.AsyncWorkflowExecution`. Omitting it silently converts an asynchronous call into a synchronous one, and `validate` does not flag it. Write the field on every emitted `external-workflow` task.
+> **`serviceType` is never omitted.** The packager falls back to `Intsvc.SyncWorkflowExecution` when the key is absent, while the designer's default is `Intsvc.AsyncWorkflowExecution`, so an omitted key emits a different artifact than the designer would for the same case. `validate` flags neither. Write the field on every emitted `external-workflow` task. (For Power Automate the runtime waits either way — this is artifact fidelity, not a runtime difference.)
 
 > **`executionType` and `serviceType` must agree.** `executionType: "sync"` pairs with `Intsvc.SyncWorkflowExecution`; `"async"` with `Intsvc.AsyncWorkflowExecution`. Nothing validates the pairing.
 
