@@ -56,3 +56,5 @@ Use [create-inline-common.md § Step 3](../create-inline-common.md#step-3--bindi
 Apply [create-inline-common.md § Failure](../create-inline-common.md#failure--surface-and-re-prompt-never-stall). Its agent fallback destination is [agent planning § Unresolved Fallback](planning.md#unresolved-fallback).
 
 An `already exists` result is an adoption candidate under [shared §3b](../../../inline-resource-creation-guide.md#3b--already-exists--adopt-kind-agnostic-residual). Agent tokens: low-code init `uip agent init`; coded init `uip codedagent init`; registered category `agent`; on-disk marker `agent.json`.
+
+<!-- END: inline-creation-guide.md -->

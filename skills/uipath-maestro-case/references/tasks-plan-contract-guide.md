@@ -232,3 +232,5 @@ SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for
 Add a brief section at the end of `tasks.md` listing things referenced in sdd.md but outside the scope of `caseplan.json` (e.g., Data Fabric entity schemas). These stay as notes for the user.
 
 ---
+
+<!-- END: tasks-plan-contract-guide.md -->

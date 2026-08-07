@@ -67,3 +67,5 @@ Use [create-inline-common.md § Step 3](../create-inline-common.md#step-3--bindi
 Apply [create-inline-common.md § Failure](../create-inline-common.md#failure--surface-and-re-prompt-never-stall). Its API-workflow fallback destination is [API-workflow planning § Unresolved Fallback](planning.md#unresolved-fallback).
 
 An `already exists` result is an adoption candidate under [shared §3b](../../../inline-resource-creation-guide.md#3b--already-exists--adopt-kind-agnostic-residual). API-workflow tokens: init `uip api-workflow init`; registered category `api`; on-disk marker `project.uiproj` with `ProjectType: "Api"`; stale declaration subpath `resources/solution_folder/process/api/`.
+
+<!-- END: inline-creation-guide.md -->

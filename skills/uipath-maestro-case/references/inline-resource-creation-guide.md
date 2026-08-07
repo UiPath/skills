@@ -91,3 +91,5 @@ For every usage, apply the registry owner's [audit contract](registry-discovery.
 ## Reject case
 
 If a later hard stop or edit drops a task after its sibling was built, keep the sibling on disk and registered. Report it as `built but not referenced`, including any in-memory-only rename. Never silently deregister or delete it; offer manual cleanup only when the user wants removal. Likewise, report every unselected, failed, or skipped resource that was assigned to placeholder fallback.
+
+<!-- END: inline-resource-creation-guide.md -->
