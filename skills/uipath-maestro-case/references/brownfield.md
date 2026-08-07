@@ -17,7 +17,7 @@ Before the first edit, present the flow once so the dev knows the steps and wher
 > - I make the edit, then **validate** and fix errors.
 > - **Debug** (optional) — **you choose** whether to run the case for real (live emails / API calls).
 > - **Publish** (optional) — **you choose** whether to upload to Studio Web.
-> - **Deploy** (optional) — **you choose** whether to deploy the case to Orchestrator.
+> - **Publish to Orchestrator** (optional) — **you choose** whether to publish the case to Orchestrator.
 
 ## Pull latest first (before editing)
 

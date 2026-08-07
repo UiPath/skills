@@ -90,7 +90,7 @@ Before any planning or build work, present the flow once so the dev knows the st
 > - **Validate** — I run validation and fix errors.
 > - **Publish** (optional) — **you choose** whether to upload to Studio Web.
 > - **Debug** (optional) — **you choose** whether to run the case for real (live emails / API calls).
-> - **Deploy** (optional) — **you choose** whether to deploy the case to Orchestrator.
+> - **Publish to Orchestrator** (optional) — **you choose** whether to publish the case to Orchestrator.
 
 When Phase 0 runs, prefix one line: "First I'll design the case from what you've given me and show one decision-first review packet with the case snapshot, primary journey, other paths, SLA responses, business rules, resources, and every decision I made — one confirmation, then I build; the full technical design doc (`sdd.md`) is saved alongside for reference."
 
