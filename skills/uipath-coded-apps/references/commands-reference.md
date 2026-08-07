@@ -115,7 +115,6 @@ uip codedapp pack <dist> [options]
 | `--main-file <file>` | Main entry file | `index.html` |
 | `--content-type <type>` | Content type: `webapp`, `library`, `process` | `webapp` |
 | `--dry-run` | Preview packaging without creating the file | `false` |
-| `--reuse-client` | Reuse existing clientId from uipath.json | `false` |
 | `--base-url <url>` | UiPath base URL | From `.env` |
 | `--org-id <id>` | Organization ID | From `.env` |
 | `--tenant-id <id>` | Tenant ID | From `.env` |
