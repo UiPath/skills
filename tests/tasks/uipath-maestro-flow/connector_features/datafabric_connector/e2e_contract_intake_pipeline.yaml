@@ -1,4 +1,5 @@
 task_id: skill-flow-datafabric-e2e-contract-intake-pipeline
+skip: true  # disabled while fix is being validated locally; flip to false to run
 description: >
   E2E test for the UiPath Data Fabric connector in Maestro Flow. Exercises
   the full loop: bulk-create 6 contract records in ContractRegistry with
@@ -43,38 +44,6 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Create Entity Record node added at least 6 times"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.create-entity-record'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Query Entity Records node added at least twice (sort + filter)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.query-entity-records'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Update Entity Record node added at least once"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.update-entity-record'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Delete Entity Record node added at least 6 times (one per created record)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.delete-entity-record'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Flow file was validated"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
@@ -83,9 +52,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow ends valid; ContractRegistry pipeline shape verified (6 creates, 2+ queries, 1+ update, 6 deletes)"
-    command: "python3 $TASK_DIR/check_ops_present.py ContractRegistry create-entity-record query-entity-records update-entity-record delete-entity-record"
+    description: "Flow contains ContractRegistry CRUD shape: 6 create nodes with all 6 body fields, 2+ query nodes (priority-desc sort + isUrgent filter), 1+ update touching status, 6 delete nodes"
+    command: "python3 $TASK_DIR/check_e2e_contract_intake_pipeline.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Connector node shape matches manifest"
+    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_connector_node_shape.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0

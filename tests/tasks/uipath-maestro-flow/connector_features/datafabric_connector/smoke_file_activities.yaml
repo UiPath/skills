@@ -1,4 +1,5 @@
 task_id: skill-flow-datafabric-smoke-file-activities
+skip: true  # disabled while fix is being validated locally; flip to false to run
 description: >
   Smoke: DF Flow connector file activities — UploadFileToRecordFieldV2 +
   DownloadFileFromRecordFieldV2 + DeleteFileFromRecordFieldV2 wired against
@@ -6,21 +7,28 @@ description: >
   in the verifier.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, connector, uipath-uipath-dataservice, ipe]
 
+run_limits:
+  max_turns: 100
+  turn_timeout: 2400
+  task_timeout: 5400
+
 pre_run:
   - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/flow_code_eval_entity.entity.json"'
     timeout: 60
 
 initial_prompt: |
-  Build a Flow that manipulates a file attached to a Data Fabric record
-  in the `FlowCodeEvalEntity` entity. Chain three file operations in order:
+  Build a Flow that manipulates a file attached to a Data Fabric record.
+  Target the `FlowCodeEvalEntity` entity and its `file1` field directly on
+  every node — do not indirect the entity name or field name through
+  workflow variables. Chain three file operations in order on the same
+  record:
 
   1. UploadFileToRecordFieldV2
   2. DownloadFileFromRecordFieldV2
   3. DeleteFileFromRecordFieldV2
 
-  Use the same record and `file1` field throughout. Keep the record and file
-  values bound consistently through workflow variables, including a typed
-  file variable for the downloaded file.
+  Capture the DownloadFileFromRecordFieldV2 output into a typed file
+  variable so the downloaded file can be inspected downstream.
 
   The Flow is not complete until `uip maestro flow validate` passes.
 

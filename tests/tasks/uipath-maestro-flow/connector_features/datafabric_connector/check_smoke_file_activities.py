@@ -22,6 +22,25 @@ REQUIRED = {
 }
 
 
+def resolve_entity(value, globals_by_id) -> str | None:
+    """Resolve entityName to the literal string it targets. Accepts a plain
+    string OR a `=js:$vars.<var>` expression whose backing global has
+    defaultValue == ENTITY."""
+    if not isinstance(value, str):
+        return None
+    if not value.startswith("=js:"):
+        return value
+    m = re.fullmatch(r"""=js:\s*["'](.+?)["']\s*""", value)
+    if m:
+        return m.group(1)
+    m = re.fullmatch(r"=js:\s*\$vars\.(\w+)\s*", value)
+    if m:
+        g = globals_by_id.get(m.group(1), {})
+        if g.get("defaultValue", g.get("default")) == ENTITY:
+            return ENTITY
+    return None
+
+
 def resolve_field(value, globals_by_id) -> str | None:
     """Return the literal string the _fieldName expression resolves to,
     or None if it can't be traced.
@@ -71,7 +90,7 @@ def main() -> int:
             detail = n.get("inputs", {}).get("detail", {})
             pp = detail.get("pathParameters") or {}
             body = detail.get("bodyParameters") or {}
-            if pp.get("entityName") != ENTITY:
+            if resolve_entity(pp.get("entityName"), globals_by_id) != ENTITY:
                 continue
             for suffix in REQUIRED:
                 if t.endswith(suffix):
@@ -103,8 +122,8 @@ def main() -> int:
             return 1
         multipart = (upload_node.get("inputs", {}).get("detail", {}) or {}).get("multipartParameters") or []
         upload_values = [p.get("value") for p in multipart if p.get("name") == "file"]
-        if not any(any(var in str(value) for var in reused_ids) for value in upload_values):
-            print(f"FAIL: {path} — upload multipart file is not bound to downloaded file variable: {upload_values}", file=sys.stderr)
+        if not any(any(var in str(value) for var in typed_file_ids) for value in upload_values):
+            print(f"FAIL: {path} — upload multipart file is not bound to any typed file variable: {upload_values} (typed file vars: {sorted(typed_file_ids)})", file=sys.stderr)
             return 1
         print(f"OK: {path} — 3 file activities on {ENTITY}/{FIELD}; typed file variable reused (raw values: {seen})")
         return 0

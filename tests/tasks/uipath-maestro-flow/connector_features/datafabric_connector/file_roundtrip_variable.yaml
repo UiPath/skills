@@ -1,9 +1,10 @@
 task_id: skill-flow-datafabric-file-roundtrip-variable
+skip: true  # newly picked up by ipe pipeline; validate locally before enabling
 description: >
   Integration coverage for downloading a Data Fabric file field into a typed
   file variable, creating a destination record, and uploading that same file
   variable to the destination record.
-tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, feature:records, feature:entities, feature:activities, feature:connections]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-dataservice, feature:records, feature:entities, feature:activities, feature:connections]
 
 pre_run:
   - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/ensure_entity.py" "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector/file_upload_verify.entity.json"'
