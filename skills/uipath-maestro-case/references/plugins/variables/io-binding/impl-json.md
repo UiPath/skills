@@ -104,224 +104,31 @@ for each string value V anywhere in caseplan.json:
 
 Resolution semantics are identical to whole-value `<-` (same name-triple and output-reference-ID algorithm), with two differences: the substitution is **bare** `vars.<outputReferenceId>` (the marker already sits inside `=js:`), and it happens in a global string pass rather than against a single input's `value`. Secondary-stage / adhoc scoping (reference any task across any stage) applies unchanged.
 
-After this pass and all bindings, run the end-of-Phase-3 validator. It performs the cross-reference checks below:
+After this pass and all bindings, Phase 3 exit validation begins. Read [I/O Binding Exit Validation](validation-guide.md) and run Checks 1–5 before entering Phase 4. Do not load that guide while ordinary binding or the Step 11.5 pass is still in progress.
 
 ### Check 1 — `=vars.X` reference resolution
 
-Verify every bound input has a non-empty `value`, and every `=vars.X` reference resolves to an existing entry in one of:
-- Any task `data.outputs[].id` (the resolver match key; mirrors `var` under skill convention)
-- Variables `inputOutputs[].id`
-- Variables `inputs[].id`
-
-Variables array path is top-level `variables.{inputOutputs,inputs}[].id`.
-
-> **Scan key:** match by `.id`, NOT `.var`. The runtime resolver matches on `Variable.id` (`VariablesService.findVariableByVariableId`). Bare self-declaring outputs commonly have `id === var`, but reassigned outputs can have a collision-safe `.id` whose `.var` points at a different Case variable. Custom `=` outputs resolve through their root companion's `.id` per the authoritative algorithm above.
-
-Also scan `=vars.X` references in:
-- Entry / exit condition expressions (stage and task)
-- Case-exit and trigger rule expressions
-- SLA expressions
-- `=js:` expressions anywhere they appear
-
-Same resolution rule applies — these are read-side consumers of the variable namespace.
+Compatibility route: at Phase 3 exit, run [Check 1](validation-guide.md#check-1--varsx-reference-resolution) against the complete runtime reference pool.
 
 ### Check 1.5 — Custom-output metadata expressions are canonical
 
-For every `custom: true` output, reject `value` or `source` beginning with `=metadata.`; emit `=js:metadata.<field>` in both properties instead.
+Compatibility route: run [Check 1.5](validation-guide.md#check-15--custom-output-metadata-expressions).
 
 ### Check 2 — Out-arg producer presence
 
-For every entry in top-level `variables.outputs[]` (formal Out-arg entries), the entry's `var` field is a POINTER to the variable slot that should hold the value at case end. Per the always-emit-companion rule, the companion in `variables.inputOutputs[]` is always present; its `default` field is empty when SDD didn't declare a Default.
-
-**The check:** can the Out-arg's slot be populated at runtime? Three populating mechanisms exist:
-
-1. **Companion default** — non-empty `default` field on the companion → always-populated fallback.
-2. **Extraction producer** — a task's `outputs: <field> -> <var>` row (extract response field into the Out-arg slot).
-3. **Assignment producer** — a task's `outputs: <var> = <expr>` row (`=` operator: set/compute/copy a literal or expression into the Out-arg slot).
-4. **Bare-name producer** — a task's `outputs: <var>` row where the bare name matches the Out-arg's var (camelCase of schema field name).
-
-If none of these exist → **pure orphan**, prompt the author.
-
-| Producer status | Validate time action |
-|---|---|
-| Companion has non-empty `default` | OK — Out-arg always has a value. |
-| At least one producer (extraction, assignment, or bare-name) exists in tasks.md AND its task is resolved (not Rule 17 placeholder) | OK — producer wires the slot when its task fires. |
-| Producer declared but its task is a Rule 17 placeholder (declared-but-unwirable) | **Silent WARN.** Log to `tasks/build-issues.md` under `## Open Items for User`. Rule 17 already prompted the author for this task. |
-| NO producer anywhere AND companion default empty | **AskUserQuestion** — pure orphan. 4 options below. |
-
-Pseudocode:
-
-```text
-for entry in root.outputs[]:
-  var = entry.var
-  case_var_row = tasks_md_row_for_out_arg(name=entry.name)
-  has_companion_default = (case_var_row.default not empty)
-
-  # Producer scan — three patterns. All operate on tasks.md `outputs:` lines:
-  has_extraction_producer  = exists in tasks.md any task's T-entry with an `outputs:` line containing `<field> -> <var>` (where var matches the Out-arg's var)
-  has_assignment_producer  = exists in tasks.md any task's T-entry with an `outputs:` line containing `<var> = <expression>` (where var matches the Out-arg's var)
-  has_bare_name_producer   = exists in tasks.md any task's T-entry with an `outputs:` line `- <name>` (bare, no operator) where camelCase(name) == var
-  has_any_producer         = has_extraction_producer || has_assignment_producer || has_bare_name_producer
-
-  producer_task_unresolved = the tasks.md-declared producer task is a Rule 17 placeholder (look up the task in caseplan.json by displayName; check `node.data.inputs` is empty `{}`)
-
-  if has_companion_default:
-      # Companion default guarantees a value; producer is optional bonus
-      OK
-  elif has_any_producer and producer_task_unresolved:
-      # Declared producer but task is unresolvable — Rule 17 already prompted; just log
-      LOG_OPEN_ITEM("Out-arg with declared but unresolvable producer — runtime returns empty until producer is wired")
-  elif not has_any_producer:
-      # Pure orphan — author never declared a producer AND no Default. Ask.
-      AskUserQuestion("pure orphan", options=(a, b, c, d))
-```
-
-**On AskUserQuestion ("pure orphan" branch):**
-
-```
-Out-argument "<name>" (id v<random8>, var <var>) has no value source:
-  SDD row Default: <"" (empty)>
-  Companion root.inputOutputs[].id="<var>": exists, default=""
-  Producing task in tasks.md (extraction or assignment): none found
-
-Pick one:
-  (a) Add producer task output — supply the producer task's **display name** as shown in tasks.md (e.g., `Send Slack Message`). If the named task doesn't exist, re-prompt. Skill appends `<field> -> <var>` to that task's Outputs.
-  (b) Add a Default value to the SDD Case Variables row — supply value inline (literal string).
-  (c) Recategorize as Variable (case-internal state) or remove the variable.
-  (d) Continue with best-effort emit (case builds; runtime returns empty string for this Out-arg; entry logged under "Open Items for User" in build-issues.md).
-```
-
-**Skill response per user pick:**
-
-- **(a)** Edit `tasks.md`: append `<field> -> <var-name>` as a new `outputs:` list item on the named task's T-entry (use the spec-derived field name if available, else an `<UNKNOWN>` placeholder). Re-run the Phase 1 dispatcher from the modified tasks.md, then retry Step 12.
-- **(b)** Edit `tasks.md`: set `default: "<value>"` on the Out-arg's T-entry. Re-run Phase 1 dispatcher, then retry Step 12.
-- **(c)** Prompt the user inline: `Recategorize as "Variable" or "Remove" the variable?` On `Variable`: edit `tasks.md` Case Variables row Category → Variable, re-run Phase 1 dispatcher, retry Step 12. On `Remove`: delete the row from `tasks.md`, re-run Phase 1 dispatcher, retry Step 12.
-- **(d)** Append the build-issues entry (template below) and continue to Phase 4. No re-run.
-
-Option (d) is the build-with-best escape for cases where the author intends to wire the producer later but wants to keep iterating now — equivalent to the silent-WARN treatment that declared-but-unresolvable producers (T20-style) get automatically.
-
-**Rationale for the split:** real-world authoring is iterative. When an author has already gone through a Rule 17 prompt for the producer task (T20-style), the skill should not pile a second prompt on top — that's the path the author already chose by picking "Skip". But when the author authored a *pure orphan* with no producer declared at all (T14-style — wait-for-timer with no aliasing wire AND no Default), there's no prior signal of intent; the AskUserQuestion is the right surface to ask "did you mean to forget this, or wire it now?" Option (d) preserves the build-with-best escape.
-
-**Build-issues entry template** (both branches log to this, only the AskUserQuestion branch ALSO prompts):
-
-```markdown
-## Open Items for User
-
-- **[Out-arg `<name>` has no value source]** — The Out-argument `<name>` is declared in `variables.outputs[]` but {no producer wired AND no Default}. Runtime will return empty string for this Out-argument unless one of:
-  - Add a `<field> -> <name>` row to a task's Outputs that produces this value (extraction)
-  - Add a `<name> = <expression>` row to a task's Outputs (assignment from literal / computed / variable reference)
-  - Add a Default value to the SDD Case Variables row
-  - Recategorize the variable as `Variable` or remove it
-```
-
-See [implementation.md § Step 12 — End-of-Phase-3 validator pass](../../../implementation.md) for invocation.
+Compatibility route: run [Check 2](validation-guide.md#check-2--out-arg-producer-presence) against declared and emitted task, trigger, and connector-rule producers.
 
 ### Check 3 — Type and descriptor fidelity
 
-**Input consumers.** Where a `=vars.X` reference resolves to a declaration with a different `type` than the consuming input expects, log WARNING. Proceed (string coercion is common and runtime-tolerant).
-
-**Extract outputs.** For every `->` row, re-resolve its full source path against the Step 0 schema using the algorithm above. Require the emitted output's `name` and `type` to equal the resolved name and leaf type. For a nested path, also require that the top-level parent was not separately auto-minted unless tasks.md contains a schema-discovered bare item for it. A mismatch is `ERROR`: correct the output from the resolved descriptor and re-run this check before Phase 4. Do not accept a passing `uip maestro case validate` as evidence here; structural validation does not compare a nested binding with its schema leaf.
+Compatibility route: run [Check 3](validation-guide.md#check-3--type-and-descriptor-fidelity) against each selected owner's current descriptor.
 
 ### Check 4 — No surviving `$xref` markers
 
-Scan every string value in `caseplan.json` for the literal token `$xref(`. The [Step 11.5 pass](#in-expression-marker-resolution-step-115) should have resolved them all; any survivor means its name-triple or output reference ID failed to resolve. This is the same class of failure as a Check 1 unresolved `=vars.X` — so it gets the **same interactive remediation**, NOT a silent ERROR. Never ship a marker to runtime (`vars.$xref(...)` throws — a method call on `vars`).
-
-**On AskUserQuestion** (present the outputs that DO exist on the named task as candidates — same diagnostic shape as a failed whole-value `<-`):
-
-```
-In-expression reference $xref('<stage>','<task>','<output>') does not resolve:
-  Stage  "<stage>":  <found | NOT FOUND>
-  Task   "<task>":   <found | NOT FOUND in that stage>
-  Output "<output>": NOT FOUND on task
-  Available outputs on "<task>": <name, name, ...>
-  Used in: <sink — e.g. entry condition on stage "Approve" | input "payload" on task "Notify">
-
-Pick one:
-  (a) Name the intended output — supply the correct output name (or full Stage / Task / output triple).
-  (b) Edit the SDD expression — the marker is one term in a larger =js: expression; the upstream output genuinely does not exist.
-  (c) Continue with best-effort emit — token left unsubstituted; case builds; the =js: expression throws at runtime until fixed.
-```
-
-**Skill response per pick:**
-
-- **(a)** Rewrite the marker's triple in place in `caseplan.json` with the corrected name(s), re-run the [Step 11.5](#in-expression-marker-resolution-step-115) resolution for that token, then re-scan. If it still fails, re-prompt.
-- **(b)** Edit the SDD expression as directed, re-run the Phase 1 dispatcher from the modified SDD, then retry Step 11.5 + this check.
-- **(c)** Leave the token unsubstituted, append the build-issues entry (template below), continue to Phase 4. No re-run.
-
-**Build-issues entry template:**
-
-```markdown
-## Open Items for User
-
-- **[Unresolved `$xref` marker]** — `vars.$xref('<stage>','<task>','<output>')` in <sink> did not resolve (output not found on the named task). The `=js:` expression throws at runtime until fixed. Correct the source output name in the SDD and rebuild.
-```
+Compatibility route: after Step 11.5, run [Check 4](validation-guide.md#check-4--no-surviving-xref-markers) over the whole artifact.
 
 ### Check 5 — Resolved-resource I/O completeness
 
-Verifies each resolved task's binding contract **covers** its resource's declared I/O — the build-side re-check of [sdd-generation-rules.md § Resolved-resource I/O completeness](../../../sdd-generation-rules.md#resolved-resource-io-completeness) (Approve-gate item 9 / Finalization step 19). Where Checks 1–4 verify that references which *exist* resolve, Check 5 verifies the *right set of references exists*: required inputs are not silently missing, and extract outputs name real fields.
-
-Read each resolved task's persisted contract from `tasks/registry-resolved.json` (per-input `name` + `required` flag, declared output-field list — written at §Resolve). **Skip** any task with no persisted contract (Rule 17 placeholder / `<UNRESOLVED>`) — same treatment as Check 2's unresolved-producer branch.
-
-```text
-# pseudocode — not executed. Realize via Read → reason → Write/Edit.
-for task in caseplan.json tasks where contract = registry_resolved[task].contract is present:
-    bound_inputs = { inp.name : inp.value for inp in task.data.inputs[] }
-    # (a) required-input coverage
-    for decl in contract.inputs where decl.required:
-        v = bound_inputs.get(decl.name)
-        if v is missing or v == "":            # no row, or row with empty value
-            ERROR → AskUserQuestion (unbound-required-input)
-    # (b) output-field fidelity
-    declared_out = set(contract.outputs[].name)
-    for out in task.data.outputs[]:            # extract rows: source = "=<path>"
-        leaf = top_level_segment(strip_leading_"=", out.source)   # strip envelope prefix: response. / Error. / data.
-        if leaf not in declared_out:
-            ERROR → AskUserQuestion (phantom-output-field)
-```
-
-An **upstream-output-fed** required input is covered like any other — its `value` is `=vars.<outputReferenceId>` (whole-value `<-`) or sits inside a `=js:` (resolved `$xref`); a non-empty `value` passes. Do NOT expect a §1.5 declaration for it.
-
-**On AskUserQuestion — unbound required input:**
-
-```
-Required input "<field>" on task "<task>" (resource "<resource>") is not bound:
-  Declared by the resource as required; no Inputs row with a value in the case plan.
-  Other required inputs on this task: <bound / unbound list>
-
-Pick one:
-  (a) Bind it — supply the source: a case variable, a literal, or an upstream task's output ("Stage"."Task".out). Skill writes the Inputs row and binds it.
-  (b) Mark <UNRESOLVED> — record a placeholder + a high review item; case builds, this input is runtime-null until wired.
-  (c) Continue with best-effort emit — leave it unbound; entry logged under Open Items; the job may fault at runtime.
-```
-
-**On AskUserQuestion — phantom output field:**
-
-```
-Output field "<field>" extracted by task "<task>" is not in resource "<resource>"'s declared outputs:
-  Available outputs on this resource: <name, name, ...>
-  Used in: outputs row "<field> -> <caseVar>"
-
-Pick one:
-  (a) Name the intended output — pick from the available list; skill rewrites the extract Field + re-resolves.
-  (b) Drop the extract row — the case does not consume this output.
-  (c) Continue with best-effort emit — left as-is; entry logged under Open Items; the extract resolves to runtime null.
-```
-
-**Skill response per pick:**
-
-- Unbound (a) — write the Inputs row to `tasks.md` + `caseplan.json`, run the Step 9.8 binding for that input, retry Check 5. (b) — set the input `value` to a placeholder and append a `high` review item (`rev_unbound_input_<task>_<field>`), continue. (c) — append the build-issues entry, continue. No re-run.
-- Phantom (a) — rewrite the output `source`/`Field` in `caseplan.json`, retry Check 5. (b) — delete the output row (and any now-orphaned `=vars.<caseVar>` consumer falls to Check 1). (c) — append the build-issues entry, continue.
-
-Check 5 honors the same **build-with-best** policy as Checks 1, 2, 4: option (c) appends a `## Open Items for User` entry and proceeds to Phase 4. Phase 4 `validate` stays green (a missing input / phantom extract is structurally valid); the runtime concern is surfaced for pre-publish review.
-
-**Build-issues entry templates:**
-
-```markdown
-## Open Items for User
-
-- **[Unbound required input]** — task "<task>" (resource "<resource>") input "<field>" is required but unbound; resolves to runtime null. Bind it in the SDD and rebuild.
-- **[Phantom output field]** — task "<task>" extracts "<field>", which resource "<resource>" does not emit; resolves to runtime null. Correct the output name in the SDD and rebuild.
-```
+Compatibility route: run [Check 5](validation-guide.md#check-5--resolved-resource-io-completeness) for every resolved owner and its current persisted contract.
 
 ## Connector Tasks
 
@@ -355,7 +162,7 @@ Two things must exist: output on Task A with a runtime-resolvable reference ID, 
 
 ## Error Handling
 
-All issues go to the shared issue list per [logging/impl-json.md](../../logging/impl-json.md). No fuzzy matching, no auto-creation, no retries.
+Ordinary binding issues go to the shared issue list per [logging/impl-json.md](../../logging/impl-json.md). No fuzzy matching or auto-creation.
 
 | Check | Severity | Action |
 |---|---|---|
@@ -363,15 +170,8 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Placeholder connector rule (no `rule.uipath.outputs[]`) | `SKIPPED` | Skip rule output bindings (nothing minted) |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
-| `$xref(...)` marker name-triple or output reference ID fails to resolve (Step 11.5 / Check 4) | `ERROR` | Leave token unsubstituted; AskUserQuestion (Check 4 above) — log unresolved triple + available outputs |
-| `=vars.X` not in any task `outputs[].id` or root `inputOutputs[].id` / `inputs[].id` | `ERROR` | Skip binding |
-| Out-arg formal entry has NO producer (no extraction, assignment, or bare-name match in any task outputs) AND companion has no `default` | `ERROR` | Log Out-arg pure-orphan issue (Check 2 above); AskUserQuestion |
-| Resolved resource's **required** input has no bound `value` in the case plan (Check 5) | `ERROR` | AskUserQuestion (unbound-required-input) — bind / `<UNRESOLVED>`+review-item / best-effort |
-| Extract output `Field` absent from resolved output contract (Check 5) | `ERROR` | AskUserQuestion (phantom-output-field) — re-point / drop row / best-effort |
-| Resolved task has no persisted contract (placeholder / `<UNRESOLVED>`) | `SKIPPED` | Skip Check 5 for that task |
-| Type mismatch (input vs variable) | `WARNING` | Proceed |
-| Extract output `name` / `type` differs from its resolved schema descriptor (Check 3) | `ERROR` | Correct from the exact resolved leaf; re-run Check 3 |
-| Nested extract also auto-mints its top-level parent without a separate schema-discovered bare item (Check 3) | `ERROR` | Remove the undeclared parent auto-mint; re-run Check 3 |
+
+Phase-exit severities, bounded retries, user choices, and Open Items for Checks 1–5 are owned only by [I/O Binding Exit Validation](validation-guide.md#remediation-decision-table).
 
 Example log entry (pseudocode — record in-reasoning, not via subprocess):
 
