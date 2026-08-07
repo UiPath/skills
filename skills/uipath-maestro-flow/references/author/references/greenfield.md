@@ -220,6 +220,15 @@ Then pick the first match down this ladder:
 
 Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../../SKILL.md#critical-rules-universal).
 
+### Document-extraction step — route it to IxP (runs even when full planning is skipped)
+
+Pulling **named fields out of documents** (PDFs, scans, receipts, invoices, contracts, forms) is a document-extraction step — its node is an **IxP node** (`uipath.ixp.*`). It's easy to miss because the fetch/post steps around it are ordinary nodes, but the extraction in between is its own node. **Always land a node for it — never leave it out:**
+
+- **Model published** → land the real `uipath.ixp.*` node (skeleton is fine; defer config to Open Questions).
+- **No model published** (`registry search "uipath.ixp"` → `Data: []`) → land a `core.logic.mock`.
+
+See [plugins/ixp/impl.md — Landing the node when you cannot fully configure it](plugins/ixp/impl.md#landing-the-node-when-you-cannot-fully-configure-it).
+
 **In-solution discovery (no login required):**
 
 ```bash
