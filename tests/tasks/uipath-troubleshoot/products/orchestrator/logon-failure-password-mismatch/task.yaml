@@ -50,10 +50,10 @@ reference:
 
 initial_prompt: |
   My InvoiceIngestor process has been faulting in Orchestrator
-  every time it runs since this morning — each job dies within a
+  every time it runs — each job dies within a
   second of starting. One thing that might be relevant: my AD admin rotated
-  the password for the UIPATH\USER1 service account yesterday
-  (2026-05-11). Can you investigate?
+  the password for the UIPATH\USER1 service account on
+  2026-05-11. Can you investigate?
 
 success_criteria:
   - type: skill_triggered
@@ -91,7 +91,7 @@ simulation:
     its investigation and trust its expertise. You only have the
     information you wrote in your initial report — no extra data.
     The only AD fact you know is that an AD admin rotated the
-    password for UIPATH\USER1 yesterday (2026-05-11). You do not
+    password for UIPATH\USER1 on 2026-05-11. You do not
     know the new password, you do not have AD console access, and
     you cannot run PowerShell on a domain controller.
   goal: |
@@ -102,7 +102,7 @@ simulation:
   constraints:
     - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, identity, ad, system-activities, activity-packages, ui-automation), always answer Yes — pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
-    - "If the agent asks for the AD PasswordLastSet timestamp, repeat: the AD admin rotated the password yesterday (2026-05-11) — that is all you know."
+    - "If the agent asks for the AD PasswordLastSet timestamp, repeat: the AD admin rotated the password on 2026-05-11 — that is all you know."
     - "If the agent asks whether the account is locked, say you cannot check AD directly — point them at the Robot service logs and Orchestrator data."
     - "If the agent asks where the failing project's source or code is, tell it the project source is available in the current working directory."
     - "Never invent or provide new factual data — you don't know any details beyond your initial report, other than the project-source location noted above."

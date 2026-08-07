@@ -51,7 +51,7 @@ initial_prompt: |
   My Orchestrator job just faulted with
   `System.NullReferenceException: Object reference not set to an instance of an object.`
   Pinned job key: ee111111-cccc-dddd-eeee-ffffaaaabbbb. It's a Write
-  Range activity. Nothing in the workflow changed since yesterday's
+  Range activity. Nothing in the workflow changed since the previous
   successful run — what's wrong?
 
 success_criteria:

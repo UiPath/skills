@@ -41,9 +41,10 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My ClassicClaimsSubmit job in folder Finance finished Successful last night,
-  but it never clicked the Submit button in our Java claims app — the claim
-  stayed in Draft. There was no error at all. Why did it silently do nothing?
+  My ClassicClaimsSubmit job in folder Finance finished Successful on its
+  most recent run, but it never clicked the Submit button in our Java claims
+  app — the claim stayed in Draft. There was no error at all. Why did it
+  silently do nothing?
 
 success_criteria:
   - type: skill_triggered
