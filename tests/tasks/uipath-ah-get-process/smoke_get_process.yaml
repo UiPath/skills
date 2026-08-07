@@ -74,18 +74,22 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # Match the RESOURCE, not the fully-expanded URL: agents commonly build the
+  # request with shell variables (e.g. `curl "$API/automations/$ID"`), so the
+  # literal `.../openapi/automations/12345` substring may never appear in the
+  # command text even though the correct call was made.
   - type: command_executed
-    description: "Agent hit the automations read endpoint — fetch-by-id (/automations/12345) or a /automations?search=… lookup"
+    description: "Agent issued a read against the automations resource (curl to .../automations/…)"
     tool_name: "Bash"
-    command_pattern: 'automationhub_/api/v1/openapi/automations(/12345|\?)'
+    command_pattern: '(?i)automations'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched the process documents via GET /automations/12345/documents (best-effort: the fixture tenant is unreachable, so an agent may stop after the first failed call)"
+    description: "Agent fetched the process documents (…/automations/{id}/documents) — best-effort: the fixture tenant is unreachable, so an agent may stop after the first failed call"
     tool_name: "Bash"
-    command_pattern: 'automationhub_/api/v1/openapi/automations/12345/documents'
+    command_pattern: '(?i)/documents'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
