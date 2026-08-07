@@ -14,8 +14,9 @@ forwards to ``uip track``. Covers:
   ``Stop``/``StopFailure``→``completion``;
 * the lifecycle fields ``session_source`` / ``reason`` / ``outcome`` and
   ``schemaVersion``;
-* the v2 key set — canonical ``session_id`` (not the v1 ``sessionId``) and no
-  ``environment`` / ``baseUrl`` (the CLI stamps its own base dimensions);
+* the v3 key set — no session id in any spelling (the CLI owns the session and
+  puts it on the native ``ai.session.id`` tag) and no ``environment`` /
+  ``baseUrl`` (the CLI stamps its own base dimensions);
 * Codex-shaped payloads — Codex fires ``SessionStart``/``Stop`` under the same
   names with a matching envelope, so mapping and fields work unchanged and
   Codex-only extras are never forwarded;
@@ -90,11 +91,10 @@ def test_session_start_maps_and_carries_source():
     )
     assert event["eventName"] == "session-start"
     assert event["session_source"] == "startup"
-    assert event["session_id"] == "sess-1"
     # The session's main model (envelope `model`) rides as agent_model —
     # full slug, not family-collapsed (UiPath/cli#2785).
     assert event["agent_model"] == "claude-sonnet-5"
-    assert event["schemaVersion"] == 2
+    assert event["schemaVersion"] == 3
 
 
 def test_session_end_carries_reason():
@@ -194,10 +194,13 @@ def test_post_tool_use_uipath_skill_maps_to_tool_use():
     assert event["outcome"] == "ok"
 
 
-def test_v2_key_set_has_no_env_fields_or_legacy_session_id():
-    """Schema v2 drops environment/baseUrl (the CLI stamps fresh
-    environment/base_url/region base dimensions itself, UiPath/cli#2806) and
-    sends only the canonical session_id spelling (UiPath/cli#2800)."""
+def test_v3_key_set_has_no_env_fields_and_no_session_id():
+    """Schema v3 sends no session id in any spelling: the CLI resolves one per
+    process from UIPATH_SESSION_ID (exported by set-session-env) and puts it on
+    App Insights' native ai.session.id tag, and `uip track` drops a payload
+    session id (UiPath/cli#3431). v2 already dropped environment/baseUrl — the
+    CLI stamps fresh environment/base_url/region dimensions itself
+    (UiPath/cli#2806)."""
     event = run_hook(
         {
             "hook_event_name": "SessionStart",
@@ -207,8 +210,11 @@ def test_v2_key_set_has_no_env_fields_or_legacy_session_id():
     )
     assert "environment" not in event
     assert "baseUrl" not in event
+    assert "session_id" not in event
     assert "sessionId" not in event
     assert "sessionSource" not in event
+    # The payload session id must not survive under any key.
+    assert "sess-1" not in event.values()
 
 
 # ── Autopilot / Delegate tool-name tests ───────────────────────────────────
@@ -367,8 +373,8 @@ def run_hook(payload, *, telemetry_disabled="0", expect_drop=False):
             "CLAUDE_PLUGIN_ROOT": str(REPO_ROOT),
             "CAPTURE_FILE": str(capture),
         }
-        # A UIPATH_SESSION_ID inherited from the CI env would override the
-        # payload session id — keep the hook's own behavior under test.
+        # The hook sends no session id (schema v3) and reads no session env;
+        # drop an inherited one so nothing about it can reach the payload.
         env.pop("UIPATH_SESSION_ID", None)
 
         subprocess.run(

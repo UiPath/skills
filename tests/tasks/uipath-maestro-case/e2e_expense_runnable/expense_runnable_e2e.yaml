@@ -61,7 +61,7 @@ initial_prompt: |
     `ProcurementProcess`, `ProjectEuler` → `RPA Workflow`, and `CaseTest` →
     `Maestro Case`. Do not substitute an SDD alias for a deployed name.
   - Treat all hard stops after the SDD as pre-approved, including Phase 1
-    planning approval, Phase 2 publish-for-review, and Phase 5 debug. Choose the
+    planning approval, Phase 2 publish-for-review, and Phase 6 debug. Choose the
     continue / skip-publish path and keep going.
   - Do NOT call AskUserQuestion — it is not available in this harness.
   - Do NOT run `uip maestro case debug` yourself — the harness runs it.

@@ -18,7 +18,7 @@ concurrency:
 jobs:
   claude-review:
     name: Claude Code Review
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     timeout-minutes: 15
 
     # Only run on non-fork PRs (secrets required), or on @claude mentions from
@@ -41,14 +41,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
           fetch-depth: 0
 
       - name: Claude Code Action
         # Pinned to a full commit SHA (not @v1) so a moved tag cannot run
         # untrusted action code with our token/secrets. SHA = v1.0.160.
-        uses: anthropics/claude-code-action@4633baf5267540f3f8cb58b684f79901d564c280 # v1.0.160
+        uses: anthropics/claude-code-action@4633baf5267540f3f8cb58b684f79901d564c280  # v1.0.160
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}

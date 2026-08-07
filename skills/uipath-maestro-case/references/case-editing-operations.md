@@ -130,7 +130,8 @@ Mapping T-entries from `tasks.md` to generated IDs:
   "T02": { "kind": "trigger", "id": "trigger_xY2mNp" },
   "T04": { "kind": "stage",   "id": "Stage_aB3kL9" },
   "T05": { "kind": "stage",   "id": "Stage_cD4mNt" },
-  "T10": { "kind": "task",    "id": "t8GQTYo8O", "stageId": "Stage_aB3kL9" }
+  "T10": { "kind": "task",    "id": "t8GQTYo8O", "stageId": "Stage_aB3kL9" },
+  "T12": { "kind": "condition", "id": "Condition_f7KqR2", "ruleId": "Rule_jdBFrJ", "scope": "task-entry", "targetId": "t8GQTYo8O", "stageId": "Stage_aB3kL9" }
 }
 ```
 
@@ -217,7 +218,7 @@ Procedure per section:
 
 **Whole-file Write outside T01.** Permitted only at section boundaries for sections with ≥10 T-entries, per the procedure above. Forbidden mid-section (between T-entries within the same section) — that bypasses the Read snapshot and risks field drops.
 
-**Cap single Write output at ~15K tokens / ~40KB.** When a section's combined output would exceed this, do NOT collapse into one Write — split by phase: Phase 2 emits the skeleton (root + nodes + variables, `edges` stays `[]`, empty `data` on tasks); Phase 3 then fills `data.context` / `data.inputs` / `data.outputs` / conditions / SLA via per-section Edits onto the already-populated nodes. A single Write turn beyond ~15K out tok pays ~150s inference latency and concentrates field-drop risk; the Phase 2 → Phase 3 split spreads the same work across smaller turns with intermediate validate gates. Concretely, for a case with ≥40 tasks or ≥8 stages: never emit the full populated caseplan.json in one Write — always Phase 2 skeleton (small Write) → Phase 3 fill (per-section Edits on populated nodes).
+**Cap single Write output at ~15K tokens / ~40KB.** When a section's combined output would exceed this, do NOT collapse into one Write — preserve the per-section cadence: Phase 2 writes root, nodes, variables, task shapes, SLA/escalations, and conditions (connector-backed rules use the canonical stub); Phase 3 fills connector context/input/output and other task values, then upgrades resolved connector-rule stubs. A single Write turn beyond ~15K out tok pays ~150s inference latency and concentrates field-drop risk. For a case with ≥40 tasks or ≥8 stages, never emit the fully populated `caseplan.json` in one Write — use the Phase 2 sections followed by Phase 3 detail Edits.
 
 **Forbidden: build-assembler helper scripts.** Writing `/tmp/build-caseplan.js`, `/tmp/gen-tasks.py`, or any script that assembles a skill artifact and pipes/writes it to disk is a Rule 13 violation — regardless of `/tmp` placement, "mechanical copy" framing, or "avoid Read+Write churn" rationale. The script-write + script-run + script-output-to-file pattern bypasses the tool-call audit trail Rule 13 protects. If the artifact is too large for a single Write turn, apply the ~15K-token Write cap and Phase 2 → Phase 3 split above. There is no helper-script escape hatch.
 
@@ -494,7 +495,7 @@ On failure: fix the reported issue (usually a missing field, malformed ID, or or
 - **Do NOT write helper scripts (`.py`, `.js`, `.sh`) that open / parse / modify / save JSON files.** Even one-shot scripts are forbidden — the agent is the processor, Read/Write/Edit are the only I/O primitives.
 - **Do NOT hand-edit IDs with human-readable patterns** (e.g., `my_stage_1`). The frontend's `generateNextId` expects CLI's format.
 - **Do NOT emit node-level layout fields** (`position`, `style`, `measured`, `width`, `height`, `zIndex`) — these belong in top-level `layout`, not on the node (Rule 18).
-- **Do NOT put `entryConditions`/`exitConditions` on primary Stages.** Only secondary stages (`data.stageType: "secondary"`) have them.
+- **Do NOT initialize empty `entryConditions`/`exitConditions` arrays on primary Stages.** The condition plugins add authored arrays in Step 10; secondary stages (`data.stageType: "secondary"`) initialize both arrays when created.
 - **Do NOT auto-inject a task `entryCondition` at task-creation time based on task type.** Entry conditions come from the SDD via the task-entry-conditions plugin (Step 10), uniformly across task types. Injecting one early duplicates the Step 10 write and corrupts `displayName` indexing.
 - **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → reason → Edit per the per-section batch contract.
 - **Do NOT run validation after every single Edit.** Validate at section boundaries, not per-T-entry.

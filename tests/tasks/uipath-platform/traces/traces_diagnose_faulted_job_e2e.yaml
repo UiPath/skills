@@ -1,0 +1,77 @@
+task_id: skill-platform-traces-diagnose-faulted-job
+description: >
+  E2E test: standalone diagnosis of a run the agent did not start. Both existing
+  traces e2e tasks launch a healthy job and then read its spans, so every
+  diagnose-labelled capability in this slice is reached only through an
+  operate-shaped path. Here the job has already faulted, the handover leaves only
+  a job key on disk, and the agent must reach the failing span through the trace
+  surface alone — starting a fresh job is graded as a failure. Verified against
+  raw `uip traces spans get` output: the span ID the agent reports must exist in
+  that payload and carry fault evidence, so an invented ID cannot pass.
+
+  FIXTURE REQUIRED — not yet provisioned. Needs a pre-faulted Agent-type job on
+  the tenant, exported to the runner as E2E_FAULTED_JOB_KEY (plus
+  E2E_FAULTED_FOLDER_PATH when it is not in Shared/uipath-platform); pre_run
+  inherits the orchestrator environment, so no experiment passthrough entry is
+  needed. Without the variable, pre_run exits with FIXTURE NOT PROVISIONED rather
+  than scoring the agent.
+tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover, traces]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+run_limits:
+  expected_turns: 18
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/traces/seed_faulted_incident.py"
+    timeout: 60
+
+initial_prompt: |
+  A scheduled agent run failed overnight and nobody knows why. The on-call
+  handover left the job details in `incident.json` — that is everything we have.
+  The job is long finished; do not start another one.
+
+  Work out what went wrong inside the agent's execution: which step failed, and
+  what the failure was. Save the raw span data your diagnosis rests on to
+  `spans.json`, and put the ID of the span that failed in `failing_span.txt`.
+
+  Do NOT ask for approval, confirmation, or feedback.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent diagnosed the existing run instead of starting a fresh job"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+jobs\s+start'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pulled the span tree for the faulted run"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get(\s+[0-9a-fA-F][0-9a-fA-F-]{7,}|[\s\S]*--job-key)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent triaged the job itself before or alongside the trace surface"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+jobs\s+(get|logs|history|traces)\s'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Raw span payload the diagnosis rests on was captured"
+    path: "spans.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Reported span exists in the real span payload and carries fault evidence"
+    command: "python3 $TASK_DIR/check_traces_diagnose_e2e.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

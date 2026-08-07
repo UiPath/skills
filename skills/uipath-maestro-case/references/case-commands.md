@@ -133,15 +133,25 @@ Validate a case management JSON file against case management rules.
 
 ```bash
 uip maestro case validate <file> --output json
+uip maestro case validate <file> --skeleton-v2 --output json
 uip maestro case validate <file> --skeleton --output json
 ```
 
 | Flag | Description |
 |------|-------------|
 | `<file>` | **(required)** Path to the case management JSON file |
-| `--skeleton` | Skeleton profile — runs structural checks only (nodes, edges, identity, types, topology). Skips tasks, SLAs, escalations, and entry/exit rules. Use during skeleton-phase authoring before tasks/conditions/SLA are wired. |
+| `--skeleton-v2` | Preferred Phase 2 preview profile: structure plus entry/exit rules, SLA, and escalation, while task values and connector schemas are still incomplete. Availability depends on the installed CLI. |
+| `--skeleton` | Legacy structural profile. Skips tasks, SLAs, escalations, and entry/exit rules. Used only as the Phase 2 fallback when `--skeleton-v2` is unavailable. |
 
 Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported inline.
+
+### Phase 2 profile probe
+
+1. Run `validate ... --skeleton-v2 --output json`.
+2. Only when the parser response names `--skeleton-v2` as unknown or unsupported (typically `ErrorCode: "invalid_argument"` and exit code 3), re-run once with `--skeleton`. Exit code 3 without that flag-specific message is not sufficient.
+3. Any genuine v2 validation result, including case validation errors, proves the profile ran. Report those findings; do not mask them with the legacy fallback.
+
+Always name the selected profile in the Phase 2 summary. A legacy `--skeleton` fallback checks structure only, so conditions/SLA remain covered by authoritative full validation in Phase 4.
 
 ---
 

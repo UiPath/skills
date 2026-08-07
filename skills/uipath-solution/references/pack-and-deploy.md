@@ -68,7 +68,7 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | `--version <version>` | Set the package version | `1.0.0` |
 | `--nuget-sources-config-path <path>` | Local `NuGet.config` that sets the package sources used for resolution | -- |
 
-The output is a `.zip` file named `<name>.<version>.zip` written under `<output-path>/` (e.g., `MySolution.2.0.0.zip`). Run `solution resources refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
+The output is a `.zip` file named `<name>_<version>.zip` — **underscore between name and version, not a dot** — written under `<output-path>/` (e.g., `MySolution_2.0.0.zip`). Don't guess the filename: read it from the command's `Data.Packages` field, or list `<output-path>/`. Run `solution resources refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
 **Controlling package sources.** In offline or air-gapped environments, or when packages must be resolved from specific feeds, pass `--nuget-sources-config-path <path>` pointing at a local `NuGet.config`. Both `pack` and `restore` accept the flag; the sources declared in that file determine where each project's dependencies are resolved from, giving you precise control over feed selection.
 
@@ -77,10 +77,10 @@ The output is a `.zip` file named `<name>.<version>.zip` written under `<output-
 Upload the packed .zip so it appears in the UiPath solution feed:
 
 ```bash
-uip solution publish ./output/MySolution.2.0.0.zip --output json
+uip solution publish ./output/MySolution_2.0.0.zip --output json
 
 # Target a specific tenant
-uip solution publish ./output/MySolution.2.0.0.zip --tenant "Production" --output json
+uip solution publish ./output/MySolution_2.0.0.zip --tenant "Production" --output json
 ```
 
 After publishing, the package is visible via `uip solution packages list` and available for deployment.
@@ -270,7 +270,7 @@ jobs:
       - run: uip login --client-id "${{ secrets.UIPATH_CLIENT_ID }}" --client-secret "${{ secrets.UIPATH_CLIENT_SECRET }}" --tenant "${{ secrets.UIPATH_TENANT }}" --output json
       - run: uip solution restore ./MySolution --output json   # optional: fail fast on a missing feed before pack
       - run: uip solution pack ./MySolution ./output --version "1.0.${{ github.run_number }}" --output json
-      - run: uip solution publish ./output/MySolution.*.zip --output json
+      - run: uip solution publish ./output/MySolution_*.zip --output json
       - run: uip solution deploy run -n "MySolution-${{ github.run_number }}" --package-name "MySolution" --package-version "1.0.${{ github.run_number }}" --folder-name "MySolution" --config-file deploy-config.json --output json
 ```
 
@@ -285,13 +285,13 @@ uip solution pack ./MySolution ./output --version "1.2.0" --output json
 
 # Staging
 uip login tenant set "Staging" --output json
-uip solution publish ./output/MySolution.1.2.0.zip --output json
+uip solution publish ./output/MySolution_1.2.0.zip --output json
 uip solution deploy run -n "MySolution-Staging" --package-name "MySolution" --package-version "1.2.0" \
   --folder-name "MySolution" --config-file staging-config.json --output json
 
 # Production (after validation)
 uip login tenant set "Production" --output json
-uip solution publish ./output/MySolution.1.2.0.zip --output json
+uip solution publish ./output/MySolution_1.2.0.zip --output json
 uip solution deploy run -n "MySolution-Prod" --package-name "MySolution" --package-version "1.2.0" \
   --folder-name "MySolution" --config-file production-config.json --output json
 ```

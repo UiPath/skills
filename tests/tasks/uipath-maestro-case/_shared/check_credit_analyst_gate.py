@@ -40,14 +40,14 @@ def has_credit_analyst_gate(text: str) -> bool:
     patterns = (
         (
             re.compile(
-                rf"credit\s+analyst(?P<between>.{{0,160}}?){HIGH_SIDE}",
+                rf"credit\s*analyst(?P<between>.{{0,160}}?){HIGH_SIDE}",
                 re.IGNORECASE,
             ),
             False,
         ),
         (
             re.compile(
-                rf"{HIGH_SIDE}(?P<between>.{{0,160}}?)credit\s+analyst",
+                rf"{HIGH_SIDE}(?P<between>.{{0,160}}?)credit\s*analyst",
                 re.IGNORECASE,
             ),
             True,

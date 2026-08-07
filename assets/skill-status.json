@@ -151,7 +151,7 @@
       "last_synced": null
     },
     "uipath-platform": {
-      "status": "preview",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null
@@ -175,7 +175,7 @@
       "last_synced": null
     },
     "uipath-rpa": {
-      "status": "preview",
+      "status": "stable",
       "confluence": {
         "page_id": null,
         "url": null
