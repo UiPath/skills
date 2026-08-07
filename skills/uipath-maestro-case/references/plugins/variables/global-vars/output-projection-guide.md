@@ -8,12 +8,13 @@ The selected task or condition plugin remains the owner of its persisted output 
 
 | Owner | Output array | Descriptor source | Output `elementId` |
 |---|---|---|---|
-| Non-connector task | `task.data.outputs[]` | That task owner's current Step 0 `tasks describe` result | `<stageId>-<taskId>` for schema outputs and `->`; task `=` uses `root` |
+| Registry-backed non-connector task | `task.data.outputs[]` | Owner's current Step 0 `tasks describe --output json`; when that owner permits and describe is unavailable, its planning-captured `tasks.md` schema; if neither exists, that owner's placeholder/fallback | `<stageId>-<taskId>` for schema outputs and `->`; task `=` uses `root` |
+| Locally resolved agent/API sibling, existing or Rule-17-built | `task.data.outputs[]` | Case-preserving on-disk `entry-points.json` at `entryPoints[0].output.properties`. For API, preserve owner fallbacks: `output.schema.document.properties` when flat properties are absent, then the `Workflow.json` root output schema when entry-point output is null. Never call tenant `tasks describe`; if the local contract chain is unavailable, follow that owner's fallback. | `<stageId>-<taskId>` for schema outputs and `->`; task `=` uses `root` |
 | Connector task | `task.data.outputs[]` | The selected connector owner's persisted `case spec --input-details` CaseShape outputs | `<stageId>-<taskId>` for schema outputs and `->`; task `=` uses `root` |
 | Stage-entry, stage-exit, or task-entry connector rule | `rule.uipath.outputs[]` | The selected condition/connector owner's persisted spec outputs | `<stageId>-<ruleId>` for every retained/projected rule output |
 | Case-exit connector rule | `rule.uipath.outputs[]` under `metadata.caseExitRules[]` | The selected condition/connector owner's persisted spec outputs | `root-<ruleId>` for every retained/projected rule output |
 
-The owner invokes this dispatch only after it has emitted/resolved its current descriptor-backed outputs and before its root-binding step. Do not reconstruct connector envelopes or replace owner-specific fields. A placeholder task with `data: {}` emits nothing. A connector-rule stub with absent or empty `uipath.outputs[]` is `SKIPPED`; it contributes no projection or companion until its connector resolves.
+The selected owner invokes this dispatch at its canonical output-binding hook, after it has emitted/resolved its current descriptor-backed outputs. Preserve each task owner's current ordering. Only connector-rule dispatch is specifically before that rule owner's root-binding step. Do not reconstruct connector envelopes or replace owner-specific fields. A placeholder task with `data: {}` emits nothing. A connector-rule stub with absent or empty `uipath.outputs[]` is `SKIPPED`; it contributes no projection or companion until its connector resolves.
 
 ## Descriptor resolution and bare outputs
 
@@ -24,7 +25,7 @@ For each explicit `<source-path> -> <case-var>` row, resolve the path against th
 3. Emit the leaf display name when present, otherwise its exact final segment. Copy its `type` and type-refining attributes such as `options` verbatim. Never inherit a parent object's `body`, `jsonSchema`, `options`, or type onto a scalar leaf.
 4. If a segment is missing, log `ERROR` and skip that binding; never fall back to the last parent.
 
-An explicit operator is dispatched before comparing names. A bare schema-discovered item has no SDD operator and retains the ordinary auto-mint shape: `{name, type, id, var: id, value: id, source: <descriptor source>, target: "=<id>", elementId}` with no `originalVar`. The same shape is the fallback for an unreferenced top-level descriptor output. An explicit nested `->` consumes its top-level parent; do not also auto-mint that parent unless `tasks.md` contains a separate schema-discovered bare item. This prevents a nested leaf projection from creating an unrelated parent output.
+An explicit operator is dispatched before comparing names. A bare schema-discovered item has no SDD operator and retains the ordinary auto-mint shape: `{name, type, id, var: id, value: id, source: <descriptor source>, target: "=<id>", elementId}` with no `originalVar`. Copy every type-refining attribute from that item's own descriptor — especially `options` — verbatim. The same shape and fidelity rule apply to every unreferenced top-level fallback and to bare siblings in a mixed output set where another output uses `->` or `=`. An explicit nested `->` consumes its top-level parent; do not also auto-mint that parent unless `tasks.md` contains a separate schema-discovered bare item. This prevents a nested leaf projection from creating an unrelated parent output. Computed/literal `=` custom assignments never inherit descriptor attributes.
 
 ## Extract reassignment
 
@@ -40,7 +41,7 @@ For `<source-path> -> <case-var>`, the target Case variable must already exist. 
 
 Keep the SDD left side verbatim after the `=` prefix. `type` is required. `originalVar` is load-bearing: it mirrors `id`, marks reassignment, and prevents frontend root mirroring from replacing or duplicating the existing companion. Copy other refining fields from the resolved descriptor only.
 
-The global-variable owner emits or preserves the target companion in top-level `variables.inputOutputs[]` with `id: <target Case-variable id>`, `elementId: "root"`, and `custom: true`; the task/rule output points to it through `var`/`value`. Out arguments always have that companion, even without a Default.
+The task/rule output points through `var`/`value` to the canonical target companion in top-level `variables.inputOutputs[]`. A `Category=Variable` companion has `elementId: "root"` and `custom: true`. A canonical Out-argument companion is also always present, even without a Default, but omits `custom` exactly as the [Out-argument owner](impl-json.md#out-argument) specifies. Preserve the target category's shape; never convert an argument companion into a custom Variable.
 
 ### Equal-name controlled alias
 
@@ -50,6 +51,10 @@ The global-variable owner emits or preserves the target companion in top-level `
 - After a real unrelated collision, suffix only the independently owned source slot: `id`, `originalVar`, and `target` become `greeting2`/`=greeting2`; `var`, `value`, and the companion remain `greeting`.
 
 Never suffix the Case-variable pointer or companion. Apply the same rule to task and connector-rule outputs.
+
+### Connector-rule runtime order
+
+The connector-rule gate evaluates before that same rule's output extract populates its Case variable. Never make a rule's gate depend on a value extracted by that rule; move the Case-state gate to a downstream stage-entry or task-entry condition, where the extract is already available.
 
 ## Custom assignment
 

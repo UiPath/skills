@@ -265,7 +265,7 @@ SDD row: `Category=Out`. **Companion is ALWAYS emitted at write time** (per FE c
 | empty | yes | Producer task fires → writes to `vars.<name>` → caller gets that value at case end. If producer fails to fire, caller gets `""` (the companion's empty default). |
 | present | yes | Producer fires → overwrites companion default. If producer skipped, companion default returned. |
 | present | no | Companion default always returned at case end. |
-| empty | no | **Pure orphan** — Out-arg producer-presence validator AskUserQuestion at end of Phase 3 (see [`io-binding/impl-json.md` § Check 2](../io-binding/impl-json.md)). Author picks: (a) add producer, (b) add Default, (c) recategorize, (d) continue with best-effort emit. |
+| empty | no | **Pure orphan** — Out-arg producer-presence validator AskUserQuestion at end of Phase 3 (see [I/O Binding Exit Validation § Check 2](../io-binding/validation-guide.md#check-2--out-arg-producer-presence)). Author picks: (a) add producer, (b) add Default, (c) recategorize, (d) continue with best-effort emit. |
 
 #### Shape
 
