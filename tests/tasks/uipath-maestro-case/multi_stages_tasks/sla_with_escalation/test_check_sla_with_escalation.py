@@ -1,6 +1,11 @@
 """Regression tests for the exact conditional-SLA expression matcher."""
 
-from check_sla_with_escalation import _matches_priority_expression
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from check_sla_with_escalation import _matches_priority_expression  # noqa: E402
 
 
 def test_priority_expression_accepts_only_the_requested_equality():

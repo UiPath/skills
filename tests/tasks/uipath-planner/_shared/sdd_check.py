@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
-"""Mechanical check on a Phase-0 ``sdd.md`` (markdown only).
+"""Mechanical check on a case-design ``sdd.md`` (markdown only).
 
-Phase 0 stops at the approved ``sdd.md`` — no caseplan exists yet — so these
-checks parse the markdown directly to confirm the SDD is sound enough to
-*deliver downstream* (Phase 1 trusts it verbatim). Domain sense is graded
-separately by the ``llm_judge`` criterion; this script is the deterministic
-"rules and mappings" half.
+Case design (the uipath-planner Case Design Lane) stops at the approved
+``sdd.md`` — no caseplan exists yet — so these checks parse the markdown
+directly to confirm the SDD is sound enough to *deliver downstream* (the
+build's planning pass trusts it verbatim). Domain sense is graded separately
+by the ``llm_judge`` criterion; this script is the deterministic "rules and
+mappings" half.
+
+NOTE: this file is deliberately kept byte-identical between
+``tests/tasks/uipath-maestro-case/_shared/`` and
+``tests/tasks/uipath-planner/_shared/`` (per-suite _shared scoping; guarded by
+``test_shared_twins.py``). Apply any change to both copies.
 
 Checks (domain-agnostic):
   0. Template shape — the document is a full SDD template render, not a prose
