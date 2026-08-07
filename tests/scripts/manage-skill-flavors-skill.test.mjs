@@ -94,4 +94,12 @@ test("contributor guidance documents the full-catalog Node flavor contract", () 
   );
   assert.match(flavorGuidance, /do not replace a complete shared table/i);
   assert.match(authoringRules, /inspect the matching sparse override/i);
+  assert.match(
+    source,
+    /review every new or materially changed canonical skill against every existing flavor/i,
+  );
+  assert.match(
+    source,
+    /update or add the smallest necessary sparse override wherever the canonical guidance is not correct for that flavor/i,
+  );
 });
