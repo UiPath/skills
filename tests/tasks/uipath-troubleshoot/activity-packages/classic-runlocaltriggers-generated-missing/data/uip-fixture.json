@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "7e2a9c14-3b58-4d6f-a091-5c8e2f1b7d63",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"Message\": \"OrderEntryAssistant execution error: System.Exception: The invoked workflow could not be loaded. A referenced workflow file was not found in the running package.\\n   at UiPath.Studio.LocalTriggers.GeneratedWorkflowLoader.Load(String path)\\n   at UiPath.Core.Activities.RunLocalTriggers.Execute(NativeActivityContext context)\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivity(...)\",\r\n      \"TimeStamp\": \"2026-07-21T14:02:13.520Z\",\r\n      \"RobotName\": \"aturner\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"OrderEntryAssistant\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 100,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "7e2a9c14-3b58-4d6f-a091-5c8e2f1b7d63"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"7e2a9c14-3b58-4d6f-a091-5c8e2f1b7d63\",\r\n    \"StartTime\": \"2026-07-21T14:02:11.310Z\",\r\n    \"EndTime\": \"2026-07-21T14:02:13.640Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"7e2a9c14-3b58-4d6f-a091-5c8e2f1b7d63\",\r\n    \"Info\": \"Job faulted at startup while starting local triggers.\",\r\n    \"CreationTime\": \"2026-07-21T14:02:10.980Z\",\r\n    \"ReleaseName\": \"OrderEntryAssistant\",\r\n    \"Type\": \"Attended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Attended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 61044188,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 771204,\r\n    \"FolderKey\": \"d8f1a3c5-2b64-4e90-a1f5-7c9e0d3b6a42\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"CONTOSO\\\\aturner\",\r\n    \"OrchestratorUserIdentity\": \"aturner@contoso.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-07-21T14:02:13.640Z\",\r\n    \"Id\": 91044501\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "7e2a9c14-3b58-4d6f-a091-5c8e2f1b7d63"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"OrderEntryAssistant execution started\",\r\n      \"TimeStamp\": \"2026-07-21T14:02:11.520Z\",\r\n      \"RobotName\": \"aturner\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"OrderEntryAssistant\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Log assistant ready execution started\",\r\n      \"TimeStamp\": \"2026-07-21T14:02:12.040Z\",\r\n      \"RobotName\": \"aturner\",\r\n      \"ProcessName\": \"OrderEntryAssistant\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"Message\": \"Order Entry Assistant ready\",\r\n      \"TimeStamp\": \"2026-07-21T14:02:12.120Z\",\r\n      \"RobotName\": \"aturner\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ProcessName\": \"OrderEntryAssistant\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Run Local Triggers execution started\",\r\n      \"TimeStamp\": \"2026-07-21T14:02:12.900Z\",\r\n      \"RobotName\": \"aturner\",\r\n      \"ProcessName\": \"OrderEntryAssistant\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"Message\": \"Run Local Triggers execution ended (faulted)\",\r\n      \"TimeStamp\": \"2026-07-21T14:02:13.560Z\",\r\n      \"RobotName\": \"aturner\",\r\n      \"ProcessName\": \"OrderEntryAssistant\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 5,\r\n    \"Limit\": 100,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3a1e81c2-07ca-4d6b-bc07-7e0c7b94ea3a\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"d8f1a3c5-2b64-4e90-a1f5-7c9e0d3b6a42\",\r\n      \"Name\": \"Operations\",\r\n      \"Path\": \"Operations\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"7e2a9c14-3b58-4d6f-a091-5c8e2f1b7d63\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"OrderEntryAssistant\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-07-21T14:02:11.310Z\",\r\n      \"EndTime\": \"2026-07-21T14:02:13.640Z\",\r\n      \"CreationTime\": \"2026-07-21T14:02:10.980Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"cedeff5a-ba9b-4ff5-80c2-b79b5662f59b\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ERN\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-18T12:48:38.730Z\",\r\n      \"EndTime\": \"2026-05-18T12:49:13.423Z\",\r\n      \"CreationTime\": \"2026-05-18T12:48:38.730Z\"\r\n    },\r\n    {\r\n      \"Key\": \"d2c90d73-bcee-4f9d-b9fc-d37146b7f6ff\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ERN\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-15T17:09:44.470Z\",\r\n      \"EndTime\": \"2026-05-15T17:10:18.527Z\",\r\n      \"CreationTime\": \"2026-05-15T17:09:44.470Z\"\r\n    },\r\n    {\r\n      \"Key\": \"7bb415a6-f17f-47e5-a43f-d1d38082eb8d\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ERN\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-11T10:56:42.527Z\",\r\n      \"EndTime\": \"2026-05-11T10:56:43.227Z\",\r\n      \"CreationTime\": \"2026-05-11T10:56:42.527Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 3,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "cedeff5a-ba9b-4ff5-80c2-b79b5662f59b",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-18T12:49:13.058Z\",\r\n      \"Message\": \"Click 'Simt că am noroc': Could not find the user-interface (UI) element for this action.\\r\\n\\r\\nPossible solutions:\\r\\n •  Ensure application is opened and the UI element is visible on the screen at execution time\\r\\n •  Edit the Target of the UI activity and use Validation to debug the issue.\\r\\n •  If needed, re-indicate the element as its properties might have changed\\r\\n •  Use \\\"Check state\\\" activity to check the application state before executing the action\\r\\n •  Increase the \\\"Delay before\\\" value to allow time to the application to render entirely and become responsive \\r\\n\\r\\n[Target]: Strict selector failure:\\r\\n<webctrl aria-label='Simt că am noroccccccccccc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit' />\\n\\r\\nThe closest selector matches found are:\\r\\n[94%] <webctrl aria-label='Simt că am noroc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\\n[82%] <webctrl aria-label='Căutare Google' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\\n[69%] <webctrl aria-label='Simt că am noroc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\\n[57%] <webctrl aria-label='Căutare Google' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>)\\r\\nin Google.xaml\\r\\n    at NClick \\\"Click 'Simt că am noroc'\\\"\\r\\n    at Sequence \\\"Do\\\"\\r\\n    at NApplicationCard \\\"Edge Google\\\"\\r\\n    at Sequence \\\"Google\\\"\\r\\n    at Google \\\"Google\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.UIAutomationNext.Exceptions.NodeNotFoundException\\r\\n   at UiPath.UIAutomationNext.Activities.TargetCommonLogic.GetSearchResultAsync(IRuntimeContext runtimeContext, ITargetAnchorable target, CancellationToken token)\\r\\n   at UiPath.UIAutomationNext.Activities.NClick.SearchAndSetTargetAsync(IRuntimeContext context, ClickData clickData, CancellationToken cancellationToken)\\r\\n   at UiPath.UIAutomationNext.Activities.NClick.ExecuteAsync(IActivityContextWrapper context, CancellationToken token)\\r\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\\r\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\\r\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\\r\\n   at UiPath.Shared.Activities.AsyncTaskNativeImplementation.BookmarkResumptionCallback(NativeActivityContext context, Object value)\\r\\n   at UiPath.Shared.Activities.AsyncTaskNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at UiPath.Shared.Activities.ContinuableAsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n--- End of stack trace from previous location ---\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.OnFault(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\\r\\n   at System.Activities.Runtime.FaultCallbackWrapper.FaultWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-18T12:49:12.651Z\",\r\n      \"Message\": \"'Click 'Simt că am noroc'' activity recovery failed. No available license / Agentic units to perform healing analysis and recovery.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "healing-data",
+        "cedeff5a-ba9b-4ff5-80c2-b79b5662f59b",
+        "-o",
+        ""
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHealingData\",\r\n  \"Data\": {\r\n    \"JobKey\": \"cedeff5a-ba9b-4ff5-80c2-b79b5662f59b\",\r\n    \"FileName\": \"\",\r\n    \"Size\": 22,\r\n    \"ExportId\": 11660\r\n  }\r\n}\r\nOK\r\r\n22"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "cedeff5a-ba9b-4ff5-80c2-b79b5662f59b",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"cedeff5a-ba9b-4ff5-80c2-b79b5662f59b\",\r\n    \"StartTime\": \"2026-05-18T12:48:38.730Z\",\r\n    \"EndTime\": \"2026-05-18T12:49:13.423Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Agent\",\r\n    \"SourceType\": \"Agent\",\r\n    \"BatchExecutionKey\": \"cedeff5a-ba9b-4ff5-80c2-b79b5662f59b\",\r\n    \"Info\": \"Could not find the user-interface (UI) element for this action.\\r\\n\\r\\nPossible solutions:\\r\\n •  Ensure application is opened and the UI element is visible on the screen at execution time\\r\\n •  Edit the Target of the UI activity and use Validation to debug the issue.\\r\\n •  If needed, re-indicate the element as its properties might have changed\\r\\n •  Use \\\"Check state\\\" activity to check the application state before executing the action\\r\\n •  Increase the \\\"Delay before\\\" value to allow time to the application to render entirely and become responsive \\r\\n\\r\\n[Target]: Strict selector failure:\\r\\n<webctrl aria-label='Simt că am noroccccccccccc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit' />\\n\\r\\nThe closest selector matches found are:\\r\\n[94%] <webctrl aria-label='Simt că am noroc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\\n[82%] <webctrl aria-label='Căutare Google' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\\n[69%] <webctrl aria-label='Simt că am noroc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\\n[57%] <webctrl aria-label='Căutare Google' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>)\\r\\n\\r\\nin Google.xaml\\r\\n    at NClick \\\"Click 'Simt că am noroc'\\\"\\r\\n    at Sequence \\\"Do\\\"\\r\\n    at NApplicationCard \\\"Edge Google\\\"\\r\\n    at Sequence \\\"Google\\\"\\r\\n    at Google \\\"Google\\\"\\r\\n\\r\\nUiPath.UIAutomationNext.Exceptions.NodeNotFoundException: Could not find the user-interface (UI) element for this action.\\r\\n\\r\\nPossible solutions:\\r\\n •  Ensure application is opened and the UI element is visible on the screen at execution time\\r\\n •  Edit the Target of the UI activity and use Validation to debug the issue.\\r\\n •  If needed, re-indicate the element as its properties might have changed\\r\\n •  Use \\\"Check state\\\" activity to check the application state before executing the action\\r\\n •  Increase the \\\"Delay before\\\" value to allow time to the application to render entirely and become responsive \\r\\n\\r\\n[Target]: Strict selector failure:\\r\\n<webctrl aria-label='Simt că am noroccccccccccc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit' />\\n\\r\\nThe closest selector matches found are:\\r\\n[94%] <webctrl aria-label='Simt că am noroc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\\n[82%] <webctrl aria-label='Căutare Google' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\\n[69%] <webctrl aria-label='Simt că am noroc' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>\\n[57%] <webctrl aria-label='Căutare Google' css-selector='body&gt;div&gt;div&gt;form&gt;div&gt;div&gt;div&gt;div&gt;div&gt;center&gt;input' tag='INPUT' type='submit'/>)\\r\\n   at UiPath.UIAutomationNext.Activities.TargetCommonLogic.GetSearchResultAsync(IRuntimeContext runtimeContext, ITargetAnchorable target, CancellationToken token)\\r\\n   at UiPath.UIAutomationNext.Activities.NClick.SearchAndSetTargetAsync(IRuntimeContext context, ClickData clickData, CancellationToken cancellationToken)\\r\\n   at UiPath.UIAutomationNext.Activities.NClick.ExecuteAsync(IActivityContextWrapper context, CancellationToken token)\\r\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\\r\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\\r\\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\\r\\n   at UiPath.Shared.Activities.AsyncTaskNativeImplementation.BookmarkResumptionCallback(NativeActivityContext context, Object value)\\r\\n   at UiPath.Shared.Activities.AsyncTaskNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at UiPath.Shared.Activities.ContinuableAsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n--- End of stack trace from previous location ---\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.OnFault(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\\r\\n   at System.Activities.Runtime.FaultCallbackWrapper.FaultWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-05-18T12:48:38.730Z\",\r\n    \"ReleaseName\": \"ERN\",\r\n    \"Type\": \"Attended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"StudioPro\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 20182479,\r\n    \"EntryPointPath\": \"Google.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"defb8e05-e36b-4c36-bf11-0b4d08ce6cd1\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-18T12:49:13.423Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"cedeff5aba9b4ff580c2b79b5662f59b\",\r\n    \"AutopilotForRobots\": {\r\n      \"Enabled\": true,\r\n      \"HealingEnabled\": true\r\n    },\r\n    \"Id\": 64476250\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "cedeff5a-ba9b-4ff5-80c2-b79b5662f59b",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-05-18T12:49:13.443Z\",\r\n      \"JobId\": 64476250\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-05-18T12:48:38.773Z\",\r\n      \"JobId\": 64476250\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3a1e81c2-07ca-4d6b-bc07-7e0c7b94ea3a\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"defb8e05-e36b-4c36-bf11-0b4d08ce6cd1\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "licenses",
+        "info",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"LicenseInfo\",\r\n  \"Data\": {\r\n    \"IsExpired\": false,\r\n    \"SubscriptionPlan\": \"ENTERPRISE\",\r\n    \"Allowed\": {\r\n      \"StudioX\": 0,\r\n      \"TestAutomation\": 1,\r\n      \"Headless\": 0,\r\n      \"PerformanceTest\": 0,\r\n      \"Attended\": 0,\r\n      \"AgentService\": 0,\r\n      \"Unattended\": 1,\r\n      \"Development\": 0,\r\n      \"BusinessRule\": 0,\r\n      \"CaseManagement\": 0,\r\n      \"ProcessOrchestration\": 0,\r\n      \"AppTest\": 0,\r\n      \"Flow\": 0,\r\n      \"Hosting\": 0,\r\n      \"StudioPro\": 0,\r\n      \"NonProduction\": 0,\r\n      \"Agent\": 0\r\n    },\r\n    \"Used\": {\r\n      \"StudioX\": 0,\r\n      \"TestAutomation\": 0,\r\n      \"Headless\": 0,\r\n      \"PerformanceTest\": 0,\r\n      \"Attended\": 0,\r\n      \"AgentService\": 0,\r\n      \"Unattended\": 1,\r\n      \"Development\": 0,\r\n      \"BusinessRule\": 0,\r\n      \"CaseManagement\": 0,\r\n      \"ProcessOrchestration\": 0,\r\n      \"AppTest\": 0,\r\n      \"Flow\": 0,\r\n      \"Hosting\": 0,\r\n      \"StudioPro\": 0,\r\n      \"NonProduction\": 0,\r\n      \"Agent\": 0\r\n    },\r\n    \"LicensedFeatures\": []\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

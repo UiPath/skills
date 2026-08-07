@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-07T04:30:03.980Z\", \"Message\": \"[Send SMTP Mail Message] Server rejected the message: 550 5.7.60 SMTP; Client does not have permissions to send as this sender (authenticated as svc-billing@contoso-test.com, From noreply@marketing-partner.com)\" },\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-07T04:30:04.060Z\", \"Message\": \"Send SMTP Mail Message: Mailbox unavailable. The server response was: 550 5.7.60 SMTP; Client does not have permissions to send as this sender.\\r\\nin Main.xaml\\r\\n    at SmtpSendMail \\\"Send SMTP Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Net.Mail.SmtpException: Mailbox unavailable. The server response was: 550 5.7.60 SMTP; Client does not have permissions to send as this sender.\" }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f6a7b8c9-0415-4e26-9f70-8192a3b4c5d7\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the finance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"a1b2c3d4-5e6f-4071-8293-a4b5c6d7e8f9\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c7d8e9f0-1526-4f37-8081-92a3b4c5d6e8\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CustomerAlertSender\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-07T04:30:00.180Z\",\r\n      \"EndTime\": \"2026-06-07T04:30:04.220Z\",\r\n      \"CreationTime\": \"2026-06-07T04:29:59.900Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": { \"Returned\": 1, \"Limit\": 50, \"Offset\": 0, \"HasMore\": false }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    { \"Level\": \"Info\", \"TimeStamp\": \"2026-06-07T04:30:00.220Z\", \"Message\": \"Execution started\" },\r\n    { \"Level\": \"Trace\", \"TimeStamp\": \"2026-06-07T04:30:01.020Z\", \"Message\": \"[Send SMTP Mail Message] Connecting to smtp.office365.com:587 (SecureConnection=StartTls)\" },\r\n    { \"Level\": \"Trace\", \"TimeStamp\": \"2026-06-07T04:30:01.760Z\", \"Message\": \"[Send SMTP Mail Message] STARTTLS negotiated; authenticated as svc-billing@contoso-test.com\" },\r\n    { \"Level\": \"Trace\", \"TimeStamp\": \"2026-06-07T04:30:02.410Z\", \"Message\": \"[Send SMTP Mail Message] MAIL FROM:<noreply@marketing-partner.com>; RCPT TO:<customer-updates@contoso-test.com>\" },\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-07T04:30:03.980Z\", \"Message\": \"[Send SMTP Mail Message] Server rejected the message: 550 5.7.60 SMTP; Client does not have permissions to send as this sender (authenticated as svc-billing@contoso-test.com, From noreply@marketing-partner.com)\" },\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-07T04:30:04.060Z\", \"Message\": \"Send SMTP Mail Message: Mailbox unavailable. The server response was: 550 5.7.60 SMTP; Client does not have permissions to send as this sender.\\r\\nin Main.xaml\\r\\n    at SmtpSendMail \\\"Send SMTP Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Net.Mail.SmtpException: Mailbox unavailable. The server response was: 550 5.7.60 SMTP; Client does not have permissions to send as this sender.\" },\r\n    { \"Level\": \"Info\", \"TimeStamp\": \"2026-06-07T04:30:04.200Z\", \"Message\": \"Execution ended in: 00:00:04\" }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c7d8e9f0-1526-4f37-8081-92a3b4c5d6e8\",\r\n    \"StartTime\": \"2026-06-07T04:30:00.180Z\",\r\n    \"EndTime\": \"2026-06-07T04:30:04.220Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"d8e9f0a1-2637-4f48-9192-a3b4c5d6e7f9\",\r\n    \"Info\": \"Send SMTP Mail Message: Mailbox unavailable. The server response was: 550 5.7.60 SMTP; Client does not have permissions to send as this sender.\\r\\n\\r\\nin Main.xaml\\r\\n    at SmtpSendMail \\\"Send SMTP Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Net.Mail.SmtpException: Mailbox unavailable. The server response was: 550 5.7.60 SMTP; Client does not have permissions to send as this sender.\",\r\n    \"CreationTime\": \"2026-06-07T04:29:59.900Z\",\r\n    \"ReleaseName\": \"CustomerAlertSender\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 6071407,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"f6a7b8c9-0415-4e26-9f70-8192a3b4c5d7\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-07T04:30:04.220Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c7d8e9f0-1526-4f37-8081-92a3b4c5d6e8\",\r\n    \"Id\": 682812017\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

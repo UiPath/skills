@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "a9b0c1d2-3e4f-4a5b-8c6d-7e8f90123456",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ArchiveMailScanner\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-03T02:00:00.180Z\",\r\n      \"EndTime\": \"2026-06-03T02:00:30.620Z\",\r\n      \"CreationTime\": \"2026-06-03T02:00:00.010Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-03T02:00:30.541Z\",\r\n      \"Message\": \"[Get Outlook Mail Messages] The operation has timed out.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-03T02:00:30.602Z\",\r\n      \"Message\": \"The operation has timed out.\\r\\nin Main.xaml\\r\\n    at GetOutlookMailMessages \\\"Get Outlook Mail Messages\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678\",\r\n    \"StartTime\": \"2026-06-03T02:00:00.180Z\",\r\n    \"EndTime\": \"2026-06-03T02:00:30.620Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"c1d2e3f4-5a6b-4c7d-8e90-1f2a3b4c5d6e\",\r\n    \"Info\": \"Get Outlook Mail Messages: The operation has timed out.\\r\\n\\r\\nin Main.xaml\\r\\n    at GetOutlookMailMessages \\\"Get Outlook Mail Messages\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.TimeoutException: The operation has timed out.\",\r\n    \"CreationTime\": \"2026-06-03T02:00:00.010Z\",\r\n    \"ReleaseName\": \"ArchiveMailScanner\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6029417,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"a9b0c1d2-3e4f-4a5b-8c6d-7e8f90123456\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-03T02:00:30.620Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678\",\r\n    \"Id\": 682419703\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-03T02:00:00.210Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-03T02:00:00.512Z\",\r\n      \"Message\": \"[Get Outlook Mail Messages] enumerating folder 'Archive' (approx. 18,420 items); Top=5000, OnlyUnreadMessages=False\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-03T02:00:12.004Z\",\r\n      \"Message\": \"[Get Outlook Mail Messages] retrieved 4,100 of 5,000 requested items so far\"\r\n    },\r\n    {\r\n      \"Level\": \"Warn\",\r\n      \"TimeStamp\": \"2026-06-03T02:00:25.733Z\",\r\n      \"Message\": \"[Get Outlook Mail Messages] enumeration has been running for more than 25s; folder is large and TimeoutMS=30000 is about to be reached\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-03T02:00:30.541Z\",\r\n      \"Message\": \"[Get Outlook Mail Messages] The operation has timed out.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-03T02:00:30.602Z\",\r\n      \"Message\": \"The operation has timed out.\\r\\nin Main.xaml\\r\\n    at GetOutlookMailMessages \\\"Get Outlook Mail Messages\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-03T02:00:30.615Z\",\r\n      \"Message\": \"Execution ended in: 00:00:30\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"a9b0c1d2-3e4f-4a5b-8c6d-7e8f90123456\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the finance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

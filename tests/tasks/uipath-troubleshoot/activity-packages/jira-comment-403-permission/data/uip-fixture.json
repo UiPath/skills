@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "5a08a2b3-d4e5-4f60-8a08-000000000008",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"5b08c3d4-e5f6-4071-9b08-000000000008\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"JiraCommentSync\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-17T14:02:02.190Z\",\r\n      \"EndTime\": \"2026-06-17T14:02:03.940Z\",\r\n      \"CreationTime\": \"2026-06-17T14:02:01.760Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "5b08c3d4-e5f6-4071-9b08-000000000008",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-17T14:02:03.810Z\",\r\n      \"Message\": \"[Add Comment] Response status code does not indicate success: 403 (Forbidden). You do not have permission to comment on this issue.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-17T14:02:03.880Z\",\r\n      \"Message\": \"UiPath.Jira.Activities.JiraException: You do not have permission to comment on this issue.\\r\\nin Main.xaml\\r\\n    at JiraApplicationScope \\\"Jira Scope\\\"\\r\\n    at AddComment \\\"Add Comment\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "5b08c3d4-e5f6-4071-9b08-000000000008",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"5b08c3d4-e5f6-4071-9b08-000000000008\",\r\n    \"StartTime\": \"2026-06-17T14:02:02.190Z\",\r\n    \"EndTime\": \"2026-06-17T14:02:03.940Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"5c08d4e5-f6a7-4182-9c08-000000000008\",\r\n    \"Info\": \"Add Comment: Response status code does not indicate success: 403 (Forbidden). You do not have permission to comment on this issue.\\r\\n\\r\\nin Main.xaml\\r\\n    at JiraApplicationScope \\\"Jira Scope\\\"\\r\\n    at AddComment \\\"Add Comment\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Jira.Activities.JiraException: You do not have permission to comment on this issue.\",\r\n    \"CreationTime\": \"2026-06-17T14:02:01.760Z\",\r\n    \"ReleaseName\": \"JiraCommentSync\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 8013308,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"5a08a2b3-d4e5-4f60-8a08-000000000008\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-17T14:02:03.940Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"5b08c3d4-e5f6-4071-9b08-000000000008\",\r\n    \"Id\": 813308208\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "5b08c3d4-e5f6-4071-9b08-000000000008",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-06-17T14:02:02.380Z\",\r\n      \"Message\": \"JiraCommentSync execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-17T14:02:03.090Z\",\r\n      \"Message\": \"Jira Scope: session opened to https://acme.atlassian.net (Authentication Type: Api Token)\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-17T14:02:03.560Z\",\r\n      \"Message\": \"Add Comment: posting comment to issue OPS-1502 as rpa-bot@company.com\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-17T14:02:03.810Z\",\r\n      \"Message\": \"[Add Comment] Response status code does not indicate success: 403 (Forbidden). You do not have permission to comment on this issue.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-17T14:02:03.880Z\",\r\n      \"Message\": \"UiPath.Jira.Activities.JiraException: You do not have permission to comment on this issue.\\r\\nin Main.xaml\\r\\n    at JiraApplicationScope \\\"Jira Scope\\\"\\r\\n    at AddComment \\\"Add Comment\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-06-17T14:02:03.940Z\",\r\n      \"Message\": \"JiraCommentSync execution ended\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"5a08a2b3-d4e5-4f60-8a08-000000000008\",\r\n      \"Name\": \"Issue Sync\",\r\n      \"Path\": \"Issue Sync\",\r\n      \"Description\": \"Production folder for Jira commenting processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

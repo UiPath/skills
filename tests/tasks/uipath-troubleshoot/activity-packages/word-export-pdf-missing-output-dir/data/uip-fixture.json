@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "a3b4c5d6-e7f8-4193-9a0b-1c2d3e4f5061",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b4c5d6e7-f8a9-4204-ab1c-2d3e4f506172\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"InvoicePdfExport\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT-13\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-17T08:30:02.110Z\",\r\n      \"EndTime\": \"2026-06-17T08:30:06.540Z\",\r\n      \"CreationTime\": \"2026-06-17T08:30:01.890Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "b4c5d6e7-f8a9-4204-ab1c-2d3e4f506172",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-17T08:30:06.470Z\",\r\n      \"Message\": \"Export to PDF: Command Failed\\r\\nin Main.xaml\\r\\n    at WordExportToPdf \\\"Export to PDF\\\"\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "b4c5d6e7-f8a9-4204-ab1c-2d3e4f506172",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"b4c5d6e7-f8a9-4204-ab1c-2d3e4f506172\",\r\n    \"StartTime\": \"2026-06-17T08:30:02.110Z\",\r\n    \"EndTime\": \"2026-06-17T08:30:06.540Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"b5c6d7e8-f9a0-4315-bc2d-3e4f50617283\",\r\n    \"Info\": \"Export to PDF: Command Failed\\r\\n\\r\\nin Main.xaml\\r\\n    at WordExportToPdf \\\"Export to PDF\\\"\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Word.Activities.WordException: Command Failed\",\r\n    \"CreationTime\": \"2026-06-17T08:30:01.890Z\",\r\n    \"ReleaseName\": \"InvoicePdfExport\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT-13\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6022280,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"a3b4c5d6-e7f8-4193-9a0b-1c2d3e4f5061\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-17T08:30:06.540Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"b4c5d6e7-f8a9-4204-ab1c-2d3e4f506172\",\r\n    \"Id\": 682458776\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "b4c5d6e7-f8a9-4204-ab1c-2d3e4f506172",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-17T08:30:02.160Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-17T08:30:03.880Z\",\r\n      \"Message\": \"[Word Application Scope] Starting Microsoft Word\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-17T08:30:05.220Z\",\r\n      \"Message\": \"[Word Application Scope] Document 'data\\\\Invoice.docx' opened\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-17T08:30:06.470Z\",\r\n      \"Message\": \"Export to PDF: Command Failed\\r\\nin Main.xaml\\r\\n    at WordExportToPdf \\\"Export to PDF\\\"\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-17T08:30:06.520Z\",\r\n      \"Message\": \"Execution ended in: 00:00:04\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"a3b4c5d6-e7f8-4193-9a0b-1c2d3e4f5061\",\r\n      \"Name\": \"PDF Export\",\r\n      \"Path\": \"PDF Export\",\r\n      \"Description\": \"Production folder for PDF export processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

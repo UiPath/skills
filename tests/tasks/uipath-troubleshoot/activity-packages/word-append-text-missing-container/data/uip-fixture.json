@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "b0c1d2e3-f4a5-4193-8061-728394a5b6c7",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c1d2e3f4-a5b6-4204-9172-8394a5b6c7d8\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"AppendNotes\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT-15\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-17T10:20:01.330Z\",\r\n      \"EndTime\": \"2026-06-17T10:20:02.210Z\",\r\n      \"CreationTime\": \"2026-06-17T10:20:01.100Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "c1d2e3f4-a5b6-4204-9172-8394a5b6c7d8",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-17T10:20:02.140Z\",\r\n      \"Message\": \"Validation Error: Activity 'Append Text' is valid only inside WordApplicationScope.\\r\\nin Main.xaml\\r\\n    at WordAppendText \\\"Append Text\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "c1d2e3f4-a5b6-4204-9172-8394a5b6c7d8",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c1d2e3f4-a5b6-4204-9172-8394a5b6c7d8\",\r\n    \"StartTime\": \"2026-06-17T10:20:01.330Z\",\r\n    \"EndTime\": \"2026-06-17T10:20:02.210Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"c2d3e4f5-a6b7-4315-9283-94a5b6c7d8e9\",\r\n    \"Info\": \"Validation Error: Activity 'Append Text' is valid only inside WordApplicationScope.\\r\\n\\r\\nin Main.xaml\\r\\n    at WordAppendText \\\"Append Text\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Word.Activities.WordException: Activity is valid only inside WordApplicationScope.\",\r\n    \"CreationTime\": \"2026-06-17T10:20:01.100Z\",\r\n    \"ReleaseName\": \"AppendNotes\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT-15\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6022610,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b0c1d2e3-f4a5-4193-8061-728394a5b6c7\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-17T10:20:02.210Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c1d2e3f4-a5b6-4204-9172-8394a5b6c7d8\",\r\n    \"Id\": 682461109\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "c1d2e3f4-a5b6-4204-9172-8394a5b6c7d8",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-17T10:20:01.380Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-17T10:20:02.140Z\",\r\n      \"Message\": \"Validation Error: Activity 'Append Text' is valid only inside WordApplicationScope.\\r\\nin Main.xaml\\r\\n    at WordAppendText \\\"Append Text\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-17T10:20:02.190Z\",\r\n      \"Message\": \"Execution ended in: 00:00:00\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b0c1d2e3-f4a5-4193-8061-728394a5b6c7\",\r\n      \"Name\": \"Doc Append\",\r\n      \"Path\": \"Doc Append\",\r\n      \"Description\": \"Production folder for document-append processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

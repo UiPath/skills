@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f0066666-3333-4444-5555-666677778888",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"StartTime\": \"2026-05-30T07:30:01.500Z\",\r\n      \"EndTime\": \"2026-05-30T07:30:02.640Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelReconExport\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"DailyRecon0730\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0066666-3333-4444-5555-666677778888\",\r\n      \"Info\": \"System.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Excel._Application'.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "aa666666-cccc-dddd-eeee-ffffaaaabbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"StartTime\": \"2026-05-30T07:30:01.500Z\",\r\n    \"EndTime\": \"2026-05-30T07:30:02.640Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9aa66666-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Info\": \"System.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Excel._Application'. This operation failed because the QueryInterface call on the COM component for the interface with IID '{000208D5-0000-0000-C000-000000000046}' failed due to the following error: No such interface supported (Exception from HRESULT: 0x80004002 (E_NOINTERFACE)).\\r\\n   at UiPath.Excel.Activities.ExcelApplicationScope.AcquireExcelComServer()\\r\\n   at UiPath.Excel.Activities.ExcelApplicationScope.OnExecute(NativeActivityContext context)\",\r\n    \"CreationTime\": \"2026-05-30T07:30:01.205Z\",\r\n    \"ReleaseName\": \"ExcelReconExport\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5681166,\r\n    \"OrganizationUnitId\": 6110066,\r\n    \"FolderKey\": \"f0066666-3333-4444-5555-666677778888\",\r\n    \"Reference\": \"DailyRecon0730\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-30T07:30:02.640Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"ApplicationException\",\r\n      \"ActivityName\": \"ExcelApplicationScope_1\",\r\n      \"ActivityDisplayName\": \"Excel Application Scope: recon-daily.xlsx\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Id\": 681199066\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "aa666666-cccc-dddd-eeee-ffffaaaabbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\"Key\": \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Pending\", \"Timestamp\": \"2026-05-30T07:30:01.205Z\"},\r\n    {\"Key\": \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Running\", \"Timestamp\": \"2026-05-30T07:30:01.500Z\"},\r\n    {\"Key\": \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Faulted\", \"Timestamp\": \"2026-05-30T07:30:02.640Z\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "aa666666-cccc-dddd-eeee-ffffaaaabbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-aa6666cc-001\",\r\n      \"JobKey\": \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-30T07:30:01.520Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ExcelReconExport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa6666cc-002\",\r\n      \"JobKey\": \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-30T07:30:01.640Z\",\r\n      \"Message\": \"[ExcelReconExport] Opening C:\\\\Robot\\\\Data\\\\recon-daily.xlsx to export the reconciliation summary\",\r\n      \"ProcessName\": \"ExcelReconExport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa6666cc-003\",\r\n      \"JobKey\": \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-30T07:30:01.820Z\",\r\n      \"Message\": \"Excel Application Scope: recon-daily.xlsx — surface: Classic ExcelApplicationScope (COM-only). Attempting to acquire Excel.Application COM server.\",\r\n      \"ProcessName\": \"ExcelReconExport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa6666cc-004\",\r\n      \"JobKey\": \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-30T07:30:02.300Z\",\r\n      \"Message\": \"Excel Application Scope: recon-daily.xlsx — Excel.Application object instantiated, but QueryInterface for Microsoft.Office.Interop.Excel._Application (IID {000208D5-0000-0000-C000-000000000046}) returned E_NOINTERFACE. Host: MOCK-HOST. Excel install state: INSTALLED (Microsoft 365 Apps, launches interactively). COM add-ins auto-loaded into this Excel instance at startup: 'UiPath.Integration.ExcelAddin' (LoadBehavior=3, HKLM — the Studio design-time Excel Add-in, present on this runtime host) and 'AcmeBudgetTools.Connect' (LoadBehavior=3). Diagnostic: launching 'excel.exe /safe' (all add-ins disabled) on the host succeeds and a manual COM bind to _Application works.\",\r\n      \"ProcessName\": \"ExcelReconExport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa6666cc-005\",\r\n      \"JobKey\": \"aa666666-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-30T07:30:02.620Z\",\r\n      \"Message\": \"Excel Application Scope: recon-daily.xlsx — System.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Excel._Application'. QueryInterface for IID {000208D5-0000-0000-C000-000000000046} failed: 0x80004002 E_NOINTERFACE (No such interface supported).\",\r\n      \"ProcessName\": \"ExcelReconExport\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0066666-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"ReconReports\",\r\n      \"FullyQualifiedName\": \"ReconReports\",\r\n      \"Description\": \"Folder for the daily reconciliation export automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6110066,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 1,
+    "stderr": "{\"error\": \"unmocked command\"}\n"
+  }
+}

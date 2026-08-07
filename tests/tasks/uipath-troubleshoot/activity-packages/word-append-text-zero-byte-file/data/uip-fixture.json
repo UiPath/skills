@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "d2e3f4a5-b6c7-4193-a283-94a5b6c7d8e9",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"e3f4a5b6-c7d8-4204-b394-a5b6c7d8e9f0\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ReportAppender\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Queue\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT-16\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-17T11:05:02.410Z\",\r\n      \"EndTime\": \"2026-06-17T11:05:05.260Z\",\r\n      \"CreationTime\": \"2026-06-17T11:05:02.180Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "e3f4a5b6-c7d8-4204-b394-a5b6c7d8e9f0",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-17T11:05:05.190Z\",\r\n      \"Message\": \"Error opening document 'C:\\\\UiPath\\\\Report Build\\\\data\\\\Notes.docx'. Archive file cannot be size zero.\\r\\nin Main.xaml\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "e3f4a5b6-c7d8-4204-b394-a5b6c7d8e9f0",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"e3f4a5b6-c7d8-4204-b394-a5b6c7d8e9f0\",\r\n    \"StartTime\": \"2026-06-17T11:05:02.410Z\",\r\n    \"EndTime\": \"2026-06-17T11:05:05.260Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Queue\",\r\n    \"SourceType\": \"Queue\",\r\n    \"BatchExecutionKey\": \"e4f5a6b7-c8d9-4315-c4a5-b6c7d8e9f001\",\r\n    \"Info\": \"Word Application Scope: Error opening document 'C:\\\\UiPath\\\\Report Build\\\\data\\\\Notes.docx'. Archive file cannot be size zero.\\r\\n\\r\\nin Main.xaml\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.IO.InvalidDataException: Archive file cannot be size zero.\",\r\n    \"CreationTime\": \"2026-06-17T11:05:02.180Z\",\r\n    \"ReleaseName\": \"ReportAppender\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT-16\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6022720,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"d2e3f4a5-b6c7-4193-a283-94a5b6c7d8e9\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"scheduler\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-17T11:05:05.260Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"e3f4a5b6-c7d8-4204-b394-a5b6c7d8e9f0\",\r\n    \"Id\": 682462220\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "e3f4a5b6-c7d8-4204-b394-a5b6c7d8e9f0",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-17T11:05:02.460Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-17T11:05:03.980Z\",\r\n      \"Message\": \"[Word Application Scope] Starting Microsoft Word\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-17T11:05:05.190Z\",\r\n      \"Message\": \"Error opening document 'C:\\\\UiPath\\\\Report Build\\\\data\\\\Notes.docx'. Archive file cannot be size zero.\\r\\nin Main.xaml\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-17T11:05:05.240Z\",\r\n      \"Message\": \"Execution ended in: 00:00:02\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d2e3f4a5-b6c7-4193-a283-94a5b6c7d8e9\",\r\n      \"Name\": \"Report Build\",\r\n      \"Path\": \"Report Build\",\r\n      \"Description\": \"Production folder for report assembly processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

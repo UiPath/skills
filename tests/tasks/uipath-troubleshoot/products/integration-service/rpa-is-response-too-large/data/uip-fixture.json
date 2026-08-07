@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "is",
+        "resources",
+        "describe",
+        "uipath-servicenow",
+        "incident",
+        "--operation",
+        "List"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ResourceMetadata\",\r\n  \"Data\": {\r\n    \"name\": \"incident\",\r\n    \"displayName\": \"List Incidents\",\r\n    \"path\": \"/table/incident\",\r\n    \"operation\": \"List\",\r\n    \"metadataFile\": \"~/.uipath/cache/integrationservice/uipath-servicenow/_static/incident.List.json\",\r\n    \"requiredFields\": [],\r\n    \"optionalFields\": [\r\n      \"sysparm_query\",\r\n      \"sysparm_limit\",\r\n      \"sysparm_offset\",\r\n      \"sysparm_fields\",\r\n      \"sysparm_display_value\",\r\n      \"sysparm_exclude_reference_link\",\r\n      \"maxRecords\"\r\n    ],\r\n    \"paginationFields\": [\r\n      \"sysparm_limit\",\r\n      \"sysparm_offset\",\r\n      \"maxRecords\"\r\n    ],\r\n    \"responseFields\": [\r\n      \"sys_id\",\r\n      \"number\",\r\n      \"short_description\",\r\n      \"description\",\r\n      \"state\",\r\n      \"priority\",\r\n      \"urgency\",\r\n      \"impact\",\r\n      \"category\",\r\n      \"subcategory\",\r\n      \"assigned_to\",\r\n      \"assignment_group\",\r\n      \"caller_id\",\r\n      \"opened_at\",\r\n      \"closed_at\",\r\n      \"resolved_at\",\r\n      \"sys_created_on\",\r\n      \"sys_updated_on\",\r\n      \"comments\",\r\n      \"work_notes\",\r\n      \"close_notes\",\r\n      \"attachment\"\r\n    ],\r\n    \"hint\": \"List returns multiple records. Use 'sysparm_query' to filter and 'sysparm_limit' / 'maxRecords' to bound the number of rows returned.\",\r\n    \"Warning\": \"Results may not include custom fields. Use --connection-id <id> for connection-specific metadata including custom objects and fields.\"\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c3d4e5f6-3333-4444-5555-666677778888\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"Data Export\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"D4E5F6A7-1000-2000-3000-400050006000\",\r\n      \"StartTime\": \"2026-06-30T02:15:41.512Z\",\r\n      \"EndTime\": \"2026-06-30T02:15:52.004Z\",\r\n      \"CreationTime\": \"2026-06-30T02:15:38.900Z\",\r\n      \"Id\": 50301122\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "is",
+        "resources",
+        "describe",
+        "uipath-servicenow",
+        "incident"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ResourceMetadata\",\r\n  \"Data\": {\r\n    \"name\": \"incident\",\r\n    \"displayName\": \"Incident\",\r\n    \"availableOperations\": [\r\n      \"List\",\r\n      \"Retrieve\",\r\n      \"Create\",\r\n      \"Update\",\r\n      \"Delete\"\r\n    ],\r\n    \"files\": {\r\n      \"List\": \"~/.uipath/cache/integrationservice/uipath-servicenow/_static/incident.List.json\",\r\n      \"Retrieve\": \"~/.uipath/cache/integrationservice/uipath-servicenow/_static/incident.Retrieve.json\",\r\n      \"Create\": \"~/.uipath/cache/integrationservice/uipath-servicenow/_static/incident.Create.json\",\r\n      \"Update\": \"~/.uipath/cache/integrationservice/uipath-servicenow/_static/incident.Update.json\",\r\n      \"Delete\": \"~/.uipath/cache/integrationservice/uipath-servicenow/_static/incident.Delete.json\"\r\n    },\r\n    \"hint\": \"Use --operation <List|Retrieve|Create|Update|Delete> to see fields, or read the files directly for full details.\",\r\n    \"Warning\": \"Results may not include custom fields. Use --connection-id <id> for connection-specific metadata including custom objects and fields. Run 'is connections list <connector-key>' to get available connection IDs.\"\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "is",
+        "connections",
+        "list",
+        "--connection-id"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ConnectionList\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"e5f6a7b8-9999-8888-7777-666655554444\",\r\n      \"Name\": \"servicenow-prod\",\r\n      \"ConnectorKey\": \"uipath-servicenow\",\r\n      \"ConnectorName\": \"ServiceNow\",\r\n      \"State\": \"Enabled\",\r\n      \"Owner\": \"original_email@test.com\",\r\n      \"IsDefault\": \"No\",\r\n      \"Folder\": \"integration-sync\",\r\n      \"FolderKey\": \"b2c3d4e5-2222-3333-4444-555566667777\",\r\n      \"Created\": \"2026-05-02T09:11:20.400Z\",\r\n      \"Updated\": \"2026-05-02T09:11:20.400Z\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "is",
+        "connections",
+        "list",
+        "uipath-servicenow"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ConnectionList\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"e5f6a7b8-9999-8888-7777-666655554444\",\r\n      \"Name\": \"servicenow-prod\",\r\n      \"ConnectorKey\": \"uipath-servicenow\",\r\n      \"ConnectorName\": \"ServiceNow\",\r\n      \"State\": \"Enabled\",\r\n      \"Owner\": \"original_email@test.com\",\r\n      \"IsDefault\": \"No\",\r\n      \"Folder\": \"integration-sync\",\r\n      \"FolderKey\": \"b2c3d4e5-2222-3333-4444-555566667777\",\r\n      \"Created\": \"2026-05-02T09:11:20.400Z\",\r\n      \"Updated\": \"2026-05-02T09:11:20.400Z\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Name\": \"DataExport\",\r\n      \"ID\": 3010001,\r\n      \"Key\": \"a1b2c3d4-1111-2222-3333-444455556666\",\r\n      \"Path\": \"Shared/integration-sync/DataExport\",\r\n      \"Type\": \"Solution\",\r\n      \"Description\": \"\"\r\n    },\r\n    {\r\n      \"Name\": \"integration-sync\",\r\n      \"ID\": 3009980,\r\n      \"Key\": \"b2c3d4e5-2222-3333-4444-555566667777\",\r\n      \"Path\": \"Shared/integration-sync\",\r\n      \"Type\": \"Standard\",\r\n      \"Description\": \"\"\r\n    },\r\n    {\r\n      \"Name\": \"Finance\",\r\n      \"ID\": 2901921,\r\n      \"Key\": \"fbb6bcb1-11a3-44e4-87b1-9e77b04f25ed\",\r\n      \"Path\": \"Finance\",\r\n      \"Type\": \"Standard\",\r\n      \"Description\": \"\"\r\n    },\r\n    {\r\n      \"Name\": \"Shared\",\r\n      \"ID\": 2892900,\r\n      \"Key\": \"c23e5354-4c28-4a8d-ab8e-d63844b35926\",\r\n      \"Path\": \"Shared\",\r\n      \"Type\": \"Standard\",\r\n      \"Description\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "processes",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ProcessList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"A1F2E3D4-1122-3344-5566-7788990011AA\",\r\n      \"Name\": \"Data Export\",\r\n      \"ProcessKey\": \"DataExport.process.Data.Export\",\r\n      \"ProcessVersion\": \"1.0.0\",\r\n      \"Description\": \"\",\r\n      \"IsLatestVersion\": true,\r\n      \"RetentionPeriod\": 30,\r\n      \"RetentionAction\": \"Delete\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"c3d4e5f6-3333-4444-5555-666677778888\",\r\n    \"StartTime\": \"2026-06-30T02:15:41.512Z\",\r\n    \"EndTime\": \"2026-06-30T02:15:52.004Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"ResourceOverwrites\": \"{\\\"Connection.e5f6a7b8-9999-8888-7777-666655554444\\\":{\\\"EntityDisplayName\\\":\\\"servicenow-prod\\\",\\\"Level\\\":0,\\\"Properties\\\":{\\\"connectionId\\\":\\\"e5f6a7b8-9999-8888-7777-666655554444\\\",\\\"folderKey\\\":\\\"b2c3d4e5-2222-3333-4444-555566667777\\\",\\\"ConnectionId\\\":\\\"e5f6a7b8-9999-8888-7777-666655554444\\\"}}}\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"7b8c9d0e-aa11-bb22-cc33-dd44ee55ff66\",\r\n    \"Info\": \"Response content too large.\\r\\n\\r\\nin Main.xaml\\n    at ConnectorActivity \\\"List Incidents\\\"\\n    at Sequence \\\"Sequence\\\"\\n    at Main \\\"Main\\\"\\n\\nUiPath.IntegrationService.Activities.Runtime.Exceptions.RuntimeException: Response content too large.\\n   at UiPath.IntegrationService.Activities.Runtime.Services.RuntimeClientService.SendRequestClientAsync(ExecutionParameters executionParameters, ConnectorActivityConfiguration activityConfiguration, ICollection`1 jitInputs, CancellationToken token)\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ExecutionService.ExecuteOperationAsync(ExecutionParameters executionParameters, ConnectorActivityConfiguration activityConfiguration, Dictionary`2 telemetryUsedProperties, CancellationToken token)\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-30T02:15:38.900Z\",\r\n    \"ReleaseName\": \"Data Export\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"D4E5F6A7-1000-2000-3000-400050006000\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Serverless\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 1122334,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 3010001,\r\n    \"FolderKey\": \"a1b2c3d4-1111-2222-3333-444455556666\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": true,\r\n    \"LocalSystemAccount\": \"ROBOTUSER\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"ServerlessJobType\": \"RobotJob\",\r\n    \"LastModificationTime\": \"2026-06-30T02:15:52.004Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"c3d4e5f633334444555566677778888\",\r\n    \"Id\": 50301122\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-30T02:15:51.940Z\",\r\n      \"Message\": \"Data Export execution ended\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-30T02:15:51.880Z\",\r\n      \"Message\": \"List Incidents: Response content too large.\\nin Main.xaml\\n    at ConnectorActivity \\\"List Incidents\\\"\\n    at Sequence \\\"Sequence\\\"\\n    at Main \\\"Main\\\"\\n\\n--- .NET stack trace ---\\nUiPath.IntegrationService.Activities.Runtime.Exceptions.RuntimeException: Response content too large.\\n   at UiPath.IntegrationService.Activities.Runtime.Services.RuntimeClientService.SendRequestClientAsync(ExecutionParameters executionParameters, ConnectorActivityConfiguration activityConfiguration, ICollection`1 jitInputs, CancellationToken token)\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ExecutionService.ExecuteOperationAsync(ExecutionParameters executionParameters, ConnectorActivityConfiguration activityConfiguration, Dictionary`2 telemetryUsedProperties, CancellationToken token)\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-30T02:15:48.220Z\",\r\n      \"Message\": \"List Incidents: Executing connector operation 'List' on object 'incident'.\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-30T02:15:44.010Z\",\r\n      \"Message\": \"Data Export execution started\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-06-30T02:15:52.010Z\",\r\n      \"JobId\": 50301122\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-06-30T02:15:41.520Z\",\r\n      \"JobId\": 50301122\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-06-30T02:15:38.930Z\",\r\n      \"JobId\": 50301122\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "is",
+        "connections",
+        "ping"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ConnectionPing\",\r\n  \"Data\": {\r\n    \"ConnectionId\": \"e5f6a7b8-9999-8888-7777-666655554444\",\r\n    \"Status\": \"Enabled\",\r\n    \"Message\": \"Connection is active and ready for operations.\"\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "--version"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "1.195.0\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

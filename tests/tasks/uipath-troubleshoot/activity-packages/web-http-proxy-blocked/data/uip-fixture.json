@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "c1a2b3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"7b2e1c04-9f3a-4d21-8c6e-2a5f9b1d3e40\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"PaymentGatewaySync\",\r\n      \"ReleaseName\": \"PaymentGatewaySync\",\r\n      \"StartTime\": \"2026-07-21T02:15:04.120Z\",\r\n      \"EndTime\": \"2026-07-21T02:15:09.880Z\",\r\n      \"CreationTime\": \"2026-07-21T02:15:00.500Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "7b2e1c04-9f3a-4d21-8c6e-2a5f9b1d3e40",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-21T02:15:09.410Z\",\r\n      \"Message\": \"HTTP Request: The remote server returned an error: (407) Proxy Authentication Required.\\r\\nin Wf_PostPayment.xaml\\r\\n    at HttpClient \\\"HTTP Request\\\"\\r\\n    at Sequence \\\"Post Payment\\\"\\r\\n    at Wf_PostPayment \\\"Wf_PostPayment\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.Net.WebException\\r\\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "7b2e1c04-9f3a-4d21-8c6e-2a5f9b1d3e40"
+      ],
+      "match_mode": "subset",
+      "exit_code": 1,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Message\": \"Error retrieving trace ID for job\",\r\n  \"Instructions\": \"Response returned an error code\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "c1a2b3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"7b2e1c04-9f3a-4d21-8c6e-2a5f9b1d3e40\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"PaymentGatewaySync\",\r\n      \"ReleaseName\": \"PaymentGatewaySync\",\r\n      \"StartTime\": \"2026-07-21T02:15:04.120Z\",\r\n      \"EndTime\": \"2026-07-21T02:15:09.880Z\",\r\n      \"CreationTime\": \"2026-07-21T02:15:00.500Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "7b2e1c04-9f3a-4d21-8c6e-2a5f9b1d3e40"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-07-21T02:15:09.700Z\",\r\n      \"Message\": \"PaymentGatewaySync execution ended\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-21T02:15:09.410Z\",\r\n      \"Message\": \"HTTP Request: The remote server returned an error: (407) Proxy Authentication Required.\\r\\nin Wf_PostPayment.xaml\\r\\n    at HttpClient \\\"HTTP Request\\\"\\r\\n    at Sequence \\\"Post Payment\\\"\\r\\n    at Wf_PostPayment \\\"Wf_PostPayment\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.Net.WebException\\r\\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-07-21T02:15:04.320Z\",\r\n      \"Message\": \"PaymentGatewaySync execution started\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "7b2e1c04-9f3a-4d21-8c6e-2a5f9b1d3e40"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"7b2e1c04-9f3a-4d21-8c6e-2a5f9b1d3e40\",\r\n    \"StartTime\": \"2026-07-21T02:15:04.120Z\",\r\n    \"EndTime\": \"2026-07-21T02:15:09.880Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"8c1d2e3f-aa4b-4c5d-9e6f-7a8b9c0d1e2f\",\r\n    \"Info\": \"The remote server returned an error: (407) Proxy Authentication Required.\\r\\n\\r\\nin Wf_PostPayment.xaml\\r\\n    at HttpClient \\\"HTTP Request\\\"\\r\\n    at Sequence \\\"Post Payment\\\"\\r\\n    at Wf_PostPayment \\\"Wf_PostPayment\\\"\\r\\n\\r\\nSystem.Net.WebException: The remote server returned an error: (407) Proxy Authentication Required.\\r\\n ---> System.Net.Http.HttpRequestException: The remote server returned an error: (407) Proxy Authentication Required.\\r\\n   at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)\\r\\n   at System.Net.Http.HttpConnectionPool.AddHttp11ConnectionAsync(QueueItem queueItem)\\r\\n   at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)\\r\\n   at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)\\r\\n   at System.Net.HttpWebRequest.SendRequest(Boolean async)\\r\\n   at System.Net.HttpWebRequest.EndGetResponse(IAsyncResult asyncResult)\\r\\n   --- End of inner exception stack trace ---\\r\\n   at UiPath.Web.Activities.HttpClient.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-07-21T02:15:00.500Z\",\r\n    \"ReleaseName\": \"PaymentGatewaySync\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 21870031,\r\n    \"EntryPointPath\": \"Wf_PostPayment.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"c1a2b3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-07-21T02:15:09.880Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"7b2e1c049f3a4d218c6e2a5f9b1d3e40\",\r\n    \"Id\": 68012774\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "7b2e1c04-9f3a-4d21-8c6e-2a5f9b1d3e40"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-21T02:15:09.884Z\",\r\n      \"JobId\": 68012774\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-21T02:15:04.130Z\",\r\n      \"JobId\": 68012774\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-07-21T02:15:00.540Z\",\r\n      \"JobId\": 68012774\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "7b2e1c04-9f3a-4d21-8c6e-2a5f9b1d3e40"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"7b2e1c04-9f3a-4d21-8c6e-2a5f9b1d3e40\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"PaymentGatewaySync\",\r\n      \"ReleaseName\": \"PaymentGatewaySync\",\r\n      \"StartTime\": \"2026-07-21T02:15:04.120Z\",\r\n      \"EndTime\": \"2026-07-21T02:15:09.880Z\",\r\n      \"CreationTime\": \"2026-07-21T02:15:00.500Z\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9b8a7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d\",\r\n      \"Name\": \"automation1@test.com's workspace\",\r\n      \"Path\": \"automation1@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c1a2b3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"Empty\",\n  \"Data\": []\n}\n"
+  }
+}

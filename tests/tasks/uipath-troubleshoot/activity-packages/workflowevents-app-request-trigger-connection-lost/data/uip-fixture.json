@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-25T15:11:08.140Z\",\r\n      \"Message\": \"Apps Request Trigger: SignalR connection did not establish within 60 seconds. Current state: Connecting\\r\\nin Main.xaml\\r\\n    at AppRequestTrigger\\r\\n    at Main\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.TimeoutException\\r\\n   at UiPath.WorkflowEvents.Activities.Services.HubConnectionService.EnsureChannelConnectedAsync(CancellationToken cancellationToken)\\r\\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.GetWorkflowRequest(IExecutorRuntime executorRuntime, Action`1 sendTrigger, Bookmark bookmark, BookmarkResumptionHelper bookmarkHelper, CancellationToken cancellationToken)\\r\\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.Throw(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"e7a1b0c44d92f308\",\r\n      \"TraceId\": \"d72c5e813a944f0b8e216c9a0f4b7d13\",\r\n      \"ParentId\": null,\r\n      \"Name\": \"Robot Job d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13\",\r\n      \"StartTime\": \"2026-06-25T15:10:05.2012001Z\",\r\n      \"EndTime\": \"2026-06-25T15:11:08.4628110Z\",\r\n      \"Attributes\": \"{\\\"Exception\\\":\\\"System.TimeoutException: SignalR connection did not establish within 60 seconds. Current state: Connecting\\\\r\\\\n   at UiPath.WorkflowEvents.Activities.Services.HubConnectionService.EnsureChannelConnectedAsync(CancellationToken cancellationToken)\\\\r\\\\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.GetWorkflowRequest(IExecutorRuntime executorRuntime, Action`1 sendTrigger, Bookmark bookmark, BookmarkResumptionHelper bookmarkHelper, CancellationToken cancellationToken)\\\\r\\\\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.Throw(NativeActivityContext context, Bookmark bookmark, Object value)\\\\r\\\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"RobotJob\",\r\n      \"ProcessKey\": \"e8b3a1d5-9c42-4f17-b6a0-3d5e8c1f0a92\",\r\n      \"JobKey\": \"d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T15:11:08.3671115Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    },\r\n    {\r\n      \"Id\": \"f8b2c1d55ea30419\",\r\n      \"TraceId\": \"d72c5e813a944f0b8e216c9a0f4b7d13\",\r\n      \"ParentId\": \"e7a1b0c44d92f308\",\r\n      \"Name\": \"Apps Request Trigger\",\r\n      \"StartTime\": \"2026-06-25T15:10:05.3320140Z\",\r\n      \"EndTime\": \"2026-06-25T15:11:08.4010522Z\",\r\n      \"Attributes\": \"{\\\"Public.FullTypeName\\\":\\\"UiPath.WorkflowEvents.Activities.AppRequestTrigger\\\",\\\"Public.ConnectionMode\\\":\\\"SignalR\\\",\\\"Private.DisplayName\\\":\\\"Apps Request Trigger\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"Activity\",\r\n      \"ProcessKey\": \"e8b3a1d5-9c42-4f17-b6a0-3d5e8c1f0a92\",\r\n      \"JobKey\": \"d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T15:11:08.3671115Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"RequestListener\",\r\n      \"ReleaseKey\": \"e8b3a1d5-9c42-4f17-b6a0-3d5e8c1f0a92\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-25T15:10:02.310Z\",\r\n      \"EndTime\": \"2026-06-25T15:11:08.640Z\",\r\n      \"CreationTime\": \"2026-06-25T15:10:01.900Z\"\r\n    },\r\n    {\r\n      \"Key\": \"3b8e0a17-9d52-4c6e-a014-7f2b9c5d83e0\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"RequestListener\",\r\n      \"ReleaseKey\": \"e8b3a1d5-9c42-4f17-b6a0-3d5e8c1f0a92\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-25T14:48:11.500Z\",\r\n      \"EndTime\": \"2026-06-25T14:49:55.220Z\",\r\n      \"CreationTime\": \"2026-06-25T14:48:11.180Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13\",\r\n    \"StartTime\": \"2026-06-25T15:10:02.310Z\",\r\n    \"EndTime\": \"2026-06-25T15:11:08.640Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Agent\",\r\n    \"SourceType\": \"Agent\",\r\n    \"BatchExecutionKey\": \"9a1e0c47-6b22-4d8f-bc31-2e7a5d0f9b48\",\r\n    \"Info\": \"SignalR connection did not establish within 60 seconds. Current state: Connecting\\r\\n\\r\\nin Main.xaml\\r\\n    at AppRequestTrigger\\r\\n    at Main\\r\\n\\r\\nSystem.TimeoutException: SignalR connection did not establish within 60 seconds. Current state: Connecting\\r\\n   at UiPath.WorkflowEvents.Activities.Services.HubConnectionService.EnsureChannelConnectedAsync(CancellationToken cancellationToken)\\r\\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.GetWorkflowRequest(IExecutorRuntime executorRuntime, Action`1 sendTrigger, Bookmark bookmark, BookmarkResumptionHelper bookmarkHelper, CancellationToken cancellationToken)\\r\\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.Throw(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-25T15:10:01.900Z\",\r\n    \"ReleaseName\": \"RequestListener\",\r\n    \"Type\": \"Attended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Attended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 61533,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 31044,\r\n    \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_user\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-25T15:11:08.640Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"d72c5e813a944f0b8e216c9a0f4b7d13\",\r\n    \"Id\": 4022907\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-25T15:11:08.140Z\",\r\n      \"Message\": \"Apps Request Trigger: SignalR connection did not establish within 60 seconds. Current state: Connecting\\r\\nin Main.xaml\\r\\n    at AppRequestTrigger\\r\\n    at Main\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.TimeoutException\\r\\n   at UiPath.WorkflowEvents.Activities.Services.HubConnectionService.EnsureChannelConnectedAsync(CancellationToken cancellationToken)\\r\\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.GetWorkflowRequest(IExecutorRuntime executorRuntime, Action`1 sendTrigger, Bookmark bookmark, BookmarkResumptionHelper bookmarkHelper, CancellationToken cancellationToken)\\r\\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.Throw(NativeActivityContext context, Bookmark bookmark, Object value)\\r\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-06-25T15:11:08.650Z\",\r\n      \"JobId\": 4022907\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-06-25T15:10:02.330Z\",\r\n      \"JobId\": 4022907\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-06-25T15:10:01.950Z\",\r\n      \"JobId\": 4022907\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"e7a1b0c44d92f308\",\r\n      \"TraceId\": \"d72c5e813a944f0b8e216c9a0f4b7d13\",\r\n      \"ParentId\": null,\r\n      \"Name\": \"Robot Job d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13\",\r\n      \"StartTime\": \"2026-06-25T15:10:05.2012001Z\",\r\n      \"EndTime\": \"2026-06-25T15:11:08.4628110Z\",\r\n      \"Attributes\": \"{\\\"Exception\\\":\\\"System.TimeoutException: SignalR connection did not establish within 60 seconds. Current state: Connecting\\\\r\\\\n   at UiPath.WorkflowEvents.Activities.Services.HubConnectionService.EnsureChannelConnectedAsync(CancellationToken cancellationToken)\\\\r\\\\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.GetWorkflowRequest(IExecutorRuntime executorRuntime, Action`1 sendTrigger, Bookmark bookmark, BookmarkResumptionHelper bookmarkHelper, CancellationToken cancellationToken)\\\\r\\\\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.Throw(NativeActivityContext context, Bookmark bookmark, Object value)\\\\r\\\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"RobotJob\",\r\n      \"ProcessKey\": \"e8b3a1d5-9c42-4f17-b6a0-3d5e8c1f0a92\",\r\n      \"JobKey\": \"d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T15:11:08.3671115Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    },\r\n    {\r\n      \"Id\": \"f8b2c1d55ea30419\",\r\n      \"TraceId\": \"d72c5e813a944f0b8e216c9a0f4b7d13\",\r\n      \"ParentId\": \"e7a1b0c44d92f308\",\r\n      \"Name\": \"Apps Request Trigger\",\r\n      \"StartTime\": \"2026-06-25T15:10:05.3320140Z\",\r\n      \"EndTime\": \"2026-06-25T15:11:08.4010522Z\",\r\n      \"Attributes\": \"{\\\"Public.FullTypeName\\\":\\\"UiPath.WorkflowEvents.Activities.AppRequestTrigger\\\",\\\"Public.ConnectionMode\\\":\\\"SignalR\\\",\\\"Private.DisplayName\\\":\\\"Apps Request Trigger\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"Activity\",\r\n      \"ProcessKey\": \"e8b3a1d5-9c42-4f17-b6a0-3d5e8c1f0a92\",\r\n      \"JobKey\": \"d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T15:11:08.3671115Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "d72c5e813a944f0b8e216c9a0f4b7d13"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"e7a1b0c44d92f308\",\r\n      \"TraceId\": \"d72c5e813a944f0b8e216c9a0f4b7d13\",\r\n      \"ParentId\": null,\r\n      \"Name\": \"Robot Job d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13\",\r\n      \"StartTime\": \"2026-06-25T15:10:05.2012001Z\",\r\n      \"EndTime\": \"2026-06-25T15:11:08.4628110Z\",\r\n      \"Attributes\": \"{\\\"Exception\\\":\\\"System.TimeoutException: SignalR connection did not establish within 60 seconds. Current state: Connecting\\\\r\\\\n   at UiPath.WorkflowEvents.Activities.Services.HubConnectionService.EnsureChannelConnectedAsync(CancellationToken cancellationToken)\\\\r\\\\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.GetWorkflowRequest(IExecutorRuntime executorRuntime, Action`1 sendTrigger, Bookmark bookmark, BookmarkResumptionHelper bookmarkHelper, CancellationToken cancellationToken)\\\\r\\\\n   at UiPath.WorkflowEvents.Activities.AppRequestTrigger.Throw(NativeActivityContext context, Bookmark bookmark, Object value)\\\\r\\\\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"RobotJob\",\r\n      \"ProcessKey\": \"e8b3a1d5-9c42-4f17-b6a0-3d5e8c1f0a92\",\r\n      \"JobKey\": \"d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T15:11:08.3671115Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    },\r\n    {\r\n      \"Id\": \"f8b2c1d55ea30419\",\r\n      \"TraceId\": \"d72c5e813a944f0b8e216c9a0f4b7d13\",\r\n      \"ParentId\": \"e7a1b0c44d92f308\",\r\n      \"Name\": \"Apps Request Trigger\",\r\n      \"StartTime\": \"2026-06-25T15:10:05.3320140Z\",\r\n      \"EndTime\": \"2026-06-25T15:11:08.4010522Z\",\r\n      \"Attributes\": \"{\\\"Public.FullTypeName\\\":\\\"UiPath.WorkflowEvents.Activities.AppRequestTrigger\\\",\\\"Public.ConnectionMode\\\":\\\"SignalR\\\",\\\"Private.DisplayName\\\":\\\"Apps Request Trigger\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"aa11bb22-cc33-4d44-ee55-ff6677889900\",\r\n      \"TenantId\": \"11aa22bb-33cc-44dd-55ee-66ff77889900\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"Activity\",\r\n      \"ProcessKey\": \"e8b3a1d5-9c42-4f17-b6a0-3d5e8c1f0a92\",\r\n      \"JobKey\": \"d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-06-25T15:11:08.3671115Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null,\r\n      \"Context\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8d1c4b22-7e90-4a3f-9b5d-1f6a2c8e0d34\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"RequestListener\",\r\n      \"ReleaseKey\": \"e8b3a1d5-9c42-4f17-b6a0-3d5e8c1f0a92\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-25T15:10:02.310Z\",\r\n      \"EndTime\": \"2026-06-25T15:11:08.640Z\",\r\n      \"CreationTime\": \"2026-06-25T15:10:01.900Z\"\r\n    },\r\n    {\r\n      \"Key\": \"3b8e0a17-9d52-4c6e-a014-7f2b9c5d83e0\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"RequestListener\",\r\n      \"ReleaseKey\": \"e8b3a1d5-9c42-4f17-b6a0-3d5e8c1f0a92\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-25T14:48:11.500Z\",\r\n      \"EndTime\": \"2026-06-25T14:49:55.220Z\",\r\n      \"CreationTime\": \"2026-06-25T14:48:11.180Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Triage must resolve the Shared folder key before listing jobs."
+    },
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent must list jobs in folder Shared to identify the most recent (faulted) job."
+    },
+    {
+      "pattern": "or jobs get d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+      "min": 1,
+      "description": "Agent must fetch the failing job to read the System.TimeoutException from UiPath.WorkflowEvents.Activities.AppRequestTrigger (SignalR connection did not establish within 60 seconds)."
+    },
+    {
+      "pattern": "traces",
+      "min": 1,
+      "description": "Cause disambiguation: the Apps Request Trigger span shows ConnectionMode=SignalR and the absence of any invoke-workflow child span, pinning the fault to a failed channel establishment rather than an in-workflow error or a hub-bootstrap failure."
+    },
+    {
+      "pattern": "or jobs logs d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+      "min": 0,
+      "description": "OPTIONAL — Error-level log repeats the exception already visible in jobs get."
+    },
+    {
+      "pattern": "or jobs history d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+      "min": 0,
+      "description": "OPTIONAL — state transitions show the ~60s establish wait before the fault."
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "e3c3d4e5-f6a7-8901-2cde-f01234567890",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"aacc44ee-55ff-66aa-77bb-88cc99001122\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ReportCompiler\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"RuntimeType\": \"Unattended\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"StartTime\": \"2026-06-22T06:00:02.500Z\",\r\n      \"EndTime\": \"2026-06-22T06:00:39.870Z\",\r\n      \"CreationTime\": \"2026-06-22T06:00:02.300Z\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "aacc44ee-55ff-66aa-77bb-88cc99001122",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-22T06:00:39.860Z\",\r\n      \"Message\": \"Job 'aacc44ee-55ff-66aa-77bb-88cc99001122' faulted. System.Exception: Job stopped with an unexpected exit code: 0xE0434352\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-22T06:00:39.700Z\",\r\n      \"Message\": \"[Robot] Executor process exited with code 0xE0434352 (CLR unhandled managed exception). Inspect execution traces for the managed exception detail.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "aacc44ee-55ff-66aa-77bb-88cc99001122"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": [\r\n    {\r\n      \"Activity\": \"Main Sequence\",\r\n      \"Status\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-22T06:00:03.010Z\",\r\n      \"EndTime\": \"2026-06-22T06:00:39.720Z\"\r\n    },\r\n    {\r\n      \"Activity\": \"Read region config\",\r\n      \"Status\": \"Succeeded\",\r\n      \"StartTime\": \"2026-06-22T06:00:03.220Z\",\r\n      \"EndTime\": \"2026-06-22T06:00:12.540Z\"\r\n    },\r\n    {\r\n      \"Activity\": \"Lookup region total (Assign)\",\r\n      \"Status\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-22T06:00:39.610Z\",\r\n      \"EndTime\": \"2026-06-22T06:00:39.700Z\",\r\n      \"Error\": {\r\n        \"Type\": \"System.Collections.Generic.KeyNotFoundException\",\r\n        \"Message\": \"The given key 'EMEA-NORTH' was not present in the dictionary.\",\r\n        \"StackTrace\": \"at System.Collections.Generic.Dictionary`2.get_Item(TKey key)\\r\\n   at lambda_method(Closure, ActivityContext)\\r\\n   at Microsoft.VisualBasic.Activities.VisualBasicValue`1.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity`1.InternalExecuteInResolutionContext(CodeActivityContext context)\",\r\n        \"Handled\": false\r\n      }\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "aacc44ee-55ff-66aa-77bb-88cc99001122"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"aacc44ee-55ff-66aa-77bb-88cc99001122\",\r\n    \"StartTime\": \"2026-06-22T06:00:02.500Z\",\r\n    \"EndTime\": \"2026-06-22T06:00:39.870Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"Info\": \"System.Exception: Job stopped with an unexpected exit code: 0xE0434352\",\r\n    \"CreationTime\": \"2026-06-22T06:00:02.300Z\",\r\n    \"ReleaseName\": \"ReportCompiler\",\r\n    \"Type\": \"Unattended\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"OrganizationUnitId\": 7791625,\r\n    \"FolderKey\": \"e3c3d4e5-f6a7-8901-2cde-f01234567890\",\r\n    \"ProcessType\": \"Process\",\r\n    \"MachineName\": \"MOCK-HOST\",\r\n    \"MachineKey\": \"f0e1d2c3-b4a5-6978-8c9d-0e1f2a3b4c5d\",\r\n    \"LastModificationTime\": \"2026-06-22T06:00:39.870Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"aacc44ee-55ff-66aa-77bb-88cc99001122\",\r\n    \"Id\": 671440011\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "aacc44ee-55ff-66aa-77bb-88cc99001122"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-22T06:00:39.860Z\",\r\n      \"Message\": \"Job 'aacc44ee-55ff-66aa-77bb-88cc99001122' faulted. System.Exception: Job stopped with an unexpected exit code: 0xE0434352\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-22T06:00:39.700Z\",\r\n      \"Message\": \"[Robot] Executor process exited with code 0xE0434352 (CLR unhandled managed exception). Inspect execution traces for the managed exception detail.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "aacc44ee-55ff-66aa-77bb-88cc99001122"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": [\r\n    {\r\n      \"Activity\": \"Main Sequence\",\r\n      \"Status\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-22T06:00:03.010Z\",\r\n      \"EndTime\": \"2026-06-22T06:00:39.720Z\"\r\n    },\r\n    {\r\n      \"Activity\": \"Read region config\",\r\n      \"Status\": \"Succeeded\",\r\n      \"StartTime\": \"2026-06-22T06:00:03.220Z\",\r\n      \"EndTime\": \"2026-06-22T06:00:12.540Z\"\r\n    },\r\n    {\r\n      \"Activity\": \"Lookup region total (Assign)\",\r\n      \"Status\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-22T06:00:39.610Z\",\r\n      \"EndTime\": \"2026-06-22T06:00:39.700Z\",\r\n      \"Error\": {\r\n        \"Type\": \"System.Collections.Generic.KeyNotFoundException\",\r\n        \"Message\": \"The given key 'EMEA-NORTH' was not present in the dictionary.\",\r\n        \"StackTrace\": \"at System.Collections.Generic.Dictionary`2.get_Item(TKey key)\\r\\n   at lambda_method(Closure, ActivityContext)\\r\\n   at Microsoft.VisualBasic.Activities.VisualBasicValue`1.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity`1.InternalExecuteInResolutionContext(CodeActivityContext context)\",\r\n        \"Handled\": false\r\n      }\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2c8cb22-2ebc-4c27-87f3-05efe701af1c\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"e3c3d4e5-f6a7-8901-2cde-f01234567890\",\r\n      \"Name\": \"ReportingOps\",\r\n      \"Path\": \"ReportingOps\",\r\n      \"Description\": \"Folder hosting the ReportCompiler unattended process.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"e0772cbe-c19c-4d5f-926c-043c2d2d300a\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "machines",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"MachineList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0e1d2c3-b4a5-6978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"ReportingRuntime\",\r\n      \"Type\": \"Template\",\r\n      \"Runtimes\": 2,\r\n      \"Hosts\": [\"MOCK-HOST\"],\r\n      \"RobotVersion\": \"23.4.0\",\r\n      \"Description\": \"Runtime template for the ReportingOps folder; hosts run an older robot build.\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

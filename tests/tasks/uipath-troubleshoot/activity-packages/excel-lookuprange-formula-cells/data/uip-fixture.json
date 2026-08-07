@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f1a2b3c4-5d6e-4789-9b0c-1d2e3f4a5b6c\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"DailyPriceSync\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-27T14:38:12.180Z\",\r\n      \"EndTime\": \"2026-05-27T14:38:17.610Z\",\r\n      \"CreationTime\": \"2026-05-27T14:38:11.940Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "f1a2b3c4-5d6e-4789-9b0c-1d2e3f4a5b6c",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-27T14:38:17.534Z\",\r\n      \"Message\": \"[Throw SKU Not Found] Today's published price for SKU-7392 not found in PublishedPrices sheet\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-27T14:38:17.582Z\",\r\n      \"Message\": \"Today's published price for SKU-7392 not found in PublishedPrices sheet\\r\\nin Main.xaml\\r\\n    at Throw \\\"Throw SKU Not Found\\\"\\r\\n    at If \\\"Guard empty result\\\"\\r\\n    at Sequence \\\"Process Published Prices\\\"\\r\\n    at ExcelApplicationScope \\\"Excel Application Scope\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "f1a2b3c4-5d6e-4789-9b0c-1d2e3f4a5b6c",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"f1a2b3c4-5d6e-4789-9b0c-1d2e3f4a5b6c\",\r\n    \"StartTime\": \"2026-05-27T14:38:12.180Z\",\r\n    \"EndTime\": \"2026-05-27T14:38:17.610Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"e3f4a5b6-7c8d-49e1-8f02-3a4b5c6d7e8f\",\r\n    \"Info\": \"Throw SKU Not Found: Today's published price for SKU-7392 not found in PublishedPrices sheet\\r\\n\\r\\nin Main.xaml\\r\\n    at Throw \\\"Throw SKU Not Found\\\"\\r\\n    at If \\\"Guard empty result\\\"\\r\\n    at Sequence \\\"Process Published Prices\\\"\\r\\n    at ExcelApplicationScope \\\"Excel Application Scope\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Core.BusinessRuleException: Today's published price for SKU-7392 not found in PublishedPrices sheet\",\r\n    \"CreationTime\": \"2026-05-27T14:38:11.940Z\",\r\n    \"ReleaseName\": \"DailyPriceSync\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6020412,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"schedule\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-27T14:38:17.610Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"BusinessRuleException\",\r\n    \"TraceId\": \"f1a2b3c4-5d6e-4789-9b0c-1d2e3f4a5b6c\",\r\n    \"Id\": 682405188\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "f1a2b3c4-5d6e-4789-9b0c-1d2e3f4a5b6c",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-27T14:38:12.220Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-27T14:38:14.060Z\",\r\n      \"Message\": \"[Excel Application Scope] Opened workbook data\\\\DailyPrices.xlsx\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-27T14:38:16.940Z\",\r\n      \"Message\": \"[Lookup Range] Searched sheet 'PublishedPrices' for 'SKU-7392'; Result = '' (no match)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-27T14:38:17.534Z\",\r\n      \"Message\": \"[Throw SKU Not Found] Today's published price for SKU-7392 not found in PublishedPrices sheet\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-27T14:38:17.582Z\",\r\n      \"Message\": \"Today's published price for SKU-7392 not found in PublishedPrices sheet\\r\\nin Main.xaml\\r\\n    at Throw \\\"Throw SKU Not Found\\\"\\r\\n    at If \\\"Guard empty result\\\"\\r\\n    at Sequence \\\"Process Published Prices\\\"\\r\\n    at ExcelApplicationScope \\\"Excel Application Scope\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-27T14:38:17.602Z\",\r\n      \"Message\": \"Execution ended in: 00:00:05\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2c9d4e7-3a8f-4b1d-9e5c-7f0a2b3c4d5e\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the finance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MacOS-excel-localproc\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-04-01T11:05:20.893Z\",\r\n      \"EndTime\": \"2026-04-01T11:05:25.247Z\",\r\n      \"CreationTime\": \"2026-04-01T11:05:19.137Z\",\r\n      \"Id\": 47602501\r\n    },\r\n    {\r\n      \"Key\": \"100c2f87-c1b1-4aba-9488-63ca964b951c\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MacOS-excel-localproc\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-04-01T07:20:39.520Z\",\r\n      \"EndTime\": \"2026-04-01T07:20:43.403Z\",\r\n      \"CreationTime\": \"2026-03-31T16:31:03.350Z\",\r\n      \"Id\": 47591023\r\n    },\r\n    {\r\n      \"Key\": \"68051472-bc1a-4188-93fc-b65dad14cd99\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MacOS-excel-localproc\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-03-31T16:29:09.680Z\",\r\n      \"EndTime\": \"2026-03-31T16:29:12.290Z\",\r\n      \"CreationTime\": \"2026-03-31T16:29:08.500Z\",\r\n      \"Id\": 47590968\r\n    },\r\n    {\r\n      \"Key\": \"dbb32a90-89a9-4af1-bcee-6ab43a4c7c74\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MacOS-excel-localproc\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-03-31T16:21:24.293Z\",\r\n      \"EndTime\": \"2026-03-31T16:21:28.030Z\",\r\n      \"CreationTime\": \"2026-03-31T16:21:23.680Z\",\r\n      \"Id\": 47590771\r\n    },\r\n    {\r\n      \"Key\": \"d8cac54f-83fc-4637-9eee-d367479b009d\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MacOS-excel-localproc\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-03-31T15:51:12.433Z\",\r\n      \"EndTime\": \"2026-03-31T15:51:16.310Z\",\r\n      \"CreationTime\": \"2026-03-31T15:51:11.627Z\",\r\n      \"Id\": 47590094\r\n    },\r\n    {\r\n      \"Key\": \"91e5b90e-57da-4f85-991f-48461fc71e0b\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"RPA.Workflow\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-03-31T15:04:06.730Z\",\r\n      \"EndTime\": \"2026-03-31T15:04:16.130Z\",\r\n      \"CreationTime\": \"2026-03-31T15:04:06.060Z\",\r\n      \"Id\": 47589186\r\n    },\r\n    {\r\n      \"Key\": \"3033bce6-5585-4455-aaec-db7a9f791126\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"RPA.Workflow\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-03-31T10:15:49.240Z\",\r\n      \"EndTime\": \"2026-03-31T10:15:57.013Z\",\r\n      \"CreationTime\": \"2026-03-31T10:15:46.003Z\",\r\n      \"Id\": 47583596\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MacOS-excel-localproc\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-04-01T11:05:20.893Z\",\r\n      \"EndTime\": \"2026-04-01T11:05:25.247Z\",\r\n      \"CreationTime\": \"2026-04-01T11:05:19.137Z\",\r\n      \"Id\": 47602501\r\n    },\r\n    {\r\n      \"Key\": \"100c2f87-c1b1-4aba-9488-63ca964b951c\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MacOS-excel-localproc\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-04-01T07:20:39.520Z\",\r\n      \"EndTime\": \"2026-04-01T07:20:43.403Z\",\r\n      \"CreationTime\": \"2026-03-31T16:31:03.350Z\",\r\n      \"Id\": 47591023\r\n    },\r\n    {\r\n      \"Key\": \"68051472-bc1a-4188-93fc-b65dad14cd99\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MacOS-excel-localproc\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-03-31T16:29:09.680Z\",\r\n      \"EndTime\": \"2026-03-31T16:29:12.290Z\",\r\n      \"CreationTime\": \"2026-03-31T16:29:08.500Z\",\r\n      \"Id\": 47590968\r\n    },\r\n    {\r\n      \"Key\": \"dbb32a90-89a9-4af1-bcee-6ab43a4c7c74\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MacOS-excel-localproc\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-03-31T16:21:24.293Z\",\r\n      \"EndTime\": \"2026-03-31T16:21:28.030Z\",\r\n      \"CreationTime\": \"2026-03-31T16:21:23.680Z\",\r\n      \"Id\": 47590771\r\n    },\r\n    {\r\n      \"Key\": \"d8cac54f-83fc-4637-9eee-d367479b009d\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MacOS-excel-localproc\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-03-31T15:51:12.433Z\",\r\n      \"EndTime\": \"2026-03-31T15:51:16.310Z\",\r\n      \"CreationTime\": \"2026-03-31T15:51:11.627Z\",\r\n      \"Id\": 47590094\r\n    },\r\n    {\r\n      \"Key\": \"91e5b90e-57da-4f85-991f-48461fc71e0b\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"RPA.Workflow\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-03-31T15:04:06.730Z\",\r\n      \"EndTime\": \"2026-03-31T15:04:16.130Z\",\r\n      \"CreationTime\": \"2026-03-31T15:04:06.060Z\",\r\n      \"Id\": 47589186\r\n    },\r\n    {\r\n      \"Key\": \"3033bce6-5585-4455-aaec-db7a9f791126\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"RPA.Workflow\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DESKTOP-HOME-WO\",\r\n      \"StartTime\": \"2026-03-31T10:15:49.240Z\",\r\n      \"EndTime\": \"2026-03-31T10:15:57.013Z\",\r\n      \"CreationTime\": \"2026-03-31T10:15:46.003Z\",\r\n      \"Id\": 47583596\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "is",
+        "connections",
+        "list",
+        "--folder-key",
+        "7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ConnectionList\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"86ec2bec-fcde-44e3-a793-9bd3ea0cd0ab\",\r\n      \"Name\": \"replacement_email@test.com\",\r\n      \"ConnectorKey\": \"uipath-microsoft-onedrive\",\r\n      \"ConnectorName\": \"Microsoft OneDrive & SharePoint\",\r\n      \"State\": \"Enabled\",\r\n      \"Owner\": \"replacement_email@test.com\",\r\n      \"IsDefault\": \"Yes\",\r\n      \"Folder\": \"replacement_email@test.com's workspace\",\r\n      \"FolderKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"Created\": \"2026-03-31T15:00:00.900Z\",\r\n      \"Updated\": \"2026-03-31T18:33:16.356Z\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "3033bce6-5585-4455-aaec-db7a9f791126"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"3033bce6-5585-4455-aaec-db7a9f791126\",\r\n    \"StartTime\": \"2026-03-31T10:15:49.240Z\",\r\n    \"EndTime\": \"2026-03-31T10:15:57.013Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"fac90848-2da0-4d2c-a26c-e8e33497d557\",\r\n    \"Info\": \"Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it\\r\\n\\r\\nin Main.xaml\\r\\n    at ForEachSheetConnections \\\"For Each Sheet in Workbook\\\"\\r\\n    at Sequence \\\"Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.MicrosoftOffice365.Office365Exception: Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it\\r\\n ---> UiPath.MicrosoftOffice365.Office365InternalException: Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it\\r\\n ---> UiPath.ConnectionClient.Contracts.ConnectionHttpException: Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it\\r\\n   at UiPath.ConnectionClient.Helpers.HttpResponseMessageExtensions.EnsureConnectionStatusCodeAsync(HttpResponseMessage response, CancellationToken ct)\\r\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestAsync(Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\r\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestAsync[T](Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\r\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestWithRetryAsync[T](Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\r\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestWithRetryAsync[T](Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\r\\n   at UiPath.ConnectionClient.ConnectionClient.<>c__DisplayClass13_0.<<GetConnectionAsync>b__0>d.MoveNext()\\r\\n--- End of stack trace from previous location ---\\r\\n   at UiPath.ConnectionClient.Helpers.CacheHelpers`1.GetValueFromCache(MemoryCache cache, String key, Func`1 refreshValueFunc, DateTimeOffset expiry, SemaphoreSlim cacheSemaphore, Boolean forceRefresh)\\r\\n   at UiPath.ConnectionClient.ConnectionClient.GetConnectionAsync(String connectionId, CancellationToken ct, Boolean forceRefresh, Boolean includeConfig)\\r\\n   at UiPath.MicrosoftOffice365.Services.GraphConnectionFactory.Create(IGraphClientServiceFactory factory, IConnectionClient connectionClient, OAuthDataOptions model, CancellationToken ct)\\r\\n   at UiPath.MicrosoftOffice365.Services.GraphServiceClientProxy.GetAccountAsync(CancellationToken ct)\\r\\n   at UiPath.MicrosoftOffice365.Activities.Excel.ForEachSheetConnections.SafeExecute(NativeActivityContext context)\\r\\n   at UiPath.MicrosoftOffice365.Activities.BaseForEachConnectionServiceActivity.Execute(NativeActivityContext context)\\r\\n   --- End of inner exception stack trace ---\\r\\n   at UiPath.ConnectionClient.Helpers.HttpResponseMessageExtensions.EnsureConnectionStatusCodeAsync(HttpResponseMessage response, CancellationToken ct)\\r\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestAsync(Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\r\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestAsync[T](Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\r\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestWithRetryAsync[T](Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\r\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestWithRetryAsync[T](Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\r\\n   at UiPath.ConnectionClient.ConnectionClient.<>c__DisplayClass13_0.<<GetConnectionAsync>b__0>d.MoveNext()\\r\\n--- End of stack trace from previous location ---\\r\\n   at UiPath.ConnectionClient.Helpers.CacheHelpers`1.GetValueFromCache(MemoryCache cache, String key, Func`1 refreshValueFunc, DateTimeOffset expiry, SemaphoreSlim cacheSemaphore, Boolean forceRefresh)\\r\\n   at UiPath.ConnectionClient.ConnectionClient.GetConnectionAsync(String connectionId, CancellationToken ct, Boolean forceRefresh, Boolean includeConfig)\\r\\n   at UiPath.MicrosoftOffice365.Services.GraphConnectionFactory.Create(IGraphClientServiceFactory factory, IConnectionClient connectionClient, OAuthDataOptions model, CancellationToken ct)\\r\\n   at UiPath.MicrosoftOffice365.Services.GraphServiceClientProxy.GetAccountAsync(CancellationToken ct)\\r\\n   at UiPath.MicrosoftOffice365.Activities.Excel.ForEachSheetConnections.SafeExecute(NativeActivityContext context)\\r\\n   at UiPath.MicrosoftOffice365.Activities.BaseForEachConnectionServiceActivity.Execute(NativeActivityContext context)\\r\\n   --- End of inner exception stack trace ---\\r\\n   at UiPath.MicrosoftOffice365.Activities.BaseForEachConnectionServiceActivity.Execute(NativeActivityContext context)\\r\\n   at System.Activities.NativeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\",\r\n    \"CreationTime\": \"2026-03-31T10:15:46.003Z\",\r\n    \"ReleaseName\": \"RPA.Workflow\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"DESKTOP-HOME-WO\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Development\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 967813,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 1321239,\r\n    \"FolderKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\RAZVAN.MARINOVICI\",\r\n    \"OrchestratorUserIdentity\": \"replacement_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-03-31T10:15:57.013Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"3033bce6-5585-4455-aaec-db7a9f791126\",\r\n    \"Id\": 47583596\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "3033bce6-5585-4455-aaec-db7a9f791126"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-03-31T10:15:57.100Z\",\r\n      \"JobId\": 47583596\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-03-31T10:15:49.353Z\",\r\n      \"JobId\": 47583596\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-03-31T10:15:46.100Z\",\r\n      \"JobId\": 47583596\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "3033bce6-5585-4455-aaec-db7a9f791126"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-03-31T10:15:57.609Z\",\r\n      \"Message\": \"For Each Sheet in Workbook: Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it\\r\\nin Main.xaml\\r\\n    at ForEachSheetConnections \\\"For Each Sheet in Workbook\\\"\\r\\n    at Sequence \\\"Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "3033bce6-5585-4455-aaec-db7a9f791126"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"8f73e7b3705293e3\",\r\n      \"TraceId\": \"3033bce655854455aaecdb7a9f791126\",\r\n      \"ParentId\": null,\r\n      \"Name\": \"Robot Job 3033bce6-5585-4455-aaec-db7a9f791126\",\r\n      \"StartTime\": \"2026-03-31T10:15:55.9473443Z\",\r\n      \"EndTime\": \"2026-03-31T10:15:57.629768Z\",\r\n      \"Attributes\": \"{\\\"Exception\\\":\\\"UiPath.MicrosoftOffice365.Office365Exception: Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it\\\\r\\\\n ---> UiPath.MicrosoftOffice365.Office365InternalException: Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it\\\\r\\\\n ---> UiPath.ConnectionClient.Contracts.ConnectionHttpException: Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it\\\\r\\\\n   at UiPath.ConnectionClient.Helpers.HttpResponseMessageExtensions.EnsureConnectionStatusCodeAsync(HttpResponseMessage response, CancellationToken ct)\\\\r\\\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestAsync(Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\\\r\\\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestAsync[T](Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\\\r\\\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestWithRetryAsync[T](Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\\\r\\\\n   at UiPath.ConnectionClient.Helpers.HttpConnectionServiceClient.RequestWithRetryAsync[T](Uri uri, HttpMethod method, String content, TimeSpan timeout, Dictionary`2 headers, CancellationToken ct)\\\\r\\\\n   at UiPath.ConnectionClient.ConnectionClient.<>c__DisplayClass13_0.<<GetConnectionAsync>b__0>d.MoveNext()\\\\r\\\\n--- End of stack trace from previous location ---\\\\r\\\\n   at UiPath.ConnectionClient.Helpers.CacheHelpers`1.GetValueFromCache(MemoryCache cache, String key, Func`1 refreshValueFunc, DateTimeOffset expiry, SemaphoreSlim cacheSemaphore, Boolean forceRefresh)\\\\r\\\\n   at UiPath.ConnectionClient.ConnectionClient.GetConnectionAsync(String connectionId, CancellationToken ct, Boolean forceRefresh, Boolean includeConfig)\\\\r\\\\n   at UiPath.MicrosoftOffice365.Services.GraphConnectionFactory.Create(IGraphClientServiceFactory factory, IConnectionClient connectionClient, OAuthDataOptions model, CancellationToken ct)\\\\r\\\\n   at UiPath.MicrosoftOffice365.Services.GraphServiceClientProxy.GetAccountAsync(CancellationToken ct)\\\\r\\\\n   at UiPath.MicrosoftOffice365.Activities.Excel.ForEachSheetConnections.SafeExecute(NativeActivityContext context)\\\\r\\\\n   at UiPath.MicrosoftOffice365.Activities.BaseForEachConnectionServiceActivity.Execute(NativeActivityContext context)\\\\r\\\\n   --- End of inner exception stack trace ---\\\\r\\\\n   --- End of inner exception stack trace ---\\\\r\\\\n   at UiPath.MicrosoftOffice365.Activities.BaseForEachConnectionServiceActivity.Execute(NativeActivityContext context)\\\\r\\\\n   at System.Activities.NativeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\\\r\\\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"27c4be1d-a3fd-4be3-b063-682b88ebee86\",\r\n      \"TenantId\": \"6a0f9306-c553-4c37-9d86-7ab06a158774\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"RobotJob\",\r\n      \"ProcessKey\": \"6c683090-a30b-4bab-b5a3-d1c6da356e15\",\r\n      \"JobKey\": \"3033bce6-5585-4455-aaec-db7a9f791126\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-03-31T10:15:56.6032322Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null\r\n    },\r\n    {\r\n      \"Id\": \"ba1d1dfb3acc8b76\",\r\n      \"TraceId\": \"3033bce655854455aaecdb7a9f791126\",\r\n      \"ParentId\": \"8f73e7b3705293e3\",\r\n      \"Name\": \"For Each Sheet in Workbook\",\r\n      \"StartTime\": \"2026-03-31T10:15:56.9789445Z\",\r\n      \"EndTime\": \"2026-03-31T10:15:56.9907599Z\",\r\n      \"Attributes\": \"{\\\"Public.FullTypeName\\\":\\\"UiPath.MicrosoftOffice365.Activities.Excel.ForEachSheetConnections\\\",\\\"Private.CurrentItemVariableName\\\":\\\"CurrentItem\\\",\\\"Public.Connector\\\":\\\"uipath-microsoft-onedrive\\\",\\\"Private.Length\\\":\\\"totalNumberOfSheetsProcessed\\\",\\\"Private.DriveItemArgument\\\":{\\\"ItemSelectionMode\\\":\\\"ItemUrl\\\",\\\"FullPathHint\\\":\\\"\\\",\\\"ParentFullPathHint\\\":\\\"\\\",\\\"ManualEntryItemUrl\\\":\\\"IT_Services_Marketshare_2018Q2.XLSM\\\"},\\\"Public.ItemSelectionMode\\\":\\\"ItemUrl\\\",\\\"Private.ManualEntryItemUrl\\\":\\\"IT_Services_Marketshare_2018Q2.XLSM\\\",\\\"Public.ConnectionId\\\":\\\"e62228b7-ffc2-49dc-a779-29207b0d2b6f\\\",\\\"Public.UseConnectionService\\\":\\\"True\\\",\\\"Public.AuthScopesInvalid\\\":\\\"False\\\",\\\"Private.DisplayName\\\":\\\"For Each Sheet in Workbook\\\"}\",\r\n      \"Status\": 1,\r\n      \"OrganizationId\": \"27c4be1d-a3fd-4be3-b063-682b88ebee86\",\r\n      \"TenantId\": \"6a0f9306-c553-4c37-9d86-7ab06a158774\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"Activity\",\r\n      \"ProcessKey\": \"6c683090-a30b-4bab-b5a3-d1c6da356e15\",\r\n      \"JobKey\": \"3033bce6-5585-4455-aaec-db7a9f791126\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-03-31T10:15:56.0585637Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1\",\r\n    \"StartTime\": \"2026-04-01T11:05:20.893Z\",\r\n    \"EndTime\": \"2026-04-01T11:05:25.247Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"11cea667-b9ad-43db-9794-8f0c15200542\",\r\n    \"Info\": \"The workbook does not exist\\r\\n\\r\\nin Main.xaml\\r\\n    at ReadRow \\\"ReadRow\\\"\\r\\n    at Sequence \\\"Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.ArgumentException: The workbook does not exist\\r\\n   at UiPath.Excel.Activities.WorkbookActivityBase`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-04-01T11:05:19.137Z\",\r\n    \"ReleaseName\": \"MacOS-excel-localproc\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"DESKTOP-HOME-WO\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Development\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 968463,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 1321239,\r\n    \"FolderKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\RAZVAN.MARINOVICI\",\r\n    \"OrchestratorUserIdentity\": \"replacement_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-04-01T11:05:25.247Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1\",\r\n    \"Id\": 47602501\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-04-01T11:05:25.390Z\",\r\n      \"JobId\": 47602501\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-04-01T11:05:21.020Z\",\r\n      \"JobId\": 47602501\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-04-01T11:05:19.180Z\",\r\n      \"JobId\": 47602501\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-04-01T11:05:24.529Z\",\r\n      \"Message\": \"ReadRow: The workbook does not exist\\r\\nin Main.xaml\\r\\n    at ReadRow \\\"ReadRow\\\"\\r\\n    at Sequence \\\"Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"b80122b16cf05adb\",\r\n      \"TraceId\": \"dbf1d1b90a4f4a4ab8679091f42fd5e1\",\r\n      \"ParentId\": null,\r\n      \"Name\": \"Robot Job dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1\",\r\n      \"StartTime\": \"2026-04-01T11:05:22.3476295Z\",\r\n      \"EndTime\": \"2026-04-01T11:05:24.566616Z\",\r\n      \"Attributes\": \"{\\\"Exception\\\":\\\"System.ArgumentException: The workbook does not exist\\\\r\\\\n   at UiPath.Excel.Activities.WorkbookActivityBase`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\\\r\\\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"27c4be1d-a3fd-4be3-b063-682b88ebee86\",\r\n      \"TenantId\": \"6a0f9306-c553-4c37-9d86-7ab06a158774\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"RobotJob\",\r\n      \"ProcessKey\": \"dcd6f89a-f608-46f5-801d-5681cf5db147\",\r\n      \"JobKey\": \"dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-04-01T11:05:24.9303922Z\",\r\n      \"Attachments\": null,\r\n      \"PermissionStatus\": 0,\r\n      \"AgentVersion\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "is",
+        "connections",
+        "ping",
+        "e62228b7-ffc2-49dc-a779-29207b0d2b6f"
+      ],
+      "match_mode": "subset",
+      "exit_code": 1,
+      "stdout": "[ERROR] Error pinging connection 'e62228b7-ffc2-49dc-a779-29207b0d2b6f': HTTP 404: Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it\r\n{\r\n  \"Result\": \"Failure\",\r\n  \"Message\": \"HTTP 404: Connection [e62228b7-ffc2-49dc-a779-29207b0d2b6f] is invalid or you do not have access to it\",\r\n  \"Instructions\": \"Run 'uip is connections edit <connection-id>' to re-authenticate, or 'uip is connections create <connector-key>' to create a new connection.\"\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"key\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"displayName\": \"replacement_email@test.com's workspace\",\r\n      \"fullyQualifiedName\": \"replacement_email@test.com's workspace\",\r\n      \"folderType\": \"Personal\",\r\n      \"id\": 1321239\r\n    },\r\n    {\r\n      \"key\": \"36c6d42a-9294-4807-ac48-46781c45fb96\",\r\n      \"displayName\": \"Solution 5\",\r\n      \"fullyQualifiedName\": \"replacement_email@test.com's workspace/Solution 5\",\r\n      \"folderType\": \"Solution\",\r\n      \"parentId\": 1321239,\r\n      \"parentKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"id\": 2157426\r\n    },\r\n    {\r\n      \"key\": \"ea201852-4965-4a5a-bf8a-9854d3a77275\",\r\n      \"displayName\": \"Shared\",\r\n      \"fullyQualifiedName\": \"Shared\",\r\n      \"folderType\": \"Standard\",\r\n      \"id\": 294109\r\n    },\r\n    {\r\n      \"key\": \"37f64013-6d26-4942-865b-cec4df0b700f\",\r\n      \"displayName\": \"Shared2\",\r\n      \"fullyQualifiedName\": \"Shared2\",\r\n      \"folderType\": \"Standard\",\r\n      \"id\": 951575\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "is",
+        "connections",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ConnectionList\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"86ec2bec-fcde-44e3-a793-9bd3ea0cd0ab\",\r\n      \"Name\": \"replacement_email@test.com\",\r\n      \"ConnectorKey\": \"uipath-microsoft-onedrive\",\r\n      \"ConnectorName\": \"Microsoft OneDrive & SharePoint\",\r\n      \"State\": \"Enabled\",\r\n      \"Owner\": \"replacement_email@test.com\",\r\n      \"IsDefault\": \"Yes\",\r\n      \"Folder\": \"replacement_email@test.com's workspace\",\r\n      \"FolderKey\": \"7b6f4886-bec5-4ffc-91cc-dd9a3f9febd0\",\r\n      \"Created\": \"2026-03-31T15:00:00.900Z\",\r\n      \"Updated\": \"2026-03-31T18:33:16.356Z\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "docsai",
+        "ask"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"DocsAIAsk\",\r\n  \"Data\": {\r\n    \"query_id\": \"9ab85416-e2c2-4422-b877-649e6f3c0531\",\r\n    \"text\": \"UiPath Orchestrator does not provide an automatic “retry policy” concept for jobs themselves. Handling child job failures and retries must be implemented in your process design and by manually restarting faulted jobs.\\n\\nKey points from the docs:\\n\\n- A job is **Faulted** if:\\n  - It failed to start, or  \\n  - The process threw an unhandled error during execution.  \\n  Faulted jobs **must be restarted manually**.  \\n  ([Job States – multiple versions](https://docs-staging.uipath.com/orchestrator/standalone/2025.10/user-guide/job-states))\\n\\n- You can **restart** any job that reached a final state (**Stopped**, **Faulted**, or **Successful**) from the Jobs list:\\n  - Click **More Actions** → **Restart**.\\n  - Adjust settings in **Start Job** window if needed.\\n  - Click **Start**.  \\n  ([Managing Jobs – Restarting a Job](https://docs-staging.uipath.com/orchestrator/standalone/2020.10/user-guide/managing-jobs))\\n\\n- For analysis before retrying:\\n  - Use **View Details** to see why a job faulted.\\n  - If **Enable Recording** was on for unattended jobs, you can [download execution media](https://docs-staging.uipath.com/orchestrator/automation-cloud/latest/user-guide/managing-jobs#downloading-execution-media) to inspect the failure.\\n  - Use **View Logs** from **More Actions** to see job logs.  \\n  ([Managing Jobs](https://docs-staging.uipath.com/orchestrator/standalone/2020.10/user-guide/managing-jobs))\\n\\nTo implement “retry policies” for child jobs, you’d typically:\\n- Catch errors in the parent workflow.\\n- Decide when to restart the child job (e.g., based on exception type or retry counter).\\n- Use Orchestrator APIs or activities to start the child job again.\\n\",\r\n    \"sources\": [\r\n      \"https://docs-staging.uipath.com/orchestrator/standalone/2025.10/user-guide/job-states\",\r\n      \"https://docs-staging.uipath.com/orchestrator/automation-cloud/latest/user-guide/job-states\",\r\n      \"https://docs-staging.uipath.com/orchestrator/standalone/2020.10/user-guide/managing-jobs\"\r\n    ],\r\n    \"disclaimers\": [],\r\n    \"followups\": [\r\n      \"How can I design a parent workflow in Studio to automatically retry a failed child job a limited number of times?\",\r\n      \"How do I use Orchestrator APIs or activities to programmatically start or restart jobs from a workflow?\",\r\n      \"What is the best way to log and track child job failures and retries in Orchestrator for reporting?\"\r\n    ]\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 1,
+    "stderr": "{\"error\": \"unmocked command\"}\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list-current-user",
+      "min": 1,
+      "description": "Agent looks up the runner's personal folder via the documented Personal-friendly endpoint."
+    },
+    {
+      "pattern": "or jobs get 3033bce6-5585-4455-aaec-db7a9f791126",
+      "min": 1,
+      "description": "Agent fetches the pinned faulted job's details to read the error message and failing activity."
+    },
+    {
+      "pattern": "is connections list uipath-microsoft-onedrive",
+      "min": 1,
+      "description": "Agent lists OneDrive connections in the runner's workspace to compare against the workflow's connection ID."
+    },
+    {
+      "pattern": "is connections ping e62228b7-ffc2-49dc-a779-29207b0d2b6f",
+      "min": 0,
+      "description": "OPTIONAL — Agent may ping the failing connection ID to confirm the runtime error verbatim, but a more efficient path confirms cross-workspace ownership directly from the project's connection resource file + Main.xaml. Both paths are valid; the source-file path is optimal. min:0 means tracked-but-not-required."
+    }
+  ]
+}

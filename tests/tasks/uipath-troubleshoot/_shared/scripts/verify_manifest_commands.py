@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Verify that every CLI command mocked in a troubleshoot scenario's manifest is
+"""Verify that every CLI command in a troubleshoot protected fixture is
 shaped correctly against the locally installed `uip` CLI.
 
-Command-aggregated: every manifest rule for the same command path collapses
+Command-aggregated: every fixture response for the same command path collapses
 into ONE check. Validity is a property of the command — not of each flag
-subset a scenario passed — so all rules for `or jobs list` (`[--folder-key]`,
+subset a scenario passed — so all responses for `or jobs list` (`[--folder-key]`,
 `[--folder-key --output --state]`, …) produce a single
 `or jobs list [--folder-key --output --state …]` [OK] line that validates the
-UNION of every flag seen and the MAX positional count; the affected manifests
+UNION of every flag seen and the MAX positional count; the affected fixtures
 are listed under each command.
 
 Three checks per command:
@@ -32,7 +32,7 @@ already know is real, so we just check the next token's membership.
 
 Exits 0 if every check passes; exits 1 otherwise.
 
-Determinism: depends only on (a) the manifests on disk and (b) the tools
+Determinism: depends only on (a) the protected fixtures on disk and (b) the tools
 currently installed in `uip`. No LLM, no network beyond `uip` itself.
 """
 
@@ -48,6 +48,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Iterable
 
+
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 # Dashless 32-char hex IDs (e.g. trace IDs) are positionals, same as dashed
 # UUIDs. Without this, an all-[a-f] hex ID that starts with a letter parses
@@ -57,7 +58,7 @@ HELP_TIMEOUT_S = 30
 
 
 def tokenize_match(match: str) -> tuple[list[str], list[str], list[str]]:
-    """Split a manifest `match` string into (path, flags, positionals).
+    """Split a rendered fixture argv into (path, flags, positionals).
 
     - path: leading subcommand tokens (plain identifiers before any flag /
       UUID / quoted arg).
@@ -129,7 +130,7 @@ def fetch_help(uip_bin: str, prefix: tuple[str, ...]) -> dict | None:
 
 # Aspect routers that JSON --help hides — the parent's JSON payload doesn't
 # list these in Subcommands, yet they're real subcommands at runtime. Caught
-# by the user via the maestro-stuck-rpa-job manifest which calls real
+# by the user via the maestro-stuck-rpa-job fixture which calls real
 # `uip maestro bpmn instance ...` paths. Add more entries here if other tools
 # exhibit the same routing quirk.
 KNOWN_ASPECT_ROUTERS: dict[tuple[str, ...], set[str]] = {
@@ -311,7 +312,7 @@ def validate_shape(
     if expected_args and total_positionals > expected_args:
         return False, (
             f"'uip {' '.join(effective_path)}' expects {expected_args} positional arg(s); "
-            f"manifest supplies {total_positionals}"
+            f"fixture supplies {total_positionals}"
         )
 
     return True, ""
@@ -329,22 +330,39 @@ def shape_repr(path: tuple[str, ...], flags: frozenset[str], positional_count: i
     return " ".join(parts)
 
 
-def walk_manifests(root: Path) -> Iterable[dict]:
-    """Yield one entry per rule.match across every troubleshoot manifest."""
-    for manifest_path in sorted(root.glob("**/data/m/r/manifest.json")):
-        scenario = manifest_path.parents[3].name
+def walk_fixtures(root: Path) -> Iterable[dict]:
+    """Yield one entry per argv response and configured docsai passthrough."""
+    for fixture_path in sorted(root.glob("**/data/uip-fixture.json")):
+        scenario = fixture_path.parents[1].name
         try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
-            yield {"scenario": scenario, "manifest": manifest_path, "parse_error": str(exc)}
+            yield {"scenario": scenario, "fixture": fixture_path, "parse_error": str(exc)}
             continue
-        for idx, rule in enumerate(manifest.get("rules", [])):
+        for idx, response in enumerate(fixture.get("responses", [])):
+            argv = response.get("argv", [])
+            if not isinstance(argv, list) or not all(isinstance(token, str) for token in argv):
+                yield {
+                    "scenario": scenario,
+                    "fixture": fixture_path,
+                    "parse_error": f"response {idx} has invalid argv",
+                }
+                continue
             yield {
                 "scenario": scenario,
-                "manifest": manifest_path,
+                "fixture": fixture_path,
                 "rule_index": idx,
-                "match": rule.get("match", ""),
-                "passthrough": bool(rule.get("passthrough")),
+                "match": shlex.join(argv),
+                "passthrough": False,
+            }
+        task_text = (fixture_path.parents[1] / "task.yaml").read_text(encoding="utf-8")
+        if "- [docsai, ask]" in task_text:
+            yield {
+                "scenario": scenario,
+                "fixture": fixture_path,
+                "rule_index": "passthrough",
+                "match": "docsai ask",
+                "passthrough": True,
             }
 
 
@@ -363,18 +381,18 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: root {args.root} does not exist", file=sys.stderr)
         return 2
 
-    # Aggregate manifest rules by COMMAND PATH. Whether a command is valid is
+    # Aggregate fixture responses by COMMAND PATH. Whether a command is valid is
     # a property of the command itself — does the leaf exist, does it accept
     # each flag, does it accept the positional arity — NOT of each individual
     # flag-subset a scenario happened to pass. So every rule for a command
     # collapses into ONE check that validates the UNION of all flags seen and
-    # the MAX positional count across its rules. `or jobs list [--folder-key]`,
+    # the MAX positional count across its responses. `or jobs list [--folder-key]`,
     # `[--folder-key --output --state]`, etc. become a single
     # `or jobs list [--folder-key --output --state ...]` check.
     commands: dict[tuple[str, ...], dict] = {}
     parse_errors: list[dict] = []
     total_rules = 0
-    for entry in walk_manifests(args.root):
+    for entry in walk_fixtures(args.root):
         if "parse_error" in entry:
             parse_errors.append(entry)
             continue
@@ -390,9 +408,9 @@ def main(argv: list[str] | None = None) -> int:
         agg["entries"].append(entry)
 
     command_keys = sorted(commands.keys())
-    print(f"Manifests scanned under: {args.root}")
-    print(f"Manifest parse errors:   {len(parse_errors)}")
-    print(f"Rules across manifests:  {total_rules}")
+    print(f"Fixtures scanned under:  {args.root}")
+    print(f"Fixture parse errors:    {len(parse_errors)}")
+    print(f"Responses across fixtures: {total_rules}")
     print(f"Distinct commands:       {len(command_keys)}")
     print()
 
@@ -429,13 +447,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if parse_errors:
         print()
-        print("Manifest parse errors:")
+        print("Fixture parse errors:")
         for e in parse_errors:
-            print(f"  [{e['scenario']}] {e['manifest']}: {e['parse_error']}")
+            print(f"  [{e['scenario']}] {e['fixture']}: {e['parse_error']}")
 
     if bad_commands:
         print()
-        print("Invalid commands — affected manifest rules:")
+        print("Invalid commands — affected fixture responses:")
         for path, flags, positional_count, msg in bad_commands:
             print(f"  {shape_repr(path, flags, positional_count)}  ({msg})")
             for entry in commands[path]["entries"]:

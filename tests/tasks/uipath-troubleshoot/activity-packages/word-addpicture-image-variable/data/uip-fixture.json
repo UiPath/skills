@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0044444-2222-3333-4444-555566667777\",\r\n      \"DisplayName\": \"Shared\",\r\n      \"FullyQualifiedName\": \"Shared\",\r\n      \"Description\": \"Default shared automation folder.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6040001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dd444444-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"StartTime\": \"2026-05-22T09:15:02.140Z\",\r\n      \"EndTime\": \"2026-05-22T09:15:04.302Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"WordReportImage\",\r\n      \"Source\": \"Manual\",\r\n      \"Reference\": \"MonthlyReportRun\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0044444-2222-3333-4444-555566667777\",\r\n      \"Info\": \"System.IO.FileNotFoundException: Could not find file 'C:\\\\Users\\\\automation1\\\\AppData\\\\Local\\\\UiPath\\\\Packages\\\\WordReportImage\\\\1.0.0\\\\UiPath.Core.Image'.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-dd444499-001\",\r\n      \"JobKey\": \"dd444444-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-22T09:15:02.180Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"WordReportImage\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-dd444499-002\",\r\n      \"JobKey\": \"dd444444-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-22T09:15:02.402Z\",\r\n      \"Message\": \"[WordReportImage] Building monthly report — capturing chart screenshot and inserting into the document.\",\r\n      \"ProcessName\": \"WordReportImage\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-dd444499-003\",\r\n      \"JobKey\": \"dd444444-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-22T09:15:03.640Z\",\r\n      \"Message\": \"Use Word File: monthly-report.docx — document opened (Path='C:\\\\Robot\\\\Reports\\\\monthly-report.docx').\",\r\n      \"ProcessName\": \"WordReportImage\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-dd444499-004\",\r\n      \"JobKey\": \"dd444444-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-22T09:15:04.110Z\",\r\n      \"Message\": \"Add Picture — inserting image from path 'UiPath.Core.Image' (ImagePath expression resolved to this string).\",\r\n      \"ProcessName\": \"WordReportImage\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-dd444499-005\",\r\n      \"JobKey\": \"dd444444-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-22T09:15:04.290Z\",\r\n      \"Message\": \"Add Picture: System.IO.FileNotFoundException: Could not find file 'C:\\\\Users\\\\automation1\\\\AppData\\\\Local\\\\UiPath\\\\Packages\\\\WordReportImage\\\\1.0.0\\\\UiPath.Core.Image'.\",\r\n      \"ProcessName\": \"WordReportImage\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dd444444-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-05-22T09:15:01.890Z\"\r\n    },\r\n    {\r\n      \"Key\": \"dd444444-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-05-22T09:15:02.140Z\"\r\n    },\r\n    {\r\n      \"Key\": \"dd444444-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-05-22T09:15:04.302Z\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"dd444444-9999-aaaa-bbbb-ccccddddeeee\",\r\n    \"StartTime\": \"2026-05-22T09:15:02.140Z\",\r\n    \"EndTime\": \"2026-05-22T09:15:04.302Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"9dd44444-9999-aaaa-bbbb-ccccddddeeee\",\r\n    \"Info\": \"System.IO.FileNotFoundException: Could not find file 'C:\\\\Users\\\\automation1\\\\AppData\\\\Local\\\\UiPath\\\\Packages\\\\WordReportImage\\\\1.0.0\\\\UiPath.Core.Image'.\\r\\n   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)\\r\\n   at System.IO.FileStream.Init(String path, FileMode mode, FileAccess access, ...)\\r\\n   at UiPath.Word.Activities.WordAddImage.AddImageFromPath(String imagePath)\\r\\n   at UiPath.Word.Activities.WordAddImage.Execute(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-22T09:15:01.890Z\",\r\n    \"ReleaseName\": \"WordReportImage\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5680401,\r\n    \"OrganizationUnitId\": 6040001,\r\n    \"FolderKey\": \"f0044444-2222-3333-4444-555566667777\",\r\n    \"Reference\": \"MonthlyReportRun\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-22T09:15:04.302Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"FileNotFoundException\",\r\n      \"ActivityName\": \"WordAddImage_1\",\r\n      \"ActivityDisplayName\": \"Add Picture\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"dd444444-9999-aaaa-bbbb-ccccddddeeee\",\r\n    \"Id\": 680077403\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

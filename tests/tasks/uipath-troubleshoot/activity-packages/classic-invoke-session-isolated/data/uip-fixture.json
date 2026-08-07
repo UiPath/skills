@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8c1f5a03-7d24-4e69-9b31-0a6f2c9e4d78\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c3d97a20-4e18-4b37-9a52-7f0c1b8e6d49\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"6b1e4d70-3a92-4c58-8f01-2d7c9a3e5b14\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"ReportDispatch\",\r\n      \"Source\": \"Agent\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"StartTime\": \"2026-07-16T11:03:47.610Z\",\r\n      \"EndTime\": \"2026-07-16T11:03:48.190Z\",\r\n      \"CreationTime\": \"2026-07-16T11:03:47.610Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-16T11:03:48.080Z\",\r\n      \"Message\": \"Invoke GenerateReport: Validation Error: When TargetSession is set to a value other than Current, the invoked workflow must run isolated. TargetSession 'PictureInPicture' requires UnSafe (Isolated) = True.\\r\\nin Main.xaml\\r\\n    at InvokeWorkflowFile \\\"Invoke GenerateReport\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at DynamicActivity \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.Activities.InvalidWorkflowException\\r\\n   at UiPath.Core.Activities.InvokeWorkflowFile.CacheMetadata(NativeActivityMetadata metadata)\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-07-16T11:03:47.760Z\",\r\n      \"Message\": \"ReportDispatch execution started\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-16T11:03:48.190Z\",\r\n      \"JobId\": 66121775\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-16T11:03:47.700Z\",\r\n      \"JobId\": 66121775\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"6b1e4d70-3a92-4c58-8f01-2d7c9a3e5b14\",\r\n    \"StartTime\": \"2026-07-16T11:03:47.610Z\",\r\n    \"EndTime\": \"2026-07-16T11:03:48.190Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Agent\",\r\n    \"SourceType\": \"Agent\",\r\n    \"Info\": \"Invoke GenerateReport: Validation Error: When TargetSession is set to a value other than Current, the invoked workflow must run isolated. TargetSession 'PictureInPicture' requires UnSafe (Isolated) = True.\\r\\n\\r\\nin Main.xaml\\r\\n    at InvokeWorkflowFile \\\"Invoke GenerateReport\\\"\\r\\n    at Sequence \\\"Main\\\"\\r\\n    at DynamicActivity \\\"Main\\\"\\r\\n\\r\\nSystem.Activities.InvalidWorkflowException: Validation errors encountered while processing the workflow tree.\\r\\n   at System.Activities.Validation.ActivityValidationServices.ThrowIfViolationsExist(IList`1 validationErrors)\\r\\n   at UiPath.Core.Activities.InvokeWorkflowFile.CacheMetadata(NativeActivityMetadata metadata)\\r\\n   at UiPath.Core.Activities.InvokeWorkflowFile.<ExecuteAsync>d__.MoveNext()\",\r\n    \"CreationTime\": \"2026-07-16T11:03:47.610Z\",\r\n    \"ReleaseName\": \"ReportDispatch\",\r\n    \"Type\": \"Attended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"StudioPro\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"c3d97a20-4e18-4b37-9a52-7f0c1b8e6d49\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\user1\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"LastModificationTime\": \"2026-07-16T11:03:48.190Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"6b1e4d703a924c588f012d7c9a3e5b14\",\r\n    \"Id\": 66121775\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

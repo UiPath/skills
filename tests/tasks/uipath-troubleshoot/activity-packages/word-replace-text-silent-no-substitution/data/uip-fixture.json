@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "c4d5e6f7-a8b9-4193-0c1d-2e3f40516273",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [],\r\n  \"Pagination\": {\r\n    \"Returned\": 0,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "c4d5e6f7-a8b9-4193-0c1d-2e3f40516273",
+        "--state",
+        "Successful",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d5e6f7a8-b9c0-4204-1d2e-3f4051627384\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"OnboardingLetter\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT-05\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-14T09:02:01.510Z\",\r\n      \"EndTime\": \"2026-06-14T09:02:06.940Z\",\r\n      \"CreationTime\": \"2026-06-14T09:02:01.280Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "d5e6f7a8-b9c0-4204-1d2e-3f4051627384",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "c4d5e6f7-a8b9-4193-0c1d-2e3f40516273",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d5e6f7a8-b9c0-4204-1d2e-3f4051627384\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"OnboardingLetter\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT-05\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-14T09:02:01.510Z\",\r\n      \"EndTime\": \"2026-06-14T09:02:06.940Z\",\r\n      \"CreationTime\": \"2026-06-14T09:02:01.280Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "d5e6f7a8-b9c0-4204-1d2e-3f4051627384",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"d5e6f7a8-b9c0-4204-1d2e-3f4051627384\",\r\n    \"StartTime\": \"2026-06-14T09:02:01.510Z\",\r\n    \"EndTime\": \"2026-06-14T09:02:06.940Z\",\r\n    \"State\": \"Successful\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"e6f7a8b9-c0d1-4315-1d2e-3f4051627395\",\r\n    \"Info\": \"The job completed successfully.\",\r\n    \"CreationTime\": \"2026-06-14T09:02:01.280Z\",\r\n    \"ReleaseName\": \"OnboardingLetter\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT-05\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6021342,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"c4d5e6f7-a8b9-4193-0c1d-2e3f40516273\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-14T09:02:06.940Z\",\r\n    \"JobError\": null,\r\n    \"ErrorCode\": \"\",\r\n    \"TraceId\": \"d5e6f7a8-b9c0-4204-1d2e-3f4051627384\",\r\n    \"Id\": 682447702\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "d5e6f7a8-b9c0-4204-1d2e-3f4051627384",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-14T09:02:01.560Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-14T09:02:03.180Z\",\r\n      \"Message\": \"[Word Application Scope] Starting Microsoft Word\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-14T09:02:04.420Z\",\r\n      \"Message\": \"[Word Application Scope] Document 'data\\\\OfferTemplate.docx' opened\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-14T09:02:05.610Z\",\r\n      \"Message\": \"[Replace Text] Executed. Replaced 0 occurrence(s) of '[Name]'.\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-14T09:02:06.910Z\",\r\n      \"Message\": \"Execution ended in: 00:00:05\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c4d5e6f7-a8b9-4193-0c1d-2e3f40516273\",\r\n      \"Name\": \"Offer Docs\",\r\n      \"Path\": \"Offer Docs\",\r\n      \"Description\": \"Production folder for onboarding document generation.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

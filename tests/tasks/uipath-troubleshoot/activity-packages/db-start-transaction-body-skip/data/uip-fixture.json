@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "c4a7e2f9-1b3d-4e5a-8c6f-9d0e1f2a3b4c",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [],\r\n  \"Pagination\": {\r\n    \"Returned\": 0,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "c4a7e2f9-1b3d-4e5a-8c6f-9d0e1f2a3b4c",
+        "--state",
+        "Successful",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"NightlyReconcileTxn\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-31T01:30:01.118Z\",\r\n      \"EndTime\": \"2026-05-31T01:30:03.402Z\",\r\n      \"CreationTime\": \"2026-05-31T01:30:00.904Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "c4a7e2f9-1b3d-4e5a-8c6f-9d0e1f2a3b4c",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"NightlyReconcileTxn\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-31T01:30:01.118Z\",\r\n      \"EndTime\": \"2026-05-31T01:30:03.402Z\",\r\n      \"CreationTime\": \"2026-05-31T01:30:00.904Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d\",\r\n    \"StartTime\": \"2026-05-31T01:30:01.118Z\",\r\n    \"EndTime\": \"2026-05-31T01:30:03.402Z\",\r\n    \"State\": \"Successful\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"e6c9d4f0-3a5b-4d7c-8e1f-2a3b4c5d6e7f\",\r\n    \"Info\": \"Execution ended.\",\r\n    \"CreationTime\": \"2026-05-31T01:30:00.904Z\",\r\n    \"ReleaseName\": \"NightlyReconcileTxn\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5048217,\r\n    \"OrganizationUnitId\": 7791624,\r\n    \"FolderKey\": \"c4a7e2f9-1b3d-4e5a-8c6f-9d0e1f2a3b4c\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-31T01:30:03.402Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"\",\r\n    \"TraceId\": \"d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d\",\r\n    \"Id\": 671320515\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-31T01:30:01.402Z\",\r\n      \"Message\": \"NightlyReconcileTxn execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-31T01:30:02.118Z\",\r\n      \"Message\": \"Start Transaction: scope started (UiPath.Database.Activities v1.5.0)\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-31T01:30:02.305Z\",\r\n      \"Message\": \"Start Transaction: scope exited; committing transaction\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-31T01:30:03.291Z\",\r\n      \"Message\": \"NightlyReconcileTxn execution ended\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"c4a7e2f9-1b3d-4e5a-8c6f-9d0e1f2a3b4c\",\r\n      \"Name\": \"Finance Operations\",\r\n      \"Path\": \"Finance Operations\",\r\n      \"Description\": \"Folder hosting the ledger posting and reconciliation processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"a7c9e1b3-5d7f-4a2c-8b6d-9e0f1a2b3c4d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

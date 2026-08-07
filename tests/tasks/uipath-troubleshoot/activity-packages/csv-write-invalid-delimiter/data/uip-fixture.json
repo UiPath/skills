@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "ea020002-d4e5-4f60-8a02-000000000002",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"eb020002-e5f6-4071-9b02-000000000002\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"DelimitedExport\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-15T10:33:24.140Z\",\r\n      \"EndTime\": \"2026-06-15T10:33:26.020Z\",\r\n      \"CreationTime\": \"2026-06-15T10:33:23.700Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "eb020002-e5f6-4071-9b02-000000000002",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-15T10:33:25.880Z\",\r\n      \"Message\": \"[Write CSV] Failed to create a 'Delimitator' from the text 'Tab'.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-15T10:33:25.950Z\",\r\n      \"Message\": \"Write CSV: Failed to create a 'Delimitator' from the text 'Tab'.\\r\\nin Main.xaml\\r\\n    at WriteCsvFile \\\"Write CSV\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "eb020002-e5f6-4071-9b02-000000000002",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"eb020002-e5f6-4071-9b02-000000000002\",\r\n    \"StartTime\": \"2026-06-15T10:33:24.140Z\",\r\n    \"EndTime\": \"2026-06-15T10:33:26.020Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"ec020002-f6a7-4182-9c02-000000000002\",\r\n    \"Info\": \"Write CSV: Failed to create a 'Delimitator' from the text 'Tab'.\\r\\n\\r\\nin Main.xaml\\r\\n    at WriteCsvFile \\\"Write CSV\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.ComponentModel.FormatException: Failed to create a 'Delimitator' from the text 'Tab'.\",\r\n    \"CreationTime\": \"2026-06-15T10:33:23.700Z\",\r\n    \"ReleaseName\": \"DelimitedExport\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7015002,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"ea020002-d4e5-4f60-8a02-000000000002\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-15T10:33:26.020Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"eb020002-e5f6-4071-9b02-000000000002\",\r\n    \"Id\": 715010202\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "eb020002-e5f6-4071-9b02-000000000002",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-15T10:33:24.140Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-15T10:33:25.110Z\",\r\n      \"Message\": \"[Read CSV] Read 18 rows from data\\\\source.csv\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-15T10:33:25.880Z\",\r\n      \"Message\": \"[Write CSV] Failed to create a 'Delimitator' from the text 'Tab'.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-15T10:33:25.950Z\",\r\n      \"Message\": \"Write CSV: Failed to create a 'Delimitator' from the text 'Tab'.\\r\\nin Main.xaml\\r\\n    at WriteCsvFile \\\"Write CSV\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-15T10:33:25.990Z\",\r\n      \"Message\": \"Execution ended in: 00:00:01\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ea020002-d4e5-4f60-8a02-000000000002\",\r\n      \"Name\": \"Extracts\",\r\n      \"Path\": \"Extracts\",\r\n      \"Description\": \"Production folder for delimited-export processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f6d6e7f8-a9b0-1234-5678-9abcdef01234",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\"Key\": \"bbccddee-2233-4455-6677-8899aabbccdd\", \"State\": \"Faulted\", \"ProcessName\": \"LedgerPostingBot\", \"Source\": \"Schedule\", \"Type\": \"Unattended\", \"RuntimeType\": \"Unattended\", \"Machine\": \"MOCK-HOST\", \"StartTime\": \"2026-06-28T06:00:01.400Z\", \"EndTime\": \"2026-06-28T06:00:02.010Z\", \"CreationTime\": \"2026-06-28T06:00:01.300Z\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "bbccddee-2233-4455-6677-8899aabbccdd",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\"Level\": \"Error\", \"TimeStamp\": \"2026-06-28T06:00:02.000Z\", \"Message\": \"Job 'bbccddee-2233-4455-6677-8899aabbccdd' failed to start. Could not start executor. Could not find a part of the path 'C:\\\\Windows\\\\TEMP\\\\UiPath\\\\CredProvider'.\"},\r\n    {\"Level\": \"Error\", \"TimeStamp\": \"2026-06-28T06:00:01.850Z\", \"Message\": \"[Robot] Executor start failed: the credential-provider log directory 'C:\\\\Windows\\\\TEMP\\\\UiPath\\\\CredProvider' is missing.\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "bbccddee-2233-4455-6677-8899aabbccdd"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"bbccddee-2233-4455-6677-8899aabbccdd\",\r\n    \"StartTime\": \"2026-06-28T06:00:01.400Z\",\r\n    \"EndTime\": \"2026-06-28T06:00:02.010Z\",\r\n    \"State\": \"Faulted\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"Info\": \"Could not start executor. Could not find a part of the path 'C:\\\\Windows\\\\TEMP\\\\UiPath\\\\CredProvider'.\",\r\n    \"CreationTime\": \"2026-06-28T06:00:01.300Z\",\r\n    \"ReleaseName\": \"LedgerPostingBot\",\r\n    \"Type\": \"Unattended\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"OrganizationUnitId\": 7791645,\r\n    \"FolderKey\": \"f6d6e7f8-a9b0-1234-5678-9abcdef01234\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVCLEDGER\",\r\n    \"MachineName\": \"MOCK-HOST\",\r\n    \"MachineKey\": \"c3d4e5f6-a7b8-9012-3456-789abcdef012\",\r\n    \"LastModificationTime\": \"2026-06-28T06:00:02.010Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"bbccddee-2233-4455-6677-8899aabbccdd\",\r\n    \"Id\": 671990011\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "bbccddee-2233-4455-6677-8899aabbccdd"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\"Level\": \"Error\", \"TimeStamp\": \"2026-06-28T06:00:02.000Z\", \"Message\": \"Job 'bbccddee-2233-4455-6677-8899aabbccdd' failed to start. Could not start executor. Could not find a part of the path 'C:\\\\Windows\\\\TEMP\\\\UiPath\\\\CredProvider'.\"},\r\n    {\"Level\": \"Error\", \"TimeStamp\": \"2026-06-28T06:00:01.850Z\", \"Message\": \"[Robot] Executor start failed: the credential-provider log directory 'C:\\\\Windows\\\\TEMP\\\\UiPath\\\\CredProvider' is missing.\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\"Key\": \"b2c8cb22-2ebc-4c27-87f3-05efe701af1c\", \"Name\": \"original_email@test.com's workspace\", \"Path\": \"original_email@test.com's workspace\", \"Type\": \"Personal\", \"ParentKey\": \"\"},\r\n    {\"Key\": \"f6d6e7f8-a9b0-1234-5678-9abcdef01234\", \"Name\": \"BackOffice\", \"Path\": \"BackOffice\", \"Description\": \"Folder hosting the LedgerPostingBot unattended process.\", \"Type\": \"Standard\", \"ParentKey\": \"\"},\r\n    {\"Key\": \"e0772cbe-c19c-4d5f-926c-043c2d2d300a\", \"Name\": \"Shared\", \"Path\": \"Shared\", \"Type\": \"Standard\", \"ParentKey\": \"\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "machines",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"MachineList\",\r\n  \"Data\": [\r\n    {\"Key\": \"c3d4e5f6-a7b8-9012-3456-789abcdef012\", \"Name\": \"BackOfficeRuntime\", \"Type\": \"Template\", \"Runtimes\": 2, \"Hosts\": [\"MOCK-HOST\"], \"RobotVersion\": \"23.10.4\", \"Description\": \"Runtime template for BackOffice; hosts run Robot 23.10.4.\"}\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

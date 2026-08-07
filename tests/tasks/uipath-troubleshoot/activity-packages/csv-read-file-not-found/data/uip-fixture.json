@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "da030003-d4e5-4f60-8a03-000000000003",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"db030003-e5f6-4071-9b03-000000000003\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CsvFetcher\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-ROBOT\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-14T13:55:30.210Z\",\r\n      \"EndTime\": \"2026-06-14T13:55:32.180Z\",\r\n      \"CreationTime\": \"2026-06-14T13:55:29.800Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "db030003-e5f6-4071-9b03-000000000003",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-14T13:55:32.020Z\",\r\n      \"Message\": \"[Read CSV] Could not find file 'C:\\\\ProgramData\\\\UiPath\\\\Packages\\\\CsvFetcher\\\\data\\\\daily-export.csv'.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-14T13:55:32.090Z\",\r\n      \"Message\": \"Read CSV: Could not find file 'C:\\\\ProgramData\\\\UiPath\\\\Packages\\\\CsvFetcher\\\\data\\\\daily-export.csv'.\\r\\nin Main.xaml\\r\\n    at ReadCsvFile \\\"Read CSV\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "db030003-e5f6-4071-9b03-000000000003",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"db030003-e5f6-4071-9b03-000000000003\",\r\n    \"StartTime\": \"2026-06-14T13:55:30.210Z\",\r\n    \"EndTime\": \"2026-06-14T13:55:32.180Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"dc030003-f6a7-4182-9c03-000000000003\",\r\n    \"Info\": \"Read CSV: Could not find file 'C:\\\\ProgramData\\\\UiPath\\\\Packages\\\\CsvFetcher\\\\data\\\\daily-export.csv'.\\r\\n\\r\\nin Main.xaml\\r\\n    at ReadCsvFile \\\"Read CSV\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.IO.FileNotFoundException: Could not find file 'C:\\\\ProgramData\\\\UiPath\\\\Packages\\\\CsvFetcher\\\\data\\\\daily-export.csv'.\",\r\n    \"CreationTime\": \"2026-06-14T13:55:29.800Z\",\r\n    \"ReleaseName\": \"CsvFetcher\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-ROBOT\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 7014003,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"da030003-d4e5-4f60-8a03-000000000003\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"user1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-14T13:55:32.180Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"db030003-e5f6-4071-9b03-000000000003\",\r\n    \"Id\": 714010303\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "db030003-e5f6-4071-9b03-000000000003",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-14T13:55:30.240Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-14T13:55:31.060Z\",\r\n      \"Message\": \"[Download Daily Export] Requested daily-export.csv from the reporting API\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-14T13:55:31.640Z\",\r\n      \"Message\": \"[Read CSV] Reading data\\\\daily-export.csv (Delimiter=Comma, AddHeaders=True)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-14T13:55:32.020Z\",\r\n      \"Message\": \"[Read CSV] Could not find file 'C:\\\\ProgramData\\\\UiPath\\\\Packages\\\\CsvFetcher\\\\data\\\\daily-export.csv'.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-14T13:55:32.090Z\",\r\n      \"Message\": \"Read CSV: Could not find file 'C:\\\\ProgramData\\\\UiPath\\\\Packages\\\\CsvFetcher\\\\data\\\\daily-export.csv'.\\r\\nin Main.xaml\\r\\n    at ReadCsvFile \\\"Read CSV\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-14T13:55:32.150Z\",\r\n      \"Message\": \"Execution ended in: 00:00:01\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"da030003-d4e5-4f60-8a03-000000000003\",\r\n      \"Name\": \"Downloads\",\r\n      \"Path\": \"Downloads\",\r\n      \"Description\": \"Production folder for download-and-read processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

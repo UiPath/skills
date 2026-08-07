@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f0022222-2222-3333-4444-555566667777",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"StartTime\": \"2026-05-20T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-20T08:04:18.412Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelWriteCellProcess\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"DailyStatusUpdate\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0022222-2222-3333-4444-555566667777\",\r\n      \"Info\": \"UiPath.Excel.BusinessException: The data you want to write has a wrong format, or Excel is busy.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "33cc3333-2222-3333-4444-555566667777",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"33cc3333-2222-3333-4444-555566667777\",\r\n    \"StartTime\": \"2026-05-20T08:00:01.300Z\",\r\n    \"EndTime\": \"2026-05-20T08:04:18.412Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9cc33333-2222-3333-4444-555566667777\",\r\n    \"Info\": \"UiPath.Excel.BusinessException: The data you want to write has a wrong format, or Excel is busy.\\r\\n   at UiPath.Excel.WorkbookApplication.SetCellValue(String sheet, String cell, Object value)\\r\\n   at UiPath.Excel.Activities.WriteCell.OnExecuteAsync(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-20T08:00:01.005Z\",\r\n    \"ReleaseName\": \"ExcelWriteCellProcess\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5690103,\r\n    \"OrganizationUnitId\": 6020001,\r\n    \"FolderKey\": \"f0022222-2222-3333-4444-555566667777\",\r\n    \"Reference\": \"DailyStatusUpdate\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-20T08:04:18.412Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"BusinessException\",\r\n      \"ActivityName\": \"WriteCell_1\",\r\n      \"ActivityDisplayName\": \"Write Cell: row N status\",\r\n      \"WorkflowFilePath\": \"Main.xaml\",\r\n      \"FailedIteration\": 248\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"33cc3333-2222-3333-4444-555566667777\",\r\n    \"Id\": 690099003\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "33cc3333-2222-3333-4444-555566667777",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\"Key\": \"33cc3333-2222-3333-4444-555566667777\", \"State\": \"Pending\", \"Timestamp\": \"2026-05-20T08:00:01.005Z\"},\r\n    {\"Key\": \"33cc3333-2222-3333-4444-555566667777\", \"State\": \"Running\", \"Timestamp\": \"2026-05-20T08:00:01.300Z\"},\r\n    {\"Key\": \"33cc3333-2222-3333-4444-555566667777\", \"State\": \"Faulted\", \"Timestamp\": \"2026-05-20T08:04:18.412Z\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "33cc3333-2222-3333-4444-555566667777",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-33cc3333-001\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-20T08:00:01.310Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-002\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-20T08:00:01.418Z\",\r\n      \"Message\": \"[ExcelWriteCellProcess] Per-row status update — workbook C:\\\\Robot\\\\Data\\\\sales-2026-05.xlsx\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-003\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:00:01.510Z\",\r\n      \"Message\": \"Use Excel File: sales-2026-05.xlsx — workbook opened (Modern scope, OpenXML provider)\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-004\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:00:01.812Z\",\r\n      \"Message\": \"Read Range: A1:F313 — completed, 312 rows read into Rows\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-005\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:00:02.110Z\",\r\n      \"Message\": \"For Each Row in Rows — iteration 1 of 312\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-006\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:00:02.312Z\",\r\n      \"Message\": \"Write Cell: row N status — iteration 1: wrote 'Normal' to Sales!E2\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-007\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:00:02.512Z\",\r\n      \"Message\": \"Write Cell: row N status — iteration 2: wrote 'High' to Sales!E3\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-008\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:00:12.310Z\",\r\n      \"Message\": \"Write Cell: row N status — iteration 50: wrote 'Normal' to Sales!E51 (~200ms/iter avg)\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-009\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:00:22.418Z\",\r\n      \"Message\": \"Write Cell: row N status — iteration 100: wrote 'High' to Sales!E101 (~210ms/iter avg)\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-010\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:01:18.512Z\",\r\n      \"Message\": \"Write Cell: row N status — iteration 150: wrote 'Normal' to Sales!E151 (~270ms/iter avg, perf degrading)\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-011\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:02:31.812Z\",\r\n      \"Message\": \"Write Cell: row N status — iteration 200: wrote 'High' to Sales!E201 (~440ms/iter avg, perf degrading)\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-012\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:04:02.312Z\",\r\n      \"Message\": \"Write Cell: row N status — iteration 245: wrote 'Normal' to Sales!E246 (~860ms/iter avg, perf degrading)\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-013\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:04:06.118Z\",\r\n      \"Message\": \"Write Cell: row N status — iteration 246: wrote 'High' to Sales!E247\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-014\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:04:09.910Z\",\r\n      \"Message\": \"Write Cell: row N status — iteration 247: wrote 'Normal' to Sales!E248\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-015\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-20T08:04:13.610Z\",\r\n      \"Message\": \"For Each Row in Rows — iteration 248 of 312\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-33cc3333-016\",\r\n      \"JobKey\": \"33cc3333-2222-3333-4444-555566667777\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-20T08:04:18.402Z\",\r\n      \"Message\": \"Write Cell: row N status — iteration 248: UiPath.Excel.BusinessException: The data you want to write has a wrong format, or Excel is busy.\",\r\n      \"ProcessName\": \"ExcelWriteCellProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0022222-2222-3333-4444-555566667777\",\r\n      \"DisplayName\": \"ExcelWrites\",\r\n      \"FullyQualifiedName\": \"ExcelWrites\",\r\n      \"Description\": \"Folder for daily Excel writes.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6020001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 1,
+    "stderr": "{\"error\": \"unmocked command\"}\n"
+  }
+}

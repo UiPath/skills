@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "a7c8e9f0-7777-4abc-9def-000000000007",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-28T10:11:02.230Z\",\r\n      \"Message\": \"Check Status Is Yes: Object reference not set to an instance of an object.\\r\\nin Main.xaml\\r\\n    at If \\\"Check Status Is Yes\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.NullReferenceException\\r\\n   at Namespace_a7c8e9f0er.Main_Expressions.Main_Expressions_TypedDataContext2_ForReadOnly.__Expr2Get()\\r\\n   at Namespace_a7c8e9f0er.Main_Expressions.Main_Expressions_TypedDataContext2_ForReadOnly.ValueType___Expr2Get()\\r\\n   at Namespace_a7c8e9f0er.Main_Expressions.InvokeExpression(Int32 expressionId, IList`1 locations, ActivityContext activityContext)\\r\\n   at Microsoft.CSharp.Activities.CSharpValue`1.Execute(CodeActivityContext context)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteInResolutionContext[T](ActivityInstance parentInstance, Activity`1 expressionActivity)\\r\\n   at System.Activities.InArgument`1.TryPopulateValue(LocationEnvironment targetEnvironment, ActivityInstance activityInstance, ActivityExecutor executor)\\r\\n   at System.Activities.ActivityInstance.InternalTryPopulateArgumentValueOrScheduleExpression(RuntimeArgument argument, Int32 nextArgumentIndex, ActivityExecutor executor, IDictionary`2 argumentValueOverrides, Location resultLocation, Boolean isDynamicUpdate)\\r\\n   at System.Activities.ActivityInstance.ResolveArguments(ActivityExecutor executor, IDictionary`2 argumentValueOverrides, Location resultLocation, Int32 startIndex)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "a7c8e9f0-7777-4abc-9def-000000000007",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"a7c8e9f0-7777-4abc-9def-000000000007\",\r\n    \"StartTime\": \"2026-06-28T10:11:02.000Z\",\r\n    \"EndTime\": \"2026-06-28T10:11:02.480Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"a7c8e9f0-7777-4abc-9def-000000000007\",\r\n    \"Info\": \"Object reference not set to an instance of an object.\\r\\n\\r\\nin Main.xaml\\r\\n    at If \\\"Check Status Is Yes\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.NullReferenceException: Object reference not set to an instance of an object.\\r\\n   at Namespace_a7c8e9f0er.Main_Expressions.Main_Expressions_TypedDataContext2_ForReadOnly.__Expr2Get()\\r\\n   at Namespace_a7c8e9f0er.Main_Expressions.Main_Expressions_TypedDataContext2_ForReadOnly.ValueType___Expr2Get()\\r\\n   at Namespace_a7c8e9f0er.Main_Expressions.InvokeExpression(Int32 expressionId, IList`1 locations, ActivityContext activityContext)\\r\\n   at Microsoft.CSharp.Activities.CSharpValue`1.Execute(CodeActivityContext context)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteInResolutionContext[T](ActivityInstance parentInstance, Activity`1 expressionActivity)\\r\\n   at System.Activities.InArgument`1.TryPopulateValue(LocationEnvironment targetEnvironment, ActivityInstance activityInstance, ActivityExecutor executor)\\r\\n   at System.Activities.ActivityInstance.InternalTryPopulateArgumentValueOrScheduleExpression(RuntimeArgument argument, Int32 nextArgumentIndex, ActivityExecutor executor, IDictionary`2 argumentValueOverrides, Location resultLocation, Boolean isDynamicUpdate)\\r\\n   at System.Activities.ActivityInstance.ResolveArguments(ActivityExecutor executor, IDictionary`2 argumentValueOverrides, Location resultLocation, Int32 startIndex)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\",\r\n    \"CreationTime\": \"2026-06-28T10:11:02.000Z\",\r\n    \"ReleaseName\": \"EligibilityRouter\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 10007,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\svcRobot\",\r\n    \"OrchestratorUserIdentity\": \"test.user@example.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-28T10:11:02.480Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"a7c8e9f077774abc9def000000000007\",\r\n    \"Id\": 4016001\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"test.user@example.com's workspace\",\r\n      \"Path\": \"test.user@example.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Agent enumerates folders to locate the folder that owns the job under investigation."
+    },
+    {
+      "pattern": "or jobs get a7c8e9f0-7777-4abc-9def-000000000007",
+      "min": 1,
+      "description": "Agent fetches the job's execution details."
+    },
+    {
+      "pattern": "or jobs logs a7c8e9f0-7777-4abc-9def-000000000007",
+      "min": 0,
+      "description": "OPTIONAL — agent may pull error-level logs for additional detail; min:0 = tracked-but-not-required."
+    }
+  ]
+}

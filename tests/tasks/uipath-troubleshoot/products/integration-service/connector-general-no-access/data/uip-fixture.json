@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f5e5eaa8-ce88-482f-9506-01394caa3967\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-22T14:06:20.220Z\",\r\n      \"EndTime\": \"2026-06-22T14:06:22.867Z\",\r\n      \"ReleaseName\": \"DriveSync\",\r\n      \"Source\": \"Agent\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 4015222\r\n    }\r\n  ]\r\n}"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "1965a46b-db4e-469e-aaaa-7e0b379cb34d"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f5e5eaa8-ce88-482f-9506-01394caa3967\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-22T14:06:20.220Z\",\r\n      \"EndTime\": \"2026-06-22T14:06:22.867Z\",\r\n      \"ReleaseName\": \"DriveSync\",\r\n      \"Source\": \"Agent\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 4015222\r\n    }\r\n  ]\r\n}"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "f5e5eaa8-ce88-482f-9506-01394caa3967"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "f5e5eaa8-ce88-482f-9506-01394caa3967"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"f5e5eaa8-ce88-482f-9506-01394caa3967\",\r\n    \"StartTime\": \"2026-06-22T14:06:20.220Z\",\r\n    \"EndTime\": \"2026-06-22T14:06:22.867Z\",\r\n    \"State\": \"Faulted\",\r\n    \"Source\": \"Agent\",\r\n    \"SourceType\": \"Agent\",\r\n    \"BatchExecutionKey\": \"f5e5eaa8-ce88-482f-9506-01394caa3967\",\r\n    \"Info\": \"Failed to retrieve connection. Consider using a different connection. - The robot does not have the Connections.View permission in the folder where this connection lives. Ask your administrator to grant Connections.View on that folder, or move the connection to a folder where the robot has the required permission. (Folder: dea5d8d6-ca39-4dbf-b4a5-3516bad38866) Error code: DAP-GE-3000.\\r\\n\\r\\nin DriveSync.xaml\\r\\n    at ConnectorActivity \\\"Google Drive: Get File or Folder\\\"\\r\\n    at Sequence \\\"DriveSync\\\"\\r\\n    \\r\\n\\r\\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException: Failed to retrieve connection. Consider using a different connection. - The robot does not have the Connections.View permission in the folder where this connection lives. Ask your administrator to grant Connections.View on that folder, or move the connection to a folder where the robot has the required permission. (Folder: dea5d8d6-ca39-4dbf-b4a5-3516bad38866) Error code: DAP-GE-3000.\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivityBase.BuildExecutionParametersAsync(AsyncCodeActivityContext context, RequestParameters requestParameters, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-22T14:06:19.183Z\",\r\n    \"ReleaseName\": \"DriveSync\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"ReleaseVersionId\": 53490,\r\n    \"EntryPointPath\": \"DriveSync.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"robot_account\",\r\n    \"LastModificationTime\": \"2026-06-22T14:06:22.867Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"f5e5eaa8ce88482f950601394caa3967\",\r\n    \"Id\": 4015222\r\n  }\r\n}"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "f5e5eaa8-ce88-482f-9506-01394caa3967"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-22T14:06:22.727Z\",\r\n      \"Message\": \"Google Drive: Get File or Folder: Failed to retrieve connection. Consider using a different connection. - The robot does not have the Connections.View permission in the folder where this connection lives. Ask your administrator to grant Connections.View on that folder, or move the connection to a folder where the robot has the required permission. (Folder: dea5d8d6-ca39-4dbf-b4a5-3516bad38866) Error code: DAP-GE-3000.\\r\\nin Main.xaml\\r\\n    at ConnectorActivity \\\"ConnectorActivity\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivityBase.BuildExecutionParametersAsync(AsyncCodeActivityContext context, RequestParameters requestParameters, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "f5e5eaa8-ce88-482f-9506-01394caa3967"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get f5e5eaa8-ce88-482f-9506-01394caa3967",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the GeneralException DAP-GE-3000 Connections.View signature and the ConnectorActivity stack frame."
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-06T06:00:35.360Z\", \"Message\": \"[Send SMTP Mail Message] Transport connection dropped during TLS negotiation on smtp.office365.com:465\" },\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-06T06:00:35.420Z\", \"Message\": \"Send SMTP Mail Message: Failure sending mail.\\r\\nin Main.xaml\\r\\n    at SmtpSendMail \\\"Send SMTP Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Net.Mail.SmtpException: Failure sending mail. ---> System.IO.IOException: Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host. ---> System.Net.Sockets.SocketException: An existing connection was forcibly closed by the remote host\" }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"e5f6a7b8-9304-4d15-8e6f-708192a3b4c5\",\r\n      \"Name\": \"RPA Production\",\r\n      \"Path\": \"RPA Production\",\r\n      \"Description\": \"Production folder for the finance RPA portfolio.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"a1b2c3d4-5e6f-4071-8293-a4b5c6d7e8f9\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b6c7d8e9-0415-4d26-8f70-8192a3b4c5d6\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"WeeklyReportDispatcher\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-06T06:00:00.170Z\",\r\n      \"EndTime\": \"2026-06-06T06:00:35.480Z\",\r\n      \"CreationTime\": \"2026-06-06T05:59:59.900Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": { \"Returned\": 1, \"Limit\": 50, \"Offset\": 0, \"HasMore\": false }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    { \"Level\": \"Info\", \"TimeStamp\": \"2026-06-06T06:00:00.210Z\", \"Message\": \"Execution started\" },\r\n    { \"Level\": \"Trace\", \"TimeStamp\": \"2026-06-06T06:00:01.020Z\", \"Message\": \"[Send SMTP Mail Message] Opening connection to smtp.office365.com:465 (SecureConnection=StartTls)\" },\r\n    { \"Level\": \"Trace\", \"TimeStamp\": \"2026-06-06T06:00:01.640Z\", \"Message\": \"[Send SMTP Mail Message] TCP connected; sending EHLO then STARTTLS command on port 465\" },\r\n    { \"Level\": \"Warn\", \"TimeStamp\": \"2026-06-06T06:00:16.220Z\", \"Message\": \"[Send SMTP Mail Message] No SMTP greeting/response to STARTTLS on port 465; the server appears to expect implicit TLS on this port. Retrying/holding the socket\" },\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-06T06:00:35.360Z\", \"Message\": \"[Send SMTP Mail Message] Transport connection dropped during TLS negotiation on smtp.office365.com:465\" },\r\n    { \"Level\": \"Error\", \"TimeStamp\": \"2026-06-06T06:00:35.420Z\", \"Message\": \"Send SMTP Mail Message: Failure sending mail.\\r\\nin Main.xaml\\r\\n    at SmtpSendMail \\\"Send SMTP Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Net.Mail.SmtpException: Failure sending mail. ---> System.IO.IOException: Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host. ---> System.Net.Sockets.SocketException: An existing connection was forcibly closed by the remote host\" },\r\n    { \"Level\": \"Info\", \"TimeStamp\": \"2026-06-06T06:00:35.470Z\", \"Message\": \"Execution ended in: 00:00:35\" }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"b6c7d8e9-0415-4d26-8f70-8192a3b4c5d6\",\r\n    \"StartTime\": \"2026-06-06T06:00:00.170Z\",\r\n    \"EndTime\": \"2026-06-06T06:00:35.480Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"c7d8e9f0-1526-4d37-9081-92a3b4c5d6e7\",\r\n    \"Info\": \"Send SMTP Mail Message: Failure sending mail.\\r\\n\\r\\nin Main.xaml\\r\\n    at SmtpSendMail \\\"Send SMTP Mail Message\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.Net.Mail.SmtpException: Failure sending mail. ---> System.IO.IOException: Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host. ---> System.Net.Sockets.SocketException: An existing connection was forcibly closed by the remote host\",\r\n    \"CreationTime\": \"2026-06-06T05:59:59.900Z\",\r\n    \"ReleaseName\": \"WeeklyReportDispatcher\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 6061407,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"e5f6a7b8-9304-4d15-8e6f-708192a3b4c5\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-06T06:00:35.480Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"b6c7d8e9-0415-4d26-8f70-8192a3b4c5d6\",\r\n    \"Id\": 682712006\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

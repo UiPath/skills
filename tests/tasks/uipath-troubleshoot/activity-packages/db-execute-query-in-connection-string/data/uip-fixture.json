@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "6a3d9f1c-2e5b-4d8a-9c7f-1b4e0a6d3c8f",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"7e2b5d9a-4c1f-4a8e-b3d6-9f0c2a5e7b1d\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CustomerLedgerSync\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-29T09:14:00.402Z\",\r\n      \"EndTime\": \"2026-05-29T09:14:01.623Z\",\r\n      \"CreationTime\": \"2026-05-29T09:14:00.190Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "7e2b5d9a-4c1f-4a8e-b3d6-9f0c2a5e7b1d",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-29T09:14:01.560Z\",\r\n      \"Message\": \"Connect to Database: A database error occurred.\\r\\nSystem.ArgumentException: Format of the initialization string does not conform to specification starting at index 0.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-29T09:14:01.575Z\",\r\n      \"Message\": \"Connect to Database: A database error occurred.\\r\\nin Main.xaml\\r\\n    at DatabaseConnect \\\"Connect to Database\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "7e2b5d9a-4c1f-4a8e-b3d6-9f0c2a5e7b1d",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"7e2b5d9a-4c1f-4a8e-b3d6-9f0c2a5e7b1d\",\r\n    \"StartTime\": \"2026-05-29T09:14:00.402Z\",\r\n    \"EndTime\": \"2026-05-29T09:14:01.623Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"9a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\r\n    \"Info\": \"Connect to Database: A database error occurred.\\r\\n\\r\\nin Main.xaml\\r\\n    at DatabaseConnect \\\"Connect to Database\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Database.Activities.DatabaseException: Connect to Database: A database error occurred. ---> System.ArgumentException: Format of the initialization string does not conform to specification starting at index 0.\\r\\n   at System.Data.Common.DbConnectionOptions.GetKeyValuePair(String connectionString, Int32 currentPosition, StringBuilder buffer, Boolean useOdbcRules, String& keyname, String& keyvalue)\\r\\n   at System.Data.Common.DbConnectionOptions.ctor(String connectionString, Hashtable synonyms, Boolean useOdbcRules)\\r\\n   at Microsoft.Data.SqlClient.SqlConnectionString.ctor(String connectionString)\\r\\n   at UiPath.Database.DatabaseConnection.Connect(String connectionString, String provider, Int32 timeout)\\r\\n   --- End of inner exception stack trace ---\",\r\n    \"CreationTime\": \"2026-05-29T09:14:00.190Z\",\r\n    \"ReleaseName\": \"CustomerLedgerSync\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 5042118,\r\n    \"OrganizationUnitId\": 7791624,\r\n    \"FolderKey\": \"6a3d9f1c-2e5b-4d8a-9c7f-1b4e0a6d3c8f\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-29T09:14:01.623Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"7e2b5d9a-4c1f-4a8e-b3d6-9f0c2a5e7b1d\",\r\n    \"Id\": 671208842\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "7e2b5d9a-4c1f-4a8e-b3d6-9f0c2a5e7b1d",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-29T09:14:00.940Z\",\r\n      \"Message\": \"CustomerLedgerSync execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-29T09:14:01.480Z\",\r\n      \"Message\": \"Connect to Database: opening connection with ProviderName 'Microsoft.Data.SqlClient' and connection string 'SELECT CustomerId, Balance, Region FROM CustomerLedger WHERE Region = ''EU'''\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-29T09:14:01.560Z\",\r\n      \"Message\": \"Connect to Database: A database error occurred.\\r\\nSystem.ArgumentException: Format of the initialization string does not conform to specification starting at index 0.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-29T09:14:01.575Z\",\r\n      \"Message\": \"Connect to Database: A database error occurred.\\r\\nin Main.xaml\\r\\n    at DatabaseConnect \\\"Connect to Database\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"6a3d9f1c-2e5b-4d8a-9c7f-1b4e0a6d3c8f\",\r\n      \"Name\": \"Finance Automation\",\r\n      \"Path\": \"Finance Automation\",\r\n      \"Description\": \"Folder hosting the customer ledger and reconciliation processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c4f1a983-6b2d-4e57-9a1c-3d8e0f5b7a26\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

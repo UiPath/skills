@@ -1,0 +1,129 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "0686cab1-35c6-4d92-aed2-c91d9c275524",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-13T08:42:11.563Z\",\r\n      \"Message\": \"Copy File: Value cannot be null. (Parameter 'path')\\r\\nin Main.xaml\\r\\n    at CopyFile \\\"Copy File\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.ArgumentNullException\\r\\n   at System.ArgumentNullException.Throw(String paramName)\\r\\n   at System.IO.DirectoryInfo..ctor(String path)\\r\\n   at UiPath.Core.Activities.CopyFile.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "processes",
+        "list",
+        "--folder-key",
+        "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ProcessList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"B16092A1-0C68-436C-BF3A-147AB53B6762\",\r\n      \"Name\": \"ERN\",\r\n      \"ProcessKey\": \"ERN\",\r\n      \"ProcessVersion\": \"1.0.6\",\r\n      \"Description\": \"Blank Process\",\r\n      \"IsLatestVersion\": true,\r\n      \"RetentionPeriod\": 30,\r\n      \"RetentionAction\": \"Delete\",\r\n      \"FolderKey\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n      \"FolderPath\": \"Shared\"\r\n    },\r\n    {\r\n      \"Key\": \"EEAD4A4E-A3D9-44E5-A8EA-644B5B4BC2B6\",\r\n      \"Name\": \"BlankProcess\",\r\n      \"ProcessKey\": \"BlankProcess\",\r\n      \"ProcessVersion\": \"1.0.3\",\r\n      \"Description\": \"Blank Process\",\r\n      \"IsLatestVersion\": true,\r\n      \"RetentionPeriod\": 30,\r\n      \"RetentionAction\": \"Delete\",\r\n      \"FolderKey\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n      \"FolderPath\": \"Shared\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "0686cab1-35c6-4d92-aed2-c91d9c275524",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"0686cab1-35c6-4d92-aed2-c91d9c275524\",\r\n    \"StartTime\": \"2026-05-13T08:42:11.170Z\",\r\n    \"EndTime\": \"2026-05-13T08:42:12.977Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Agent\",\r\n    \"SourceType\": \"Agent\",\r\n    \"BatchExecutionKey\": \"0686cab1-35c6-4d92-aed2-c91d9c275524\",\r\n    \"Info\": \"Value cannot be null. (Parameter 'path')\\r\\n\\r\\nin Main.xaml\\r\\n    at CopyFile \\\"Copy File\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.ArgumentNullException: Value cannot be null. (Parameter 'path')\\r\\n   at System.ArgumentNullException.Throw(String paramName)\\r\\n   at System.IO.DirectoryInfo..ctor(String path)\\r\\n   at UiPath.Core.Activities.CopyFile.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\",\r\n    \"CreationTime\": \"2026-05-13T08:42:11.170Z\",\r\n    \"ReleaseName\": \"ERN\",\r\n    \"Type\": \"Attended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"StudioPro\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 53410,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-13T08:42:12.977Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"0686cab135c64d92aed2c91d9c275524\",\r\n    \"AutopilotForRobots\": {\r\n      \"Enabled\": true,\r\n      \"HealingEnabled\": true\r\n    },\r\n    \"Id\": 4014089\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "0686cab1-35c6-4d92-aed2-c91d9c275524",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-05-13T08:42:12.997Z\",\r\n      \"JobId\": 4014089\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-05-13T08:42:11.210Z\",\r\n      \"JobId\": 4014089\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "0686cab1-35c6-4d92-aed2-c91d9c275524",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-13T08:42:12.922Z\",\r\n      \"Message\": \"ERN execution ended\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-13T08:42:11.563Z\",\r\n      \"Message\": \"Copy File: Value cannot be null. (Parameter 'path')\\r\\nin Main.xaml\\r\\n    at CopyFile \\\"Copy File\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nSystem.ArgumentNullException\\r\\n   at System.ArgumentNullException.Throw(String paramName)\\r\\n   at System.IO.DirectoryInfo..ctor(String path)\\r\\n   at UiPath.Core.Activities.CopyFile.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-13T08:42:11.520Z\",\r\n      \"Message\": \"ERN execution started\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "0686cab1-35c6-4d92-aed2-c91d9c275524",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": [\r\n    {\r\n      \"PermissionStatus\": 0,\r\n      \"Id\": \"00000000-0000-0000-b98b-59af3439c595\",\r\n      \"TraceId\": \"0686cab1-35c6-4d92-aed2-c91d9c275524\",\r\n      \"ParentId\": null,\r\n      \"Name\": \"Robot Job 0686cab1-35c6-4d92-aed2-c91d9c275524\",\r\n      \"StartTime\": \"2026-05-13T08:42:11.4796773Z\",\r\n      \"EndTime\": \"2026-05-13T08:42:11.5741896Z\",\r\n      \"Attributes\": \"{\\\"Exception\\\":\\\"System.ArgumentNullException: Value cannot be null. (Parameter 'path')\\\\r\\\\n   at System.ArgumentNullException.Throw(String paramName)\\\\r\\\\n   at System.IO.DirectoryInfo..ctor(String path)\\\\r\\\\n   at UiPath.Core.Activities.CopyFile.Execute(CodeActivityContext context)\\\\r\\\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\\\r\\\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\\\"}\",\r\n      \"Status\": 2,\r\n      \"OrganizationId\": \"1215ce35-89a9-4dff-9f40-19c57da7689e\",\r\n      \"TenantId\": \"bcae8058-3f3b-4ec2-9550-517007673698\",\r\n      \"ExpiryTimeUtc\": null,\r\n      \"FolderKey\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n      \"Source\": 4,\r\n      \"SpanType\": \"RobotJob\",\r\n      \"ProcessKey\": \"b16092a1-0c68-436c-bf3a-147ab53b6762\",\r\n      \"JobKey\": \"0686cab1-35c6-4d92-aed2-c91d9c275524\",\r\n      \"ReferenceId\": null,\r\n      \"VerbosityLevel\": 2,\r\n      \"ExecutionType\": null,\r\n      \"UpdatedAt\": \"2026-05-13T08:42:12.8439788Z\",\r\n      \"AgentVersion\": null,\r\n      \"Context\": null,\r\n      \"Attachments\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs get 0686cab1-35c6-4d92-aed2-c91d9c275524",
+      "min": 1,
+      "description": "Agent fetches the job's execution details."
+    },
+    {
+      "pattern": "or jobs logs 0686cab1-35c6-4d92-aed2-c91d9c275524",
+      "min": 1,
+      "description": "Agent reads error-level job logs for additional execution detail."
+    },
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Agent enumerates folders to locate the folder that owns the job under investigation."
+    },
+    {
+      "pattern": "or processes list",
+      "min": 0,
+      "description": "OPTIONAL - agent may inspect the process/release configuration."
+    },
+    {
+      "pattern": "or jobs traces 0686cab1-35c6-4d92-aed2-c91d9c275524",
+      "min": 0,
+      "description": "OPTIONAL - agent may pull execution traces for additional detail."
+    }
+  ]
+}

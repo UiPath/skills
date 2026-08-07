@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9e1f3a5c-7b2d-4f6e-8a0c-1d3b5f7e9a2c\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T06:41:33.210Z\",\r\n      \"EndTime\": \"2026-06-20T06:41:36.882Z\",\r\n      \"ReleaseName\": \"InvoiceTrigger\",\r\n      \"Source\": \"Agent\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 5048771\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "1965a46b-db4e-469e-aaaa-7e0b379cb34d"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9e1f3a5c-7b2d-4f6e-8a0c-1d3b5f7e9a2c\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T06:41:33.210Z\",\r\n      \"EndTime\": \"2026-06-20T06:41:36.882Z\",\r\n      \"ReleaseName\": \"InvoiceTrigger\",\r\n      \"Source\": \"Agent\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 5048771\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "9e1f3a5c-7b2d-4f6e-8a0c-1d3b5f7e9a2c"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"9e1f3a5c-7b2d-4f6e-8a0c-1d3b5f7e9a2c\",\r\n    \"StartTime\": \"2026-06-20T06:41:33.210Z\",\r\n    \"EndTime\": \"2026-06-20T06:41:36.882Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Agent\",\r\n    \"SourceType\": \"Agent\",\r\n    \"BatchExecutionKey\": \"9e1f3a5c-7b2d-4f6e-8a0c-1d3b5f7e9a2c\",\r\n    \"Info\": \"Could not obtain access token. (invalid_grant)\\r\\n\\r\\nin InvoiceTrigger.xaml\\r\\n    at ConnectorTriggerActivity \\\"Workday: New Invoice (sample)\\\"\\r\\n    at Sequence \\\"InvoiceTrigger\\\"\\r\\n\\r\\nUiPath.Ipc.RemoteException: Could not obtain access token. (invalid_grant)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ExecutionService.SendAsync(String requestUri, ExecutionParameters executionParameters, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity.DebugExecuteAsync(IExecutionService executionService, ExecutionParameters executionParameters, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-20T06:41:33.210Z\",\r\n    \"ReleaseName\": \"InvoiceTrigger\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"ReleaseVersionId\": 7715,\r\n    \"EntryPointPath\": \"InvoiceTrigger.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"LastModificationTime\": \"2026-06-20T06:41:36.882Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"9e1f3a5c7b2d4f6e8a0c1d3b5f7e9a2c\",\r\n    \"Id\": 5048771\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "9e1f3a5c-7b2d-4f6e-8a0c-1d3b5f7e9a2c"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-20T06:41:36.640Z\",\r\n      \"Message\": \"Workday: New Invoice (sample): Could not obtain access token. (invalid_grant)\\r\\nin InvoiceTrigger.xaml\\r\\n    at ConnectorTriggerActivity \\\"Workday: New Invoice (sample)\\\"\\r\\n    at Sequence \\\"InvoiceTrigger\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.Ipc.RemoteException: Could not obtain access token. (invalid_grant)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ExecutionService.SendAsync(String requestUri, ExecutionParameters executionParameters, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity.DebugExecuteAsync(IExecutionService executionService, ExecutionParameters executionParameters, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorTriggerActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "is",
+        "connections",
+        "ping",
+        "a7c3e1f9-4b6d-42a8-9c05-3e8f1d0b7a62"
+      ],
+      "match_mode": "subset",
+      "exit_code": 1,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ConnectionPing\",\r\n  \"Message\": \"Could not obtain access token. (invalid_grant)\",\r\n  \"Data\": {\r\n    \"Id\": \"a7c3e1f9-4b6d-42a8-9c05-3e8f1d0b7a62\",\r\n    \"Name\": \"Workday - Finance\",\r\n    \"ConnectorKey\": \"uipath-workday\",\r\n    \"IsActive\": false,\r\n    \"State\": \"AuthenticationFailed\"\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get 9e1f3a5c-7b2d-4f6e-8a0c-1d3b5f7e9a2c",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the RemoteException wrapping 'Could not obtain access token. (invalid_grant)' and the ConnectorTriggerActivity stack frame."
+    },
+    {
+      "pattern": "is connections ping",
+      "min": 0,
+      "description": "OPTIONAL — agent may ping the connection to corroborate the auth failure, but the unwrapped inner message already names the cause. min:0 means tracked-but-not-required."
+    }
+  ]
+}

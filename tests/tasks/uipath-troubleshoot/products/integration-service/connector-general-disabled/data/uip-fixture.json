@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3f8a1c7e-9b2d-4e6a-8c11-5d7e9f0a1b2c\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-18T09:14:51.120Z\",\r\n      \"EndTime\": \"2026-06-18T09:14:52.004Z\",\r\n      \"ReleaseName\": \"OrderSync\",\r\n      \"Source\": \"Agent\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 5021143\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "1965a46b-db4e-469e-aaaa-7e0b379cb34d"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3f8a1c7e-9b2d-4e6a-8c11-5d7e9f0a1b2c\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-18T09:14:51.120Z\",\r\n      \"EndTime\": \"2026-06-18T09:14:52.004Z\",\r\n      \"ReleaseName\": \"OrderSync\",\r\n      \"Source\": \"Agent\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 5021143\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "3f8a1c7e-9b2d-4e6a-8c11-5d7e9f0a1b2c"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"3f8a1c7e-9b2d-4e6a-8c11-5d7e9f0a1b2c\",\r\n    \"StartTime\": \"2026-06-18T09:14:51.120Z\",\r\n    \"EndTime\": \"2026-06-18T09:14:52.004Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Agent\",\r\n    \"SourceType\": \"Agent\",\r\n    \"BatchExecutionKey\": \"3f8a1c7e-9b2d-4e6a-8c11-5d7e9f0a1b2c\",\r\n    \"Info\": \"Connection is disabled. Please enable the connection to continue. Error code: DAP-GE-3005.\\r\\n\\r\\nin OrderSync.xaml\\r\\n    at ConnectorHttpActivity \\\"Salesforce: HTTP Request\\\"\\r\\n    at Sequence \\\"OrderSync\\\"\\r\\n\\r\\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException: Connection is disabled. Please enable the connection to continue. Error code: DAP-GE-3005.\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivityBase.ResolveConnectionAsync(AsyncCodeActivityContext context, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorHttpActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\\r\\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-18T09:14:51.120Z\",\r\n    \"ReleaseName\": \"OrderSync\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"ReleaseVersionId\": 10042,\r\n    \"EntryPointPath\": \"OrderSync.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"LastModificationTime\": \"2026-06-18T09:14:52.004Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"3f8a1c7e9b2d4e6a8c115d7e9f0a1b2c\",\r\n    \"Id\": 5021143\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "3f8a1c7e-9b2d-4e6a-8c11-5d7e9f0a1b2c"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-18T09:14:51.880Z\",\r\n      \"Message\": \"Salesforce: HTTP Request: Connection is disabled. Please enable the connection to continue. Error code: DAP-GE-3005.\\r\\nin OrderSync.xaml\\r\\n    at ConnectorHttpActivity \\\"Salesforce: HTTP Request\\\"\\r\\n    at Sequence \\\"OrderSync\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException: Connection is disabled. Please enable the connection to continue. Error code: DAP-GE-3005.\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivityBase.ResolveConnectionAsync(AsyncCodeActivityContext context, CancellationToken token)\\r\\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorHttpActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "is",
+        "connections",
+        "ping",
+        "c4d8f0a2-6b1e-4d93-a7c5-8f201b3e9d40"
+      ],
+      "match_mode": "subset",
+      "exit_code": 1,
+      "stdout": "{\r\n  \"Result\": \"Failure\",\r\n  \"Code\": \"ConnectionPing\",\r\n  \"Message\": \"Connection 'c4d8f0a2-6b1e-4d93-a7c5-8f201b3e9d40' is disabled.\",\r\n  \"Data\": {\r\n    \"Id\": \"c4d8f0a2-6b1e-4d93-a7c5-8f201b3e9d40\",\r\n    \"IsActive\": false,\r\n    \"State\": \"Disabled\"\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "is",
+        "connections",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"ConnectionList\",\r\n  \"Data\": [\r\n    {\r\n      \"Id\": \"c4d8f0a2-6b1e-4d93-a7c5-8f201b3e9d40\",\r\n      \"Name\": \"Salesforce - Production\",\r\n      \"ConnectorKey\": \"uipath-salesforce\",\r\n      \"ConnectorName\": \"Salesforce\",\r\n      \"IsActive\": false,\r\n      \"State\": \"Disabled\",\r\n      \"FolderKey\": \"1965a46b-db4e-469e-aaaa-7e0b379cb34d\",\r\n      \"Owner\": \"original_email@test.com\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get 3f8a1c7e-9b2d-4e6a-8c11-5d7e9f0a1b2c",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the GeneralException DAP-GE-3005 'Connection is disabled' signature and the ConnectorHttpActivity stack frame."
+    },
+    {
+      "pattern": "is connections",
+      "min": 0,
+      "description": "OPTIONAL — agent may ping/list the connection to corroborate the disabled state, but the job Info already names the cause. min:0 means tracked-but-not-required."
+    }
+  ]
+}

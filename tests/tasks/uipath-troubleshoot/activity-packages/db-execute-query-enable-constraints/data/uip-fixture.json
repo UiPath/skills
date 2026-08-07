@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "a2f8c3e1-9d47-4b6a-8e02-1c5f7a9b3d64",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-18T07:32:12.041Z\",\r\n      \"Message\": \"Execute Query: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.\\r\\nSystem.Data.ConstraintException: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-18T07:32:12.060Z\",\r\n      \"Message\": \"Execute Query: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.\\r\\nin Main.xaml\\r\\n    at ExecuteQuery \\\"Execute Query 'Customer Orders'\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "a2f8c3e1-9d47-4b6a-8e02-1c5f7a9b3d64"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"a2f8c3e1-9d47-4b6a-8e02-1c5f7a9b3d64\",\r\n    \"StartTime\": \"2026-06-18T07:32:10.402Z\",\r\n    \"EndTime\": \"2026-06-18T07:32:12.088Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 30,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"6d2a1b3c-4e5f-4a6b-8c7d-9e0f1a2b3c4d\",\r\n    \"Info\": \"Execute Query: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.\\r\\n\\r\\nin Main.xaml\\r\\n    at ExecuteQuery \\\"Execute Query 'Customer Orders'\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Database.Activities.DatabaseException: Execute Query: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints. ---> System.Data.ConstraintException: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.\\r\\n   at System.Data.DataTable.EnableConstraints()\\r\\n   at System.Data.DataTable.set_EnforceConstraints(Boolean value)\\r\\n   at System.Data.DataTable.EndLoadData()\\r\\n   at System.Data.Common.DbDataAdapter.FillLoadDataRow(SchemaMapping mapping)\\r\\n   at System.Data.Common.DbDataAdapter.FillFromReader(DataSet dataset, DataTable datatable, String srcTable, DataReaderContainer dataReader, Int32 startRecord, Int32 maxRecords)\\r\\n   at UiPath.Database.DatabaseConnection.ExecuteQuery(String sql, Dictionary`2 parameters, Int32 timeout)\\r\\n   --- End of inner exception stack trace ---\",\r\n    \"CreationTime\": \"2026-06-18T07:32:10.180Z\",\r\n    \"ReleaseName\": \"CustomerOrderReport\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6112034,\r\n    \"OrganizationUnitId\": 7791624,\r\n    \"FolderKey\": \"5c9d2a71-3e64-4b80-9a15-6b8c0d2e4f31\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-18T07:32:12.088Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"a2f8c3e1-9d47-4b6a-8e02-1c5f7a9b3d64\",\r\n    \"Id\": 671308842\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "a2f8c3e1-9d47-4b6a-8e02-1c5f7a9b3d64"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-06-18T07:32:10.612Z\",\r\n      \"Message\": \"CustomerOrderReport execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-18T07:32:11.140Z\",\r\n      \"Message\": \"Connect to Database execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-18T07:32:11.520Z\",\r\n      \"Message\": \"Connect to Database execution ended\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-06-18T07:32:11.560Z\",\r\n      \"Message\": \"Execute Query 'Customer Orders' execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-18T07:32:12.041Z\",\r\n      \"Message\": \"Execute Query: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 5,\r\n    \"Limit\": 100,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"5c9d2a71-3e64-4b80-9a15-6b8c0d2e4f31\",\r\n      \"Name\": \"Reporting\",\r\n      \"Path\": \"Reporting\",\r\n      \"Description\": \"Folder hosting the customer and order reporting processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"b8e2c145-7d3a-49b6-a2c8-1f4b5e8a9c01\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"a2f8c3e1-9d47-4b6a-8e02-1c5f7a9b3d64\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"CustomerOrderReport\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-18T07:32:10.402Z\",\r\n      \"EndTime\": \"2026-06-18T07:32:12.088Z\",\r\n      \"CreationTime\": \"2026-06-18T07:32:10.180Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

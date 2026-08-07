@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f0066666-3333-4444-5555-666677778888",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"StartTime\": \"2026-05-25T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-25T08:00:02.812Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelInvoiceProcess\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"DailyOverdueA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0066666-3333-4444-5555-666677778888\",\r\n      \"Info\": \"UiPath.Excel.BusinessException: The Excel Activity option 'Ignore empty source' is ineffective: the source DataTable has 0 rows and 'Exclude headers' is False.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "ee222222-cccc-dddd-eeee-ffffaaaabbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"StartTime\": \"2026-05-25T08:00:01.300Z\",\r\n    \"EndTime\": \"2026-05-25T08:00:02.812Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9ee22222-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Info\": \"UiPath.Excel.BusinessException: The Excel Activity option 'Ignore empty source' is ineffective: the source DataTable has 0 rows and 'Exclude headers' is False.\\r\\n   at UiPath.Excel.Activities.Business.WriteRangeX.ValidateSourceTable(DataTable source)\\r\\n   at UiPath.Excel.Activities.Business.WriteRangeX.OnExecute(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-25T08:00:01.005Z\",\r\n    \"ReleaseName\": \"ExcelInvoiceProcess\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5680601,\r\n    \"OrganizationUnitId\": 6060001,\r\n    \"FolderKey\": \"f0066666-3333-4444-5555-666677778888\",\r\n    \"Reference\": \"DailyOverdueA\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-25T08:00:02.812Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"BusinessException\",\r\n      \"ActivityName\": \"WriteRange_1\",\r\n      \"ActivityDisplayName\": \"Write Range: overdue report\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Id\": 680699001\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "ee222222-cccc-dddd-eeee-ffffaaaabbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\"Key\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Pending\", \"Timestamp\": \"2026-05-25T08:00:01.005Z\"},\r\n    {\"Key\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Running\", \"Timestamp\": \"2026-05-25T08:00:01.300Z\"},\r\n    {\"Key\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Faulted\", \"Timestamp\": \"2026-05-25T08:00:02.812Z\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "ee222222-cccc-dddd-eeee-ffffaaaabbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-ee2222cc-001\",\r\n      \"JobKey\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-25T08:00:01.310Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ExcelInvoiceProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee2222cc-002\",\r\n      \"JobKey\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-25T08:00:01.418Z\",\r\n      \"Message\": \"[ExcelInvoiceProcess] Filtering overdue invoices and writing report to C:\\\\Robot\\\\Data\\\\invoice-report.xlsx\",\r\n      \"ProcessName\": \"ExcelInvoiceProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee2222cc-003\",\r\n      \"JobKey\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-25T08:00:01.510Z\",\r\n      \"Message\": \"Use Excel File: invoices-source.xlsx — workbook opened (OpenXML provider)\",\r\n      \"ProcessName\": \"ExcelInvoiceProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee2222cc-004\",\r\n      \"JobKey\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-25T08:00:01.810Z\",\r\n      \"Message\": \"Read Range: load invoices (Invoices!A1:Z10000) — returned 247 rows (Status values: Paid=189, Pending=58, Overdue=0)\",\r\n      \"ProcessName\": \"ExcelInvoiceProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee2222cc-005\",\r\n      \"JobKey\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-25T08:00:02.010Z\",\r\n      \"Message\": \"Filter Data Table: Status = Overdue — input 247 rows, output 0 rows (no matches)\",\r\n      \"ProcessName\": \"ExcelInvoiceProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee2222cc-006\",\r\n      \"JobKey\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-25T08:00:02.310Z\",\r\n      \"Message\": \"Use Excel File: invoice-report.xlsx — workbook opened (OpenXML provider)\",\r\n      \"ProcessName\": \"ExcelInvoiceProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee2222cc-007\",\r\n      \"JobKey\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-25T08:00:02.510Z\",\r\n      \"Message\": \"Write Range: overdue report — resolved config Sheet='Overdue' StartingCell='A1' ExcludeHeaders=False DataTable='dtOverdue' (rows=0 cols=8)\",\r\n      \"ProcessName\": \"ExcelInvoiceProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-ee2222cc-008\",\r\n      \"JobKey\": \"ee222222-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-25T08:00:02.802Z\",\r\n      \"Message\": \"Write Range: overdue report — UiPath.Excel.BusinessException: The Excel Activity option 'Ignore empty source' is ineffective: the source DataTable has 0 rows and 'Exclude headers' is False.\",\r\n      \"ProcessName\": \"ExcelInvoiceProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0066666-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"InvoiceOps\",\r\n      \"FullyQualifiedName\": \"InvoiceOps\",\r\n      \"Description\": \"Folder for daily invoice-reporting automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6060001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 1,
+    "stderr": "{\"error\": \"unmocked command\"}\n"
+  }
+}

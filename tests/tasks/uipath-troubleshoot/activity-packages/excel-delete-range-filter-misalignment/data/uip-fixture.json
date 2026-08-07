@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f0044444-3333-4444-5555-666677778888",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"StartTime\": \"2026-05-23T08:00:01.300Z\",\r\n      \"EndTime\": \"2026-05-23T08:00:02.812Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"ExcelCustomerProcess\",\r\n      \"Source\": \"Schedule\",\r\n      \"Reference\": \"CustomerCleanupA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0044444-3333-4444-5555-666677778888\",\r\n      \"Info\": \"System.Exception: Customer CUST-9001 missing from post-delete data\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"StartTime\": \"2026-05-23T08:00:01.300Z\",\r\n    \"EndTime\": \"2026-05-23T08:00:02.812Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"9dd33333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Info\": \"System.Exception: Customer CUST-9001 missing from post-delete data\\r\\n   at System.Activities.Statements.Throw.Execute(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-23T08:00:01.005Z\",\r\n    \"ReleaseName\": \"ExcelCustomerProcess\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5680401,\r\n    \"OrganizationUnitId\": 6040001,\r\n    \"FolderKey\": \"f0044444-3333-4444-5555-666677778888\",\r\n    \"Reference\": \"CustomerCleanupA\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-23T08:00:02.812Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"Exception\",\r\n      \"ActivityName\": \"Throw_1\",\r\n      \"ActivityDisplayName\": \"Throw: missing customer\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n    \"Id\": 680399001\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\"Key\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Pending\", \"Timestamp\": \"2026-05-23T08:00:01.005Z\"},\r\n    {\"Key\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Running\", \"Timestamp\": \"2026-05-23T08:00:01.300Z\"},\r\n    {\"Key\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\", \"State\": \"Faulted\", \"Timestamp\": \"2026-05-23T08:00:02.812Z\"}\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "dd333333-cccc-dddd-eeee-ffffaaaabbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-dd3333cc-001\",\r\n      \"JobKey\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-23T08:00:01.310Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"ExcelCustomerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-dd3333cc-002\",\r\n      \"JobKey\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-23T08:00:01.418Z\",\r\n      \"Message\": \"[ExcelCustomerProcess] Removing legacy test customers (rows 10-20) from C:\\\\Robot\\\\Data\\\\customer-list.xlsx\",\r\n      \"ProcessName\": \"ExcelCustomerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-dd3333cc-003\",\r\n      \"JobKey\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-23T08:00:01.510Z\",\r\n      \"Message\": \"Use Excel File: customer-list.xlsx — workbook opened (OpenXML provider)\",\r\n      \"ProcessName\": \"ExcelCustomerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-dd3333cc-004\",\r\n      \"JobKey\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-23T08:00:01.610Z\",\r\n      \"Message\": \"Use Excel File: customer-list.xlsx — workbook has active AutoFilter on sheet 'Customers' column 'Status' (hiding rows where Status='Archived')\",\r\n      \"ProcessName\": \"ExcelCustomerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-dd3333cc-005\",\r\n      \"JobKey\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-23T08:00:01.810Z\",\r\n      \"Message\": \"Read Range: pre-delete snapshot (Customers!A1:Z100) — returned 47 rows (filtered view: 22 visible, 25 hidden including rows 15-22)\",\r\n      \"ProcessName\": \"ExcelCustomerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-dd3333cc-006\",\r\n      \"JobKey\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-23T08:00:02.110Z\",\r\n      \"Message\": \"Delete Range: drop legacy customers (Customers!A10:D20 ShiftCells=True ShiftOption=ShiftCellsUp) — completed successfully (44 cells deleted across 11 rows, 0 errors)\",\r\n      \"ProcessName\": \"ExcelCustomerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-dd3333cc-007\",\r\n      \"JobKey\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-23T08:00:02.410Z\",\r\n      \"Message\": \"Read Range: post-delete snapshot (Customers!A1:Z100) — returned 36 rows\",\r\n      \"ProcessName\": \"ExcelCustomerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-dd3333cc-008\",\r\n      \"JobKey\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-23T08:00:02.610Z\",\r\n      \"Message\": \"For Each Row: scan for CUST-9001 — 36 iterations, CUST-9001 not encountered (found=False)\",\r\n      \"ProcessName\": \"ExcelCustomerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-dd3333cc-009\",\r\n      \"JobKey\": \"dd333333-cccc-dddd-eeee-ffffaaaabbbb\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-23T08:00:02.802Z\",\r\n      \"Message\": \"Throw: missing customer — System.Exception: Customer CUST-9001 missing from post-delete data\",\r\n      \"ProcessName\": \"ExcelCustomerProcess\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0044444-3333-4444-5555-666677778888\",\r\n      \"DisplayName\": \"CustomerOps\",\r\n      \"FullyQualifiedName\": \"CustomerOps\",\r\n      \"Description\": \"Folder for customer-list maintenance automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6040001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 1,
+    "stderr": "{\"error\": \"unmocked command\"}\n"
+  }
+}

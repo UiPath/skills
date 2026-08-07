@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f0011144-2222-3333-4444-555566667777\",\r\n      \"DisplayName\": \"Shared\",\r\n      \"FullyQualifiedName\": \"Shared\",\r\n      \"Description\": \"Default shared automation folder.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6011001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"aa111111-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"StartTime\": \"2026-05-19T07:30:02.115Z\",\r\n      \"EndTime\": \"2026-05-19T07:30:03.061Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"WordLogoStamp\",\r\n      \"Source\": \"Manual\",\r\n      \"Reference\": \"LogoStampRun\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f0011144-2222-3333-4444-555566667777\",\r\n      \"Info\": \"System.InvalidOperationException: The 'Add Picture' activity must be used inside a 'Use Word File' or 'Word Application Scope' activity. No Word document is open in the current scope.\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-aa111199-001\",\r\n      \"JobKey\": \"aa111111-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-19T07:30:02.180Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"WordLogoStamp\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa111199-002\",\r\n      \"JobKey\": \"aa111111-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-19T07:30:02.402Z\",\r\n      \"Message\": \"[WordLogoStamp] Stamping the company logo into the monthly report.\",\r\n      \"ProcessName\": \"WordLogoStamp\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa111199-003\",\r\n      \"JobKey\": \"aa111111-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-19T07:30:02.640Z\",\r\n      \"Message\": \"Use Word File: monthly-report.docx — document opened (Path='C:\\\\Robot\\\\Reports\\\\monthly-report.docx').\",\r\n      \"ProcessName\": \"WordLogoStamp\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa111199-004\",\r\n      \"JobKey\": \"aa111111-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-05-19T07:30:02.710Z\",\r\n      \"Message\": \"[WordLogoStamp] Report document opened — ready to stamp logo.\",\r\n      \"ProcessName\": \"WordLogoStamp\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa111199-005\",\r\n      \"JobKey\": \"aa111111-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-05-19T07:30:02.880Z\",\r\n      \"Message\": \"Use Word File: monthly-report.docx — scope exited; document context closed.\",\r\n      \"ProcessName\": \"WordLogoStamp\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa111199-006\",\r\n      \"JobKey\": \"aa111111-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-05-19T07:30:03.050Z\",\r\n      \"Message\": \"Add Picture: System.InvalidOperationException: The 'Add Picture' activity must be used inside a 'Use Word File' or 'Word Application Scope' activity. No Word document is open in the current scope.\",\r\n      \"ProcessName\": \"WordLogoStamp\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"aa111111-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-05-19T07:30:01.870Z\"\r\n    },\r\n    {\r\n      \"Key\": \"aa111111-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-05-19T07:30:02.115Z\"\r\n    },\r\n    {\r\n      \"Key\": \"aa111111-9999-aaaa-bbbb-ccccddddeeee\",\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-05-19T07:30:03.061Z\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"aa111111-9999-aaaa-bbbb-ccccddddeeee\",\r\n    \"StartTime\": \"2026-05-19T07:30:02.115Z\",\r\n    \"EndTime\": \"2026-05-19T07:30:03.061Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"9aa11111-9999-aaaa-bbbb-ccccddddeeee\",\r\n    \"Info\": \"System.InvalidOperationException: The 'Add Picture' activity must be used inside a 'Use Word File' or 'Word Application Scope' activity. No Word document is open in the current scope.\\r\\n   at UiPath.Word.Activities.WordAddImage.ResolveDocumentContext()\\r\\n   at UiPath.Word.Activities.WordAddImage.Execute(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-19T07:30:01.870Z\",\r\n    \"ReleaseName\": \"WordLogoStamp\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5610401,\r\n    \"OrganizationUnitId\": 6011001,\r\n    \"FolderKey\": \"f0011144-2222-3333-4444-555566667777\",\r\n    \"Reference\": \"LogoStampRun\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-19T07:30:03.061Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"InvalidOperationException\",\r\n      \"ActivityName\": \"WordAddImage_1\",\r\n      \"ActivityDisplayName\": \"Add Picture\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"aa111111-9999-aaaa-bbbb-ccccddddeeee\",\r\n    \"Id\": 680011403\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

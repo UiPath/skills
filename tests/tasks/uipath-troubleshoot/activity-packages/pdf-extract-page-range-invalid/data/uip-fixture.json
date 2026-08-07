@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T10:02:11.402Z\",\r\n      \"EndTime\": \"2026-06-20T10:02:14.880Z\",\r\n      \"ReleaseName\": \"MonthlyReporting\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50614107\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-20T10:02:14.560Z\",\r\n      \"Message\": \"Extract document pages: The input string 'abc' was not in a correct format.\\r\\nException Type: UiPath.DocumentProcessing.Contracts.Extensions.InvalidPageRangeException\\r\\nin Main.xaml\\r\\n    at ExtractPDFPageRange \\\"Extract document pages\\\"\\r\\n    at Sequence \\\"Extract document pages\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.DocumentProcessing.Contracts.Extensions.InvalidPageRangeException: The input string 'abc' was not in a correct format.\\r\\n   at UiPath.DocumentProcessing.Contracts.Extensions.PageRange.ParsePageRangePart(String rangePart, Int32 pagesCount)\\r\\n   at UiPath.DocumentProcessing.Contracts.Extensions.PageRange.Parse(String pageRange, Int32 pagesCount)\\r\\n   at UiPath.PDF.Activities.PDF.ValidationHelper.ParseRange(String range, Int32 pagesCount)\\r\\n   at UiPath.PDF.Activities.PDF.ExtractPDFPageRange.Execute(CodeActivityContext context)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T10:02:11.402Z\",\r\n      \"EndTime\": \"2026-06-20T10:02:14.880Z\",\r\n      \"ReleaseName\": \"MonthlyReporting\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50614107\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpans\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b\",\r\n    \"StartTime\": \"2026-06-20T10:02:11.402Z\",\r\n    \"EndTime\": \"2026-06-20T10:02:14.880Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"BatchExecutionKey\": \"c2d3e4f5-a6b7-4c8d-9e0f-1a2b3c4d5e6f\",\r\n    \"Info\": \"Source: Extract document pages\\r\\nMessage: The input string 'abc' was not in a correct format.\\r\\nException Type: UiPath.DocumentProcessing.Contracts.Extensions.InvalidPageRangeException\\r\\nin Main.xaml\\r\\n    at ExtractPDFPageRange \\\"Extract document pages\\\"\\r\\n    at Sequence \\\"Extract document pages\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.DocumentProcessing.Contracts.Extensions.InvalidPageRangeException: The input string 'abc' was not in a correct format.\\r\\n   at UiPath.DocumentProcessing.Contracts.Extensions.PageRange.ParsePageRangePart(String rangePart, Int32 pagesCount)\\r\\n   at UiPath.DocumentProcessing.Contracts.Extensions.PageRange.Parse(String pageRange, Int32 pagesCount)\\r\\n   at UiPath.PDF.Activities.PDF.ValidationHelper.ParseRange(String range, Int32 pagesCount)\\r\\n   at UiPath.PDF.Activities.PDF.ExtractPDFPageRange.Execute(CodeActivityContext context)\\r\\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\",\r\n    \"CreationTime\": \"2026-06-20T10:02:10.220Z\",\r\n    \"ReleaseName\": \"MonthlyReporting\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 1108803,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 28927,\r\n    \"FolderKey\": \"2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\REPLACEMENT_USER\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-20T10:02:14.880Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"3d1b8e609a2c4f5d8e7b1c2d3e4f5a6b\",\r\n    \"Id\": 50614107\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-20T10:02:14.560Z\",\r\n      \"Message\": \"Extract document pages: The input string 'abc' was not in a correct format.\\r\\nException Type: UiPath.DocumentProcessing.Contracts.Extensions.InvalidPageRangeException\\r\\nin Main.xaml\\r\\n    at ExtractPDFPageRange \\\"Extract document pages\\\"\\r\\n    at Sequence \\\"Extract document pages\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.DocumentProcessing.Contracts.Extensions.InvalidPageRangeException: The input string 'abc' was not in a correct format.\\r\\n   at UiPath.DocumentProcessing.Contracts.Extensions.PageRange.ParsePageRangePart(String rangePart, Int32 pagesCount)\\r\\n   at UiPath.DocumentProcessing.Contracts.Extensions.PageRange.Parse(String pageRange, Int32 pagesCount)\\r\\n   at UiPath.PDF.Activities.PDF.ValidationHelper.ParseRange(String range, Int32 pagesCount)\\r\\n   at UiPath.PDF.Activities.PDF.ExtractPDFPageRange.Execute(CodeActivityContext context)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "traces",
+        "3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobTraces\",\r\n  \"Data\": []\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"dea5d8d6-ca39-4dbf-b4a5-3516bad38866\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b\",\r\n      \"State\": \"Faulted\",\r\n      \"StartTime\": \"2026-06-20T10:02:11.402Z\",\r\n      \"EndTime\": \"2026-06-20T10:02:14.880Z\",\r\n      \"ReleaseName\": \"MonthlyReporting\",\r\n      \"Source\": \"Manual\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"ErrorCode\": \"Robot\",\r\n      \"Id\": 50614107\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get 3d1b8e60-9a2c-4f5d-8e7b-1c2d3e4f5a6b",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the InvalidPageRangeException signature from the Info / Error log."
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "d4e5f6a7-b8c9-4193-a5b6-c7d8e9f01403",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"e6f7a8b9-c0d1-4204-b6c7-d8e9f0a12514\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"MonthlyReportFiller\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-06-10T06:00:05.310Z\",\r\n      \"EndTime\": \"2026-06-10T06:00:11.870Z\",\r\n      \"CreationTime\": \"2026-06-10T06:00:05.020Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "e6f7a8b9-c0d1-4204-b6c7-d8e9f0a12514",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-10T06:00:11.790Z\",\r\n      \"Message\": \"[Word Application Scope] Word experienced an error trying to open the file 'C:\\\\UiPath\\\\Reporting\\\\data\\\\MonthlyTemplate.docx'. The file appears to be corrupted.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-10T06:00:11.840Z\",\r\n      \"Message\": \"Word experienced an error trying to open the file. The file appears to be corrupted.\\r\\nin Main.xaml\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "e6f7a8b9-c0d1-4204-b6c7-d8e9f0a12514",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"e6f7a8b9-c0d1-4204-b6c7-d8e9f0a12514\",\r\n    \"StartTime\": \"2026-06-10T06:00:05.310Z\",\r\n    \"EndTime\": \"2026-06-10T06:00:11.870Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"f7a8b9c0-d1e2-4315-c7d8-e9f0a1253647\",\r\n    \"Info\": \"Word Application Scope: Word experienced an error trying to open the file 'C:\\\\UiPath\\\\Reporting\\\\data\\\\MonthlyTemplate.docx'. The file appears to be corrupted.\\r\\n\\r\\nin Main.xaml\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.Word.Activities.WordException: Word experienced an error trying to open the file. The file appears to be corrupted.\",\r\n    \"CreationTime\": \"2026-06-10T06:00:05.020Z\",\r\n    \"ReleaseName\": \"MonthlyReportFiller\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 6020655,\r\n    \"OrganizationUnitId\": 7791618,\r\n    \"FolderKey\": \"d4e5f6a7-b8c9-4193-a5b6-c7d8e9f01403\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_ROBOT\",\r\n    \"OrchestratorUserIdentity\": \"scheduler\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-06-10T06:00:11.870Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"e6f7a8b9-c0d1-4204-b6c7-d8e9f0a12514\",\r\n    \"Id\": 682419901\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "e6f7a8b9-c0d1-4204-b6c7-d8e9f0a12514",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-10T06:00:05.360Z\",\r\n      \"Message\": \"Execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-10T06:00:07.120Z\",\r\n      \"Message\": \"[Word Application Scope] Starting Microsoft Word\"\r\n    },\r\n    {\r\n      \"Level\": \"Warn\",\r\n      \"TimeStamp\": \"2026-06-10T06:00:08.640Z\",\r\n      \"Message\": \"[Word Application Scope] A Microsoft Word instance was already running on the host when the scope started.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-10T06:00:11.790Z\",\r\n      \"Message\": \"[Word Application Scope] Word experienced an error trying to open the file 'C:\\\\UiPath\\\\Reporting\\\\data\\\\MonthlyTemplate.docx'. The file appears to be corrupted.\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-06-10T06:00:11.840Z\",\r\n      \"Message\": \"Word experienced an error trying to open the file. The file appears to be corrupted.\\r\\nin Main.xaml\\r\\n    at WordApplicationScope \\\"Word Application Scope\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    },\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-06-10T06:00:11.860Z\",\r\n      \"Message\": \"Execution ended in: 00:00:06\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"d4e5f6a7-b8c9-4193-a5b6-c7d8e9f01403\",\r\n      \"Name\": \"Reporting\",\r\n      \"Path\": \"Reporting\",\r\n      \"Description\": \"Production folder for scheduled reporting processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-5b6a-4978-8c9d-0e1f2a3b4c5d\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

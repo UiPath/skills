@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f3e8d4b1-9c2a-4f5e-b8d7-c1a0e6f9b3d2",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091\",\r\n      \"StartTime\": \"2026-05-12T02:00:02.140Z\",\r\n      \"EndTime\": \"2026-05-12T02:00:04.620Z\",\r\n      \"State\": \"Faulted\",\r\n      \"Source\": \"Schedule\",\r\n      \"SourceType\": \"Schedule\",\r\n      \"ReleaseName\": \"ExpenseImporter\",\r\n      \"Type\": \"Unattended\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"f3e8d4b1-9c2a-4f5e-b8d7-c1a0e6f9b3d2\",\r\n      \"Info\": \"UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException: Could not find target application.\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.GetAppNotFoundExceptionAsync\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.ProcessAppNotFoundAsync\\r\\n\\r\\nin Main.xaml\\r\\n    at NApplicationCard \\\"Use AcmeBooks accounting app\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\",\r\n      \"Id\": 671012845\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-12T02:00:04.587Z\",\r\n      \"Message\": \"Use AcmeBooks accounting app: Could not find target application.\\r\\n\\r\\nException type: UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException\\r\\nMessage: Could not find target application.\\r\\n\\r\\nin Main.xaml\\r\\n    at NApplicationCard \\\"Use AcmeBooks accounting app\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-12T02:00:04.611Z\",\r\n      \"Message\": \"UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException: Could not find target application.\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.GetAppNotFoundExceptionAsync(String appSelector, NAppOpenMode openMode, Boolean showClosestMatchesInSearchError, CancellationToken cancellationToken)\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.ProcessAppNotFoundAsync(ITargetApp targetApp, Boolean showClosestMatchesInSearchError, CancellationToken token)\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.ExecuteAsync(NativeActivityContext context, CancellationToken token)\\r\\n   at System.Activities.NativeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "--job-key",
+        "2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpansGet\",\r\n  \"Data\": [\r\n    {\r\n      \"SpanId\": \"01a3c5e7f9b1d2c4\",\r\n      \"ParentSpanId\": null,\r\n      \"TraceId\": \"2c4f8a913e7d4b6c9a1e5f8d2b7c3091\",\r\n      \"Name\": \"ExpenseImporter\",\r\n      \"Kind\": \"Internal\",\r\n      \"StartTime\": \"2026-05-12T02:00:02.220Z\",\r\n      \"EndTime\": \"2026-05-12T02:00:04.620Z\",\r\n      \"Status\": \"Error\",\r\n      \"Attributes\": {\r\n        \"workflow.entry_point\": \"Main.xaml\",\r\n        \"process.release_name\": \"ExpenseImporter\"\r\n      }\r\n    },\r\n    {\r\n      \"SpanId\": \"02b4d6f8a0c2e3d5\",\r\n      \"ParentSpanId\": \"01a3c5e7f9b1d2c4\",\r\n      \"TraceId\": \"2c4f8a913e7d4b6c9a1e5f8d2b7c3091\",\r\n      \"Name\": \"Use AcmeBooks accounting app\",\r\n      \"Kind\": \"Internal\",\r\n      \"StartTime\": \"2026-05-12T02:00:02.355Z\",\r\n      \"EndTime\": \"2026-05-12T02:00:04.587Z\",\r\n      \"Status\": \"Error\",\r\n      \"Attributes\": {\r\n        \"activity.type\": \"UiPath.UIAutomationNext.Activities.NApplicationCard\",\r\n        \"activity.display_name\": \"Use AcmeBooks accounting app\",\r\n        \"activity.id_ref\": \"NApplicationCard_AcmeBooks\",\r\n        \"workflow.file\": \"Main.xaml\",\r\n        \"target_app.open_mode\": \"Never\",\r\n        \"target_app.selector\": \"<wnd app='acmebooks.exe' cls='Afx:00007FF6:0' />\",\r\n        \"exception.type\": \"UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException\",\r\n        \"exception.message\": \"Could not find target application.\"\r\n      }\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091\",\r\n    \"StartTime\": \"2026-05-12T02:00:02.140Z\",\r\n    \"EndTime\": \"2026-05-12T02:00:04.620Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"8f3c1a2d-5b7e-4f9a-b6c8-2d4e0f1a3c95\",\r\n    \"Info\": \"UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException: Could not find target application.\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.GetAppNotFoundExceptionAsync\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.ProcessAppNotFoundAsync\\r\\n\\r\\nin Main.xaml\\r\\n    at NApplicationCard \\\"Use AcmeBooks accounting app\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nUiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException: Could not find target application.\",\r\n    \"CreationTime\": \"2026-05-12T02:00:01.890Z\",\r\n    \"ReleaseName\": \"ExpenseImporter\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5103772,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 7791619,\r\n    \"FolderKey\": \"f3e8d4b1-9c2a-4f5e-b8d7-c1a0e6f9b3d2\",\r\n    \"Reference\": \"Nightly Expense Import\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\FINANCE-ROBOT-01\",\r\n    \"OrchestratorUserIdentity\": \"finance_robot\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-12T02:00:04.620Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091\",\r\n    \"AutopilotForRobots\": {\r\n      \"Enabled\": false,\r\n      \"HealingEnabled\": false\r\n    },\r\n    \"Id\": 671012845\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-12T02:00:02.220Z\",\r\n      \"Message\": \"ExpenseImporter started - importing yesterday's expense reports into AcmeBooks\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-12T02:00:02.301Z\",\r\n      \"Message\": \"Execution started: Main.xaml\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-12T02:00:02.355Z\",\r\n      \"Message\": \"Activity start: 'Use AcmeBooks accounting app' (NApplicationCard) — OpenMode=Never, Selector=<wnd app='acmebooks.exe' cls='Afx:00007FF6:0' />\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-12T02:00:04.587Z\",\r\n      \"Message\": \"Use AcmeBooks accounting app: Could not find target application.\\r\\n\\r\\nException type: UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException\\r\\nMessage: Could not find target application.\\r\\n\\r\\nin Main.xaml\\r\\n    at NApplicationCard \\\"Use AcmeBooks accounting app\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-12T02:00:04.611Z\",\r\n      \"Message\": \"UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException: Could not find target application.\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.GetAppNotFoundExceptionAsync(String appSelector, NAppOpenMode openMode, Boolean showClosestMatchesInSearchError, CancellationToken cancellationToken)\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.ProcessAppNotFoundAsync(ITargetApp targetApp, Boolean showClosestMatchesInSearchError, CancellationToken token)\\r\\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.ExecuteAsync(NativeActivityContext context, CancellationToken token)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"TimeStamp\": \"2026-05-12T02:00:01.890Z\",\r\n      \"PrincipalName\": \"TriggerService\",\r\n      \"Reason\": \"Triggered by schedule 'Nightly Expense Import'\"\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"TimeStamp\": \"2026-05-12T02:00:02.140Z\",\r\n      \"PrincipalName\": \"UIPATH\\\\FINANCE-ROBOT-01\",\r\n      \"Reason\": \"Picked up by robot\"\r\n    },\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"TimeStamp\": \"2026-05-12T02:00:04.620Z\",\r\n      \"PrincipalName\": \"UIPATH\\\\FINANCE-ROBOT-01\",\r\n      \"Reason\": \"UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException: Could not find target application.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "2c4f8a913e7d4b6c9a1e5f8d2b7c3091",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpansGet\",\r\n  \"Data\": [\r\n    {\r\n      \"SpanId\": \"01a3c5e7f9b1d2c4\",\r\n      \"ParentSpanId\": null,\r\n      \"TraceId\": \"2c4f8a913e7d4b6c9a1e5f8d2b7c3091\",\r\n      \"Name\": \"ExpenseImporter\",\r\n      \"Kind\": \"Internal\",\r\n      \"StartTime\": \"2026-05-12T02:00:02.220Z\",\r\n      \"EndTime\": \"2026-05-12T02:00:04.620Z\",\r\n      \"Status\": \"Error\",\r\n      \"Attributes\": {\r\n        \"workflow.entry_point\": \"Main.xaml\",\r\n        \"process.release_name\": \"ExpenseImporter\"\r\n      }\r\n    },\r\n    {\r\n      \"SpanId\": \"02b4d6f8a0c2e3d5\",\r\n      \"ParentSpanId\": \"01a3c5e7f9b1d2c4\",\r\n      \"TraceId\": \"2c4f8a913e7d4b6c9a1e5f8d2b7c3091\",\r\n      \"Name\": \"Use AcmeBooks accounting app\",\r\n      \"Kind\": \"Internal\",\r\n      \"StartTime\": \"2026-05-12T02:00:02.355Z\",\r\n      \"EndTime\": \"2026-05-12T02:00:04.587Z\",\r\n      \"Status\": \"Error\",\r\n      \"Attributes\": {\r\n        \"activity.type\": \"UiPath.UIAutomationNext.Activities.NApplicationCard\",\r\n        \"activity.display_name\": \"Use AcmeBooks accounting app\",\r\n        \"activity.id_ref\": \"NApplicationCard_AcmeBooks\",\r\n        \"workflow.file\": \"Main.xaml\",\r\n        \"target_app.open_mode\": \"Never\",\r\n        \"target_app.selector\": \"<wnd app='acmebooks.exe' cls='Afx:00007FF6:0' />\",\r\n        \"exception.type\": \"UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException\",\r\n        \"exception.message\": \"Could not find target application.\"\r\n      }\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "traces",
+        "spans",
+        "get",
+        "2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"TraceSpansGet\",\r\n  \"Data\": [\r\n    {\r\n      \"SpanId\": \"01a3c5e7f9b1d2c4\",\r\n      \"ParentSpanId\": null,\r\n      \"TraceId\": \"2c4f8a913e7d4b6c9a1e5f8d2b7c3091\",\r\n      \"Name\": \"ExpenseImporter\",\r\n      \"Kind\": \"Internal\",\r\n      \"StartTime\": \"2026-05-12T02:00:02.220Z\",\r\n      \"EndTime\": \"2026-05-12T02:00:04.620Z\",\r\n      \"Status\": \"Error\",\r\n      \"Attributes\": {\r\n        \"workflow.entry_point\": \"Main.xaml\",\r\n        \"process.release_name\": \"ExpenseImporter\"\r\n      }\r\n    },\r\n    {\r\n      \"SpanId\": \"02b4d6f8a0c2e3d5\",\r\n      \"ParentSpanId\": \"01a3c5e7f9b1d2c4\",\r\n      \"TraceId\": \"2c4f8a913e7d4b6c9a1e5f8d2b7c3091\",\r\n      \"Name\": \"Use AcmeBooks accounting app\",\r\n      \"Kind\": \"Internal\",\r\n      \"StartTime\": \"2026-05-12T02:00:02.355Z\",\r\n      \"EndTime\": \"2026-05-12T02:00:04.587Z\",\r\n      \"Status\": \"Error\",\r\n      \"Attributes\": {\r\n        \"activity.type\": \"UiPath.UIAutomationNext.Activities.NApplicationCard\",\r\n        \"activity.display_name\": \"Use AcmeBooks accounting app\",\r\n        \"activity.id_ref\": \"NApplicationCard_AcmeBooks\",\r\n        \"workflow.file\": \"Main.xaml\",\r\n        \"target_app.open_mode\": \"Never\",\r\n        \"target_app.selector\": \"<wnd app='acmebooks.exe' cls='Afx:00007FF6:0' />\",\r\n        \"exception.type\": \"UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException\",\r\n        \"exception.message\": \"Could not find target application.\"\r\n      }\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f3e8d4b1-9c2a-4f5e-b8d7-c1a0e6f9b3d2\",\r\n      \"Name\": \"Finance Automations\",\r\n      \"Path\": \"Finance Automations\",\r\n      \"Description\": \"Folder containing finance-team unattended jobs (expense imports, GL postings, month-end close).\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"b8e2c145-7d3a-49b6-a2c8-1f4b5e8a9c01\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

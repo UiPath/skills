@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f1e2d3c4-b5a6-7890-1234-56789abcdef0",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"JobList\",\n  \"Data\": [\n    {\n      \"Key\": \"b2c0b2c3-d4e5-4678-9012-3456789bbbbb\",\n      \"State\": \"Faulted\",\n      \"ProcessName\": \"LongRunningProcess\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Manual\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-19T08:00:00.500Z\",\n      \"EndTime\": \"2026-05-19T08:03:01.255Z\",\n      \"CreationTime\": \"2026-05-19T08:00:00.302Z\"\n    }\n  ]\n}\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "b2c0b2c3-d4e5-4678-9012-3456789bbbbb",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"JobLogs\",\n  \"Data\": [\n    {\n      \"Level\": \"Error\",\n      \"TimeStamp\": \"2026-05-19T08:03:01.255Z\",\n      \"Message\": \"Job 'b2c0b2c3-d4e5-4678-9012-3456789bbbbb' (ReleaseName=LongRunningProcess) ended with unexpected exit code 0x40010004. The executor was terminated externally; no graceful shutdown was performed.\"\n    },\n    {\n      \"Level\": \"Warn\",\n      \"TimeStamp\": \"2026-05-19T08:03:00.005Z\",\n      \"Message\": \"[Robot] Stop request received for job 'b2c0b2c3-d4e5-4678-9012-3456789bbbbb' (strategy=Kill, source=API). Terminating executor process.\"\n    },\n    {\n      \"Level\": \"Info\",\n      \"TimeStamp\": \"2026-05-19T08:00:00.520Z\",\n      \"Message\": \"[LongRunningProcess] Starting long-running work — 5 minute delay simulates a slow inference or batch step.\"\n    },\n    {\n      \"Level\": \"Info\",\n      \"TimeStamp\": \"2026-05-19T08:00:00.510Z\",\n      \"Message\": \"Job 'b2c0b2c3-d4e5-4678-9012-3456789bbbbb' (ReleaseName=LongRunningProcess) entering Running state on MOCK-HOST.\"\n    },\n    {\n      \"Level\": \"Info\",\n      \"TimeStamp\": \"2026-05-19T08:00:00.310Z\",\n      \"Message\": \"Job 'b2c0b2c3-d4e5-4678-9012-3456789bbbbb' created. Source=Schedule, ReleaseName=LongRunningProcess, RequiresUserInteraction=False.\"\n    }\n  ]\n}\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f1e2d3c4-b5a6-7890-1234-56789abcdef0",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"JobList\",\n  \"Data\": [\n    {\n      \"Key\": \"b2c0b2c3-d4e5-4678-9012-3456789bbbbb\",\n      \"State\": \"Faulted\",\n      \"ProcessName\": \"LongRunningProcess\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Schedule\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-19T08:00:00.500Z\",\n      \"EndTime\": \"2026-05-19T08:03:01.255Z\",\n      \"CreationTime\": \"2026-05-19T08:00:00.302Z\"\n    },\n    {\n      \"Key\": \"9aa0b2c3-d4e5-4678-9012-3456789aaaa1\",\n      \"State\": \"Successful\",\n      \"ProcessName\": \"LongRunningProcess\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Schedule\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-18T08:00:00.500Z\",\n      \"EndTime\": \"2026-05-18T08:05:00.812Z\",\n      \"CreationTime\": \"2026-05-18T08:00:00.295Z\"\n    },\n    {\n      \"Key\": \"8aa0b2c3-d4e5-4678-9012-3456789aaaa2\",\n      \"State\": \"Successful\",\n      \"ProcessName\": \"LongRunningProcess\",\n      \"ReleaseKey\": \"\",\n      \"Source\": \"Schedule\",\n      \"Type\": \"Unattended\",\n      \"Priority\": \"Normal\",\n      \"Machine\": \"MOCK-HOST\",\n      \"MachineKey\": \"\",\n      \"StartTime\": \"2026-05-17T08:00:00.500Z\",\n      \"EndTime\": \"2026-05-17T08:05:00.755Z\",\n      \"CreationTime\": \"2026-05-17T08:00:00.310Z\"\n    }\n  ]\n}\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "b2c0b2c3-d4e5-4678-9012-3456789bbbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"b2c0b2c3-d4e5-4678-9012-3456789bbbbb\",\r\n    \"StartTime\": \"2026-05-19T08:00:00.500Z\",\r\n    \"EndTime\": \"2026-05-19T08:03:01.255Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 50,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"8e3f7c41-1a2b-4c5d-8e6f-0a1b2c3d4e5f\",\r\n    \"Info\": \"System.Exception: Job stopped with an unexpected exit code: 0x40010004\\r\\n   at UiPath.Robot.Service.Hosting.ExecutorSupervisor.HandleExitAsync(Int32 exitCode, CancellationToken cancellationToken)\\r\\n   at UiPath.Robot.Service.JobManager.FinalizeJobAsync(JobRecord record, CancellationToken cancellationToken)\\r\\n\",\r\n    \"CreationTime\": \"2026-05-19T08:00:00.302Z\",\r\n    \"ReleaseName\": \"LongRunningProcess\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 5670099,\r\n    \"OrganizationUnitId\": 7791617,\r\n    \"FolderKey\": \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-19T08:03:01.255Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"b2c0b2c3-d4e5-4678-9012-3456789bbbbb\",\r\n    \"Id\": 670911044\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "b2c0b2c3-d4e5-4678-9012-3456789bbbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"JobHistory\",\n  \"Data\": [\n    {\n      \"State\": \"Pending\",\n      \"Timestamp\": \"2026-05-19T08:00:00.302Z\",\n      \"Reason\": \"JobCreated\"\n    },\n    {\n      \"State\": \"Running\",\n      \"Timestamp\": \"2026-05-19T08:00:00.500Z\",\n      \"Reason\": \"ExecutorStarted\"\n    },\n    {\n      \"State\": \"Killing\",\n      \"Timestamp\": \"2026-05-19T08:03:00.000Z\",\n      \"Reason\": \"StopRequested\",\n      \"Strategy\": \"Kill\",\n      \"Source\": \"API\"\n    },\n    {\n      \"State\": \"Faulted\",\n      \"Timestamp\": \"2026-05-19T08:03:01.255Z\",\n      \"Reason\": \"ExecutorExited\",\n      \"ExitCode\": \"0x40010004\"\n    }\n  ]\n}\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "b2c0b2c3-d4e5-4678-9012-3456789bbbbb",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"JobLogs\",\n  \"Data\": [\n    {\n      \"Level\": \"Error\",\n      \"TimeStamp\": \"2026-05-19T08:03:01.255Z\",\n      \"Message\": \"Job 'b2c0b2c3-d4e5-4678-9012-3456789bbbbb' (ReleaseName=LongRunningProcess) ended with unexpected exit code 0x40010004. The executor was terminated externally; no graceful shutdown was performed.\"\n    },\n    {\n      \"Level\": \"Warn\",\n      \"TimeStamp\": \"2026-05-19T08:03:00.005Z\",\n      \"Message\": \"[Robot] Stop request received for job 'b2c0b2c3-d4e5-4678-9012-3456789bbbbb' (strategy=Kill, source=API). Terminating executor process.\"\n    },\n    {\n      \"Level\": \"Info\",\n      \"TimeStamp\": \"2026-05-19T08:00:00.520Z\",\n      \"Message\": \"[LongRunningProcess] Starting long-running work — 5 minute delay simulates a slow inference or batch step.\"\n    },\n    {\n      \"Level\": \"Info\",\n      \"TimeStamp\": \"2026-05-19T08:00:00.510Z\",\n      \"Message\": \"Job 'b2c0b2c3-d4e5-4678-9012-3456789bbbbb' (ReleaseName=LongRunningProcess) entering Running state on MOCK-HOST.\"\n    },\n    {\n      \"Level\": \"Info\",\n      \"TimeStamp\": \"2026-05-19T08:00:00.310Z\",\n      \"Message\": \"Job 'b2c0b2c3-d4e5-4678-9012-3456789bbbbb' created. Source=Schedule, ReleaseName=LongRunningProcess, RequiresUserInteraction=False.\"\n    }\n  ]\n}\n"
+    },
+    {
+      "argv": [
+        "admin",
+        "audit",
+        "tenant",
+        "events"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"AuditTenantEvents\",\n  \"Data\": {\n    \"auditEvents\": [\n      {\n        \"id\": \"9e5f1e62-2345-4bcd-9def-2b3c4d5e6f7g\",\n        \"createdOn\": \"2026-05-19T08:03:00.105Z\",\n        \"organizationId\": \"11111111-2222-3333-4444-555555555555\",\n        \"organizationName\": \"Acme Corp\",\n        \"tenantId\": \"22222222-3333-4444-5555-666666666666\",\n        \"tenantName\": \"Acme-Prod\",\n        \"actorId\": \"bbbb2222-cccc-3333-dddd-4444eeee5555\",\n        \"actorName\": \"watchdog-svc\",\n        \"actorEmail\": \"watchdog-svc@acme.com\",\n        \"eventType\": \"Job stopped\",\n        \"eventSource\": \"Orchestrator\",\n        \"eventTarget\": \"Job\",\n        \"eventDetails\": \"{\\\"jobKey\\\":\\\"b2c0b2c3-d4e5-4678-9012-3456789bbbbb\\\",\\\"processName\\\":\\\"LongRunningProcess\\\",\\\"strategy\\\":\\\"Kill\\\",\\\"origin\\\":\\\"API\\\",\\\"folderKey\\\":\\\"f1e2d3c4-b5a6-7890-1234-56789abcdef0\\\",\\\"folderName\\\":\\\"KillScenarios\\\",\\\"actorType\\\":\\\"ServiceAccount\\\",\\\"watchdogRule\\\":\\\"HungJobReaper\\\",\\\"watchdogThresholdSeconds\\\":180,\\\"clientApp\\\":\\\"watchdog-svc/1.4.2\\\"}\",\n        \"eventSummary\": \"Job 'LongRunningProcess' (b2c0b2c3-d4e5-4678-9012-3456789bbbbb) was stopped (strategy Kill) by service account watchdog-svc@acme.com via API (rule: HungJobReaper, threshold: 180s)\",\n        \"status\": 0\n      }\n    ],\n    \"next\": null,\n    \"previous\": null\n  }\n}\n"
+    },
+    {
+      "argv": [
+        "admin",
+        "audit",
+        "org",
+        "events"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"AuditTenantEvents\",\n  \"Data\": {\n    \"auditEvents\": [\n      {\n        \"id\": \"9e5f1e62-2345-4bcd-9def-2b3c4d5e6f7g\",\n        \"createdOn\": \"2026-05-19T08:03:00.105Z\",\n        \"organizationId\": \"11111111-2222-3333-4444-555555555555\",\n        \"organizationName\": \"Acme Corp\",\n        \"tenantId\": \"22222222-3333-4444-5555-666666666666\",\n        \"tenantName\": \"Acme-Prod\",\n        \"actorId\": \"bbbb2222-cccc-3333-dddd-4444eeee5555\",\n        \"actorName\": \"watchdog-svc\",\n        \"actorEmail\": \"watchdog-svc@acme.com\",\n        \"eventType\": \"Job stopped\",\n        \"eventSource\": \"Orchestrator\",\n        \"eventTarget\": \"Job\",\n        \"eventDetails\": \"{\\\"jobKey\\\":\\\"b2c0b2c3-d4e5-4678-9012-3456789bbbbb\\\",\\\"processName\\\":\\\"LongRunningProcess\\\",\\\"strategy\\\":\\\"Kill\\\",\\\"origin\\\":\\\"API\\\",\\\"folderKey\\\":\\\"f1e2d3c4-b5a6-7890-1234-56789abcdef0\\\",\\\"folderName\\\":\\\"KillScenarios\\\",\\\"actorType\\\":\\\"ServiceAccount\\\",\\\"watchdogRule\\\":\\\"HungJobReaper\\\",\\\"watchdogThresholdSeconds\\\":180,\\\"clientApp\\\":\\\"watchdog-svc/1.4.2\\\"}\",\n        \"eventSummary\": \"Job 'LongRunningProcess' (b2c0b2c3-d4e5-4678-9012-3456789bbbbb) was stopped (strategy Kill) by service account watchdog-svc@acme.com via API (rule: HungJobReaper, threshold: 180s)\",\n        \"status\": 0\n      }\n    ],\n    \"next\": null,\n    \"previous\": null\n  }\n}\n"
+    },
+    {
+      "argv": [
+        "admin",
+        "audit",
+        "tenant",
+        "sources"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"AuditTenantSources\",\n  \"Data\": [\n    {\n      \"id\": \"33333333-aaaa-4444-bbbb-555555555555\",\n      \"name\": \"Orchestrator\",\n      \"targets\": [\n        {\n          \"id\": \"44444444-cccc-5555-dddd-666666666666\",\n          \"name\": \"Job\"\n        }\n      ],\n      \"types\": [\n        {\n          \"id\": \"55555555-eeee-6666-ffff-777777777777\",\n          \"name\": \"Job stopped\"\n        }\n      ]\n    }\n  ]\n}\n"
+    },
+    {
+      "argv": [
+        "admin",
+        "audit",
+        "org",
+        "sources"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\n  \"Result\": \"Success\",\n  \"Code\": \"AuditTenantSources\",\n  \"Data\": [\n    {\n      \"id\": \"33333333-aaaa-4444-bbbb-555555555555\",\n      \"name\": \"Orchestrator\",\n      \"targets\": [\n        {\n          \"id\": \"44444444-cccc-5555-dddd-666666666666\",\n          \"name\": \"Job\"\n        }\n      ],\n      \"types\": [\n        {\n          \"id\": \"55555555-eeee-6666-ffff-777777777777\",\n          \"name\": \"Job stopped\"\n        }\n      ]\n    }\n  ]\n}\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"b2c8cb22-2ebc-4c27-87f3-05efe701af1c\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\",\r\n      \"Name\": \"KillScenarios\",\r\n      \"Path\": \"KillScenarios\",\r\n      \"Description\": \"Folder hosting LongRunningProcess — long-running job used to exercise the 0x40010004 (Job killed) playbook variants.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"e0772cbe-c19c-4d5f-926c-043c2d2d300a\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs get b2c0b2c3",
+      "min": 1,
+      "description": "Agent must inspect the failing job to confirm the exit code"
+    },
+    {
+      "pattern": "or jobs history b2c0b2c3",
+      "min": 1,
+      "description": "Agent must inspect state history to distinguish operator-initiated Stop from host-side termination"
+    },
+    {
+      "pattern": "admin audit",
+      "min": 1,
+      "description": "Agent must query the audit log to identify the actor"
+    }
+  ]
+}

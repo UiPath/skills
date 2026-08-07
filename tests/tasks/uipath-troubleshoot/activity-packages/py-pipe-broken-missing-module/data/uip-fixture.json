@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"fa111111-2222-3333-4444-555566667777\",\r\n      \"DisplayName\": \"PythonAutomations\",\r\n      \"FullyQualifiedName\": \"PythonAutomations\",\r\n      \"Description\": \"Folder for Python-backed automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6020001,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"aa111111-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"StartTime\": \"2026-06-18T09:15:02.110Z\",\r\n      \"EndTime\": \"2026-06-18T09:15:08.640Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"PythonInvoiceParser\",\r\n      \"Source\": \"Manual\",\r\n      \"Reference\": \"InvoiceRunA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"fa111111-2222-3333-4444-555566667777\",\r\n      \"Info\": \"UiPath.Python.RemoteException wrapping System.IO.IOException: Pipe is broken: \\\"Invoke Python Method: extract_total\\\"\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"aa111111-7777-bbbb-cccc-ddddeeeeffff\",\r\n    \"StartTime\": \"2026-06-18T09:15:02.110Z\",\r\n    \"EndTime\": \"2026-06-18T09:15:08.640Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"Info\": \"UiPath.Python.RemoteException wrapping System.IO.IOException: Pipe is broken: \\\"Invoke Python Method: extract_total\\\"\\r\\n   at UiPath.Python.Service.PythonClient.InvokeMethod(PythonObject instance, String method, IList`1 args)\\r\\n   at UiPath.Python.Activities.InvokeMethod.<>c__DisplayClass.<ExecuteAsync>b__0()\\r\\n   at UiPath.Python.Activities.InvokeMethod.OnExecuteAsync(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-06-18T09:15:01.900Z\",\r\n    \"ReleaseName\": \"PythonInvoiceParser\",\r\n    \"Type\": \"Unattended\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"OrganizationUnitId\": 6020001,\r\n    \"FolderKey\": \"fa111111-2222-3333-4444-555566667777\",\r\n    \"Reference\": \"InvoiceRunA\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"LastModificationTime\": \"2026-06-18T09:15:08.640Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"RemoteException\",\r\n      \"ActivityName\": \"InvokeMethod_1\",\r\n      \"ActivityDisplayName\": \"Invoke Python Method: extract_total\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"aa111111-7777-bbbb-cccc-ddddeeeeffff\",\r\n    \"Id\": 680078101\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"JobKey\": \"aa111111-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-06-18T09:15:01.900Z\"\r\n    },\r\n    {\r\n      \"JobKey\": \"aa111111-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-06-18T09:15:02.110Z\"\r\n    },\r\n    {\r\n      \"JobKey\": \"aa111111-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-06-18T09:15:08.640Z\",\r\n      \"Info\": \"UiPath.Python.RemoteException wrapping System.IO.IOException: Pipe is broken: \\\"Invoke Python Method: extract_total\\\"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-aa111111-001\",\r\n      \"JobKey\": \"aa111111-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-06-18T09:15:02.180Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"PythonInvoiceParser\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa111111-002\",\r\n      \"JobKey\": \"aa111111-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-06-18T09:15:02.260Z\",\r\n      \"Message\": \"[PythonInvoiceParser] Invoking parse_invoice.extract_total via Python Scope\",\r\n      \"ProcessName\": \"PythonInvoiceParser\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa111111-003\",\r\n      \"JobKey\": \"aa111111-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-06-18T09:15:04.020Z\",\r\n      \"Message\": \"Python Scope — resolved interpreter at 'C:\\\\Program Files\\\\Python311' (Version=Python_311, Target=x64); host process started.\",\r\n      \"ProcessName\": \"PythonInvoiceParser\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa111111-004\",\r\n      \"JobKey\": \"aa111111-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Trace\",\r\n      \"Timestamp\": \"2026-06-18T09:15:05.500Z\",\r\n      \"Message\": \"Load Python Script: parse_invoice.py — loaded.\",\r\n      \"ProcessName\": \"PythonInvoiceParser\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-aa111111-005\",\r\n      \"JobKey\": \"aa111111-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-06-18T09:15:08.610Z\",\r\n      \"Message\": \"Invoke Python Method: extract_total — UiPath.Python.RemoteException wrapping System.IO.IOException: Pipe is broken: \\\"Invoke Python Method: extract_total\\\". The Python host process exited before returning a result.\",\r\n      \"ProcessName\": \"PythonInvoiceParser\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 1,
+    "stderr": "{\"error\": \"unmocked command\"}\n"
+  }
+}

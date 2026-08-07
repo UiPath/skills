@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f1a10001-0000-4000-8000-000000000001",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"a1710001-1111-4111-8111-111111111111\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"DailyExtract\",\r\n      \"ReleaseName\": \"DailyExtract\",\r\n      \"StartTime\": \"2026-07-19T06:00:03.100Z\",\r\n      \"EndTime\": \"2026-07-19T06:00:03.900Z\",\r\n      \"CreationTime\": \"2026-07-19T06:00:02.500Z\",\r\n      \"HostMachineName\": \"WS-CLIENT-07\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "a1710001-1111-4111-8111-111111111111",
+        "--level",
+        "Error"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-19T06:00:03.820Z\",\r\n      \"Message\": \"Could not start executor. The workstation is in use by another user. Please retry after the user logs off or disconnects.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "f1a10001-0000-4000-8000-000000000001"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"a1710001-1111-4111-8111-111111111111\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"DailyExtract\",\r\n      \"ReleaseName\": \"DailyExtract\",\r\n      \"StartTime\": \"2026-07-19T06:00:03.100Z\",\r\n      \"EndTime\": \"2026-07-19T06:00:03.900Z\",\r\n      \"CreationTime\": \"2026-07-19T06:00:02.500Z\",\r\n      \"HostMachineName\": \"WS-CLIENT-07\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"a1710002-2222-4222-8222-222222222222\",\r\n      \"State\": \"Running\",\r\n      \"ProcessName\": \"HourlySync\",\r\n      \"ReleaseName\": \"HourlySync\",\r\n      \"StartTime\": \"2026-07-19T06:00:01.400Z\",\r\n      \"EndTime\": null,\r\n      \"CreationTime\": \"2026-07-19T06:00:00.900Z\",\r\n      \"HostMachineName\": \"WS-CLIENT-07\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"a1710003-3333-4333-8333-333333333333\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"DailyExtract\",\r\n      \"ReleaseName\": \"DailyExtract\",\r\n      \"StartTime\": \"2026-07-18T06:00:02.700Z\",\r\n      \"EndTime\": \"2026-07-18T06:04:55.100Z\",\r\n      \"CreationTime\": \"2026-07-18T06:00:02.100Z\",\r\n      \"HostMachineName\": \"WS-CLIENT-07\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--state",
+        "Faulted"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"a1710001-1111-4111-8111-111111111111\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"DailyExtract\",\r\n      \"ReleaseName\": \"DailyExtract\",\r\n      \"StartTime\": \"2026-07-19T06:00:03.100Z\",\r\n      \"EndTime\": \"2026-07-19T06:00:03.900Z\",\r\n      \"CreationTime\": \"2026-07-19T06:00:02.500Z\",\r\n      \"HostMachineName\": \"WS-CLIENT-07\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "a1710001-1111-4111-8111-111111111111"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"a1710001-1111-4111-8111-111111111111\",\r\n    \"StartTime\": \"2026-07-19T06:00:03.100Z\",\r\n    \"EndTime\": \"2026-07-19T06:00:03.900Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 50,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"Info\": \"Could not start executor. The workstation is in use by another user. Please retry after the user logs off or disconnects.\\r\\n   at UiPath.Robot.Service.SessionManager.CreateSessionAsync(LogonRequest request)\\r\\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)\\r\\n\",\r\n    \"CreationTime\": \"2026-07-19T06:00:02.500Z\",\r\n    \"ReleaseName\": \"DailyExtract\",\r\n    \"Type\": \"Unattended\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"WS-CLIENT-07\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"FolderKey\": \"f1a10001-0000-4000-8000-000000000001\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\SVC_EXTRACT\",\r\n    \"OrchestratorUserIdentity\": \"svc_extract\",\r\n    \"LastModificationTime\": \"2026-07-19T06:00:03.900Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"a1710001111141118111111111111111\",\r\n    \"Id\": 671330101\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "a1710001-1111-4111-8111-111111111111"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-19T06:00:03.820Z\",\r\n      \"Message\": \"Could not start executor. The workstation is in use by another user. Please retry after the user logs off or disconnects.\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history",
+        "a1710001-1111-4111-8111-111111111111"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-19T06:00:03.900Z\",\r\n      \"JobId\": 671330101\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-19T06:00:03.110Z\",\r\n      \"JobId\": 671330101\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-07-19T06:00:02.540Z\",\r\n      \"JobId\": 671330101\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "machines",
+        "list",
+        "--all-fields"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"MachineList\",\r\n  \"Data\": [\r\n    {\r\n      \"licenseKey\": \"605b37db-dc58-460f-99ed-93fcfb2f2701\",\r\n      \"name\": \"WS-CLIENT-07\",\r\n      \"description\": \"Windows 11 client workstation, dedicated unattended host.\",\r\n      \"type\": \"Template\",\r\n      \"scope\": \"Default\",\r\n      \"nonProductionSlots\": 0,\r\n      \"unattendedSlots\": 3,\r\n      \"headlessSlots\": 0,\r\n      \"testAutomationSlots\": 0,\r\n      \"hostingSlots\": 0,\r\n      \"appTestSlots\": 0,\r\n      \"performanceTestSlots\": 0,\r\n      \"agentSlots\": 0,\r\n      \"automationCloudSlots\": 0,\r\n      \"automationCloudTestAutomationSlots\": 0,\r\n      \"key\": \"beef1001-2222-4333-8444-555566667701\",\r\n      \"endpointDetectionStatus\": \"Available\",\r\n      \"robotVersions\": [\r\n        {\r\n          \"count\": 1,\r\n          \"version\": \"24.10.4\"\r\n        }\r\n      ],\r\n      \"robotUsers\": [\r\n        {\r\n          \"userName\": \"UIPATH\\\\SVC_EXTRACT\"\r\n        }\r\n      ],\r\n      \"automationType\": \"Any\",\r\n      \"targetFramework\": \"Windows\",\r\n      \"tags\": [],\r\n      \"id\": 1990701\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"f1a10001-0000-4000-8000-000000000001\",\r\n      \"Name\": \"Unattended Ops\",\r\n      \"Path\": \"Unattended Ops\",\r\n      \"Description\": \"Scheduled unattended automations.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"c1d2e3f4-a5b6-4c78-9d0e-1f2a3b4c5d6f\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"a1710001-1111-4111-8111-111111111111\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"DailyExtract\",\r\n      \"ReleaseName\": \"DailyExtract\",\r\n      \"StartTime\": \"2026-07-19T06:00:03.100Z\",\r\n      \"EndTime\": \"2026-07-19T06:00:03.900Z\",\r\n      \"CreationTime\": \"2026-07-19T06:00:02.500Z\",\r\n      \"HostMachineName\": \"WS-CLIENT-07\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"a1710002-2222-4222-8222-222222222222\",\r\n      \"State\": \"Running\",\r\n      \"ProcessName\": \"HourlySync\",\r\n      \"ReleaseName\": \"HourlySync\",\r\n      \"StartTime\": \"2026-07-19T06:00:01.400Z\",\r\n      \"EndTime\": null,\r\n      \"CreationTime\": \"2026-07-19T06:00:00.900Z\",\r\n      \"HostMachineName\": \"WS-CLIENT-07\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    },\r\n    {\r\n      \"Key\": \"a1710003-3333-4333-8333-333333333333\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"DailyExtract\",\r\n      \"ReleaseName\": \"DailyExtract\",\r\n      \"StartTime\": \"2026-07-18T06:00:02.700Z\",\r\n      \"EndTime\": \"2026-07-18T06:04:55.100Z\",\r\n      \"CreationTime\": \"2026-07-18T06:00:02.100Z\",\r\n      \"HostMachineName\": \"WS-CLIENT-07\",\r\n      \"Type\": \"Unattended\",\r\n      \"Source\": \"Schedule\",\r\n      \"Priority\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "machines",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"MachineList\",\r\n  \"Data\": [\r\n    {\r\n      \"name\": \"WS-CLIENT-07\",\r\n      \"description\": \"Windows 11 client workstation, dedicated unattended host.\",\r\n      \"type\": \"Template\",\r\n      \"key\": \"beef1001-2222-4333-8444-555566667701\",\r\n      \"id\": 1990701\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

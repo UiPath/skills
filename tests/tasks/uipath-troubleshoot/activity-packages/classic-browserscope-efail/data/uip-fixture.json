@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  },\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"3a1e81c2-07ca-4d6b-bc07-7e0c7b94ea3a\",\r\n      \"Name\": \"original_email@test.com's workspace\",\r\n      \"Path\": \"original_email@test.com's workspace\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Personal\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"a2f9c1d4-6b08-4e17-9c3a-2d5e8f0b7143\",\r\n      \"Name\": \"Finance\",\r\n      \"Path\": \"Finance\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"7c4e0b9a-3f21-4d88-a6b2-19e5c3d40f77\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"PortalReconciliation\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-07-15T02:15:04.180Z\",\r\n      \"EndTime\": \"2026-07-15T02:15:11.902Z\",\r\n      \"CreationTime\": \"2026-07-15T02:15:03.900Z\"\r\n    },\r\n    {\r\n      \"Key\": \"1b90d6f2-8c44-4a1e-b7d3-6f0a2e9c5511\",\r\n      \"State\": \"Successful\",\r\n      \"ProcessName\": \"PortalReconciliation\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Manual\",\r\n      \"Type\": \"Attended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"DEV-BOX\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-07-14T16:42:22.501Z\",\r\n      \"EndTime\": \"2026-07-14T16:43:07.815Z\",\r\n      \"CreationTime\": \"2026-07-14T16:42:22.501Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 2,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-07-15T02:15:11.640Z\",\r\n      \"Message\": \"Attach Browser 'Chrome portal': Could not attach to the browser. Invalid access to memory location. (Exception from HRESULT: 0x800703E6)\\r\\nin Main.xaml\\r\\n    at Attach Browser \\\"Attach Browser 'Chrome portal'\\\"\\r\\n    at Sequence \\\"Reconcile\\\"\\r\\n    at DynamicActivity \\\"Main\\\"\\r\\n\\r\\n--- .NET stack trace ---\\r\\nUiPath.Core.Activities.BrowserOperationException ---> System.Runtime.InteropServices.COMException (0x800703E6): Invalid access to memory location.\\r\\n   at UiPath.UIAutomationCore.UiNode.SetForeground()\\r\\n   at UiPath.Core.Activities.BrowserScope.AttachToBrowser(Browser browser, NativeActivityContext context)\\r\\n   at UiPath.Core.Activities.BrowserScope.Execute(NativeActivityContext context)\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-07-15T02:15:05.010Z\",\r\n      \"Message\": \"Attach Browser 'Chrome portal' execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Information\",\r\n      \"TimeStamp\": \"2026-07-15T02:15:04.520Z\",\r\n      \"Message\": \"PortalReconciliation execution started\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-07-15T02:15:11.930Z\",\r\n      \"JobId\": 66214788\r\n    },\r\n    {\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-07-15T02:15:04.470Z\",\r\n      \"JobId\": 66214788\r\n    },\r\n    {\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-07-15T02:15:03.900Z\",\r\n      \"JobId\": 66214788\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"7c4e0b9a-3f21-4d88-a6b2-19e5c3d40f77\",\r\n    \"StartTime\": \"2026-07-15T02:15:04.180Z\",\r\n    \"EndTime\": \"2026-07-15T02:15:11.902Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"7c4e0b9a-3f21-4d88-a6b2-19e5c3d40f77\",\r\n    \"Info\": \"Attach Browser 'Chrome portal': Could not attach to the browser. Invalid access to memory location. (Exception from HRESULT: 0x800703E6)\\r\\n\\r\\nin Main.xaml\\r\\n    at Attach Browser \\\"Attach Browser 'Chrome portal'\\\"\\r\\n    at Sequence \\\"Reconcile\\\"\\r\\n    at DynamicActivity \\\"Main\\\"\\r\\n\\r\\nUiPath.Core.Activities.BrowserOperationException: Could not attach to the browser. Invalid access to memory location. (Exception from HRESULT: 0x800703E6)\\r\\n ---> System.Runtime.InteropServices.COMException: Invalid access to memory location. (Exception from HRESULT: 0x800703E6)\\r\\n   at UiPath.UIAutomationCore.UiNode.SetForeground()\\r\\n   at UiPath.Core.UiElement.SetForeground()\\r\\n   at UiPath.Core.Activities.BrowserScope.AttachToBrowser(Browser browser, NativeActivityContext context)\\r\\n   at UiPath.Core.Activities.BrowserScope.OnBrowserFound(NativeActivityContext context, Browser browser)\\r\\n   --- End of inner exception stack trace ---\\r\\n   at UiPath.Core.Activities.BrowserScope.OnBrowserFound(NativeActivityContext context, Browser browser)\\r\\n   at UiPath.Core.Activities.BrowserScope.Execute(NativeActivityContext context)\\r\\n   at System.Activities.NativeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\",\r\n    \"CreationTime\": \"2026-07-15T02:15:03.900Z\",\r\n    \"ReleaseName\": \"PortalReconciliation\",\r\n    \"Type\": \"Unattended\",\r\n    \"InputArguments\": \"{}\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"ReleaseVersionId\": 21093344,\r\n    \"EntryPointPath\": \"Main.xaml\",\r\n    \"OrganizationUnitId\": 1500287,\r\n    \"FolderKey\": \"a2f9c1d4-6b08-4e17-9c3a-2d5e8f0b7143\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\svc_robot\",\r\n    \"OrchestratorUserIdentity\": \"original_email@test.com\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-07-15T02:15:11.902Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"7c4e0b9a3f214d88a6b219e5c3d40f77\",\r\n    \"Id\": 66214788\r\n  }\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}

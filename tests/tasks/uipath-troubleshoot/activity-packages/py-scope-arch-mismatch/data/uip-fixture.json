@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FoldersListCurrentUser\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"fc333333-2222-3333-4444-555566667777\",\r\n      \"DisplayName\": \"PythonAutomations\",\r\n      \"FullyQualifiedName\": \"PythonAutomations\",\r\n      \"Description\": \"Folder for Python-backed automations.\",\r\n      \"ProvisionType\": \"Manual\",\r\n      \"PermissionModel\": \"FineGrained\",\r\n      \"FeedType\": \"Processes\",\r\n      \"Id\": 6020003,\r\n      \"ParentId\": null,\r\n      \"ParentKey\": null\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobsList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"cc333333-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"StartTime\": \"2026-06-18T13:40:05.200Z\",\r\n      \"EndTime\": \"2026-06-18T13:40:07.900Z\",\r\n      \"State\": \"Faulted\",\r\n      \"ReleaseName\": \"PythonDataCruncher\",\r\n      \"Source\": \"Manual\",\r\n      \"Reference\": \"CrunchRunA\",\r\n      \"HostMachineName\": \"MOCK-HOST\",\r\n      \"FolderKey\": \"fc333333-2222-3333-4444-555566667777\",\r\n      \"Info\": \"Python Scope: One or more errors occurred. (Error initializing the Python engine)\",\r\n      \"ErrorCode\": \"Activity\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"cc333333-7777-bbbb-cccc-ddddeeeeffff\",\r\n    \"StartTime\": \"2026-06-18T13:40:05.200Z\",\r\n    \"EndTime\": \"2026-06-18T13:40:07.900Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"Source\": \"Manual\",\r\n    \"SourceType\": \"Manual\",\r\n    \"Info\": \"Python Scope: One or more errors occurred. (Error initializing the Python engine) ---> System.BadImageFormatException: An attempt was made to load a program with an incorrect format. (0x8007000B)\\r\\n   at UiPath.Python.Service.PythonProcessClient.Start(PythonConfig config)\\r\\n   at UiPath.Python.Activities.PythonScope.OnExecuteAsync(NativeActivityContext context)\\r\\n\",\r\n    \"CreationTime\": \"2026-06-18T13:40:05.000Z\",\r\n    \"ReleaseName\": \"PythonDataCruncher\",\r\n    \"Type\": \"Unattended\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": false,\r\n    \"OrganizationUnitId\": 6020003,\r\n    \"FolderKey\": \"fc333333-2222-3333-4444-555566667777\",\r\n    \"Reference\": \"CrunchRunA\",\r\n    \"ProcessType\": \"Process\",\r\n    \"LocalSystemAccount\": \"UIPATH\\\\AUTOMATION1\",\r\n    \"OrchestratorUserIdentity\": \"automation1\",\r\n    \"LastModificationTime\": \"2026-06-18T13:40:07.900Z\",\r\n    \"JobError\": {\r\n      \"ErrorCode\": \"Activity\",\r\n      \"Type\": \"AggregateException\",\r\n      \"ActivityName\": \"PythonScope_1\",\r\n      \"ActivityDisplayName\": \"Python Scope\",\r\n      \"WorkflowFilePath\": \"Main.xaml\"\r\n    },\r\n    \"ErrorCode\": \"Activity\",\r\n    \"TraceId\": \"cc333333-7777-bbbb-cccc-ddddeeeeffff\",\r\n    \"Id\": 680078303\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "history"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobHistory\",\r\n  \"Data\": [\r\n    {\r\n      \"JobKey\": \"cc333333-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"State\": \"Pending\",\r\n      \"Timestamp\": \"2026-06-18T13:40:05.000Z\"\r\n    },\r\n    {\r\n      \"JobKey\": \"cc333333-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"State\": \"Running\",\r\n      \"Timestamp\": \"2026-06-18T13:40:05.200Z\"\r\n    },\r\n    {\r\n      \"JobKey\": \"cc333333-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"State\": \"Faulted\",\r\n      \"Timestamp\": \"2026-06-18T13:40:07.900Z\",\r\n      \"Info\": \"Python Scope: One or more errors occurred. (Error initializing the Python engine)\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"log-cc333333-001\",\r\n      \"JobKey\": \"cc333333-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-06-18T13:40:05.260Z\",\r\n      \"Message\": \"Execution started.\",\r\n      \"ProcessName\": \"PythonDataCruncher\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-cc333333-002\",\r\n      \"JobKey\": \"cc333333-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Info\",\r\n      \"Timestamp\": \"2026-06-18T13:40:05.330Z\",\r\n      \"Message\": \"[PythonDataCruncher] Opening Python Scope (Target=x86)\",\r\n      \"ProcessName\": \"PythonDataCruncher\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    },\r\n    {\r\n      \"Key\": \"log-cc333333-003\",\r\n      \"JobKey\": \"cc333333-7777-bbbb-cccc-ddddeeeeffff\",\r\n      \"Level\": \"Error\",\r\n      \"Timestamp\": \"2026-06-18T13:40:07.870Z\",\r\n      \"Message\": \"Python Scope: One or more errors occurred. (Error initializing the Python engine) ---> System.BadImageFormatException: An attempt was made to load a program with an incorrect format. (0x8007000B)\",\r\n      \"ProcessName\": \"PythonDataCruncher\",\r\n      \"MachineName\": \"MOCK-HOST\",\r\n      \"RobotName\": \"AUTOMATION1\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 1,
+    "stderr": "{\"error\": \"unmocked command\"}\n"
+  }
+}

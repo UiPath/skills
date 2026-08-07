@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "responses": [
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "list",
+        "--folder-key",
+        "8c4e1a7d-3f6b-4e2a-9d8c-0a5f3b7e1c4d",
+        "--state",
+        "Faulted",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"9d3f7b2e-5a8c-4f1d-b6e9-2c4a8d0f3b5e\",\r\n      \"State\": \"Faulted\",\r\n      \"ProcessName\": \"StagingCleanup\",\r\n      \"ReleaseKey\": \"\",\r\n      \"Source\": \"Schedule\",\r\n      \"Type\": \"Unattended\",\r\n      \"Priority\": \"Normal\",\r\n      \"Machine\": \"MOCK-HOST\",\r\n      \"MachineKey\": \"\",\r\n      \"StartTime\": \"2026-05-29T03:05:00.402Z\",\r\n      \"EndTime\": \"2026-05-29T03:05:01.302Z\",\r\n      \"CreationTime\": \"2026-05-29T03:05:00.190Z\"\r\n    }\r\n  ],\r\n  \"Pagination\": {\r\n    \"Returned\": 1,\r\n    \"Limit\": 50,\r\n    \"Offset\": 0,\r\n    \"HasMore\": false\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "9d3f7b2e-5a8c-4f1d-b6e9-2c4a8d0f3b5e",
+        "--level",
+        "Error",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-29T03:05:01.241Z\",\r\n      \"Message\": \"Assign: There is no row at position 0.\\r\\nSystem.ArgumentOutOfRangeException: There is no row at position 0.\\r\\n   at System.Data.DataRowCollection.get_Item(Int32 index)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-29T03:05:01.258Z\",\r\n      \"Message\": \"Assign: There is no row at position 0.\\r\\nin Main.xaml\\r\\n    at Assign \\\"Compute deleted count\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "get",
+        "9d3f7b2e-5a8c-4f1d-b6e9-2c4a8d0f3b5e",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobGet\",\r\n  \"Data\": {\r\n    \"Key\": \"9d3f7b2e-5a8c-4f1d-b6e9-2c4a8d0f3b5e\",\r\n    \"StartTime\": \"2026-05-29T03:05:00.402Z\",\r\n    \"EndTime\": \"2026-05-29T03:05:01.302Z\",\r\n    \"State\": \"Faulted\",\r\n    \"JobPriority\": \"Normal\",\r\n    \"SpecificPriorityValue\": 45,\r\n    \"Source\": \"Schedule\",\r\n    \"SourceType\": \"Schedule\",\r\n    \"BatchExecutionKey\": \"3c5a8d0f-2b4e-4a7c-9d1f-6e8a0b2c4d5f\",\r\n    \"Info\": \"Assign: There is no row at position 0.\\r\\n\\r\\nin Main.xaml\\r\\n    at Assign \\\"Compute deleted count\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\\r\\nSystem.ArgumentOutOfRangeException: There is no row at position 0.\\r\\n   at System.Data.DataRowCollection.get_Item(Int32 index)\\r\\n   at Main.Compute deleted count_AssignExpression(ActivityContext context)\\r\\n   at System.Activities.CodeActivity`1.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\\r\\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)\",\r\n    \"CreationTime\": \"2026-05-29T03:05:00.190Z\",\r\n    \"ReleaseName\": \"StagingCleanup\",\r\n    \"Type\": \"Unattended\",\r\n    \"EnvironmentVariables\": \"\",\r\n    \"OutputArguments\": \"{}\",\r\n    \"HostMachineName\": \"MOCK-HOST\",\r\n    \"HasMediaRecorded\": false,\r\n    \"HasVideoRecorded\": false,\r\n    \"RuntimeType\": \"Unattended\",\r\n    \"RequiresUserInteraction\": true,\r\n    \"ReleaseVersionId\": 5043207,\r\n    \"OrganizationUnitId\": 7791624,\r\n    \"FolderKey\": \"8c4e1a7d-3f6b-4e2a-9d8c-0a5f3b7e1c4d\",\r\n    \"Reference\": \"\",\r\n    \"ProcessType\": \"Process\",\r\n    \"ResumeOnSameContext\": false,\r\n    \"LocalSystemAccount\": \"UIPATH\\\\ROBOTUSER1\",\r\n    \"OrchestratorUserIdentity\": \"RobotUser1\",\r\n    \"RemoteControlAccess\": \"None\",\r\n    \"LastModificationTime\": \"2026-05-29T03:05:01.302Z\",\r\n    \"JobError\": {},\r\n    \"ErrorCode\": \"Robot\",\r\n    \"TraceId\": \"9d3f7b2e-5a8c-4f1d-b6e9-2c4a8d0f3b5e\",\r\n    \"Id\": 671233907\r\n  }\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "jobs",
+        "logs",
+        "9d3f7b2e-5a8c-4f1d-b6e9-2c4a8d0f3b5e",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"JobLogs\",\r\n  \"Data\": [\r\n    {\r\n      \"Level\": \"Info\",\r\n      \"TimeStamp\": \"2026-05-29T03:05:00.640Z\",\r\n      \"Message\": \"StagingCleanup execution started\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-29T03:05:00.918Z\",\r\n      \"Message\": \"Connect to Database: opened connection with ProviderName 'Microsoft.Data.SqlClient' to 'Server=sqlprod07;Database=Warehouse'\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-29T03:05:01.187Z\",\r\n      \"Message\": \"Execute Query: executing 'DELETE FROM TempStaging WHERE LoadDate < ''2026-05-01''' (CommandType=Text); result set returned 0 rows\"\r\n    },\r\n    {\r\n      \"Level\": \"Trace\",\r\n      \"TimeStamp\": \"2026-05-29T03:05:01.205Z\",\r\n      \"Message\": \"Assign 'Compute deleted count': evaluating CInt(dt_Deleted.Rows(0)(0)) against an empty DataTable (0 rows)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-29T03:05:01.241Z\",\r\n      \"Message\": \"Assign: There is no row at position 0.\\r\\nSystem.ArgumentOutOfRangeException: There is no row at position 0.\\r\\n   at System.Data.DataRowCollection.get_Item(Int32 index)\"\r\n    },\r\n    {\r\n      \"Level\": \"Error\",\r\n      \"TimeStamp\": \"2026-05-29T03:05:01.258Z\",\r\n      \"Message\": \"Assign: There is no row at position 0.\\r\\nin Main.xaml\\r\\n    at Assign \\\"Compute deleted count\\\"\\r\\n    at Sequence \\\"Main Sequence\\\"\\r\\n    at Main \\\"Main\\\"\\r\\n\"\r\n    }\r\n  ]\r\n}\r\n"
+    },
+    {
+      "argv": [
+        "or",
+        "folders",
+        "list",
+        "--output",
+        "json"
+      ],
+      "match_mode": "subset",
+      "exit_code": 0,
+      "stdout": "{\r\n  \"Result\": \"Success\",\r\n  \"Code\": \"FolderList\",\r\n  \"Data\": [\r\n    {\r\n      \"Key\": \"8c4e1a7d-3f6b-4e2a-9d8c-0a5f3b7e1c4d\",\r\n      \"Name\": \"Data Operations\",\r\n      \"Path\": \"Data Operations\",\r\n      \"Description\": \"Folder hosting the nightly warehouse maintenance and staging-cleanup processes.\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    },\r\n    {\r\n      \"Key\": \"b1d6f0a2-7c3e-4d59-8a1b-4f0c2e6d9a37\",\r\n      \"Name\": \"Shared\",\r\n      \"Path\": \"Shared\",\r\n      \"Description\": \"\",\r\n      \"Type\": \"Standard\",\r\n      \"ParentKey\": \"\"\r\n    }\r\n  ]\r\n}\r\n"
+    }
+  ],
+  "default": {
+    "exit_code": 0,
+    "stdout": "[]\n"
+  }
+}
