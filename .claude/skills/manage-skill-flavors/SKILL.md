@@ -96,7 +96,7 @@ replace passages that differ for that host.
 
 - Add no flavor file when canonical guidance is correct for the host.
 - Add the smallest replacement block when canonical guidance is wrong for the host.
-- Review every new canonical skill and materially changed marked passage against every existing flavor because inclusion is automatic.
+- Review every new or materially changed canonical skill against every existing flavor because inclusion is automatic. Update or add the smallest necessary sparse override wherever the canonical guidance is not correct for that flavor.
 - Do not create an empty flavor. If a host has no exceptions, it should consume the default package.
 
 ## Preserve Generic Discovery and Package Naming
