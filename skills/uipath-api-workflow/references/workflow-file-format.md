@@ -1,6 +1,8 @@
 # API Workflow File Format
 
+<!--skill-flavor:runtime-description:start-->
 JSON files conforming to **CNCF Serverless Workflow DSL 1.0.0** with UiPath task-type extensions. Executed by `@uipath/api-workflow-executor` via `uip api-workflow run`.
+<!--skill-flavor:runtime-description:end-->
 
 ## Top-Level Structure
 
@@ -127,9 +129,11 @@ Workflow-level I/O is declared at the root via JSON Schema:
 }
 ```
 
+<!--skill-flavor:runtime-input-output:start-->
 Inputs come from `--input-arguments` JSON or the calling workflow. Read them as `$workflow.input.<name>` from any task. (Reading as `$input.<name>` only works on the very first task — see [expressions-and-context.md](expressions-and-context.md).)
 
 Outputs are read from the final `Response` task's `response` value.
+<!--skill-flavor:runtime-input-output:end-->
 
 ## WorkflowStart — System Activity
 
