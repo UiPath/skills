@@ -8,7 +8,7 @@ Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per 
 >
 > **Input:** `tasks/tasks.md` — the complete handoff artifact.
 
-> **Five phases follow planning.** Execution splits into **Phase 2 — Prototyping** (reviewable preview: structure, conditions, SLA/escalation, and connector-rule stubs), **Phase 3 — Implementation** (connector schemas, task values, and connector-rule upgrades), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, and Phase 6 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbers are stable labels; follow the order stated by each phase.
+> **Five phases follow planning.** Execution splits into **Phase 2 — Prototyping** (reviewable preview: structure, conditions, SLA/escalation, and connector-rule stubs), **Phase 3 — Implementation** (connector schemas, task values, and connector-rule upgrades), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run). Read [phased-execution.md](phased-execution.md) for all phase boundaries, prompts, re-entry, retries, and aborts. Step numbers are stable labels; follow the order stated by each phase.
 
 ## Per-plugin execution
 
@@ -350,18 +350,4 @@ Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-
 
 ## Step 15a — Troubleshoot failed case
 
-When a debug or process run fails, read **[troubleshooting-guide.md](troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → caseplan.json correlation → traces (last resort).
-
-**Diagnose → fix → re-run loop.** After each diagnostic pass, classify root cause and act:
-
-1. **Fixable in `caseplan.json`** (wrong binding, missing condition, malformed expression, incorrect input value): apply targeted fix via matching plugin's `impl-json.md`, re-run `uip maestro case validate`, then re-run Step 15 debug. If the case was already published in Phase 5, re-run Step 14 afterwards so Studio Web holds the fixed build.
-2. **Fixable outside `caseplan.json`** (missing/expired connection, unregistered task type, missing Orchestrator asset, permissions): halt agent edits. Report exact resource + remediation steps to user via **AskUserQuestion** with options — `Resource fixed, re-run debug`, `Abort`.
-3. **Inconclusive** (no actionable cause): proceed to next round per retry policy.
-
-> **Known by-design debug fault:** an inline-built api-workflow sibling's task failing with incident `170007` ("job's associated process could not be found") under `case debug` is expected — debug does not provision Api siblings (agent siblings do resolve). Do not spend troubleshoot rounds on it; runtime verification needs a full solution deploy, offered via AskUserQuestion per [phased-execution.md § Debug notes](phased-execution.md#debug-notes) (the contract owner).
-
-**Retry policy.** Up to 3 troubleshoot → fix → debug rounds per failed run. Each round must add new context (different element ID, broader scope, fallback command) or apply different fix — do not repeat identical commands or re-apply same fix. Track round count.
-
-**Per-round timeout.** If debug run exceeds 10 minutes wall-clock, treat round as inconclusive and advance to next round (counts toward 3-round limit). Advisory — do not hard-kill subprocess; classify by elapsed time and move on.
-
-After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user with **AskUserQuestion**. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.json` edits without confirmed cause.
+When a debug or deployed Case run fails, read [troubleshooting-guide.md](troubleshooting-guide.md) directly. It owns diagnosis, classification, targeted repair, validate/debug retry, conditional re-publish, incident `170007`, round/timeout limits, and escalation; do not load it for successful execution.

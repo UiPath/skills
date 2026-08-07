@@ -4,6 +4,8 @@ Diagnostic workflow for failed debug runs and deployed case process runs. All co
 
 > **`--folder-key` is required for `incident get`.** Most `instance` subcommands accept `--folder-key <FOLDER_KEY>` and auto-detect from the authenticated folder if omitted, but `incident get` requires it explicitly. Get the folder key from `uip or folders list --output json` or from the job/process context.
 
+Use this guide only after a debug or deployed Case run fails. One troubleshooting round contains at most one pass through Steps 1–5. Stop the pass as soon as the cause is confirmed; later rounds must add evidence or apply a different targeted fix, never repeat an identical command or unconfirmed edit.
+
 ## Diagnostic priority
 
 Investigate in this order — each step adds context, stop when you have enough to diagnose the root cause:
@@ -23,7 +25,7 @@ uip maestro case job status <JOB_KEY> --output json
 
 Parse the instance ID and folder key from the response.
 
-> **No instance ID / `job status` fails →** halt. Report job key to user; downstream steps need the instance ID.
+> **No instance ID after `job status` succeeds, or `job status` still fails after its permitted transient retry →** end the round and report the job key; downstream steps need the instance ID.
 
 ## Step 2 — Fetch incidents
 
@@ -99,13 +101,24 @@ uip maestro case job traces <JOB_KEY> --pretty                  # human-readable
 
 > **Always use CLI commands for troubleshooting — never call the underlying APIs directly.**
 
-## Stop conditions
+## Classify and act
 
-1. **Stop early on root cause.** Once a step yields actionable cause (error + faulting element + variable state), stop. Skip remaining steps.
-2. **Empty result → next step.** If a step returns empty/missing data, move to the next step. Do not retry the same command.
-3. **One retry on transient failure** (auth, network). Second failure: halt that step, continue.
-4. **Max one full pass through Steps 1–5.** No looping.
-5. **Escalate to user** if Steps 1–5 yield no root cause, or all paths blocked. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot. Do not propose `caseplan.json` edits without confirmed cause.
+After the pass, classify the result exactly once:
+
+1. **Caseplan-fixable** — a confirmed wrong binding, condition, expression, or input value. Read only the plugin that owns the confirmed fault, apply a targeted fix, then run `uip maestro case validate <caseplan.json> --output json`. If Phase 5 had published the build and the fix changed it, re-enter the complete [Phase 5 publish contract](phased-execution.md#phase-5--publish) before Phase 6; otherwise re-enter the consent-gated [Phase 6 debug path](phased-execution.md#phase-6--debug). Never bypass either gate or debug before the Phase 5 choice.
+2. **External-resource** — a missing/expired connection, unregistered task type, missing asset, or permission problem. Do not edit Case artifacts. Report the exact resource and remediation, then AskUserQuestion: `Resource fixed, return to Phase 6` / `Abort`. On `Resource fixed`, re-enter the Phase 6 debug path so `uip solution resources refresh` runs before debug.
+3. **Inconclusive** — no confirmed actionable cause. Do not edit. Start another round only with a new evidence path; if none remains, use the escalation below immediately.
+
+### Inline API workflow incident `170007`
+
+Incident `170007` with "job's associated process could not be found" on an inline-built API-workflow sibling is expected under `case debug`: debug does not provision that sibling. Do not spend another troubleshooting round or edit `caseplan.json`. Runtime verification requires a full solution deploy (`uip solution pack` → `uip solution publish` → `uip solution deploy run`), which installs in Orchestrator. AskUserQuestion: `Run full solution deploy` / `Skip (mark debug-unverifiable)`. Never deploy without that explicit consent; if skipped, report the task as debug-unverifiable.
+
+## Round limits and escalation
+
+- Run at most three progressive diagnose/fix/debug rounds for one failed run. A round that applies a fix must validate before the debug rerun.
+- In Steps 2–5, empty data advances to the next step. Retry a transient auth/network failure once; after a second failure, record it and advance. A second Step-1 failure instead ends the round and reports the job key because later steps require an instance ID.
+- Ten minutes is an advisory per-round debug limit. If exceeded, record the round as inconclusive; do not hard-kill the subprocess or start another debug while it remains active. Wait for it to exit or for the user to resolve the live run before continuing.
+- After round three, regardless of its mix of inconclusive and post-fix failures, end this failed-run loop and AskUserQuestion: `Provide context for a later run` / `Pause for manual investigation` / `Abort`. Report the instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot, and what changed or was learned in each round. Never run a fourth debug round in this loop or propose a `caseplan.json` edit without a confirmed cause; a later debug attempt requires fresh user consent.
 
 ## CLI command reference
 
