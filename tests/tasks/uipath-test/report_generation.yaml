@@ -26,6 +26,10 @@ initial_prompt: |
   project — use the test set CLAIM:23. Save the report file in the current
   working directory using the default filename convention from the skill.
 
+  The report is only complete when it carries the full section structure the
+  skill defines for this persona — don't hand back a summary that skips
+  sections.
+
 success_criteria:
   - type: command_executed
     description: "Agent checked login status (Critical Rule #1 + #2)"

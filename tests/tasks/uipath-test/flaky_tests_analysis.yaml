@@ -15,9 +15,99 @@ run_limits:
   expected_turns: 17
   max_turns: 35
 
+# Dedicated fixture — see tests/fixtures/README.md for the EVFX- contract.
+#
+# This task is a PURE READER: it needs an intermittent pass/fail history and
+# never writes. While it read CLAIM's shared "UAT Smoke Suite" it kept losing
+# that history to other tasks — execution_rerun retried failed cases, cleanup
+# closed the reopened logs as Passed, and the suite converged on 3-pass/0-fail.
+# The 2026-08-05 nightly analysed three executions that were uniformly green
+# and correctly found no flakiness, so the assertions criterion had no failing
+# log to target.
+#
+# EVFX-FLAKY-SET is owned by this task alone. The seed is one-time: it runs
+# only while fewer than three finished executions exist, so once the history
+# is built every later run finds it intact and creates nothing. TC2 fails in
+# exactly one of the three executions, which is the intermittency the task
+# exists to detect.
+pre_run:
+  - command: |
+      python3 - <<'EOF' || true
+      import json, subprocess
+      P, SET = "CLAIM", "EVFX-FLAKY-SET"
+      CASES = ["EVFX-FLAKY-TC1", "EVFX-FLAKY-TC2", "EVFX-FLAKY-TC3"]
+      # TC2 is the flaky one: Passed, Failed, Passed across the three runs.
+      PATTERNS = [["Passed", "Passed", "Passed"],
+                  ["Passed", "Failed", "Passed"],
+                  ["Passed", "Passed", "Passed"]]
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:220]} err={err[:150]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def by_name(label, kind, name):
+          for x in call(label, "tm", kind, "list", "--project-key", P,
+                        "--filter", name).get("Data") or []:
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          print("FIXTURE: could not create", SET); raise SystemExit(0)
+      set_key, set_id = ts["TestSetKey"], ts["Id"]
+
+      keys = []
+      for name in CASES:
+          tc = by_name(f"tc.{name}", "testcases", name)
+          if not tc:
+              call(f"tc.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"tc.re.{name}", "testcases", name)
+          if tc:
+              keys.append(tc["TestCaseKey"])
+      if keys:
+          call("set.add", "tm", "testcases", "add", "--test-set-key", set_key,
+               "--test-case-keys", *keys)
+
+      # One-time: only build history while it is missing. Once three finished
+      # executions exist this block never runs again and the task is read-only.
+      done = [e for e in call("ex.list", "tm", "executions", "list", "--project-key", P,
+                              "--test-set-id", set_id).get("Data") or []
+              if e.get("Status") == "Finished"]
+      print(f"FIXTURE: {len(done)} finished executions already present", flush=True)
+
+      for pat in PATTERNS[len(done):]:
+          r = call("run", "tm", "testsets", "run", "--test-set-key", set_key,
+                   "--execution-type", "manual")
+          eid = (r.get("Data") or {}).get("ExecutionId")
+          if not eid:
+              print("FIXTURE: could not start execution"); break
+          logs = call("logs", "tm", "executions", "testcaselogs", "list",
+                      "--project-key", P, "--execution-id", eid).get("Data") or []
+          for i, l in enumerate(logs):
+              res = pat[i % len(pat)]
+              call(f"finish.{i}", "tm", "testcaselog", "finish", "--project-key", P,
+                   "--execution-id", eid, "--test-case-id", l["TestCaseId"],
+                   "--result", res, "--has-error", "true" if res == "Failed" else "false",
+                   "--executed-by", "eval-fixture@uipath.com")
+          print(f"FIXTURE: seeded {eid} with {pat}", flush=True)
+      EOF
+    timeout: 280
+
 initial_prompt: |
-  Analyse the top 3 executions with a finished executionStatus of a test
-  set 'UAT Smoke Suite' in my UiPath Test Manager project CLAIM. List testcases that pass and
+  Analyse the 3 most recent executions with a finished executionStatus of a test
+  set 'EVFX-FLAKY-SET' in my UiPath Test Manager project CLAIM. List testcases that pass and
   fail intermittently, ranked by flakiness. Also, list the assertions for such testcases.
 
 success_criteria:

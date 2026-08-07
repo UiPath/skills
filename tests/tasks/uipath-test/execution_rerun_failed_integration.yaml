@@ -20,13 +20,139 @@ run_limits:
   turn_timeout: 1200
   task_timeout: 1500
 
+# Dedicated fixture — see tests/fixtures/README.md for the EVFX- contract.
+#
+# This task CONSUMES its own premise: retrying the failed cases reopens their
+# logs, and with no robot serving this tenant nothing closes them again. While
+# it shared CLAIM's "UAT Smoke Suite" that damage landed on three other tasks —
+# flaky_tests_analysis lost the intermittency it reads, and the suite converged
+# on 3-pass/0-fail so this task itself had nothing left to retry (2026-08-03 and
+# 2026-08-05 nightlies both read P3/F0 and the agent correctly declined).
+#
+# It now owns EVFX-RERUN-SET outright. pre_run is create-if-absent and additive:
+# it builds the set and its cases on first run, then APPENDS a fresh execution
+# whose newest result pattern is always Passed/Passed/Failed. Nothing is ever
+# deleted, and no existing execution's logs are rewritten — so the state this
+# task leaves behind cannot dilute any other task, and its own premise holds on
+# every run regardless of what the previous run did to it.
+pre_run:
+  - command: |
+      python3 - <<'EOF' || true
+      import json, subprocess
+      P, SET = "CLAIM", "EVFX-RERUN-SET"
+      CASES = ["EVFX-RERUN-TC1", "EVFX-RERUN-TC2", "EVFX-RERUN-TC3"]
+      RESULTS = ["Passed", "Passed", "Failed"]
+
+      # Every call is traced. A silent helper here cost a full CI round trip
+      # (run 31063937897): the seed failed and the log said only "could not
+      # start", with no way to tell which call or field name was wrong.
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:400]} err={err[:250]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def pick(d, *names):
+          for n in names:
+              if d.get(n):
+                  return d[n]
+          return None
+
+      def by_name(label, kind, name):
+          d = call(label, "tm", kind, "list", "--project-key", P, "--filter", name)
+          rows = d.get("Data") or []
+          if rows:
+              print(f"FIXTURE[{label}] field names: {sorted(rows[0].keys())}", flush=True)
+          for x in rows:
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      # 1. test set — create if absent, never delete
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          print("FIXTURE: could not create", SET); raise SystemExit(0)
+      set_key = pick(ts, "TestSetKey", "Key", "ObjKey")
+      print(f"FIXTURE: set_key={set_key!r} set_id={ts.get('Id')!r}", flush=True)
+
+      # 2. test cases — create if absent, then add to the set (add is idempotent)
+      keys = []
+      for name in CASES:
+          tc = by_name(f"tc.find.{name}", "testcases", name)
+          if not tc:
+              call(f"tc.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"tc.refind.{name}", "testcases", name)
+          if tc:
+              keys.append(pick(tc, "TestCaseKey", "Key", "ObjKey"))
+      keys = [k for k in keys if k]
+      print(f"FIXTURE: case keys={keys}", flush=True)
+      if set_key and keys:
+          call("set.add", "tm", "testcases", "add", "--test-set-key", set_key,
+               "--test-case-keys", *keys)
+
+      # 3. append a fresh execution with the exact pattern this task needs.
+      #    `testsets run` wraps its payload: {"Result","Code","Data":{...}} — the
+      #    ExecutionId lives under Data, NOT at the top level. Reading the top
+      #    level made run 31064309908 mistake six successful runs for failures
+      #    and reassign the project default folder six times.
+      def start(label):
+          r = call(label, "tm", "testsets", "run", "--test-set-key", set_key,
+                   "--execution-type", "manual")
+          return r, (r.get("Data") or {}).get("ExecutionId")
+
+      ex, eid = start("run.direct")
+
+      # CLAIM already carries a working default folder, so the run above
+      # normally succeeds outright. Only when it genuinely reports failure is it
+      # worth pinning a folder (SKILL.md Critical Rule 10) — and then stop at
+      # the first one that works, so shared project config is touched at most
+      # once rather than rewritten on every probe.
+      if not eid and ex.get("Result") != "Success":
+          for f in (call("folders", "or", "folders", "list", "--all").get("Data") or [])[:6]:
+              fk = f.get("Key")
+              if not fk:
+                  continue
+              call("folder.pin", "tm", "project", "set-default-folder",
+                   "--project-key", P, "--folder-key", fk)
+              ex, eid = start("run.retry")
+              if eid:
+                  print("FIXTURE: pinned default folder", fk, flush=True)
+                  break
+
+      if not eid:
+          print("FIXTURE: could not start a manual execution"); raise SystemExit(0)
+
+      # 4. close every log so the execution reaches Finished with one failure
+      logs = call("logs", "tm", "executions", "testcaselogs", "list",
+                  "--project-key", P, "--execution-id", eid).get("Data") or []
+      for i, l in enumerate(logs):
+          res = RESULTS[i % len(RESULTS)]
+          call(f"finish.{i}", "tm", "testcaselog", "finish", "--project-key", P,
+               "--execution-id", eid, "--test-case-id", l["TestCaseId"],
+               "--result", res, "--has-error", "true" if res == "Failed" else "false",
+               "--executed-by", "eval-fixture@uipath.com")
+      print(f"FIXTURE: seeded execution {eid} on {SET} with {len(logs)} logs")
+      EOF
+    timeout: 240
+
 initial_prompt: |
-  Our "UAT Smoke Suite" in the CLAIM project (Test Manager) had a regression run
-  finish recently and a few cases failed. Can you pull up that latest finished
-  run, show me the pass/fail breakdown, and then kick off a retry of just the
-  failed cases so we can tell whether they were real failures or flakes? Don't
-  start a fresh run of the whole suite — only retry what actually failed in that
-  run. No need to check back with me.
+  Our "EVFX-RERUN-SET" test set in the CLAIM project (Test Manager) had a
+  regression run finish recently and a case failed. Can you pull up that latest
+  finished run and report its aggregate result totals — how many passed, how
+  many failed, how many were skipped — as the run itself reports them, not a
+  tally you counted by hand from the individual case logs. Then kick off a
+  retry of just the failed cases so we can tell whether they were real failures
+  or flakes. Don't start a fresh run of the whole suite — only retry what
+  actually failed in that run. No need to check back with me.
 
 success_criteria:
   - type: command_executed

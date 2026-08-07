@@ -16,6 +16,68 @@ description: >
   coverage gap, go/no-go signoff). Requires a fixture project in the
   tenant — see references at the bottom of this file.
 tags: [uipath-test, integration, mode:diagnose, lifecycle:generate, feature:test-case, feature:compliance]
+# Dedicated fixture — see tests/fixtures/README.md for the EVFX- contract.
+#
+# BANK is referenced by this task and no other, so it is already collision-free
+# and the fixture keeps its discoverable names — the task grades the agent's
+# ability to FIND the active regression suite, so renaming it to EVFX-* would
+# remove the thing under test.
+#
+# What drifted is history, not naming: the 2026-08-05 nightly reported "the
+# active regression suite has 10 tests but no recorded execution", so the
+# testcaselogs drill-down had no execution to open and the report had no real
+# result data to cite. Seed one finished execution with mixed results, once —
+# the guard means every later run finds it and creates nothing.
+pre_run:
+  - command: |
+      python3 - <<'EOF' || true
+      import json, subprocess
+      P = "BANK"
+      RESULTS = ["Passed", "Passed", "Failed", "Passed"]
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:220]} err={err[:150]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      sets = call("sets", "tm", "testsets", "list", "--project-key", P).get("Data") or []
+      if not sets:
+          print("FIXTURE: no test sets in", P); raise SystemExit(0)
+      # The prompt calls it the "active regression suite" — prefer a set that
+      # names itself so, and fall back to the first rather than guessing wrong.
+      ts = next((t for t in sets if "regression" in (t.get("Name") or "").lower()), sets[0])
+      print(f"FIXTURE: target suite {ts.get('Name')!r} ({ts.get('TestSetKey')})", flush=True)
+
+      done = [e for e in call("ex", "tm", "executions", "list", "--project-key", P,
+                              "--test-set-id", ts["Id"]).get("Data") or []
+              if e.get("Status") == "Finished"]
+      if done:
+          print(f"FIXTURE: {len(done)} finished execution(s) already present — nothing to seed")
+          raise SystemExit(0)
+
+      r = call("run", "tm", "testsets", "run", "--test-set-key", ts["TestSetKey"],
+               "--execution-type", "manual")
+      eid = (r.get("Data") or {}).get("ExecutionId")
+      if not eid:
+          print("FIXTURE: could not start execution"); raise SystemExit(0)
+      logs = call("logs", "tm", "executions", "testcaselogs", "list",
+                  "--project-key", P, "--execution-id", eid).get("Data") or []
+      for i, l in enumerate(logs):
+          res = RESULTS[i % len(RESULTS)]
+          call(f"finish.{i}", "tm", "testcaselog", "finish", "--project-key", P,
+               "--execution-id", eid, "--test-case-id", l["TestCaseId"],
+               "--result", res, "--has-error", "true" if res == "Failed" else "false",
+               "--executed-by", "eval-fixture@uipath.com")
+      print(f"FIXTURE: seeded execution {eid} with {len(logs)} logs", flush=True)
+      EOF
+    timeout: 280
+
 initial_prompt: |
   I'm a QA Lead. We're deploying new loan-approval workflows tonight, but a
   UAT tester reported inconsistent approval behavior for the same customer
