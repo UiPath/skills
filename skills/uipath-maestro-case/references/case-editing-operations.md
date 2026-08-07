@@ -262,7 +262,7 @@ Not authored (Rule 20). To make a stage reachable, add a `stage-entry-conditions
 
 ### Update one property in place
 
-Read the target object, anchor by its stable `id`, and replace only the requested property. Preserve the object envelope, sibling properties, containing `data.tasks` task-set and order, every condition, all root fields, sidecars, bindings, variables, and topology byte-for-byte. Do not rebuild a node or task to change one scalar. Run the selected plugin's post-write invariant checks, then validate once after the edit batch.
+Use this primitive only when the selected owner declares the scalar independent of companions, consumers, sidecars, resource/schema identity, or routing. A specialized brownfield row always wins. Read the target object, anchor by its stable `id`, and replace only the requested property. Preserve the object envelope, sibling properties, containing `data.tasks` task-set and order, every condition, all root fields, sidecars, bindings, variables, and topology byte-for-byte. Run the selected plugin's post-write invariants, then validate once after the edit batch.
 
 ### Bind an input
 
@@ -272,13 +272,14 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 
 ### Canonical consumer sweep
 
-Run this one inventory before removing, renaming, moving, retyping, or replacing any producer, resolver key, task, stage, trigger, binding, SLA, or escalation. Search the complete `caseplan.json` plus `entry-points.json`; do not substitute an operation-specific shortlist.
+Run this one inventory before removing, renaming, moving, retyping, or replacing any producer, resolver key, task, stage, trigger, binding, SLA, or escalation. Search the complete `caseplan.json`, `entry-points.json`, and existing `id-map.json`; do not synthesize an absent sidecar or substitute an operation-specific shortlist.
 
 - exact lookup strings `=vars.<id>` and `=bindings.<id>`, and the same identifiers anywhere inside `=js:` strings, including task values, connector bodies/context, condition expressions in stage-entry, stage-exit, task-entry, and case-exit scopes, SLA expressions, and custom outputs;
-- cross-task triples `sourceStage` / `sourceTask` / `sourceOutput`, task-output `id`/`var`/`originalVar`/`source`/`target` links, and every `selectedTasksIds`, `selectedStageId`, or `exitToStageId` reference;
+- cross-task triples `sourceStage` / `sourceTask` / `sourceOutput`, output `id` / `var` / `originalVar` / `value` / `source` / `target` links (rewrite a bare mirrored `value` with its `var`), and every `selectedTasksIds`, `selectedStageId`, or `exitToStageId` reference;
 - connector task, trigger, and condition-rule context/input/output consumers; top-level binding pairs grouped by `resourceKey`; and the matching `bindings_v2.json` resource projection;
 - `variables.inputs`, `variables.outputs`, and `variables.inputOutputs` formal slots/companions, plus trigger `data.inputs.outputs` bridges;
-- every `slaId` and `escalationId` consumer; and every trigger `#<triggerId>` entry in `entry-points.json`.
+- every `slaId` and `escalationId` consumer; every trigger `#<triggerId>` entry in `entry-points.json`; and, for In/Out arguments, the projected name/type/default/body/required contract in each affected `entryPoints[].input` / `.output` schema.
+- every `id-map.json` entry whose owned `id` / `ruleId` or structural `stageId` / `targetId` names an affected object.
 
 Classify each hit as preserve, rewrite/repoint, or remove before mutation. Prune a binding pair or variable companion only after a second scan of all remaining tasks, triggers, four condition scopes, and SLA rules proves its reference/producer count is zero. Regenerate `bindings_v2.json` only when top-level `bindings` changed. Preserve DNF outer/inner array order while changing rules.
 
@@ -290,10 +291,12 @@ Classify each hit as preserve, rewrite/repoint, or remove before mutation. Prune
 4. Top-level `edges` is normally `[]`. Defensively remove only imported edges that reference the removed node; never author a replacement edge.
 5. **Trigger deletion:** remove only the matching `entry-points.json.entryPoints[]` item whose `filePath` ends in `#<removedTriggerId>`, preserving every other entry and envelope field.
 6. **Trigger variable cascade.** For a removed trigger, remove `variables.inputs[]` formal slots with `elementId == <removedTriggerId>` and its `data.inputs.outputs[]` bridges. For each companion name, apply the canonical sweep, then prune the `variables.inputOutputs[]` companion only when no other producer remains.
-7. If the node was a stage containing a connector task **or a connector condition rule** (in `entryConditions[]` / `exitConditions[]` / task `entryConditions[]`), prune entries from the top-level `bindings` referenced only by that task/rule. A connector rule contributes the same Connection/Folder binding pair as a task — `rule.uipath.context[name="connection"|"folderKey"]` references `=bindings.<bindingId>`. Walk every remaining task/trigger/rule; an entry whose `resourceKey` is no longer referenced anywhere is the one to prune. Case-exit rules are NOT in scope here — they live on root, not inside a node; use § Delete a condition rule for those.
-8. If the removed node held connector rule outputs bound to case variables, prune the matching `variables.inputOutputs[]` companion (`elementId == "root"`) only after the canonical sweep proves no remaining producer or consumer requires it.
-9. Regenerate `bindings_v2.json` only if top-level `bindings` changed, per [bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal).
-10. Edit separate, ID-anchored slices for top-level `nodes`, `entry-points.json` (trigger only), `variables.inputs` / `variables.inputOutputs`, and top-level `bindings`. Never whole-file Write.
+7. **Connector cache/output cascade.** Retain any removed target's full-response `tasks/spec-cache.<elementId>.json` only as inactive audit evidence; remove it from working audit state and never use it to enrich another target. An event trigger also removes its T-entry from `trigger-spec-cache.json`; run the global-variable owner against the reduced sidecar so its spec-derived outputs/companions disappear while other triggers and spec-independent declarations survive. Do not synthesize absent caches.
+8. Collect every top-level binding referenced by the removed node, including all nested connector and non-connector resource tasks, connector condition rules, and an event trigger's own context. After removal, scan every remaining task, trigger, and rule in all condition scopes; prune a binding pair and IS-cache contribution only when no remaining consumer references its IDs or `resourceKey`. Case-exit rules live in metadata rather than a stage, but still participate in the remaining-consumer scan.
+9. If the removed node held connector rule outputs bound to case variables, prune the matching `variables.inputOutputs[]` companion (`elementId == "root"`) only after the canonical sweep proves no remaining producer or consumer requires it.
+10. If `id-map.json` exists, remove mappings owned by the deleted node and its deleted descendants: entries whose `id` / `ruleId` is one of the removed node, task, condition, or rule IDs, or whose structural `stageId` / `targetId` points at that removed owner. Preserve every unrelated mapping.
+11. Regenerate `bindings_v2.json` only if top-level `bindings` changed, per [bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal).
+12. Edit separate, ID-anchored slices for top-level `nodes`, `entry-points.json` (trigger only), `variables.inputs` / `variables.inputOutputs`, existing caches/sidecars, existing `id-map.json`, and top-level `bindings`. Never whole-file Write.
 
 ### Delete a task
 
@@ -307,9 +310,10 @@ Remove a task from a stage. Tasks live only in the owning stage's nested `data.t
    - Any task's `entryConditions[].rules[][]` `selected-tasks-completed` rule whose `selectedTasksIds` names the deleted task — remove the id from the array; if it empties, remove the rule (and the parent condition object when it empties), per § Delete a condition rule's DNF removal mechanic.
    - Any `conditionExpression` (`=js:...`) referencing the deleted task's outputs — repoint or remove.
 5. Use the canonical sweep to repoint/remove every cross-task triple and every exact/`=js:` output consumer. Do not limit the scan to task inputs; conditions, connectors, SLA expressions, custom outputs, variables, and trigger bridges are consumers too.
-6. **Connector-task cascade (connector tasks only).** Prune its top-level binding pair and `variables.inputOutputs[]` companions only after complete remaining-consumer/reference-count scans. Regenerate `bindings_v2.json` only if top-level `bindings` changed.
-7. Update the task's `id-map.json` entry (remove it) if the sidecar is present.
-8. Edit — narrow slices for the source `data.tasks` (removal + lane re-pack), each swept condition, each repointed consumer binding, and (connector only) the bindings array / `inputOutputs[]`. Never whole-file Write. Validate at the section boundary.
+6. **Resource cascade.** For any connector or non-connector resource-bound task, prune its top-level binding pair only after complete remaining-consumer/reference-count scans across tasks, triggers, and all condition scopes. Connector-owned output companions receive the same zero-producer/consumer guard. Regenerate `bindings_v2.json` only if top-level `bindings` changed.
+7. For a connector task, retire its target-local raw cache as audit-only through its source owner and remove its IS-cache contribution only when no remaining connector target uses it.
+8. If `id-map.json` exists, remove the task's mapping plus mappings for deleted task-entry conditions/rules whose owned `id` / `ruleId` was nested under it or whose `targetId` names the deleted task. Preserve other mappings, including sibling tasks in the same stage.
+9. Edit — narrow slices for the source `data.tasks` (removal + lane re-pack), each swept condition, each repointed consumer, existing connector caches, and any changed top-level bindings / `variables.inputOutputs[]`. Never whole-file Write. Validate at the section boundary.
 
 > **Reverse of § Add a task to a stage.** § Move a task always re-pushes to a destination; § Delete a task is the terminal removal — there is no destination, so the cascade prunes references instead of repointing them to a new stage.
 
@@ -322,8 +326,9 @@ Remove a single rule from a condition (without deleting the parent stage / task 
 3. Remove the rule, empty branch, or now-empty parent condition as determined above without flattening or reordering surviving DNF arrays. **Plain (non-connector) rules stop here** — skip steps 4–6. **For case-exit completion rules, first run the ≥1-completion-rule guard** in § Delete a case-exit completion rule below.
 4. **(Connector rules only)** Apply the canonical sweep across all remaining tasks, triggers, four condition scopes, and SLA rules; prune a top-level binding pair only when its `resourceKey` reference count reaches zero.
 5. **(Connector rules only)** Prune a `variables.inputOutputs[]` companion tied to this rule's outputs only when no remaining producer or consumer requires it.
-6. **(Connector rules only)** Regenerate `bindings_v2.json` per [bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal).
-7. Edit — separate slices for the conditions array, and (connector only) the bindings array and `inputOutputs[]`. Never whole-file Write.
+6. **(Connector rules only)** Retire the rule's target-local raw cache as audit-only through the common owner, prune its IS-cache contribution only at zero remaining references, and regenerate `bindings_v2.json` when top-level bindings changed.
+7. If `id-map.json` exists, remove the mapping whose `ruleId` names the deleted rule; if the parent condition was also removed, remove its owned `id` mapping too. Preserve every surviving rule/condition mapping.
+8. Edit — separate slices for the conditions array, existing `id-map.json`, and (connector only) its cache, bindings array, and `inputOutputs[]`. Never whole-file Write.
 
 #### Modify a condition rule in place
 
@@ -356,142 +361,51 @@ The skill never creates edges, so top-level `edges` should already be `[]`. If a
 
 ### Insert a stage between two existing stages
 
-1. Preserve all existing IDs and task sets; add the stage through [stages/impl-json.md](plugins/stages/impl-json.md), and add its tasks/conditions through their selected owners.
-2. Add the new stage's entry condition referencing each intended upstream stage, preserving valid DNF arrays.
-3. Apply the canonical sweep to the old hand-off and repoint **every** affected downstream stage-entry rule and matching source exit consumer to the new stage. Do not stop after the first successor or disturb unrelated routes.
-
-No edges are involved — reachability is entirely condition-driven.
+[Composite recipe](brownfield-operations-guide.md#insert-a-stage-between-two-existing-stages).
 
 ### Replace a placeholder task with an enriched task
 
-Follow [placeholder-tasks.md § Upgrade Procedure](placeholder-tasks.md) and the selected task `impl-json.md`. Keep `id`, `elementId`, envelope, placement, conditions, and every still-valid input/output unchanged. Enrich only the owner-defined resource fields and schema delta; add/reuse its binding pair with reference-counted dedup, and regenerate `bindings_v2.json` because the binding set changed.
+[Composite recipe](brownfield-operations-guide.md#replace-a-placeholder-task-with-an-enriched-task).
 
 ### Re-sync a task after its source schema changed
 
-The task's source resource added, removed, renamed, or retyped an input/output. Its owner-defined resource fields and `data.inputs` / `data.outputs` may now be stale. Edit in place — keep `id`, `elementId`, envelope, placement, conditions, and all unaffected schema fields.
-
-1. **Re-fetch the current schema** (read-only CLI — never hand-author, per § Responsibilities):
-   - Non-connector task: consume the current [Rule-3/Rule-17 registry contract](registry-discovery.md). Run its normal pull only when no successful current-session pull exists; run `registry pull --force` only when the user selects that gate option. Then call `uip maestro case tasks describe ... --output json`.
-   - Connector activity / trigger: `uip maestro case spec --type ... --output json` (unified endpoint — see [connector-integration.md](connector-integration.md)).
-2. Read `caseplan.json`; locate the task by `id`.
-3. Reconcile the task through its selected `impl-json.md`: update only owner-defined resource fields and changed `data.inputs[]` / `data.outputs[]`; do not invent a shared `taskTypeId` field. Keep `id` and `elementId = ${stageId}-${taskId}` unchanged.
-4. **Re-bind affected inputs.** For each added / renamed / retyped input, fix its `data.inputs[i]` entry (literal/expression `value` or cross-task `sourceStage`/`sourceTask`/`sourceOutput`) per [bindings-and-expressions.md](bindings-and-expressions.md). Prefix: `=vars.X` / `=bindings.X` for a single lookup, `=js:...` for dotted access or operators.
-5. **Repoint consumers of removed/renamed outputs.** Apply the canonical consumer sweep to every dropped output; preserve unchanged inputs/outputs and unknown schema fields. Prune top-level `bindings` only after a complete reference-count scan.
-6. **If the resource binding set changed (connector or non-connector), regenerate `bindings_v2.json`** ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 14) — same scope as § Repoint a non-connector task step 5 and the brownfield After-edits step 2. A pure schema-only re-sync (same resource, `data.inputs`/`data.outputs` reshaped but no `bindings[]` entry added/removed/repointed) leaves `bindings_v2.json` unchanged — skip the refresh in that case.
-7. Edit — narrow slices targeting the task's `data` (and any consumer / bindings slices). Never whole-file Write. Validate at the section boundary.
+[Composite recipe](brownfield-operations-guide.md#re-sync-a-task-after-its-source-schema-changed).
 
 ### Repoint a non-connector task at a different resource
 
-Swap which process / agent / RPA / api-workflow / case-management resource a task runs. The node references its resource indirectly — `data.name` / `data.folderPath` are `=bindings.<id>` pointers into top-level `bindings[]` ([process impl-json](plugins/tasks/process/impl-json.md), [bindings impl-json](plugins/variables/bindings/impl-json.md)). The new resource almost always has a different I/O schema, so this is a **superset of § Re-sync a task after its source schema changed** plus a binding swap. Keep the task `id` / `elementId` / `entryConditions` so references stay valid.
-
-1. **Re-resolve the new resource** through [registry-discovery.md](registry-discovery.md): reuse a successful current-session normal pull, otherwise run the Rule-3 gate; reserve `--force` for the user's Rule-17 Force choice. Search the cache for the new name + folder, preserve the owner-defined zero-match fallback, and record the swap in `registry-resolved.json`.
-2. **Swap the resource bindings — respect dedup.** The task's two binding entries (`propertyAttribute` `name` / `folderPath`) share `resourceKey = <folderPath>.<name>`.
-   - Old pair referenced **only** by this task → update each entry's `default` (new name / folder) and `resourceKey` (`<newFolderPath>.<newName>`) in place.
-   - Old pair **shared** with other tasks (deduped by `default + resource + resourceKey`) → do NOT mutate in place. Create or reuse a binding pair for the new resource, repoint this task's `data.name` / `data.folderPath` to the new ids, then prune the old pair if no task references it any longer.
-3. **Re-sync the schema.** Follow § Re-sync a task after its source schema changed steps 1–5 against the new resource: `uip maestro case tasks describe --type <type> --id <newEntityKey> --output json`, update `data.inputs` / `data.outputs`, re-bind inputs, repoint downstream consumers of dropped outputs.
-4. **If the task type also changes** (e.g. process → agent): update the node `type`, the bindings' `resource` / `resourceSubType` per the new type's [impl-json](plugins/tasks/), and rebuild `data` per that type's recipe — still keeping `id` / `elementId` / `entryConditions`.
-5. Regenerate `bindings_v2.json` ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 14) — the swap changes which Orchestrator resource declaration the case needs.
-6. Edit — narrow slices for the task `data`, the bindings array, and any consumer slices. Never whole-file Write. Validate at the section boundary.
+[Composite recipe](brownfield-operations-guide.md#repoint-a-non-connector-task-at-a-different-resource).
 
 ### Move a task to a different stage or lane
 
-Relocate a task within the case. **Keep the task `id`** so conditions and cross-task bindings referencing it stay valid — but every `elementId` is stage-scoped and MUST be recomputed.
-
-1. Read `caseplan.json`. Locate the task in its source `stageNode.data.tasks[oldLane]`.
-2. **Recompute every stage-scoped `elementId` — the step most easily missed** (a move looks like layout, but `elementId` encodes the owning stage):
-   - the task itself: `elementId = ${destStageId}-${taskId}`
-   - every task `data.inputs[]` / `data.outputs[]` entry owned by that task: the new task `elementId`;
-   - every `wait-for-connector` entry-condition rule input/output on the task: `${destStageId}-${ruleId}`;
-   - top-level `variables.inputOutputs[]` companions whose `elementId` is `"root"` are not stage-scoped; leave them unchanged.
-3. Remove the task from the source `data.tasks[oldTaskSet]` and insert it into the destination task set in the preserved `data.tasks` order. Parallel task sets remain allowed, but shared destination task sets are valid only for explicitly parallel or parallel-after-predecessor siblings. For `runs-sequentially` strict-chain tasks or other non-parallel entry modes, insert the task as its own single-task set; lane/task-set placement is structural, while entry conditions carry sequencing.
-4. Apply the canonical consumer sweep. Cross-task triples keep `sourceTask` but change `sourceStage`; exact/`=js:` output-ID consumers retain the same output ID. Confirm execution ordering still makes every consumer valid.
-5. **Re-check the moved task's `entryConditions[]`:**
-   - `current-stage-entered` — no change; it follows the task to the destination stage.
-   - `selected-tasks-completed` — `selectedTasksIds` left behind in the source stage now gate across stages; repoint to a task in the destination or remove if the dependency no longer applies.
-   - `runs-sequentially` — the moved task must be in its own single-task set unless it is explicitly part of a parallel-after-predecessor sibling set; re-evaluate lane membership (step 3) in both stages so strict sequential chains stay as consecutive single-task sets.
-   - **Reverse sweep — tasks left behind in the source stage.** Any task remaining in the source stage whose `selected-tasks-completed.selectedTasksIds` names the moved task now gates *across stages* (the gater stayed put, the gated task left). Repoint each such reference to a surviving source-stage task, or remove it if the dependency no longer applies. This is the inverse of the moved task's own gater re-check above — easy to miss because step 5 otherwise looks only at the moved task.
-6. Update the task's `id-map.json` entry `stageId` if the sidecar is present.
-7. Edit — narrow slices for the source and destination `data.tasks`, the recomputed `elementId`s, and any consumer-binding slices. Never whole-file Write. Validate at the section boundary.
+[Composite recipe](brownfield-operations-guide.md#move-a-task-to-a-different-stage-or-lane).
 
 ### Rename or delete a global variable or argument
 
-The runtime resolver matches `=vars.<id>` by **exact string equality on `Variable.id`** ([global-vars impl-json](plugins/variables/global-vars/impl-json.md)). Renaming or removing a variable dangles every consumer, and `validate` does not reliably catch a dangling `=vars.*` — sweep them by hand.
-
-1. Read `caseplan.json`. Note the variable's `id` (the resolver key) and its owning array: top-level `variables.{inputs,outputs,inputOutputs}[]`, a `task.data.outputs[]` self-declaration, or a trigger output.
-2. Apply the canonical consumer sweep; it owns the complete exact-reference, `=js:`, connector, condition, SLA, companion, bridge, cross-task, and sidecar inventory.
-3. **Rename:** update `id` (and mirror `var` / `target` where they equal it — `name` / `source` keep their original value, per the global-vars Uniqueness Rule) in the owning array, then update every swept consumer to the new identifier.
-   **Delete:** remove the declaration from its owning array and its `inputOutputs[]` companion, then repoint or remove every swept consumer. An input left bound to a deleted variable must get a new `value` or be cleared.
-4. Regenerate `bindings_v2.json` only if top-level `bindings` changed; refresh resources before debug/publish when it did.
-5. Edit — narrow slices per consumer location and the owning array. Never whole-file Write. Validate at the section boundary.
+[Composite recipe](brownfield-operations-guide.md#rename-or-delete-a-global-variable-or-argument).
 
 ### Change a variable's type or default
 
-Mutate a variable's `type` / `body` / `default` in place — keep its `id` so every `=vars.<id>` reference stays valid. **Cannot be faked by delete + re-add**: re-adding re-mints a fresh `id` and dangles every consumer (§ Rename or delete). The `type` is duplicated across several coordinated slots ([global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md)); change all of them in one pass or the FE picker and runtime disagree.
-
-1. Read `caseplan.json`. Identify the variable's category and every slot that carries its `type`:
-   - **Internal variable** (`variables.inputOutputs[]`): the single companion entry's `type` (+ `body` when `type == "jsonSchema"`).
-   - **Out argument** (`variables.outputs[]` formal + `inputOutputs[]` companion): both entries' `type`; the companion's `body` for `jsonSchema`.
-   - **In argument** (three entries — `variables.inputs[]` formal slot, `variables.inputOutputs[]` companion, `triggerNode.data.inputs.outputs[]` bridge): change `type` on **all three**. The bridge's `type` must match or the fire-time copy mis-types.
-2. **Type change** — set the new `type` on every slot from step 1. For `type == "jsonSchema"`, set `body` to the new schema on the formal slot and companion (the FE picker reads `body` to discover sub-fields). For `type == "file"`, apply the file-type carve-outs ([global-vars/impl-json.md § In argument](plugins/variables/global-vars/impl-json.md)): companion + formal slot get `body: <FILE_TYPE_JSON_SCHEMA>`, and an In-arg's `default` MUST stay `""`.
-3. **Default change** — set `default` on the formal slot (`variables.inputs[]` for an In-arg, the `variables.outputs[]`/`variables.inputOutputs[]` entry otherwise). A file-typed variable rejects any `default` other than `""`.
-4. **Re-validate every `=vars.<id>` consumer against the new type.** A condition/SLA expression that compared the variable as one type (`=js:vars.amount > 5`) may now be malformed against the new type (e.g., string). Repoint or fix each consumer; `validate` does not catch a type-mismatched `=js:*` expression.
-5. Edit — narrow slices for each coordinated slot and any reworked consumer. Never whole-file Write. Validate at the section boundary.
+[Composite recipe](brownfield-operations-guide.md#change-a-variables-type-or-default).
 
 ### Modify or remove an SLA or escalation
 
-The add path is [plugins/sla/impl-json.md](plugins/sla/impl-json.md); this is the in-place modify / remove. SLA rules live in `metadata.slaRules[]` (root target) or `node.data.slaRules[]` (stage target); each rule carries an `escalationRule[]`. Each rule has a required stable `sla_` ID; escalations carry stable `esc_` IDs. Address persisted objects by ID and preserve response behavior from [sla-response-shapes.md](sla-response-shapes.md).
-
-1. Read `caseplan.json`. Locate the SLA array — `metadata.slaRules[]` for the root target, else the stage node's `data.slaRules[]` (find by `data.label`).
-2. **Modify a rule:** edit the target rule's `count` / `unit` / `expression` in place. Preserve its escalation recipients and every unchanged response field. Keep the default rule (`expression == "=js:true"`) **last**; never reorder it ahead of a conditional rule.
-3. **Remove a rule:** first apply the canonical sweep to its `slaId` and every nested `escalationId`. Repoint or remove each response consumer explicitly; never add an escalation to a breach rule or silently convert `start-task`, `enter-stage`, `exit-stage`, or `exit-case` behavior. Then delete the rule and its nested escalations. If no SLA remains, remove the `slaRules` key; otherwise preserve conditional priority and keep the `=js:true` default last.
-4. **Modify an escalation:** edit its `action.recipients[]`, `triggerInfo.type`, or `atRiskPercentage` in place. `atRiskPercentage` is present only when `triggerInfo.type == "at-risk"` — drop the field when switching to `sla-breached`. Omit `displayName` entirely rather than emitting `undefined`.
-5. **Remove an escalation:** apply the canonical sweep to its `escalationId`. Remove/repoint every at-risk response that names it without converting it to breach behavior, then delete the entry by `esc_` ID. Leave `escalationRule: []` on the rule and remove the sidecar ID when present.
-6. Edit — narrow slices targeting the specific rule / escalation entry. Never whole-file Write. Validate at the section boundary.
+[Composite recipe](brownfield-operations-guide.md#modify-or-remove-an-sla-or-escalation).
 
 ### Replace a trigger with a different type
 
-Swap a trigger's type in place (e.g., manual → timer, or manual → event) — keep the node `id` so `id-map.json` and any references stay valid.
-
-1. Read `caseplan.json`.
-2. Locate the Trigger node by `id`. Keep its ID and every envelope field the selected target owner retains; replace only the target-owned `data.inputs` shape via [manual](plugins/triggers/manual/impl-json.md), [timer](plugins/triggers/timer/impl-json.md), or [event](plugins/triggers/event/impl-json.md):
-   - **→ manual:** use the current manual owner shape (`data.inputs.serviceType: "None"` when authoring); preserve any compatible `outputs[]` bridges required by formal In arguments.
-   - **→ timer:** set `data.inputs = { serviceType: "timer", … }` per the timer recipe.
-   - **→ event:** set `data.inputs = { serviceType: "Intsvc.EventTrigger", … }` per the event recipe (or the placeholder shape if the connector is unresolved).
-
-   Preserve `data.display`, `data.typeVersion`, `data.description`, `data.parentElement`, and unknown/future envelope fields unless the selected owner explicitly replaces one.
-3. **Run the In-arg / trigger-output variable cascade when the bridge host changes.** Apply the canonical sweep to every formal slot, companion, bridge, and consumer. Re-emit compatible bridges when the new target hosts outputs; otherwise explicitly repoint/remove their consumers before pruning. Preserve unrelated formal slots and companions.
-4. Update the one matching `entry-points.json` entry in place. Preserve its `uniqueId`, `filePath` fragment, type, ordering, and unknown fields; refresh its input/output through the current entry-point/target owner rather than reconstructing the entry.
-5. Edit — narrow slices targeting that node's `data.inputs`, the `entry-points.json` entry, and any swept variable slices. Never whole-file Write.
-6. Validate at the section boundary.
+[Composite recipe](brownfield-operations-guide.md#replace-a-trigger-with-a-different-type).
 
 ### Re-target an event trigger (same type, different event)
 
-Keep an event trigger as an event trigger but point it at a different connector event (different object / operation / filter). Distinct from § Replace a trigger with a different type (which changes the *type*). Keep the node `id`.
-
-1. Run the integrated target-local raw-cache pipeline in [connector-trigger-common.md](connector-trigger-common.md) and [event/impl-json.md](plugins/triggers/event/impl-json.md). Persist the new complete spec response, then splice its `Data.CaseShape` subtrees with only the owner-permitted substitutions. Never hand-author, summarize, or reconstruct connector payloads.
-2. Read `caseplan.json`; locate the Trigger node by ID. Preserve its ID and envelope; replace only the event owner's `data.inputs` configuration while retaining compatible formal-slot bridges.
-3. **Reconcile bindings and bridges.** Apply the canonical sweep before removing any old output, binding pair, formal slot, or companion. Re-run the global-variable dispatcher from the new raw cache, preserve every still-valid bridge/consumer, and prune only zero-reference leftovers.
-4. Update the matching `entry-points.json` entry in place if its I/O changed; keep trigger fragment, `uniqueId`, ordering, and unrelated fields.
-5. **Regenerate `bindings_v2.json`** + repopulate the IS connection cache ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 14) — the new event needs its own Connection resource declaration.
-6. Edit narrow slices for the node's `data.inputs`, top-level `bindings`, `variables.inputOutputs`, and `entry-points.json`. Never whole-file Write. Validate at the section boundary.
-
-> If the connector / connection is unresolved, downgrade to the event placeholder shape ([plugins/triggers/event/impl-json.md § Placeholder fallback](plugins/triggers/event/impl-json.md)) rather than fabricating IDs.
+[Composite recipe](brownfield-operations-guide.md#re-target-an-event-trigger-same-type-different-event).
 
 ### Convert a Stage to/from an Exception Stage
 
-An exception (secondary) stage is **not** a distinct node type — it is a regular `case-management:Stage` node carrying `data.stageType: "secondary"`. `stageType` is the enum `["primary", "secondary"]`; primary stages **omit** the field entirely. So the node `type` never changes — the **only** JSON delta is the presence/value of `data.stageType`. Keep the node `id` so tasks, conditions, and `=vars.*` references stay valid (delete + re-add is forbidden, [brownfield.md](brownfield.md) "preserve IDs").
-
-1. Read `caseplan.json`; locate the stage node by `id` (always `type: "case-management:Stage"`).
-2. **Primary → Secondary (exception):** add `data.stageType: "secondary"`. Leave `data.entryConditions` / `data.exitConditions` as they are — a secondary stage is condition-entered, so ensure it has ≥1 entry condition (add one per [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md) if it has none).
-3. **Secondary → Primary:** **remove the `data.stageType` key** (primary stages omit it — do not set `"primary"` explicitly unless the file already does). Re-check the stage's reachability: a primary stage still needs ≥1 entry condition (`case-entered` if first, else `selected-stage-completed` / `selected-stage-exited`).
-4. Reconcile the coordinated topology: secondary stages remain `isRequired: false`, do not join the normal required-stage chain, and return with `return-to-origin` when applicable; primary stages use normal predecessor/successor conditions. Preserve DNF arrays and update every affected forward/reverse condition consumer. `isInterrupting` lives on the containing stage-entry condition object, not the rule or stage node; change it only when the requested behavior changes.
-5. Edit — narrow slice targeting that node's `data.stageType` key (and any reworked entry condition). Never whole-file Write. Validate at the section boundary.
+[Composite recipe](brownfield-operations-guide.md#convert-a-stage-tofrom-an-exception-stage).
 
 ### Re-wire a stage transition — RETIRED (no edges)
 
-Transitions are not edges. To change where a stage flows, edit the relevant stage's entry/exit conditions (the target stage's `stage-entry-conditions` rule, and the source's `stage-exit-conditions` when it diverges). See the conditions plugins.
-
----
+[Composite recipe](brownfield-operations-guide.md#re-wire-a-stage-transition--no-edges).
 
 ## Validation Cadence
 
