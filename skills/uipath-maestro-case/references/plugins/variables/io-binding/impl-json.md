@@ -32,7 +32,7 @@ Output IDs are name-based camelCase per [uniqueness rule](../global-vars/impl-js
 
 ## Output Binding Shapes
 
-If every task output is an ordinary Step 0 schema output, preserve the [Task Output Shape](#task-output-shape), apply the global allocator, and do not load projection guidance. If any output uses `->`, `=`, reassignment, or needs a root companion, read [Output Projection](../global-vars/output-projection-guide.md) before the task owner writes `data.outputs[]`.
+If every task/rule output is an ordinary current schema/spec output, preserve the [Task Output Shape](#task-output-shape), apply the global allocator, and copy every descriptor-defined type-refining attribute — especially `options` — verbatim onto its output; do not load projection guidance. Descriptor attributes do not apply to computed/literal `=` custom assignments. If any output uses `->`, `=`, reassignment, or needs a root companion, read [Output Projection](../global-vars/output-projection-guide.md) before the owner writes its output array.
 
 ## Output Binding Shapes for Connector Condition Rules
 
@@ -128,7 +128,7 @@ Compatibility route: after Step 11.5, run [Check 4](validation-guide.md#check-4-
 
 ### Check 5 — Resolved-resource I/O completeness
 
-Compatibility route: run [Check 5](validation-guide.md#check-5--resolved-resource-io-completeness) for every resolved owner and its current persisted contract.
+Compatibility route: run [Check 5](validation-guide.md#check-5--resolved-resource-io-completeness) for every resolved owner against its exact current descriptor/spec contract.
 
 ## Connector Tasks
 
