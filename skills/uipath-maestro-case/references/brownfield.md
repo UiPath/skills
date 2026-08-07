@@ -33,7 +33,7 @@ Most "edit an existing case" requests mean a case **deployed in Studio Web**, no
 
 Record the outcome (pulled from SW at `<SolutionId>`, or local-only) for the freshness note in [Completion Output](#completion-output).
 
-> **Do NOT regenerate from scratch.** SKILL.md Rule 6 ("always regenerate from scratch") is a greenfield/planning rule. Brownfield edits the file in place and preserves every node `id` / `elementId` — re-minting IDs breaks `=vars.*` references, conditions, and `entry-points.json`.
+> **Do NOT regenerate from scratch.** SKILL.md Rule 6 is greenfield-only. Brownfield edits in place. Before mutation, inventory unaffected top-level fields, node/task/condition IDs and order, nested `data.tasks` task sets, unknown fields, bindings, variables, sidecars, and topology; after any whole-file repair, compare that preservation ledger. Re-minting IDs or rebuilding unrelated siblings breaks consumers that validation may miss.
 
 ## Large or sweeping edits
 
@@ -45,6 +45,8 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 
 - **All mutations via Read/Write/Edit only** (Rule 13). CLI never mutates the case file in place: metadata fetches (`uip maestro case tasks describe`, `uip maestro case spec`, `is resources/triggers describe`), `uip maestro case validate`, the pre-edit pull (`uip solution download` / `solution projects resync` — see [§ Pull latest first](#pull-latest-first-before-editing)), and (on handoff) `uip solution resources refresh` / `uip solution upload` / `uip maestro case debug`. No `python`/`node`/`jq`/`sed`/`awk`/helper scripts touching the file.
 - **`id-map.json` may be absent.** When editing a `caseplan.json` not built in this session, the `id-map.json` sidecar may not exist. Read node IDs directly from `caseplan.json`; do not assume the sidecar is present. If absent, do not synthesize one.
+- **Use the current root directly.** The operational paths are top-level `nodes`, `edges`, `bindings`, and `variables.{inputs,outputs,inputOutputs}`. There is no `schema` or `root` wrapper. Never author edges; preserve imported ones unless the requested edit removes a referenced node.
+- **Sweep consumers before destructive or identity-bearing edits.** Use [case-editing-operations.md § Canonical consumer sweep](case-editing-operations.md#canonical-consumer-sweep) once; operation recipes must not substitute narrower lists.
 - **Connector edits need a metadata fetch first.** Adding/altering a connector-activity task or connector-bound rule requires `uip maestro case spec --type ...` (or `tasks describe`) before authoring the shape — never hand-author connector schemas. See [connector-integration.md](connector-integration.md).
 - **Cross-cutting mechanics** (ID generation, Pre-flight Checklist, expression prefixes, per-section batch contract) live in [case-editing-operations.md](case-editing-operations.md). This doc routes; that doc supplies the recipe.
 
