@@ -180,7 +180,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Publish to Studio 
 | Cross-cutting edit mechanics (IDs, anchoring, batch contract) | [references/case-editing-operations.md](references/case-editing-operations.md) |
 | Case JSON schema | [references/case-schema.md](references/case-schema.md) |
 | Surviving CLI commands (registry, validate, debug, runtime) | [references/case-commands.md](references/case-commands.md) |
-| Troubleshoot a failed case | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
+| Failed debug/deployed Case run (failure-only) | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
 | Resolve task identifiers and gate genuine empty lookups | [references/registry-discovery.md](references/registry-discovery.md) |
 | Wire inputs/outputs + cross-task refs + expression prefixes | [references/bindings-and-expressions.md](references/bindings-and-expressions.md) |
 | Select a connector target owner | [references/connector-integration.md](references/connector-integration.md) |
