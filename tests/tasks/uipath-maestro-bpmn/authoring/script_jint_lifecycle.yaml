@@ -1,11 +1,14 @@
 task_id: skill-bpmn-script-jint-lifecycle
 description: >
   Author a complete Maestro BPMN script-task project, covering the full
-  local lifecycle for the Jint-backed script path with package metadata.
-tags: [uipath-maestro-bpmn, e2e, "mode:build", lifecycle:generate, "node:script", "feature:jint"]
+  live Alpha lifecycle for the Jint-backed script path: validate locally, then
+  debug against Studio Web and prove the run completed.
+tags: [uipath-maestro-bpmn, e2e, "mode:operate", lifecycle:setup, "node:script"]
 
 run_limits:
   expected_turns: 22
+  task_timeout: 2400
+  max_turns: 80
   turn_timeout: 1200
 
 initial_prompt: |
@@ -16,22 +19,31 @@ initial_prompt: |
     ScriptNormalizer/ScriptNormalizer/ScriptNormalizer.bpmn
 
   Model a public-safe request normalizer:
-  - Manual start with a rawRequest JSON/string input.
+  - Manual start with an optional rawRequest JSON/string input.
   - A `bpmn:scriptTask` named "Normalize Request".
   - Set `scriptFormat="JavaScript"` and include `uipath:scriptVersion`
     value `v3`.
   - Use deterministic Jint-compatible JavaScript only: no Node.js packages,
     filesystem, network, browser globals, or long-running async behavior.
   - Map input into the script and map the returned normalized response to a
-    declared output variable.
+    declared output variable. For the live run, normalize a deterministic
+    in-script sample when rawRequest is absent; `bpmn debug --inputs` does not
+    currently reach manual-start inputs on Alpha.
   - End with a success end event and include BPMN DI for visible elements.
 
   Also create the standard local package files next to the BPMN:
     project.uiproj, operate.json, entry-points.json, bindings_v2.json,
     package-descriptor.json
 
-  Do not upload, publish, deploy, debug, run, or call cloud-side UiPath
-  commands. Do not ask for approval or pause for feedback.
+  Validate the BPMN locally, then debug the project against the connected
+  Studio Web tenant. Use the documented solution context if the debug workflow
+  requires it. The process must have no external side effects: it may only run
+  deterministic Jint code. Save the raw debug JSON to
+  `debug-evidence/debug.json`; the task is not complete until it reports
+  `finalStatus` `Completed`.
+
+  You have explicit consent to execute this test project in the connected Alpha
+  tenant. Do not ask for approval or pause for feedback.
 
 success_criteria:
   - type: file_exists
@@ -47,3 +59,39 @@ success_criteria:
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the BPMN before execution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+validate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran a live BPMN debug session"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+debug\s'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Offline BPMN validation succeeds before live execution"
+    command: "python3 $TASK_DIR/check_validate_script_jint.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Live Alpha debug evidence reports finalStatus Completed"
+    command: "python3 $TASK_DIR/check_live_debug_completed.py"
+    timeout: 900
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-bpmn/_shared/cleanup_solutions.py"
+    timeout: 120

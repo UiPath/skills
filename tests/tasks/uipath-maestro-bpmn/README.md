@@ -1,7 +1,8 @@
 # Maestro BPMN Skill Eval Tasks
 
-These tasks exercise the `uipath-maestro-bpmn` skill — a registry-driven,
-authoring-only skill for producing valid, importable Maestro `.bpmn` XML.
+These tasks exercise the `uipath-maestro-bpmn` skill — a registry-driven skill
+for producing valid, importable Maestro `.bpmn` XML and verifying selected
+runtime contracts through live debug.
 
 - `smoke/` covers the core registry-driven authoring loop.
   `registry_discovery.yaml` checks that the agent discovers extension types via
@@ -14,7 +15,10 @@ authoring-only skill for producing valid, importable Maestro `.bpmn` XML.
 - `author/` covers BPMN skeleton structure, gateways, sequence flows, and
   diagrams.
 - `authoring/` covers implementation rows that are not fixture-only: business
-  rules, API workflow execution, and the script/Jint lifecycle path.
+  rules, API workflow execution, and the script/Jint lifecycle path. The Jint
+  lifecycle task validates locally and then performs a side-effect-free live
+  debug session against the configured Alpha tenant; its post-run hook removes
+  any Studio Web solution created for the test.
 - `nodes/` covers task-wrapper and script-task authoring behavior, including
   public-safe Maestro BPMN XML contract variants.
 - `connector/` covers Integration Service boundary behavior and registry
@@ -34,7 +38,8 @@ authoring-only skill for producing valid, importable Maestro `.bpmn` XML.
 - `operate-diagnose/` covers diagnostic inspection and operate-action guidance
   using mocked CLI responses, matching the operate and diagnose capabilities the
   skill retains.
-- `_shared/` contains small Python helpers for durable XML shape assertions.
+- `_shared/` contains Python helpers for durable XML shape assertions and
+  post-run cleanup hooks.
 
 These tasks validate with `uip maestro bpmn validate <file>`, which runs the
 full PO.Frontend canvas rule set offline (added in UiPath/cli#3135). If the CLI
