@@ -2,29 +2,30 @@
 
 Microsoft 365 Copilot Cowork can use Agent Skills as prompt-based workflows. It is a Microsoft 365 product and is not GitHub Copilot or the GitHub Copilot coding agent.
 
-This repository's Cowork exporter adapts the source skills to Cowork's packaging and companion-file limits. The export is a derived artifact; the source skill remains the canonical version.
+This repository composes a complete Cowork skill flavor, then adapts that marker-free tree to Cowork's packaging and companion-file limits. The export is a derived artifact; canonical skills and sparse Cowork overrides remain the source.
 
 ## Export
 
-Run the exporter from the repository root:
+Build the complete local Cowork export from the repository root:
 
 ```bash
-python scripts/export-cowork.py --output dist/cowork
+npm run cowork:build
 ```
 
-To export one skill while developing or validating it:
+This writes upload-ready artifacts under `build/cowork/`. To export one skill while developing or validating it, first compose the Cowork tree and then point the exporter at that tree:
 
 ```bash
-python scripts/export-cowork.py --output dist/cowork --skill uipath-agents
+npm run skills:build
+python scripts/export-cowork.py --skills-root build/skills/cowork --output build/cowork-focused --skill uipath-agents
 ```
 
 Use `--force` to replace a prior exporter-owned directory:
 
 ```bash
-python scripts/export-cowork.py --output dist/cowork --force
+python scripts/export-cowork.py --skills-root build/skills/cowork --output build/cowork --force
 ```
 
-`--skill` is repeatable when you need a focused set. `--repo-root` can point to a different skills checkout. For safety, `--force` replaces a nonempty output directory only when its `report.json` identifies it as output from this exporter and every existing file matches that report. It refuses to overwrite an arbitrary directory or delete unknown files.
+`--skill` is repeatable when you need a focused set. `--repo-root` can point to a different skills checkout, and `--skills-root` selects its complete composed input tree. The exporter rejects unresolved flavor markers. For safety, `--force` replaces a nonempty output directory only when its `report.json` identifies it as output from this exporter and every existing file matches that report. It refuses to overwrite an arbitrary directory or delete unknown files.
 
 The output contains:
 
@@ -38,15 +39,15 @@ The per-skill `.skill` archive is the fastest artifact for focused manual testin
 
 ## Published npm artifacts
 
-Every `@uipath/skills` publish builds the complete export after its release version is resolved and includes it under `cowork/` in the npm package:
+Cowork is a separate flavor package, `@uipath/skills-cowork`. Its gated `dev` and `preview` publication jobs build the complete export after resolving the release version. The package contains the complete marker-free Cowork catalog under `skills/` and the upload-ready projection under:
 
 - `cowork/skills/*.skill`
 - `cowork/plugins/*.zip`
 - `cowork/report.json`
 
-The generated directory is intentionally ignored by Git. Consumers such as the UiPath CLI should resolve the version-matched `@uipath/skills` package and copy these prebuilt artifacts; they do not need Python or a skills repository checkout at runtime.
+The default `@uipath/skills` package excludes `cowork/` and remains unchanged. The Cowork flavor is published only to Internal GitHub Packages, never npmjs or `latest`, and only after both its administrator bootstrap and publication gates are enabled. Consumers such as the UiPath CLI should resolve the version-matched `@uipath/skills-cowork` package from GitHub Packages and copy these prebuilt artifacts; they do not need Python or a skills repository checkout at runtime.
 
-`report.json` records both `source_package_version` (the exact npm version, including a `dev` or `preview` suffix) and `source_version` (the numeric version required by Microsoft 365 manifests). Stable, `dev`, and `preview` plugin packages use separate deterministic app IDs. Within a prerelease channel, the publish run number becomes the manifest patch version so a later package can update an earlier upload without colliding with the stable app.
+`report.json` records both `source_package_version` (the exact npm version, including a `dev` or `preview` suffix) and `source_version` (the numeric version required by Microsoft 365 manifests). Local base-version, `dev`, and `preview` exports use separate deterministic app IDs. Within a prerelease channel, the publish run number becomes the manifest patch version so a later package can update an earlier upload without colliding with a local base-version export.
 
 ## Prerequisites for manual validation
 

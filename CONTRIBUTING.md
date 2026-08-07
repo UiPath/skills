@@ -294,6 +294,13 @@ allowlist, registry JSON, flavor-specific npm build script, or generic
 validation-CI branch. Registry publication remains an explicit, isolated
 decision per published flavor.
 
+The Cowork flavor is a reviewed transport-format exception: the centralized
+package wrapper derives upload-ready `.skill` and plugin ZIP artifacts from the
+complete `build/skills/cowork/` tree and adds them only to
+`@uipath/skills-cowork` under `cowork/`. The default package must not contain
+that payload. Do not edit generated Cowork output or add a separate
+flavor-specific npm build pipeline; extend and verify the centralized wrapper.
+
 The existing root `npm pack` and `npm publish` commands remain default-only
 entry points. Their npm lifecycle temporarily composes the marker-free default
 tree and restores canonical `skills/` afterward. The default release jobs keep
@@ -366,16 +373,17 @@ This configures git to use `.githooks/` and enables the skill description valida
 
 ## Exporting for Microsoft 365 Copilot Cowork
 
-Microsoft 365 Copilot Cowork is distinct from GitHub Copilot. Do not add Cowork-specific instructions directly to source skills. Keep source content tool-agnostic and use the exporter to generate Cowork packaging and compatibility guidance:
+Microsoft 365 Copilot Cowork is distinct from GitHub Copilot. Keep canonical skill content tool-agnostic, express only genuine Cowork host differences through sparse flavor overrides, and export from the complete marker-free Cowork tree:
 
 ```bash
-python scripts/export-cowork.py --output dist/cowork
-python scripts/export-cowork.py --output dist/cowork --skill uipath-agents
+npm run cowork:build
+npm run skills:build
+python scripts/export-cowork.py --skills-root build/skills/cowork --output build/cowork-focused --skill uipath-agents
 ```
 
 The full export writes one archive per skill to `skills/<name>.skill`, plugin ZIPs sharded at 20 skills to `plugins/uipath-skills-cowork-<NN>.zip`, and a machine-readable `report.json`. The exporter consolidates Markdown reference material under `## Cowork Reference Bundles` and rewrites its links so every skill fits Cowork's 20-companion-file limit, while retaining portable non-Markdown assets. The generated `SKILL.md` also receives `## When Not to Use`, `## Safety and Guardrails`, and `## Failure Handling` where those sections are missing; source-authored guidance is preserved. Do not copy generated sections back mechanically or edit export artifacts as source.
 
-The `--skill` option is repeatable, and `--repo-root` can select another checkout. Use `--force` only when you intend to replace a prior export. It refuses to overwrite a nonempty directory unless its `report.json` identifies exporter-owned output and its files still match that report; unknown files are never deleted. Before submitting a change to the exporter or to packaging-sensitive skill content:
+The first command creates the full local export. The `--skill` option is repeatable for focused exports, `--repo-root` can select another checkout, and `--skills-root` must identify a complete composed tree rather than marker-bearing canonical sources. Use `--force` only when you intend to replace a prior export. It refuses to overwrite a nonempty directory unless its `report.json` identifies exporter-owned output and its files still match that report; unknown files are never deleted. Before submitting a change to the exporter or to packaging-sensitive skill content:
 
 1. Export the affected skill from the branch under test.
 2. Inspect the `.skill` archive and generated `SKILL.md`.
@@ -384,6 +392,12 @@ The `--skill` option is repeatable, and `--repo-root` can select another checkou
 5. Exercise direct, paraphrased, negative, destructive, missing-input/failure, and reference-dependent prompts in two or three fresh conversations, recording the prompts, responses, trigger behavior, and branch/commit evidence.
 
 The upload validates instructions and skill discovery. It does not install the `uip` CLI or grant UiPath runtime access. End-to-end command execution is a separate integration and can require a governed remote connector. See [the complete Cowork export and manual-validation guide](docs/copilot-cowork.md).
+
+Release packaging publishes Cowork as the separate
+`@uipath/skills-cowork` flavor. It contains the complete composed `skills/`
+tree plus verified upload artifacts under `cowork/`; root `npm pack` and the
+default `@uipath/skills` package exclude them. Cowork publication is limited to
+gated `dev` and `preview` releases in Internal GitHub Packages.
 
 ## Testing Skills
 
@@ -478,6 +492,7 @@ Before submitting your PR, verify:
 - [ ] Root `npm pack` creates one marker-free `@uipath/skills` default tarball and leaves canonical sources unchanged
 - [ ] Root `npm publish --dry-run` selects only the default package and leaves canonical sources unchanged
 - [ ] Custom tarballs pin both default and scoped publication to GitHub Packages and omit `package.json.repository`
+- [ ] The default tarball excludes `cowork/`; the Cowork tarball's `cowork/` files exactly match its `report.json`
 - [ ] Built trees, staged packages, and actual tarballs contain no flavor marker comments or sparse override sources
 
 ### Tests

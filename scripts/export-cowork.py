@@ -37,6 +37,7 @@ import re
 import shutil
 import struct
 import sys
+import tempfile
 import textwrap
 import uuid
 import zipfile
@@ -47,6 +48,7 @@ from urllib.parse import unquote, urlsplit
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 GENERATOR = "scripts/export-cowork.py"
+FLAVOR_MARKER = b"skill-flavor:"
 
 M365_SCHEMA = (
     "https://developer.microsoft.com/json-schemas/teams/v1.28/"
@@ -849,7 +851,12 @@ def _read_skill_sources(skill_dir: Path) -> tuple[dict[str, bytes], tuple[str, .
             hidden.append(relative.as_posix())
             continue
         _validate_safe_archive_path(relative.as_posix())
-        files[relative.as_posix()] = path.read_bytes()
+        payload = path.read_bytes()
+        if FLAVOR_MARKER in payload:
+            raise ExportError(
+                f"{skill_dir.name}: unresolved skill flavor marker in {relative.as_posix()}"
+            )
+        files[relative.as_posix()] = payload
     return files, tuple(hidden)
 
 
@@ -872,6 +879,9 @@ def _validate_exported_skill(name: str, files: dict[str, bytes]) -> None:
         _validate_safe_archive_path(path)
         if len(payload) > COMPANION_FILE_BYTES:
             raise ExportError(f"{name}: companion exceeds 5 MiB: {path}")
+    for path, payload in files.items():
+        if FLAVOR_MARKER in payload:
+            raise ExportError(f"{name}: unresolved skill flavor marker in {path}")
 
 
 def _export_skill(skill_dir: Path, version: str) -> ExportedSkill:
@@ -881,7 +891,12 @@ def _export_skill(skill_dir: Path, version: str) -> ExportedSkill:
     if _is_link_like(source_skill):
         raise ExportError(f"{skill_dir.name}: SKILL.md may not be a symbolic link")
 
-    fields, body = parse_frontmatter(source_skill.read_text(encoding="utf-8"))
+    source_text = source_skill.read_text(encoding="utf-8")
+    if "skill-flavor:" in source_text:
+        raise ExportError(
+            f"{skill_dir.name}: unresolved skill flavor marker in SKILL.md"
+        )
+    fields, body = parse_frontmatter(source_text)
     name = fields.get("name", "")
     description = fields.get("description", "")
     if name != skill_dir.name:
@@ -1086,19 +1101,21 @@ def _validate_skill_archive(name: str, payload: bytes) -> None:
 def build_export(
     repo_root: Path,
     selected_skills: list[str] | None = None,
+    *,
+    skills_root: Path | None = None,
 ) -> dict[str, bytes]:
     """Build all output artifacts in memory and return ``path -> bytes``."""
 
     repo_root = Path(repo_root).resolve()
-    skills_root = repo_root / "skills"
-    if not skills_root.is_dir():
-        raise ExportError(f"skills directory not found: {skills_root}")
-    if _is_link_like(skills_root):
-        raise ExportError(f"skills directory may not be a symbolic link: {skills_root}")
+    source_root = Path(skills_root or (repo_root / "skills")).absolute()
+    if _is_link_like(source_root):
+        raise ExportError(f"skills directory may not be a symbolic link: {source_root}")
+    if not source_root.is_dir():
+        raise ExportError(f"skills directory not found: {source_root}")
 
-    resolved_skills_root = skills_root.resolve(strict=True)
+    resolved_skills_root = source_root.resolve(strict=True)
     available: dict[str, Path] = {}
-    for path in sorted(skills_root.iterdir()):
+    for path in sorted(resolved_skills_root.iterdir()):
         if not path.is_dir() or not (path / "SKILL.md").is_file():
             continue
         if _is_link_like(path):
@@ -1107,7 +1124,7 @@ def build_export(
             path.resolve(strict=True).relative_to(resolved_skills_root)
         except (OSError, ValueError) as exc:
             raise ExportError(
-                f"skill directory resolves outside skills/: {path}"
+                f"skill directory resolves outside source root: {path}"
             ) from exc
         available[path.name] = path
 
@@ -1293,16 +1310,27 @@ def _safe_output_target(output: Path, repo_root: Path) -> bool:
     if resolved in home.parents or resolved in repo.parents:
         return False
 
-    # Generated content inside this repository belongs under dist/, except for
-    # the exact ignored cowork/ directory used to assemble the npm package.
+    # Generated content inside this repository belongs under dist/ or build/.
     # This prevents a typo such as --output skills/cowork from contaminating
-    # source while allowing the release workflow's explicit package target.
+    # source while allowing flavor packaging in the ignored build tree.
     if repo in resolved.parents:
         dist = (repo / "dist").resolve()
-        npm_cowork = (repo / "cowork").resolve()
-        if resolved != npm_cowork and resolved != dist and dist not in resolved.parents:
+        build = (repo / "build").resolve()
+        if (
+            resolved != dist
+            and dist not in resolved.parents
+            and resolved != build
+            and build not in resolved.parents
+        ):
             return False
     return True
+
+
+def _linked_path_component(path: Path) -> Path | None:
+    for candidate in (path, *path.parents):
+        if _is_link_like(candidate):
+            return candidate
+    return None
 
 
 def write_artifacts(
@@ -1312,11 +1340,19 @@ def write_artifacts(
     repo_root: Path,
     force: bool = False,
 ) -> None:
-    output = Path(output).resolve()
+    requested_output = Path(output).absolute()
+    linked_component = _linked_path_component(requested_output)
+    if linked_component is not None:
+        raise ExportError(
+            f"refusing output path with a symbolic link or junction: {linked_component}"
+        )
+    output = requested_output.resolve()
     repo_root = Path(repo_root).resolve()
     if not _safe_output_target(output, repo_root):
         raise ExportError(f"refusing unsafe output directory: {output}")
 
+    if output.exists() and not output.is_dir():
+        raise ExportError(f"output path is not a directory: {output}")
     if output.exists() and any(output.iterdir()):
         if not force:
             raise ExportError(
@@ -1327,13 +1363,57 @@ def write_artifacts(
                 f"refusing to replace non-exporter-owned directory: {output} "
                 "(a valid report.json marker is required)"
             )
-        shutil.rmtree(output)
-    output.mkdir(parents=True, exist_ok=True)
 
-    for relative, payload in artifacts.items():
-        target = output / Path(relative)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(payload)
+    for relative in artifacts:
+        _validate_safe_archive_path(relative)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(
+        tempfile.mkdtemp(prefix=f".{output.name}.cowork-stage-", dir=output.parent)
+    )
+    backup_root: Path | None = None
+    backup: Path | None = None
+    try:
+        for relative, payload in artifacts.items():
+            target = staging / Path(relative)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(payload)
+
+        if output.exists():
+            backup_root = Path(
+                tempfile.mkdtemp(
+                    prefix=f".{output.name}.cowork-backup-", dir=output.parent
+                )
+            )
+            backup = backup_root / "previous"
+            output.rename(backup)
+        try:
+            staging.rename(output)
+        except OSError as install_error:
+            if backup is not None and backup.exists():
+                try:
+                    backup.rename(output)
+                except OSError as restore_error:
+                    raise ExportError(
+                        f"failed to install Cowork export ({install_error}); "
+                        f"failed to restore prior export ({restore_error}); "
+                        f"backup remains at {backup}"
+                    ) from install_error
+            raise
+        if backup_root is not None:
+            shutil.rmtree(backup_root)
+            backup_root = None
+    finally:
+        if staging.exists() and not _is_link_like(staging):
+            shutil.rmtree(staging)
+        if (
+            backup_root is not None
+            and backup_root.exists()
+            and backup is not None
+            and not backup.exists()
+            and not _is_link_like(backup_root)
+        ):
+            shutil.rmtree(backup_root)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1350,6 +1430,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Output directory (default: <repo>/dist/cowork)",
     )
     parser.add_argument(
+        "--skills-root",
+        type=Path,
+        help=(
+            "Complete marker-free skill tree to export "
+            "(default: <repo>/skills; release builds use build/skills/cowork)"
+        ),
+    )
+    parser.add_argument(
         "--skill",
         action="append",
         dest="skills",
@@ -1363,9 +1451,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     repo_root = args.repo_root.resolve()
-    output = (args.output or (repo_root / "dist" / "cowork")).resolve()
+    output = Path(args.output or (repo_root / "dist" / "cowork")).absolute()
     try:
-        artifacts = build_export(repo_root, args.skills)
+        artifacts = build_export(
+            repo_root,
+            args.skills,
+            skills_root=args.skills_root,
+        )
         write_artifacts(
             artifacts,
             output,

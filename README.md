@@ -197,13 +197,15 @@ Project rules are provided in `.cursor/rules/` and are automatically loaded by C
 
 ### Microsoft 365 Copilot Cowork
 
-Microsoft 365 Copilot Cowork (not GitHub Copilot) accepts Agent Skills and Microsoft 365 plugin packages. Export Cowork-compatible artifacts with:
+Microsoft 365 Copilot Cowork (not GitHub Copilot) accepts Agent Skills and Microsoft 365 plugin packages. Build the marker-free Cowork flavor and its upload-ready artifacts with:
 
 ```bash
-python scripts/export-cowork.py --output dist/cowork
+npm run cowork:build
 ```
 
-Use the repeatable `--skill uipath-agents` option for a focused export and `--force` to replace an intact prior exporter-owned output. The exporter writes per-skill archives to `skills/<name>.skill`, plugin ZIPs sharded at 20 skills to `plugins/uipath-skills-cowork-<NN>.zip`, and an export report to `report.json`. It consolidates references to meet Cowork's 20-companion limit and adds explicit `When Not to Use`, `Safety and Guardrails`, and `Failure Handling` guidance to generated skill instructions.
+The command writes the export to `build/cowork/`. For a focused export, run `npm run skills:build`, then invoke `scripts/export-cowork.py` with `--skills-root build/skills/cowork`, the repeatable `--skill uipath-agents` option, and an output under `build/`. Use `--force` to replace an intact prior exporter-owned output. The exporter writes per-skill archives to `skills/<name>.skill`, plugin ZIPs sharded at 20 skills to `plugins/uipath-skills-cowork-<NN>.zip`, and an export report to `report.json`.
+
+Cowork is packaged separately as `@uipath/skills-cowork`; the default `@uipath/skills` package does not contain Cowork artifacts. The custom package is eligible only for gated `dev` and `preview` publication to Internal GitHub Packages after its one-time administrator bootstrap.
 
 Cowork validation is manual: upload a `.skill` from **Customize > Skills > Upload skill**, wait for it to sync, and test it in a new conversation. A Cowork-enabled Microsoft 365 work account and tenant usage-based billing/Copilot Credits are required. See [Exporting skills for Microsoft 365 Copilot Cowork](docs/copilot-cowork.md) for prerequisites, runtime limitations, and the acceptance matrix.
 

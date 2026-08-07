@@ -12,7 +12,9 @@ import io
 import json
 import posixpath
 import re
+import shutil
 import struct
+import subprocess
 import sys
 import uuid
 import zipfile
@@ -70,22 +72,42 @@ def _load_exporter():
 export_cowork = _load_exporter()
 
 
-def test_npm_publish_builds_and_includes_cowork_artifacts():
+def test_cowork_is_published_as_a_separate_skill_flavor():
     package = json.loads((REPO_ROOT / "package.json").read_text(encoding="utf-8"))
-    assert "cowork" in package["files"]
-    assert package["scripts"]["cowork:build"] == (
-        "python scripts/export-cowork.py --output cowork --force"
+    assert "cowork" not in package["files"]
+    assert package["scripts"]["skills:pack"] == (
+        "node scripts/pack-skill-packages.mjs pack"
     )
+    assert package["scripts"]["cowork:build"] == (
+        "node scripts/pack-skill-packages.mjs cowork-export"
+    )
+    assert (REPO_ROOT / "skill-flavors" / "cowork").is_dir()
 
     workflow = (REPO_ROOT / ".github" / "workflows" / "publish.yml").read_text(
         encoding="utf-8"
     )
-    publish_dev, publish_npmjs = workflow.split("  publish-npmjs:", maxsplit=1)
-    assert "  publish-dev:" in publish_dev
-    assert "actions/setup-python@v5" in publish_dev
-    assert "run: npm run cowork:build" in publish_dev
-    assert "actions/setup-python@v5" in publish_npmjs
-    assert "run: npm run cowork:build" in publish_npmjs
+    assert "  publish-cowork-dev:" in workflow
+    assert "  publish-cowork-preview:" in workflow
+    assert workflow.count("vars.ENABLE_COWORK_SKILL_FLAVOR_PUBLISH == 'true'") == 2
+
+    reusable = (
+        REPO_ROOT / ".github" / "workflows" / "publish-skill-flavor.yml"
+    ).read_text(encoding="utf-8")
+    assert "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065" in reusable
+    assert "run: npm run skills:pack" in reusable
+
+    # Default-package jobs stay transport-neutral; only the explicit Cowork
+    # flavor callers build and publish its derived upload artifacts.
+    publish_dev = workflow.split("  publish-dev:", maxsplit=1)[1].split(
+        "\n  ", maxsplit=1
+    )[0]
+    publish_npmjs = workflow.split("  publish-npmjs:", maxsplit=1)[1].split(
+        "\n  ", maxsplit=1
+    )[0]
+    assert "cowork:build" not in publish_dev
+    assert "setup-python" not in publish_dev
+    assert "cowork:build" not in publish_npmjs
+    assert "setup-python" not in publish_npmjs
 
 
 def test_prerelease_report_preserves_exact_package_version(tmp_path):
@@ -365,10 +387,27 @@ Return to the [fixture guide](../guide.md#fixture-guide).
 
 @pytest.fixture(scope="module")
 def repository_export():
+    node = shutil.which("node")
+    assert node is not None, "Node.js is required to compose the Cowork flavor"
+    result = subprocess.run(
+        [
+            node,
+            str(REPO_ROOT / "scripts" / "compose-skill-flavor.mjs"),
+            "--repo-root",
+            str(REPO_ROOT),
+            "build",
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+    skills_root = REPO_ROOT / "build" / "skills" / "cowork"
     # Keep both complete builds: deterministic ZIP metadata is part of the
     # distribution contract, and the result is shared by all corpus checks.
-    first = export_cowork.build_export(REPO_ROOT, None)
-    second = export_cowork.build_export(REPO_ROOT, None)
+    first = export_cowork.build_export(REPO_ROOT, None, skills_root=skills_root)
+    second = export_cowork.build_export(REPO_ROOT, None, skills_root=skills_root)
     return first, second
 
 
@@ -458,6 +497,48 @@ def test_fixture_export_consolidates_markdown_and_preserves_assets(tmp_path):
         "SOURCE-FAILURE-CANARY",
     ):
         assert exported.count(canary) == 1
+
+
+def test_export_uses_an_explicit_composed_skills_root(tmp_path):
+    repo = _write_fixture_repo(tmp_path / "repo")
+    composed = repo / "build" / "skills" / "cowork"
+    composed.parent.mkdir(parents=True)
+    (repo / "skills").rename(composed)
+    skill_md = composed / "fixture-skill" / "SKILL.md"
+    skill_md.write_text(
+        skill_md.read_text(encoding="utf-8").replace(
+            "# Fixture Skill", "# Composed Cowork Fixture"
+        ),
+        encoding="utf-8",
+    )
+
+    artifacts = export_cowork.build_export(repo, skills_root=composed)
+    exported = _zip_files(artifacts["skills/fixture-skill.skill"])["SKILL.md"].decode(
+        "utf-8"
+    )
+
+    assert "# Composed Cowork Fixture" in exported
+    assert json.loads(artifacts["report.json"])["source_package_version"] == "1.2.3"
+
+
+@pytest.mark.parametrize(
+    "relative",
+    ["SKILL.md", "references/guide.md", "assets/payload.json"],
+)
+def test_export_rejects_unresolved_flavor_markers(tmp_path, relative):
+    repo = _write_fixture_repo(tmp_path / "repo")
+    source = repo / "skills" / "fixture-skill" / relative
+    source.write_text(
+        source.read_text(encoding="utf-8")
+        + "\n<!--skill-flavor:host:start-->\nLeaked override.\n"
+        + "<!--skill-flavor:host:end-->\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        export_cowork.ExportError, match="unresolved skill flavor marker"
+    ):
+        export_cowork.build_export(repo)
 
 
 def test_filtered_plugin_uses_a_distinct_manifest_identity(tmp_path):
@@ -683,15 +764,88 @@ def test_main_writes_artifacts_and_force_only_replaces_owned_output(tmp_path):
     assert export_cowork.main([*ancestor_argv, "--force"]) != 0
 
 
-def test_exact_repository_cowork_directory_is_allowed_for_npm_packaging(tmp_path):
+def test_output_symlink_is_rejected_without_touching_its_target(tmp_path):
     repo = _write_fixture_repo(tmp_path / "repo")
-    output = repo / "cowork"
+    artifacts = export_cowork.build_export(repo)
+    target = tmp_path / "real-output"
+    export_cowork.write_artifacts(artifacts, target, repo_root=repo)
+    before = {
+        path.relative_to(target).as_posix(): path.read_bytes()
+        for path in target.rglob("*")
+        if path.is_file()
+    }
+    link = tmp_path / "linked-output"
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except (NotImplementedError, OSError) as exc:
+        pytest.skip(f"directory links are unavailable in this test environment: {exc}")
+
+    with pytest.raises(export_cowork.ExportError, match="symbolic link or junction"):
+        export_cowork.write_artifacts(
+            artifacts,
+            link,
+            repo_root=repo,
+            force=True,
+        )
+    after = {
+        path.relative_to(target).as_posix(): path.read_bytes()
+        for path in target.rglob("*")
+        if path.is_file()
+    }
+    assert after == before
+
+
+def test_failed_atomic_install_restores_the_previous_export(tmp_path, monkeypatch):
+    repo = _write_fixture_repo(tmp_path / "repo")
+    artifacts = export_cowork.build_export(repo)
+    output = tmp_path / "cowork"
+    export_cowork.write_artifacts(artifacts, output, repo_root=repo)
+    before = {
+        path.relative_to(output).as_posix(): path.read_bytes()
+        for path in output.rglob("*")
+        if path.is_file()
+    }
+    replacement = dict(artifacts)
+    replacement["skills/fixture-skill.skill"] += b"replacement-canary"
+    original_rename = Path.rename
+
+    def fail_staging_install(self, target):
+        if self.name.startswith(f".{output.name}.cowork-stage-"):
+            raise OSError("simulated atomic install failure")
+        return original_rename(self, target)
+
+    monkeypatch.setattr(Path, "rename", fail_staging_install)
+    with pytest.raises(OSError, match="simulated atomic install failure"):
+        export_cowork.write_artifacts(
+            replacement,
+            output,
+            repo_root=repo,
+            force=True,
+        )
+
+    after = {
+        path.relative_to(output).as_posix(): path.read_bytes()
+        for path in output.rglob("*")
+        if path.is_file()
+    }
+    assert after == before
+    assert not list(tmp_path.glob(".cowork.cowork-*-*"))
+
+
+def test_repository_build_directory_is_allowed_for_flavor_packaging(tmp_path):
+    repo = _write_fixture_repo(tmp_path / "repo")
+    composed = repo / "build" / "skills" / "cowork"
+    composed.parent.mkdir(parents=True)
+    (repo / "skills").rename(composed)
+    output = repo / "build" / "cowork"
 
     assert (
         export_cowork.main(
             [
                 "--repo-root",
                 str(repo),
+                "--skills-root",
+                str(composed),
                 "--output",
                 str(output),
                 "--skill",
@@ -703,3 +857,21 @@ def test_exact_repository_cowork_directory_is_allowed_for_npm_packaging(tmp_path
     assert (output / "skills" / "fixture-skill.skill").is_file()
     assert (output / "plugins" / "uipath-skills-cowork.zip").is_file()
     assert (output / "report.json").is_file()
+
+    source_adjacent = repo / "cowork"
+    assert (
+        export_cowork.main(
+            [
+                "--repo-root",
+                str(repo),
+                "--skills-root",
+                str(composed),
+                "--output",
+                str(source_adjacent),
+                "--skill",
+                "fixture-skill",
+            ]
+        )
+        != 0
+    )
+    assert not source_adjacent.exists()

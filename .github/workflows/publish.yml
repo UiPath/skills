@@ -84,10 +84,6 @@ jobs:
           node-version: "22.x"
           registry-url: "https://npm.pkg.github.com"
           scope: "@uipath"
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
       # Stamp a prerelease suffix: <base>-dev.<run_number>. Dot-separated so
       # semver orders the run number numerically. Never committed — only the
       # published tarball carries it. sync-version.mjs rewrites the derived
@@ -101,12 +97,6 @@ jobs:
           npm version "$DEV" --no-git-tag-version --allow-same-version
           node scripts/sync-version.mjs
           echo "Publishing $DEV to dist-tag dev"
-
-      # Cowork archives are derived from the exact versioned source being
-      # published. They are generated in CI and included through package.json
-      # rather than committed to the repository.
-      - name: Build Copilot Cowork artifacts
-        run: npm run cowork:build
 
       # setup-node wrote `@uipath:registry=https://npm.pkg.github.com/` + auth;
       # the scoped registry routes this scoped package to GitHub Packages. The
@@ -140,10 +130,6 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "22.x"
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
       # Node 22 ships npm 10.x; OIDC trusted publishing needs npm >= 11.5.1.
       - name: Upgrade npm for trusted publishing
         run: |
@@ -175,11 +161,6 @@ jobs:
             echo "tag=latest" >> "$GITHUB_OUTPUT"
             echo "Publishing $(node -p "require('./package.json').version") to dist-tag latest"
           fi
-
-      # Build after any preview version stamp so the generated manifests match
-      # the package contents that npm publishes.
-      - name: Build Copilot Cowork artifacts
-        run: npm run cowork:build
 
       # No auth token and no setup-node registry-url — a token would make npm
       # use token auth and bypass OIDC. We only pin the scoped package to
@@ -219,4 +200,39 @@ jobs:
     uses: ./.github/workflows/publish-skill-flavor.yml
     with:
       flavor: studioweb
+      channel: preview
+
+  publish-cowork-dev:
+    name: Publish Cowork dev to GitHub Packages
+    needs: [guard]
+    # Cowork has its own fail-closed caller gate because its Internal package
+    # must be bootstrapped independently of every other flavor. The reusable
+    # workflow also enforces the global ENABLE_SKILL_FLAVOR_PUBLISH gate.
+    if: >-
+      vars.ENABLE_COWORK_SKILL_FLAVOR_PUBLISH == 'true'
+      && github.repository == 'UiPath/skills'
+      && ((github.event_name == 'push' && github.ref == 'refs/heads/main')
+          || (github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'dev'))
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-skill-flavor.yml
+    with:
+      flavor: cowork
+      channel: dev
+
+  publish-cowork-preview:
+    name: Publish Cowork preview to GitHub Packages
+    needs: [guard]
+    if: >-
+      vars.ENABLE_COWORK_SKILL_FLAVOR_PUBLISH == 'true'
+      && github.repository == 'UiPath/skills'
+      && ((github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/'))
+          || (github.event_name == 'workflow_dispatch' && github.event.inputs.channel == 'preview'))
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-skill-flavor.yml
+    with:
+      flavor: cowork
       channel: preview
