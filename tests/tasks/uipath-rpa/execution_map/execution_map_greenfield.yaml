@@ -18,8 +18,10 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a UiPath XAML automation called "TextReport", with the workflow in
-  the project's default Main.xaml (keep that filename): read data/orders.txt
+  Build a UiPath XAML automation called "TextReport", with the project
+  created in the current working directory (at ./TextReport) and the
+  workflow in the project's default Main.xaml (keep that filename): read
+  data/orders.txt
   (create that input file with a few sample order lines inside the project
   first), append a "processed" marker line to it, and log the file contents.
   The project must target cross-platform (Portable); Studio Desktop is not
