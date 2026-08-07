@@ -42,7 +42,14 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-maestro-bpmn": 95,
     "uipath-admin": 95,
     "uipath-review": 95,
-    "uipath-planner": 95,
+    # uipath-planner re-measured 2026-08-07 on the current gate model
+    # (claude-sonnet-5): main's own unchanged frontmatter scored 65.9% recall
+    # over the full positive set (probe run
+    # https://github.com/UiPath/skills/actions/runs/31219477420) — the 95%
+    # figure predates the #2132 model retarget, and no PR between the retarget
+    # and this measurement changed planner frontmatter, so the gate never ran
+    # on the new model. Rounded to the nearest 5 per the convention above.
+    "uipath-planner": 65,
     "uipath-coded-apps": 90,
     "uipath-solution": 90,
     "uipath-agents": 90,
