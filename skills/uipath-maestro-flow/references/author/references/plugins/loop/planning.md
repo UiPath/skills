@@ -49,4 +49,4 @@ Where `<loopId>` is the loop node's `id` (e.g., `$vars.loop1.currentItem`).
 - The last node in the loop body connects back to the loop's `loopBack` port
 - After all iterations, execution continues from the `success` port
 - Do not create cycles except through the `loopBack` mechanism
-- **Every node inside the loop body must have `"parentId": "<loopId>"`** — without this, variableUpdates will not fire per-iteration and loop variables will be inaccessible
+- **Every node inside the loop body must have `"parentId": "<loopId>"`** — without this, variableUpdates will not fire per-iteration and loop variables will be inaccessible. User-owned nodes set `parentId` directly in the JSON; CLI-owned nodes (managed HTTP, connector activities/triggers) get it via `--parent <loopId>` on `node add` (see [impl.md](impl.md#cli-owned-nodes-inside-a-loop))
