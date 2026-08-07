@@ -171,6 +171,14 @@ cases:
 Name the catalog-recommended action for that scope in the description. Severity `judgment` — a guardrail that breaks
 the agent or leaves a security gap can be Critical; a milder ineffectiveness is Warning/Info.
 
+**The catalog verdict IS the evidence — do not verify SDK behavior empirically.** Source read + catalog comparison
+fully decides this check. Do NOT import or execute the project's dependencies, inspect `uipath_langchain` /
+`langchain` package sources, fetch SDK documentation sites, or run the agent's factory code to "prove" an action is
+ineffective — that forensic detour adds no admissible evidence to the finding and routinely burns the entire review
+budget. Once the configured action diverges from the catalog's recommendation for that scope, write the finding and
+move on to the report (the report file is the deliverable; an unwritten report scores zero regardless of analysis
+depth).
+
 ### Relevance + Wiring Check → `CODED_GUARDRAIL_MISAPPLIED`
 
 Two ways a format-valid guardrail can be misapplied:

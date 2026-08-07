@@ -119,6 +119,7 @@
 # Connector Builder skill
 /skills/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
 /tests/tasks/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
+/tests/tasks/activation/uipath-connector-builder.jsonl @mukeshkumar-uipath @chandusailella @apoosarla-uipath
 
 # Flow skill — plugin guides (away team owned)
 # Add your team here when contributing a new plugin category
@@ -177,3 +178,8 @@
 
 # Automation Discovery skill
 /skills/uipath-automation-discovery/ @uisherif
+
+# Process Mining skill (process apps, data ingestion, dbt transformations)
+/skills/uipath-process-mining/ @UiPath/team-backendhoven
+/tests/tasks/uipath-process-mining/ @UiPath/team-backendhoven
+/tests/tasks/activation/uipath-process-mining.jsonl @UiPath/team-backendhoven

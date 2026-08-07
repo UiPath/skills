@@ -358,7 +358,7 @@ catch (Exception ex)         { Log(ex.ToString(), LogLevel.Error); throw; }
 
 - `throw;` (bare) preserves the stack trace; `throw ex;` resets it — same `CA2200` rule as Rethrow vs Throw-new.
 - Workflow Analyzer rules (`ST-DBP-003`, etc.) apply to `.cs` workflows too.
-- Retry: a plain `for` loop with `try/catch` and a delay, or call a Retry Scope from XAML. C# expression-binding mechanics for XAML activities: [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md); coded `using` directives: [coded/coding-guidelines.md](coded/coding-guidelines.md).
+- Retry: a plain `for` loop with `try/catch` and a delay, or call a Retry Scope from XAML. C# expression-binding mechanics for XAML activities: [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md); coded `using` directives: [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules).
 
 ---
 

@@ -3,7 +3,7 @@ description: >
   CASE DRAFT FINALIZATION ONLY (planner Case Design Lane) — a LoanOrigination interview draft (sdd.draft.md)
   is staged into the sandbox; the planner's Case Design Lane resumes from the draft, runs the Finalization
   checks (normalizing rule syntax / gate legality / interrupting flags as
-  needed), and renames it to an approved sdd.md. Decoupled from the interview
+  needed), and renders an approved sdd.md. Decoupled from the interview
   (covered by loan_origination) so the heavy finalization step runs in one
   bounded turn. Grades mechanical validity of the produced sdd.md (sdd_check)
   plus domain coherence. Loan-domain counterpart to finalize_from_draft.
@@ -61,9 +61,16 @@ success_criteria:
 
   - type: run_command
     description: "sdd.md preserves the conditional >$5M Credit-Analyst gate"
-    command: "grep -Eiq 'credit analyst.{0,80}5' sdd.md"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/check_credit_analyst_gate.py sdd.md"
     timeout: 10
     expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Rule 13: finalization renders sdd.md with Write/Edit instead of copying or renaming the draft"
+    tool_name: "Bash"
+    command_pattern: '(cp|mv|install|rsync)\b[^\n]*(sdd\.draft\.md|sdd\.md)'
     weight: 1.0
     pass_threshold: 1.0
 
@@ -76,8 +83,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "finalized sdd.md preserves all 6 primary stages (none dropped at finalization)"
-    command: "[ \"$(grep -cE '^#+ +Stage [0-9]' sdd.md)\" -ge 6 ]"
+    description: "finalized sdd.md preserves the draft's complete ordered stage/task inventory"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/phase_0_finalize_draft_loan/check_finalize_inventory.py"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0

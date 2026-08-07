@@ -120,7 +120,9 @@ Skip entirely when no review items are open. Blocking = yes keeps Planner Handof
 
 ### Case Triggers
 
-<!-- Trigger mapping into variables is declared in Case Variables with sourceTriggers/sourceFields, not here. T01 is reserved for the case file; number runtime triggers from T02. -->
+<!-- Trigger mapping into variables is declared in Case Variables with sourceTriggers/sourceFields, not here. T01 is reserved for the case file; number runtime triggers from T02.
+`Manual` is author shorthand — a manual trigger has no serviceType in the generated JSON (the on-disk serviceType enum is `None` / `Intsvc.EventTrigger` / `timer`; the SDD's `Intsvc.TimerTrigger` maps to on-disk `timer`; never write `serviceType: "Manual"`).
+Tenant object starts are still event triggers: a case that starts when a tenant case-entity / data-object record is created authors `Intsvc.EventTrigger` with that object name as Source — never downgrade to `Manual` because the object is not provisioned; unresolved event triggers survive as placeholders. -->
 
 | T# | Trigger Type | Source | Configuration |
 |----|-------------|--------|---------------|
@@ -159,7 +161,8 @@ Every row must have Category.
 - Every stage and task must have a concrete `Design Rationale` and prose `Description`.
 - Task Type must be one of: `action`, `agent`, `process`, `rpa`, `api-workflow`, `wait-for-timer`, `wait-for-connector`, `execute-connector-activity`, `case-management`.
 - `action` is the only task type that can carry task-level SLA.
-- Sequential work uses `runs-sequentially` on every task in the ordered run, including the first task.
+- Sequential work uses `runs-sequentially` on every task in the ordered task-set run, including the first task. When multiple independent tasks start after the same immediate predecessor, place them in the same next task set, mark `Activation Mode: parallel-after-predecessor`, and give each `runs-sequentially` instead of duplicate `selected-tasks-completed("<previous>")` entries. Use `selected-tasks-completed` only for fan-in, branch convergence, condition-result routing, or a non-immediate dependency; it must select only non-adhoc sibling tasks in the same stage.
+- Stage-picker repair is a replacement, never a duplicate: when `user-selected-stage` requires picker exposure from an origin, replace that origin's `required-tasks-completed | exit-only | Yes` completion row with `required-tasks-completed | wait-for-user | Yes`. Keep exactly one `required-tasks-completed` row; never add a second `Marks Stage Complete: No` row.
 - Every task detail block must contain the exact marker `**Task envelope**` before the Required / Run Only Once / Skip Condition table.
 
 ---
@@ -207,12 +210,12 @@ Every row must have Category.
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management> | <sequential \| parallel \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
+| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
 
 ##### Task <N>.<M>: <TASK_NAME>
 
 **Type:** <exact task type from schema>
-**Activation Mode:** <sequential \| parallel \| event-triggered \| adhoc \| fan-in \| conditional-gate>
+**Activation Mode:** <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate>
 **Design Rationale:** <Why this task type fits the actor/work and why this activation mode fits.>
 **Description:** <What this task does and why it exists in the case plan.>
 

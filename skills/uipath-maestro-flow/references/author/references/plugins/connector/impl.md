@@ -139,7 +139,7 @@ cat <metadataFile path from response>
 
 The full metadata contains:
 - **`availableOperations[].method`** and **`availableOperations[].path`** — HTTP method and API endpoint path. Same value as `connectorMethodInfo.method` / `.path` from `registry get`.
-- **`parameters`** — query and path parameters (may include required params not in `requestFields`, e.g. `send_as` for Slack)
+- **`parameters`** — query and path parameters (may include required params not in `requestFields`, e.g. `send_as` for Slack). Parameters carry `reference` objects too — scan them in Step 4 exactly like body fields.
 - **`requestFields`** — body fields with `name`, `type`, `required`, `description`, and `reference` objects for ID resolution. Pair these field names with the `path` above (e.g. `messageToSend` for Slack `/send_message_to_channel_v2`).
 - **`responseFields`** — response schema
 
@@ -155,7 +155,9 @@ Run this before Step 5 (validate required fields) and reuse the same parent-fiel
 
 ### Step 4 — Resolve reference fields
 
-Check `requestFields` from the metadata for fields with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources run list` to resolve them:
+Check **BOTH `requestFields` AND `parameters`** from the metadata for entries with a `reference` object — these require ID lookup from the connector's live data. Use `uip is resources run list` to resolve them:
+
+> **References are NOT body-field-only.** Query and path parameters carry `reference` objects too, and on some connectors the activity's PRIMARY input is a required **path parameter** whose `reference` is the design-time lookup behind a Studio Web dropdown. Scanning only `requestFields` misses it — the node then configures and passes `flow validate` with an unverified value and 404s at runtime. The same `reference` blocks appear on `connectorMethodInfo.parameters[]` in `registry get` output (with or without `--connection-id`) — when projecting parameter metadata for inspection, always include the `reference` key, not just `name`/`required`/`design.component`.
 
 > **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../../../SKILL.md).
 
@@ -167,6 +169,8 @@ uip is resources run list "uipath-salesforce-slack" "curated_channels?types=publ
 ```
 
 The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `run list` call — in the flow's node `inputs`. When multiple matches exist, ask the user, with one option per match plus **"Something else"** as the last option (see the dropdown question rule in [SKILL.md](../../../../../SKILL.md)).
+
+> **Zero matches on a user-supplied value** — if the completed lookup (`Data.Pagination.HasMore` is `"false"`) finds no entry matching a value the user provided, do NOT configure the node with it silently. Ask the user, presenting the closest candidates as options plus **"Something else"** as the last option (see the dropdown question rule in [SKILL.md](../../../../../SKILL.md)). Proceed with the unverified value only if the user confirms it.
 
 > **Filter server-side before paginating.** If the field's `reference` carries a `filterPattern` (e.g. Teams `userId`: `"$filter=startswith(userPrincipalName,'{filter}')"`), substitute the search term for `{filter}` and pass the result as `--query` — one targeted call instead of walking a large directory. `filterPattern` appears only in `is resources describe` output; the flow `registry get` reference object strips it (keeps only `objectName`/`lookupValue`/`lookupNames`/`path`/`childPath`), so read it from the Step 3 describe metadata. Guessed params (`searchTerm=`/`where=`/`filter=`) are silently ignored. See [reference-resolution.md — Search References (filterPattern)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#search-references-filterpattern).
 
@@ -233,7 +237,8 @@ For every match:
 - That parameter's `name` is the connector-specific filter input — most commonly `where`, sometimes `q` (Salesforce), sometimes another name. Do not assume `where`.
 - **Pass a structured filter tree under `--detail.filter`** — the CLI compiles it into both halves of the contract: the runtime CEQL string at `inputs.detail.queryParameters.<name>` *and* the design-time tree at `inputs.detail.configuration.essentialConfiguration.savedFilterTrees.<name>`. Studio Web reads the latter to render the FilterBuilder UI; only `--detail.filter` populates that side.
 - **Do not pass a raw CEQL string under `--detail.queryParameters.<name>`.** It populates only the runtime half — debug runs succeed but the FilterBuilder UI shows `undefined` when the activity is reopened in SW. The CLI rejects this at configure time.
-- **When a CEQL string is authored anyway** (e.g. a `queryExpression` written directly into the `.flow`): field names bare, values single-quoted — `` `accountNumber = '${$vars...}'` ``, never `'accountNumber' = '...'`.
+- **A dynamic operand in the tree works**: `"value": {"value": "=js:$vars...", "isLiteral": false}` — the CLI compiles it to a `{var_…}` placeholder plus `inputs.detail.filterVariables` the runtime resolves.
+- **When a CEQL string is authored anyway** (e.g. a `queryExpression` written directly into the `.flow`): field names bare, values single-quoted — `` `accountNumber = '${$vars...}'` ``, never `'accountNumber' = '...'`. The whole value MUST start with `` =js:` `` and end with `` ` `` when it interpolates: `` "=js:`invoiceNumber = '${$vars...}'`" ``. A plain string containing `${…}` is never resolved — the query silently matches nothing.
 - Tree shape, operator table, examples → [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
 If the operation has no FilterBuilder parameter, server-side filtering is not supported — pass no `filter` and filter downstream (e.g. with a Script node).
@@ -564,9 +569,9 @@ For every unique connection used in the flow, `node configure` appends **two ent
 | `default` | Connection binding → connection UUID. Folder binding → folder key. |
 | `propertyAttribute` | `"ConnectionId"` or `"FolderKey"` — case matters. |
 
-The connector node instance carries no `model` block and no binding/context data. `uip maestro flow node configure` populates only `inputs.detail` on the instance and appends the two top-level `bindings[]` entries. The connection UUID is held on the binding entry (`resourceKey`), not on the node.
+The connector node instance carries no `model` block and no binding/context data. `uip maestro flow node configure` populates only `inputs.detail` on the instance and writes the two top-level `bindings[]` entries — claiming the empty `ConnectionId` stub that `node add` hoisted (matched by name) and adding the `FolderKey` row. The connection UUID is held on the binding entry (`resourceKey`), not on the node.
 
-> **CLI side-effect — duplicate empty bindings.** `node configure` currently appends placeholder entries with `resourceKey: ""` and no `default` alongside the resolved pair (4 entries per configure call instead of 2). Validate passes; they're harmless but verbose. Remove the empty pair via `Edit` after configure if you care about clean diffs.
+> **An empty-keyed Connection binding is a defect, not a cosmetic nit.** A `bindings[]` row with `resource: "Connection"`, `propertyAttribute: "ConnectionId"`, and `resourceKey: ""` faults Studio Web at runtime with `Value cannot be null. (Parameter 'Connection')`. `node add` hoists exactly one such stub (`name: "<connector-key> connection"`); `node configure` **claims it in place** (matching by that name), so a fully configured connector leaves no empty row — do not expect a "duplicate" empty pair, and never hand-edit `bindings[]` to remove one (it is CLI-owned). The only legitimate empty stub is the No-Live-Tenant / Planned Configuration case above, where the node is deliberately left unconfigured and the flow is known not to pass `flow validate` yet. An empty stub that survives a real `node configure` — or lingers after a connector node is removed — is a CLI bug to report, not something to paper over by hand.
 
 **Share bindings across nodes using the same connection.** If two connector nodes share the same `<CONNECTION_UUID>`, reuse the same two binding entries — do not add duplicates. Matching is by `name` only (the `<CONNECTOR_KEY> connection` placeholder is unique per connector), so any node whose definition resolves against `<bindings.<CONNECTOR_KEY> connection>` picks up the shared binding pair.
 

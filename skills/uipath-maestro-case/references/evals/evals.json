@@ -46,7 +46,7 @@
         "The case-management skill was triggered",
         "Shows the journey-specific roadmap with the design prefix line before design work begins — user-facing language never mentions the delegation or subagents",
         "Does not offer an entry menu or ask for an sdd.md path before the user names one",
-        "Does not run a per-dimension interview of its own; the design comes back as one SDD-shaped Case Review for the single confirmation"
+        "Does not run a per-dimension interview of its own; the design comes back as one decision-first Case Review for the single confirmation"
       ]
     },
         {
@@ -58,14 +58,14 @@
                 "Does NOT go through the sdd.md planning workflow"
             ]
         },
-    {
-      "id": 6,
-      "prompt": "Build my case from ./sdd.md",
-      "expected_output": "Skill triggers, emits caseplan.json with the top-level shape (id: case-<10>, version: 23.0.0, metadata, top-level bindings/variables, layout: {}), runs Phase 4 validate authoritatively",
+        {
+            "id": 6,
+            "prompt": "Build my case from ./sdd.md",
+            "expected_output": "Skill triggers, emits caseplan.json with the top-level shape (id: case-<10>, version: 27.0.0, metadata, top-level bindings/variables, layout: {}), runs Phase 4 validate authoritatively",
             "expectations": [
                 "The case-management skill was triggered",
                 "caseplan.json top-level keys are: id, version, name, metadata, bindings, variables, nodes, edges, layout",
-                "caseplan.json.version === '23.0.0'",
+                "caseplan.json.version === '27.0.0'",
                 "caseplan.json.id matches /^case-[A-Za-z0-9]{10}$/",
                 "No 'root' wrapper key in caseplan.json",
                 "metadata.caseExitRules is used once case-exit conditions are written",
@@ -79,15 +79,17 @@
     {
       "id": 7,
       "prompt": "I want to create a new case but I do not have an sdd.md yet",
-      "expected_output": "Skill delegates the design (planner-authored, best assumption) and confirms it in ONE SDD-shaped Case Review that is complete enough to approve without opening sdd.md",
+      "expected_output": "Skill delegates the design (planner-authored, best assumption) and confirms it in ONE decision-first Case Review that is complete enough to approve without opening sdd.md",
       "expectations": [
         "The case-management skill was triggered",
         "Shows the high-level journey first: designs the case from the request with tenant checks along the way, one review packet with every decision for confirmation, then build and validate without interruptions, pausing only before any run or publish",
         "Does not expose internal phase labels, the delegation, or subagent mechanics in user-facing output",
         "No per-dimension question walk about trigger, task types, exits, or SLAs — open fields are decided best-assumption and disclosed as decisions",
-        "Presents ONE Case Review with the required sections: Case snapshot, Data contract, Stages list, Stage/task detail cards, Other Paths Considered, Rules / tiers, Resources & integrations, Decisions I made, Review flags, and Caller obligation when relevant",
-        "The Case Review names every stage and every task at least once, with task type, activation mode, required/optional status, persona or resource, routing/exit behavior, and SLA context in scan-friendly tables or cards",
-        "The confirmation includes a complete Decisions-I-made block with a plain-language source per assumption",
+        "Presents ONE Case Review with the required sections: Case Snapshot, Primary Journey, Other Paths Considered, SLA and Escalations, Rules and Outcomes, Resources and Integrations, Decisions I Made, Review Flags, and Caller obligation when relevant",
+        "The Case Review names every stage and every task in the Primary Journey or Other Paths tables, with task type, activation mode, required/optional status, routing/exit behavior, and SLA context",
+        "The approval surface omits the data contract, variables, task inputs, task outputs, and duplicated stage/task detail cards; those technical details remain in sdd.md",
+        "SLA and Escalations has one row per meaningful scope, SLA, and status combination, including the target or condition, response, response target, interrupting behavior, and rationale",
+        "The confirmation includes a complete Decisions I Made table with a plain-language provenance per assumption",
         "A manually triggered task is presented as optional adhoc worker-launched work without exposing schema mechanics",
         "The confirmation carries the build continuation choice (build straight through vs pause at the build preview) so it is never asked mid-build",
         "sdd.md is already on disk from the delegated design when the review is shown; on a Build answer the build starts (solution init + planning) and the design doc is mentioned in one line as a reference artifact — never presented for review"
@@ -125,8 +127,8 @@
       "expected_output": "Skill delegates the design, confirms once (capturing the straight-through choice), then builds Phase 1 through Phase 4 automatically, pausing next at the debug gate",
       "expectations": [
         "The single Case Review carries the build continuation choice: build straight through vs pause at the build preview",
-        "The Case Review is complete enough to approve without opening sdd.md: it includes case snapshot, data contract, stages list, stage/task cards, other paths, rules/tiers, resources, decisions, and review flags",
-        "The confirmation's Decisions-I-made block discloses every assumption with a plain-language source",
+        "The Case Review is complete enough to approve without opening sdd.md: it includes Case Snapshot, Primary Journey, Other Paths Considered, SLA and Escalations, Rules and Outcomes, Resources and Integrations, Decisions I Made, and Review Flags while keeping data and variable details in sdd.md",
+        "The confirmation's Decisions I Made table discloses every assumption with plain-language provenance",
         "sdd.md is already written by the delegated design; on the Build answer the transition line is announced and the build starts with solution init and planning — the design doc path is reported in one line as a reference artifact",
         "No blocking prompt between the confirmation and Phase 4 validation on the straight-through path — the Phase 2 boundary prints the skeleton counts line and continues",
         "Phase 1 reads the delegated sdd.md once, reuses this session's successful registry pull instead of re-pulling, and runs verify-only from the returned resolution ledger",
@@ -149,14 +151,15 @@
     {
       "id": 12,
       "prompt": "Build a case from this requirements document: ./claim-settlement-requirements.md (a complete spec: 5 phases with per-phase SLA targets, 3 wrap-up outcomes, a 4-way adjuster decision, amount-tiered sign-off, anytime actions).",
-      "expected_output": "Skill digests the doc through the delegated design, presents ONE SDD-shaped Case Review with tables/cards and a decisions block, and on the Build answer moves straight into the build",
+      "expected_output": "Skill digests the doc through the delegated design, presents ONE decision-first Case Review with tables and a decisions block, and on the Build answer moves straight into the build",
       "expectations": [
         "Skips the entry menu — the request already describes the case, and the document path travels verbatim into the design",
         "Everything the doc covers is decided by assumption, not re-confirmed; genuine contradictions surface as flagged decisions in the review",
-        "The Case Review includes case snapshot, data contract, stages list, stage/task detail cards, Other Paths Considered, Rules / tiers, Resources & integrations, Review flags, and a complete Decisions-I-made block with plain-language sources",
+        "The Case Review includes Case Snapshot, Primary Journey, Other Paths Considered, SLA and Escalations, Rules and Outcomes, Resources and Integrations, Review Flags, and a complete Decisions I Made table with plain-language provenance",
+        "The five phase SLA targets and their at-risk or breach responses appear as separate rows in SLA and Escalations, not mixed into task cards or variable details",
         "The confirmation options carry the build continuation choice",
         "On the Build answer: no re-summary — transition line, then solution init and planning start; sdd.md is already on disk from the delegated design, reported in one artifact line",
-        "The confirmation question anchors to the Case Review tables/cards"
+        "The confirmation question anchors to the Case Review tables"
       ]
     },
     {

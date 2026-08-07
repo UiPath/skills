@@ -26,7 +26,7 @@ def has_near(text: str, left: str, right: str, distance: int = 500) -> bool:
     ) is not None
 
 
-def task_section(plan: str, task_name: str) -> str:
+def task_section(plan: str, task_name: str, stage_name: str | None = None) -> str:
     heading = (
         # Accepts the compact plan title (`T21: task "Name"`) AND the canonical
         # full-form build title (`T21: Add <type> task "Name" to "Stage"`).
@@ -34,13 +34,116 @@ def task_section(plan: str, task_name: str) -> str:
         rf"(?:[^\"\n]*?\btask\s+)?(?:Task:\s*)?(?:\"{re.escape(task_name)}\"|{re.escape(task_name)}\b)[^\n]*\n"
     )
     next_heading = rf"^#{{2,3}}\s+T\d+(?:\.\d+)?\s*(?:[:—-])"
-    match = re.search(
+    matches = list(re.finditer(
         rf"(?ims){heading}.*?(?={next_heading}|\Z)",
         plan,
-    )
+    ))
+    if stage_name is not None:
+        matches = [
+            match
+            for match in matches
+            if re.search(
+                rf'(?im)^[-*]?\s*stage:\s*["`]?{re.escape(stage_name)}["`]?\s*$',
+                match.group(0),
+            )
+        ]
+    if not matches:
+        location = f" in stage {stage_name!r}" if stage_name else ""
+        fail(f"missing tasks.md T-entry for {task_name!r}{location}")
+    if len(matches) > 1:
+        location = f" in stage {stage_name!r}" if stage_name else ""
+        fail(f"ambiguous tasks.md T-entry for {task_name!r}{location}")
+    return matches[0].group(0)
+
+
+def rule_type(value: str, task_name: str, field: str) -> str:
+    match = re.search(r"[a-z][a-z0-9-]*", value.casefold().replace("`", ""))
     if not match:
-        fail(f"missing tasks.md T-entry for {task_name!r}")
+        fail(f"missing {field} rule type for task {task_name!r}")
     return match.group(0)
+
+
+def sdd_task_activation(sdd: str) -> dict[tuple[str, str], tuple[str, str]]:
+    """Return each SDD task's declared activation mode and entry-rule type."""
+    headings = list(
+        re.finditer(
+            r"(?im)^#####\s+Task\s+[^:\n]+:\s*(.+?)\s*$",
+            sdd,
+        )
+    )
+    stage_headings = list(re.finditer(STAGE_HEADING, sdd))
+    contracts: dict[tuple[str, str], tuple[str, str]] = {}
+    for index, heading in enumerate(headings):
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(sdd)
+        section = sdd[heading.start() : end]
+        task_name = re.sub(r"\s+\(`[^`]+`\)\s*$", "", heading.group(1)).strip()
+        stage_heading = next(
+            (candidate for candidate in reversed(stage_headings) if candidate.start() < heading.start()),
+            None,
+        )
+        if stage_heading is None:
+            fail(f"task {task_name!r} appears before any SDD stage heading")
+        stage_name = re.sub(
+            r"\s*\([^)]*\)\s*$", "", stage_heading.group(1)
+        ).strip()
+
+        activation = re.search(
+            r"(?im)^\*\*Activation Mode:\*\*\s*([^\n]+)",
+            section,
+        )
+        if not activation:
+            fail(f"missing SDD Activation Mode for task {task_name!r}")
+
+        entry_block = re.search(
+            r"(?ims)^\*\*Entry Condition:\*\*\s*(.*?)(?=^\*\*Task envelope|^######|\Z)",
+            section,
+        )
+        if not entry_block:
+            fail(f"missing SDD Entry Condition for task {task_name!r}")
+        entry_rule = None
+        for line in entry_block.group(1).splitlines():
+            if not line.strip().startswith("|"):
+                continue
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            if not cells or cells[0].casefold() == "when" or re.fullmatch(r"[-:\s]+", cells[0]):
+                continue
+            entry_rule = rule_type(cells[0], task_name, "SDD entry")
+            break
+        if entry_rule is None:
+            fail(f"missing SDD entry-rule row for task {task_name!r}")
+
+        key = (stage_name, task_name)
+        if key in contracts:
+            fail(f"duplicate SDD task {task_name!r} in stage {stage_name!r}")
+        contracts[key] = (
+            rule_type(activation.group(1), task_name, "SDD activation"),
+            entry_rule,
+        )
+
+    if not contracts:
+        fail("SDD declares no task detail blocks")
+    return contracts
+
+
+def check_plan_preserves_task_activation(sdd: str, plan: str) -> None:
+    """The no-build handoff must not reinterpret confirmed task semantics."""
+    for (stage_name, task_name), (sdd_activation, sdd_entry_rule) in sdd_task_activation(sdd).items():
+        section = task_section(plan, task_name, stage_name)
+        activation = re.search(r"(?im)^[-*]?\s*activation-mode:\s*([^\n]+)", section)
+        entry_rule = re.search(r"(?im)^[-*]?\s*entry-rule:\s*([^\n]+)", section)
+        if not activation:
+            fail(f"missing tasks.md activation-mode for task {task_name!r}")
+        if not entry_rule:
+            fail(f"missing tasks.md entry-rule for task {task_name!r}")
+
+        plan_activation = rule_type(activation.group(1), task_name, "plan activation")
+        plan_entry_rule = rule_type(entry_rule.group(1), task_name, "plan entry")
+        if plan_activation != sdd_activation or plan_entry_rule != sdd_entry_rule:
+            fail(
+                f"tasks.md changes {task_name!r} activation from "
+                f"{sdd_activation}/{sdd_entry_rule} to "
+                f"{plan_activation}/{plan_entry_rule}"
+            )
 
 
 def stage_section(sdd: str, stage_name: str) -> str:
@@ -56,7 +159,7 @@ def stage_section(sdd: str, stage_name: str) -> str:
 
 
 def task_lane(section: str, task_name: str) -> int:
-    match = re.search(r"(?im)^-\s*[^\n]*\blane:\s*(\d+)\b", section)
+    match = re.search(r"(?im)^[-*]?\s*[^\n]*\blane:\s*(\d+)\b", section)
     if not match:
         fail(f"missing lane for sequential task {task_name!r}")
     return int(match.group(1))
@@ -150,6 +253,18 @@ def declared_sla_titles(sdd: str) -> set[str]:
     }
 
 
+def check_canonical_stage_sla(section: str, stage: str) -> None:
+    if re.search(r"(?im)^####\s+Stage SLA\s*$", section) is None:
+        fail(f"primary phase {stage!r} has no canonical '#### Stage SLA' block")
+    titles = re.findall(r"(?im)^\*\*SLA Title:\*\*\s*(.+)$", section)
+    expected = f"{stage} SLA"
+    if [title.strip().casefold() for title in titles] != [expected.casefold()]:
+        fail(
+            f"primary phase {stage!r} must declare exactly "
+            f"'**SLA Title:** {expected}'; got {titles or 'nothing'}"
+        )
+
+
 def check_sla_reference_closure(sdd: str) -> None:
     """Every sla-status-change entry must resolve to a declared SLA + escalation.
 
@@ -213,6 +328,7 @@ def check_sla_reference_closure(sdd: str) -> None:
         )
         if section is None:
             fail(f"missing SDD stage section for primary phase {stage!r}")
+        check_canonical_stage_sla(section, stage)
         if not declared_sla_titles(section):
             fail(
                 f"primary phase {stage!r} declares no stage SLA (prompt: every primary "
@@ -228,7 +344,7 @@ def check_sla_reference_closure(sdd: str) -> None:
 def check_plan_carries_sla_references(sdd: str, plan: str) -> None:
     """tasks.md must carry the SLA interrupt it inherited from the SDD.
 
-    The compact no-build plan contract (phase-0-interview.md § Compact
+    The compact no-build plan contract (planning.md § Compact
     tasks/tasks.md contract) requires the global-event entry to name its rule
     type and, for `sla-status-change`, the SLA it fires off (plus the at-risk
     escalation when the row is at-risk; a breach row names the SLA alone).
@@ -292,13 +408,15 @@ def main() -> None:
             f"expected {expected_lanes!r}"
         )
 
+    check_plan_preserves_task_activation(sdd, plan)
+
     if sdd.lower().count("rationale") < 4:
         fail("SDD does not preserve enough design rationale")
     if plan.lower().count("rationale") < 4:
         fail("tasks.md does not carry the SDD rationale into planning")
 
     print(
-        "OK: global interrupts, resolvable SLA references, sequential activation, "
+        "OK: global interrupts, resolvable SLA references, task activation, "
         "and rationale are preserved"
     )
 

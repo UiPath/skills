@@ -26,10 +26,10 @@ for task_name, resource_name in EXPECTED.items():
     assert f"**Resolved Resource:** {resource_name}" in task_body, (
         f'"{task_name}" did not preserve intended resource name {resource_name}'
     )
-    assert "**Folder Path:** <UNRESOLVED>" in task_body, (
+    assert re.search(r"\*\*Folder Path:\*\*\s*`?<UNRESOLVED>`?", task_body), (
         f'"{task_name}" must keep its unresolved folder explicit'
     )
-    assert "**Resource Identity:** <UNRESOLVED>" in task_body, (
+    assert re.search(r"\*\*Resource Identity:\*\*\s*`?<UNRESOLVED>`?", task_body), (
         f'"{task_name}" must keep its unresolved identity explicit'
     )
 

@@ -1,0 +1,43 @@
+task_id: skill-pm-app-types-discovery-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-process-mining skill to
+  discover the available process-app templates (app types) on the org.
+  Tests the correct CLI namespace (`uip pm app-types list`) and the
+  --output json / --output-filter convention taught by the skill.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is that the
+  agent loads the skill and invokes the right discovery command.
+tags: [uipath-process-mining, smoke, mode:diagnose, discover, app-types]
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  I want to build a UiPath Process Mining app. Show me which process-app
+  templates (app types) are available on my UiPath organization so I can
+  pick one.
+
+  Important:
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail with auth errors — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+
+  - type: skill_triggered
+    description: "Agent activated the uipath-process-mining skill"
+    skill_name: "uipath-process-mining"
+    expected_skill: "uipath-process-mining"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed the available app templates"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+app-types\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

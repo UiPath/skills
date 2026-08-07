@@ -168,6 +168,30 @@ When a name (e.g. `orders` queue) exists in multiple cloud folders, refresh pref
 
 The placeholder `solution_folder` (and `.`) in a binding's folder field means "no folder" / tenant scope — they're not real cloud folders.
 
+### Repointing a connection leaves the old resource behind
+
+Repointing a connector activity to a *different* connection (a different connection GUID) does **not** update the existing connection resource in place. Refresh is import-only, so it imports the new connection as a new resource and leaves the old one alone. Because both carry the same connection display name, the newcomer gets suffixed:
+
+```
+resources/solution_folder/connection/<connector>/<name>.json      # old GUID — now unreferenced
+resources/solution_folder/connection/<connector>/<name>_1.json    # new GUID
+```
+
+`bindings_v2.json` cleanly references only the new GUID, but both resources stay in `resources list` and in `userProfile/<uid>/debug_overwrites.json`, and every subsequent refresh reports `Imported: 1` for the new one.
+
+**Clean it up yourself** — refresh will not, by design:
+
+```bash
+# find the key of the resource for the old connection
+uip solution resources list --output json
+
+uip solution resources remove <old-resource-key> --solution-folder <dir> --output json
+```
+
+This is intentional. Refresh never removes resources, so it cannot silently drop something you added on purpose. The trade-off is that a repoint needs one manual `remove`.
+
+> A connection can be `Enabled` and pingable and still not be importable: the Resource Catalog is indexed per folder, so `refresh` may warn `Connection <guid> not found in Resource Catalog in the required folder "<folder>"` and import nothing. Membership in `uip is connections list` does not guarantee a connection is refresh-resolvable from a given `folderPath`.
+
 > For single-resource mutations that don't need a full project scan, see [Step 9: Add a Resource Atomically](#step-9-add-a-resource-atomically), [Step 10: Remove a Resource](#step-10-remove-a-resource), and [Step 11: Edit a Resource](#step-11-edit-a-resource). `refresh` and these solve different problems — `refresh` reconciles every binding in every project (and **never overwrites** a resource already in the solution); `add`/`remove`/`edit` operate on one resource at a time. To change an existing resource's spec, `edit` is the only path — `refresh` won't.
 
 ## Step 8: Get a Single Resource Configuration
@@ -350,7 +374,7 @@ If the key isn't in the local solution, the command exits with `Failure` and `Re
 
 ## Step 11: Edit a Resource
 
-Change a resource's `spec` properties by key. This is the only command that mutates an existing resource — `refresh` is import-only (it skips resources already in the solution, never overwrites them).
+Change a resource's `spec` properties by key. This is the only command that mutates an existing resource — `refresh` is import-only (it skips resources already in the solution, never overwrites them). Repointing a binding to a different connection is not an edit either: refresh imports the new one and leaves the old behind for you to `remove` — see [Repointing a connection leaves the old resource behind](#repointing-a-connection-leaves-the-old-resource-behind).
 
 ```bash
 # Patch a single spec property

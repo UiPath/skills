@@ -1,0 +1,53 @@
+task_id: skill-platform-traces-spans-discovery
+description: >
+  Smoke test: agent works the documented two-tool trace-discovery flow — asks the
+  orchestrator tool which traces a job recorded (`uip or jobs traces <job-key>`),
+  then pulls the span tree for a log-sourced trace ID using the positional
+  `spans get <trace-id>` form with folder context. Complements traces_fetch.yaml,
+  which only ever reaches `spans get --job-key` and never touches `or jobs traces`,
+  the positional trace-id form, or the `--folder-path`/`--folder-key` context flags.
+  Auth/404 responses are acceptable outcomes — the graded behavior is which tools
+  the agent reaches for and the shape of the commands, not tenant data.
+tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, traces]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  A support ticket points at job `9f2c1d84-77ab-4e0e-9a63-2f1b0c5e7a10`, which ran
+  in the `Shared/uipath-platform` folder.
+
+  Two things I need:
+  - Which traces did that job record? I have no trace ID for it.
+  - An application log elsewhere in the ticket quotes trace
+    `4bf92f3577b34da6a3ce929d0e0e4736` from the same folder. Pull that trace's
+    full span detail so I can read its tool calls and LLM interactions.
+
+  Both identifiers come straight off the ticket and may not resolve against this
+  tenant — that is expected and not something to work around. Report what the
+  commands return; do not go searching for substitute jobs or traces.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent used the orchestrator tool to discover the job's trace IDs"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+jobs\s+traces\s+(?!-)\S+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched spans by positional trace ID (not the --job-key shortcut)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get\s+(?:\\\s+)?["'']?(?:\$\{?\w+\}?|[0-9a-fA-F][0-9a-fA-F-]{7,})'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed folder context on spans get (--folder-path or --folder-key)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get(?=[\s\S]*--folder-(path|key))'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

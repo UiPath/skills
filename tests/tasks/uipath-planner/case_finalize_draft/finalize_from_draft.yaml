@@ -74,10 +74,10 @@ success_criteria:
 
   - type: run_command
     description: "sdd.md preserves the engineering-role / L4+ Onsite-Loop gating rule"
-    command: "grep -Eiq '(onsite|loop).{0,80}(engineering|l[45]|level)' sdd.md"
-    timeout: 10
+    command: "python3 $TASK_DIR/check_finalize_inventory.py"
+    timeout: 30
     expected_exit_code: 0
-    weight: 1.0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command

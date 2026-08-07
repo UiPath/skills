@@ -48,7 +48,6 @@ initial_prompt: |
   | Case Name | ExceptionStage |
   | Case Description | One regular Process stage plus two secondary stages (Issues returns to origin; Critical exits the case). |
   | Case Identifier | Prefix: ES, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
   | SLA Type | Not specified |
 

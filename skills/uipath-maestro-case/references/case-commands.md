@@ -94,12 +94,16 @@ Upload a solution directly to Studio Web. **Requires `uip login`.**
 
 ```bash
 uip solution resources refresh --solution-folder <SolutionDir> --output json
-uip solution upload <SolutionDir> --output json
+uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"
 ```
 
 `uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step. Uploads to Studio Web where the user can visualize, inspect, edit, and publish the case from the browser.
 
-> **This is the default publish path.** When the user asks to "publish" without specifying where, run `resource refresh` then `uip solution upload <SolutionDir>`. Share the resulting URL with the user.
+> **`--output-filter` is mandatory on upload.** The raw upload response is large enough that the agent truncates it and loses `DesignerUrl`. The JMESPath projection `{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}` (applied to the response envelope's `Data` field) reduces the response to the three fields the skill actually reads, so `DesignerUrl` always survives.
+
+> **On a missing `DesignerUrl`**, re-run the upload once **without** `--output-filter` and dump the unfiltered response to `tasks/upload-response.json` — the filter hides any error/diagnostic fields that explain why the URL is absent.
+
+> **This is the default publish path.** When the user asks to "publish" without specifying where, run `resource refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"`. Share the resulting URL with the user.
 
 ---
 
@@ -129,15 +133,25 @@ Validate a case management JSON file against case management rules.
 
 ```bash
 uip maestro case validate <file> --output json
+uip maestro case validate <file> --skeleton-v2 --output json
 uip maestro case validate <file> --skeleton --output json
 ```
 
 | Flag | Description |
 |------|-------------|
 | `<file>` | **(required)** Path to the case management JSON file |
-| `--skeleton` | Skeleton profile — runs structural checks only (nodes, edges, identity, types, topology). Skips tasks, SLAs, escalations, and entry/exit rules. Use during skeleton-phase authoring before tasks/conditions/SLA are wired. |
+| `--skeleton-v2` | Preferred Phase 2 preview profile: structure plus entry/exit rules, SLA, and escalation, while task values and connector schemas are still incomplete. Availability depends on the installed CLI. |
+| `--skeleton` | Legacy structural profile. Skips tasks, SLAs, escalations, and entry/exit rules. Used only as the Phase 2 fallback when `--skeleton-v2` is unavailable. |
 
 Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported inline.
+
+### Phase 2 profile probe
+
+1. Run `validate ... --skeleton-v2 --output json`.
+2. Only when the parser response names `--skeleton-v2` as unknown or unsupported (typically `ErrorCode: "invalid_argument"` and exit code 3), re-run once with `--skeleton`. Exit code 3 without that flag-specific message is not sufficient.
+3. Any genuine v2 validation result, including case validation errors, proves the profile ran. Report those findings; do not mask them with the legacy fallback.
+
+Always name the selected profile in the Phase 2 summary. A legacy `--skeleton` fallback checks structure only, so conditions/SLA remain covered by authoritative full validation in Phase 4.
 
 ---
 

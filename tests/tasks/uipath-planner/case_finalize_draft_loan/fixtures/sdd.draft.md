@@ -36,7 +36,6 @@ Rejected).
 | Case Name | LoanOrigination |
 | Case Description | Manages the end-to-end origination lifecycle for commercial term loans at Accrual Capital, from initial application receipt through funding or adverse disposition. Covers ~600 loans per month in the $1M–$25M range with a 30–45 day target lifecycle. |
 | Case Identifier | Type: constant. Prefix: LO |
-| Priority | Choiceset: Low, Medium, High, Critical — Default: Medium |
 | Case-Level SLA | 45 d |
 | SLA Type | time-based |
 

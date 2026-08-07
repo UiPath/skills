@@ -1,6 +1,6 @@
 # Phase 1 — Planning: sdd.md → tasks.md
 
-Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Discovers registry resources, resolves task type IDs, produces declarative specification that downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Debug → Phase 6 Publish) consume via direct JSON writes to `caseplan.json`. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
+Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Discovers registry resources, resolves task type IDs, produces declarative specification that downstream execution phases (Phase 2 Prototyping → Phase 3 Implementation → Phase 4 Validate → Phase 5 Publish → Phase 6 Debug) consume via direct JSON writes to `caseplan.json`. See [implementation.md](implementation.md) for execution detail and [phased-execution.md](phased-execution.md) for phase contracts.
 
 > **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip this planning pipeline — see [brownfield.md](brownfield.md).
 
@@ -96,8 +96,14 @@ If the plan-only / no-build exception is active, skip registry and schema discov
 
 - Task declarations use an H2 heading with a quoted display name: `## T{N}: task "{Task Name}"`. Do not use dotted task T-numbers (for example, `T12.1`) as the task entry heading; if you group entries by stage, the task's own T-entry still remains the H2.
 - Stage entries: `stage-kind`, `entry-rule`, `exit-rule`, `interrupting`, `required`, `sla`, `rationale`.
-- Task entries: `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, `rationale`. `lane` is the integer task-set index exactly as in §4.6 (strict chains use consecutive single-task lanes starting at 0) — never prose like `sequential step 1 of 3`; sequencing prose belongs in `rationale`.
-- Trigger/condition/SLA entries: `rule-type`, `source/status`, `target stage/task`, `return-or-close behavior`, `rationale`.
+- Task entries: `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, `rationale`.
+- Trigger/condition/SLA entries: `rule-type`, `source/status`, `target stage/task`, `return-or-close behavior`, `rationale`. Every `selected-tasks-completed` entry carries `selected-tasks-ids`.
+- Preserve each task's confirmed SDD activation semantics exactly. A singleton task that starts with its stage remains `activation-mode: parallel` + `entry-rule: current-stage-entered`; a single-task stage or list position does not make it sequential. Use `sequential` + `runs-sequentially` only when the source explicitly requires an ordered run or dependency.
+- Global event/exception entries name exactly one interrupting secondary stage and the rule type (`wait-for-connector` or `sla-status-change`); do not duplicate those events across every primary stage. A `sla-status-change` entry names target + SLA title, plus an at-risk escalation title only for an at-risk row (a breach names the SLA alone) — all declared in the SDD and repeated verbatim in `tasks/tasks.md`.
+
+**Rule-valued fields take canonical values, never prose.** `activation-mode`, `entry-rule`, `exit-rule`, and `rule-type` carry a value from their vocabulary exactly as spelled (`runs-sequentially`, `current-stage-entered`, `wait-for-connector`, `adhoc`, `selected-tasks-completed`, …) — review-oriented does not mean free text. When the supplied/approved SDD has an explicit rule row, copy that rule and its selectors exactly; task proximity and list order never authorize planning to normalize it. Only derive `runs-sequentially` for ordered work whose source does not already declare an entry rule. Put the human phrasing in `rationale`.
+
+**`lane` is a number, and grouping is expressed by sharing it.** `lane` is the zero-based `data.tasks` task-set index — `lane: 2`, never a descriptive name like `lane: payment confirmation`. Tasks that run as one task set carry the **same** number: `parallel-after-predecessor` siblings after one predecessor share a single lane value, and a strict chain increments. Giving two siblings different lanes contradicts their `activation-mode` and emits them as separate task sets, which is the defect the mode exists to prevent — the label alone does not group them.
 
 Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json` in this mode; those require tenant evidence and belong to the later build run. End the response with suggested next steps: review the SDD and plan, then run a later build to resolve tenant resources and create `caseplan.json`.
 
@@ -211,12 +217,7 @@ Procedure:
 3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
 4. **`registry-resolved.json`.** Same section-batched discipline — one Read per section, N Edit-appends, no re-Read between siblings.
 
-**T-entry heading contract.** Every declaration is its own level-two heading in
-the exact form `## T<n>: <action>`. Do not use level-three-or-deeper headings
-for T-entries, and do not nest a task beneath a stage's T-entry. A task
-heading must quote its display name, for example
-`## T08: Add wait-for-timer task "First Step" to "Process"`. This keeps the
-plan independently addressable by Phase 2 and by plan validators.
+**T-entry heading contract.** Every declaration is its own level-two heading in the exact form `## T<n>: <action>`. Do not use level-three-or-deeper headings for T-entries, and do not nest a task beneath a stage's T-entry. A task heading must quote its display name, for example `## T08: Add wait-for-timer task "First Step" to "Process"`. This keeps the plan independently addressable by Phase 2 and by plan validators.
 
 Why: section-batched round-trips keep tool-call transcript reviewable, preserve rollback granularity at section boundary, allow mid-run interruption recovery via re-Read + resume from next un-applied T-entry, and surface omissions before they propagate — without paying a per-T-entry Read tax that inflates inference latency by ~5s per turn.
 
@@ -310,8 +311,8 @@ Every task entry includes at least:
 
 - **taskTypeId** — resolved from the registry in Step 3
 - **rationale** — copied from the SDD; explains the task-type and activation/sequencing choice
-- **activation-mode** — required on every task. One of `sequential`, `parallel`, `event-triggered`, `adhoc`, `fan-in`, or `conditional-gate`. This is the user-visible task mode decision, not layout state.
-- **entry-rule** — required on every task; mirrors the planned task-entry condition rule. Sequential tasks MUST say `runs-sequentially`, event-triggered tasks normally say `wait-for-connector`, adhoc tasks say `adhoc`, parallel stage-start tasks say `current-stage-entered`, and fan-in / non-immediate gates say `selected-tasks-completed`.
+- **activation-mode** — required on every task. One of `sequential`, `parallel`, `parallel-after-predecessor`, `event-triggered`, `adhoc`, `fan-in`, or `conditional-gate`. This is the user-visible task mode decision, not layout state.
+- **entry-rule** — required on every task; mirrors the planned task-entry condition rule. Sequential tasks MUST say `runs-sequentially`, event-triggered tasks normally say `wait-for-connector`, adhoc tasks say `adhoc`, parallel stage-start tasks say `current-stage-entered`, parallel siblings after an immediate predecessor say `runs-sequentially`, and fan-in / non-immediate gates say `selected-tasks-completed`.
 - **inputs** / **outputs** — see [bindings-and-expressions.md](bindings-and-expressions.md) for the two input modes (literal/expression and cross-task reference)
 - **runOnlyOnce** — from sdd.md (default `false` if not specified). Design-lane-generated SDDs should always state `Run Only Once: Yes/No`; when a user-authored SDD omits it, use the frontend/default-new-task behavior (`false`) and do not infer `true` from task type.
 - **isRequired** — from sdd.md (default `true` if not specified)
@@ -323,13 +324,15 @@ Additional fields are plugin-specific; read the plugin's `planning.md` before fi
 
 > **Activation-mode audit before writing §4.7.** After §4.6 is drafted and before any condition T-entry is written, scan every stage's task list and make the task mode visible in the plan:
 >
-> - Contiguous ordered work in one stage (`then`, `after`, `before`, `in order`, direct previous-step wording, or an upstream prerequisite) → every task in that ordered run gets `activation-mode: sequential` and `entry-rule: runs-sequentially`, including the first task.
+> **Authority order:** an explicit rule in the supplied/approved SDD wins. This audit verifies the handoff; it does not redesign or normalize authored rules. Use the derivation bullets below only when authoring from source behavior that has no explicit task-entry rule.
+>
+> - Contiguous ordered work in one stage (`then`, `after`, `before`, `in order`, direct previous-step wording, or an upstream prerequisite) → every task in that ordered run gets `activation-mode: sequential` and `entry-rule: runs-sequentially`, including the first task, unless the SDD explicitly declares another legal rule.
 > - Independent work that starts with the stage → `activation-mode: parallel`, `entry-rule: current-stage-entered`, and rationale says why the tasks are independent.
 > - Connector/event callback wait → `activation-mode: event-triggered`, usually `entry-rule: wait-for-connector`.
 > - User-launched optional work → `activation-mode: adhoc`, `entry-rule: adhoc`, `isRequired: false`.
 > - Branch convergence, fan-in, decision-result routing, or a non-immediate dependency → `activation-mode: fan-in` or `conditional-gate`, `entry-rule: selected-tasks-completed`, with the selected tasks named.
 >
-> A task whose only reason for `selected-tasks-completed` is "it follows the immediately previous task" is a planning defect. Convert that contiguous run to `runs-sequentially` instead. `selected-tasks-completed` remains correct for fan-in, branch convergence, non-immediate dependencies, and stage-exit routing conditions.
+> While authoring a new SDD, do not invent `selected-tasks-completed` merely because a task follows the immediately previous task; model a plain contiguous run as `runs-sequentially`. Once an SDD is supplied or approved, however, preserve every explicit `selected-tasks-completed` row and selector in `tasks.md` and `caseplan.json`; planning is not a second design pass. Map that task to `conditional-gate` or `fan-in` as its authored rationale supports, never to `sequential`.
 > Before leaving §4.6, audit each stage's planned lanes: sequential tasks that form a strict chain MUST NOT share a lane with each other or with adhoc/event-driven/parallel work. If `activation-mode`/`entry-rule` conflicts with `lane`, the mode wins and the lane must be corrected. Same-lane grouping is reserved for intentionally parallel siblings, and the rationale must say why they run in parallel.
 
 > **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD Outputs table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-outputs-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
@@ -381,19 +384,8 @@ Treat the generated `tasks.md` as approved and proceed directly to Phase 2 by de
 
 Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](implementation.md)); context may have compacted during planning. `tasks.md` is complete handoff artifact — all resolved IDs, inputs, outputs, and references captured there.
 
-**Plan-shape gate.** Before Phase 2, re-read every §4.6 task T-entry itself
-(not the §4.7 condition entries) and confirm it literally contains its own
-`- activation-mode:` line and its own `- entry-rule:` line — **exactly one of
-each, colocated on the task's own T-entry** — and that the pair is legal for
-that mode. Re-run the §4.6 Activation-mode audit over the finished plan,
-covering all six modes, not just `sequential`.
+**Plan-shape gate.** Before Phase 2, re-read every §4.6 task T-entry itself (not the §4.7 condition entries) and confirm it literally contains its own `- activation-mode:` line and its own `- entry-rule:` line — **exactly one of each, colocated on the task's own T-entry** — and that the pair is legal for that mode. Re-run the §4.6 Activation-mode audit over the finished plan, covering all six modes, not just `sequential`.
 
-**Known failure pattern:** deferring the rule to a *separate* §4.7
-task-entry-condition entry (`rule-type:`) does not satisfy this gate —
-`caseplan.json` can end up fully correct while `tasks.md` itself still fails
-this check, because §4.6 and §4.7 are graded as separate artifacts. See
-[task-entry-conditions/planning.md § Phase 1 Plan Presentation Contract](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract)
-for the compliant §4.6 shape.
+**Known failure pattern:** deferring the rule to a *separate* §4.7 task-entry-condition entry (`rule-type:`) does not satisfy this gate — `caseplan.json` can end up fully correct while `tasks.md` itself still fails this check, because §4.6 and §4.7 are graded as separate artifacts. See [task-entry-conditions/planning.md § Phase 1 Plan Presentation Contract](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract) for the compliant §4.6 shape.
 
-Correct the plan before building; validation of `caseplan.json` cannot detect
-a malformed Phase 1 handoff.
+Correct the plan before building; validation of `caseplan.json` cannot detect a malformed Phase 1 handoff.

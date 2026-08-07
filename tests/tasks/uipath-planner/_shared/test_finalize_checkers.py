@@ -11,6 +11,7 @@ Runs with no model and no tenant:
     python3 tests/tasks/uipath-planner/_shared/test_finalize_checkers.py
 """
 
+
 from __future__ import annotations
 
 import subprocess
@@ -22,6 +23,7 @@ from pathlib import Path
 PLANNER_ROOT = Path(__file__).resolve().parents[1]
 PICKER_CHECK = PLANNER_ROOT / "case_finalize_draft_picker" / "check_picker_pairing.py"
 REJECT_CHECK = PLANNER_ROOT / "case_finalize_draft_reject" / "check_reject_route.py"
+
 
 # --------------------------------------------------------------------------
 # sdd.md builders
@@ -65,11 +67,12 @@ def stage(
 
 COMPLETION_EXIT = ["`required-tasks-completed`", "—", "exit-only", "Yes"]
 PICKER_ENTRY = ["`user-selected-stage`", "—", "Yes"]
-WAIT_FOR_USER_EXIT = ["`required-tasks-completed`", "—", "wait-for-user", "No"]
+WAIT_FOR_USER_EXIT = ["`required-tasks-completed`", "—", "wait-for-user", "Yes"]
 
 
 def picker_sdd(
     *,
+    document_exits: list[list[str]] | None = None,
     upstream_exits: list[list[str]] | None = None,
     lane_entry: list[list[str]] | None = None,
     lane_exits: list[list[str]] | None = None,
@@ -79,6 +82,11 @@ def picker_sdd(
     parts = [
         "# SDD — VendorOnboarding\n",
         "## Section 2: Stages & Tasks\n",
+        stage(
+            "Document Collection",
+            [["`case-entered`", "—", "No"]],
+            document_exits or [COMPLETION_EXIT],
+        ),
         stage("Vendor Approval", [["`case-entered`", "—", "No"]], upstream_exits or [COMPLETION_EXIT]),
     ]
     if include_lane:
@@ -161,17 +169,13 @@ class SharedParserTest(unittest.TestCase):
     exercise them."""
 
     def setUp(self) -> None:
-        # Path-based import: a package import (`from _shared import ...`) collides
-        # with the sibling suite's identically-named `_shared` package when both
-        # test trees are collected in one pytest run.
-        import importlib.util  # noqa: PLC0415
+        # Import by module name from this _shared dir, NOT via the `_shared`
+        # package: in a combined-suite pytest run the maestro-case `_shared`
+        # package can already occupy sys.modules and shadow this one.
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import entry_rule_check  # noqa: PLC0415
 
-        spec = importlib.util.spec_from_file_location(
-            "planner_shared_entry_rule_check", PLANNER_ROOT / "_shared" / "entry_rule_check.py"
-        )
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        self.mod = mod
+        self.mod = entry_rule_check
 
     def test_section_one_headings_are_not_parsed_as_stages(self) -> None:
         text = "\n\n".join(
@@ -235,8 +239,13 @@ class PickerPairingCheckTest(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0, "grader accepted a regression")
         self.assertIn(expected, (result.stdout + result.stderr).lower())
 
-    def test_accepts_picker_entry_paired_with_upstream_wait_for_user_exit(self) -> None:
-        self.assert_pass(picker_sdd(upstream_exits=[COMPLETION_EXIT, WAIT_FOR_USER_EXIT]))
+    def test_accepts_picker_entry_exposed_from_every_primary_stage(self) -> None:
+        self.assert_pass(
+            picker_sdd(
+                document_exits=[WAIT_FOR_USER_EXIT],
+                upstream_exits=[WAIT_FOR_USER_EXIT],
+            )
+        )
 
     def test_rejects_picker_entry_with_no_wait_for_user_anywhere(self) -> None:
         self.assert_fail(picker_sdd(), "wait-for-user")
@@ -276,6 +285,11 @@ class PickerPairingCheckTest(unittest.TestCase):
             [
                 "# SDD — VendorOnboarding",
                 "## Section 2: Stages & Tasks",
+                stage(
+                    "Document Collection",
+                    [["`case-entered`", "—", "No"]],
+                    [COMPLETION_EXIT],
+                ),
                 "### Stage 1: Vendor Approval",
                 "**Type:** Stage",
                 "#### Stage Entry Conditions",
@@ -465,10 +479,5 @@ class RejectRouteCheckTest(unittest.TestCase):
         )
 
 
-# --------------------------------------------------------------------------
-# JMESPath assertions embedded in the two caseplan-emit task YAMLs
-# --------------------------------------------------------------------------
-
-
 if __name__ == "__main__":
-    unittest.main(verbosity=2)
+    unittest.main()

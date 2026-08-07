@@ -1,6 +1,6 @@
 {
     "id": "case-Lx7Rq2mPnK",
-    "version": "23.0.0",
+    "version": "27.0.0",
     "name": "LinearThreeStages",
     "description": "Three regular stages chained linearly behind a manual trigger; exercises stage-entry conditions, parallel wait-for-timer tasks, and the full Variable / In / Out argument trio.",
     "metadata": {
@@ -357,14 +357,15 @@
         },
         {
             "id": "trigger_1",
-            "type": "case-management:Trigger",
+            "type": "uipath.case.trigger",
             "data": {
                 "parentElement": { "id": "root", "type": "case-management:root" },
-                "label": "Start Manually",
                 "description": "User-initiated trigger that starts the LinearThreeStages case from the portal",
                 "isInvalidDropTarget": false,
                 "isPendingParent": false,
-                "uipath": {
+                "typeVersion": "1.0.0",
+                "display": { "label": "Start Manually" },
+                "inputs": {
                     "outputs": [
                         {
                             "name": "caseRef",

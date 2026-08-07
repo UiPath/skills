@@ -10,7 +10,7 @@ plus a confusion matrix.
 |------|---------|
 | `<skill>.jsonl` | Positives for that skill — every prompt should fire that skill. `expected_skill` is injected per file by `activation.yaml`. |
 | `negative.jsonl` | Shared negatives — prompts that should fire **no** skill (small talk, unrelated dev tasks, adjacent UiPath products, other workflow tools). |
-| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 23 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
+| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 24 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
 
 The `expected_skill` field on each row is the row's true label (the skill it should fire, or `""` for negatives). Each criterion compares its own `skill_name` to `expected_skill`: `expected="yes"` iff they match. So for skill X:
 - `<X>.jsonl` rows are positives.

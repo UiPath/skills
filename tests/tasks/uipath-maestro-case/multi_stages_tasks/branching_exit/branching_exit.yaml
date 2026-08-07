@@ -48,7 +48,6 @@ initial_prompt: |
   | Case Name | BranchingExit |
   | Case Description | Triage stage routes to one of three downstream branches via stage-exit conditions covering wait-for-user, exit-only with marks-complete:false, and exit-only with marks-complete:true. |
   | Case Identifier | Prefix: BE, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
   | SLA Type | Not specified |
 

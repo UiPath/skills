@@ -33,7 +33,6 @@ initial_prompt: |
   | Case Name | InvoiceReviewCase |
   | Case Description | Reviews an invoice and records the decision. |
   | Case Identifier | Prefix: IRC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 
