@@ -30,7 +30,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 | `SKILL.md` | Required. Uppercase. YAML frontmatter + markdown body. |
 | `references/*.md` | Kebab-case. Guides end with `-guide.md`. |
 | `skill-flavors/<flavor>/<skill>/**/*.md` | Optional sparse overrides at paths relative to `skills/`; contain only named replacement blocks. |
-| `<!-- skill-flavor:<name>:start\|end -->` | Boundary around the smallest canonical passage that differs by flavor. Names are lowercase kebab-case and unique within a file. |
+| `<!-- skill-flavor:<name>:start\|end -->` | Column-one boundary around the smallest canonical passage that differs by flavor. Names are lowercase kebab-case and unique within a file; indent the enclosed Markdown, never the boundary. |
 | `assets/templates/*` | Templates end with `-template.md` or `-template.<ext>`. |
 | `hooks/*.sh` + `hooks/*.ps1` | Session hooks ship as twin implementations with the same basename — bash and PowerShell (5.1 and 7+ compatible). The twins MUST stay behaviorally identical: a change to one requires the same change to the other in the same PR. Dispatched by the polyglot commands in `hooks/hooks.json`. |
 
@@ -38,6 +38,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 
 - Before changing flavor markers, overrides, discovery, package construction, publishing, or flavor CI, read `.claude/skills/manage-skill-flavors/SKILL.md` completely and follow its reference-routing instructions
 - Read the existing SKILL.md before making changes
+- Read every matching flavor override before changing a canonical marked passage; prefer an empty additive extension block over replacing a shared table, list, or navigation section
 - Preserve the Critical Rules section — these prevent expensive agent mistakes
 - Validate YAML frontmatter — broken frontmatter breaks skill discovery
 - Ensure `description` field has both TRIGGER and DO NOT TRIGGER conditions

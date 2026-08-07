@@ -1,6 +1,6 @@
-    <!-- skill-flavor:connector-solution-registration:start -->
+<!-- skill-flavor:connector-solution-registration:start -->
     - **(Studio Web + IntSvc only)** do not run local binding-sync/resource-refresh commands or edit solution catalogue files. Treat the connection and solution resources exposed by Studio Web as authoritative. If the host exposes a relevant ProxyTool, inspect its live schema before calling it and use only the fields and values that schema declares; never reconstruct the call from memory.
-    <!-- skill-flavor:connector-solution-registration:end -->
+<!-- skill-flavor:connector-solution-registration:end -->
 
 <!-- skill-flavor:surface-lifecycle-scope:start -->
 - User wants to **run, package, publish, or deploy** an API workflow through capabilities exposed by Studio Web
@@ -49,13 +49,7 @@ Fix run failures in category order — **Structure > Expression > Activity Confi
 - `Not authenticated` / `Organization ID not available` → do not ask the user to run `uip login`. Use an exposed Studio Web authentication or connection capability after inspecting its live schema; if none exists, report the host-level authentication blocker and do not retry.
 <!-- skill-flavor:authentication-remediation:end -->
 
-<!-- skill-flavor:reference-navigation:start -->
-| File | Use when |
-|------|----------|
-| [references/workflow-file-format.md](references/workflow-file-format.md) | Authoring or editing the JSON skeleton and understanding the Studio Web-owned project tree |
-| [references/http-retry-config.md](references/http-retry-config.md) | Adding workflow-level HTTP retry policy (`httpRetryConfig`) |
-| [references/task-types.md](references/task-types.md) | Adding or editing an activity's JSON shape and export pattern |
-| [references/control-flow-patterns.md](references/control-flow-patterns.md) | Combining activities into nested control-flow structures |
-| [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Understanding connector activity shapes; use only discovery capabilities exposed by Studio Web and inspect their live schemas |
-| [references/expressions-and-context.md](references/expressions-and-context.md) | Writing JavaScript expressions and propagating workflow state |
-<!-- skill-flavor:reference-navigation:end -->
+<!-- skill-flavor:reference-navigation-extra:start -->
+
+> **Studio Web reference scope.** Keep the shared references available for JSON authoring, troubleshooting, and CLI operations that Studio Web exposes, including validation and `uip api-workflow registry resolve` / `stub` for connector discovery. A reference documents the complete API Workflow surface; it does not grant permission to run every listed command in this host. Project creation must use the live `proxy-tools-Solution` / `CreateProjects` schema, and the Studio Web rules above still prohibit local init, login, solution-metadata, and lifecycle fallbacks.
+<!-- skill-flavor:reference-navigation-extra:end -->
