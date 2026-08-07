@@ -39,14 +39,14 @@ const branchLine = cutOk
   : `${WARN} Release branch \`release/v${line}\` cut from \`main\` FAILED (<${runUrl}|see logs>)`;
 
 // Package publication line. The publish step covers both dispatched workflow
-// runs; the isolated Studio Web jobs run only when custom publishing is enabled.
+// runs; isolated custom-flavor jobs run only when their gates are enabled.
 let previewLine;
 if (publishOk) {
-  previewLine = `${OK} Default preview published to npmjs — ${previewLabel} (<${npmUrl}|view on npmjs>); default dev published to GitHub Packages; Studio Web dev/preview published there when custom publishing was enabled`;
+  previewLine = `${OK} Default preview published to npmjs — ${previewLabel} (<${npmUrl}|view on npmjs>); default dev and enabled custom-flavor dev/preview packages published to GitHub Packages`;
 } else if (!cutOk) {
   previewLine = `${WARN} Dev/preview package publishing skipped`;
 } else {
-  previewLine = `${WARN} A dev/preview publish FAILED (Studio Web only runs when custom publishing is enabled) — ${previewLabel} (<${runUrl}|see logs>)`;
+  previewLine = `${WARN} A dev/preview publish FAILED (custom flavors run only when their gates are enabled) — ${previewLabel} (<${runUrl}|see logs>)`;
 }
 
 // Version-bump PR line

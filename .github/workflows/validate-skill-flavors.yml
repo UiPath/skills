@@ -11,9 +11,13 @@ on:
       - 'assets/**'
       - '.claude-plugin/**'
       - 'scripts/compose-skill-flavor.mjs'
+      - 'scripts/pack-skill-packages.mjs'
+      - 'scripts/export-cowork.py'
       - 'scripts/npm-package-lifecycle.mjs'
       - 'scripts/select-skill-package.mjs'
       - 'tests/scripts/compose-skill-flavor.test.mjs'
+      - 'tests/scripts/pack-skill-packages.test.mjs'
+      - 'tests/scripts/test_export_cowork.py'
       - 'tests/scripts/manage-skill-flavors-skill.test.mjs'
       - '.claude/skills/manage-skill-flavors/**'
       - '.cursor/rules/skill-structure.mdc'
@@ -26,6 +30,7 @@ on:
       - 'CLAUDE.md'
       - 'CONTRIBUTING.md'
       - 'docs/RELEASE.md'
+      - 'docs/copilot-cowork.md'
       - '.github/workflows/publish.yml'
       - '.github/workflows/publish-skill-flavor.yml'
       - '.github/workflows/sprint-release-cut.yml'
@@ -45,6 +50,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22.x'
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
 
       - name: Test the flavor composer and contributor contracts
         run: npm run skills:test
@@ -73,10 +82,20 @@ jobs:
             --name @uipath/skills-studioweb \
             --flavor studioweb \
             --version "$VERSION")
+          GENERATED_COWORK=$(node scripts/select-skill-package.mjs \
+            --directory build/npm \
+            --name @uipath/skills-cowork \
+            --flavor cowork \
+            --version "$VERSION")
           ROOT_DEFAULT=$(find build/root-pack-check -maxdepth 1 -name '*.tgz' -print)
           test "$(sha512sum "$GENERATED_DEFAULT" | cut -d ' ' -f 1)" = \
             "$(sha512sum "$ROOT_DEFAULT" | cut -d ' ' -f 1)"
-          echo "Verified marker-free artifacts: $GENERATED_DEFAULT and $GENERATED_STUDIOWEB"
+          if tar -tzf "$GENERATED_DEFAULT" | grep '^package/cowork/' >/dev/null; then
+            echo 'Default package unexpectedly contains Cowork artifacts.' >&2
+            exit 1
+          fi
+          tar -tzf "$GENERATED_COWORK" | grep -x 'package/cowork/report.json' >/dev/null
+          echo "Verified marker-free artifacts: $GENERATED_DEFAULT, $GENERATED_STUDIOWEB, and $GENERATED_COWORK"
 
           test ! -e build/.root-pack-transaction
           git diff --exit-code -- skills

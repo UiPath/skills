@@ -110,9 +110,10 @@ Package names derive mechanically from the root package:
 |---|---|
 | `default` | `@uipath/skills` |
 | `studioweb` | `@uipath/skills-studioweb` |
+| `cowork` | `@uipath/skills-cowork` |
 | `<flavor>` | `@uipath/skills-<flavor>` |
 
-Do not add an allowlist, `skill.build.json`, a flavor registry, or per-flavor package metadata. The directory name and sparse overrides are the source contract.
+Do not add an allowlist, `skill.build.json`, or a flavor registry. The directory name and sparse overrides are the skill-content source contract. A reviewed transport flavor may add verified derived payload and identifying manifest fields through the single repository package wrapper; do not maintain a second source tree or hand-authored package manifest.
 
 ## Validate the Consumer Artifacts
 
@@ -126,7 +127,7 @@ npm run skills:test
 git diff --check
 ```
 
-`skills:build` must produce complete marker-free trees under `build/skills/`. `skills:pack` must rebuild those trees, stage packages under `build/packages/`, run real `npm pack`, and verify tarballs under `build/npm/`. Flavor publishing jobs must select one verified `.tgz` by manifest identity and publish only that exact path; they must never publish a wildcard containing the default or another flavor.
+`skills:build` must produce complete marker-free trees under `build/skills/`. `skills:pack` is the canonical repository package wrapper: it must rebuild those trees, add any verified transport-format payload to the correct staged flavor only, stage packages under `build/packages/`, run real `npm pack`, and verify tarballs under `build/npm/`. Calling the generic composer's `pack` operation directly is a lower-level primitive and does not apply repository transport augmentation. Flavor publishing jobs must select one verified `.tgz` by manifest identity and publish only that exact path; they must never publish a wildcard containing the default or another flavor.
 
 Normal `npm pack` and `npm publish` at the repository root remain backward
 compatible default-package commands. Their `prepack` lifecycle transactionally
@@ -145,6 +146,7 @@ Inspect the final package contract, not only sparse sources:
 
 - The default contains every canonical skill and retains canonical block bodies without marker boundaries.
 - Each custom package contains every canonical skill and its flavor replacements.
+- The default contains no Cowork transport payload. `@uipath/skills-cowork` contains verified `.skill`, plugin ZIP, and `report.json` files under `cowork/`, all derived from its composed `skills/` tree.
 - Every staged manifest uses the root version and the derived package name.
 - Custom manifests contain no repository lifecycle scripts or `package.json.repository` field. They pin both `publishConfig.registry` and `publishConfig["@uipath:registry"]` to `https://npm.pkg.github.com/`; the scoped pin prevents an ambient `@uipath` npmjs configuration from winning. The publisher still validates the effective scoped registry and supplies the reviewed `dev` or `preview` tag. Do not set an access value during normal publishing because the existing Internal visibility must remain unchanged.
 - No built tree, staged package, or tarball contains `skill-flavor:` comments, `skill-flavors/`, repository tests, or composer source.
@@ -158,36 +160,40 @@ established default jobs root-only. Give each published flavor an isolated,
 reviewed caller that passes its flavor and channel to
 `publish-skill-flavor.yml`. The reusable workflow validates the flavor,
 derives its package name, and publishes one selected tarball to GitHub Packages
-only. Studio Web callers pass `flavor: studioweb`; never add Studio Web to the
-default npmjs path. A future flavor is automatically buildable, not
+only. Studio Web callers pass `flavor: studioweb`; Cowork callers pass
+`flavor: cowork`. Never add either flavor to the default npmjs path. A future flavor is automatically buildable, not
 automatically publishable, until an explicit caller is added. The reusable
 publisher also requires the repository variable
-`ENABLE_SKILL_FLAVOR_PUBLISH=true`; leave it absent or false until an operator
-has confirmed that every explicitly published custom package has been
-bootstrapped as Internal, does not inherit access from the public repository,
-and grants `UiPath/skills` Actions write access. Registry routing and GitHub
-package visibility are separate controls, and this variable is an enablement
-switch rather than a live visibility check. Follow the one-time procedure in
-`docs/RELEASE.md`, and disable the global gate again before adding a caller for
-another not-yet-bootstrapped flavor.
+`ENABLE_SKILL_FLAVOR_PUBLISH=true`. Registry routing and GitHub package
+visibility are separate controls, and this variable is an enablement switch
+rather than a live visibility check. If the global gate is already enabled,
+give any new caller a narrower per-flavor gate that remains absent or false
+until an operator has confirmed that package is Internal, does not inherit
+access from the public repository, and grants `UiPath/skills` Actions write
+access. The caller-level gate narrows but never replaces the reusable
+publisher's global gate. Follow the one-time procedure in `docs/RELEASE.md`.
+Cowork requires
+`ENABLE_COWORK_SKILL_FLAVOR_PUBLISH=true` at the caller as well as the global
+gate, and that dedicated variable must remain absent or false until
+`@uipath/skills-cowork` is bootstrapped.
 
 ## Critical Rules
 
 1. **Keep canonical files complete.** Default/local consumers must understand `SKILL.md` without a build manifest.
 2. **Build files before packages.** Packages consume complete `build/skills/<variant>` trees, never canonical and sparse sources directly.
-3. **Make additions automatic.** A valid new flavor directory must receive a tree and package without code, npm-script, or workflow edits.
+3. **Make additions automatic.** A valid new flavor directory must receive a tree and base package without code, npm-script, or workflow edits. A new transport payload is an exceptional reviewed repository-wrapper change.
 4. **Preserve root command compatibility.** Normal root `npm pack` and `npm publish` must compose only the marker-free default package and restore canonical sources; `npm run skills:pack` remains the all-flavor command.
 5. **Never edit generated output.** Change canonical files, sparse overrides, or the composer; do not modify or commit `build/`.
 6. **Fail before replacement.** Validate every flavor and inspect every tarball before replacing the last successful generated artifacts.
 7. **Recover without data loss.** Keep root packaging transactional, reject overlapping transactions, and preserve unexpected overlay edits before restoring canonical sources.
-8. **Isolate publication.** Keep default root publishing separate from flavor publishing; registry-lock and select one exact flavor tarball, and keep operator enablement off until every called flavor package is confirmed Internal.
+8. **Isolate publication.** Keep default root publishing separate from flavor publishing; registry-lock and select one exact flavor tarball, and keep that flavor caller's required operator gates off until its package is confirmed Internal.
 9. **Keep shared evolution automatic.** Prefer empty additive extension points for host-only additions; never copy a shared table or list into a broad replacement that can silently hide later canonical changes.
 
 ## What Not to Do
 
 - Do not copy an entire skill into a flavor to change a few paragraphs.
 - Do not introduce JSON tags, fragment manifests, or runtime composition.
-- Do not add one npm build command or generic validation-CI branch per flavor; an explicitly published flavor still needs a reviewed caller of the correct publisher.
+- Do not add one npm build command or generic validation-CI branch per flavor; use the centralized package wrapper for a reviewed transport augmentation. An explicitly published flavor still needs a reviewed caller of the correct publisher.
 - Do not ship default plugin hooks or manifests in a minimal host package.
 - Do not validate only `studioweb`; enumerate every discovered flavor.
 - Do not trust a source-tree scan as proof of package safety; inspect the actual tarballs.

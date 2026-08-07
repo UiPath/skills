@@ -66,7 +66,8 @@ Inspect staged directories and real `.tgz` archives.
 - Flavor package name is `@uipath/skills-<flavor>`.
 - Every package version exactly matches the root manifest, including preview or dev suffixes.
 - Default preserves the current non-skill payload but reads `skills/` from the built default tree.
-- Custom packages contain their complete built `skills/`, generated manifest/README, license, and version metadata only.
+- Custom packages contain their complete built `skills/`, generated manifest/README, license, and version metadata; ordinary flavors contain no additional payload.
+- A reviewed transport flavor may additionally contain its verified derived payload. The Cowork package contains only report-owned `.skill`, plugin ZIP, and `report.json` files under `cowork/`, derived from the marker-free composed Cowork tree; the default package contains no `cowork/` path.
 - The default manifest retains the safe package lifecycle and ships only its small lifecycle driver; custom manifests contain no repository lifecycle scripts or `package.json.repository` field and pin both the default and `@uipath` scoped registry to GitHub Packages in `publishConfig`.
 - A missing or extra custom `publishConfig` key, npmjs registry, public access, or inherited `package.json.repository` field is rejected by final tarball selection.
 - Tarball `package/skills/**` bytes equal the staged `skills/**` bytes.
@@ -97,9 +98,9 @@ Inspect staged directories and real `.tgz` archives.
 - `publish-skill-flavor.yml` accepts only `flavor` and `channel`, validates the lowercase kebab-case flavor, derives its package name, and rejects `default`, missing directories, symlinks, and unsupported channels.
 - The generic publisher requires exactly one matching name/flavor/version tarball, scans that exact tarball for markers, and publishes only the selected path.
 - The generic publisher has `packages: write` but no npmjs registry, OIDC permission, provenance flag, or access flag; it validates and explicitly supplies the GitHub Packages registry and supports only `dev` and `preview`. Omitting access preserves the existing Internal visibility.
-- Custom publication is skipped unless `ENABLE_SKILL_FLAVOR_PUBLISH` equals exactly `true`; the default GitHub Packages and npmjs jobs are never gated by that variable.
-- Treat the variable as an operator enablement switch, not a live visibility check. Before enabling it, confirm every explicit flavor caller has an Internal package, does not inherit access from the public source repository, and grants Actions write access. Registry pinning does not establish GitHub visibility.
-- Studio Web callers pass `flavor: studioweb` after stamping the same channel and caller `github.run_number` used by the default path.
+- Custom publication is skipped unless `ENABLE_SKILL_FLAVOR_PUBLISH` equals exactly `true`; the default GitHub Packages and npmjs jobs are never gated by that variable. Cowork callers additionally require `ENABLE_COWORK_SKILL_FLAVOR_PUBLISH` to equal exactly `true`.
+- Treat each variable as an operator enablement switch, not a live visibility check. Before enabling a caller's final required gate, confirm its package is Internal, does not inherit access from the public source repository, and grants Actions write access. Registry pinning does not establish GitHub visibility.
+- Studio Web and Cowork callers pass their reviewed flavor after stamping the same channel and caller `github.run_number` used by the default path.
 - Publish concurrency is normalized by effective channel: a `main` push shares a group with manual `dev`, and a `release/v*` push shares a group with manual `preview`.
 - A new flavor remains automatically buildable but needs an explicit caller of the generic publisher before it becomes registry-available.
-- Local tarball, Studio Web GitHub Packages `dev`/`preview`, default GitHub Packages `dev`, and default npmjs `preview`/`latest` are distinct availability targets; confirm which one the change requires.
+- Local tarball, custom-flavor GitHub Packages `dev`/`preview`, default GitHub Packages `dev`, and default npmjs `preview`/`latest` are distinct availability targets; confirm which one the change requires. Cowork has no npmjs or `latest` publication path.

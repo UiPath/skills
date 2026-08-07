@@ -1355,9 +1355,21 @@ function packStagedPackages(staged, npmRoot, runNpmPack) {
 
 export function packAllVariants(
   repoRoot = REPO_ROOT,
-  { runNpmPack = defaultRunNpmPack } = {},
+  {
+    runNpmPack = defaultRunNpmPack,
+    augmentStagedPackage = null,
+    verifyPackedPackage = null,
+  } = {},
 ) {
   repoRoot = path.resolve(repoRoot);
+  for (const [name, callback] of [
+    ["augmentStagedPackage", augmentStagedPackage],
+    ["verifyPackedPackage", verifyPackedPackage],
+  ]) {
+    if (callback !== null && typeof callback !== "function") {
+      throw new TypeError(`${name} must be a function or null`);
+    }
+  }
   const variants = createAllVariants(repoRoot);
   const buildRoot = prepareBuildRoot(repoRoot);
   const temporaryRoot = mkdtempSync(path.join(buildRoot, ".skill-flavor-pack-"));
@@ -1369,7 +1381,58 @@ export function packAllVariants(
     const findings = markerFindings(temporarySkills, "built skill tree");
     if (findings.length) throw new FlavorCompositionError(findings);
     const staged = stagePackages(repoRoot, variants, temporarySkills, temporaryPackages);
+    const expectedSkillTrees = new Map(
+      variants.map(({ name }) => [
+        name,
+        treeFingerprint(path.join(temporarySkills, name)),
+      ]),
+    );
+    if (augmentStagedPackage) {
+      for (const variant of variants) {
+        const item = staged.get(variant.name);
+        augmentStagedPackage({
+          repoRoot,
+          variant: variant.name,
+          packageName: item.packageName,
+          version: item.version,
+          packageDir: item.packageDir,
+          skillsDir: path.join(temporarySkills, variant.name),
+        });
+      }
+      const augmentedFindings = [
+        ...markerFindings(temporarySkills, "augmented built skill tree"),
+        ...markerFindings(temporaryPackages, "augmented staged npm package"),
+      ];
+      if (augmentedFindings.length) throw new FlavorCompositionError(augmentedFindings);
+      for (const variant of variants) {
+        const expected = expectedSkillTrees.get(variant.name);
+        const composed = treeFingerprint(path.join(temporarySkills, variant.name));
+        const packaged = treeFingerprint(path.join(staged.get(variant.name).packageDir, "skills"));
+        if (composed !== expected) {
+          throw new Error(`package augmenter changed the composed ${variant.name} skill tree`);
+        }
+        if (packaged !== expected) {
+          throw new Error(`package augmenter changed the staged ${variant.name} skill tree`);
+        }
+        treeFingerprint(staged.get(variant.name).packageDir);
+      }
+    }
     const packed = packStagedPackages(staged, temporaryNpm, runNpmPack);
+    if (verifyPackedPackage) {
+      const verifiedRoots = new Map([
+        [temporarySkills, treeFingerprint(temporarySkills)],
+        [temporaryPackages, treeFingerprint(temporaryPackages)],
+        [temporaryNpm, treeFingerprint(temporaryNpm)],
+      ]);
+      for (const item of packed) {
+        verifyPackedPackage({ repoRoot, ...item });
+      }
+      for (const [root, fingerprint] of verifiedRoots) {
+        if (treeFingerprint(root) !== fingerprint) {
+          throw new Error(`package verifier changed generated output under ${root}`);
+        }
+      }
+    }
 
     const finalSkills = path.join(buildRoot, "skills");
     const finalPackages = path.join(buildRoot, "packages");

@@ -1031,7 +1031,7 @@ test("pack builds complete, marker-free default and custom npm packages", (t) =>
   );
   const customPublishDryRun = invokeNpm(
     repo,
-    ["publish", selectedStudioWeb, "--dry-run"],
+    ["publish", selectedStudioWeb, "--dry-run", "--tag", "preview"],
     { npm_config_userconfig: forcedPublicUserConfig },
   );
   assert.equal(
@@ -1153,6 +1153,122 @@ test("a failed npm pack preserves every last successful generated output", (t) =
     ),
     [],
   );
+});
+
+test("pack hooks augment staged packages and verify their tarballs", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-example", block("host", "Default."));
+  writeOverride(
+    repo,
+    "studioweb",
+    "uipath-example/SKILL.md",
+    block("host", "Studio Web."),
+  );
+  addPackageManifest(repo);
+  const verified = [];
+
+  const packages = withNpmCache(repo, () =>
+    packAllVariants(repo, {
+      augmentStagedPackage(item) {
+        if (item.variant !== "studioweb") return;
+        writeFileSync(join(item.packageDir, "host-payload.txt"), "derived payload\n");
+        const manifestPath = join(item.packageDir, "package.json");
+        const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+        manifest.files.push("host-payload.txt");
+        writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+      },
+      verifyPackedPackage(item) {
+        if (item.variant !== "studioweb") return;
+        const entries = readTarballEntries(item.tarball);
+        assert.equal(
+          entries.get("package/host-payload.txt").toString("utf8"),
+          "derived payload\n",
+        );
+        verified.push(item.variant);
+      },
+    }),
+  );
+
+  assert.deepEqual(verified, ["studioweb"]);
+  assert.ok(packages.some(({ variant }) => variant === "studioweb"));
+  assert.equal(
+    readFileSync(join(repo, "build", "packages", "studioweb", "host-payload.txt"), "utf8"),
+    "derived payload\n",
+  );
+});
+
+test("an augmenter cannot change skill trees or replace successful outputs", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-example", block("host", "Default."));
+  writeOverride(
+    repo,
+    "studioweb",
+    "uipath-example/SKILL.md",
+    block("host", "Studio Web."),
+  );
+  addPackageManifest(repo);
+  withNpmCache(repo, () => packAllVariants(repo));
+  const generatedRoots = ["skills", "packages", "npm"];
+  const before = new Map(
+    generatedRoots.map((name) => [name, treeFileBytes(join(repo, "build", name))]),
+  );
+
+  assert.throws(
+    () =>
+      withNpmCache(repo, () =>
+        packAllVariants(repo, {
+          augmentStagedPackage(item) {
+            if (item.variant === "studioweb") {
+              writeFileSync(join(item.packageDir, "skills", "unexpected.txt"), "mutation\n");
+            }
+          },
+        }),
+      ),
+    /augmenter changed the staged studioweb skill tree/,
+  );
+  for (const name of generatedRoots) {
+    assert.ok(
+      buffersMapEqual(before.get(name), treeFileBytes(join(repo, "build", name))),
+      `${name} should remain byte-identical after a failed augmenter`,
+    );
+  }
+});
+
+test("a package verifier cannot mutate or replace successful outputs", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-example", block("host", "Default."));
+  writeOverride(
+    repo,
+    "studioweb",
+    "uipath-example/SKILL.md",
+    block("host", "Studio Web."),
+  );
+  addPackageManifest(repo);
+  withNpmCache(repo, () => packAllVariants(repo));
+  const generatedRoots = ["skills", "packages", "npm"];
+  const before = new Map(
+    generatedRoots.map((name) => [name, treeFileBytes(join(repo, "build", name))]),
+  );
+
+  assert.throws(
+    () =>
+      withNpmCache(repo, () =>
+        packAllVariants(repo, {
+          verifyPackedPackage(item) {
+            if (item.variant === "default") {
+              writeFileSync(join(item.packageDir, "verifier-mutation.txt"), "mutation\n");
+            }
+          },
+        }),
+      ),
+    /package verifier changed generated output/,
+  );
+  for (const name of generatedRoots) {
+    assert.ok(
+      buffersMapEqual(before.get(name), treeFileBytes(join(repo, "build", name))),
+      `${name} should remain byte-identical after verifier mutation`,
+    );
+  }
 });
 
 test("compact or malformed marker tokens in binary assets fail before output replacement", (t) => {

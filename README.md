@@ -142,7 +142,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 
 ## Multi-Tool Support
 
-This repository works with **Claude Code**, **Google Gemini CLI**, **OpenAI Codex CLI**, and **Cursor IDE**.
+This repository works with **Claude Code**, **Google Gemini CLI**, **OpenAI Codex CLI**, **Cursor IDE**, and **Microsoft 365 Copilot Cowork**.
 
 ### Claude Code
 
@@ -194,6 +194,20 @@ The marketplace entry currently uses a `plugins/uipath` symlink so Codex can loa
 ### Cursor IDE
 
 Project rules are provided in `.cursor/rules/` and are automatically loaded by Cursor.
+
+### Microsoft 365 Copilot Cowork
+
+Microsoft 365 Copilot Cowork (not GitHub Copilot) accepts Agent Skills and Microsoft 365 plugin packages. Build the marker-free Cowork flavor and its upload-ready artifacts with:
+
+```bash
+npm run cowork:build
+```
+
+The command writes the export to `build/cowork/`. For a focused export, run `npm run skills:build`, then invoke `scripts/export-cowork.py` with `--skills-root build/skills/cowork`, the repeatable `--skill uipath-agents` option, and an output under `build/`. Use `--force` to replace an intact prior exporter-owned output. The exporter writes per-skill archives to `skills/<name>.skill`, plugin ZIPs sharded at 20 skills to `plugins/uipath-skills-cowork-<NN>.zip`, and an export report to `report.json`.
+
+Cowork is packaged separately as `@uipath/skills-cowork`; the default `@uipath/skills` package does not contain Cowork artifacts. The custom package is eligible only for gated `dev` and `preview` publication to Internal GitHub Packages after its one-time administrator bootstrap.
+
+Cowork validation is manual: upload a `.skill` from **Customize > Skills > Upload skill**, wait for it to sync, and test it in a new conversation. A Cowork-enabled Microsoft 365 work account and tenant usage-based billing/Copilot Credits are required. See [Exporting skills for Microsoft 365 Copilot Cowork](docs/copilot-cowork.md) for prerequisites, runtime limitations, and the acceptance matrix.
 
 ## Contributing
 
