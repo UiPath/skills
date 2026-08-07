@@ -11,7 +11,7 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 | Commands | What | Auth |
 |----------|------|------|
 | `solution init`, `solution projects add`, `solution resources refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
-| `solution pack`, `solution publish` | Phase 7 Orchestrator deploy — pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
+| `solution pack`, `solution publish` | Phase 7 Publish to Orchestrator — pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
 | `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
@@ -168,7 +168,7 @@ uip solution publish <packagePath> --wait --output json
 
 > The feed rejects duplicate `name+version` pairs. On a `processKey` collision, bump `--version` on `uip solution pack` and re-run.
 
-> **On failure**, print the CLI error verbatim, log it in `build-issues.md`, and re-show the Phase 7 prompt. Full contract: [phased-execution.md § Phase 7](phased-execution.md#phase-7--orchestrator-deploy).
+> **On failure**, print the CLI error verbatim, log it in `build-issues.md`, and re-show the Phase 7 prompt. Full contract: [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator).
 
 > Publish only lists the package on the feed. Installing it into an Orchestrator folder needs `uip solution deploy run` — out of Phase 7 scope.
 
