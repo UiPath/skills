@@ -163,7 +163,7 @@ When a higher tier overrides a lower one, apply it and surface it in the confirm
 
 ## Choosing the task type
 
-The `type` says **how the work gets done**, not what it's about. Read the verb + the actor in the user's description, ask the matching question, pick the type. The enum is closed — 9 values (SKILL.md Rule 16). Pick the baseline here; [§ Task-type override priority](#task-type-override-priority) then resolves conflicts (compliance, tenant evidence) on top of this pick.
+The `type` says **how the work gets done**, not what it's about. Read the verb + the actor in the user's description, ask the matching question, pick the type. The enum is closed — 10 values (SKILL.md Rule 16). Pick the baseline here; [§ Task-type override priority](#task-type-override-priority) then resolves conflicts (compliance, tenant evidence) on top of this pick.
 
 | Type | Pick when the work is… | The question that selects it |
 |---|---|---|
@@ -176,8 +176,9 @@ The `type` says **how the work gets done**, not what it's about. Read the verb +
 | `wait-for-connector` | the case **pauses until an external system calls back** (webhook, inbound message, event) | Is the case waiting for an external system to respond? |
 | `wait-for-timer` | the case **pauses for a duration or until a datetime** | Is the case just waiting on time? |
 | `case-management` | the step **launches / coordinates a child case** | Does this spin up a sub-case? |
+| `external-workflow` | a workflow **owned by an external system** runs, reached through an Integration Service connection (e.g. a Power Automate flow, a ServiceNow workflow) | Is the automation itself owned and executed by the other system, not by us? |
 
-**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. "Approve / review / decide" verbs are ambiguous between `action` (human) and `agent` (AI) — decide per the assumption playbook in [phase-0-interview.md § Sketch](phase-0-interview.md#sketch--best-assumption-every-field) and disclose the decision in the confirmation. A compliance trigger phrase forces `action` regardless of the pick above (see below).
+**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. `external-workflow` vs `execute-connector-activity`: pick `external-workflow` only when the other system runs a **multi-step workflow of its own**; a single operation against that system is `execute-connector-activity`. `external-workflow` vs `api-workflow`: `api-workflow` is ours and lives in our registry; `external-workflow` is theirs, reached through an IS connection and resolved against its own connector catalog ([external-workflow/planning.md](plugins/tasks/external-workflow/planning.md)). "Approve / review / decide" verbs are ambiguous between `action` (human) and `agent` (AI) — decide per the assumption playbook in [phase-0-interview.md § Sketch](phase-0-interview.md#sketch--best-assumption-every-field) and disclose the decision in the confirmation. A compliance trigger phrase forces `action` regardless of the pick above (see below).
 
 ## Task-type override priority
 
@@ -1008,7 +1009,7 @@ On fail: fix the model and re-run the failed checks (plus any whose inputs chang
 - **Do NOT emit a decision `action` task with fewer than 2 buttons.** `is_decision: Yes` requires ≥ 2 buttons; downgrade to `is_decision: No` if the task does not fork the case path.
 - **Do NOT emit a `wait-for-timer` task with `<UNRESOLVED>` duration.** Timer cannot fire — block Approve.
 - **Do NOT emit SLA cells on `process` / `agent` / `rpa` / `api-workflow` / timer / connector / `case-management` tasks.** SLA supports case, stage, and `action` tasks ONLY (sdd-template Key Rule 1).
-- **Do NOT emit `external-agent`, `external-workflow`, `document-extraction`, `flow-process`, `connector-activity`, `connector-trigger`, or `wait-for-event` as task types.** This skill generates 9 of the CLI's 10 types (Rule 16). `external-agent`, `external-workflow`, `document-extraction`, and `flow-process` are **not supported yet**. The rest are not CLI task types at all.
+- **Do NOT emit `external-agent`, `document-extraction`, `flow-process`, `connector-activity`, `connector-trigger`, or `wait-for-event` as task types.** `external-agent`, `document-extraction`, and `flow-process` are **not supported yet**; `connector-activity` / `connector-trigger` are plugin folder names, not schema values; `wait-for-event` is not a CLI task type at all. `external-workflow` **is** supported (Rule 16) and resolves against its own connector catalog — see [external-workflow/planning.md](plugins/tasks/external-workflow/planning.md).
 - **Do NOT author task inputs as bare field-name lists** (`**Inputs:** a, b, c`). Use the `Field | Type | Binding` table — bare lists force Phase 1 into name-match inference.
 - **Do NOT close variable lineage by guessing producers.** If no producer fires before a consumer AND the §1.5 row has no `Default`, that is an open-lineage error — surface it. Never silently retag the row's `Category` to `In` or invent a `Default` to suppress the failure.
 - **Do NOT populate `sourceTriggers` on `Out` rows.** PR 860's Phase 2 validator rejects `Out` + non-empty `sourceTriggers` (direction mismatch). An `In` row MAY carry a single `T<N>` to bind to a specific trigger (blank = primary), but its `sourceFields` MUST stay empty and a CSV is forbidden. For trigger-payload extraction, use `Category: Variable` (see §1.5 and [sdd-template-examples.md](../assets/templates/sdd-template-examples.md) Use Case 2).
