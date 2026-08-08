@@ -3,7 +3,7 @@
   "description": "Seed entity for integration_csv_import brownfield test. Schema-only (no seed records — agent imports a CSV).",
   "fields": [
     {
-      "fieldName": "SKU",
+      "name": "SKU",
       "displayName": "Stock-Keeping Unit",
       "type": "STRING",
       "isRequired": true,
@@ -11,7 +11,7 @@
       "lengthLimit": 30
     },
     {
-      "fieldName": "Quantity",
+      "name": "Quantity",
       "displayName": "On-Hand Quantity",
       "type": "DECIMAL",
       "decimalPrecision": 0,
@@ -19,7 +19,7 @@
       "minValue": 0
     },
     {
-      "fieldName": "UnitCost",
+      "name": "UnitCost",
       "displayName": "Unit Cost",
       "type": "DECIMAL",
       "isRequired": true,
@@ -27,14 +27,14 @@
       "decimalPrecision": 2
     },
     {
-      "fieldName": "Available",
+      "name": "Available",
       "displayName": "Available for Sale",
       "type": "BOOLEAN",
       "isRequired": true,
       "defaultValue": true
     },
     {
-      "fieldName": "LastRestocked",
+      "name": "LastRestocked",
       "displayName": "Last Restocked Date",
       "type": "DATE"
     }

@@ -26,9 +26,9 @@ Schema file format (passed verbatim as the body of `uip df entities create`):
     {
       "displayName": "Integration Orders",
       "fields": [
-        {"fieldName": "Code",   "type": "STRING"},
-        {"fieldName": "Value",  "type": "DECIMAL"},
-        {"fieldName": "Status", "type": "STRING"}
+        {"name": "Code",   "type": "STRING"},
+        {"name": "Value",  "type": "DECIMAL"},
+        {"name": "Status", "type": "STRING"}
       ]
     }
 
