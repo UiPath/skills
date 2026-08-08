@@ -53,3 +53,5 @@ After the sibling is built, registered, and verified (orchestration §), bind th
 Mirrors [connector-integration.md § Creating a Connection](../../connector-integration.md#creating-a-connection) step 4. If a build sub-agent returns `built:false` (or dies), show its `error` verbatim, then AskUserQuestion: `Retry create` / `Skip (defer)`. On `Skip` or repeated failure, fall to the type's Unresolved Fallback (placeholder + completion-report note) and finish planning — never halt. A verify-time I/O mismatch is a **warning**, not a failure: rewire matched fields, report missing/extra, continue.
 
 > **"Already exists" is NOT a failure** — an interrupted prior run already built the sibling; adopt it per [registry-discovery.md § Create-on-Missing → 3b](../../registry-discovery.md#create-on-missing-build-and-rediscovery). Per-type adopt tokens (init verb, kind markers, stale-declaration subpath) live in each type's § Failure blockquote.
+
+<!-- END: create-inline-common.md -->

@@ -55,3 +55,5 @@ If the connector or connection cannot be resolved:
 - The matching `entry-points.json` entry **is still appended** — entry-points are structural BPMN references and do not depend on connector resolution.
 - **No trigger-edge is created** (Rule 20). The first stage's `case-entered` entry condition starts the case regardless of whether this trigger is resolved or a placeholder.
 - Document the missing trigger and its `<UNRESOLVED>` fields in the completion report so the user knows what to attach after registering the IS connection.
+
+<!-- END: planning.md -->

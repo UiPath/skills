@@ -75,3 +75,5 @@ When the sdd.md phrasing is ambiguous (missing start time, timezone, repeat coun
 ```
 
 `sdd-intent` is reviewer-only prose — the execution phase ignores it. `timeCycle` is the canonical executable field, written directly into `node.data.inputs.timeCycle` per [`impl-json.md`](impl-json.md).
+
+<!-- END: planning.md -->

@@ -65,3 +65,5 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - `data.inputs` and `data.outputs` populated (unless placeholder)
 - No circular self-reference
 - `id` captured in `id-map.json`
+
+<!-- END: impl-json.md -->
