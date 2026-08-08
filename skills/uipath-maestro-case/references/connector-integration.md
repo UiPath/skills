@@ -182,3 +182,5 @@ Record the resolved values in `tasks.md` under the task entry:
 ```
 
 Also record in `registry-resolved.json`: search query, matched entry, selected connection, connector metadata, and (when surfaced) `spec.diagnostics.fallbacks[]`.
+
+<!-- END: connector-integration.md -->

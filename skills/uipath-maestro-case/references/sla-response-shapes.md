@@ -72,3 +72,5 @@ Probed with `uip maestro case validate` on **uip 1.198.0-preview.102** (2026-07-
 | `escalationId: "any"` | **invalid** — same error |
 | dangling `slaId` | **invalid** — "The SLA referenced by rule … no longer exists" |
 | task with `entryConditions: []` or the key absent | valid (defect is invisible to the CLI) |
+
+<!-- END: sla-response-shapes.md -->

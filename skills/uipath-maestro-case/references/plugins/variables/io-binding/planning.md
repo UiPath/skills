@@ -139,3 +139,5 @@ Apply at planning time (Phase 1):
 | Regular stage task | Earlier stages + same stage earlier tasks + root variables |
 | Secondary stage task | ALL tasks across ALL stages |
 | Adhoc task | ALL tasks |
+
+<!-- END: planning.md -->
