@@ -36,11 +36,13 @@ description: >
   structural grading passes that, outcome grading correctly fails it).
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:setup, shape:multi-node, connector, feature:activities, feature:write-back]
 
-# One attempt only. A retry re-runs the agent AND the graders, and every grader pass
-# re-executes the case — which writes to the real mailbox and the real Jira project.
-# Retrying a test with third-party side effects duplicates records, it does not
-# recover the run.
-max_iterations: 1
+# NOTE on retries: a retry would re-run the agent AND the graders, and each grader
+# pass re-executes the case — duplicating records in the real mailbox and Jira
+# project. `max_iterations: 1` is NOT set here on purpose: `coder-eval plan` reports
+# it as an unknown top-level field that is ignored ("unknown top-level field
+# 'max_iterations' will be ignored"), so it would document a guarantee it does not
+# provide. The current execution model is one-shot (observed `iterations=1`); if a
+# supported retry control appears, cap it at 1 here.
 
 # Measured: a healthy run is ~14 min end to end (build ~12 min, refresh + debug ~1 min,
 # probes seconds). `task_timeout` must cover GRADING too — the reported duration

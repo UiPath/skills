@@ -18,6 +18,7 @@ from __future__ import annotations
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -52,9 +53,38 @@ PEER_WAIT_SECONDS = 900
 
 
 def precondition_failed(msg: str) -> None:
-    """Abort as an ENVIRONMENT gap, not a skill regression."""
+    """Fail loudly and label the cause as environmental.
+
+    NOTE: coder_eval has no skip semantics — a non-zero exit scores the criterion
+    as failed regardless of the message. This only makes triage unambiguous for a
+    human reading the log. The real guard is the connection health check in
+    ``pre_run`` (``seed_outcome.py``), which fails before an agent run is spent.
+    """
     sys.exit(f"test precondition failed: {msg} — this is an ENVIRONMENT gap "
              "(unhealthy connection / missing sandbox fixture), NOT a skill regression")
+
+
+def _to_epoch(stamp: str | None) -> float | None:
+    """Parse the timestamp shapes these two APIs return, into epoch seconds.
+
+    Graph returns ``2026-08-07T23:55:17Z``; Jira returns
+    ``2026-08-08T02:55:28.242+0300`` (offset without a colon). Both must be
+    comparable to the harness's debug-start time.
+    """
+    if not stamp:
+        return None
+    text = str(stamp).strip().replace("Z", "+00:00")
+    # Normalize ±HHMM to ±HH:MM, which datetime.fromisoformat requires on <3.11.
+    match = re.search(r"([+-]\d{2})(\d{2})$", text)
+    if match:
+        text = text[: match.start()] + f"{match.group(1)}:{match.group(2)}"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.timestamp()
 
 
 def fail(msg: str) -> None:
@@ -181,7 +211,10 @@ def _do_debug() -> dict:
         data = {**data, **_await_instance(since)}
 
     return {"envelope": {k: v for k, v in payload.items() if k != "Data"},
-            "data": data}
+            "data": data,
+            # Attribution floor for the outcome probes: only effects at or after
+            # this instant can have come from the case the harness just ran.
+            "debug_started_at": since + "+00:00"}
 
 
 def ensure_debug_ran() -> dict:
@@ -204,10 +237,28 @@ def ensure_debug_ran() -> dict:
             waited += 5
         fail("timed out waiting for a peer grader's case debug run")
 
-    result = _do_debug()
-    with open(DEBUG_RESULT, "w") as fh:
-        json.dump(result, fh, indent=1, default=str)
-    return result
+    # Always publish SOMETHING and always drop the lock. A bare `_do_debug()` here
+    # stranded the lock on failure (its internal `fail()` raises SystemExit), which
+    # made every peer grader wait out PEER_WAIT_SECONDS and then report a timeout
+    # instead of the real error.
+    try:
+        result = _do_debug()
+    except BaseException as exc:
+        result = {"envelope": {"Result": "Failure",
+                               "Message": f"case debug raised: {exc!r}"},
+                  "data": {}}
+        with open(DEBUG_RESULT, "w") as fh:
+            json.dump(result, fh, indent=1, default=str)
+        raise
+    else:
+        with open(DEBUG_RESULT, "w") as fh:
+            json.dump(result, fh, indent=1, default=str)
+        return result
+    finally:
+        try:
+            os.remove(DEBUG_LOCK)
+        except OSError:
+            pass
 
 
 def final_status(result: dict) -> str | None:
@@ -216,6 +267,48 @@ def final_status(result: dict) -> str | None:
         if data.get(key):
             return data[key]
     return None
+
+
+def debug_started_at() -> float | None:
+    """Epoch seconds when the HARNESS started the case, from ``debug_result.json``."""
+    if not os.path.exists(DEBUG_RESULT):
+        return None
+    try:
+        with open(DEBUG_RESULT) as fh:
+            return _to_epoch((json.load(fh) or {}).get("debug_started_at"))
+    except Exception:
+        return None
+
+
+def _only_after(hits: list, stamp_key: str, label: str) -> list:
+    """Drop records that predate the harness-owned case run.
+
+    Attribution guard. The token alone proves a record mentions this run; it does
+    NOT prove the CASE produced it. An agent can reach the same connectors by any
+    route the `command_not_executed` patterns miss — e.g. wrapping the CLI in a
+    helper script and invoking `python3 helper.py`. Anything the agent creates
+    necessarily predates the harness's debug run, which starts only after the
+    agent has finished, so a timestamp floor removes that whole class of bypass.
+
+    Fails open when the floor is unknown (no debug result yet, unparseable stamp):
+    the criteria that call this always run the case first, so an absent floor means
+    something else already went wrong and will be reported by its own criterion.
+    """
+    floor = debug_started_at()
+    if floor is None:
+        return hits
+    kept, dropped = [], []
+    for hit in hits:
+        when = _to_epoch(hit.get(stamp_key))
+        # Allow a small negative skew: the two systems' clocks are not ours.
+        if when is None or when >= floor - 120:
+            kept.append(hit)
+        else:
+            dropped.append(hit)
+    for hit in dropped:
+        print(f"  [{label}] IGNORED record predating the case run "
+              f"({hit.get(stamp_key)}): {hit}")
+    return kept
 
 
 def probe_email(token: str) -> list:
@@ -236,11 +329,12 @@ def probe_email(token: str) -> list:
         if any(s in blob for s in ("Unauthorized", "invalid_grant", "401", "403")):
             precondition_failed(f"cannot read the sandbox mailbox: {blob[:400]}")
         return []
-    return [
+    hits = [
         {"subject": m.get("subject"), "received": m.get("receivedDateTime")}
         for m in _items(payload)
         if token in (m.get("subject") or "")
     ]
+    return _only_after(hits, "received", "email")
 
 
 def probe_issue(token: str) -> list:
@@ -264,7 +358,7 @@ def probe_issue(token: str) -> list:
             out.append({"key": issue.get("key"),
                         "summary": fields.get("summary"),
                         "created": fields.get("created")})
-    return out
+    return _only_after(out, "created", "jira")
 
 
 def poll(label: str, probe, token: str) -> list:

@@ -3,11 +3,14 @@
 
 Both targets are SHARED sandboxes, so the test cleans up after itself.
 
-Asymmetry to be aware of: mailbox messages are deletable, Jira issues are NOT —
-the sandbox account gets 403 "You do not have permission to delete issues in this
-project". Those issues accumulate at roughly one per run per replicate. Harmless
-to correctness (every query is scoped to the run's own token) but worth requesting
-delete permission from the sandbox owner if the project gets noisy.
+Mailbox messages are deleted from BOTH Inbox and Sent Items (the design sets
+``saveToSentItems: true``, so each run leaves two copies).
+
+Jira issues cannot be deleted — the sandbox account gets 403 "You do not have
+permission to delete issues in this project" — so they are transitioned to Done
+instead. One row per run therefore persists, but the project's open-issue list
+stays clean. Worth requesting delete permission from the sandbox owner if the row
+count ever matters.
 
 Best-effort: post_run results are informational, so this always exits 0.
 """
@@ -17,9 +20,11 @@ from __future__ import annotations
 import json
 import os
 import sys
+import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from outcome_probe import (  # noqa: E402
+    JIRA_CONN,
     JIRA_PROJECT,
     MAILBOX_FOLDER,
     OUTLOOK_CONN,
@@ -96,6 +101,10 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except Exception as exc:  # never let cleanup affect the run
-        print(f"cleanup_outcomes: best-effort cleanup failed: {exc}")
+    except Exception:  # never let cleanup affect the run
+        # Print the traceback, not just str(exc): a bare message hid a NameError in
+        # the Jira branch, which only executes when there IS an issue to close — so
+        # cleanup looked fine on dry runs and silently no-opped on real ones.
+        print("cleanup_outcomes: best-effort cleanup failed:")
+        traceback.print_exc()
         sys.exit(0)
