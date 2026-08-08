@@ -107,6 +107,10 @@ def main() -> None:
                         help="Substring that MUST appear across metric modules / generated code (repeatable)")
     parser.add_argument("--forbid-substr", action="append", default=[],
                         help="Substring that must NOT appear across metric modules / generated code (repeatable)")
+    parser.add_argument("--require-regex", action="append", default=[],
+                        help="Regex that MUST match across metric modules / generated code (repeatable). "
+                             "Use when several equally-valid spellings satisfy the requirement, e.g. "
+                             "\"(ProcessType|processType|packageType) eq 'Agent'\".")
     parser.add_argument("--require-starttime", action="store_true",
                         help="A named time constant must appear in metric modules (not inline Date arithmetic)")
     parser.add_argument("--require-state", action="store_true",
@@ -187,10 +191,13 @@ def main() -> None:
     code_surface = "\n".join(p.read_text(encoding="utf-8", errors="ignore") for p in scan_files)
     metric_surface = "\n".join(p.read_text(encoding="utf-8", errors="ignore") for p in metric_files)
 
-    # 6. require-substr / forbid-substr
+    # 6. require-substr / require-regex / forbid-substr
     for s in args.require_substr:
         check(s in code_surface,
               f"Required substring not found in metric modules / generated code: {s!r}")
+    for pat in args.require_regex:
+        check(re.search(pat, code_surface) is not None,
+              f"Required pattern not found in metric modules / generated code: {pat!r}")
     for s in args.forbid_substr:
         check(s not in code_surface,
               f"Forbidden substring present in metric modules / generated code: {s!r}")

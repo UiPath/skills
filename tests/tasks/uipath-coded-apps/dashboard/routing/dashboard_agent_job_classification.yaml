@@ -37,12 +37,16 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Correct agent-job classification: raw OData filter + no sourceType discriminator.
+  # Correct agent-job classification: filter on the agent discriminator, never sourceType.
+  # Accept all three equally-valid spellings — ProcessType (wire), processType (SDK
+  # camelCase), packageType (SDK mapped name; the skill's own canonical example, and
+  # the SDK rewrites it to processType in the filter). The old check required only the
+  # ProcessType spelling and false-failed correct code that used packageType/processType.
   - type: run_command
-    description: "Metric module filters jobs with ProcessType eq 'Agent' and does not use sourceType as the discriminator"
+    description: "Metric module filters jobs on the agent discriminator ((Process|process|package)Type eq 'Agent') and does not use sourceType"
     command: >
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
-      --min-metrics 1 --require-substr "ProcessType eq 'Agent'" --forbid-substr "sourceType"
+      --min-metrics 1 --require-regex "(ProcessType|processType|packageType) eq 'Agent'" --forbid-substr "sourceType"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
