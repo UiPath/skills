@@ -44,12 +44,17 @@ POLL_SLEEP = 30
 
 # Terminal instance states, used when falling back to instance polling.
 TERMINAL_STATES = {"Completed", "Successful", "Faulted", "Cancelled", "Canceled", "Stopped"}
-INSTANCE_WAIT_SECONDS = 1200
+INSTANCE_WAIT_SECONDS = 600
 INSTANCE_POLL_SLEEP = 20
 
 # Waiting for a peer grader's debug run; must exceed a cold debug (pack + deploy
 # + execute), which measured ~60s but can be far slower on a loaded tenant.
 PEER_WAIT_SECONDS = 900
+
+# A lock older than this had its owner killed (coder_eval kills a criterion at its
+# timeout, so the `finally` that releases the lock never runs). Must exceed the
+# worst honest debug duration: 600s CLI poll + INSTANCE_WAIT_SECONDS.
+STALE_LOCK_SECONDS = 1500
 
 
 def precondition_failed(msg: str) -> None:
@@ -186,7 +191,7 @@ def _await_instance(since_iso: str) -> dict:
             "followedInstance": True}
 
 
-def _do_debug() -> dict:
+def _do_debug(since: str) -> dict:
     solution_dir = _find_dir("**/*.uipx")
     project_dir = _find_dir("**/project.uiproj")
 
@@ -202,7 +207,6 @@ def _do_debug() -> dict:
         if "Node already added to the graph" not in blob:
             fail(f"solution resources refresh failed: {blob[:600]}")
 
-    since = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     payload = _uip_json(["maestro", "case", "debug", project_dir], timeout=1500)
     data = payload.get("Data") if isinstance(payload, dict) else None
     data = data if isinstance(data, dict) else {}
@@ -217,16 +221,50 @@ def _do_debug() -> dict:
             "debug_started_at": since + "+00:00"}
 
 
+def _claim_lock() -> str | None:
+    """Take ownership of the debug run, returning the attribution floor to use.
+
+    The lock file carries the ISO instant its owner started. That matters when a
+    stale lock is taken over: reusing the ORIGINAL start keeps the attribution
+    floor from sliding forward, which would otherwise discard effects the first
+    (killed) debug run legitimately produced.
+
+    Returns None when another grader holds a live lock.
+    """
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    try:
+        fd = os.open(DEBUG_LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.write(fd, now.encode())
+        os.close(fd)
+        return now
+    except FileExistsError:
+        pass
+
+    age = time.time() - os.path.getmtime(DEBUG_LOCK)
+    if age <= STALE_LOCK_SECONDS:
+        return None
+
+    # The owner died without publishing — coder_eval kills a criterion at its
+    # timeout, so `finally` never runs. Take over rather than waiting out
+    # PEER_WAIT_SECONDS and reporting a timeout instead of the real problem.
+    try:
+        with open(DEBUG_LOCK) as fh:
+            original = (fh.read() or "").strip()
+    except OSError:
+        original = ""
+    print(f"  taking over a stale debug lock (age {int(age)}s); "
+          f"keeping the original attribution floor {original or '<unknown>'}")
+    return original or now
+
+
 def ensure_debug_ran() -> dict:
     """Run the case once per task, no matter how many graders ask for it."""
     if os.path.exists(DEBUG_RESULT):
         with open(DEBUG_RESULT) as fh:
             return json.load(fh)
 
-    try:
-        fd = os.open(DEBUG_LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        os.close(fd)
-    except FileExistsError:
+    floor = _claim_lock()
+    while floor is None:
         # A peer grader owns the debug run — wait for it to publish.
         waited = 0
         while waited < PEER_WAIT_SECONDS:
@@ -235,14 +273,18 @@ def ensure_debug_ran() -> dict:
                     return json.load(fh)
             time.sleep(5)
             waited += 5
-        fail("timed out waiting for a peer grader's case debug run")
+            floor = _claim_lock()   # the peer may have died mid-wait
+            if floor is not None:
+                break
+        else:
+            fail("timed out waiting for a peer grader's case debug run")
 
     # Always publish SOMETHING and always drop the lock. A bare `_do_debug()` here
     # stranded the lock on failure (its internal `fail()` raises SystemExit), which
     # made every peer grader wait out PEER_WAIT_SECONDS and then report a timeout
     # instead of the real error.
     try:
-        result = _do_debug()
+        result = _do_debug(floor)
     except BaseException as exc:
         result = {"envelope": {"Result": "Failure",
                                "Message": f"case debug raised: {exc!r}"},

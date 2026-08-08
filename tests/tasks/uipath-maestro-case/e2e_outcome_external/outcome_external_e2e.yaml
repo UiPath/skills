@@ -120,10 +120,14 @@ success_criteria:
     pass_threshold: 0
 
   # The execution vehicle. Deliberately lighter than the outcome probes below.
+  # timeout must EXCEED the grader's own slow path (600 s CLI debug poll +
+  # INSTANCE_WAIT_SECONDS 600 s), not equal it. At 1800 s they matched exactly and
+  # coder_eval killed the grader at the wall: no result published, lock stranded,
+  # and the next criterion started a SECOND debug run. Margin is the fix.
   - type: run_command
     description: "case executes: uip solution resources refresh then uip maestro case debug reaches finalStatus=Completed"
     command: "python3 $TASK_DIR/check_case_ran.py"
-    timeout: 1800
+    timeout: 2400
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0

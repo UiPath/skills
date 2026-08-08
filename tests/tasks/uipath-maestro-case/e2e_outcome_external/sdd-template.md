@@ -87,9 +87,9 @@ correlates the notification and the audit record by that reference.
 
 > **The email MUST actually be delivered to the approver's mailbox — a saved
 > draft does NOT notify anyone and does NOT satisfy this requirement.** The
-> connector's `saveAsDraft` input defaults to `true`, so bind it explicitly to
-> `false`. Leaving it unbound drafts the message instead of sending it, and also
-> leaves this task incomplete so the case never reaches Stage 2.
+> connector documents `saveAsDraft` as defaulting to `true` ("By default, the
+> email will be saved as draft"), so bind it explicitly to `false` rather than
+> relying on the default.
 
 **Inputs (body):**
 
