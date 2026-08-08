@@ -130,8 +130,46 @@ def _find_dir(pattern: str) -> str:
     return os.path.dirname(sorted(hits, key=len)[0])
 
 
+def _our_stage_ids() -> set:
+    """Stage node ids from the caseplan the agent built.
+
+    These are randomly minted per build (e.g. ``Stage_aR4mK9``), which makes them
+    a reliable fingerprint for OUR instance. Trigger ids are not: the skill often
+    emits the literal ``trigger_1``, which any other case can also carry.
+    """
+    hits = glob.glob("**/caseplan.json", recursive=True)
+    if not hits:
+        return set()
+    try:
+        with open(sorted(hits, key=len)[0]) as fh:
+            plan = json.load(fh)
+    except Exception:
+        return set()
+    return {n.get("id") for n in (plan.get("nodes") or [])
+            if "Stage" in str(n.get("type")) and n.get("id")}
+
+
+def _instance_is_ours(instance_id: str, folder_key: str, stage_ids: set) -> bool:
+    """True when the instance executed elements belonging to OUR caseplan.
+
+    The runtime names per-stage elements after the stage id (e.g.
+    ``stageSlaEventSubprocess_Stage_aR4mK9``), so a substring match identifies the
+    instance without needing an id the CLI never gave us.
+    """
+    payload = _uip_json(["maestro", "case", "instance", "variables",
+                         str(instance_id), "--folder-key", str(folder_key)])
+    elements = (payload.get("Data") or {}).get("Elements") or []
+    seen = " ".join(str(e.get("ElementId") or "") for e in elements)
+    return any(stage_id in seen for stage_id in stage_ids)
+
+
 def _newest_debug_instance(since_iso: str) -> dict | None:
-    """The most recent Studio Web Debug instance started after ``since_iso``.
+    """Find OUR Studio Web Debug instance started after ``since_iso``.
+
+    The tenant is shared: other people's debug instances land in the same window
+    (measured 2026-08-07 — a foreign instance reached Completed while ours was
+    still stalled, and following "the newest" would have reported their success as
+    ours). So candidates are fingerprinted against this build's stage ids.
 
     Deliberately does not filter by folder: debug lands the instance in the
     invoking user's personal workspace, whose key differs per user and per CI
@@ -148,17 +186,28 @@ def _newest_debug_instance(since_iso: str) -> dict | None:
     ]
     if not candidates:
         return None
-    if len(candidates) > 1:
-        # The CLI gives no instanceId when it times out, so the only handle is
-        # "newest debug instance in this window". With tasks run in parallel
-        # (-j > 1) a sibling case task's instance can land in the same window,
-        # and attaching to it would report someone else's success. Refuse to
-        # guess: the outcome probes carry the real signal anyway.
-        ids = ", ".join(str(i.get("InstanceId")) for i in candidates)
-        print(f"  refusing to follow an instance — {len(candidates)} debug instances "
-              f"started in this window, cannot tell which is ours: {ids}")
+
+    stage_ids = _our_stage_ids()
+    if not stage_ids:
+        print("  cannot fingerprint our instance (no caseplan stage ids); "
+              "refusing to follow one")
         return None
-    return candidates[0]
+
+    ours = [i for i in candidates
+            if _instance_is_ours(i.get("InstanceId"), i.get("FolderKey"), stage_ids)]
+    if not ours:
+        # An instance that stalls BEFORE entering a stage runs only generic
+        # elements (trigger_1, CaseInitialVariablesSetupNode, caseStartedSendMessage
+        # …), and its server-minted PackageId appears nowhere on disk — so there is
+        # no way to tell it apart from a stranger's. Refuse rather than guess: this
+        # criterion is the vehicle, and the outcome probes are token-scoped, so they
+        # still report the truth about whether the case did its job.
+        ids = ", ".join(str(i.get("InstanceId")) for i in candidates)
+        print(f"  none of the {len(candidates)} debug instance(s) in this window "
+              f"carry our stage ids {sorted(stage_ids)} — cannot identify ours "
+              f"(an instance stalled before its first stage is indistinguishable): {ids}")
+        return None
+    return max(ours, key=lambda i: str(i.get("CreatedTimeUtc") or ""))
 
 
 def _await_instance(since_iso: str) -> dict:
