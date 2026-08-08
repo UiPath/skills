@@ -86,7 +86,7 @@ If the parser response names `--skeleton-v2` as unknown or unsupported (typicall
 
 - **Straight-through** → continue directly into Phase 3 with no prompt; the summary doubles as the milestone narration line.
 - **Pause-at-preview** → present the §Prompt below; only a user response transitions out of Phase 2.
-- **No recorded preference** (resumed or legacy run): interactive → ask the §Prompt now; non-interactive → straight-through (no publish — Phase 5 remains the only, still-gated, publish point) and say so in one line.
+- **No recorded preference** (including a resumed/legacy or fresh non-interactive run) → straight-through with no prompt; say so in one line. Do not publish here — Phase 5 remains the only, still-gated, publish point.
 
 The Phase 4 retry-cap, Phase 5 publish, and Phase 6 debug-consent stops below are independent of this preference and are never bypassed.
 
@@ -219,7 +219,7 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 - **`--output-filter` is mandatory on every `uip solution upload` call** — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload) for the projection and fallback procedure.
 - `uip solution resources refresh` MUST run before upload — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
 - Do **NOT** run `uip maestro case pack` + `uip solution publish` unless user explicitly asks for Orchestrator deployment. That path puts case directly into Orchestrator, bypassing Studio Web. Default is always Studio Web.
-- Publish ships a build that has not been exercised — the debug gate follows (Phase 6). If a Phase 6 debug run leads to a fix, re-run this phase's `resources refresh` + `solution upload` so Studio Web holds the fixed build.
+- Publish ships a build that has not been exercised — the debug gate follows (Phase 6).
 
 ## Phase 6 — Debug
 
@@ -232,15 +232,14 @@ After Phase 5 (whether published or skipped), prompt via **AskUserQuestion**:
 
 Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams results.
 
-After debug completes, return to Phase 6 prompt so user can re-run or move on. Exit skill only on `Done`.
+After a successful debug run, return to the Phase 6 prompt so the user can re-run or move on. If debug fails, load [troubleshooting-guide.md](troubleshooting-guide.md) directly. Exit only on `Done`.
 
-Before this prompt, include `Suggested next steps: run a debug session if you are ready to exercise the case, or stop here if validation (and publish) is enough for now.` After debug results, print `Suggested next steps: inspect the debug output, fix and re-run, or re-publish with the Phase 5 commands if a fix changed the build.` On `Done`, print `Suggested next steps: review caseplan.json/tasks.md locally or update sdd.md and re-run when you want changes.`
+Before this prompt, include `Suggested next steps: run a debug session if you are ready to exercise the case, or stop here if validation (and publish) is enough for now.` After a successful result, print `Suggested next steps: inspect the debug output, run again, or choose Done.` A failed result follows the troubleshooting route above. On `Done`, print `Suggested next steps: review caseplan.json/tasks.md locally or update sdd.md and re-run when you want changes.`
 
 ### Debug notes
 
 - `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
-- Debug verifies the build actually runs end-to-end. If debug surfaces a fixable issue, see [Step 15a — Troubleshoot failed case](implementation.md#step-15a--troubleshoot-failed-case) and re-run; if the case was already published, re-publish afterwards so the published build carries the fix.
-- **Inline-built api-workflow siblings are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found") by design; agent siblings do resolve in debug. Verifying that task's runtime needs a full solution deploy (`uip solution pack` → `uip solution publish` → `uip solution deploy run`) — an Orchestrator install, so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`; the Phase 5 no-deploy default applies); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline).
+- A failed debug or deployed Case run routes directly to [troubleshooting-guide.md](troubleshooting-guide.md), the sole owner of diagnosis, repair/retry, conditional re-publish, incident `170007`, timeout, and escalation. Do not load it on a successful run.
 
 For further authoring changes (add task, tweak condition, etc.), user updates `sdd.md` and re-runs skill from Phase 1 — skill does not offer in-place incremental edits.
 

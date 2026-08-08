@@ -8,7 +8,7 @@ Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per 
 >
 > **Input:** `tasks/tasks.md` — the complete handoff artifact.
 
-> **Five phases follow planning.** Execution splits into **Phase 2 — Prototyping** (reviewable preview: structure, conditions, SLA/escalation, and connector-rule stubs), **Phase 3 — Implementation** (connector schemas, task values, and connector-rule upgrades), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, and Phase 6 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbers are stable labels; follow the order stated by each phase.
+> **Five phases follow planning.** Execution splits into **Phase 2 — Prototyping** (reviewable preview: structure, conditions, SLA/escalation, and connector-rule stubs), **Phase 3 — Implementation** (connector schemas, task values, and connector-rule upgrades), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run). Read [phased-execution.md](phased-execution.md) for all phase boundaries, prompts, re-entry, retries, and aborts. Step numbers are stable labels; follow the order stated by each phase.
 
 ## Per-plugin execution
 
@@ -28,7 +28,7 @@ TaskUpdate items keyed by T-number are the audit trail — mark each `in_progres
 
 **Cap single Write at ~15K out tok / ~40KB.** When a section's whole-section Write would exceed this, keep the per-section cadence: root/nodes/vars and task shapes first, then Phase 2 SLA and conditions, then Phase 3 connector/value details. For cases with ≥40 tasks or ≥8 stages, NEVER emit the full populated caseplan.json in one Write. A single 15K-out-tok Write turn pays ~150s inference; smaller turns let validate gates catch field drops between phases. Build-assembler helper scripts (`/tmp/build-caseplan.js` etc.) are forbidden — they violate Rule 13 regardless of `/tmp` placement or framing.
 
-For CLI-gated sections (§4.6 non-connector schema, §9.7 connector schema), use **gather-then-write**: run all CLI calls first, collect results in reasoning, then enter the Read → writes → validate batch.
+For §4.6 non-connector schema, use **gather-then-write**: run its CLI calls first, collect those small schemas in reasoning, then enter the Read → writes → validate batch. Section §9.7 instead uses **cache-then-write**: after each target-local CLI call, immediately Write the complete response to that target's raw cache; only after the eligible caches exist may its mutation batch begin. Never collect a connector payload in reasoning.
 
 Full contract — recovery, tool primitive selection (Edit default, whole-section Write at ≥10 T-entries), audit trail, scope — in [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical). Phase 1 `tasks.md` building uses the same section-batched contract per [planning.md §4.0a](planning.md).
 
@@ -98,14 +98,14 @@ The case file must live inside a solution + project. The case plugin owns projec
 
 For each trigger T-entry in `tasks.md §4.3`, open the matching plugin's `impl-json.md`:
 
-- Manual / Timer / Event (resolved) → `plugins/triggers/<type>/impl-json.md` §3
+- Manual / Timer → `plugins/triggers/<type>/impl-json.md`; Event (resolved) → [`plugins/triggers/event/impl-json.md`](plugins/triggers/event/impl-json.md) Phase 2 envelope only
 - Event (UNRESOLVED) → [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) — node still written; case stays reachable
 
-Each plugin writes one node to `caseplan.json.nodes[]` and appends one entry to `entry-points.json.entryPoints[]` atomically. Capture every `TriggerId` for Step 6.2 — an In-arg's `elementId` resolves to `id-map[<sourceTriggers T-number>].id`, or the primary trigger (T02) when its `sourceTriggers` is blank.
+Each plugin writes one node to `caseplan.json.nodes[]` and appends one entry to `entry-points.json.entryPoints[]` atomically. Capture every `TriggerId` for Step 6.2 — an In-arg's `elementId` resolves to `id-map[<sourceTriggers T-number>].id`, or the primary trigger (T02) when its `sourceTriggers` is blank. A resolved connector event is only scaffolded here; its own Phase 3 spec/cache/splice runs in Step 9.7.
 
 ## Step 6.2 — Declare global variables and arguments
 
-For each variable/argument T-entry from `tasks.md §4.2.1`, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md). This step populates top-level `variables` (inputs, outputs, inputOutputs) and trigger output mappings. Execute these before adding stages — downstream tasks and conditions reference variables via `=vars.<id>`.
+For each variable/argument T-entry from `tasks.md §4.2.1`, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md). This step populates top-level `variables` and spec-independent trigger argument bridges before stages are added. Defer only the connector-event spec-output dispatcher and its spec-dependent validation until Step 9.7 creates `tasks/trigger-spec-cache.json`; do not fabricate a sidecar in Phase 2.
 
 ## Step 6.3 — Refresh entry-points.json input/output
 
@@ -219,7 +219,7 @@ Before any Phase 3 mutation:
 1. **Re-read `tasks.md`** — per Rule 7 of `SKILL.md`.
 2. **Re-read `caseplan.json`** — rebuild name → ID maps from authoritative artifact. See [phased-execution.md § Re-entry protocol](phased-execution.md#re-entry-protocol) for which fields to index.
 3. **Seed Phase 3 progress todos** — call TodoWrite with the section-level items below. Mark each `in_progress` on entry, `completed` on exit. Phase 2 todos (if any) are stale — replace, do not append.
-   1. Wire connector task schemas (Step 9.7)
+   1. Configure connector event/task targets (Step 9.7)
    2. Bind task I/O values (Step 9.8)
    3. Upgrade resolved connector-bound condition rules (Step 10.5)
    4. Resolve in-expression `vars.$xref` markers (Step 11.5)
@@ -228,25 +228,31 @@ Before any Phase 3 mutation:
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
 
-## Step 9.7 — Connector task detail (gather-then-write)
+## Step 9.7 — Connector event/task detail (raw-cache gather then splice)
 
-**Phase A — gather.** For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md`:
+Process resolved targets in this order: case-level connector events, connector activities, then in-stage connector waits. Skip target placeholders.
 
-1. Run `get-connection` (each task runs its own — never reuse).
-2. Run `uip maestro case spec --type <activity|trigger> --activity-type-id <id> --connection-id <id> --input-details '<json>' --output json` per the plugin's `impl-json.md`.
-3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids; mint `var` / `id` / `elementId` on `caseShape.inputs` / `outputs` per the plugin's uniqueness rule.
+**Phase A — target-local cache.** For each target, follow its selected owner:
 
-Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderKey bindings) in reasoning. Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`).
+| Target | Owner |
+|---|---|
+| Event trigger | [`plugins/triggers/event/impl-json.md`](plugins/triggers/event/impl-json.md) + trigger [common](connector-trigger-common.md#phase-3-implementation--single-cli-call) |
+| Connector activity | [`plugins/tasks/connector-activity/impl-json.md`](plugins/tasks/connector-activity/impl-json.md) |
+| In-stage wait | [`plugins/tasks/connector-trigger/impl-json.md`](plugins/tasks/connector-trigger/impl-json.md) + trigger common |
 
-**Phase B — batched write.** One Read of `caseplan.json`. Then for each gathered task: one Edit setting `data.context = caseShape.context`, `data.inputs = caseShape.inputs`, `data.outputs = caseShape.outputs` plus the matching root-level Connection + FolderKey binding entries. Skip the re-Read between sibling Edits.
+Every target runs its own Phase 3 `get-connection` and `case spec --input-details --output json`. Immediately Write the complete unmodified response to `tasks/spec-cache.<elementId>.json` and record cache path + target identity. Do not reuse or substitute another target's response, and never keep this payload only in reasoning. After the selected owner's post-spec gate, also record whether the cache is eligible for enrichment or retained for audit only.
 
-**Phase C — sync + validate.** Populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Regenerate `bindings_v2.json` once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md) — single pass includes non-connector bindings from Step 9 and Connection bindings from this step. Run validate.
+**Phase B — cache-derived mutation.** One Read of `caseplan.json` at section entry. For each successfully gated, enrichment-eligible target, Read its cache immediately before that target's Edit. Splice the complete `Data.CaseShape.Context`, `Inputs`, and `Outputs` subtrees required by its owner; recursively lower-case only the first character of object keys; then apply only mutations explicitly permitted by that owner: placeholder substitution, ID minting, output projection/deduplication, envelope placement, and the activity owner's multipart file-value binding. Preserve all other values, including JSON-string values. Append that target's root bindings and skip a caseplan re-Read between sibling Edits. Never splice a cache retained only for audit after placeholder fallback.
 
-On context-compaction mid-gather: re-Read `caseplan.json`, scan for connector tasks without `data.context` populated, re-run Phase A for those only.
+For every enrichment-eligible event target, derive its unminted `tasks/trigger-spec-cache.json[T<N>]` view from the raw cache. After all event entries exist, run only the global-variable owner's deferred connector-event spec-output dispatch and spec-dependent validation; merge outputs with Phase 2 argument bridges rather than replacing them.
+
+**Phase C — sync + validate.** Populate the IS connection cache, regenerate `bindings_v2.json` once (including non-connector bindings from Step 9), and validate.
+
+On context compaction, re-Read `caseplan.json` and the relevant raw cache. A populated target without its recorded full-response cache is not proof of a safe resume; rerun that target's spec and replace only its cache before continuing.
 
 ## Step 9.8 — Bind task input/output values (per-task Edit batch)
 
-One Read of `caseplan.json` at Step 9.8 entry. Then **one Edit per task** replacing that task's full `data.inputs` array. Skip the re-Read between sibling Edits. Skip placeholder tasks entirely — they have no inputs.
+One Read of `caseplan.json` at Step 9.8 entry. Then **one Edit per non-connector task** replacing that task's full `data.inputs` array. Skip the re-Read between sibling Edits. Skip placeholders and both persisted connector task types (`execute-connector-activity`, `wait-for-connector`) entirely: their owners already passed resolved values through `case spec`, and replacing `data.inputs` would destroy CLI-authored sink forms.
 
 Per-task composition (in reasoning, before that task's Edit) per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md):
 
@@ -263,42 +269,22 @@ Read `caseplan.json` and scan all four condition scopes for `wait-for-connector`
 
 For each matched rule whose connector resolved in planning, run the connector-trigger `case spec --type trigger --input-details` procedure, mint its output IDs/element IDs, and gather its root Connection/Folder bindings. Then Edit **only that rule's `uipath` block**. Preserve the enclosing condition array plus the rule's `id`, `rule`, `conditionExpression`, scope, and placement. Apply declared rule-output bindings after the real outputs exist.
 
-If the connector is `<UNRESOLVED>` or `case spec` fails, leave the stub unchanged, log it, and list it in the completion report. After all successful upgrades, populate the IS cache and regenerate `bindings_v2.json` once. Re-scan: every resolved rule must be free of `"placeholder"`; any remaining stub must map to a reported unresolved connector. Full procedure and scope-specific `elementId` rules: [`connector-trigger-common.md § Target: connector-bound condition rule`](connector-trigger-common.md#target-connector-bound-condition-rule).
+Each rule runs its own target-local spec call and immediately Writes the complete unmodified response to `tasks/spec-cache.<ownerNodeId>-<ruleId>.json`. Only after the common required-field gate succeeds may that exact cache be Read and its complete PascalCase `Data.CaseShape.Context`, `Inputs`, and `Outputs` subtrees be normalized and spliced into `rule.uipath`; a cache retained for placeholder audit is never mutation input. No rule may reuse a sibling response.
+
+If the connector is `<UNRESOLVED>`, `case spec` fails, or the required-field gate is declined, leave the stub unchanged, log it, and list it in the completion report. After all successful upgrades, populate the IS cache and regenerate `bindings_v2.json` once. Re-scan: every resolved rule must be free of `"placeholder"`; any remaining stub must map to a reported unresolved connector. Full procedure and scope-specific `elementId` rules: [`connector-trigger-common.md § Target: connector-bound condition rule`](connector-trigger-common.md#target-connector-bound-condition-rule).
 
 ## Step 11.5 — Resolve in-expression `vars.$xref` markers (whole-file pass)
 
-Runs after bindings (9.8) and connector-rule upgrades (10.5), when every task / trigger / rule output is minted and deduped. Conditions and SLA were already written in Phase 2. Resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` in ONE pass: one Read, then Edit each string value holding a marker — resolve the source through the common output-reference-ID algorithm and substitute bare `vars.<outputReferenceId>` (no leading `=`; the marker already sits inside `=js:`). Sink-blind: covers composite input payloads, `conditionExpression`, SLA `expression`, computed `=` outputs, and connector body fields in one place. An unresolved name-triple or reference ID is an ERROR (Check 4 below). Algorithm + pseudocode: [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115). One validate at section end.
+Runs after bindings (9.8) and connector-rule upgrades (10.5), when every task / trigger / rule output is minted and deduped. Conditions and SLA were already written in Phase 2. Resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` in ONE pass: one Read, then Edit each string value holding a marker — resolve the source through the common output-reference-ID algorithm and substitute bare `vars.<outputReferenceId>` (no leading `=`; the marker already sits inside `=js:`). Sink-blind: covers composite input payloads, `conditionExpression`, SLA `expression`, computed `=` outputs, and connector body fields in one place. An unresolved name-triple or reference ID is an ERROR under Step 12 Check 4. Algorithm + pseudocode: [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115). One validate at section end.
 
 ## Step 12 — End-of-Phase-3 validator pass
 
-> **Algorithm reference:** the per-check pseudocode + AskUserQuestion prompt templates + skill-response-per-pick details all live in [`plugins/variables/io-binding/impl-json.md § Binding Procedure`](plugins/variables/io-binding/impl-json.md#binding-procedure). This step is the orchestration hook; that doc is the algorithm. When in doubt, follow the impl-json doc.
+After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and the whole-artifact marker pass (Step 11.5) are complete, Step 12 starts. Directly load both owners now:
 
-After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker resolution (Step 11.5), invoke the end-of-Phase-3 validator — Checks 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11. Phase 2 conditions and SLA remain in place throughout.
+- [End-of-Phase-3 Case Validation](case-validation-guide.md) for Checks 1–11 ordering, repair sequencing, halt/build-with-best policy, and reporting; and
+- [I/O Binding Exit Validation](plugins/variables/io-binding/validation-guide.md) for the canonical Checks 1–5 algorithms.
 
-- **Check 1** — Resolve every `=vars.X` reference against `variables.{inputs, inputOutputs}[].id`. Scan all task input `value` fields, entry/exit condition expressions (stage and task), case-exit and trigger rule expressions, SLA expressions, and `=js:` expressions anywhere they appear. On unresolved → **AskUserQuestion** offering: (a) name the intended variable, (b) remove the reference, (c) continue with best-effort emit (entry logged under Open Items, runtime returns undefined).
-- **Check 2 — Out-arg producer presence** — For every formal Out-arg in `variables.outputs[]`, verify the producer/Default situation per [`io-binding/impl-json.md` § Check 2](plugins/variables/io-binding/impl-json.md):
-  - **Has Default but no companion** → AskUserQuestion.
-  - **No Default + producer declared in SDD on a Rule 17 placeholder task** (declared-but-unresolvable) → no prompt; silent log to `## Open Items for User` in `tasks/build-issues.md`. Rule 17 already prompted the author for this task.
-  - **No Default + no producer declared anywhere (pure orphan)** → AskUserQuestion offering 4 options: (a) add producer task output, (b) add Default value, (c) recategorize as Variable / remove, (d) continue with best-effort emit (entry logged under Open Items).
-- **Check 3** — Type mismatch between `=vars.X` reference and consumer slot → log WARN inline (non-blocking; string coercion is runtime-tolerant).
-  - **Check 4 — No surviving `$xref` markers** — Scan every string value in `caseplan.json` for the literal `$xref(`. Step 11.5 resolves all; any survivor means its name-triple or output reference ID failed — the same class of failure as a Check 1 unresolved `=vars.X`, so it gets the same interactive remediation. On unresolved → **AskUserQuestion** (present the outputs that DO exist on the named task as candidates): (a) name the intended source output — skill rewrites the triple, re-resolves, substitutes `vars.<outputReferenceId>`; (b) edit the SDD expression + re-run the Phase 1 dispatcher (when the output genuinely doesn't exist); (c) continue with best-effort emit (token left unsubstituted, entry logged under Open Items; `vars.$xref(...)` throws at runtime until fixed). Detail: [`io-binding/impl-json.md` § Check 4](plugins/variables/io-binding/impl-json.md).
-  - **Check 5 — Resolved-resource I/O completeness** — For each task with a persisted contract in `tasks/registry-resolved.json`, verify every **required** declared input has a bound `value` and every extract output `Field` exists in the resolved output contract. An upstream-output-fed input (`=vars.<outputReferenceId>` / resolved `$xref`) counts as bound with NO §1.5 row. On unbound-required-input or phantom-output-field → **AskUserQuestion**: (a) bind / re-point, (b) `<UNRESOLVED>`+review-item / drop row, (c) continue with best-effort emit (entry logged under Open Items; runtime null until fixed). Tasks with no contract (placeholder / `<UNRESOLVED>`) are skipped. Detail: [`io-binding/impl-json.md` § Check 5](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness).
-- **Check 6 — Entry-point schema parity** — Verify every `entry-points.json` entry's `input`/`output` matches the In/Out args projected at Step 6.3 (keys, type mapping, `required`, `file`/`jsonSchema` shapes), plus unique `filePath` fragments and no orphaned `inputs[].elementId`. **Non-interactive:** on mismatch re-run the Step 6.3 refresh once; if still divergent (or a uniqueness/orphan finding) log to `## Open Items for User` and continue. No AskUserQuestion. Algorithm: [`entry-points-sync.md § Check 6`](entry-points-sync.md#check-6--entry-point-schema-parity-step-12-validator).
-- **Check 7 — Bindings sidecar parity** — Compare `bindings_v2.json.resources[]` with the complete projection of top-level `caseplan.json.bindings[]` using [`bindings-v2-sync.md`](bindings-v2-sync.md). If they differ — including non-empty bindings with empty resources — regenerate the full sidecar once and re-check. If they still differ, halt before Phase 4. This check is non-interactive.
-- **Check 8 — Global generated-output ID uniqueness** — Read the completed `caseplan.json` and build one owner-keyed uniqueness pool from root variables plus every task, trigger, and connector-rule output across all condition scopes. Include unused and schema-generated outputs such as `Error` and `response`. Apply the [global uniqueness rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule): on collision, suffix the later producer, update only that producer's fields and consumers by producer ownership, then re-run the affected binding and marker-resolution steps. Re-read and re-scan the complete pool; halt before Phase 4 if any duplicate generated `id` or `var` remains. `uip maestro case validate` success does not satisfy this check.
-- **Check 9 — Resolved-resource emission and repair preservation** — Read `tasks/registry-resolved.json`, `tasks.md`, `caseplan.json`, and `bindings_v2.json`. For every registry entry with a non-null `selected`, locate its declared `(stage, task)` in `caseplan.json`. The task MUST exist and MUST NOT have `data: {}`. For non-connector task types, `data.name` and `data.folderPath` MUST each be `=bindings.<id>` references to complete root binding entries (all required fields present) — Check 7 covers their projection into `bindings_v2.json.resources[]`. A selected resource is never eligible for a placeholder fallback. Any whole-file Write used to repair a finding follows the repair-preservation contract in [`case-editing-operations.md § Per-section batch write contract`](case-editing-operations.md#per-section-batch-write-contract--canonical) — a dropped stage, task, root binding, or selected-resource task is a hard failure. Repair only the named task/binding with a targeted Edit, then repeat Checks 7 and 9. Do not enter Phase 4, report completion, or downgrade this finding to an Open Item while it remains unresolved; `uip maestro case validate` success does not satisfy this check.
-- **Check 10 — Formal-arg slot ID format** — For every entry in `variables.inputs[]` and `variables.outputs[]`, verify `id` matches `^v[A-Za-z0-9]{8}$` per [`global-vars/impl-json.md` § Formal-arg slot ID format](plugins/variables/global-vars/impl-json.md#formal-arg-slot-id-format). The most common violation is copying the human-readable companion name into the formal slot (e.g. `variables.inputs[].id: "applicantName"` instead of `"vK3mNp9Qx"`) — `uip maestro case validate` does not catch this, so it silently produces a case whose BPMN packaging can reject the id. **Non-interactive repair:** mint a replacement `v`+8-chars id, deduplicated against the Check 8 global pool; update the `variables.inputs[]`/`variables.outputs[]` entry's `id` to the new value; for an `inputs[]` (In-arg) entry, also find its bound trigger node's `data.inputs.outputs[]` bridge entry whose `source == "=vars.<old id>"` and rewrite it to `"=vars.<new id>"` (skip this sub-step when the bound trigger is a placeholder — no bridge was ever written, per [global-vars/impl-json.md § In argument](plugins/variables/global-vars/impl-json.md#in-argument)). Leave `name`, `var`, and the `inputOutputs[]` companion's `id` unchanged — only the formal slot's `id` (and, for In-args, the bridge's `source`) are rewritten. Re-scan `variables.inputs[]`/`variables.outputs[]` after repair; halt before Phase 4 if any entry still fails the format after one repair pass.
-- **Check 11 — resourceKey self-consistency (non-connector tasks)** — For every top-level `bindings[]` pair sharing a `resourceKey` on a non-connector task (`process`, `agent`, `rpa`, `api-workflow`, `case-management`, `action`), verify `resourceKey` is internally consistent with the pair's own `default` fields per [`bindings/impl-json.md` § resourceKey construction](plugins/variables/bindings/impl-json.md#resourcekey-construction--non-connector-tasks): normally `resourceKey == "<folderPath-binding default>.<name-binding default>"`; for an inline-built sibling (agent/api-workflow whose `folderPath` binding `default` is `""`), `resourceKey == "solution_folder.<name-binding default>"` instead. The most common violation is copying a tenant identity value — the SDD's "Resource Identity" column, a `tasks describe --id` argument, or a registry `entityKey` — directly into `resourceKey` instead of constructing the composite string. `uip maestro case validate` does not catch this: it silently produces an unresolvable process reference that only faults at `case debug`. **Non-interactive repair:** recompute the correct `resourceKey` from the pair's own `default` fields and rewrite both bindings in the shared pair (a pair's two `resourceKey` values must stay identical), then re-run Check 7 to resync `bindings_v2.json`. Re-scan `bindings[]` after repair; halt before Phase 4 if any pair still fails after one repair pass.
-
-**Build-with-best policy:** for any user pick of "continue with best-effort emit" on a Check 1, Check 2, Check 4, or Check 5 AskUserQuestion, append a `## Open Items for User` entry to `tasks/build-issues.md` and proceed to Phase 4. AskUserQuestion is the surface; build-with-best is the escape. The skill conservatively emits what it has; Phase 4 validate stays green (structural validity is intact); runtime concerns are listed for pre-publish review.
-
-**Reporting:** at end of Phase 4, count entries in the `## Open Items for User` section of `tasks/build-issues.md` (read the file after writing). If count > 0, the completion report MUST include a literal line of the form:
-
-```
-Open Items: <N> entry/entries — review tasks/build-issues.md § Open Items for User before publishing.
-```
-
-(Use `entry` for N == 1, `entries` otherwise.) Place this line above the per-stage / per-task summary in the completion report so it's not buried.
+Do not load either guide earlier, and do not rely on one guide to discover the other. Run Checks 1 through 11 in order; Phase 2 conditions and SLA remain in place. Follow the case guide's repair/recheck order and clear every blocking result before Phase 4.
 
 End of Phase 3 mutations. Proceed directly to Phase 4 — no hard stop between Phase 3 and Phase 4.
 
@@ -342,18 +328,4 @@ Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-
 
 ## Step 15a — Troubleshoot failed case
 
-When a debug or process run fails, read **[troubleshooting-guide.md](troubleshooting-guide.md)**. Diagnostic priority: incidents → runtime variables → caseplan.json correlation → traces (last resort).
-
-**Diagnose → fix → re-run loop.** After each diagnostic pass, classify root cause and act:
-
-1. **Fixable in `caseplan.json`** (wrong binding, missing condition, malformed expression, incorrect input value): apply targeted fix via matching plugin's `impl-json.md`, re-run `uip maestro case validate`, then re-run Step 15 debug. If the case was already published in Phase 5, re-run Step 14 afterwards so Studio Web holds the fixed build.
-2. **Fixable outside `caseplan.json`** (missing/expired connection, unregistered task type, missing Orchestrator asset, permissions): halt agent edits. Report exact resource + remediation steps to user via **AskUserQuestion** with options — `Resource fixed, re-run debug`, `Abort`.
-3. **Inconclusive** (no actionable cause): proceed to next round per retry policy.
-
-> **Known by-design debug fault:** an inline-built api-workflow sibling's task failing with incident `170007` ("job's associated process could not be found") under `case debug` is expected — debug does not provision Api siblings (agent siblings do resolve). Do not spend troubleshoot rounds on it; runtime verification needs a full solution deploy, offered via AskUserQuestion per [phased-execution.md § Debug notes](phased-execution.md#debug-notes) (the contract owner).
-
-**Retry policy.** Up to 3 troubleshoot → fix → debug rounds per failed run. Each round must add new context (different element ID, broader scope, fallback command) or apply different fix — do not repeat identical commands or re-apply same fix. Track round count.
-
-**Per-round timeout.** If debug run exceeds 10 minutes wall-clock, treat round as inconclusive and advance to next round (counts toward 3-round limit). Advisory — do not hard-kill subprocess; classify by elapsed time and move on.
-
-After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user with **AskUserQuestion**. Report: instance ID, folder key, incident IDs/messages, faulting element ID, variable snapshot, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.json` edits without confirmed cause.
+When a debug or deployed Case run fails, read [troubleshooting-guide.md](troubleshooting-guide.md) directly. It owns diagnosis, classification, targeted repair, validate/debug retry, conditional re-publish, incident `170007`, round/timeout limits, and escalation; do not load it for successful execution.

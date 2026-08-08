@@ -1,8 +1,6 @@
 # connector-trigger task — Planning
 
-A connector-based trigger **inside a stage** — waits for an external event before continuing.
-
-The planning pipeline is shared with the [event trigger](../../triggers/event/planning.md) — see [connector-trigger-common.md](../../../connector-trigger-common.md) for the full resolution pipeline (TypeCache lookup → connection pick → `case spec` discovery → reference resolution → required-field gate → SDD mapping → input-values + filter authoring).
+A connector-based trigger **inside a stage**. This file owns only task selection, placement fields, the T-entry envelope, and the task placeholder. Read the shared metadata owner directly: [connector-trigger-common.md](../../../connector-trigger-common.md).
 
 ## When to Use
 
@@ -12,15 +10,11 @@ Pick this plugin when the sdd.md describes a task that **suspends the stage unti
 - "Continue when a Slack reaction is added"
 - "Suspend until an email arrives in Inbox"
 
-Distinguish from:
-
-- **Case-level event triggers** (start the case from outside) → [`plugins/triggers/event/`](../../triggers/event/planning.md)
-- **Connector activity** (call out, don't wait) → [connector-activity](../connector-activity/planning.md)
-- **Timer wait** (not connector-driven) → [wait-for-timer](../wait-for-timer/planning.md)
+Do not select it for a case-start event, an outbound connector call, or a timer wait; the connector selector routes those targets.
 
 ## Resolution Pipeline
 
-Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline). All steps are identical for both in-stage triggers and case-level event triggers.
+Follow [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline), then emit only this task's T-entry below.
 
 ## tasks.md Entry Format
 
@@ -40,20 +34,21 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
   - <SDD output row, copied verbatim>
 - isRequired: true
 - runOnlyOnce: false
-- activation-mode: event-triggered   # required; normally event-triggered for a connector event wait
-- entry-rule: wait-for-connector   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
+- activation-mode: <copy the supplied/approved SDD activation mode>  # sequential | parallel | parallel-after-predecessor | event-triggered | adhoc | fan-in | conditional-gate
+- entry-rule: <copy the matching supplied/approved SDD task-entry rule>  # legality: ../../conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract
+- rationale: "<copy the supplied/approved SDD rationale>"   # required
 - order: after T<m>
 - lane: <n>
 - verify: Confirm task created with correct event parameters
 ```
 
+Task type never supplies activation semantics. Copy the SDD pair losslessly: a stage-entry listener uses `parallel` + `current-stage-entered`; a listener after an immediate predecessor uses `parallel-after-predecessor` + `runs-sequentially`; an event-gated task uses `event-triggered` + `wait-for-connector`; any other explicitly authored legal task-entry rule remains authoritative.
+
 ## Unresolved Fallback
 
-Two entry paths: **Scenario A** — connector not found in TypeCache ([connector-trigger-common.md § 1 No-match](../../../connector-trigger-common.md#1-find-the-trigger-in-typecache), after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the create offer ([connector-trigger-common.md § Resolve the connection](../../../connector-trigger-common.md#2-resolve-the-connection)) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight here.
+Enter fallback only when the common owner assigns a TypeCache zero to placeholder or connection creation is declined/fails. Empty `Connections` is not a Rule 17 zero and must receive the common owner's creation offer first.
 
-> **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector trigger exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
-
-If the connector or connection cannot be resolved:
+Then:
 - Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`
 - Omit `input-values:` and `filter:`
 - Execution creates a placeholder task (display-name + type only) per [placeholder-tasks.md](../../../placeholder-tasks.md)

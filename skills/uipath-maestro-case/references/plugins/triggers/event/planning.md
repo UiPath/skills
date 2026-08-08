@@ -1,8 +1,6 @@
 # event trigger — Planning
 
-A case-level trigger that fires on an external connector event. Starts the case when the event matches a filter.
-
-The planning pipeline is shared with the [connector-trigger task](../../tasks/connector-trigger/planning.md) — see [connector-trigger-common.md](../../../connector-trigger-common.md) for the full 7-step resolution pipeline.
+A case-level trigger that starts the case from an external connector event. This file owns trigger selection, the T-entry envelope, and event-trigger fallback fields. Read the metadata owner directly: [connector-trigger-common.md](../../../connector-trigger-common.md).
 
 ## When to Use
 
@@ -12,15 +10,11 @@ Pick this plugin when the sdd.md describes the case as starting in response to a
 - "On each new Jira issue with priority High"
 - "When a file is uploaded to SharePoint"
 
-Distinguish from:
-
-- **User-initiated start** → [manual](../manual/planning.md)
-- **Scheduled start** → [timer](../timer/planning.md)
-- **In-stage event wait** → [connector-trigger task](../../tasks/connector-trigger/planning.md)
+Do not select it for a user-initiated start, scheduled start, or in-stage wait; the trigger selector routes those targets.
 
 ## Resolution Pipeline
 
-Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline). All steps are identical for both event triggers and in-stage connector-trigger tasks.
+Follow [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline), then emit only this trigger's T-entry below.
 
 ## tasks.md Entry Format
 
@@ -42,9 +36,7 @@ T-number is T02 for the first trigger row in sdd.md, T03+ for subsequent rows in
 
 ## Unresolved Fallback
 
-Two entry paths: **Scenario A** — connector not found in TypeCache ([connector-trigger-common.md § 1 No-match](../../../connector-trigger-common.md#1-find-the-trigger-in-typecache), after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the create offer ([connector-trigger-common.md § Resolve the connection](../../../connector-trigger-common.md#2-resolve-the-connection)) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight here.
-
-> **Rule 17 exception.** Empty `Connections` from `get-connection` (the trigger activity exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
+Enter fallback only when the common owner assigns a TypeCache zero to placeholder or connection creation is declined/fails. Empty `Connections` is not a Rule 17 zero and must receive the common owner's creation offer first.
 
 > **Planning emits the T-entry; execution emits a placeholder trigger node.** "Cannot resolve the connector / connection yet" is not a reason to drop the trigger from `tasks.md` or from `caseplan.json` — the no-omission rule (planning.md §4.0) applies to triggers the same as it does to stages, tasks, and conditions. The pattern mirrors the connector-trigger task placeholder in [placeholder-tasks.md](../../../placeholder-tasks.md): structure preserved, runtime config deferred.
 
