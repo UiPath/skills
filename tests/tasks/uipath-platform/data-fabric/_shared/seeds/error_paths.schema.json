@@ -12,7 +12,8 @@
     {
       "fieldName": "Score",
       "displayName": "Score",
-      "type": "INTEGER"
+      "type": "DECIMAL",
+      "decimalPrecision": 0
     },
     {
       "fieldName": "Tag",

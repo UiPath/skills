@@ -6,6 +6,142 @@ How to generate ViewState for Flowchart, State Machine, and Long Running Workflo
 - **Sequences**: ViewState is optional — Studio auto-stacks children vertically. Only `IsExpanded=True` matters.
 - **Flowcharts, State Machines, ProcessDiagrams**: ViewState is **mandatory** for usable layout. Without it, Studio stacks all nodes at (0,0).
 
+## Flowchart Structure & Wiring
+
+### When to Use a Flowchart
+
+Branching logic with multiple decision points, loops, and back-edges. Best when the flow is a graph rather than a straight sequence. For straight-line steps use a `Sequence`; for state-driven processes use a State Machine; for BPMN-style event-driven long waits use a Long Running Workflow (ProcessDiagram).
+
+### Node Vocabulary
+
+| Node | Purpose | Successor wiring |
+|------|---------|------------------|
+| `FlowStep` | Wraps **exactly one** activity (which may be a container). The unit of work. | `FlowStep.Next` → one node |
+| `FlowDecision` | Boolean branch. `Condition` plus `True`/`False` targets. | `FlowDecision.True` / `.False` → one node each |
+| `FlowSwitch<T>` | Multi-way branch keyed by an expression. | `Default` plus one target per case |
+
+A `FlowStep` wraps one activity. If that activity is a container (`Sequence`, `NApplicationCard`, `TryCatch`), its children stay nested and are NOT separate nodes. See [§ What Counts as a Node](#what-counts-as-a-node).
+
+### Wiring
+
+**Rule:** every `FlowStep`/`FlowDecision`/`FlowSwitch` is a **direct child of `<Flowchart>`** with an `x:Name`. Links between nodes are made with `<x:Reference>__ReferenceIDn</x:Reference>` inside property elements — never by physically nesting one node inside another.
+
+```xml
+<Flowchart DisplayName="My Flowchart" sap2010:WorkflowViewState.IdRef="Flowchart_1">
+  <Flowchart.StartNode>
+    <x:Reference>__ReferenceID0</x:Reference>
+  </Flowchart.StartNode>
+  <FlowStep x:Name="__ReferenceID0">
+    <ui:LogMessage DisplayName="Step 1" />
+    <FlowStep.Next>
+      <x:Reference>__ReferenceID1</x:Reference>
+    </FlowStep.Next>
+  </FlowStep>
+  <FlowDecision x:Name="__ReferenceID1">
+    <FlowDecision.Condition>
+      <CSharpValue x:TypeArguments="x:Boolean">condition</CSharpValue>
+    </FlowDecision.Condition>
+    <FlowDecision.True>
+      <x:Reference>__ReferenceID0</x:Reference>
+    </FlowDecision.True>
+    <!-- FlowDecision.False omitted = end of flow -->
+  </FlowDecision>
+</Flowchart>
+```
+
+### Where `<x:Reference>` Goes
+
+`<x:Reference>` is used ONLY inside property elements to create cross-references between nodes:
+
+| Property Element | Container | Purpose |
+|-----------------|-----------|---------|
+| `Flowchart.StartNode` | Flowchart | Points to the first node |
+| `FlowStep.Next` | Flowchart | Links to the next node |
+| `FlowDecision.True` / `.False` | Flowchart | Branch targets |
+| `Transition.To` | State Machine | Transition destination state |
+| `StateMachine.InitialState` | State Machine | Starting state (attribute form: `{x:Reference ...}`) |
+| `ProcessDiagram.StartNode` | ProcessDiagram | Points to start event |
+| `EventNode.Next` / `TaskNode.Next` | ProcessDiagram | Links to next node |
+| `DecisionNode.True` / `.False` | ProcessDiagram | Branch targets |
+
+### Node Registration
+
+Only nodes in the `Flowchart.Nodes` collection render — and that collection is built from the **direct children** of `<Flowchart>`. A node that is not a direct child is never registered, so the designer does not draw it, regardless of ViewState. The same registration rules apply to `<StateMachine>` (States) and `<upa:ProcessDiagram>` and its node types (`EventNode`, `TaskNode`, `DecisionNode`, `SwitchNode<T>`, `SplitNode`, `MergeNode`, `SubProcessNode`, `EndNode`, `BoundaryNode`).
+
+Two cases:
+
+1. **Direct children** of the container — already registered. Do NOT also add a trailing `<x:Reference>`.
+2. **Inline definitions** inside a property element (e.g., a `FlowStep` written inside `<FlowDecision.True>`) — MUST add a trailing `<x:Reference>` entry as a direct child of the container to register them.
+
+**Correct — inline node registered with trailing `<x:Reference>`:**
+```xml
+<Flowchart>
+  <Flowchart.StartNode>
+    <x:Reference>__ReferenceID0</x:Reference>
+  </Flowchart.StartNode>
+  <FlowDecision x:Name="__ReferenceID0">        <!-- direct child — no trailing ref -->
+    <FlowDecision.True>
+      <FlowStep x:Name="__ReferenceID1">         <!-- inline definition -->
+        ...
+      </FlowStep>
+    </FlowDecision.True>
+  </FlowDecision>
+  <x:Reference>__ReferenceID1</x:Reference>      <!-- register inline node -->
+</Flowchart>
+```
+
+**Wrong — re-listing a direct child:**
+```xml
+<Flowchart>
+  <FlowStep x:Name="__ReferenceID0">             <!-- direct child -->
+    ...
+  </FlowStep>
+  <x:Reference>__ReferenceID0</x:Reference>      <!-- WRONG — already a direct child -->
+</Flowchart>
+```
+
+#### Forbidden — nested FlowStep chains
+
+Do NOT build the flow by physically nesting each `FlowStep` inside the previous one's `<FlowStep.Next>` (a deep chain with only the first node under `<Flowchart.StartNode>`). Nested-only steps never enter `Flowchart.Nodes`, so the designer renders almost nothing — invisible regardless of ViewState. Wire successors by reference (as in [§ Wiring](#wiring)) and keep every step a direct child.
+
+**Wrong** — Step 2 nested inside Step 1's `.Next`; `Flowchart.Nodes` holds only Step 1, so Step 2 never renders:
+```xml
+<Flowchart sap2010:WorkflowViewState.IdRef="Flowchart_1">
+  <Flowchart.StartNode>
+    <x:Reference>__ReferenceID0</x:Reference>
+  </Flowchart.StartNode>
+  <FlowStep x:Name="__ReferenceID0">
+    <ui:LogMessage DisplayName="Step 1" />
+    <FlowStep.Next>
+      <FlowStep>                              <!-- WRONG — nested, not registered -->
+        <ui:LogMessage DisplayName="Step 2" />
+      </FlowStep>
+    </FlowStep.Next>
+  </FlowStep>
+</Flowchart>
+```
+
+#### `__ReferenceID` Gotchas
+
+- `__ReferenceID` values must be unique within the entire XAML file — duplicate IDs cause deserialization errors. When adding nodes manually, use a number higher than any existing one (Studio auto-renumbers on copy-paste; manual XAML editing doesn't).
+- When copying from flowchart to sequence, elements may be ordered backwards due to node ordering in XAML.
+- `x:Reference` can only refer to elements with `x:Name` in the same XAML file — cross-file references are not supported.
+
+### No Orphan Nodes
+
+Every node except the start must be reachable: referenced by `Flowchart.StartNode`, a `FlowStep.Next`, or a decision/switch branch. A `FlowStep` with no incoming reference and no `FlowStep.Next` is an orphan — it renders as a disconnected box and is almost always a leftover. Do not generate them.
+
+### Condition Expressions
+
+`FlowDecision.Condition` and `FlowSwitch` expressions follow the project's expression language:
+
+- **C# projects:** `<CSharpValue x:TypeArguments="x:Boolean">condition</CSharpValue>`
+- **VB projects:** `<mva:VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="condition" />`
+
+Structure first, then coordinates: ViewState positions a node **only after** it is registered — see [§ 3. Flowchart Layout](#3-flowchart-layout) below and SKILL.md Rule 20.
+
+---
+
 ---
 
 ## 1. Required XAML Namespaces
@@ -68,7 +204,7 @@ Every activity should have `sap:VirtualizedContainerService.HintSize` as an attr
 
 ## 3. Flowchart Layout
 
-Node vocabulary, structure & wiring, and node registration: [flowchart-guide.md](flowchart-guide.md). This section covers layout coordinates and ViewState only.
+Node vocabulary, structure & wiring, and node registration: [§ Flowchart Structure & Wiring](#flowchart-structure--wiring) above. This section covers layout coordinates and ViewState only.
 
 ### What Counts as a Node
 
@@ -79,11 +215,6 @@ One node per top-level step → separate boxes. One step's children nested → s
 ### Required vs. Optional ViewState Keys
 
 `ShapeLocation` + `ShapeSize` are the **required** pair on every node — they are what makes nodes render as separate boxes. `ConnectorLocation` (and `TrueConnector`/`FalseConnector`) is **optional**: Studio auto-routes connectors from the source and target node positions. The recipes below include connectors for precise routing, but omitting them is valid — Studio's own saved output omits them entirely.
-
-### No Orphan Nodes
-
-Every node except the start must be reachable: referenced by `Flowchart.StartNode`, a `FlowStep.Next`, or a decision/switch branch. A `FlowStep` with no incoming reference and no `FlowStep.Next` is an orphan — it renders as a disconnected box and is almost always a leftover. Do not generate them.
-
 ### Coordinate System
 
 - **Origin**: Top-left corner (0, 0)
@@ -276,33 +407,9 @@ FlowDecision:  (270, 220)     60x60
   True branch:  (100, 330)    200x60     (left)
   False branch: (400, 330)    200x60     (right)
 ```
-
 ### Node Registration
 
-All FlowStep/FlowDecision/FlowSwitch nodes must be registered as children of `<Flowchart>`. Direct children are already registered. Nodes defined inline within property elements (e.g., inside `FlowDecision.True`) need a trailing `<x:Reference>` entry at the Flowchart level.
-
-Only nodes in the `Flowchart.Nodes` collection (the direct children) render. ViewState positions a node **only after** it is registered there — coordinates on an unregistered node do nothing.
-
-**Forbidden — nested FlowStep chains.** Do NOT build the flow by physically nesting each `FlowStep` inside the previous one's `<FlowStep.Next>`, leaving only the first node under `<Flowchart.StartNode>`. Nested-only steps never enter `Flowchart.Nodes`, so the designer renders almost nothing — invisible regardless of ViewState. Wire each step's successor with `<FlowStep.Next><x:Reference>__ReferenceIDn</x:Reference></FlowStep.Next>` and keep every `FlowStep` a direct child of `<Flowchart>`:
-
-```xml
-<Flowchart>
-  <Flowchart.StartNode>
-    <x:Reference>__ReferenceID0</x:Reference>
-  </Flowchart.StartNode>
-  <FlowStep x:Name="__ReferenceID0">           <!-- direct child -->
-    <ui:LogMessage DisplayName="Step 1" />
-    <FlowStep.Next>
-      <x:Reference>__ReferenceID1</x:Reference> <!-- link by reference, NOT by nesting -->
-    </FlowStep.Next>
-  </FlowStep>
-  <FlowStep x:Name="__ReferenceID1">           <!-- direct child -->
-    <ui:LogMessage DisplayName="Step 2" />
-  </FlowStep>
-</Flowchart>
-```
-
-See [common-pitfalls.md § x:Reference](common-pitfalls.md#xreference--__referenceid-naming) for the full rules with correct/wrong examples.
+See [§ Node Registration](#node-registration) at the top of this file — structure and registration come before coordinates.
 
 ---
 
@@ -422,7 +529,7 @@ End State:          (164, 385)      229x110 (IsFinal=True)
 
 ### Node Registration
 
-States defined inline inside `Transition.To` need `<x:Reference>` registration as direct children of `<StateMachine>`, same as Flowchart pattern.
+States defined inline inside `Transition.To` need `<x:Reference>` registration as direct children of `<StateMachine>`. See [§ Node Registration](#node-registration).
 
 ---
 
@@ -644,7 +751,7 @@ EventNode (start)  →  TaskNode 1  →  DecisionNode  →  TaskNode 2  →  End
 
 ### Node Registration
 
-Same rules as Flowchart — nodes defined inline within property elements (e.g., `TaskNode` inside `EventNode.Next`) need trailing `<x:Reference>` entries as direct children of `<upa:ProcessDiagram>`. See [common-pitfalls.md § x:Reference](common-pitfalls.md#xreference--__referenceid-naming) for the full rules.
+Same rules as Flowchart — inline nodes need trailing `<x:Reference>` entries as direct children of `<upa:ProcessDiagram>`. See [§ Node Registration](#node-registration).
 
 ---
 

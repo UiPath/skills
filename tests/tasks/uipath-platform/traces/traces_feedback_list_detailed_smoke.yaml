@@ -1,0 +1,65 @@
+task_id: skill-platform-traces-feedback-list-detailed
+description: >
+  Smoke test: agent reaches for `uip traces feedback list detailed` — the only
+  read that returns `spanAttributes` (agentId, agentName, userPrompt, output)
+  and the only one that works without a `--trace-id` — for a cross-trace bulk
+  review, and drives its time-window, sort, and category filters. The whole
+  `list detailed` subcommand is untested today. Choosing it over plain `list`
+  is itself graded: the prompt asks for span context, which plain `list` cannot
+  return. Criteria bind to the requested values, not just flag presence, so
+  `--sort-order asc` against a "newest first" ask does not score.
+  Auth/404 responses are acceptable outcomes — the graded behavior is command
+  shape plus a captured CLI response envelope.
+tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, traces, feedback]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  Bulk quality sweep across traces, folder key
+  `2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2`. I need each feedback record together
+  with the span context behind it — which agent produced it, the user prompt,
+  and the agent's output — not just the bare feedback rows.
+
+  - Everything from the last 24 hours.
+  - Separately, the window 2026-07-01T00:00:00Z through 2026-07-08T00:00:00Z,
+    restricted to category `3f9a2b71-6c48-4d05-b2e7-91ac5d80e6f4`, newest first.
+    Save that second response to `detailed.json`.
+
+  The folder and category come from the review export and may not resolve against
+  this tenant — that is expected. Run both reads and report what comes back.
+
+success_criteria:
+  - type: command_executed
+    description: "Last-24-hours pass used the relative lookback (--since 24h)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=[\s\S]*--since[\s=]["'']?24h)'
+    exclude_pattern: '--before'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Second pass bounded by the requested explicit --after/--before window"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=[\s\S]*--after[\s=]["'']?2026-07-01)(?=[\s\S]*--before[\s=]["'']?2026-07-08)'
+    exclude_pattern: '--since'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Second pass filtered to the requested category and ordered newest-first (--sort-order desc)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+list\s+detailed(?=[\s\S]*--category-id[\s=]["'']?3f9a2b71)(?=[\s\S]*--sort-order[\s=]["'']?desc)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "detailed.json holds a real CLI response envelope, not hand-written JSON"
+    path: "detailed.json"
+    includes:
+      - '"Result"'
+    weight: 1.0
+    pass_threshold: 1.0

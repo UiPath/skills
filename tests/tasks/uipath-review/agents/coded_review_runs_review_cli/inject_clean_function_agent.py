@@ -20,7 +20,9 @@ from coded_scaffold import write_baseline_function_agent  # noqa: E402
 
 
 def main() -> None:
-    write_baseline_function_agent(Path("CodedAgent"))
+    project = Path("CodedAgent")
+    write_baseline_function_agent(project)
+    (project / "agent.json").write_text('{"type":"coded"}\n', encoding="utf-8")
     print("Scaffolded clean coded FUNCTION agent at CodedAgent/")
 
 

@@ -84,3 +84,16 @@ python3 scripts/check-skill-status.py --write-readme
 - All file links MUST use relative paths from the SKILL.md location
 - All file links MUST point to files that actually exist in the repo
 - No secrets, tokens, credentials, or personal filesystem paths
+
+## Flavor-Aware Skill Edits
+
+When `skill-flavors/` exists, inspect the matching sparse override before
+changing any canonical Markdown passage enclosed by a `skill-flavor` block.
+Flavors inherit canonical edits outside replaced blocks, but they do not
+inherit edits inside a block they replace.
+
+- Use the compact `<!--skill-flavor:<name>:start|end-->` form with no internal, leading, or trailing whitespace; keep required Markdown indentation on the enclosed content.
+- Keep shared tables, lists, and navigation outside replacement blocks.
+- For host-only additions, prefer an empty canonical `<name>-extra` block that the flavor fills additively.
+- If one existing row or item differs, mark only that item rather than replacing the complete shared section.
+- Read `.claude/skills/manage-skill-flavors/SKILL.md` before authoring or changing any flavor boundary or override.

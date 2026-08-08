@@ -38,20 +38,34 @@ The user may specify a max number of iterations (default: 3). Track:
 
 Do NOT re-read the taxonomy or sample documents between iterations — use what you already have. Only re-read metrics after each instruction update + retrain cycle. This assumes no one modifies the taxonomy or documents externally during the loop. If the user mentions changes were made in the web UI, re-fetch the taxonomy and document list before continuing.
 
+## Waiting for retrain
+
+Every change to model inputs — labellings, instructions, document upload/delete, taxonomy edits — triggers a full retrain. Metrics read mid-retrain are *pre*-change scores and corrupt every downstream comparison, so wait before each metrics read.
+
+**Bounded wait. Poll on a fixed interval; never poll indefinitely:**
+
+1. Record `ModelVersion` from the last metrics read BEFORE the change.
+2. Wait 2 minutes, then read `uip ixp projects get-metrics <project-name> --output json`.
+3. `ModelVersion` **greater than** the recorded value → retrain is done, proceed. Any increment counts. Do NOT wait for a specific number: queued input changes can bump the version by more than one, so waiting for exactly *N*+1 polls until the budget dies when the server jumps straight to *N*+2.
+4. Otherwise repeat step 2 — **2 minutes between checks, 5 checks in total** (10 minutes). Do NOT use a single long sleep, and do NOT escalate or shorten the interval between checks.
+5. Still unchanged after the 5th check → **stop polling** and report that the retrain did not complete. Metrics you carry forward predate the change: label them as such, never present them as the post-change measurement, and never roll back instructions on a comparison against them.
+
+A read that fails counts against the budget like any other attempt, and never restarts it.
+
 ## Step 1 — Setup (once, before the loop)
 
 ### 1a. Get baseline metrics
 
-If documents were just labelled (or uploaded, or the taxonomy was edited), wait ~2 minutes for the resulting retrain to complete before reading metrics. Reading mid-retrain captures *pre*-change scores and corrupts every downstream comparison.
+If documents were just labelled (or uploaded, or the taxonomy was edited), wait out the resulting retrain before reading metrics — apply the bounded wait in [Waiting for retrain](#waiting-for-retrain).
 
 ```bash
 mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
 uip ixp projects get-metrics <project-name> --output json
 ```
 
-Note the `ModelVersion` from this baseline read — later iterations check that it advances after each `fields update-prompts` / `groups update-prompts` (see step 2e). If the value here looks identical to a known pre-labelling version, the retrain may still be in flight; wait another 60 seconds and re-fetch.
+Note the `ModelVersion` from this baseline read — later iterations check that it advances after each `fields update-prompts` / `groups update-prompts` (see step 2e). If the value here looks identical to a known pre-labelling version, the retrain may still be in flight; re-fetch under the bounded wait in [Waiting for retrain](#waiting-for-retrain), then proceed with whatever it returns.
 
-Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against. (For a validated model, get-metrics Data is flat — `Fields`/`FieldGroups`/`ValidatedDocuments` are top-level. An unvalidated model returns `Data: { Metrics: null }` instead — wait for retrain and re-fetch.)
+Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against. (For a validated model, get-metrics Data is flat — `Fields`/`FieldGroups`/`ValidatedDocuments` are top-level. An unvalidated model returns `Data: { Metrics: null }` instead — re-fetch under the bounded wait above.)
 
 **Correlating metrics to field names:** The metrics `Fields` array returns `FieldId` but not the field name. To map them, join against the taxonomy's `field` entries:
 
@@ -96,7 +110,7 @@ The `download` command auto-detects format and appends the correct extension —
 
 ### 1e. Check for unlabelled documents
 
-Compare the document list against the metrics. If the metrics show fewer `ValidatedDocuments` than the total document count, some documents have no confirmed labellings (e.g., newly added documents). Review and label them first using the [Label Documents Guide](label-documents-guide.md), then wait ~2 minutes for retrain and re-fetch metrics before starting the loop.
+Compare the document list against the metrics. If the metrics show fewer `ValidatedDocuments` than the total document count, some documents have no confirmed labellings (e.g., newly added documents). Review and label them first using the [Label Documents Guide](label-documents-guide.md), then re-fetch metrics under the bounded wait in [Waiting for retrain](#waiting-for-retrain) before starting the loop.
 
 ---
 
@@ -135,7 +149,7 @@ For each REFINE field with **Recall < 0.5**, check whether the problem is a bad 
    - If yes, the model may have predicted it correctly but it wasn't confirmed in a previous round → re-fetch predictions and review those fields again
    - If the field is genuinely not visible in the document → it's a prompt/recall issue, handle with instruction changes
 
-**If you find previously skipped predictions that are actually correct**, confirm them now using `labelling confirm --fields` for those specific documents and fields. Wait ~2 minutes for retrain and re-fetch metrics before continuing.
+**If you find previously skipped predictions that are actually correct**, confirm them now using `labelling confirm --fields` for those specific documents and fields, then re-fetch metrics under the bounded wait in [Waiting for retrain](#waiting-for-retrain) before continuing.
 
 **If no labelling gaps are found**, proceed directly to writing instructions.
 
@@ -212,17 +226,17 @@ Compare the number of fields in each updated label_def against the previous vers
 
 ### 2d. Review and confirm predictions for all documents
 
-Wait ~2 minutes for the model to retrain with the updated instructions, then review predictions for all documents using the [Label Documents Guide](label-documents-guide.md). The updated prompts should produce better predictions — review each document's predictions against the actual content and confirm the correct ones. Documents with incorrect predictions are skipped (their old labels remain).
+Wait out the retrain triggered by the updated instructions ([Waiting for retrain](#waiting-for-retrain)), then review predictions for all documents using the [Label Documents Guide](label-documents-guide.md). The updated prompts should produce better predictions — review each document's predictions against the actual content and confirm the correct ones. Documents with incorrect predictions are skipped (their old labels remain).
 
 ### 2e. Wait and get new metrics
 
-Wait ~2 minutes for the model to retrain with the new labellings, then:
+Wait out the retrain triggered by the new labellings ([Waiting for retrain](#waiting-for-retrain)), then:
 
 ```bash
 uip ixp projects get-metrics <project-name> --output json
 ```
 
-If `ModelVersion` hasn't advanced since the last check, wait another 60 seconds and retry.
+If `ModelVersion` hasn't advanced since the last check, keep re-reading under that same bounded budget. When the budget runs out, record the metrics you have and move on to step 2f — do NOT stall the iteration waiting for a version bump.
 
 ### 2f. Compare and decide
 
@@ -246,7 +260,7 @@ uip ixp fields update-prompts <project-name> \
   --output json
 ```
 
-Wait ~2 minutes for retrain. On the next iteration, try a **different approach** for the regressed fields only (different wording, shorter instruction, fewer examples).
+Wait out the retrain ([Waiting for retrain](#waiting-for-retrain)). On the next iteration, try a **different approach** for the regressed fields only (different wording, shorter instruction, fewer examples).
 
 **Rollback caveat:** Rollback restores the previous instructions but the model needs to retrain. Expect only **partial recovery** — prefer small-scope iterations (few fields at a time).
 

@@ -32,7 +32,6 @@ initial_prompt: |
   | Case Name | AgentSingleCase |
   | Case Description | Single-node case that runs the CountLetters agent on a fixed input word. |
   | Case Identifier | Prefix: ASC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | 1 d |
   | SLA Type | Static |
 

@@ -43,7 +43,17 @@ Go in this order — cheaper checks first.
 
 3. **Confirm branch 1 (COM cast / library not registered).** Confirm the desktop Outlook is installed on the **Robot host** (not only the developer machine) and note its **bitness** against the Robot process. A 64-bit process with a 32-bit-only Outlook (or a corrupted type library after an Office update) produces the cast / not-registered error. Check for a stray `OUTLOOK.EXE` left running with no window from a prior job.
 
-4. **Confirm branch 2 (timeout / hang).** Determine whether the run is **unattended** (no interactive desktop). Check whether the Outlook **security prompt** could be firing (antivirus state / programmatic-access policy), whether Outlook is in **Work Offline** mode, and whether the Robot's Windows user has a configured profile. Read `TimeoutMS` and compare against a realistic profile-load + send time. A hang on an unattended Robot with no visible Outlook is the prototypical case.
+4. **Confirm branch 2 (timeout / hang), then pick the sub-cause.** Determine whether the run is **unattended** (no interactive desktop). Read `TimeoutMS` and compare against a realistic profile-load + send time. A hang on an unattended Robot with no visible Outlook is the prototypical case.
+
+   Branch 2 has three sub-causes and they are **separable — do not report them as equally likely.** The job log discriminates them:
+
+   | Log / test evidence | Sub-cause | Why |
+   |---|---|---|
+   | Item reaches the **Outbox** and stays there; connectivity reports Disconnected; **no dialog or prompt raised** | **Work Offline** | The message was accepted and queued — the Object Model Guard never lets it get that far. Offline means there is nothing to transmit against, so the call blocks to `TimeoutMS`. |
+   | A modal is **awaiting input**; the item was never queued; an attended re-run on the host **shows the popup** | **Object Model Guard / security prompt** | The Guard blocks at compose/send time, before the item is created. |
+   | Item sends, but only after a long first profile load; duration near but under a raised `TimeoutMS` | **Slow profile load** | Genuinely slow, not blocked. |
+
+   An attended re-run on the same host is the decisive test: **a popup appearing** confirms the Guard; **no popup plus mail left sitting in the Outbox** confirms Work Offline and eliminates the Guard. Eliminate the sub-causes the evidence excludes rather than listing them as parallel checks — registering antivirus or setting the programmatic-access GPO does nothing for an offline mailbox.
 
 5. **Confirm branch 3 (uninitialized input).** In the workflow source, trace the variables bound to `To`, `Subject`, `Body`, and each attachment path back to their producers. A variable left `Nothing` (upstream step skipped, or declared in an inner scope) or an empty attachment path confirms the branch. Reproduce by hardcoding literal values into the activity fields — if the error disappears, an input was null.
 
@@ -63,6 +73,7 @@ Map the branch identified in Investigation to the fix:
   - Make sure Outlook is **running, signed in, and Online** (turn off `Send/Receive > Work Offline`) under the Robot's Windows user before the activity runs.
   - Resolve the **security prompt** at its source rather than waiting on it: keep antivirus up to date and registered with Windows Security Center (this is what normally suppresses the Object Model Guard prompt), or set the Outlook programmatic-access / Trust Center policy via Group Policy for the Robot's user. Do **not** rely on a human dismissing the prompt on an unattended Robot.
   - If the send is **legitimately** slow (first profile load), raise `TimeoutMS` above the worst observed duration (it is in **milliseconds**: `60000` = 60 s). Raising the timeout does **not** fix a blocking security prompt or Work Offline state — only branch-2 *slowness*.
+  - **When the run is unattended, pair the immediate fix with the durable one.** Clearing Work Offline or the prompt fixes this run, but the desktop-Outlook dependency will keep producing branch-1 and branch-2 faults on a host with no interactive session — online/offline state, profile health and modal prompts are all things an unattended Robot cannot manage. Recommend migrating the activity to **Send SMTP Mail Message** or the Graph **o365-activities** (see the alternative below) as part of the same answer, not as a footnote.
 
 - **Branch 3 — Uninitialized input:**
   - Initialize every variable bound to `To`, `Subject`, and `Body` before the activity, and guard against null/empty (a null `To` is the most common). Validate it by hardcoding literal values into the fields first.

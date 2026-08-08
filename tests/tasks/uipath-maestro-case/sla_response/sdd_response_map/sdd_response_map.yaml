@@ -1,0 +1,60 @@
+task_id: skill-case-sla-sdd-response-map
+description: >
+  T6 of the SLA-response battery — the SDD-layer contract, graded on sdd.md with no build.
+  Three SLA statements in one requirement must land as three different responses in the SLA
+  Response Map: an email-only SLA stays notify-only on both statuses, a breach that raises
+  local follow-up work is start-task targeting the follow-up TASK with Interrupting `—`
+  (it is that task's own task-entry rule, so it interrupts nothing), and a case breach that
+  hands the case over is enter-stage with Interrupting Yes. Also enforces
+  closure both ways (every graph response has an sla-status-change entry and vice versa) and
+  that the map's Interrupting cell matches the Stage Entry Conditions row it produces —
+  the guard against defaulting every SLA lane to interrupting.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation, feature:conversational]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 90
+  turn_timeout: 1800
+
+initial_prompt: |
+  Design an "OrderExceptionReview" Maestro case and write the design document to `sdd.md`.
+  Design only: stop before creating caseplan.json, and do not scaffold a solution.
+
+  The design is settled — do not interview me, and do NOT call AskUserQuestion (it is not
+  available in this harness). Treat the plan as pre-approved and proceed. Do not query the
+  tenant registry, connections, schemas, or users; use concrete intended resource names and
+  mark identities `resolve at build`.
+
+  The case has three stages: Triage, Assess, Resolve.
+
+  Timing rules from operations:
+
+  - Triage must be done within 4 hours. When 80% of that time is gone, email the triage
+    team. That is all anyone asked for on Triage.
+  - Assess must be done within 3 days. If it goes over, raise an approval task called
+    "Senior Assessor Check" for the assessor's manager as part of the assessment work —
+    the assessor carries on working the case in the meantime; nothing pauses and nothing
+    moves to another team.
+  - The whole case must be done within 10 days. If it goes over, a "Case Escalation" lane
+    takes the case over until a manager clears it; the team stops working the case until
+    then, and afterwards work resumes where it left off.
+
+  Preserve why each SLA response was chosen.
+
+success_criteria:
+  - type: run_command
+    description: "sdd.md was produced and no caseplan.json was built"
+    command: "test -f sdd.md && test -z \"$(find . -name caseplan.json -print -quit)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The SLA Response Map is present, closed both ways, consistent with the Stage Entry Conditions Interrupting cells, and assigns notify-only / start-task (targets the follow-up task, Interrupting —) / enter-stage (interrupting) to the three stated SLAs"
+    command: "python3 $TASK_DIR/check_sdd_response_map.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

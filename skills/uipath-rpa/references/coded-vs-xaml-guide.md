@@ -181,7 +181,7 @@ Both XAML workflows (via typed arguments) and coded workflows (via direct refere
 ## Related References
 
 - [coded/operations-guide.md](coded/operations-guide.md) — How to create coded workflows, test cases, and source files
-- [coded/coding-guidelines.md](coded/coding-guidelines.md) — C# coding rules and common issues
-- [xaml/workflow-guide.md](xaml/workflow-guide.md) — XAML workflow creation and editing
+- [coded/operations-guide.md § Coding Guidelines](coded/operations-guide.md#coding-guidelines) — C# coding rules and common issues
+- [xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md) — XAML authoring workflow, anatomy, and editing
 - [xaml/common-pitfalls.md](xaml/common-pitfalls.md) — InvokeCode language property gotcha
-- [project-structure-guide.md](project-structure-guide.md) — Project layout examples including hybrid
+- [environment-setup.md § Designing Project Structure](environment-setup.md#designing-project-structure) — Project layout examples including hybrid

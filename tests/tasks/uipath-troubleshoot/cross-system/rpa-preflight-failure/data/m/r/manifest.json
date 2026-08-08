@@ -23,6 +23,10 @@
       "file": "bf63839a62.json"
     },
     {
+      "match": "or jobs list --state Faulted --output json",
+      "file": "27179fee03.json"
+    },
+    {
       "match": "or jobs get 3ecaa4ef-a1ab-4376-ae06-d3b942362e6f",
       "file": "14d1c186b6.json"
     },

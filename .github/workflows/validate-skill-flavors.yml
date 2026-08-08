@@ -1,0 +1,96 @@
+name: Validate Skill Flavors
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+      - 'skill-flavors/**'
+      - 'agents/**'
+      - 'commands/**'
+      - 'hooks/**'
+      - 'assets/**'
+      - '.claude-plugin/**'
+      - 'scripts/compose-skill-flavor.mjs'
+      - 'scripts/npm-package-lifecycle.mjs'
+      - 'scripts/select-skill-package.mjs'
+      - 'tests/scripts/compose-skill-flavor.test.mjs'
+      - 'tests/scripts/manage-skill-flavors-skill.test.mjs'
+      - '.claude/skills/manage-skill-flavors/**'
+      - '.cursor/rules/skill-structure.mdc'
+      - '.gitignore'
+      - 'package.json'
+      - 'version-manifest.json'
+      - 'README.md'
+      - 'LICENSE'
+      - 'CODEOWNERS'
+      - 'CLAUDE.md'
+      - 'CONTRIBUTING.md'
+      - 'docs/RELEASE.md'
+      - '.github/workflows/publish.yml'
+      - '.github/workflows/publish-skill-flavor.yml'
+      - '.github/workflows/sprint-release-cut.yml'
+      - '.github/workflows/scripts/slack-sprint-cut-notify.mjs'
+      - '.github/workflows/validate-skill-flavors.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Build and inspect every skill package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Test the flavor composer and contributor contracts
+        run: npm run skills:test
+
+      - name: Validate source contracts
+        run: npm run skills:validate
+
+      - name: Build complete trees and real npm tarballs
+        run: npm run skills:pack
+
+      - name: Verify backward-compatible root default packaging
+        run: |
+          mkdir -p build/root-pack-check
+          npm pack --json --pack-destination build/root-pack-check > build/root-pack-check/pack.json
+          npm publish --dry-run --json --access public > build/root-pack-check/publish.json
+          test "$(find build/root-pack-check -maxdepth 1 -name '*.tgz' | wc -l)" -eq 1
+
+          VERSION=$(node -p "require('./package.json').version")
+          GENERATED_DEFAULT=$(node scripts/select-skill-package.mjs \
+            --directory build/npm \
+            --name @uipath/skills \
+            --flavor default \
+            --version "$VERSION")
+          GENERATED_STUDIOWEB=$(node scripts/select-skill-package.mjs \
+            --directory build/npm \
+            --name @uipath/skills-studioweb \
+            --flavor studioweb \
+            --version "$VERSION")
+          ROOT_DEFAULT=$(find build/root-pack-check -maxdepth 1 -name '*.tgz' -print)
+          test "$(sha512sum "$GENERATED_DEFAULT" | cut -d ' ' -f 1)" = \
+            "$(sha512sum "$ROOT_DEFAULT" | cut -d ' ' -f 1)"
+          echo "Verified marker-free artifacts: $GENERATED_DEFAULT and $GENERATED_STUDIOWEB"
+
+          test ! -e build/.root-pack-transaction
+          git diff --exit-code -- skills
+
+      - name: Ensure build-only markers do not reach consumers
+        run: |
+          if rg -n 'skill-flavor[ \t]*:' build/skills build/packages; then
+            echo 'Flavor marker leaked into a built tree or staged package.' >&2
+            exit 1
+          fi
+
+      - name: Upload package tarballs for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-flavor-packages
+          path: build/npm/*.tgz
+          if-no-files-found: error

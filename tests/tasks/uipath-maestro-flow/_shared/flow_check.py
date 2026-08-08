@@ -566,6 +566,11 @@ def _non_empty_binding_value(value: Any) -> bool:
     )
 
 
+# A project whose ``.flow`` declares at most this many nodes is an abandoned
+# `flow init` scaffold, not a build: init seeds a single trigger node.
+_HUSK_MAX_NODES = 1
+
+
 def _find_project(pattern: str) -> str:
     """Locate the *Flow* project directory matching ``pattern``.
 
@@ -577,6 +582,9 @@ def _find_project(pattern: str) -> str:
     declare ``"ProjectType": "Agent"`` / ``"Coded"`` / ``"Process"``.
     Filtering by manifest avoids a 1-of-N glob collision the symptom of
     MST-9734.
+
+    Two Flow projects can also mean one build plus one abandoned scaffold —
+    see :func:`_split_off_scaffold_husks`. Anything else stays a refusal.
     """
     candidates = sorted(glob.glob(pattern, recursive=True))
     if not candidates:
@@ -589,11 +597,69 @@ def _find_project(pattern: str) -> str:
             f'candidates exist but none declare ProjectType="Flow":\n  - {joined}'
         )
     if len(flow_projects) > 1:
-        joined = "\n  - ".join(flow_projects)
+        counts = [(p, _flow_node_count(os.path.dirname(p))) for p in flow_projects]
+        selected, husks = _split_off_scaffold_husks(counts)
+        if selected is not None:
+            listed = ", ".join(_describe_candidate(p, n) for p, n in husks)
+            print(f"note: ignoring {len(husks)} abandoned scaffold(s): {listed}")
+            return os.path.dirname(selected)
+        joined = "\n  - ".join(_describe_candidate(p, n) for p, n in counts)
         _fail(
             f"Multiple Flow projects match {pattern!r} — refusing to guess:\n  - {joined}"
         )
     return os.path.dirname(flow_projects[0])
+
+
+def _split_off_scaffold_husks(
+    counts: list[tuple[str, int | None]],
+) -> tuple[str | None, list[tuple[str, int | None]]]:
+    """Separate the one project carrying real work from abandoned init husks.
+
+    `uip maestro flow init` run outside a solution auto-scaffolds a duplicate
+    `<Project>Solution/` holding a trigger-only project (cli#2470). An agent that
+    then rebuilds in the right solution leaves two `project.uiproj` files, one of
+    which is dead weight — a configuration this checker used to refuse outright.
+
+    Returns ``(selected, husks)`` only when exactly one candidate has a known
+    node count above the husk ceiling and every other candidate has a known
+    count at or below it. Any unknown count (missing / unreadable / malformed
+    ``.flow``) makes the split ambiguous, so the caller keeps refusing.
+    """
+    substantive = [(p, n) for p, n in counts if n is None or n > _HUSK_MAX_NODES]
+    husks = [(p, n) for p, n in counts if n is not None and n <= _HUSK_MAX_NODES]
+    if len(substantive) != 1 or substantive[0][1] is None:
+        return None, []
+    return substantive[0][0], husks
+
+
+def _flow_node_count(project_dir: str) -> int | None:
+    """Total ``nodes`` declared across every ``.flow`` under ``project_dir``.
+
+    ``None`` means unknown — no ``.flow``, or one that will not parse. Unknown is
+    never read as a husk.
+    """
+    flows = glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
+    if not flows:
+        return None
+    total = 0
+    for path in flows:
+        try:
+            with open(path, encoding="utf-8") as f:
+                flow = json.load(f)
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            return None
+        nodes = flow.get("nodes") if isinstance(flow, dict) else None
+        if not isinstance(nodes, list):
+            return None
+        total += len(nodes)
+    return total
+
+
+def _describe_candidate(project_uiproj: str, node_count: int | None) -> str:
+    project_dir = os.path.dirname(project_uiproj)
+    if node_count is None:
+        return f"{project_dir} (node count unknown — .flow missing or unreadable)"
+    return f"{project_dir} ({node_count} node{'' if node_count == 1 else 's'})"
 
 
 def _is_flow_project(path: str) -> bool:

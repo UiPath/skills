@@ -11,9 +11,9 @@ description: >
 tags: [uipath-review, integration, mode:diagnose, lifecycle:discover, guardrail]
 
 run_limits:
-  turn_timeout: 1200
-  task_timeout: 1500
-  max_turns: 40
+  turn_timeout: 1800
+  task_timeout: 2400
+  max_turns: 60
 
 sandbox:
   python: {}
@@ -53,6 +53,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+review'
     min_count: 1
+    require_success: true
     weight: 2.0
     pass_threshold: 1.0
 
@@ -61,6 +62,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
     min_count: 1
+    require_success: true
     weight: 2.0
     pass_threshold: 1.0
 

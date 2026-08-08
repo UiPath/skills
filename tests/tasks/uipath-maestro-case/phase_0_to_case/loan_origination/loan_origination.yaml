@@ -60,7 +60,7 @@ success_criteria:
 
   - type: run_command
     description: "design models the conditional >$5M Credit-Analyst gate"
-    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'credit analyst.{0,80}5'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/check_credit_analyst_gate.py sdd.draft.md sdd.md"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0

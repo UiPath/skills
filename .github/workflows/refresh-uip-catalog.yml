@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   refresh:
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     env:
       # Turn off the CLI's startup version-sync: on a `-dev` CLI it would try to
       # re-align tools through the release-channel path (which can't resolve
@@ -19,7 +19,7 @@ jobs:
       # a corrupted/collapsed catalog.
       UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
       - name: Check for existing open refresh PR
         id: check
@@ -40,12 +40,12 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         if: steps.check.outputs.exists != 'true'
         with:
           node-version: '20'
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         if: steps.check.outputs.exists != 'true'
         with:
           python-version: '3.13'
@@ -63,7 +63,11 @@ jobs:
       - name: Install uip CLI (GitHub Packages @dev)
         if: steps.check.outputs.exists != 'true'
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_PAT }}
+          # Feed read only — deliberately NOT the repo-write PAT. See the
+          # `Open PR` step below for the split rationale. Falls back to
+          # GH_PAT so this keeps working until GH_PACKAGES_TOKEN is created;
+          # drop the fallback once it exists.
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
         run: |
           npm config set @uipath:registry https://npm.pkg.github.com/
           npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
@@ -85,6 +89,13 @@ jobs:
           # --min-verbs 1000 is a deliberate hard tripwire — it caught the
           # orchestrator-tool drop (#1203 follow-up). The build must clear it;
           # a stuck refresh is louder than a silently shrunk catalog.
+          # A third guard needs no flag and is always on: the build refuses to
+          # write if a group walked in the committed snapshot comes back
+          # unwalkable. Losing one command group is far too small a fraction of
+          # a ~1380-verb catalog for --max-drop-frac to notice (`rpa debug` +
+          # 2 others = 0.5% on 2026-07-30), and the group node survives, so the
+          # subtree vanishes silently. Failed `--help` walks are also retried
+          # first — see scripts/build-uip-catalog.py.
           python3 scripts/build-uip-catalog.py --install-tools \
             --min-verbs 1000 --max-drop-frac 0.2
 
@@ -105,11 +116,22 @@ jobs:
         # Use a PAT (not GITHUB_TOKEN) so the opened PR triggers
         # `pull_request:` workflows — required-check workflows authored by
         # GITHUB_TOKEN do not fire, which would let `--auto` merge before
-        # the verb gate / smoke tests ran. Same PAT already used by
-        # activation-gate.yml.
+        # the verb gate / smoke tests ran.
+        #
+        # GH_PAT is the repo-WRITE credential: contents + pull-requests +
+        # issues (labels live under the Issues permission — a token without
+        # it fails here with `HTTP 404 .../labels`, which is how this
+        # workflow broke for a month from 2026-06-30). It is referenced only
+        # by this workflow and automerge-catalog-refresh.yml, both of which
+        # trigger on `schedule`/`check_suite` and so cannot be influenced by
+        # a PR author. Feed reads use GH_PACKAGES_TOKEN instead, because
+        # that secret IS exposed to `pull_request`-triggered builds on this
+        # public repo and must not carry write access.
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
+          set -euo pipefail
+
           RAW_VERSION=$(jq -r .cli_version assets/uip-catalog-snapshot.json | tr -d '\r\n')
           # Sanitize before interpolating into title/body/branch — defense
           # in depth against unexpected characters in `uip --version` output.
@@ -125,15 +147,38 @@ jobs:
           git commit -m "chore: refresh uip CLI catalog ($CLI_VERSION, $VERB_COUNT verbs)"
           git push -u origin "$BRANCH"
 
+          # Past this point the branch exists on the remote, so any failure
+          # would strand it: the guard at the top of this job only looks for
+          # open PRs, so it never notices its own debris, and 34 orphans
+          # accumulated while the label call below was failing. Worse, the
+          # branch name is derived from version + UTC date, so a same-day
+          # retry at an unchanged CLI version collides with the orphan and
+          # dies on a non-fast-forward push instead of the real error.
+          # Delete the branch unless a PR ended up owning it.
+          PR_CREATED=false
+          cleanup_branch() {
+            if [ "$PR_CREATED" != "true" ]; then
+              echo "::warning::PR creation did not complete — deleting pushed branch $BRANCH"
+              git push origin --delete "$BRANCH" || true
+            fi
+          }
+          trap cleanup_branch EXIT
+
           # Ensure the `automated` label exists before referencing it on the
           # PR. The label is the join key the auto-merger uses to identify
           # refresh PRs (see automerge-catalog-refresh.yml). Creating it
           # idempotently here keeps the workflow self-contained — no
           # one-time repo setup step required after a fresh fork.
+          # Non-fatal: the label already exists on this repo, so a failure
+          # here is a token/permission hiccup, not a reason to abandon an
+          # otherwise-good catalog refresh. `gh pr create --label` below is
+          # the call that actually matters; if the label is genuinely
+          # missing that one fails loudly.
           gh label create automated \
             --color cccccc \
             --description "Bot-generated automated PR" \
-            --force
+            --force \
+            || echo "::warning::gh label create failed — continuing to PR creation"
 
           gh pr create \
             --title "chore: refresh uip CLI catalog ($CLI_VERSION)" \
@@ -141,3 +186,6 @@ jobs:
 
           Merges automatically once all checks pass (handled by \`automerge-catalog-refresh.yml\`). If a check fails, the failure is real drift (a CLI release removed/renamed a verb still referenced in skill docs or task YAMLs); investigate the gate annotations and either sweep the docs or, if the verb is intentionally retired, add it to \`.claude/rules/cli-renames.md\`. \`/lint-task\` and the CLI Verb Gate will surface the affected references." \
             --label "automated"
+
+          # PR owns the branch now — leave it for the auto-merger.
+          PR_CREATED=true

@@ -32,7 +32,6 @@ initial_prompt: |
   | Case Name | ApiWorkflowSingleCase |
   | Case Description | Single-node case that invokes the NameToAgeFixed2 API workflow with a fixed name. |
   | Case Identifier | Prefix: AWS, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | 1 d |
   | SLA Type | Static |
 

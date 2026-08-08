@@ -40,6 +40,8 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
   - <SDD output row, copied verbatim>
 - isRequired: true
 - runOnlyOnce: false
+- activation-mode: event-triggered   # required; normally event-triggered for a connector event wait
+- entry-rule: wait-for-connector   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
 - order: after T<m>
 - lane: <n>
 - verify: Confirm task created with correct event parameters

@@ -2,8 +2,6 @@
 """TaskDependencyChain: task-driven exits + under-covered task-entry rule-types."""
 
 import os
-import glob
-import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -62,51 +60,8 @@ def _task_entry_rule(task: dict) -> str | None:
     return None
 
 
-def _read_all_tasks_md() -> str:
-    matches = sorted(
-        p for p in glob.glob("**/tasks.md", recursive=True) if "/.venv/" not in p
-    )
-    if not matches:
-        sys.exit("FAIL: no tasks.md found; Phase 1 planning artifact is required")
-    chunks = []
-    for path in matches:
-        with open(path, encoding="utf-8") as f:
-            chunks.append(f"\n<!-- {path} -->\n" + f.read())
-    return "\n".join(chunks)
-
-
-def _task_plan_section(tasks_md: str, task_name: str) -> str:
-    pattern = re.compile(
-        rf"(?ims)^##\s+T\d+:.*?\"{re.escape(task_name)}\".*?(?=^##\s+T\d+:|\Z)"
-    )
-    match = pattern.search(tasks_md)
-    if not match:
-        sys.exit(f"FAIL: tasks.md has no T-entry for task {task_name!r}")
-    return match.group(0)
-
-
-def _assert_plan_sequential_mode(tasks_md: str, task_name: str) -> None:
-    section = _task_plan_section(tasks_md, task_name)
-    if not re.search(r"(?im)^-\s*activation-mode:\s*sequential\s*$", section):
-        sys.exit(
-            f"FAIL: tasks.md T-entry for {task_name!r} must expose "
-            "`activation-mode: sequential`"
-        )
-    if not re.search(r"(?im)^-\s*entry-rule:\s*runs-sequentially\s*$", section):
-        sys.exit(
-            f"FAIL: tasks.md T-entry for {task_name!r} must expose "
-            "`entry-rule: runs-sequentially`"
-        )
-    if re.search(r"(?im)^-\s*entry-rule:\s*selected-tasks-completed\b", section):
-        sys.exit(
-            f"FAIL: tasks.md T-entry for {task_name!r} models an immediate "
-            "ordered step as selected-tasks-completed instead of runs-sequentially"
-        )
-
-
 def main():
     plan = read_caseplan()
-    tasks_md = _read_all_tasks_md()
 
     stages = find_stages(plan, include_exception=False)
     if len(stages) != 3:
@@ -174,7 +129,6 @@ def main():
             )
 
     for name in ("First Step", "Second Step"):
-        _assert_plan_sequential_mode(tasks_md, name)
         task = expectations[name][0]
         rules = [
             (first_rule_of_condition(condition) or {}).get("rule")

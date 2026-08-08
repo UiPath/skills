@@ -25,6 +25,7 @@
     "troubleshoot"
   ],
   "private": false,
+  "uipathSkillsFlavor": "default",
   "files": [
     "skills",
     "agents",
@@ -36,9 +37,17 @@
     "version-manifest.json",
     "README.md",
     "LICENSE",
-    "CODEOWNERS"
+    "CODEOWNERS",
+    "scripts/npm-package-lifecycle.mjs"
   ],
   "scripts": {
+    "skills:test": "node --test tests/scripts/compose-skill-flavor.test.mjs tests/scripts/manage-skill-flavors-skill.test.mjs",
+    "skills:validate": "node scripts/compose-skill-flavor.mjs validate",
+    "skills:build": "node scripts/compose-skill-flavor.mjs build",
+    "skills:pack": "node scripts/compose-skill-flavor.mjs pack",
+    "skills:recover": "node scripts/npm-package-lifecycle.mjs recover",
+    "prepack": "node scripts/npm-package-lifecycle.mjs prepare",
+    "postpack": "node scripts/npm-package-lifecycle.mjs restore",
     "version:sync": "node scripts/sync-version.mjs",
     "version:check": "node scripts/sync-version.mjs --check"
   }

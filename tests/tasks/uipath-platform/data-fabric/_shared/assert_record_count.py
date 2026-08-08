@@ -23,9 +23,14 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 
-
-UIP_TIMEOUT_SECONDS = 60
+UIP_TIMEOUT_SECONDS = 30
+ENTITY_LOOKUP_ATTEMPTS = 2
+ENTITY_LOOKUP_RETRY_SECONDS = 2
+COUNT_ATTEMPTS = 2
+COUNT_RETRY_SECONDS = 3
+TENANT_SCOPE = "00000000-0000-0000-0000-000000000000"
 
 
 def run_uip(*args: str) -> tuple[int, str, str]:
@@ -41,26 +46,45 @@ def run_uip(*args: str) -> tuple[int, str, str]:
     return result.returncode, result.stdout, result.stderr
 
 
+def entity_folder_key(entity: dict) -> str:
+    folder_key = (
+        entity.get("FolderKey")
+        or entity.get("folderKey")
+        or entity.get("FolderId")
+        or entity.get("folderId")
+        or ""
+    )
+    return "" if str(folder_key).lower() == TENANT_SCOPE else str(folder_key)
+
+
 def find_entity_id(name: str) -> tuple[str | None, str | None]:
     """Return (entity_id, folder_key) — folder_key is empty string for tenant-scoped."""
     # Try with --include-folders first (sees both tenant and folder-scoped entities).
     # If the CLI version doesn't support the flag, fall back to plain --native-only.
-    for extra in (["--include-folders"], []):
-        code, out, err = run_uip("df", "entities", "list", "--native-only", *extra)
-        if code != 0 or not out.strip():
-            continue
-        try:
-            data = json.loads(out)
-        except json.JSONDecodeError:
-            continue
-        inner = data.get("Data") if isinstance(data, dict) else None
-        recs = inner if isinstance(inner, list) else (inner or {}).get("Records") or (inner or {}).get("records") or []
-        for ent in recs:
-            if not isinstance(ent, dict):
+    include_folders_supported = True
+    for attempt in range(ENTITY_LOOKUP_ATTEMPTS):
+        extras = (["--include-folders"], []) if include_folders_supported else ([],)
+        for extra in extras:
+            code, out, err = run_uip("df", "entities", "list", "--native-only", *extra)
+            if code != 0 or not out.strip():
+                detail = f"{out}\n{err}".lower()
+                if extra and ("unknown option" in detail or "unknown argument" in detail):
+                    include_folders_supported = False
                 continue
-            if (ent.get("Name") or ent.get("name")) == name:
-                folder_key = ent.get("FolderKey") or ent.get("folderKey") or ""
-                return (ent.get("ID") or ent.get("Id") or ent.get("id"), folder_key)
+            try:
+                data = json.loads(out)
+            except json.JSONDecodeError:
+                continue
+            inner = data.get("Data") if isinstance(data, dict) else None
+            recs = inner if isinstance(inner, list) else (inner or {}).get("Records") or (inner or {}).get("records") or []
+            for ent in recs:
+                if not isinstance(ent, dict):
+                    continue
+                if (ent.get("Name") or ent.get("name")) == name:
+                    folder_key = entity_folder_key(ent)
+                    return (ent.get("ID") or ent.get("Id") or ent.get("id"), folder_key)
+        if attempt + 1 < ENTITY_LOOKUP_ATTEMPTS:
+            time.sleep(ENTITY_LOOKUP_RETRY_SECONDS)
     return None, None
 
 
@@ -68,18 +92,26 @@ def total_count(entity_id: str, folder_key: str = "") -> int | None:
     args = ["df", "records", "list", entity_id, "--limit", "1"]
     if folder_key:
         args += ["--folder-key", folder_key]
-    code, out, err = run_uip(*args)
-    if code != 0 or not out.strip():
-        print(f"FAIL: uip df records list failed: {err.strip()}", file=sys.stderr)
-        return None
-    try:
-        data = json.loads(out)
-    except json.JSONDecodeError:
-        print("FAIL: could not parse records list output", file=sys.stderr)
-        return None
-    inner = (data.get("Data") if isinstance(data, dict) else None) or {}
-    tc = inner.get("TotalCount")
-    return int(tc) if isinstance(tc, int) else None
+    last_err = ""
+    for attempt in range(COUNT_ATTEMPTS):
+        code, out, err = run_uip(*args)
+        if code == 0 and out.strip():
+            try:
+                data = json.loads(out)
+            except json.JSONDecodeError:
+                last_err = "could not parse records list output"
+            else:
+                inner = (data.get("Data") if isinstance(data, dict) else None) or {}
+                tc = inner.get("TotalCount")
+                if isinstance(tc, int):
+                    return int(tc)
+                last_err = "TotalCount missing/non-integer in response"
+        else:
+            last_err = err.strip() or f"exit {code}"
+        if attempt + 1 < COUNT_ATTEMPTS:
+            time.sleep(COUNT_RETRY_SECONDS)
+    print(f"FAIL: uip df records list failed after {COUNT_ATTEMPTS} attempts: {last_err}", file=sys.stderr)
+    return None
 
 
 def main() -> None:

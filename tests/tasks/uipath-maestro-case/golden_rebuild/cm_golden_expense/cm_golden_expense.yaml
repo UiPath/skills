@@ -6,8 +6,8 @@ description: >
   IDs, connection IDs, and connector activity type IDs of the CM-Golden
   golden solution on the coder-eval tenant. Unlike the phase_0_build_* tasks
   (offline, skeleton bindings allowed), this exercises live resolution and
-  grades the resulting resource/connector bindings rather than the exact CLI
-  command sequence. Every task must be RESOLVED (no skeletons or unresolved
+  grades the resulting bindings, structure, semantics, and direct-JSON
+  authoring contract. Every task must be RESOLVED (no skeletons or unresolved
   connector rules), with structural fidelity to the golden design
   (8 stages incl. a secondary rework lane with return-to-origin, 15 tasks
   across all 9 task types, wait-for-user / user-selected-stage handoff,
@@ -109,6 +109,13 @@ success_criteria:
     timeout: 120
     expected_exit_code: 0
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b'
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: command_not_executed

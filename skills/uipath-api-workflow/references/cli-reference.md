@@ -429,7 +429,7 @@ uip solution pack <solutionPath> <outputPath> \
 | Argument / Flag | Required | Description |
 |-----------------|----------|-------------|
 | `<solutionPath>` | yes | Path to solution folder or `.uis`/`.uipx` file. |
-| `<outputPath>` | yes | Output directory for the `.zip`. |
+| `<outputPath>` | yes | Output directory for the `.zip`. The file lands as `<outputPath>/<name>_<version>.zip` — underscore, not a dot. |
 | `-n, --name <name>` | no | Package name. Defaults to solution folder name. |
 | `-v, --version <version>` | no | Package version. Default `1.0.0`. |
 | `--login-validity <minutes>` | no | Min minutes before token refresh. Default `10`. |
@@ -507,8 +507,8 @@ uip solution pack . ./build \
   --version 1.0.0 \
   --output json
 
-# 6. Publish
-uip solution publish ./build/MyApiSolution.zip \
+# 6. Publish — pack names the zip <name>_<version>.zip
+uip solution publish ./build/MyApiSolution_1.0.0.zip \
   --tenant MyTenant \
   --output json
 ```

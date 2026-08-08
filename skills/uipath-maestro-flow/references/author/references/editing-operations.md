@@ -8,7 +8,7 @@ Strategy selection and shared concepts for modifying `.flow` files. Direct `.flo
 >
 > 1. **CLI-managed carve-outs only** → use the relevant plugin workflow for connector activity, connector-trigger, or managed HTTP operations when the CLI populates product-managed state (`inputs.detail`, `bindings_v2.json`, connection resources).
 > 2. **Any structural `.flow` mutation** (add/delete OOTB nodes, add/delete edges, add/edit variables, in-place value tweaks, output mapping, subflows, scheduled triggers, non-connector resources, inline-agent node/wiring) → `Edit`.
-> 3. **Wholesale file rewrite** (only when ≥70% of nodes change, e.g., scaffolding from a template) → `Write`.
+> 3. **Wholesale file rewrite** (only when ≥70% of nodes change, e.g., scaffolding from a template) → `Write` — but never on a flow that already contains CLI-owned nodes (connector, connector-trigger, managed HTTP): the rewrite clobbers their CLI-owned `bindings[]` / `inputs.detail` and `flow validate` won't catch it. Use `Edit` (rung 2); if you do `Write`, re-run `node configure` **as the last write** to touch `inputs.detail` / `bindings[]` (a later `Write` re-clobbers it). See [CAPABILITY.md — Node ownership](../CAPABILITY.md#node-ownership--who-authors-the-node).
 > 4. **Anything else** → STOP and ask the user. A scripting language is a last resort: surface the trade-offs (state bypass, opaque diff, no interruption point) and present finite options — typically **Use `Edit` instead** / **Use `Write` (full rewrite)** / **Approve the script for this change** / **Cancel** / **Something else**. Only proceed after the user explicitly approves that path for this specific change. See the dropdown question rule in [SKILL.md](../../../SKILL.md).
 
 ### Why not Python / Node / jq / sed?
