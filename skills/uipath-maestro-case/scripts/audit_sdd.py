@@ -67,7 +67,7 @@ TASK_DETAIL_MARKERS = {
 CASE_VARIABLES_HEADER = "| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |"
 
 STAGE_HEADING = re.compile(r"^###\s+(Stage\s+\d+|Secondary Stage):\s*(.+?)\s*$", re.M)
-TASK_HEADING = re.compile(r"^#####\s+Task\s+(S?\d+)\.(\d+):\s*(.+?)\s*$", re.M)
+TASK_HEADING = re.compile(r"^#####\s+Task\s+(S?\d+|[A-Z]{1,4})\.(\d+):\s*(.+?)\s*$", re.M)
 LETTERED_TASK = re.compile(r"^#####\s+Task\s+[A-RT-Z]+[A-Z]*\.\d", re.M)
 
 
@@ -96,6 +96,62 @@ def inventory(text: str):
 
 def js_expressions(text: str):
     return {re.sub(r"\s+", " ", m.group(0)).strip() for m in re.finditer(r"=js:[^|\n]+", text)}
+
+
+COMPARATOR_THRESHOLD = re.compile(
+    r"(?:>=|<=|>|<|≥|≤|\b(?:over|above|under|below|at\s+least|at\s+most|more\s+than|"
+    r"less\s+than|greater\s+than|in\s+excess\s+of|exceed(?:s|ing)?)\b)\s*"
+    r"\$\s*(\d[\d,]*(?:\.\d+)?)\s*([mk])?\b",
+    re.IGNORECASE,
+)
+EXECUTABLE_LINE = re.compile(r"=js:|vars\.|\bowner\b|\brecipient\b|Role:", re.IGNORECASE)
+
+
+def threshold_variants(number: str, suffix: str | None) -> list[str]:
+    """Spellings of one currency threshold: '5' + 'M' -> 5M, 5 million, 5000000, 5,000,000.
+
+    The bare short numeral ('5') is deliberately excluded — it would match any
+    digit in an executable line and make the check vacuous.
+    """
+    bare = number.replace(",", "")
+    if suffix:
+        factor = 1_000_000 if suffix.lower() == "m" else 1_000
+        word = "million" if suffix.lower() == "m" else "thousand"
+        variants = [f"{bare}{suffix.lower()}", f"{bare} {word}"]
+        if "." not in bare:
+            expanded = str(int(bare) * factor)
+            variants += [expanded, f"{int(expanded):,}"]
+        return variants
+    variants = [bare]
+    if "." not in bare:
+        variants.append(f"{int(bare):,}")
+    return variants
+
+
+def unencoded_thresholds(draft: str, final: str) -> list[str]:
+    """Draft comparator-currency thresholds with no executable encoding in the final.
+
+    A threshold counts as encoded when some final line mentions one of its
+    spellings AND carries an executable signal (`=js:` / `vars.` / owner /
+    recipient / `Role:`). Prose repetition alone is not an encoding.
+    """
+    findings = []
+    seen: set[str] = set()
+    executable_lines = [line for line in final.splitlines() if EXECUTABLE_LINE.search(line)]
+    for match in COMPARATOR_THRESHOLD.finditer(draft):
+        variants = threshold_variants(match.group(1), match.group(2))
+        key = variants[-1]
+        if key in seen:
+            continue
+        seen.add(key)
+        needles = [re.compile(rf"(?<![\w.]){re.escape(v)}(?!\w)", re.IGNORECASE) for v in variants]
+        if not any(any(n.search(line) for n in needles) for line in executable_lines):
+            findings.append(
+                f"draft threshold policy {match.group(0).strip()!r} appears only in prose — encode it in an "
+                f"executable expression (fast-path step 9), e.g. an `IF =js:` condition or a guarded "
+                f"owner/recipient expression naming the attribute and threshold"
+            )
+    return findings
 
 
 def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
@@ -179,6 +235,7 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
             lost = sorted(js_expressions(draft) - js_expressions(text))
             for expression in lost[:10]:
                 draft_findings.append(f"draft policy expression lost: {expression}")
+            draft_findings.extend(unencoded_thresholds(draft, text))
 
     findings = draft_findings + findings
     return findings

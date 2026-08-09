@@ -194,10 +194,10 @@ Compact `tasks/tasks.md` contract for this no-build path:
 - Task entries include `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, and `rationale`.
 - Preserve each task's confirmed SDD activation semantics exactly. A singleton task that starts with its stage remains `activation-mode: parallel` + `entry-rule: current-stage-entered`; a single-task stage or list position does not make it sequential. Use `sequential` + `runs-sequentially` only when the source explicitly requires an ordered run or dependency.
 - Sequential runs use consecutive single-task lane numbers; every task in the run has `activation-mode: sequential` and `entry-rule: runs-sequentially`.
-- When the prompt says every primary phase/stage has an SLA target, every named primary stage renders its own `#### Stage SLA` block with a concrete `**SLA Title:**` (prefer `<Stage Name> SLA`) and concrete at-risk/breach display names. Every `sla-status-change` reference uses those exact titles.
+- When the prompt says every primary phase/stage has an SLA target, every named primary stage renders its own `#### Stage SLA` block with a concrete `**SLA Title:**` (prefer `<Stage Name> SLA`) and concrete at-risk/breach display names. Every `sla-status-change` reference uses those exact titles. Keep per-stage SLA tables consistent with the SLA Response Map: a breach row routes to its declared interrupting response (the `sla-status-change`-entered secondary stage), never to a notify-only action; notify-only rows are at-risk warnings.
 - Global event/exception entries name exactly one interrupting secondary stage and the rule type (`wait-for-connector` or `sla-status-change`); do not duplicate those events across every primary stage. A `sla-status-change` entry names target + SLA title, plus an at-risk escalation title only for an at-risk row (a breach names the SLA alone) — all declared in the SDD and repeated verbatim in `tasks/tasks.md`.
 - Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json`.
-- Before ending the turn, run the skill's deterministic plan audit and repair until clean (read-only; not a Rule-13 violation): `python3 "<this skill's folder>/scripts/audit_plan.py" tasks/tasks.md --sdd sdd.md`. On `AUDIT FAIL`, fix each finding with Edit and re-run; max 3 rounds, then surface the remaining findings. If `python3` is unavailable, re-check headings and per-task fields against this contract manually.
+- MANDATORY final gate: the plan is not deliverable until the skill's deterministic audit prints `AUDIT OK` (read-only; not a Rule-13 violation): `python3 "<this skill's folder>/scripts/audit_plan.py" tasks/tasks.md --sdd sdd.md`. On `AUDIT FAIL`, fix each finding with Edit and re-run; max 3 rounds, then surface the remaining findings. Quote the final `AUDIT OK` line in the reply as evidence. If `python3` is unavailable, re-check headings and per-task fields against this contract manually.
 - End the response with suggested next steps: review the SDD/plan, then run a later build to resolve tenant resources and create `caseplan.json`.
 
 ## HTML preview
@@ -243,7 +243,7 @@ If the user explicitly asks to finalize the existing draft, choose `Use the draf
 11. Section 3/4 tables keep the template's exact column headers (Section 4 Agents: `Agent | Folder | Resource ID (+version) | Inputs → Outputs (or shared contract) | Used By Tasks`); never substitute a compact layout — dropped columns lose the folder/identity/IO contract.
 12. For a large draft that needs batched writes, first Write the complete ordered document skeleton — Sections 1–4 with every primary/secondary stage heading in source order inside Section 2 — then Edit each stage/task block in place. Never append a deferred or omitted stage after `## Section 3`; insert it at its existing Section 2 heading before continuing.
 13. Write `sdd.md` with Write/Edit. Never delete or rename `sdd.draft.md` — it stays beside the finalized document.
-14. Audit loop — run the skill's deterministic auditor on the written file (read-only; running it does not violate Rule 13):
+14. Audit loop — MANDATORY, not optional: the finalized `sdd.md` is unpresentable until this prints `AUDIT OK`. Run the skill's deterministic auditor on the written file (read-only; running it does not violate Rule 13):
 
     ```bash
     python3 "<this skill's folder>/scripts/audit_sdd.py" sdd.md --draft sdd.draft.md
@@ -256,7 +256,7 @@ If the user explicitly asks to finalize the existing draft, choose `Use the draf
     - Literal seven-column Case Variables header (`Name | Category | Type | sourceTriggers | sourceFields | Default | Description`).
     - Explicit `**Interrupting:** Yes` or `No` line on every secondary stage.
     - Every stage/task block carries the literal markers from steps 5–6.
-15. Stop. The finalized `sdd.md` beside the untouched `sdd.draft.md` is the deliverable.
+15. Stop. The finalized `sdd.md` beside the untouched `sdd.draft.md` is the deliverable; quote the audit's final `AUDIT OK` line in the reply as evidence.
 
 ## What to say while working
 
