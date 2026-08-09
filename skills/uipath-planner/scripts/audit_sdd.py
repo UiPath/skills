@@ -180,6 +180,46 @@ def unencoded_thresholds(draft: str, final: str) -> list[str]:
     return findings
 
 
+VARIABLE_ROW = re.compile(
+    r"^\|\s*([A-Za-z]\w*)\s*\|\s*(In|Out|Variable)\s*\|"
+    r"\s*[^|]*\|\s*([^|]*?)\s*\|\s*[^|]*\|\s*([^|]*?)\s*\|",
+    re.M,
+)
+
+
+def lineage_findings(text: str) -> list[str]:
+    """Mirror sdd_check's mapping + lineage closure: every consumed variable is
+    declared and produced (-> output, `X =` assignment, Default, or trigger-sourced)."""
+    findings: list[str] = []
+    category: dict[str, str] = {}
+    src_trig: dict[str, str] = {}
+    default: dict[str, str] = {}
+    for name, cat, st, d in VARIABLE_ROW.findall(text):
+        category[name] = cat
+        src_trig[name] = st.strip()
+        default[name] = d.strip()
+    if not category:
+        return findings  # template checks already flag a missing table
+    refs = set(re.findall(r"=vars\.([A-Za-z]\w*)", text)) - {"X"}
+    undeclared = sorted(r for r in refs if r not in category)
+    if undeclared:
+        findings.append(f"{len(undeclared)} =vars consumed but not declared in Case Variables: {', '.join(undeclared)}")
+    produced = set(re.findall(r"->\s*([A-Za-z]\w*)", text)) | set(
+        re.findall(r"\b([A-Za-z]\w*)\s*=\s*(?!=)", text)
+    )
+    open_lineage = sorted(
+        r for r in refs
+        if r in category and category.get(r) != "In"
+        and not default.get(r) and not src_trig.get(r) and r not in produced
+    )
+    for name in open_lineage:
+        findings.append(
+            f"variable {name!r} is consumed but never produced — keep its producer output row "
+            f"(`-> {name}`), assignment, Default, or trigger source"
+        )
+    return findings
+
+
 def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
     findings: list[str] = []
     text = sdd_path.read_text(encoding="utf-8")
@@ -242,6 +282,8 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
                     f"line {line_no}: sla-status-change takes (\"<SLA target>\",\"<SLA Title>\") "
                     f"or (...,\"<At-Risk Escalation Display Name>\"); got {len(args)} args"
                 )
+
+    findings.extend(lineage_findings(text))
 
     draft_findings: list[str] = []
     if draft_path is not None:
