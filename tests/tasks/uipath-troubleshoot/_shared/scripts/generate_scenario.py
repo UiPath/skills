@@ -101,7 +101,7 @@ description: >
   runs the uipath-troubleshoot skill against a uip CLI mock whose
   responses are the verbatim sub-agent outputs from the real session.
   Success = the agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, {domain_tags}e2e, faithful-replay]
+tags: [uipath-troubleshoot, {domain_tags}e2e, mode:diagnose, faithful-replay]
 
 agent:
   type: claude-code
@@ -113,7 +113,6 @@ run_limits:
   turn_timeout: 1800
 
 sandbox:
-  driver: tempdir
   python: {{}}
   template_sources:
     - type: template_dir
