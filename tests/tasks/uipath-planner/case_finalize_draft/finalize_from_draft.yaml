@@ -51,6 +51,12 @@ initial_prompt: |
 
 success_criteria:
   - type: file_exists
+    description: "sdd.draft.md is still in place — finalization renders beside the draft, never consumes it"
+    path: "sdd.draft.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
     description: "Finalization produced the approved sdd.md"
     path: "sdd.md"
     weight: 1.5

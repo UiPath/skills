@@ -105,7 +105,11 @@ If the plan-only / no-build exception is active, skip registry and schema discov
 
 **`lane` is a number, and grouping is expressed by sharing it.** `lane` is the zero-based `data.tasks` task-set index — `lane: 2`, never a descriptive name like `lane: payment confirmation`. Tasks that run as one task set carry the **same** number: `parallel-after-predecessor` siblings after one predecessor share a single lane value, and a strict chain increments. Giving two siblings different lanes contradicts their `activation-mode` and emits them as separate task sets, which is the defect the mode exists to prevent — the label alone does not group them.
 
-Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json` in this mode; those require tenant evidence and belong to the later build run. End the response with suggested next steps: review the SDD and plan, then run a later build to resolve tenant resources and create `caseplan.json`.
+Do not add `taskTypeId`, `activityTypeId`, `connectionId`, resolved schemas, `inputs`, `outputs`, `registry-resolved.json`, or `recipients-resolved.json` in this mode; those require tenant evidence and belong to the later build run.
+
+**MANDATORY final gate:** the plan is not deliverable until the skill's deterministic audit prints `AUDIT OK` (read-only): `python3 "<this skill's folder>/scripts/audit_plan.py" tasks/tasks.md --sdd sdd.md`. On `AUDIT FAIL`, fix each finding with Edit and re-run; max 3 rounds, then surface the remaining findings. Quote the final `AUDIT OK` line in the reply as evidence. If `python3` is unavailable, re-check headings and per-task fields against this contract manually.
+
+End the response with suggested next steps: review the SDD and plan, then run a later build to resolve tenant resources and create `caseplan.json`.
 
 When the plan-only / no-build exception is not active, continue with the normal build-planning path:
 

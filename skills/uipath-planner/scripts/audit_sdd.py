@@ -1,0 +1,297 @@
+#!/usr/bin/env python3
+"""Deterministic template-shape audit for a planner-authored Case Management SDD.
+
+Usage:
+    python3 audit_sdd.py <sdd.md> [--draft <sdd.draft.md>]
+
+Read-only. Exit 0 = shape-clean. Exit 1 = numbered findings on stderr; repair
+the document with Write/Edit and re-run until clean. `--draft` additionally
+verifies the finalized document preserves the draft's ordered stage/task
+inventory and every draft `=js:` expression.
+"""
+
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+REQUIRED_HEADINGS = [
+    "## Table of Contents",
+    "## Section 1: Case Definition",
+    "### Case Metadata",
+    "### Case Triggers",
+    "### Case Exit Conditions",
+    "### Case Variables",
+    "## Section 2: Stages & Tasks",
+    "## Section 3: Personas & App Views",
+    "### Personas",
+    "### Process App Views",
+    "## Section 4: Integrations",
+]
+
+SUMMARY_ONLY_HEADINGS = [
+    "Source", "Case Objective", "Actors And Systems", "Case Trigger", "Stages",
+    "Business Rules", "Task Plan", "Resource Resolution", "Acceptance Scenarios",
+]
+
+STAGE_MARKERS = [
+    "**Type:**",
+    "**Design Rationale:**",
+    "#### Stage Entry Conditions",
+    "#### Stage Exit Conditions",
+    "#### Tasks",
+]
+
+TASK_MARKERS = [
+    "**Type:**",
+    "**Activation Mode:**",
+    "**Design Rationale:**",
+    "**Entry Condition:**",
+    "**Task envelope**",
+]
+
+# task type -> (detail-block heading, alternate literal markers)
+TASK_DETAIL_MARKERS = {
+    "action": ("Action Task Detail", "**HITL Implementation:**"),
+    "wait-for-connector": ("Connector Task Detail", "**Connector:**", "**Trigger / Event:**"),
+    "execute-connector-activity": ("Connector Task Detail", "**Connector:**", "**Resolved Resource:**"),
+    "wait-for-timer": ("Timer Task Detail", "**Timer Configuration:**", "**Duration:**", "**Timer:**"),
+    "case-management": ("Child Case Task Detail", "**Child Case:**"),
+    "process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "agent": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "rpa": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "api-workflow": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+}
+
+CASE_VARIABLES_HEADER = "| Name | Category | Type | sourceTriggers | sourceFields | Default | Description |"
+
+STAGE_HEADING = re.compile(r"^###\s+(Stage\s+\d+|Secondary Stage):\s*(.+?)\s*$", re.M)
+TASK_HEADING = re.compile(r"^#####\s+Task\s+(S?\d+|[A-Z]{1,4})\.(\d+):\s*(.+?)\s*$", re.M)
+LETTERED_TASK = re.compile(r"^#####\s+Task\s+[A-RT-Z]+[A-Z]*\.\d", re.M)
+
+
+def strip_id_suffix(name: str) -> str:
+    return re.sub(r"\s*\(`[^`]*`\)\s*$", "", name).strip()
+
+
+def stage_blocks(text: str):
+    """Yield (kind, display name, block text) for each stage heading."""
+    matches = list(STAGE_HEADING.finditer(text))
+    section3 = re.search(r"^## Section 3: Personas & App Views\s*$", text, re.M)
+    doc_end = section3.start() if section3 else len(text)
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else doc_end
+        yield match.group(1), strip_id_suffix(match.group(2)), text[match.start():end]
+
+
+def inventory(text: str):
+    """Ordered (stage, task) names, id suffixes stripped."""
+    entries = []
+    for _, stage_name, block in stage_blocks(text):
+        for task in TASK_HEADING.finditer(block):
+            entries.append((stage_name, strip_id_suffix(task.group(3))))
+    return entries
+
+
+def js_expressions(text: str):
+    return {re.sub(r"\s+", " ", m.group(0)).strip() for m in re.finditer(r"=js:[^|\n]+", text)}
+
+
+HIGH_WORDS = r"over|above|at\s+least|more\s+than|greater\s+than|in\s+excess\s+of|exceed(?:s|ing)?"
+LOW_WORDS = r"under|below|at\s+most|less\s+than"
+COMPARATOR_THRESHOLD = re.compile(
+    rf"(>=|<=|>|<|≥|≤|\b(?:{HIGH_WORDS}|{LOW_WORDS})\b)\s*"
+    r"\$\s*(\d[\d,]*(?:\.\d+)?)\s*([mk])?\b",
+    re.IGNORECASE,
+)
+EXECUTABLE_LINE = re.compile(r"=js:|vars\.|\bowner\b|\brecipient\b|Role:", re.IGNORECASE)
+PROSE_MARKER = re.compile(r"^\*\*(Design Rationale|Description):\*\*", re.M)
+
+
+def comparator_direction(token: str) -> str:
+    token = token.casefold().strip()
+    if token in (">", ">=", "≥") or re.fullmatch(HIGH_WORDS, token):
+        return "high"
+    return "low"
+
+
+def threshold_variants(number: str, suffix: str | None) -> list[str]:
+    """Spellings of one currency threshold: '5' + 'M' -> 5M, 5 million, 5000000, 5,000,000.
+
+    The bare short numeral ('5') is deliberately excluded — it would match any
+    digit in an executable line and make the check vacuous.
+    """
+    bare = number.replace(",", "")
+    if suffix:
+        factor = 1_000_000 if suffix.lower() == "m" else 1_000
+        word = "million" if suffix.lower() == "m" else "thousand"
+        variants = [f"{bare}{suffix.lower()}", f"{bare} {word}"]
+        if "." not in bare:
+            expanded = str(int(bare) * factor)
+            variants += [expanded, f"{int(expanded):,}"]
+        return variants
+    variants = [bare]
+    if "." not in bare:
+        variants.append(f"{int(bare):,}")
+    return variants
+
+
+def unencoded_thresholds(draft: str, final: str) -> list[str]:
+    """Draft comparator-currency thresholds with no executable encoding in the final.
+
+    A threshold counts as encoded when some final line mentions one of its
+    spellings AND carries an executable signal (`=js:` / `vars.` / owner /
+    recipient / `Role:`). Prose repetition alone is not an encoding.
+    """
+    findings = []
+    seen: set[tuple[str, str]] = set()
+    # Rationale/Description prose never counts as an encoding — the guard must
+    # live in an executable table cell (owner/recipient/WHEN/IF/Inputs).
+    executable_lines = [
+        line for line in final.splitlines()
+        if EXECUTABLE_LINE.search(line) and not PROSE_MARKER.match(line.strip())
+    ]
+    for match in COMPARATOR_THRESHOLD.finditer(draft):
+        direction = comparator_direction(match.group(1))
+        variants = threshold_variants(match.group(2), match.group(3))
+        key = (variants[-1], direction)
+        if key in seen:
+            continue
+        seen.add(key)
+        needles = [re.compile(rf"(?<![\w.]){re.escape(v)}(?!\w)", re.IGNORECASE) for v in variants]
+        covered = False
+        for line in executable_lines:
+            if not any(n.search(line) for n in needles):
+                continue
+            ternary = "?" in line and ":" in line.split("?", 1)[-1]
+            line_dirs = {comparator_direction(t.group(1)) for t in re.finditer(
+                rf"(>=|<=|>|<|≥|≤|\b(?:{HIGH_WORDS}|{LOW_WORDS})\b)", line, re.IGNORECASE)}
+            if ternary or direction in line_dirs:
+                covered = True
+                break
+        if not covered:
+            findings.append(
+                f"draft threshold policy {match.group(0).strip()!r} has no {direction}-side executable encoding — "
+                f"add the guard to an owner/recipient/WHEN/IF cell (fast-path step 9), e.g. "
+                f"`=js:vars.<attr> > <threshold> ? \"Role:<ExceptionRole>\" : \"Role:<DefaultRole>\"`; "
+                f"Rationale/Description prose does not count"
+            )
+    return findings
+
+
+def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
+    findings: list[str] = []
+    text = sdd_path.read_text(encoding="utf-8")
+
+    first = next((line.strip() for line in text.splitlines() if line.strip()), "")
+    if not first.startswith("# SDD — "):
+        findings.append("first heading must be '# SDD — {Case Name}'")
+
+    for heading in REQUIRED_HEADINGS:
+        if not re.search(rf"^{re.escape(heading)}\s*$", text, re.M):
+            findings.append(f"missing required heading {heading!r}")
+    for heading in SUMMARY_ONLY_HEADINGS:
+        if re.search(rf"^## {re.escape(heading)}\s*$", text, re.M):
+            findings.append(f"summary-only heading '## {heading}' — render the full template instead")
+
+    if CASE_VARIABLES_HEADER not in text:
+        findings.append(f"Case Variables table must use the literal header {CASE_VARIABLES_HEADER!r}")
+    if LETTERED_TASK.search(text):
+        findings.append("lettered task prefixes (Task R.1 / W.1 / CC.1 / ESC.1) — renumber as Task S{K}.{M}")
+    for line_no, line in enumerate(text.splitlines(), 1):
+        if re.search(r"\\n\s*(?:\*\*|#|\|)", line):
+            findings.append(
+                f"line {line_no}: literal \\n escape corrupts the document structure — rewrite the block with real newlines"
+            )
+
+    stages = list(stage_blocks(text))
+    if not stages:
+        findings.append("no '### Stage {N}:' / '### Secondary Stage:' blocks found")
+    for kind, stage_name, block in stages:
+        for marker in STAGE_MARKERS:
+            if marker not in block:
+                findings.append(f"stage {stage_name!r} missing {marker!r}")
+        if kind == "Secondary Stage" and not re.search(r"^\*\*Interrupting:\*\*\s*(Yes|No)\b", block, re.M):
+            findings.append(f"secondary stage {stage_name!r} missing explicit '**Interrupting:** Yes' or 'No'")
+
+        tasks = list(TASK_HEADING.finditer(block))
+        if not tasks:
+            findings.append(f"stage {stage_name!r} has no '##### Task' detail blocks — every task in its Tasks table needs one")
+            continue
+        for index, task in enumerate(tasks):
+            end = tasks[index + 1].start() if index + 1 < len(tasks) else len(block)
+            task_block = block[task.start():end]
+            task_name = strip_id_suffix(task.group(3))
+            for marker in TASK_MARKERS:
+                if marker not in task_block:
+                    findings.append(f"task {task_name!r} missing {marker!r}")
+            type_match = re.search(r"^\*\*Type:\*\*\s*`?([a-z-]+)", task_block, re.M)
+            if type_match:
+                markers = TASK_DETAIL_MARKERS.get(type_match.group(1))
+                if markers and not any(marker in task_block for marker in markers):
+                    findings.append(f"task {task_name!r} (type {type_match.group(1)}) missing type detail block {markers[0]!r}")
+
+    # sla-status-change arg shape: 2 quoted args (breach) or 3 (at-risk).
+    # Zero-quoted-arg mentions are prose shorthand and not checked.
+    for line_no, line in enumerate(text.splitlines(), 1):
+        for call in re.finditer(r"sla-status-change\s*\(([^)]*)\)", line, re.I):
+            args = re.findall(r"[\"“‘']([^\"”’']+)[\"”’']", call.group(1))
+            if args and len(args) not in (2, 3):
+                findings.append(
+                    f"line {line_no}: sla-status-change takes (\"<SLA target>\",\"<SLA Title>\") "
+                    f"or (...,\"<At-Risk Escalation Display Name>\"); got {len(args)} args"
+                )
+
+    draft_findings: list[str] = []
+    if draft_path is not None:
+        if not draft_path.is_file():
+            draft_findings.append(f"{draft_path} is gone — never delete or rename the draft; finalize renders a new sdd.md beside it")
+        else:
+            draft = draft_path.read_text(encoding="utf-8")
+            draft_inv, final_inv = inventory(draft), inventory(text)
+            if draft_inv != final_inv:
+                missing = [f"{s} / {t}" for s, t in draft_inv if (s, t) not in final_inv]
+                added = [f"{s} / {t}" for s, t in final_inv if (s, t) not in draft_inv]
+                detail = "; ".join(
+                    part for part in (
+                        f"missing: {', '.join(missing[:8])}" if missing else "",
+                        f"added/renamed: {', '.join(added[:8])}" if added else "",
+                        "order changed" if not missing and not added else "",
+                    ) if part
+                )
+                draft_findings.append(
+                    f"stage/task inventory differs from draft (draft={len(draft_inv)}, final={len(final_inv)}) — {detail}"
+                )
+            lost = sorted(js_expressions(draft) - js_expressions(text))
+            for expression in lost[:10]:
+                draft_findings.append(f"draft policy expression lost: {expression}")
+            draft_findings.extend(unencoded_thresholds(draft, text))
+
+    findings = draft_findings + findings
+    return findings
+
+
+def main() -> None:
+    args = [a for a in sys.argv[1:]]
+    draft: Path | None = None
+    if "--draft" in args:
+        i = args.index("--draft")
+        draft = Path(args[i + 1])
+        del args[i:i + 2]
+    if len(args) != 1:
+        sys.exit(__doc__)
+    findings = audit(Path(args[0]), draft)
+    if findings:
+        shown = findings[:40]
+        print("AUDIT FAIL — repair these, then re-run:", file=sys.stderr)
+        for n, f in enumerate(shown, 1):
+            print(f"  {n}. {f}", file=sys.stderr)
+        if len(findings) > len(shown):
+            print(f"  … and {len(findings) - len(shown)} more", file=sys.stderr)
+        sys.exit(1)
+    print("AUDIT OK: sdd.md template shape is clean")
+
+
+if __name__ == "__main__":
+    main()

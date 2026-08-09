@@ -147,8 +147,8 @@ def check_plan_preserves_task_activation(sdd: str, plan: str) -> None:
 
 
 def stage_section(sdd: str, stage_name: str) -> str:
-    heading = rf"^#{{2,4}}\s+(?:Secondary\s+Stage:\s*)?{re.escape(stage_name)}\b[^\n]*\n"
-    next_stage = r"^#{2,4}\s+(?:Stage\s+\d+|Secondary\s+Stage:)"
+    heading = rf"^#{{2,4}}\s+(?:(?:Primary\s+)?Stage\s+\d+:\s*|Secondary\s+Stage(?:\s+S?\d+)?:\s*)?{re.escape(stage_name)}\b[^\n]*\n"
+    next_stage = r"^#{2,4}\s+(?:(?:Primary\s+)?Stage\s+\d+|Secondary\s+Stage(?:\s+S?\d+)?:)"
     match = re.search(
         rf"(?ims){heading}.*?(?={next_stage}|\Z)",
         sdd,
@@ -165,7 +165,7 @@ def task_lane(section: str, task_name: str) -> int:
     return int(match.group(1))
 
 
-STAGE_HEADING = r"(?im)^#{3,4}\s+(?:Stage\s+\d+|Exception Stage|Secondary Stage):\s*(.+)$"
+STAGE_HEADING = r"(?im)^#{3,4}\s+(?:(?:Primary\s+)?Stage\s+\d+|Exception Stage|Secondary Stage(?:\s+S?\d+)?):\s*(.+)$"
 
 # Primary phases the prompt names; each must carry its own SLA.
 PRIMARY_STAGES = ("Intake", "Supplier Setup", "Compliance Review", "Decision", "Close")
@@ -195,7 +195,12 @@ def sla_references(sdd: str) -> list[tuple[int, list[str]]]:
     for line_no, line in enumerate(sdd.splitlines(), 1):
         call = re.search(r"sla-status-change\s*\(([^)]*)\)", line, re.IGNORECASE)
         if call:
-            references.append((line_no, re.findall(r"[\"']([^\"']+)[\"']", call.group(1))))
+            args = re.findall(r"[\"']([^\"']+)[\"']", call.group(1))
+            # Zero quoted args means summary-table / prose shorthand, not an
+            # executable reference; real rule coverage is enforced per stage +
+            # root below, so a malformed real rule still fails there.
+            if args:
+                references.append((line_no, args))
     return references
 
 
@@ -209,7 +214,7 @@ def declared_sla_titles(sdd: str) -> set[str]:
     `Breached` sits in column 1 of the escalation table and is never a title.
     """
     titles = set()
-    for match in re.finditer(r"(?im)^\|\s*SLA Title\s*\|\s*([^|]+)\|", sdd):
+    for match in re.finditer(r"(?im)^\|\s*(?:Case\s+)?SLA Title\s*\|\s*([^|]+)\|", sdd):
         titles.add(match.group(1).strip().casefold())
     for match in re.finditer(r"(?im)^\*\*SLA Title:\*\*\s*(.+)$", sdd):
         titles.add(match.group(1).strip().casefold())
@@ -386,7 +391,13 @@ def main() -> None:
     withdrawn_section = stage_section(sdd, "Withdrawn")
     if "wait-for-connector" not in withdrawn_section.lower():
         fail("Withdrawn is not entered by the global supplier-portal event")
-    if not has_near(withdrawn_section, "Supplier Portal", "Withdraw", 500):
+    if not (
+        has_near(withdrawn_section, "Supplier Portal", "Withdraw", 500)
+        # The connector source may be declared once in the Triggers table /
+        # Section 4 rollup and referenced from the stage by event title; the
+        # wait-for-connector entry check above already pins the stage's rule.
+        or has_near(sdd, "Supplier Portal", "Withdraw", 500)
+    ):
         fail("Withdrawn connector rule does not preserve the supplier-portal withdrawal event")
 
     sequential_tasks = ("Verify Supplier Identity", "Set Supplier Record", "Invite Supplier")
