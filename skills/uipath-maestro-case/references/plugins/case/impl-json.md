@@ -263,3 +263,4 @@ If any check fails, halt and report — do not proceed to downstream plugins.
 
 **Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, so the case cannot be entered). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command"). Pre-build validate is informational only, regardless of schema.
 
+<!-- END: impl-json.md -->

@@ -77,6 +77,41 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 In Phase 2, always write the canonical stub from [connector-trigger-common.md § Condition-rule phase contract](../../../connector-trigger-common.md#condition-rule-phase-contract), regardless of connector resolution. In Phase 3 Step 10.5, a resolved connector replaces only `rule.uipath`; final inputs/outputs use the owning stage's `elementId = <stageId>-<ruleId>` (not the task ID). Preserve the optional `conditionExpression`.
 
+Both shapes re-stated below from [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) (source of truth — keep in sync). `rule.uipath` is ALWAYS `serviceType` + the four arrays; connector identity lives inside `context[]` entries, never as flat fields (`typeId` / `connectorKey` / `operation` directly on `uipath`) — a flat shape passes `validate` but is not runnable.
+
+Phase 2 stub (exact):
+
+```json
+"rules": [[
+  {
+    "id": "rxxxxxxxx",
+    "rule": "wait-for-connector",
+    "uipath": {
+      "serviceType": "Intsvc.WaitForEvent",
+      "context": [
+        { "name": "connectorKey", "value": "placeholder", "type": "string" },
+        { "name": "operation",    "value": "placeholder", "type": "string" }
+      ],
+      "inputs": [],
+      "outputs": [],
+      "bindings": []
+    }
+  }
+]]
+```
+
+Phase 3 Step 10.5 — replace only `uipath` with the `case spec --type trigger --input-details` caseShape ([common § Procedure (Phase 3)](../../../connector-trigger-common.md#procedure-phase-3)):
+
+```json
+"uipath": {
+  "serviceType": "Intsvc.WaitForEvent",
+  "context": "<caseShape.context — placeholders substituted>",
+  "inputs":  "<caseShape.inputs  — var/id/elementId minted>",
+  "outputs": "<caseShape.outputs — var/id/elementId minted, dedup applied>",
+  "bindings": []
+}
+```
+
 **Rule output binding.** Defer it with the stub. After the Phase 3 upgrade produces real outputs, dispatch them per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules), before root bindings. `elementId` stays `<stageId>-<ruleId>`.
 
 ### runs-sequentially — sequential task chain
@@ -115,3 +150,5 @@ When a *stage* should take the case instead, the rule goes on the stage's `entry
 ## Post-Write Verification
 
 Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`), non-empty `displayName` (SDD value or `Entry Rule {N}` default), and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use the owning stage's `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
+
+<!-- END: impl-json.md -->

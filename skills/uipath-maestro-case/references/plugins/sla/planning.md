@@ -209,3 +209,5 @@ Before emitting SLA T-entries, reject or repair the same cases the Case App reje
 - **Do not skip the resolver to save a CLI call.** Email / group-name recipients MUST go through [§ Identity Resolution](#identity-resolution). Writing `<UNRESOLVED: ...>` directly without attempting `uip admin users/groups list` is a planning bug.
 - **Do not fabricate UUIDs.** When the resolver returns 0 / multi / partial matches, AskUserQuestion or keep `<UNRESOLVED>` — never guess a UUID, never auto-pick the first candidate without the exact-email / exact-name gate.
 - **Do not cache user declines.** Session cache holds positive resolutions only. Re-ask on each T-entry occurrence of the same unresolved recipient.
+
+<!-- END: planning.md -->
