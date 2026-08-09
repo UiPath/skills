@@ -51,56 +51,37 @@ Phase 3 (implementation) catches spec-dependent issues — see [`impl-json.md`](
 
 ## tasks.md Entry Format
 
-One T-entry per Case Variables row. Place after the case file (T01) and all trigger T-entries (T02+), before stages. T-number for the first variable depends on trigger count.
+One T-entry per Case Variables row, serialized as one row in a single variables table — NOT one H2 block per variable. Each row keeps its own T-number; the §4.0 completeness contract (one T-entry per declaration, never group, never omit) applies row-by-row. Place the table after the case file (T01) and all trigger T-entries (T02+), before stages. T-number for the first variable depends on trigger count.
 
 ```markdown
-## T05: Declare In-argument "applicantName"
-- category: In
-- type: string
-- sourceTriggers: T03            # single T-number; omit to bind the primary trigger (T02)
-- default: ""
-- verify: inputs[] formal slot + inputOutputs[] companion (elementId = id-map[T03].id) + that trigger node's outputs[] bridge written.
+### Variables and arguments (one T-entry per row)
 
-## T06: Declare Variable "subject"
-- category: Variable
-- type: string
-- sourceTrigger: T02
-- sourceField: response.subject
-- verify: inputOutputs[] entry (id=subject, elementId="root"); trigger T02's outputs[] carries Pattern C wire (source="=response.subject", var=id="subject"); no inputs[] entry.
-
-## T07: Declare Variable "caseStarter"
-- category: Variable
-- type: string
-- sourceTriggers: T02, T03
-- sourceFields:
-    T02: response.user
-    T03: response.initiator
-- verify: one inputOutputs[] companion (elementId="root") shared across triggers; each listed trigger's outputs[] has its own Pattern C wire targeting the companion.
-
-## T08: Declare Variable "caseStatus"
-- category: Variable
-- type: string
-- default: "Open"
-- verify: inputOutputs[] entry (id=caseStatus, elementId="root", default="Open"); no trigger output entries.
-
-## T09: Declare Out-argument "finalDecision"
-- category: Out
-- type: string
-- producedBy: T15.outputs.finalDecision   # informational reference to the producing task T-entry
-- verify: outputs[] formal entry (var=finalDecision); companion in inputOutputs[] ALWAYS emitted (with default="" when Default empty); io-binding validator confirms producer task output has id=finalDecision.
+| T# | name | category | type | sourceTriggers | sourceFields | default | producedBy |
+|---|---|---|---|---|---|---|---|
+| T05 | applicantName | In | string | T03 | | "" | |
+| T06 | subject | Variable | string | T02 | response.subject | | |
+| T07 | caseStarter | Variable | string | T02, T03 | T02: response.user; T03: response.initiator | | |
+| T08 | caseStatus | Variable | string | | | "Open" | |
+| T09 | finalDecision | Out | string | | | | T15.outputs.finalDecision |
 ```
 
-**Field semantics on the T-entry:**
+**Column semantics:**
 
 - `category` — required, one of `In`, `Out`, `Variable`
 - `type` — required, one of `string`, `integer`, `float`, `double`, `boolean`, `datetime`, `date`, `jsonSchema`, `file`
-- `sourceTrigger` — T-number when the value comes from a single trigger's payload (Variable category)
-- `sourceTriggers` — for a `Variable`: CSV of T-numbers when multiple triggers populate it. For an `In`-arg: a single `T<N>` selecting the trigger it binds to (blank → primary trigger T02; never a CSV). Replaces the legacy `triggerRef` field.
-- `sourceFields` — per-trigger payload paths (Variable only). Single-trigger form is `<path>`; multi-trigger form is a YAML-style sub-block with one `T<N>: <path>` per line. Empty on `In` rows.
+- `sourceTriggers` — for a `Variable`: CSV of T-numbers when one or more triggers populate it. For an `In`-arg: a single `T<N>` selecting the trigger it binds to (blank → primary trigger T02; never a CSV). Replaces the legacy `triggerRef` field.
+- `sourceFields` — per-trigger payload paths (Variable only). Single-trigger form is `<path>`; multi-trigger form is `T<N>: <path>` pairs separated by `; `. Empty on `In` rows.
 - `default` — initial value (string-encoded for non-string types). Drives the `default` field on the companion `inputOutputs[]` entry.
 - `producedBy` — informational only (for Out-args). The io-binding validator confirms the named task actually exists with a matching output.
 
-**`verify` text — use exact terms from [`impl-json.md` § Pattern shapes](impl-json.md):**
+**Verify contract — per category, stated ONCE after the table, never repeated per row.** Emit one `verify:` line per category present, using exact terms from [`impl-json.md` § Pattern shapes](impl-json.md):
+
+- `In` → inputs[] formal slot + inputOutputs[] companion (elementId = id-map[source trigger].id) + that trigger node's outputs[] bridge.
+- `Variable` with source-triggers → inputOutputs[] companion (elementId="root"); each listed trigger's outputs[] carries its own Pattern C wire targeting the companion; no inputs[] entry.
+- `Variable` without source-triggers → inputOutputs[] entry (elementId="root", default carried); no trigger output entries.
+- `Out` → outputs[] formal entry; companion in inputOutputs[] ALWAYS emitted (default="" when Default empty); io-binding validator confirms producer task output id.
+
+**Verify-term glossary — use exact terms from [`impl-json.md` § Pattern shapes](impl-json.md):**
 
 - "Bridge" = In-arg formal-arg → companion forwarding (any trigger type; 3-entry shape) on the trigger named by the In row's `sourceTriggers` (blank → primary). NEVER use for Variable rows.
 - Variable-row trigger.outputs[] entries are "Pattern C wires" (direct payload extraction, 2-entry shape).

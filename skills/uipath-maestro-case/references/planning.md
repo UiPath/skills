@@ -90,7 +90,7 @@ Before resource resolution, seed TodoWrite with the items below to track Phase 1
 
 For every task, trigger, and condition in the sdd.md:
 
-If the plan-only / no-build exception is active, skip registry and schema discovery in this step and do not fan out through every plugin `planning.md`. Use the compact no-build shape below for the review plan: preserve SDD portable names, emit tenant identities as `resolve at build`, carry every rationale, and stop after `tasks/tasks.md`. The compact no-build plan is exempt from the normal section-batched planning workflow because it is a review artifact, not a build handoff: create `tasks/` if needed and write the complete concise `tasks/tasks.md` with one direct Write, then stop. The later build run owns authoritative resource resolution and regenerates any registry-derived fields before Phase 2.
+If the plan-only / no-build exception is active, skip registry and schema discovery in this step and do not fan out through every plugin `planning.md`. The compact no-build T-entry shape and artifact contract are canonical in [phase-0-interview.md § Build start → No-build design + plan request](phase-0-interview.md#build-start--sdd-written-alongside-the-build) — read only that contract, not the full interview flow. Summary: each declaration still gets a T-number with review-oriented fields; preserve SDD portable names; emit tenant identities as `resolve at build`; carry every rationale; no registry-derived fields (`taskTypeId`, `connectionId`, resolved schemas, `inputs`/`outputs`) and no audit files. The compact plan is exempt from the normal section-batched planning workflow because it is a review artifact, not a build handoff: create `tasks/` if needed and write the complete concise `tasks/tasks.md` with one direct Write, then stop. The later build run owns authoritative resource resolution and regenerates any registry-derived fields before Phase 2.
 
 **Compact no-build T-entry shape:** each declaration still gets a T-number, but the fields are intentionally review-oriented:
 
@@ -181,7 +181,7 @@ Every declaration in `sdd.md` must become a T-task in `tasks.md`. Mapping is 1-t
 - **Never filter** declarations on the grounds that the default rule-type, default field value, or "implicit behavior" would cover them. If `sdd.md` lists a task, stage, trigger, condition, SLA row, **variable, or argument**, `tasks.md` emits a T-task for it — regardless of rule-type (`current-stage-entered`, `case-entered`, `exit-only`, `required-tasks-completed`, etc.).
 - **Never merge** two sdd.md items into one T-task "because they're similar."
 - **Never drop** defaults-looking items (e.g., `is-interrupting: false`, `runOnlyOnce: true`, `marks-stage-complete: true`). The explicit declaration is the signal — honor it.
-- **Never drop design rationale.** Copy each SDD stage/task/SLA `Design Rationale` into `rationale:` on its matching T-entry. Condition T-entries copy the rationale for the routing/activation choice they implement. Rationale is reviewer/audit context; the execution plugin ignores it when composing JSON.
+- **Never drop design rationale.** Anchor each SDD stage/task/SLA `Design Rationale` on its matching T-entry as `rationale-ref: SDD §<section>` — tasks.md sits next to sdd.md, so the anchor is lossless. Write `rationale:` prose ONLY when the T-entry implements a choice whose rationale the SDD does not state (then the plan synthesizes it). Condition T-entries anchor the routing/activation rationale the same way. Rationale is reviewer/audit context; the execution plugin ignores it when composing JSON.
 - **When in doubt, emit.** It is always correct to create a T-task that mirrors an sdd.md row. It is never correct to silently omit one.
 - **When format is ambiguous or unrecognized, ASK — do not skip.** If a row exists but you cannot determine the right plugin, category, or T-entry shape (e.g., trigger "Initial Variable Mapping" uses an aggregate phrase instead of explicit per-field mappings; a variable's category — In / Out / Variable — is unclear; a task type does not match the closed enum), invoke **AskUserQuestion** with the row content + the specific ambiguity + bounded options. Silent omission is a defect. This obligation applies to every sdd.md declaration class above, including variables and arguments.
 
@@ -210,14 +210,16 @@ Procedure:
 1. **Seed.** Write `tasks.md` with a `## Inventory` placeholder section only. Single Write.
 2. **Per section.** Sections are §4.2.1 vars → §4.3 triggers → §4.4 stages → §4.6 tasks → §4.7 conditions → §4.8 SLA. For each section:
    - **One Read** of `tasks.md` at section entry.
-   - **N Edit-appends** in sequence, one per T-entry in the section. Skip the re-Read between sibling Edits — Edit's tool result confirms applied state in context.
+   - **N Edit-appends**, one per T-entry in the section. **Batch multiple sibling Edits into the SAME assistant turn whenever each individual payload stays ≤30KB — this is a MUST, not a should.** Issuing sibling Edits one-per-turn when nothing blocks batching them wastes a full inference round-trip + prompt-cache replay per Edit for zero incremental progress; a 16-Edit section sent as 16 solo turns instead of ~6 batched turns measurably inflates wall-clock with no corresponding gain. Skip the re-Read between sibling Edits — Edit's tool result confirms applied state in context.
+   - **Assign every T-number for the whole section (and, within §4.6, for every stage) before writing the first Edit, then write in that exact T-number order.** Do not jump ahead to a later stage's tasks and loop back to an earlier one — writing out of the assigned order produces a `tasks.md` whose physical layout no longer matches T-number order, which then requires a separate reorder pass (Read-to-locate-anchor + delete-and-reinsert Edits) purely to undo the mistake. That rework is pure waste: it adds Read/Edit turns that produce no new content, whereas planning the write order up front costs nothing.
    - TaskUpdate marks each T-entry `in_progress` → `completed` as it goes — that is the per-T-entry audit trail, not the file diff.
 3. **Inventory finalize.** After last T-entry, Edit the inventory section with class-by-class counts (per §4.0 cross-check table).
 4. **`registry-resolved.json`.** Same section-batched discipline — one Read per section, N Edit-appends, no re-Read between siblings.
+5. **Verify once, at the end of the whole file, not per section.** A single `grep -nE '^## T[0-9]+|^\| *T[0-9]+' tasks.md` (or equivalent) pass after the last section confirms T-number order and absence of duplicates — §4.2.1 variable T-numbers appear as table rows (`| T05 |`), not `## T` headings, so the gap between the last trigger heading and the first stage heading is expected, not a defect. Running it speculatively after every section that "might" have gone wrong is itself a symptom of not having planned the write order (see the bullet above) — fix the plan, not the symptom.
 
-**T-entry heading contract.** Every declaration is its own level-two heading in the exact form `## T<n>: <action>`. Do not use level-three-or-deeper headings for T-entries, and do not nest a task beneath a stage's T-entry. A task heading must quote its display name, for example `## T08: Add wait-for-timer task "First Step" to "Process"`. This keeps the plan independently addressable by Phase 2 and by plan validators.
+**T-entry heading contract.** Every declaration is its own level-two heading in the exact form `## T<n>: <action>` — EXCEPT §4.2.1 variables/arguments, which serialize as rows of one table under a non-T heading (each row still owns its T-number; see §4.2.1). Do not use level-three-or-deeper headings for T-entries, and do not nest a task beneath a stage's T-entry. A task heading must quote its display name, for example `## T08: Add wait-for-timer task "First Step" to "Process"`. This keeps the plan independently addressable by Phase 2 and by plan validators.
 
-Why: section-batched round-trips keep tool-call transcript reviewable, preserve rollback granularity at section boundary, allow mid-run interruption recovery via re-Read + resume from next un-applied T-entry, and surface omissions before they propagate — without paying a per-T-entry Read tax that inflates inference latency by ~5s per turn.
+Why: section-batched round-trips keep tool-call transcript reviewable, preserve rollback granularity at section boundary, allow mid-run interruption recovery via re-Read + resume from next un-applied T-entry, and surface omissions before they propagate — without paying a per-T-entry Read tax that inflates inference latency by ~5s per turn. Turn-batching sibling Edits and writing in assigned T-number order the first time (rather than fixing it after) are the two highest-leverage ways to cut wall-clock on this step.
 
 **Hard cap on tasks.md write size.** After the §4.0a Step 1 Seed Write (Inventory placeholder, <1KB), the only legal mutation of `tasks.md` is **Edit-append** per the section-batched contract above. A single Write replacing the whole `tasks.md` is **forbidden** regardless of size. A single Edit-append payload >30KB is also forbidden — split into per-section Edit-appends even when consecutive Edits would total >30KB combined. Rationale: a single 96KB Write of tasks.md emits ~40K output tokens in one turn = ~360s inference latency = ~20% of total session in one tool call. Section-batched Edit-appends spread that cost across ~7 turns of ~50s each, recovers reviewability, and matches the recovery contract (re-Read + resume from next un-applied T-entry).
 
@@ -241,9 +243,7 @@ When `identifier-type: external`, `case-identifier` carries the sdd.md expressio
 
 ### 4.2.1 Declare global variables and arguments
 
-Title format: `Declare <category> "<name>"` where category is `In argument`, `Out argument`, or `variable`.
-
-One T-entry per variable or argument from the sdd.md "Case Variables" table. Place these after the case file (T01) and **all** trigger T-entries (T02+) — i.e., after the last trigger row, before stages. In multi-trigger cases the variables block starts at `T0<last-trigger>+1`, not at `T03`. Consult [`plugins/variables/global-vars/planning.md`](plugins/variables/global-vars/planning.md) for the SDD-to-category mapping rules and entry format.
+One T-entry per variable or argument from the sdd.md "Case Variables" table, serialized as one row in a single variables table (columns: `T#`, `name`, `category`, `type`, `sourceTriggers`, `sourceFields`, `default`, `producedBy`) — NOT one H2 block per variable. Each row keeps its own T-number and the §4.0 completeness contract applies row-by-row; the per-category `verify:` contract is stated once after the table, never per row. Place the table after the case file (T01) and **all** trigger T-entries (T02+) — i.e., after the last trigger row, before stages. In multi-trigger cases the variables block starts at `T0<last-trigger>+1`, not at `T03`. Consult [`plugins/variables/global-vars/planning.md`](plugins/variables/global-vars/planning.md) for the SDD-to-category mapping rules and the table format.
 
 ### 4.3 Configure trigger(s) (T02+)
 
@@ -253,39 +253,7 @@ Consult the corresponding trigger plugin (`plugins/triggers/<type>/planning.md`)
 
 **One T-entry per trigger row in sdd.md.** A case with N entry-point rows in its triggers table emits N trigger T-entries (T02, T03, …) — even when several rows would resolve to `<UNRESOLVED>` because the IS connection isn't provisioned. Per §4.0, "value can't be resolved yet" is not a reason to omit a row; it's a reason to mark `<UNRESOLVED: …>` and continue. Regardless of how many triggers a case has, no per-trigger edge is created (Rule 20; §4.5) — the case starts at the first stage's `case-entered` entry condition whenever any trigger fires.
 
-Each trigger row uses its plugin's full field set — see `plugins/triggers/<type>/planning.md` for the per-type entry format. Worked example — sdd.md declares 3 entry-point rows (one manual + two events), one of which is unresolved:
-
-```markdown
-## T02: Configure manual trigger "Operator Starts Case"
-- display-name: "Operator Starts Case"
-- description: "Operator kicks off a case from the portal"
-- order: after T01
-- verify: Confirm node appended; capture TriggerId
-
-## T03: Configure event trigger "New Inbound Email"
-- type-id: <uiPathActivityTypeId>
-- connection-id: <connection-uuid>
-- connector-key: uipath-microsoft-office-365-outlook
-- object-name: Email
-- event-operation: created
-- event-mode: webhooks
-- input-values: {"parentFolderId": "AAMkADNm..."}
-- filter: "(contains(subject, 'urgent'))"
-- order: after T02
-- verify: Confirm trigger configured with correct event parameters
-
-## T04: Configure event trigger "Jira Issue Created"
-- type-id: <UNRESOLVED: no IS connection for uipath-atlassian-jira>
-- connection-id: <UNRESOLVED>
-- connector-key: <UNRESOLVED>
-- object-name: <UNRESOLVED>
-- event-operation: <UNRESOLVED>
-- event-mode: <UNRESOLVED>
-- order: after T03
-- verify: trigger skipped at execution; user attaches after registering connection
-```
-
-Do **not** collapse the unresolved trigger into a note on T02 or omit it entirely — execution behavior for unresolved event triggers is documented in [`triggers/event/planning.md § Unresolved Fallback`](plugins/triggers/event/planning.md#unresolved-fallback), but the planning row is still required.
+Each trigger row uses its plugin's full field set — the per-type entry format (including the resolved event-trigger shape and the `<UNRESOLVED: …>` field-marking shape) lives in `plugins/triggers/<type>/planning.md`. Do **not** collapse an unresolved trigger into a note on another trigger's T-entry or omit it entirely — execution behavior for unresolved event triggers is documented in [`triggers/event/planning.md § Unresolved Fallback`](plugins/triggers/event/planning.md#unresolved-fallback), but the planning row is still required, one per sdd.md trigger row.
 
 ### 4.4 Create stages
 
@@ -293,7 +261,7 @@ Title format: `Create stage "<name>"` or `Create secondary stage "<name>"`
 
 One task per stage. Consult [`plugins/stages/planning.md`](plugins/stages/planning.md) for required fields and the `stage` vs `secondary` decision. Basic properties only — SLA and escalation come later (§4.7).
 
-Every stage T-entry includes `rationale:` copied from the SDD. It must explain the stage-kind decision and routing shape, especially when one interrupting secondary-stage entry handles a global event.
+Every stage T-entry carries its rationale — `rationale-ref: SDD §<section>` when the SDD states it, `rationale:` prose only when synthesized (§4.0). It must cover the stage-kind decision and routing shape, especially when one interrupting secondary-stage entry handles a global event.
 
 ### 4.5 Edges — not authored (RETIRED)
 
@@ -308,7 +276,7 @@ One task per task from the sdd.md — do NOT group multiple tasks under a single
 Every task entry includes at least:
 
 - **taskTypeId** — resolved from the registry in Step 3
-- **rationale** — copied from the SDD; explains the task-type and activation/sequencing choice
+- **rationale** — `rationale-ref: SDD §<section>` when the SDD states it; `rationale:` prose only when synthesized (§4.0). Covers the task-type and activation/sequencing choice
 - **activation-mode** — required on every task. One of `sequential`, `parallel`, `parallel-after-predecessor`, `event-triggered`, `adhoc`, `fan-in`, or `conditional-gate`. This is the user-visible task mode decision, not layout state.
 - **entry-rule** — required on every task; mirrors the planned task-entry condition rule. Sequential tasks MUST say `runs-sequentially`, event-triggered tasks normally say `wait-for-connector`, adhoc tasks say `adhoc`, parallel stage-start tasks say `current-stage-entered`, parallel siblings after an immediate predecessor say `runs-sequentially`, and fan-in / non-immediate gates say `selected-tasks-completed`.
 - **inputs** / **outputs** — see [bindings-and-expressions.md](bindings-and-expressions.md) for the two input modes (literal/expression and cross-task reference)
@@ -362,11 +330,11 @@ For per-scope fields, consult the corresponding condition plugin:
 - `plugins/conditions/task-entry-conditions/planning.md`
 - `plugins/conditions/case-exit-conditions/planning.md`
 
-Every condition T-entry includes `rationale:` copied from the SDD choice it implements. For global events, state why one interrupting secondary-stage entry replaces per-primary-stage exits/tasks.
+Every condition T-entry carries its rationale — `rationale-ref: SDD §<section>` when the SDD states the choice it implements, `rationale:` prose only when synthesized (§4.0). For global events, the rationale must say why one interrupting secondary-stage entry replaces per-primary-stage exits/tasks.
 
 ### 4.8 Set SLA and escalation rules
 
-SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for the three sub-operations (default SLA, conditional SLA rules, escalation rules) and per-target ordering. Root rules target `metadata.slaRules[]`; stage rules target that stage's `data.slaRules[]`. Every SLA/escalation T-entry includes `rationale:` copied from the SDD's case/stage SLA rationale.
+SLA comes last. Consult [`plugins/sla/planning.md`](plugins/sla/planning.md) for the three sub-operations (default SLA, conditional SLA rules, escalation rules) and per-target ordering. Root rules target `metadata.slaRules[]`; stage rules target that stage's `data.slaRules[]`. Every SLA/escalation T-entry carries its rationale — `rationale-ref: SDD §<section>` when the SDD's case/stage SLA rationale states it, `rationale:` prose only when synthesized (§4.0).
 
 ### 4.9 Not Covered section
 
