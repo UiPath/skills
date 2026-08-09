@@ -347,45 +347,6 @@ For **outputs** apply the dedup rule: collect existing output `var` values acros
 
 ---
 
-## Trigger filter sinks (FYI — populated by CLI)
-
-> **Source of truth:** [case-spec-input-details.md § Trigger sinks](case-spec-input-details.md). Re-stated below for skill plumbing convenience; keep both copies in sync.
-
-The CLI populates **three** trigger filter sinks. The skill consumes them by reference; no manual writes:
-
-| Sink | Where (post-spec) | Form |
-|---|---|---|
-| FilterTree (design-time) | `caseShape.context[name="metadata"].body.activityPropertyConfiguration.configuration` (inside the `=jsonString:` blob, at `essentialConfiguration.filter`) | User tree only — round-trips for Studio Web's filter widget |
-| Compiled JMESPath (FE projection) | `caseShape.context[name="metadata"].body.activityPropertyConfiguration.filterExpression` | **Combined**: `(mandatory) && (user)` |
-| Compiled JMESPath (runtime) | `caseShape.inputs[name="body"].body.filters.expression` | **Combined**: `(mandatory) && (user)` |
-
-`mandatory` is derived from required event-param values (see § Mandatory-filter contract in Step 7). `user` is the compiled tree from `--input-details.filter`. Either side may be empty:
-
-| Inputs supplied | Compiled expression in both sinks |
-|---|---|
-| Required event params + user filter | `(<mandatory>) && (<user>)` |
-| Required event params only | `<mandatory>` |
-| User filter only | `<user>` |
-| Neither | omitted from both sinks |
-
-The expression is duplicated in two non-config sinks because both have load-bearing roles: SW reads `activityPropertyConfiguration.filterExpression` for the design-time summary; the runtime reads `body.filters.expression` to evaluate against incoming events. Both sinks carry the same combined form so design-time and runtime don't drift. Mirrors flow's `configureTrigger` write semantics post uipcli #1880.
-
-## Root-level bindings
-
-Read [bindings/impl-json.md § Full binding shape — connector tasks](plugins/variables/bindings/impl-json.md) for the canonical 7-field shape on each entry (all required — omitting any causes Studio Web render failure). Per-trigger value sources:
-
-- `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this trigger's `tasks.md` entry
-- `<connectorKey>` (drives ConnectionBinding templated `name`): from `tasks.md`
-- `<folderKey>` (FolderKey binding `default`): from `spec.connection.folderKey` in Step 2 response. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
-
-Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of-truth code: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
-
-After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Skip if `case spec` failed.
-
-> **`bindings_v2.json` regeneration is deferred and batched.** Runs at three points, not per-target: end of Phase 2 Step 9 (non-connector tasks), end of Phase 3 Step 9.7 (connector tasks + triggers), and end of Phase 3 **Step 10.5** (upgraded connector condition rules across all 4 scopes). See [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run).
-
----
-
 ## Target: connector-bound condition rule
 
 A `wait-for-connector` rule inside a condition (`…conditions[].rules[i][j]`) binds the connector under the rule's **`uipath`** — structurally the same block the in-stage task writes under `data`. **The CLI cannot author this** (`buildRule` in `case-tool` emits a bare `{ rule, id, conditionExpression }` with no `uipath`); write `rule.uipath` directly per this recipe. Used by all four condition plugins.
@@ -493,6 +454,45 @@ This stub is a **deliberate mock**. While temporary, it is simply Phase 2 build 
 
 ---
 
+## Trigger filter sinks (FYI — populated by CLI)
+
+> **Source of truth:** [case-spec-input-details.md § Trigger sinks](case-spec-input-details.md). Re-stated below for skill plumbing convenience; keep both copies in sync.
+
+The CLI populates **three** trigger filter sinks. The skill consumes them by reference; no manual writes:
+
+| Sink | Where (post-spec) | Form |
+|---|---|---|
+| FilterTree (design-time) | `caseShape.context[name="metadata"].body.activityPropertyConfiguration.configuration` (inside the `=jsonString:` blob, at `essentialConfiguration.filter`) | User tree only — round-trips for Studio Web's filter widget |
+| Compiled JMESPath (FE projection) | `caseShape.context[name="metadata"].body.activityPropertyConfiguration.filterExpression` | **Combined**: `(mandatory) && (user)` |
+| Compiled JMESPath (runtime) | `caseShape.inputs[name="body"].body.filters.expression` | **Combined**: `(mandatory) && (user)` |
+
+`mandatory` is derived from required event-param values (see § Mandatory-filter contract in Step 7). `user` is the compiled tree from `--input-details.filter`. Either side may be empty:
+
+| Inputs supplied | Compiled expression in both sinks |
+|---|---|
+| Required event params + user filter | `(<mandatory>) && (<user>)` |
+| Required event params only | `<mandatory>` |
+| User filter only | `<user>` |
+| Neither | omitted from both sinks |
+
+The expression is duplicated in two non-config sinks because both have load-bearing roles: SW reads `activityPropertyConfiguration.filterExpression` for the design-time summary; the runtime reads `body.filters.expression` to evaluate against incoming events. Both sinks carry the same combined form so design-time and runtime don't drift. Mirrors flow's `configureTrigger` write semantics post uipcli #1880.
+
+## Root-level bindings
+
+Read [bindings/impl-json.md § Full binding shape — connector tasks](plugins/variables/bindings/impl-json.md) for the canonical 7-field shape on each entry (all required — omitting any causes Studio Web render failure). Per-trigger value sources:
+
+- `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this trigger's `tasks.md` entry
+- `<connectorKey>` (drives ConnectionBinding templated `name`): from `tasks.md`
+- `<folderKey>` (FolderKey binding `default`): from `spec.connection.folderKey` in Step 2 response. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
+
+Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of-truth code: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
+
+After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Skip if `case spec` failed.
+
+> **`bindings_v2.json` regeneration is deferred and batched.** Runs at three points, not per-target: end of Phase 2 Step 9 (non-connector tasks), end of Phase 3 Step 9.7 (connector tasks + triggers), and end of Phase 3 **Step 10.5** (upgraded connector condition rules across all 4 scopes). See [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run).
+
+---
+
 ## What NOT to Do (shared)
 
 - **Do NOT call legacy `uip maestro case tasks describe --type connector-trigger` or `uip is triggers describe`.** `case spec --type trigger` replaces both. The legacy commands still work but produce a different shape that doesn't include `caseShape` or placeholders.
@@ -509,3 +509,5 @@ This stub is a **deliberate mock**. While temporary, it is simply Phase 2 build 
 ## Known Limitation (shared)
 
 The CLI-produced `essentialConfiguration` uses `essentialConfiguration` only (not `optionalConfiguration`). Triggers work at **runtime** but the FE editor may not render certain fields until the user re-configures the trigger in the UI. DAP repopulates these on form open.
+
+<!-- END: connector-trigger-common.md -->

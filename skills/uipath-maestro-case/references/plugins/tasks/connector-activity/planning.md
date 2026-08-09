@@ -213,3 +213,5 @@ If the connector or connection cannot be resolved:
 - Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`
 - Omit `input-values:` entirely — no schema to wire against
 - Execution creates a placeholder task (display-name + type only) per [placeholder-tasks.md](../../../placeholder-tasks.md)
+
+<!-- END: planning.md -->

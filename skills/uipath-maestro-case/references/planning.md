@@ -387,3 +387,5 @@ Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](impleme
 **Known failure pattern:** deferring the rule to a *separate* §4.7 task-entry-condition entry (`rule-type:`) does not satisfy this gate — `caseplan.json` can end up fully correct while `tasks.md` itself still fails this check, because §4.6 and §4.7 are graded as separate artifacts. See [task-entry-conditions/planning.md § Phase 1 Plan Presentation Contract](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract) for the compliant §4.6 shape.
 
 Correct the plan before building; validation of `caseplan.json` cannot detect a malformed Phase 1 handoff.
+
+<!-- END: planning.md -->

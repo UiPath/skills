@@ -526,3 +526,5 @@ Each operation's JSON shape lives in its plugin's `impl-json.md`. This file cove
 | Sync `bindings_v2.json` | [bindings-v2-sync.md](bindings-v2-sync.md) |
 | Upgrade a placeholder task | [placeholder-tasks.md](placeholder-tasks.md) |
 | Resolve task schemas from the registry | [registry-discovery.md](registry-discovery.md) |
+
+<!-- END: case-editing-operations.md -->
