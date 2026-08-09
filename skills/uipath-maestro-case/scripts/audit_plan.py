@@ -37,6 +37,7 @@ def field_value(section: str, field: str) -> str | None:
 
 def audit(path: Path) -> list[str]:
     findings: list[str] = []
+    sequential_lanes: dict[str, list[tuple[str, int]]] = {}
     text = path.read_text(encoding="utf-8")
 
     headings = list(re.finditer(r"(?m)^## (T\d+)[^\n]*$", text))
@@ -81,6 +82,18 @@ def audit(path: Path) -> list[str]:
         lane = field_value(section, "lane")
         if "sequential" in activation and (lane is None or not re.match(r"^\d+$", lane)):
             findings.append(f"{label}: sequential task needs an integer `lane:` line")
+        elif "sequential" in activation and lane is not None:
+            stage = (field_value(section, "stage") or "").strip('"` ')
+            sequential_lanes.setdefault(stage, []).append((label, int(lane)))
+
+    # Sequential runs use consecutive single-task lanes: no duplicates, no gaps.
+    for stage, lanes in sequential_lanes.items():
+        numbers = [n for _, n in lanes]
+        if sorted(numbers) != list(range(min(numbers), min(numbers) + len(numbers))):
+            labels = ", ".join(f"{t}=lane {n}" for t, n in lanes)
+            findings.append(
+                f"stage {stage!r}: sequential lanes must be consecutive single-task numbers with no duplicates; got {labels}"
+            )
 
     findings.extend(sla_shape_findings(text, path.name))
     return findings
