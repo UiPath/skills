@@ -73,6 +73,11 @@ its input or output (literal word/phrase, regex, number, boolean, or always),
 use the custom deterministic recipe below. This decision happens before
 built-in catalog candidate ranking:
 
+0. **Run the Step 0 catalog and guardrails-list fetches now, even though this
+   branch does not use their content to pick a validator.** They are still
+   mandatory discovery/audit steps before writing any guardrail — this branch
+   only skips catalog-driven *ranking* (step 2 below), not the Step 0 calls
+   themselves.
 1. Treat quoted text and a distinct all-caps token such as `CONFIDENTIAL` as
    an exact literal predicate, even when the surrounding request is phrased
    semantically (for example, "worried it might publish CONFIDENTIAL content"
@@ -92,8 +97,8 @@ built-in catalog candidate ranking:
 Broad semantic threats without an exact mechanical predicate continue through
 the built-in catalog ranking in Step 2.
 
-Once this deterministic branch matches, the catalog/list calls remain
-mandatory discovery steps but cannot replace or override the custom rule with
+Once this deterministic branch matches, the Step 0 catalog/list calls (already
+run per step 0 above) cannot replace or override the custom rule with
 `llm_as_judge`, PII detection, or any other built-in validator.
 
 ### Step 2 — Catalog-Driven Recommendation Analysis
@@ -183,8 +188,11 @@ Generate a fresh UUID for each guardrail `id`.
 Write the new guardrail blocks to `agent.json`'s `guardrails[]` array. Then run:
 
 ```bash
+uip agent refresh "<AgentName>" --output json
 uip agent validate "<AgentName>" --output json
 ```
+
+`refresh` regenerates `entry-points.json` and `bindings_v2.json` so Studio Web sees the updated guardrails — always run it before `validate`, matching [guardrails.md](guardrails.md)'s base walkthrough.
 
 **Deterministic completion gate:** when the request matched the exact
 named-Tool branch, re-read `agent.json` before validation and confirm the
