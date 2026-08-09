@@ -256,6 +256,7 @@ If the user explicitly asks to finalize the existing draft, choose `Use the draf
     - Same ordered stage/task inventory as the draft; every inventoried stage and task appears before `## Section 3`.
     - Per task type, task count equals type-detail-block count (N `process`/`agent`/`rpa`/`api-workflow` tasks ⇒ N `Process / Agent / RPA / API Workflow Task Detail` headings; likewise action / connector / timer / child-case blocks).
     - Every draft `=js:` expression is present in the output.
+    - Every consumed `=vars.X` is declared in Case Variables and keeps a producer — a `-> X` output row, an assignment, a Default, or a trigger source; a consumer without a producer is a lineage failure.
     - No comparator threshold from the draft (`>$5M`, `≤ $N`, `over $X`) remains prose-only — each appears in an executable table cell (owner/recipient/WHEN/IF), high-side guard assigning the exception role; `=js:` inside Rationale/Description prose does not count (step 9).
     - Literal seven-column Case Variables header (`Name | Category | Type | sourceTriggers | sourceFields | Default | Description`).
     - Explicit `**Interrupting:** Yes` or `No` line on every secondary stage.
