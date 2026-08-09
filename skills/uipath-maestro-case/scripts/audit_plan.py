@@ -117,6 +117,10 @@ def sla_shape_findings(text: str, source: str) -> list[str]:
                     f"{source}:{line_no}: sla-status-change reference needs 2 (breach) "
                     f"or 3 (at-risk) quoted args; got {len(args)}"
                 )
+            if args and args[0].strip().casefold() == "case":
+                findings.append(
+                    f"{source}:{line_no}: sla-status-change target 'Case' — the case-level target is the literal 'root'"
+                )
     return findings
 
 

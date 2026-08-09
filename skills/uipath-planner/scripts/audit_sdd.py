@@ -252,6 +252,12 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
         for marker in STAGE_MARKERS:
             if marker not in block:
                 findings.append(f"stage {stage_name!r} missing {marker!r}")
+        stage_type = re.search(r"^\*\*Type:\*\*\s*([^\n]+)", block, re.M)
+        if stage_type and stage_type.group(1).strip() not in ("Stage", "ExceptionStage"):
+            findings.append(
+                f"stage {stage_name!r} has '**Type:** {stage_type.group(1).strip()}' — the stage Type literal is 'Stage'; "
+                "secondary-ness lives in the heading, '**Stage Kind:** secondary', and '**Interrupting:**'"
+            )
         if kind == "Secondary Stage" and not re.search(r"^\*\*Interrupting:\*\*\s*(Yes|No)\b", block, re.M):
             findings.append(f"secondary stage {stage_name!r} missing explicit '**Interrupting:** Yes' or 'No'")
         if kind == "Secondary Stage" and "return-to-origin" in block and not re.search(
@@ -287,6 +293,10 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
                 findings.append(
                     f"line {line_no}: sla-status-change takes (\"<SLA target>\",\"<SLA Title>\") "
                     f"or (...,\"<At-Risk Escalation Display Name>\"); got {len(args)} args"
+                )
+            if args and args[0].strip().casefold() == "case":
+                findings.append(
+                    f"line {line_no}: sla-status-change target 'Case' — the case-level target is the literal 'root'"
                 )
 
     findings.extend(lineage_findings(text))
