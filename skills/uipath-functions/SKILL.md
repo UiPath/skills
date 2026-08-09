@@ -42,6 +42,15 @@ Use Python when the logic needs job semantics, platform SDK access, or is invoke
 
 ---
 
+## Critical Rules
+
+1. **Pass `-l py`, then verify the scaffold.** `uip function new` defaults to TypeScript. And when `uipath-langchain` is installed it emits a LangGraph *agent* even with `-l py` — check for `langgraph.json` and replace the scaffold if present (Step 1).
+2. **Add `authors` to `pyproject.toml` right after scaffolding.** The scaffold omits it; `uip function pack` then fails with `Project authors cannot be empty`. Do this as part of scaffolding, not before packing — every project needs it, including ones you only run locally.
+3. **Never instantiate `UiPath()` at module level.** Use a lazy getter (Step 3 template).
+4. **Return errors, never raise them.** Populate `error_type`/`error_message` on the output model; an exception escaping the entrypoint faults the job.
+5. **No LLM calls.** LLM reasoning belongs in a coded agent → `uipath-agents`.
+6. **Run `uip function init` before `pack` or `push`.** It regenerates `entry-points.json` from the current Input/Output models.
+
 ## CLI Reference
 
 All Python Coded Function lifecycle commands use `uip function`:
@@ -71,6 +80,14 @@ uip function new <name> --language js       # JavaScript Function (JS/TS, no job
 **`--language py` is required for Python.** The default language is TypeScript — omitting `--language` scaffolds a JS/TS project. Always pass `-l py` or `--language py` when building a Python Coded Function.
 
 `--empty` skips the hello-world function (JS/TS only).
+
+**Verify what you got before writing logic.** `uip function new -l py` passes through to `uipath new`. When `uipath-langchain` is installed in the same environment, its `langgraph_new_middleware` intercepts that command and scaffolds a **LangGraph agent instead of a Function** ([uipath-python#1543](https://github.com/UiPath/uipath-python/issues/1543)). Symptoms: a `langgraph.json` file, a `main.py` importing `langgraph` / `UiPathChat`, and no `functions` map in `uipath.json`.
+
+```bash
+ls langgraph.json 2>/dev/null && echo "WRONG SCAFFOLD — agent, not function"
+```
+
+If you see it: delete `langgraph.json`, replace `main.py` with the Step 3 template, and write `uipath.json` per Step 4. Do not try to adapt the agent template — it carries an LLM call, which Critical Rule 5 forbids. Two edits fix it; iterating on the wrong scaffold burns the whole turn budget.
 
 ### Step 2: Define Function Schema
 
@@ -161,6 +178,7 @@ The key is the entrypoint name — it can be any string and marks this as the ca
 name = "my-function"
 version = "0.1.0"
 description = "..."
+authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.11"
 dependencies = [
     "uipath",
@@ -168,6 +186,8 @@ dependencies = [
     "pydantic-settings>=2", # if using Settings for env/asset config
 ]
 ```
+
+`authors` is **required and the scaffold omits it** — add it immediately after `uip function new`, not later. Empty or missing: `uip function pack` fails with `Project authors cannot be empty`. Keep `name`, `version`, `description`, `authors` all present.
 
 No `[build-system]` section. The project is identified as a Coded Function by the `functions` map in `uipath.json` (Step 4).
 
