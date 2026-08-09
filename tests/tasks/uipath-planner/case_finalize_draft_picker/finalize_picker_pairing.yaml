@@ -59,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "finalized sdd.md passes the shared mechanical SDD contract"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/sdd_check.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/sdd_check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
