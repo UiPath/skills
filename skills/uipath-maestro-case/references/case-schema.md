@@ -576,3 +576,5 @@ Connects Stage → Stage. Transition conditions live on the source stage's `exit
 **Type discriminator when reading:** Trigger source → `TriggerEdge`; Stage source → `Edge`. **`zIndex`** (number, optional) may appear.
 
 `edges` is empty: the skill authors no edges. The case starts because `Stage_aB3kL9` carries a `case-entered` entry condition (added by the stage-entry-conditions plugin), not because a `TriggerEdge` connects the trigger to it.
+
+<!-- END: case-schema.md -->

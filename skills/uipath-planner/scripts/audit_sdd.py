@@ -254,6 +254,12 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
                 findings.append(f"stage {stage_name!r} missing {marker!r}")
         if kind == "Secondary Stage" and not re.search(r"^\*\*Interrupting:\*\*\s*(Yes|No)\b", block, re.M):
             findings.append(f"secondary stage {stage_name!r} missing explicit '**Interrupting:** Yes' or 'No'")
+        if kind == "Secondary Stage" and "return-to-origin" in block and not re.search(
+            r"^\*\*Interrupting:\*\*\s*Yes\b", block, re.M
+        ):
+            findings.append(
+                f"secondary stage {stage_name!r} exits return-to-origin but does not declare '**Interrupting:** Yes'"
+            )
 
         tasks = list(TASK_HEADING.finditer(block))
         if not tasks:

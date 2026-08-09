@@ -78,3 +78,5 @@ Stage exit conditions are created **after** all tasks in the stage have been add
 ```
 
 > `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning).
+
+<!-- END: planning.md -->

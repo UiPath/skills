@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T04:43:58Z",
-  "cli_version": "1.200.0-dev.8116",
+  "generated_at": "2026-08-09T04:36:59Z",
+  "cli_version": "1.200.0-dev.8173",
   "verbs": [
     "admin",
     "admin audit",
@@ -457,7 +457,10 @@
     "gov compliance-packs state restore",
     "guardrails",
     "guardrails byo-configurations",
+    "guardrails byo-configurations create",
+    "guardrails byo-configurations delete",
     "guardrails byo-configurations list",
+    "guardrails byo-configurations update",
     "insights",
     "insights jobs",
     "insights jobs completed-timeline",

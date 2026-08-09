@@ -435,3 +435,5 @@ issues.append({"severity": "ERROR", "step": "9", "plugin": "io-binding",
     "message": f'input "{name}" not found on task "{task}" — available: {available}',
     "context": {"task": task, "stage": stage, "input": name, "available": available}})
 ```
+
+<!-- END: impl-json.md -->

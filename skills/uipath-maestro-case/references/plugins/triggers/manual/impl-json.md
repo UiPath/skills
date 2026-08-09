@@ -120,3 +120,4 @@ After writing, confirm:
 
 Run `uip maestro case validate <caseplan.json> --output json` after all triggers for this plugin's batch are added.
 
+<!-- END: impl-json.md -->

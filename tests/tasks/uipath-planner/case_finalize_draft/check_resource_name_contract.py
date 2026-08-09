@@ -57,10 +57,12 @@ for task_name, resource_name in EXPECTED.items():
         f"{resource_name} Section 4 row has too few columns: {cells}"
     )
     folder, resource_id, used_by = cells[0], cells[1], cells[-1]
-    assert folder == "<UNRESOLVED>", (
+    # Tolerant of markdown code-formatting (`<UNRESOLVED>`), matching the per-task
+    # Folder Path / Resource Identity tolerance above — same literal value, same contract.
+    assert folder.strip("`") == "<UNRESOLVED>", (
         f"{resource_name} Section 4 folder must be <UNRESOLVED>, got {folder!r}"
     )
-    assert resource_id == "<UNRESOLVED>", (
+    assert resource_id.strip("`") == "<UNRESOLVED>", (
         f"{resource_name} Section 4 resource id must be <UNRESOLVED>, got {resource_id!r}"
     )
     assert task_name in used_by, (

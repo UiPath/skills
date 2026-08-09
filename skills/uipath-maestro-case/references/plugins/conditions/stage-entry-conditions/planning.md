@@ -84,3 +84,5 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 ```
 
 Breach, so **no `escalation-display-name`** — the rule references the SLA alone. An at-risk response adds `escalation-display-name: "<At-risk escalation on that same SLA>"`; nothing else changes.
+
+<!-- END: planning.md -->

@@ -282,3 +282,5 @@ No artifact deletion. No rollback. User owns partial state.
 
 - **Re-ingesting Studio Web edits.** If user edits published placeholder in Studio Web during review, edits are not round-tripped back into local `caseplan.json`. Phase 3 writes on top of local state; Phase 5 re-publish overwrites Studio Web with completed local build.
 - **Resuming aborted session.** Re-running skill regenerates `tasks.md` from scratch (Rule 6) and re-executes Phase 2 onwards.
+
+<!-- END: phased-execution.md -->

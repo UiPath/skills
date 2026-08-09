@@ -74,7 +74,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Rule 13: finalization renders sdd.md with Write/Edit instead of copying or renaming the draft"
+    description: "Rule 13: finalization renders sdd.md with Write/Edit instead of copying, renaming, or deleting the draft"
     tool_name: "Bash"
     command_pattern: '(cp|mv|install|rsync|rm)\b[^\n]*(sdd\.draft\.md|sdd\.md)'
     weight: 1.0

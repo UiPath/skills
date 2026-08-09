@@ -176,3 +176,5 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 9. `entry-points.json` has a matching entry referencing the trigger node ID.
 
 Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.
+
+<!-- END: impl-json.md -->
