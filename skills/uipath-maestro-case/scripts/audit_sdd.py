@@ -98,13 +98,22 @@ def js_expressions(text: str):
     return {re.sub(r"\s+", " ", m.group(0)).strip() for m in re.finditer(r"=js:[^|\n]+", text)}
 
 
+HIGH_WORDS = r"over|above|at\s+least|more\s+than|greater\s+than|in\s+excess\s+of|exceed(?:s|ing)?"
+LOW_WORDS = r"under|below|at\s+most|less\s+than"
 COMPARATOR_THRESHOLD = re.compile(
-    r"(?:>=|<=|>|<|≥|≤|\b(?:over|above|under|below|at\s+least|at\s+most|more\s+than|"
-    r"less\s+than|greater\s+than|in\s+excess\s+of|exceed(?:s|ing)?)\b)\s*"
+    rf"(>=|<=|>|<|≥|≤|\b(?:{HIGH_WORDS}|{LOW_WORDS})\b)\s*"
     r"\$\s*(\d[\d,]*(?:\.\d+)?)\s*([mk])?\b",
     re.IGNORECASE,
 )
 EXECUTABLE_LINE = re.compile(r"=js:|vars\.|\bowner\b|\brecipient\b|Role:", re.IGNORECASE)
+PROSE_MARKER = re.compile(r"^\*\*(Design Rationale|Description):\*\*", re.M)
+
+
+def comparator_direction(token: str) -> str:
+    token = token.casefold().strip()
+    if token in (">", ">=", "≥") or re.fullmatch(HIGH_WORDS, token):
+        return "high"
+    return "low"
 
 
 def threshold_variants(number: str, suffix: str | None) -> list[str]:
@@ -136,20 +145,37 @@ def unencoded_thresholds(draft: str, final: str) -> list[str]:
     recipient / `Role:`). Prose repetition alone is not an encoding.
     """
     findings = []
-    seen: set[str] = set()
-    executable_lines = [line for line in final.splitlines() if EXECUTABLE_LINE.search(line)]
+    seen: set[tuple[str, str]] = set()
+    # Rationale/Description prose never counts as an encoding — the guard must
+    # live in an executable table cell (owner/recipient/WHEN/IF/Inputs).
+    executable_lines = [
+        line for line in final.splitlines()
+        if EXECUTABLE_LINE.search(line) and not PROSE_MARKER.match(line.strip())
+    ]
     for match in COMPARATOR_THRESHOLD.finditer(draft):
-        variants = threshold_variants(match.group(1), match.group(2))
-        key = variants[-1]
+        direction = comparator_direction(match.group(1))
+        variants = threshold_variants(match.group(2), match.group(3))
+        key = (variants[-1], direction)
         if key in seen:
             continue
         seen.add(key)
         needles = [re.compile(rf"(?<![\w.]){re.escape(v)}(?!\w)", re.IGNORECASE) for v in variants]
-        if not any(any(n.search(line) for n in needles) for line in executable_lines):
+        covered = False
+        for line in executable_lines:
+            if not any(n.search(line) for n in needles):
+                continue
+            ternary = "?" in line and ":" in line.split("?", 1)[-1]
+            line_dirs = {comparator_direction(t.group(1)) for t in re.finditer(
+                rf"(>=|<=|>|<|≥|≤|\b(?:{HIGH_WORDS}|{LOW_WORDS})\b)", line, re.IGNORECASE)}
+            if ternary or direction in line_dirs:
+                covered = True
+                break
+        if not covered:
             findings.append(
-                f"draft threshold policy {match.group(0).strip()!r} appears only in prose — encode it in an "
-                f"executable expression (fast-path step 9), e.g. an `IF =js:` condition or a guarded "
-                f"owner/recipient expression naming the attribute and threshold"
+                f"draft threshold policy {match.group(0).strip()!r} has no {direction}-side executable encoding — "
+                f"add the guard to an owner/recipient/WHEN/IF cell (fast-path step 9), e.g. "
+                f"`=js:vars.<attr> > <threshold> ? \"Role:<ExceptionRole>\" : \"Role:<DefaultRole>\"`; "
+                f"Rationale/Description prose does not count"
             )
     return findings
 
@@ -173,6 +199,11 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
         findings.append(f"Case Variables table must use the literal header {CASE_VARIABLES_HEADER!r}")
     if LETTERED_TASK.search(text):
         findings.append("lettered task prefixes (Task R.1 / W.1 / CC.1 / ESC.1) — renumber as Task S{K}.{M}")
+    for line_no, line in enumerate(text.splitlines(), 1):
+        if re.search(r"\\n\s*(?:\*\*|#|\|)", line):
+            findings.append(
+                f"line {line_no}: literal \\n escape corrupts the document structure — rewrite the block with real newlines"
+            )
 
     stages = list(stage_blocks(text))
     if not stages:
