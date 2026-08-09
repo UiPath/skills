@@ -1,0 +1,81 @@
+task_id: skill-ixp-extract-runtime-smoke
+description: >
+  Smoke: agent runs runtime extraction against a published model via the
+  async two-step flow — resolve the project Id from the designtime project
+  list, `uip ixp extraction start <project-id> <file> --tag <tag>` to get an
+  operationId, then `uip ixp extraction get-result <project-id> <operation-id> --tag
+  <tag>` to fetch the result. It must NOT substitute `labellings get-predictions`
+  (which is for the training set, not a fresh runtime file).
+
+  The `extraction_mock_template` overlay answers those three verbs with canned
+  JSON (every other verb still fails offline), so the second step is actually
+  reachable: against the base fail-all mock `extraction start` returns no
+  operationId and no correct agent can call `get-result` at all. The overlay's
+  `projects list` returns a real GUID Id alongside the Name slug, which makes
+  the Critical Rule 7 exception gradable — runtime extraction is keyed by the
+  project **Id**, not the `my_invoices-f1afa9ef-ixp` Name.
+
+  Graded from the mock's calls.log (actual uip executions), not regexes over
+  agent-authored Bash text.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/extraction_mock_template}
+
+initial_prompt: |
+  I have a published IXP model on project `my_invoices-f1afa9ef-ixp`
+  (tag `live`). Run that deployed model on a single new document,
+  `./invoice.png`, and show me the extracted field values.
+
+  Important:
+  - Use the tenant this environment is already configured for — do NOT
+    attempt to login or re-authenticate.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Agent resolved the project Id from the designtime project list (`projects list`)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+list(\s|$))[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Agent ran `uip ixp extraction start` on invoice.png with `--tag live`"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+extraction\s+start\b(?=.*invoice\.png)(?=.*--tag[\s=]+["']?live\b).*)[^\r\n]*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Agent polled the result with `uip ixp extraction get-result --tag live`"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+extraction\s+get-result\b(?=.*--tag[\s=]+["']?live\b).*)[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Extraction was keyed by the resolved project Id (GUID), not the `my_invoices-f1afa9ef-ixp` Name slug"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+extraction\s+(?:start|get-result)\s+["']?3f2a7c58-9d41-4b6e-8c02-5e91a4d7b6f0\b.*)[^\r\n]*$
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Agent did NOT use `labellings get-predictions` for a fresh runtime file"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions\b)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
