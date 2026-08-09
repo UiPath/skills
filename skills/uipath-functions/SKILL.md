@@ -161,6 +161,7 @@ The key is the entrypoint name — it can be any string and marks this as the ca
 name = "my-function"
 version = "0.1.0"
 description = "..."
+authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.11"
 dependencies = [
     "uipath",
@@ -168,6 +169,8 @@ dependencies = [
     "pydantic-settings>=2", # if using Settings for env/asset config
 ]
 ```
+
+`authors` is **required** — `uip functions pack` rejects the package with `Project authors cannot be empty` if it is missing or empty. Set it before packing.
 
 No `[build-system]` section. The project is identified as a Coded Function by the `functions` map in `uipath.json` (Step 4).
 
