@@ -142,6 +142,7 @@ Read `caseplan.json`, locate the placeholder task by `id`, and mutate its `data`
 | Task class | `data` mutation |
 |---|---|
 | `process`, `agent`, `rpa`, `api-workflow`, `case-management` | Set `data.name`, `data.folderPath` (both `=bindings.<id>` refs). Write `data.inputs[]` / `data.outputs[]` from the `tasks describe` schema (each input `value: ""` to start). |
+| `external-workflow` | Set `data.name`, `data.folderPath` (`=bindings.<id>`), **`data.serviceType`** (never omit), and the `data.context[]` triplet `operation` / `eventMode` / `executionType`. Write `data.inputs[]` / `data.outputs[]` from `tasks describe --type external-workflow --id <activityTypeId> --connection-id <connId>`. No ConnectionId / FolderKey bindings. See [external-workflow/impl-json.md](plugins/tasks/external-workflow/impl-json.md). |
 | `action` | Set `data.name`, `data.folderPath` (`=bindings.<id>`), `data.taskTitle`, `data.priority`, `data.recipient` (if known). Write `data.inputs[]` / `data.outputs[]` from the schema. |
 | `execute-connector-activity`, `wait-for-connector` | Set `data.typeId`, `data.connectionId`. Write `data.inputs[]` / `data.outputs[]` from the `case spec` schema (per the connector plugin's `impl-json.md`). |
 
