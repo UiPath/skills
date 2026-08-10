@@ -346,7 +346,7 @@ All errors include the offending field path and a remediation hint, formatted as
 | `--input-details` + `--skip-case-shape` together | `--input-details has no effect when --skip-case-shape is set; remove one of the two flags.` |
 | Malformed JSON in `--input-details` | `Invalid --input-details JSON: <parse error>` |
 
-> The no-FilterBuilder rejection message overstates: it rules out the structured `filter` tree only, NOT server-side filtering. The operation may declare a plain filter field in `inputs.queryParameters[]` or `inputs.bodyFields[]` (e.g. Outlook 365 `ListEmails` → `queryParameters.filter`, OData string). Repair the plan by copying only the exact SDD value into the field's declared sink; never translate the FilterTree or drop the requirement. No matching field or no exact source literal is a hard stop. Recovery order: [connector-activity impl Step 4](plugins/tasks/connector-activity/impl-json.md#step-4--filterbuilder-detection-when-planning-authored-a-filter).
+> This rejection covers only the structured tree. A declared plain filter remains a native-syntax query/body input; preserve its exact SDD value and sink or halt. See [connector-activity Step 4](plugins/tasks/connector-activity/impl-json.md#step-4--filterbuilder-detection-when-planning-authored-a-filter).
 
 ---
 
