@@ -124,6 +124,33 @@ def sla_shape_findings(text: str, source: str) -> list[str]:
     return findings
 
 
+def plan_repeats_sdd_sla_rules(plan: str, sdd: str) -> list[str]:
+    """Every quoted-arg sla-status-change entry declared in the SDD is repeated
+    verbatim in the plan (compact-contract requirement) — target + each title."""
+    findings: list[str] = []
+    declared: list[list[str]] = []
+    for call in re.finditer(r"sla-status-change\s*\(([^)]*)\)", sdd, re.I):
+        args = re.findall(r"[\"“‘']([^\"”’']+)[\"”’']", call.group(1))
+        if args and args not in declared:
+            declared.append(args)
+    if not declared:
+        return findings
+    lowered = plan.casefold()
+    if "sla-status-change" not in lowered:
+        findings.append(
+            "the SDD declares sla-status-change entry rules but the plan carries none — "
+            "each gets its own T-entry with rule-type: sla-status-change, repeating target and titles verbatim"
+        )
+        return findings
+    for args in declared:
+        missing = [a for a in args if a.casefold() not in lowered]
+        if missing:
+            findings.append(
+                f"plan does not repeat the SDD sla-status-change entry {tuple(args)!r} verbatim — missing: {', '.join(missing)}"
+            )
+    return findings
+
+
 def main() -> None:
     args = list(sys.argv[1:])
     sdd: Path | None = None
@@ -135,7 +162,9 @@ def main() -> None:
         sys.exit(__doc__)
     findings = audit(Path(args[0]))
     if sdd is not None:
-        findings.extend(sla_shape_findings(sdd.read_text(encoding="utf-8"), sdd.name))
+        sdd_text = sdd.read_text(encoding="utf-8")
+        findings.extend(sla_shape_findings(sdd_text, sdd.name))
+        findings.extend(plan_repeats_sdd_sla_rules(Path(args[0]).read_text(encoding="utf-8"), sdd_text))
     if findings:
         shown = findings[:40]
         print("AUDIT FAIL — repair these, then re-run:", file=sys.stderr)
