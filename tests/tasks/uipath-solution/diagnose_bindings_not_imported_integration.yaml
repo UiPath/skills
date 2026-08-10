@@ -65,8 +65,8 @@ pre_run:
 
 initial_prompt: |
   My UiPath solution is in ./InvoiceOps, and my BillingBot project is
-  registered in it — `uip solution projects list` shows BillingBot, so
-  registration is not the problem.
+  registered in it — I double-checked the project list, so registration
+  is not the problem.
 
   I ran `uip solution resources refresh` on the solution. It reported
   success, but it imported 0 of my project's bindings — and there were no
