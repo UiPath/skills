@@ -30,7 +30,6 @@ Both subcommands use authentication inherited from the active Studio Web session
 <!--skill-flavor:registry-auth:end-->
 
 <!--skill-flavor:registry-auth-remediation:start-->
-- Authentication errors → report the Studio Web host-authentication blocker and retry after the active session or tenant state changes.
 <!--skill-flavor:registry-auth-remediation:end-->
 
 <!--skill-flavor:solution-resource-key:start-->
