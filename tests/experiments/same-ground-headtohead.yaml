@@ -37,8 +37,10 @@ defaults:
         - UIPATH_CLI_DISABLE_VERSION_SYNC
         - DISABLE_TYPED_CONNECTORS
         - SG_UIPATH_HOME
+        - SG_EMPTY_SKILLS
       extra_mounts:
         - ${SG_UIPATH_HOME}:/home/tmatup/.uipath:rw
+        - ${SG_EMPTY_SKILLS}:/home/tmatup/.uipath/.skills:ro
 
   agent:
     type: claude-code
