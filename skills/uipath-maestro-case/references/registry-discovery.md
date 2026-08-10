@@ -236,7 +236,14 @@ for item in data:
 1. **Exact name + exact folder** — strongest match, use directly.
 2. **Exact name, multiple folders** — pick the one matching the sdd.md folder path.
 3. **Exact name, no folder specified in sdd.md** — pick the first exact-name match; note alternatives in `registry-resolved.json`.
-4. **No match in primary cache file** — apply the compatible cross-type fallback above. For `action` and `case-management`, do not search another cache type; proceed to the empty-result gate.
+4. **Exact name matches exist, but the sdd.md folder is concrete and has ZERO matches** — treat as **unresolved**, not as a name-only lookup. Do NOT fall back to "first exact-name match", "most recently modified", or any other tiebreak across the wrong folders. See the rule below.
+5. **No match in primary cache file** — apply the compatible cross-type fallback above. For `action` and `case-management`, do not search another cache type; proceed to the empty-result gate.
+
+> **Concrete-but-absent folder → unresolved.** When sdd.md names a specific folder and that folder yields no match, the SDD is asserting an identity the tenant does not have. A same-named resource in a *different* folder is a different resource; binding it silently swaps in something the author never specified. This is the same reasoning that forbids cross-type fallback for `action` and `case-management`.
+>
+> This case is common and high-volume — a single stale folder path can leave dozens of same-named candidates. Observed: 44 exact `SimpleApprovalApp` matches and 120+ `Agentic Process` matches, none in the SDD's stated folder, which did not exist on the tenant at all.
+>
+> **Two runs against this same input produced different answers** — one improvised "most recently modified", the other declared it unresolved — which is what an underdetermined rule looks like in practice. Record in `registry-resolved.json`: the full match set, `selected: null`, and a rationale naming the missing folder explicitly (`"N exact-name matches, none in declared folder <path>; folder absent from tenant"`). Report it as a folder-path problem in the SDD, not as a missing resource — the resource may well exist under a different path, and the author is the one who can say which.
 
 ### 3. Handle Empty Results
 

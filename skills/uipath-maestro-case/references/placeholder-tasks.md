@@ -113,6 +113,54 @@ Rules:
 
 These are **expected** and do not block the build. Errors only appear when cross-task bindings reference non-existent outputs — which is exactly why the skill forbids fabricated task mocks (except the sanctioned connector-rule stub — see § Connector condition rules).
 
+**Validation cannot tell you whether the case can still run.** A caseplan where every task is a placeholder validates clean, publishes, and launches a debug instance that reports `Running` with `Incidents: null` — while executing nothing. See § Placeholder position risk.
+
+## Placeholder position risk — MANDATORY classification
+
+A placeholder's consequence depends entirely on **where in the graph it lands**, and nothing above distinguishes the cases. Classify every placeholder before Phase 5.
+
+| Position | Consequence |
+|---|---|
+| Optional task, or a task on a side path | Inert. The case runs; that work is skipped. |
+| Required task with siblings that can still satisfy the stage exit | Degraded but progressing. |
+| **Required + gating** — the task's completion is the only way its stage can exit, or it is the first required task of the first stage | **Dead case.** The engine has nothing to invoke, so the stage never exits and the case never advances. |
+
+**A "dead case" placeholder is not a warning — it is a build that cannot work.** Observed in a real run: `Capture case`, the required first task of the first stage, was a `<UNRESOLVED>` connector placeholder. The case published, launched instance `RAO-30390989`, reported `LatestRunStatus: Running` and `Incidents: null` for 40+ minutes, and never executed a single stage element. Both documented health checks reported healthy the whole time.
+
+### What to do
+
+1. **Detect it.** After Phase 3, for every placeholder task ask: if this task never completes, can its stage still exit? Trace the stage's exit conditions — `required-tasks-completed` with the placeholder marked `isRequired: true`, or a `selected-tasks-completed` naming it, means no.
+2. **Report it before publish, at the top of `build-issues.md` under HIGH** — not buried in the placeholder list. Name the task, its stage, and state plainly that the case cannot progress past that stage until the resource is attached.
+3. **Say it in the completion report too.** "32 placeholders" is not the same statement as "the case cannot start"; a reader must not have to derive the second from the first.
+4. **Never present such a build as runnable.** Reaching Phase 6 and seeing `Running` is not evidence of anything — see § What Validation Catches.
+
+## Placeholders discard SDD-supplied literal outputs
+
+Some SDDs give their connector tasks literal, always-succeeding outputs — `identityValid = js:(true)`, `kycStatus = js:("Clear")`, `provisioningStatus = js:("Successful")`. These are a deliberate demo-mode fallback: they let the case traverse its happy path with no live backing systems.
+
+A placeholder emits `data: {}` with **no outputs at all**, so those literals are never written and every stage-exit condition gated on them can never evaluate true. The placeholder mechanism is then the direct cause of a dead case, not merely a symptom of the missing connection.
+
+**This tradeoff must be surfaced, never taken silently.** When placeholdering a task whose SDD Outputs table contains only literal `=` assignments (no `->` extractions from a real schema):
+
+- record it in `registry-resolved.json`'s `rationale` for that task;
+- list it in `build-issues.md` as **"demo-mode outputs discarded"**, naming the variables that will now never be written and the conditions that depend on them;
+- if those variables gate the case's only forward path, it is also a § Placeholder position risk HIGH.
+
+Do **not** unilaterally emit the literals on a placeholder — a placeholder has no `data.outputs[]` by contract, and inventing one is the mock the skill forbids. Surfacing the loss is the requirement; changing the contract is a product decision that has not been made.
+
+## Cross-task references into a placeholder
+
+Rule 10 resolves `<-` and `vars.$xref(...)` through the source output's `.id`. A placeholder has no outputs, therefore no `.id`, **ever** — so a reference into a placeholder task cannot be resolved, by construction.
+
+**Do not silently degrade the expression.** Writing `=js:false` (or `null`, or dropping the condition) makes the containing rule permanently unsatisfiable and is exactly the silent omission Rule 6 forbids elsewhere. Observed: four conditions degraded to `=js:false` left Stage 1 permanently un-exitable, with nothing in the output saying so.
+
+Required handling:
+
+1. Keep the condition and preserve the authored expression text in `tasks.md` verbatim.
+2. In `caseplan.json`, emit the rule with the `conditionExpression` **omitted** rather than falsified — an ungated rule is honest about "we could not express this yet"; a `false` gate silently asserts "never".
+3. Log it in `build-issues.md` under HIGH as **"unresolvable cross-task reference"**, naming the referencing condition, the referenced task, and the consequence for stage exit.
+4. If the reference gated the stage's only exit, this is also a § Placeholder position risk HIGH.
+
 ## Upgrade Procedure — Placeholder → Full Task
 
 > **Built-inline agents / API workflows are not placeholders.** An `agent` or `api-workflow` the user chose to **Create** at the Rule 17 gate is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — it enters Phase 2 as a fully resolved task, never a placeholder, and skips this procedure. This procedure covers creatable resources the user **declined/skipped or whose build failed** (their recovery is the same as any other unresolved kind — register the real resource, below), plus every other unresolved kind.

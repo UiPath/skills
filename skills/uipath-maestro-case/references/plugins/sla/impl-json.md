@@ -33,6 +33,17 @@ Mint these IDs while composing the Phase 2 objects, check them against existing 
 - `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules`
 - Accepted node types: `case-management:Stage` (a secondary/exception stage is the same node with `data.stageType === "secondary"`).
 - If the stage node isn't found, halt and AskUserQuestion with candidate stage labels + "Something else".
+- `target: "task: <task-name>"` → **no schema target exists.** See below.
+
+> **Task-scoped SLA has no home in the schema — do NOT silently widen it to the stage.** The SDD template permits an SLA on an `action` task, and SDDs do author one (`Task SLA: 72h`). There is no task-level `slaRules` location: the only write targets are `metadata.slaRules` and `node.data.slaRules` on a Stage.
+>
+> Attaching it to the containing stage is a **real semantic change** — the clock then covers every task in the stage, not the one optional task the author scoped it to, and it starts on stage entry rather than task start. Two independent runs made this substitution silently; neither surfaced it.
+>
+> Required handling until the schema supports it:
+> 1. Do not emit a task-level SLA rule anywhere.
+> 2. Do not promote it to the stage without saying so.
+> 3. Record it in `build-issues.md` under Open Items as **"task-scoped SLA not representable"**, naming the task, the declared duration, and whether you widened it to the stage (with the changed semantics spelled out) or dropped it.
+> 4. Prefer **widening + disclosure** over dropping when the stage contains only that one task — the semantics then coincide. Prefer **dropping + disclosure** when the stage has other tasks, since a widened clock silently changes when breach fires for all of them.
 
 > **Stage conditional rules are direct JSON only.** `uip maestro case sla rules add` exposes a root-only CLI surface; do not use it for a stage target. Compose the stage's complete conditional + default array here and write `node.data.slaRules`.
 

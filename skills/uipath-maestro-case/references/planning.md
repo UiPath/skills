@@ -388,4 +388,16 @@ Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](impleme
 
 Correct the plan before building; validation of `caseplan.json` cannot detect a malformed Phase 1 handoff.
 
+**Artifact-existence gate.** Before Phase 2 begins, confirm on disk that BOTH `tasks/tasks.md` and `tasks/registry-resolved.json` exist and are non-empty (plus `tasks/recipients-resolved.json` when SLA escalations are present). Planning "in memory" and proceeding straight to `caseplan.json` is a Phase 1 failure even when the resulting case validates: the audit trail for how every resource was resolved is then unrecoverable. If either file is missing, write it before continuing. Nothing downstream detects the absence — `validate` and the Step 12 checks read `caseplan.json`, never the planning trail.
+
+**One-T-entry-per-declaration gate.** Count the `## T<n>:` headings in the finished `tasks.md` and compare against the SDD's declaration count (case + triggers + every variable/argument + every stage + every task + every entry/exit/task-entry/case-exit condition row + every SLA rule + every escalation). The two numbers must match.
+
+**Range headings are a hard failure.** A heading covering more than one declaration — `## T03-T32: Case Variables (30 rows)`, `## T41-T60: Tasks`, `## T61-T94: Conditions` — violates Rule 6 and voids the plan's purpose:
+
+- a reviewer cannot cite or comment on `T57`;
+- a later phase cannot re-read one declaration;
+- the "lossless" property is gone, because a range heading records the count but not the content.
+
+Observed in a real 8-stage / 20-task build: 106 mandated entries were emitted as 7 range headings and the run still produced a `Valid` caseplan, so **no downstream signal will catch this.** If a run is short of budget, reduce prose per entry — never collapse entries. Regenerate the plan before building.
+
 <!-- END: planning.md -->
