@@ -68,7 +68,7 @@ The response carries everything the planning phase needs:
 | `inputs.multipart` | `null` for non-multipart; otherwise `{ bodyFieldName, parameters[] }` — multipart upload contract |
 | `outputs.responseFields[]` | Response shape; `[?responseCurated]` are FE-broken-out outputs, `[?primaryKey]` are id fields |
 | `outputs.pagination` | `null` for non-list, `{ maxPageSize: N }` for list operations |
-| `filter` | `undefined` when the activity does NOT support server-side filtering. Present when it does, with `builder: "ceql"` and `fields[]` listing every searchable field |
+| `filter` | `undefined` when the activity does NOT declare a design-time `FilterBuilder` (no structured CEQL authoring — Step 7). Present when it does, with `builder: "ceql"` and `fields[]` listing every searchable field. `undefined` does NOT mean no server-side filtering: the operation may declare a plain filter field in `inputs.queryParameters[]` instead (normal Step 6 input) |
 | `references[]` | Cross-references (lookups). Each entry includes a pre-built `discoverCommand` runnable string |
 | `diagnostics.fetched` / `fallbacks` | What endpoints succeeded / fell back; surface `fallbacks` to the user when meaningful |
 
@@ -125,7 +125,7 @@ Values can be:
 
 ### 7. Optional — author a server-side filter
 
-If `spec.filter` is present (i.e. the operation declares a `FilterBuilder` parameter and supports CEQL), the user can author a filter tree. If `spec.filter` is `undefined`, server-side filtering is not supported on this operation — filter downstream (post-execution) instead.
+If `spec.filter` is present (i.e. the operation declares a `FilterBuilder` parameter and supports CEQL), the user can author a filter tree. If `spec.filter` is `undefined`, structured filter authoring is not supported — do NOT author a `filter:` tree. That does NOT mean server-side filtering is unavailable: many operations declare a plain filter field in `inputs.queryParameters[]` instead (e.g. Outlook 365 `ListEmails` declares `queryParameters.filter` — "Additional OData filters", string). An SDD filter literal matching such a declared field is a normal Step 6 input: keep it in `input-values.queryParameters.<name>`, native connector syntax (e.g. OData), never converted to a tree. Only when neither `spec.filter` nor a declared plain filter field exists: filter downstream (post-execution).
 
 Filter tree shape, operator table, anti-patterns, worked examples: [/uipath:uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers (compiler differs — JMESPath instead of CEQL).
 

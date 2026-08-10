@@ -109,7 +109,7 @@ Spec output carries the full operation contract:
 | `inputs.multipart` | `null` for non-multipart; `{ bodyFieldName, parameters[] }` otherwise |
 | `outputs.responseFields[]` | Response shape; `[?responseCurated]` are FE-broken-out outputs, `[?primaryKey]` are id fields |
 | `outputs.pagination` | `null` for non-list; `{ maxPageSize: N }` for list ops |
-| `filter` | `undefined` when server-side filtering is not supported. Present when supported, with `builder: "ceql"` (activity) / `"jmes"` (trigger) and `fields[]` listing every searchable field |
+| `filter` | `undefined` when the operation declares no design-time `FilterBuilder` (no structured filter authoring). Present when it does, with `builder: "ceql"` (activity) / `"jmes"` (trigger) and `fields[]` listing every searchable field. `undefined` does NOT rule out server-side filtering — the operation may declare a plain filter field in `inputs.queryParameters[]` (normal input, native syntax) |
 | `references[]` | Cross-references with pre-built `discoverCommand` runnable strings |
 | `caseShape` | FE-canonical `inputs[]` / `outputs[]` / `context[]` ready to drop into `caseplan.json` (after binding-id substitution); only present when `--skip-case-shape` is NOT set |
 | `diagnostics` | Per-endpoint `fetched` / `fallbacks` |

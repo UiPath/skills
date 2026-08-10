@@ -119,10 +119,14 @@ This is a hard gate — do NOT proceed to write the task until every required fi
 When `tasks.md` carries a `filter:` object, the activity's operation must declare a `FilterBuilder` design parameter. The CLI rejects the filter at configure time when no FilterBuilder param exists; the planning step 7 should already have caught this by checking `spec.filter` presence, but verify here as a safety net.
 
 - `spec.filter` present (with `builder: "ceql"` and `fields[]`) → CEQL filter is supported. Pass the structured tree under `--input-details.filter`. The CLI compiles it into both halves of the contract: the runtime CEQL string at `caseShape.inputs[name="queryParameters"].body.<filterParamName>` AND the design-time tree under `essentialConfiguration.savedFilterTrees.<filterParamName>` (inside the `=jsonString:` blob in `caseShape.context[name="metadata"].body.activityPropertyConfiguration.configuration`).
-- **Do NOT pass a raw CEQL string under `queryParameters.where`** (or whichever connector-specific name) when authoring a filter. The CLI rejects this; even if it didn't, the design-time tree would be empty and Studio Web would render the filter widget as `undefined` when the activity is reopened.
+- **Do NOT pass a raw CEQL string under `queryParameters.where`** (or whichever connector-specific name) when authoring a filter. The CLI rejects this; even if it didn't, the design-time tree would be empty and Studio Web would render the filter widget as `undefined` when the activity is reopened. Scope: FilterBuilder/CEQL operations only — a filter field the spec declares as a plain query parameter takes a literal in the connector's native syntax and is a normal input, not an authored filter.
 - Tree shape, operator table, examples → [/uipath:uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
-If the operation has no FilterBuilder parameter, server-side filtering is not supported — the spec will return `filter: undefined`. Filter downstream (post-execution) instead.
+If the operation has no FilterBuilder parameter (`spec.filter` undefined), the structured tree cannot be passed — but that does NOT mean server-side filtering is unsupported. **Recover in order — never silently drop an SDD-declared filter:**
+
+1. Check the lean spec's declared plain inputs (`inputs.queryParameters[]`, `inputs.bodyFields[]`) for a filter field (e.g. Outlook 365 `ListEmails` declares `queryParameters.filter` — "Additional OData filters", string).
+2. Declared field matches the SDD filter requirement → drop the `filter:` tree, pass the SDD's literal expression under `--input-details.queryParameters.<name>` in the connector's native syntax (e.g. OData `contains(subject,'urgent')` — NOT CEQL, NOT a tree). Log the tree→literal conversion as advisory.
+3. No declared field → filter downstream (post-execution); log a warning naming the dropped SDD literal and its source SDD row.
 
 ### Step 5 — Mint binding IDs
 
@@ -250,6 +254,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 3–8 across every connector node
 11. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
 12. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
+13. **Lossless inputs (HARD GATE).** Every field in the task's tasks.md `input-values` appears with its value in the matching `data.inputs[].body` (`queryParameters` / `pathParameters` / body). Also covers a tasks.md `filter:` tree resolved via Step 4: either compiled into the caseShape (FilterBuilder path) or preserved as a literal under the declared plain field (recovery path 2). A planned input absent from the written task = enrichment dropped an SDD requirement — halt, re-run Step 2 with the field included; do NOT downgrade to a build-issues warning.
 
 ## What NOT to Do
 
@@ -259,7 +264,8 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT copy root bindings into `data.bindings[]`.** Leave it as `[]`. The FE crashes if activity tasks have task-level binding copies.
 - **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and splice `Data.caseShape.context` verbatim. See Step 6.
 - **Do NOT write the spec's PascalCase keys to disk verbatim.** `case spec` emits PascalCase; the caseplan disk schema is camelCase. After splicing, lower-case the first character of every object key in the spec subtree — keys only, never values. See Step 6 and [connector-trigger-impl.md § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase).
-- **Do NOT pass a raw CEQL string under `queryParameters.where`** (or whichever connector-specific name) when authoring a filter. Pass the structured tree under `filter:` in tasks.md and let the CLI compile both halves.
+- **Do NOT pass a raw CEQL string under `queryParameters.where`** (or whichever connector-specific name) when authoring a filter. Pass the structured tree under `filter:` in tasks.md and let the CLI compile both halves. Applies to FilterBuilder/CEQL operations only — a filter field declared in `inputs.queryParameters[]` is a normal input taking a native-syntax literal (Step 4 recovery path).
+- **Do NOT drop an SDD filter literal because FilterBuilder is absent.** `spec.filter: undefined` only rules out the structured tree. Check `inputs.queryParameters[]` for a declared plain filter field first (Step 4 recovery); Post-Write check 13 halts on silently dropped inputs.
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
 - **Do NOT pass `bodyParameters` for synthetic HTTP request activities.** Use `queryParameters` instead, or omit.
 - **Do NOT pass literal `field[*]` keys in `bodyParameters`.** The `[*]` in `inputs.bodyFields[].name` is JSONPath-style schema notation meaning "array of"; it is NOT a valid input key. Express array-of-object body fields as real JSON arrays under the parent name (see [planning.md](planning.md)). Pre-input scan in [Step 1.b](#step-1b--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
