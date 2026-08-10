@@ -105,6 +105,18 @@ def sla_shape_findings(text: str, source: str) -> list[str]:
     Zero-quoted-arg mentions are summary/prose shorthand and are not flagged.
     """
     findings: list[str] = []
+    # Every `#### Stage SLA` block declares its title on its own line —
+    # a collapsed `**SLA Type:** … **SLA Title:** …` line hides the title
+    # from line-start tooling and reference resolution.
+    for match in re.finditer(r"(?im)^####\s+Stage SLA\s*$", text):
+        block_end = re.search(r"(?m)^#{1,4}\s", text[match.end():])
+        block = text[match.end(): match.end() + block_end.start()] if block_end else text[match.end():]
+        if not re.search(r"(?im)^\*\*SLA Title:\*\*\s*\S", block):
+            line_no = text[: match.start()].count("\n") + 1
+            findings.append(
+                f"{source}:{line_no}: '#### Stage SLA' block has no line-start '**SLA Title:**' — "
+                "render '**SLA Type:**' and '**SLA Title:**' as two separate lines"
+            )
     for line_no, line in enumerate(text.splitlines(), 1):
         for call in re.finditer(r"sla-status-change\s*\(([^)]*)\)", line, re.I):
             args = re.findall(r"[\"“‘']([^\"”’']+)[\"”’']", call.group(1))
