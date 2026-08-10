@@ -74,26 +74,18 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "All three script nodes are present by name"
-    path: "ReceiptIntake/ReceiptIntake/ReceiptIntake.flow"
-    includes:
-      - "postReceipt"
-      - "sendToValidation"
-      - "logError"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'postReceipt' 'sendToValidation' 'logError'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Scripts reference the extraction output via $vars expression"
-    path: "ReceiptIntake/ReceiptIntake/ReceiptIntake.flow"
-    includes:
-      - "$vars."
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '$vars.'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
-
-run_limits:
-  expected_turns: 24
-  max_turns: 40
-  turn_timeout: 900
-  task_timeout: 900
