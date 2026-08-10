@@ -227,6 +227,16 @@ Method signatures come from the installed types (`node_modules/@uipath/uipath-ty
 
 If the user wants a **Document Understanding validation UI** (review/correct extraction results), embed the Validation Station widget — see [widgets/validation-station.md](widgets/validation-station.md). Required scope: `OR.Buckets` (plus `OR.Tasks` if the widget completes an Action Center task on save). Add to the `scope` field in `uipath.json` during Step 4.
 
+More prebuilt `@uipath/ui-widgets-*` components — prefer these over hand-rolled UI, and add each widget's scopes to `uipath.json` during Step 4 ([oauth-scopes.md](oauth-scopes.md) § Widgets):
+
+| Widget | Use for | Guide |
+|--------|---------|-------|
+| Conversational Agent chat | Chat UI over a conversational agent (streaming, attachments, history) | [widgets/conversational-agent-chat.md](widgets/conversational-agent-chat.md) |
+| DataTable | CRUD grid over a Data Fabric entity | [widgets/datatable.md](widgets/datatable.md) |
+| Multi-file upload | Upload files to a storage bucket | [widgets/multi-file-upload.md](widgets/multi-file-upload.md) |
+| PDF viewer | Display PDFs from buckets, entity attachments, or URLs | [widgets/pdf-viewer.md](widgets/pdf-viewer.md) |
+| External auth | Sign-in buttons for external IdPs (Google/SAML) — NOT UiPath login | [widgets/external-auth.md](widgets/external-auth.md) |
+
 When implementing specific SDK services, read the corresponding reference:
 
 | Service | Reference |

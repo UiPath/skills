@@ -4,6 +4,8 @@ Signatures/params/examples: `dist/entities/index.d.ts` (trigger-event behavior d
 
 > **Scope pairing warning:** schema introspection (`entities.getAll()` / `getById()`) and record I/O sit in different scope pairs — `DataFabric.Schema.Read` vs `DataFabric.Data.Read` / `DataFabric.Data.Write`. This file mandates schema introspection before writes and filters, so an app with only Data scopes 403s on the introspection step. Check the shipped table per method.
 
+> **Building a CRUD grid over one entity?** Embed the DataTable widget instead of hand-wiring ag-Grid + record I/O — [../widgets/datatable.md](../widgets/datatable.md). The traps below still apply to any direct SDK calls the host app makes around it.
+
 ## Anti-shapes & gotchas (read first)
 
 Data Fabric does NOT behave like a typical RDBMS. These server behaviors are invisible to both the types and the JSDoc. Before writing analytics, filters, or update logic, call `entities.getById(id)` and inspect `fields[].name` + `fieldDataType.name`. Pick your data strategy from what's actually there — do NOT assume.
