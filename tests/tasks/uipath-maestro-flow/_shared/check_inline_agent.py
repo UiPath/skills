@@ -8,7 +8,7 @@ Usage (from a task's run_command, cwd = sandbox root):
   <glob>  Shell-style glob for the inline agent.json. The inline agent dir is a
           UUID, so the path is not statically knowable — pass e.g.
           "EmailTriage/EmailTriage/*/agent.json". Defaults to
-          "*/*/*/agent.json" if omitted.
+          "**/agent.json" if omitted.
 
 Asserts, on the first matching agent.json (excluding generated .agent-builder/):
   1. settings.model is set and is NOT the stale scaffold default gpt-4o-2024-11-20.
@@ -41,8 +41,8 @@ MIN_PROMPT_LEN = 40
 
 
 def main() -> int:
-    pattern = sys.argv[1] if len(sys.argv) > 1 else "*/*/*/agent.json"
-    paths = [p for p in glob.glob(pattern) if "/.agent-builder/" not in p]
+    pattern = sys.argv[1] if len(sys.argv) > 1 else "**/agent.json"
+    paths = [p for p in glob.glob(pattern, recursive=True) if "/.agent-builder/" not in p]
     if not paths:
         print(f"FAIL: no inline agent.json matched {pattern!r}")
         return 1
