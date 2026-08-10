@@ -33,7 +33,9 @@ else:
   uip agent guardrails catalog --output json > .guardrails-catalog-cache.json
   ```
 
-Inspect the saved JSON. If the output contains `"Code": "GuardrailCatalogUnavailable"`, surface the message to the user and **stop** — do not fall back to guessing. This means the catalog endpoint is not yet available for this tenant. Note: the CLI writes all structured output (both success and error JSON) to stdout, so the redirect captures error responses correctly — do not add `2>&1`.
+Inspect the saved JSON. **Only stop for the specific, structured signal that the catalog endpoint itself is unavailable:** the output contains `"Code": "GuardrailCatalogUnavailable"`. In that exact case, surface the message to the user and **stop** — do not fall back to guessing. Note: the CLI writes all structured output (both success and error JSON) to stdout, so the redirect captures error responses correctly — do not add `2>&1`.
+
+**A generic CLI parse error is a different signal — do not stop for it.** If the output is instead something like `"Message": "error: unknown command 'catalog'"` (a `ValidationError`/parse error, not `GuardrailCatalogUnavailable`), that means this CLI build predates the `catalog` subcommand — it is an older/local build, not a tenant-side unavailability. Do not halt the whole workflow on this. Fall back to `uip agent guardrails list` plus built-in reasoning about the request, note in the report that the catalog command wasn't available on this CLI build, and continue.
 
 The cache file is `.guardrails-catalog-cache.json` in the current working directory. Add it to `.gitignore` if one exists.
 
@@ -260,7 +262,7 @@ If the user asks to fix identified issues: apply corrections to `agent.json`, ru
 ## Critical Rules
 
 1. **Always fetch catalog first** (use cache if fresh); **always fetch guardrails list second** (no cache). Both are required before any analysis.
-2. **If `GuardrailCatalogUnavailable`** → surface the message and stop. Do not fall back to guessing or hardcoded recommendations.
+2. **If the catalog call returns `"Code": "GuardrailCatalogUnavailable"`** → surface the message and stop. Do not fall back to guessing or hardcoded recommendations. **A generic CLI error (e.g. `"unknown command 'catalog'"`) is not this signal** — that means an older CLI build, not tenant unavailability; fall back to `guardrails list` + built-in reasoning and note the limitation in the report instead of halting.
 3. **Only recommend `Available` validators**. Mention `Unauthorised` ones to the user so they can contact their administrator.
 4. **Every recommendation must cite** the catalog entry's `when_to_use` or a specific `use_cases` item that matched the agent's context. Do not recommend a guardrail without explaining why it applies.
 5. **Never recommend two validators with the same `security_category` at the same scope and stage** (e.g. `prompt_injection` + `user_prompt_attacks` at Llm PRE). De-duplicate per Step 3: drop catalog-deprecated entries, keep the best fit, mention the alternative. Derive the grouping and deprecation from the catalog's own fields — do not hardcode validator names.
