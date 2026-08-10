@@ -8,7 +8,7 @@ description: >
 
   Command-construction only — no live tenant. Commands fail with auth errors;
   what matters is the shape of the query the agent constructs.
-tags: [uipath-process-mining, mode:diagnose, query, aggregate]
+tags: [uipath-process-mining, smoke, mode:diagnose, lifecycle:discover, query, aggregate]
 
 run_limits:
   expected_turns: 6

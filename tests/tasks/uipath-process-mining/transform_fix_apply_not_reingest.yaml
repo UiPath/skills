@@ -13,7 +13,7 @@ description: >
 
   Command-construction only — no live tenant. Commands fail with auth errors;
   what matters is which commands the agent chooses.
-tags: [uipath-process-mining, mode:fix, lifecycle:maintain, transformations, custom]
+tags: [uipath-process-mining, integration, mode:diagnose, lifecycle:setup, transformations, custom]
 
 run_limits:
   expected_turns: 8
