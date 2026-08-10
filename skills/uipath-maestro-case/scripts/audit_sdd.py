@@ -284,8 +284,9 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
                 if markers and not any(marker in task_block for marker in markers):
                     findings.append(f"task {task_name!r} (type {type_match.group(1)}) missing type detail block {markers[0]!r}")
 
-    # sla-status-change arg shape: 2 quoted args (breach) or 3 (at-risk).
-    # Zero-quoted-arg mentions are prose shorthand and not checked.
+    # sla-status-change arg shape: 2 quoted args (breach) or 3 (at-risk), and the
+    # target must resolve: the literal 'root' or a declared stage display name.
+    valid_targets = {"root"} | {name.casefold() for _, name, _ in stage_blocks(text)}
     for line_no, line in enumerate(text.splitlines(), 1):
         for call in re.finditer(r"sla-status-change\s*\(([^)]*)\)", line, re.I):
             args = re.findall(r"[\"“‘']([^\"”’']+)[\"”’']", call.group(1))
@@ -294,9 +295,10 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
                     f"line {line_no}: sla-status-change takes (\"<SLA target>\",\"<SLA Title>\") "
                     f"or (...,\"<At-Risk Escalation Display Name>\"); got {len(args)} args"
                 )
-            if args and args[0].strip().casefold() == "case":
+            if args and valid_targets and args[0].strip().casefold() not in valid_targets:
                 findings.append(
-                    f"line {line_no}: sla-status-change target 'Case' — the case-level target is the literal 'root'"
+                    f"line {line_no}: sla-status-change target {args[0]!r} is neither the literal 'root' (case-level) "
+                    f"nor a stage declared in this SDD — never the case name or a synonym"
                 )
 
     findings.extend(lineage_findings(text))
