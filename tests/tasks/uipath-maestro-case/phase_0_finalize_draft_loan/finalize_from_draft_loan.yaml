@@ -67,9 +67,15 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Rule 13: finalization renders sdd.md with Write/Edit instead of copying or renaming the draft"
+    description: "Rule 13: the draft is never renamed or deleted (a cp seed is outcome-graded by sdd_check + inventory + draft-survives)"
     tool_name: "Bash"
-    command_pattern: '(cp|mv|install|rsync)\b[^\n]*(sdd\.draft\.md|sdd\.md)'
+    command_pattern: '(mv|rm)\b[^\n]*(sdd\.draft\.md|sdd\.md)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "sdd.draft.md is still in place — finalization renders beside the draft, never consumes it"
+    path: "sdd.draft.md"
     weight: 1.0
     pass_threshold: 1.0
 

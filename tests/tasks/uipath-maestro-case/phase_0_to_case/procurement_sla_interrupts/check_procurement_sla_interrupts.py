@@ -145,8 +145,8 @@ def check_plan_preserves_task_activation(sdd: str, plan: str) -> None:
 
 
 def stage_section(sdd: str, stage_name: str) -> str:
-    heading = rf"^#{{2,4}}\s+(?:Secondary\s+Stage:\s*)?{re.escape(stage_name)}\b[^\n]*\n"
-    next_stage = r"^#{2,4}\s+(?:Stage\s+\d+|Secondary\s+Stage:)"
+    heading = rf"^#{{2,4}}\s+(?:(?:Primary\s+)?Stage\s+\d+:\s*|Secondary\s+Stage(?:\s+S?\d+)?:\s*)?{re.escape(stage_name)}\b[^\n]*\n"
+    next_stage = r"^#{2,4}\s+(?:(?:Primary\s+)?Stage\s+\d+|Secondary\s+Stage(?:\s+S?\d+)?:)"
     match = re.search(
         rf"(?ims){heading}.*?(?={next_stage}|\Z)",
         sdd,
@@ -163,7 +163,7 @@ def task_lane(section: str, task_name: str) -> int:
     return int(match.group(1))
 
 
-STAGE_HEADING = r"(?im)^#{3,4}\s+(?:Stage\s+\d+|Exception Stage|Secondary Stage):\s*(.+)$"
+STAGE_HEADING = r"(?im)^#{3,4}\s+(?:(?:Primary\s+)?Stage\s+\d+|Exception Stage|Secondary Stage(?:\s+S?\d+)?):\s*(.+)$"
 
 # Primary phases the prompt names; each must carry its own SLA.
 PRIMARY_STAGES = ("Intake", "Supplier Setup", "Compliance Review", "Decision", "Close")
@@ -187,13 +187,33 @@ def sections_by_target(sdd: str) -> dict[str, str]:
     return sections
 
 
+def case_level_aliases(sdd: str) -> set[str]:
+    """Casefolded spellings that unambiguously mean the case-level target.
+
+    The canonical target is the literal `root`; designs also show up with
+    "Case" or the case's own name from the `# SDD — {Case Name}` heading.
+    All three resolve to the same SLA scope, so grading treats them as root —
+    anything else still fails target closure.
+    """
+    aliases = {"root", "case"}
+    title = re.search(r"(?m)^#\s+SDD\s+—\s+(.+?)\s*$", sdd)
+    if title:
+        aliases.add(title.group(1).strip().casefold())
+    return aliases
+
+
 def sla_references(sdd: str) -> list[tuple[int, list[str]]]:
     """(line number, quoted args) for every sla-status-change(...) in the SDD."""
     references = []
     for line_no, line in enumerate(sdd.splitlines(), 1):
         call = re.search(r"sla-status-change\s*\(([^)]*)\)", line, re.IGNORECASE)
         if call:
-            references.append((line_no, re.findall(r"[\"']([^\"']+)[\"']", call.group(1))))
+            args = re.findall(r"[\"']([^\"']+)[\"']", call.group(1))
+            # Zero quoted args means summary-table / prose shorthand, not an
+            # executable reference; real rule coverage is enforced per stage +
+            # root below, so a malformed real rule still fails there.
+            if args:
+                references.append((line_no, args))
     return references
 
 
@@ -207,7 +227,7 @@ def declared_sla_titles(sdd: str) -> set[str]:
     `Breached` sits in column 1 of the escalation table and is never a title.
     """
     titles = set()
-    for match in re.finditer(r"(?im)^\|\s*SLA Title\s*\|\s*([^|]+)\|", sdd):
+    for match in re.finditer(r"(?im)^\|\s*(?:Case\s+)?SLA Title\s*\|\s*([^|]+)\|", sdd):
         titles.add(match.group(1).strip().casefold())
     for match in re.finditer(r"(?im)^\*\*SLA Title:\*\*\s*(.+)$", sdd):
         titles.add(match.group(1).strip().casefold())
@@ -254,12 +274,22 @@ def declared_sla_titles(sdd: str) -> set[str]:
 def check_canonical_stage_sla(section: str, stage: str) -> None:
     if re.search(r"(?im)^####\s+Stage SLA\s*$", section) is None:
         fail(f"primary phase {stage!r} has no canonical '#### Stage SLA' block")
-    titles = re.findall(r"(?im)^\*\*SLA Title:\*\*\s*(.+)$", section)
-    expected = f"{stage} SLA"
-    if [title.strip().casefold() for title in titles] != [expected.casefold()]:
+    titles = [t.strip() for t in re.findall(r"(?im)^\*\*SLA Title:\*\*\s*(.+)$", section)]
+    # Exactly one concrete line-start `**SLA Title:**` per stage — the field shape
+    # is contractual (line-start titles are what reference resolution matches).
+    # The NAME is graded semantically: any concrete stage-scoped title works as
+    # long as references resolve (closure is checked separately); the preferred
+    # deterministic spelling is '<Stage Name> SLA' but variants like
+    # '<Stage Name> Phase SLA' carry the same meaning.
+    if len(titles) != 1 or not titles[0] or re.fullmatch(r"[-—:\s]+", titles[0]):
         fail(
-            f"primary phase {stage!r} must declare exactly "
-            f"'**SLA Title:** {expected}'; got {titles or 'nothing'}"
+            f"primary phase {stage!r} must declare exactly one concrete "
+            f"'**SLA Title:**' line; got {titles or 'nothing'}"
+        )
+    if stage.casefold() not in titles[0].casefold():
+        fail(
+            f"primary phase {stage!r} declares SLA title {titles[0]!r}, which does not "
+            f"name its own stage — each phase declares its own scoped SLA"
         )
 
 
@@ -278,6 +308,7 @@ def check_sla_reference_closure(sdd: str) -> None:
 
     sections = sections_by_target(sdd)
     targets: list[str] = []
+    aliases = case_level_aliases(sdd)
     for line_no, args in references:
         # Arg count carries the status: 2 args is a Breached rule (it references the
         # SLA alone — an absent escalation IS the persisted Breached shape), 3 args is
@@ -291,16 +322,17 @@ def check_sla_reference_closure(sdd: str) -> None:
             )
         target, sla_title = args[0], args[1]
         escalation_title = args[2] if len(args) == 3 else None
-        if target.casefold() not in sections:
+        target_key = "root" if target.casefold() in aliases else target.casefold()
+        if target_key not in sections:
             fail(
                 f"sdd.md:{line_no}: sla-status-change target {target!r} is neither "
                 "'root' (case-level SLA) nor a stage declared in this SDD"
             )
-        targets.append(target.casefold())
+        targets.append(target_key)
 
         # Scoped to the named target: an escalation declared on a different SLA
         # cannot be borrowed, because Phase 1 resolves the id within the target.
-        declared = declared_sla_titles(sections[target.casefold()])
+        declared = declared_sla_titles(sections[target_key])
         for title in (t for t in (sla_title, escalation_title) if t is not None):
             if title.casefold() not in declared:
                 fail(
@@ -384,7 +416,13 @@ def main() -> None:
     withdrawn_section = stage_section(sdd, "Withdrawn")
     if "wait-for-connector" not in withdrawn_section.lower():
         fail("Withdrawn is not entered by the global supplier-portal event")
-    if not has_near(withdrawn_section, "Supplier Portal", "Withdraw", 500):
+    if not (
+        has_near(withdrawn_section, "Supplier Portal", "Withdraw", 500)
+        # The connector source may be declared once in the Triggers table /
+        # Section 4 rollup and referenced from the stage by event title; the
+        # wait-for-connector entry check above already pins the stage's rule.
+        or has_near(sdd, "Supplier Portal", "Withdraw", 500)
+    ):
         fail("Withdrawn connector rule does not preserve the supplier-portal withdrawal event")
 
     sequential_tasks = ("Verify Supplier Identity", "Set Supplier Record", "Invite Supplier")

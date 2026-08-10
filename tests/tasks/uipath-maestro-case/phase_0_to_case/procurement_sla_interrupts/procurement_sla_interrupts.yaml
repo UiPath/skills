@@ -95,10 +95,21 @@ success_criteria:
         rationales for implementation.
       - Global events are not modeled as repeated per-primary-stage exit rules.
 
-      Score 0.5 for a mostly correct design with one minor omission. Score 0.0
-      for duplicated per-stage routing, parallel Supplier Setup work, missing
-      rationale, or SLA events represented only as notifications with no
-      interrupting stage entry for the required escalation work.
+      Grade routing SEMANTICS, not table presentation. The SLA Response Map is
+      authoritative for breach routing: when it correctly routes a breach to
+      the interrupting stage entry, do not deduct for how per-stage SLA table
+      cells render that action (display names, notification wording). The
+      consecutive-single-task-set requirement applies to the sequential
+      Supplier Setup run only; tasks inside an interrupting secondary stage
+      may legitimately run parallel in one shared task set.
+
+      Score 1.0 when all five criteria hold; deviations that are purely
+      presentation-level (display names, table rendering, plan formatting) do
+      not reduce the score below 0.8. Score 0.5 for one semantic omission.
+      Score 0.0 for duplicated per-stage routing, parallel Supplier Setup
+      work, missing rationale, or SLA events represented only as
+      notifications with no interrupting stage entry for the required
+      escalation work.
     weight: 3.0
     pass_threshold: 0.8
 

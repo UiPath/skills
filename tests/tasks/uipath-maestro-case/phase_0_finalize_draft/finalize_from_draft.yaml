@@ -55,6 +55,12 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  - type: file_exists
+    description: "sdd.draft.md is still in place — finalization renders beside the draft, never consumes it"
+    path: "sdd.draft.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "sdd.md is mechanically sound: variable mappings + lineage, per-gate rule legality, task types, entry/completion/exit conditions"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/sdd_check.py"
