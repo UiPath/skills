@@ -6,6 +6,10 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 > **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution). Explicit plan-only / no-build runs stop at `tasks/tasks.md` and skip registry-derived audit files because tenant lookup is deferred to the later build run.
 >
+> **`tasks/` is keyed to the SDD, not to the solution — one build per working directory.** Every solution built from the same `sdd.md` writes to the *same* `tasks/` files. Giving two concurrent builds different solution names does **not** isolate them: solution-name separation buys nothing for artifacts that are not namespaced by solution. Observed: two concurrent runs from one `sdd.md` silently overwrote each other's `tasks.md` and `registry-resolved.json` mid-build, and neither noticed until a harness file-change notification surfaced it.
+>
+> Before starting, if `tasks/` already exists and was not written by this run, treat it as a **hard stop** — do not overwrite. Either the run is a re-run (regenerate per Rule 6, which is fine) or another build is live in this directory (which is not). To build two variants of one SDD, give each its own working directory with its own copy of `sdd.md`; do not rely on distinct solution names.
+>
 > **Exit:** Auto-proceeds to Phase 2 — plan treated as approved, no prompt by default. Stops after `tasks.md` only when the request explicitly asked for a plan-only / review-first run. Re-read `tasks.md` before execution.
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting planning workflow. For how to fill fields for a specific node, consult the relevant plugin:
