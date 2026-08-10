@@ -364,5 +364,5 @@ uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 | `Folder key required` / deploy hangs on prompt | Missing folder key | Resolve via `uip or folders list --output json`, then run `uip codedapp deploy --folder-key <key> ...` (or `UIPATH_FOLDER_KEY=<key>` env-var prefix). |
 | `Missing tenant name` on publish | `UIPATH_TENANT_NAME` not set | Set in `.env` or pass `--tenant-name` |
 | `dist/ not found` | App not built | Run `npm run build` |
-| Pack shows wrong clientId | Stale `uipath.json` | `pack` copies `uipath.json` verbatim — fix `clientId` there. Do NOT pass `--reuse-client` (removed from the CLI). |
+| Pack shows wrong clientId | Stale `uipath.json` | `pack` copies `uipath.json` verbatim — fix `clientId` there. |
 | `unknown option '--reuse-client'` | Passing a removed flag | Drop it — `pack` has no client option; the client ID comes from `uipath.json`. |
