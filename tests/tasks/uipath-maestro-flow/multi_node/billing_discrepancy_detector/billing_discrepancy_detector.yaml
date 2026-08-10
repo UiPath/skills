@@ -65,20 +65,8 @@ success_criteria:
   weight: 5.0
   pass_threshold: 1.0
 - type: run_command
-  description: 'Advisory: bindings.json exists and carries no stub UUIDs'
-  command: |
-    python3 -c "
-    import json, re
-    b = json.load(open('bindings.json'))
-    def is_stub(v):
-        s = str(v or '').strip()
-        return (not s) or bool(re.match(r'^0{8}-0{4}-0{4}-0{4}-', s)) or (s.startswith('<') and s.endswith('>'))
-    entries = b.get('bindings') or []
-    assert entries, 'bindings.json declares no bindings at all'
-    stubs = [e for e in entries if is_stub(e.get('resourceKey')) and is_stub(e.get('default'))]
-    assert not stubs, f'stub or empty bindings: {[e.get(\"id\") for e in stubs]}'
-    print(f'{len(entries)} bindings, all populated with non-stub UUIDs')
-    "
+  description: 'Advisory: generated bindings exist and carry no stub UUIDs'
+  command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_bindings_no_stubs.py
   timeout: 30
   expected_exit_code: 0
   weight: 1.0
