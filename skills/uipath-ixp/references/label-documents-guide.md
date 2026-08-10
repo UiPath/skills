@@ -31,7 +31,7 @@ uip ixp labellings get-predictions <project-name> <document-id> --output json
 
 This returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is `{ DocumentId, Labels[] }` (for a single-document call, `Predictions[0]`). Each label is `{ Name, Occurrence, Fields[] }`, and each field has `FieldId`, `FieldName`, `FormattedValue`. `Occurrence` is the explicit 0-based index used for `--occurrence`/`--updates`, valid **for this read only** — see [Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped).
 
-The response also carries `ModelVersion` — the model version that produced these predictions. Note it: pass it to `confirm --model-version` in 2d so a retrain mid-review can't silently swap the values you confirm.
+The response also carries `ModelVersion` — the model version that produced these predictions. Note it: pass it to `confirm --model-version` in step 2d so a retrain mid-review can't silently change the values `confirm` stamps.
 
 ### 2b. Download the document file
 
@@ -91,7 +91,7 @@ For **NOT CONFIRMED** fields: state the predicted value, the actual value (if vi
 
 Submit confirmed, corrected, and missing fields for this document — all in one `confirm` call.
 
-**Pass the version you reviewed.** Add `-m <model_version>` (the `ModelVersion` from 2a) to the `confirm` call. If a retrain landed since you read the predictions, the confirm is rejected with `PredictionVersionChangedError` instead of stamping values you never saw — re-run 2a, re-review this document, then confirm again. Omit `-m` only for the bulk confirm-all form (no single version across documents).
+**Pass the version you reviewed.** Add `-m <model_version>` (the `ModelVersion` from step 2a) to the `confirm` call. If a retrain landed since you read the predictions, the confirm is rejected with `PredictionVersionChangedError` instead of stamping values you never saw — re-run step 2a, re-review this document, then confirm again. Omit `-m` only for the bulk confirm-all form (no single version across documents).
 
 **If there are corrections:**
 
