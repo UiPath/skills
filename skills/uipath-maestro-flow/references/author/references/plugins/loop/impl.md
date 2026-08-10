@@ -29,6 +29,8 @@ Confirm: input ports `input` and `loopBack`, output ports `success` and `output`
 }
 ```
 
+> **Collection source shape depends on the node type.** Connector `list` activities return the bare array — `"collection": "=js:$vars.searchIssuesByJql1.output"`, NOT `.output.issues` / `.output.items`. HTTP nodes differ — envelope preserved: `.output.body.<key>` as above. See [connector/impl.md — Connector output shape](../connector/impl.md).
+
 Set `"parallel": true` to execute all iterations concurrently.
 
 ### Loop body nodes — `parentId` required
