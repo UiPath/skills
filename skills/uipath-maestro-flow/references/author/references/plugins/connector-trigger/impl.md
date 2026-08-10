@@ -23,7 +23,7 @@ Discovery call is **always**:
 uip is connections list "<connector-key>" --all-folders --output json
 ```
 
-`--all-folders` is mandatory. Without it the CLI returns the active folder only and hides connections in other folders the user can see. Plain `uip is connections list "<connector-key>"` is forbidden for discovery.
+`--all-folders` is mandatory. Without it the CLI returns the active folder only and hides connections in other folders the user can see. Plain `uip is connections list "<connector-key>"` is forbidden for discovery. It widens discovery, not selection: a solution binds exactly ONE Orchestrator folder, so select every connection from the same folder — see [connector/impl.md](../connector/impl.md) Step 1.
 
 > **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md). Single source of truth for selection rules, BYOA filtering, empty-result recovery, ping verification.
 

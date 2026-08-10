@@ -23,7 +23,7 @@ The CLI copies the manifest into `definitions[]`, adds the node instance, regist
 uip is connections list "<target-connector-key>" --all-folders --output json
 ```
 
-`--all-folders` is mandatory for discovery. Selection rules, empty-result recovery, and ping verification live in the platform skill — do not duplicate them here.
+`--all-folders` is mandatory for discovery. Selection rules, empty-result recovery, and ping verification live in the platform skill — do not duplicate them here. One selection constraint is Maestro-specific: a solution binds exactly ONE Orchestrator folder, so every connection in the flow must come from the same folder — see [connector/impl.md](../connector/impl.md) Step 1.
 
 > **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md).
 
