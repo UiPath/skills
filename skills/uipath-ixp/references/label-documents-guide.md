@@ -91,7 +91,7 @@ For **NOT CONFIRMED** fields: state the predicted value, the actual value (if vi
 
 Submit confirmed, corrected, and missing fields for this document — all in one `confirm` call.
 
-**Pass the version you reviewed.** Add `-m <model_version>` (the `ModelVersion` from step 2a) to the `confirm` call. If a retrain landed since you read the predictions, the confirm is rejected with `PredictionVersionChangedError` instead of stamping values you never saw — re-run step 2a, re-review this document, then confirm again. Omit `-m` only for the bulk confirm-all form (no single version across documents).
+**Pass the version you reviewed.** Add `-m <model_version>` (the `ModelVersion` from step 2a) to the `confirm` call. If a retrain landed since you read the predictions, the confirm is rejected with `PredictionVersionChangedError` instead of stamping values you never saw — re-run step 2a, re-review this document, then confirm again.
 
 **If there are corrections:**
 
