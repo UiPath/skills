@@ -178,3 +178,4 @@
 
 # Automation Hub skills (Open API publish/read of processes via the user's cloud token)
 /skills/uipath-automationhub/ @parth-patil-uipath @abhiram-vad
+/tests/tasks/uipath-automationhub/ @parth-patil-uipath @abhiram-vad
