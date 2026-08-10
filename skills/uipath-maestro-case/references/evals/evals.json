@@ -83,7 +83,7 @@
       "expectations": [
         "The case-management skill was triggered",
         "Shows the high-level journey first: reads the request and makes the design calls, one review packet with every decision for confirmation, then build and validate without interruptions, pausing only before any run or publish",
-        "Does not expose internal Phase 0 through Phase 6 labels in the user-facing roadmap",
+        "Does not expose internal Phase 0 through Phase 7 labels in the user-facing roadmap",
         "Asks the Listen opener once, then fills every open field by best assumption — no per-dimension question walk about trigger, task types, exits, or SLAs",
         "Presents ONE Case Review with the required sections: Case Snapshot, Primary Journey, Other Paths Considered, SLA and Escalations, Rules and Outcomes, Resources and Integrations, Decisions I Made, Review Flags, and Caller obligation when relevant",
         "The Case Review names every stage and every task in the Primary Journey or Other Paths tables, with task type, activation mode, required/optional status, routing/exit behavior, and SLA context",
