@@ -303,17 +303,27 @@ Body field names in `bodyParameters` come from `inputDefinition.fields[].name` (
 >
 > | `requestFields[].name` | `dataType` | Authoring shape in `inputs.detail` |
 > |---|---|---|
-> | `fields.labels[*]` | `string` | `"fields.labels": ["shield", "p0"]` |
-> | `fields.components_arrayRemap_name[*]` | `string` | `"fields.components_arrayRemap_name": ["IS Runtime"]` |
+> | `fields.labels[*]` | `string` | `"fields.labels": "=js:(['shield', 'p0'])"` |
+> | `fields.components_arrayRemap_name[*]` | `string` | `"fields.components_arrayRemap_name": "=js:(['IS Runtime'])"` |
+> | `users[*]` | `string` | `"users": "=js:(['U123ABC', 'U456DEF'])"` |
 >
-> **Strip `[*]` from the key; pass an array value in `--detail`.** The canvas UI is the source of truth — it omits `[*]` from the wire key on write, and the CLI follows the same convention when it builds `inputs.detail`. The runtime rejects any key containing the literal `[*]` substring as unknown (regardless of value shape), so pass the stripped form in your `node configure --detail` payload. **Distinct from `customFieldsRequestDetails.parameterValues`**, where `[*]` is encoded as `_array` — see Step 6c.
+> **Strip `[*]` from the key; pass a `=js:` expression returning the array.**  The runtime rejects any key containing the literal `[*]` substring as unknown (regardless of value shape), so pass the stripped form in your `node configure --detail` payload. **A literal JSON array (`"users": ["U123ABC", "U456DEF"]`) passes `node configure` and `flow validate` but does not bind — the field round-trips empty.** **Distinct from `customFieldsRequestDetails.parameterValues`**, where `[*]` is encoded as `_array` — see Step 6c.
 >
 > **Expression values.** The serializer is purely structural (dot-expansion only; no expression evaluation, no type coercion). Choose the authoring shape based on what the expression returns at runtime:
 >
 > | Expression resolves to | Authoring shape | Example |
 > |---|---|---|
 > | The whole array | `"<field>": "=<expr>"` | `"fields.labels": "=js:$vars.allTags"` |
-> | A single element to wrap | `"<field>": ["=<expr>"]` | `"fields.labels": ["=js:$vars.priorityTag"]` |
+> | A single element to wrap | `"<field>": "=js:([<expr>])"` | `"fields.labels": "=js:([$vars.priorityTag])"` |
+
+> **Connector output shape — derive it from `connectorMethodInfo`, never from vendor-API intuition.**
+>
+> | `connectorMethodInfo.operation` | `output` at runtime | Loop / binding shape |
+> |---|---|---|
+> | `list` | bare **array**; `outputResponseDefinition.fields` describes one element | `"collection": "=js:$vars.<node>.output"` |
+> | anything else (`retrieve`, `create`, `update`, …) | single **object** matching those fields | `=js:$vars.<node>.output.<field>` |
+>
+> Ignore `outputDefinition.output.type` — it says `"object"` even for `list` operations, where the actual output type is an array.
 
 The command populates `inputs.detail` and creates workflow-level `bindings` entries. Use **resolved IDs** from Step 4, not display names. For FilterBuilder params, see Step 6a.
 
@@ -687,7 +697,8 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | `node configure` fails with `customFieldsRequestDetails.parameterValues must be an array of [key, value] tuples, not an object map` | Wrote `parameterValues: {key: value}` (object map). Studio Web emits its `Map<string,string\|null>` as `Array.from(entries())` — tuples, not object | Convert to tuples: `[["key", "value"], ...]`. See Step 6c. |
 | Custom fields fault at runtime with token unresolved | A `{token}` in `objectActions[].apiConfiguration.url` or `body` has no entry in `parameterValues` | Re-read the ObjectAction's `apiConfiguration` placeholders, add the missing tuple to `parameterValues`. CLI does not validate token coverage. |
 | `node configure` fails with `customFieldsRequestDetails has unknown keys: ObjectActionName, ParameterValues` | PascalCase inner keys instead of camelCase | Use `objectActionName` / `parameterValues`. Studio Web emits camelCase; PascalCase is rejected. |
-| Field rejected at runtime as unknown (e.g. `"unknown field 'fields.labels[*]'"`) after a clean `flow validate` | `[*]` was left in the `bodyParameters` / `queryParameters` / `pathParameters` key. `[*]` is an array marker from `requestFields[].name`, not part of the wire key. | Strip `[*]` from the key in your `--detail` payload, pass an array value matching the field's `dataType`, and re-run `node configure`. Fields with `[*].` (segments after the `[*]`) are not authorable. See the array-fields table in Step 6b. |
+| Field rejected at runtime as unknown (e.g. `"unknown field 'fields.labels[*]'"`) after a clean `flow validate` | `[*]` was left in the `bodyParameters` / `queryParameters` / `pathParameters` key. `[*]` is an array marker from `requestFields[].name`, not part of the wire key. | Strip `[*]` from the key in your `--detail` payload, pass a `=js:` expression returning the array, and re-run `node configure`. Fields with `[*].` (segments after the `[*]`) are not authorable. See the array-fields table in Step 6b. |
+| Array field round-trips empty after a clean `flow validate` | Literal JSON array authored for a `[*]` field — validates but does not bind | Author as `=js:` expression returning the array: `"users": "=js:(['U123ABC', 'U456DEF'])"`. See the array-fields table in Step 6b. |
 
 ### Debug Tips
 
