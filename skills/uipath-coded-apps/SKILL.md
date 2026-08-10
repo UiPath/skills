@@ -14,7 +14,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 - User wants to **build, debug, or deploy** a UiPath Coded Web App or Coded Action App
 - User asks about `uip codedapp` commands, `.uipath/` directory, `app.config.json`, or `action-schema.json`
 - User wants to **scaffold** a new React/Vue frontend for UiPath Cloud or an Action Center form
-- User wants to embed a **`@uipath/ui-widgets-*` widget**: DU Validation Station (human review of DU extraction results), Conversational Agent chat, Data Fabric DataTable, multi-file bucket upload, PDF viewer, or external-IdP sign-in
+- User asks for app UI that a **prebuilt UiPath widget** covers: review/correct Document Understanding extraction results (Validation Station), chat with a conversational agent, browse/edit a Data Fabric entity in a grid, upload files to a storage bucket, display a PDF, or sign in with an external IdP (Google/SAML)
 - User wants to **push/pull source** between local and Studio Web
 - User wants to use the `@uipath/uipath-typescript` SDK from a coded app
 - User wants to run the **full pipeline** (build → pack → publish → deploy)
