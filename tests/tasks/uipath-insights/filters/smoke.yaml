@@ -1,0 +1,81 @@
+task_id: skill-insights-smoke-filter-discovery
+description: >
+  Smoke test: agent uses the uipath-insights skill to discover valid
+  scope candidates before acting. Given a prompt about finding folders,
+  processes, queues, and machines to scope an investigation, the agent
+  should run all four filter discovery commands instead of guessing
+  identifiers, and treat an empty result as normal rather than an
+  error. The CLI is authenticated; the tenant may or may not have
+  recent activity, and both are valid outcomes.
+tags: [uipath-insights, smoke, mode:build, lifecycle:discover]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  I want to set up monitoring scoped to whatever we actually run. Find
+  out which folders, processes, queues, and machines have had Insights
+  activity recently, and give me their names plus the exact keys the
+  commands return alongside them, so I can pick a scope. If nothing shows up in
+  a category, say so and move on. If the output says more rows exist,
+  page through them before you summarize. Run each discovery command at
+  most once per page; do not retry failures.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran filter-folders list to discover folders"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-folders\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran filter-processes list to discover processes"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-processes\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran filter-queues list to discover queues"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-queues\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran filter-machines list to discover machines"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-machines\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not pass time flags to filter commands"
+    tool_name: "Bash"
+    # [^&;|\n]* instead of .* : the grader compiles patterns with re.DOTALL,
+    # so .* would bleed across command separators and false-fail a batched
+    # call like `filter-folders list ... && jobs summary --time-range ...`
+    command_pattern: 'uip\s+insights\s+filter-\S+\s+list[^&;|\n]*--(time-range|started-after|started-before)'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on discovery commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+filter-\S+\s+list\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 0

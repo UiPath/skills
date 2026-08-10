@@ -106,9 +106,12 @@ uip insights jobs summary \
 User asks about a specific Orchestrator folder.
 
 ```bash
-# Step 1: Find the folder key (requires uipath-platform)
+# Step 1: Find the folder key — Insights-active folders first
+uip insights filter-folders list --output json
+# Look for the folder's FolderKey in the output.
+# Fallback for folders without recent activity (requires uipath-platform):
 uip or folders list --output json
-# Look for the folder's Key (GUID) in the output
+# There the GUID is the folder's Key field (not FolderKey)
 
 # Step 2: Query insights with folder filter
 uip insights jobs summary --time-range 1440 \
@@ -141,5 +144,5 @@ This means:
 | User wants to start/stop/restart a specific job | `uipath-platform` (`uip or jobs start`) |
 | User wants to read the logs of a failed job | `uipath-platform` (`uip or jobs logs`) |
 | User wants to debug why a specific job error happened | `uipath-troubleshoot` |
-| User wants to find a folder key to filter by | `uipath-platform` (`uip or folders list`) |
+| User wants to find a folder key to filter by | `uip insights filter-folders list` (Insights-active folders), or `uipath-platform` (`uip or folders list`) for the full folder inventory |
 | User wants to fix the code that's causing failures | `uipath-rpa` or `uipath-agents` |
