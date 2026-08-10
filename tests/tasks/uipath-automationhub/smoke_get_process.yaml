@@ -1,6 +1,6 @@
 task_id: skill-ah-get-process-smoke
 description: >
-  Smoke test: agent uses the uipath-ah-get-process skill to read a business
+  Smoke test: agent uses the uipath-automationhub skill to read a business
   process and its documents back from Automation Hub via the Open API. The
   tenant is a smoke fixture and is NOT reachable (Automation Hub is not
   provisioned in the eval env), so every call fails — that's expected. The test
@@ -10,13 +10,13 @@ description: >
   pair at the `automationhub_/api/v1/openapi` base — GET `automations/{id}` then
   GET `automations/{id}/documents` — (4) NEVER send the admin-token header
   `x-ah-openapi-auth`, and (5) stay read-only (never POST / never create).
-tags: [uipath-ah-get-process, smoke, mode:operate, lifecycle:discover]
+tags: [uipath-automationhub, smoke, mode:operate, lifecycle:discover]
 
 run_limits:
   expected_turns: 8
 
 initial_prompt: |
-  Using the `uipath-ah-get-process` skill, fetch process `12345` from UiPath
+  Using the `uipath-automationhub` skill, fetch process `12345` from UiPath
   Automation Hub and list its attached documents (PDD/SDD). You already have the
   process id (`12345`) — fetch it DIRECTLY BY ID; do not search by name.
 
@@ -39,9 +39,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent activated the uipath-ah-get-process skill"
-    skill_name: "uipath-ah-get-process"
-    expected_skill: "uipath-ah-get-process"
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
     weight: 3.0
     pass_threshold: 1.0
 

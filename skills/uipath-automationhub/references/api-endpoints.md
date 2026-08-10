@@ -1,6 +1,8 @@
 # Automation Hub Open API — Reference (cloud-token auth)
 
-> These skills authenticate with the **user's UiPath cloud access token** — **not** an admin-generated OpenAPI token. This is the AH Open API's `automation-cloud` mode: send the bearer token and **do not** send `x-ah-openapi-auth`.
+> This skill authenticates with the **user's UiPath cloud access token** — **not** an admin-generated OpenAPI token. This is the AH Open API's `automation-cloud` mode: send the bearer token and **do not** send `x-ah-openapi-auth`.
+
+This is the shared auth + endpoint catalog for both flows — [`publish-process.md`](publish-process.md) (write) and [`get-process.md`](get-process.md) (read).
 
 ## Authentication
 
@@ -33,15 +35,17 @@ e.g. `https://cloud.uipath.com/acme/prod/automationhub_/api/v1/openapi`. Always 
 
 Cloud access tokens are short-lived. If any call returns **401** and the token came from `~/.uipath/.auth`, tell the user to run `uip login` again (or re-provide a token) and retry.
 
-## Endpoints used by these skills
+## Endpoints used by this skill
 
 ### GET `/idea-flows`
-All idea flows (workflow types) on the tenant. Each element has `Idea flow name` (e.g. "Business Process") and `Idea flow ID` (number). Response wrapped as `{ message, statusCode, data: [...] }`.
+All idea flows (workflow types) on the tenant. Each element has `Idea flow name` (e.g. "Business Process") and `Idea flow ID` (number). Response wrapped as `{ message, statusCode, data: [...] }`. *(Used by the publish flow.)*
 
 ### GET `/idea-schema?idea_flow_id={id}`
 Full JSON schema for an idea flow + a ready-made `user_inputs` template. Response wrapped as `{ status: "success", data: {...} }`:
 - `data.properties.schema.properties` — field definitions, 3-level nested (Assessment Type > Section > Question); enums carry `answer_option` codes + labels in `custom_properties`.
 - `data.user_inputs` — the exact POST body template ("fill in the blanks"). Most fields wrap as `{ "value": <v> }`; owner/submitter questions take a direct string (no wrapper); questions with no example are omitted.
+
+*(Used by the publish flow.)*
 
 ### POST `/idea-from-schema`
 Create a process from the schema. **Use this, not `POST /automations`** (the `/automations` alias 404s in some deployments).
@@ -52,16 +56,22 @@ Body:
 ```
 `user_inputs` **must** contain a question whose key contains `OVERVIEW_NAME` with a non-empty value (the process name; enforced by validation middleware).
 
-**Response 201** — the created process object **at the top level** (not nested): `process_id`, `process_uuid`, `process_name`, … Record `process_id`.
+**Response 201** — the created process object **at the top level** (not nested): `process_id`, `process_uuid`, `process_name`, … Record `process_id`. *(Used by the publish flow.)*
 
 ### POST `/automations/{process_id}/documents`
-Attach a document to a process. **Link-based** (a link/embed URL + metadata), not a raw file upload — byte upload is a separate `media` endpoint that is not usable yet. Body fields are governed by `open-api-service` `ProcessDocumentValidator` (`src/models/schema/processDocumentRequest.schema.ts`); the known fields are the document **name**, an **embed/link URL** (`embed_link`), and a **document type id** (`document_type_id`). Confirm the exact required fields against that schema before finalizing. Returns the created `document_id`.
+Attach a document to a process. **Link-based** (a link/embed URL + metadata), not a raw file upload — byte upload is a separate `media` endpoint that is not usable yet. Body fields are governed by `open-api-service` `ProcessDocumentValidator` (`src/models/schema/processDocumentRequest.schema.ts`); the known fields are the document **name**, an **embed/link URL** (`embed_link`), and a **document type id** (`document_type_id`). Confirm the exact required fields against that schema before finalizing. Returns the created `document_id`. *(Used by the publish flow.)*
+
+### GET `/automations?search=<text>&limit=<n>&offset=<n>`
+Search/list processes. Returns a paged list (results under a resource key, e.g. `processes`, or a bare array). Use to resolve a name → `process_id`. *(Used by the get flow.)*
+
+### GET `/automations/{id}`
+Fetch one process by numeric id (or slug). Returns the full process record (can be ~300 fields; project to the ones you need for display). *(Used by the get flow.)*
 
 ### GET `/automations/{process_id}/documents`
-List a process's documents (key `documents`), including `FileId` / download references.
+List a process's documents (key `documents`); each entry includes the document name, type, and a `FileId` / download reference. *(Used by both flows.)*
 
-### GET `/automations/{id}` · GET `/automations?search=<text>`
-Fetch one process by id, or search/list processes. (Optional: GET `/automations/{id}/components` for linked components.)
+### GET `/automations/{id}/components`  *(optional)*
+Linked components for the process.
 
 ## Errors
 

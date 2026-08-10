@@ -1,6 +1,6 @@
 task_id: skill-ah-publish-process-smoke
 description: >
-  Smoke test: agent uses the uipath-ah-publish-process skill to publish a
+  Smoke test: agent uses the uipath-automationhub skill to publish a
   business process (and a PDD/SDD document) to Automation Hub via the Open API.
   The tenant is a smoke fixture and is NOT reachable (Automation Hub is not
   provisioned in the eval env), so every call fails — that's expected. The test
@@ -11,14 +11,14 @@ description: >
   base — `idea-flows` → `idea-from-schema` (POST) → `automations/{id}/documents`
   (POST) — and (4) NEVER send the admin-token header `x-ah-openapi-auth`
   (the single most important rule; sending it 401s a cloud token).
-tags: [uipath-ah-publish-process, smoke, mode:build, lifecycle:setup]
+tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 10
 
 initial_prompt: |
   Publish the approved business process below to UiPath Automation Hub using
-  the `uipath-ah-publish-process` skill, and attach its PDD document.
+  the `uipath-automationhub` skill, and attach its PDD document.
 
     Process name: "Invoice Reconciliation (smoke)"
     Description:  Reconcile supplier invoices against POs.
@@ -47,9 +47,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent activated the uipath-ah-publish-process skill"
-    skill_name: "uipath-ah-publish-process"
-    expected_skill: "uipath-ah-publish-process"
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
     weight: 3.0
     pass_threshold: 1.0
 

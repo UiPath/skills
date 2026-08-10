@@ -41,8 +41,7 @@
         "uipath-process-mining",
         "uipath-tasks",
         "uipath-mcp-servers",
-        "uipath-ah-publish-process",
-        "uipath-ah-get-process"
+        "uipath-automationhub"
       ]
     },
     {
