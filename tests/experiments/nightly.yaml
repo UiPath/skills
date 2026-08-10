@@ -29,6 +29,10 @@ defaults:
         - CODEX_BASE_URL
       extra_mounts:
         - ~/.uipath:/.uipath:rw
+      # Contract enforced by coder-eval: these paths must never be agent-visible.
+      # Requires coder_eval with isolated_paths support on the runner VM (coder_eval#96).
+      isolated_paths:
+        - "$SKILLS_REPO_PATH/tests"
 
   agent:
     # type omitted on purpose — the runner selects the harness via --type (codex/antigravity);
