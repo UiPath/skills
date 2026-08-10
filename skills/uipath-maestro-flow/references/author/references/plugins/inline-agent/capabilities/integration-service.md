@@ -26,11 +26,10 @@ For Orchestrator process tools (RPA / agent / API / agentic process), see [proce
 ### 1. Find the connector
 
 ```bash
-uip is connectors list --output json
-# Or filter: uip is connectors list --filter "slack" --output json
+uip is typecache packages --output json
 ```
 
-Note the connector `Key` (e.g., `uipath-salesforce-slack`).
+Returns the connectors available to low-code agents — the curated set the Agent Builder UI shows, from the Studio typecache (defaults to `--project-type Agent`). Note the connector `Key` (e.g., `uipath-salesforce-slack`). The general `uip is connectors list` returns the full IS catalog, not the curated low-code set — a connector absent from the typecache has no `tool.connector.*` node types.
 
 ### 2. Find a connection
 
@@ -47,10 +46,10 @@ This command also populates the local IS cache used when solution-level connecti
 ### 3. Find the activity and its endpoint
 
 ```bash
-uip is activities list "<CONNECTOR_KEY>" --output json
+uip is typecache activities "<CONNECTOR_KEY>" --output json
 ```
 
-Note the chosen activity's `DisplayName`, `Description`, `ObjectName`. Then:
+Calls the same Agent Builder typecache endpoints the frontend uses — exactly the activities the UI shows for low-code agents (deprecated stubs with empty `objectName` filtered out; file-operation and HTTP activities carry a "Preview" chip in the UI but are fully selectable and included). Note the chosen activity's `DisplayName`, `Description`, `ObjectName`. Then:
 
 ```bash
 uip is resources describe "<CONNECTOR_KEY>" "<OBJECT_NAME>" \
@@ -180,14 +179,14 @@ The `.flow` node also survives flag-off canvas saves intact — the flag-off str
 ## Walkthrough
 
 ```bash
-# 1. Connector key
-uip is connectors list --filter "<SEARCH>" --output json
+# 1. Connector key (curated low-code set)
+uip is typecache packages --output json
 
 # 2. Connection — note Id + FolderKey (user confirms the pick)
 uip is connections list "<CONNECTOR_KEY>" --all-folders --output json
 
 # 3. Activity + endpoint/method — note ObjectName, Operation.Path, Operation.Method, Description
-uip is activities list "<CONNECTOR_KEY>" --output json
+uip is typecache activities "<CONNECTOR_KEY>" --output json
 uip is resources describe "<CONNECTOR_KEY>" "<OBJECT_NAME>" --connection-id "<CONNECTION_ID>" --operation Create --output json
 
 # 4. Node type + manifest
@@ -197,7 +196,7 @@ uip maestro flow registry get <NODE_TYPE> --output json
 
 Then edit the `.flow` directly (`Edit` / `Write`):
 
-5. Add the tool node per § Tool Node Shape (mint `inputs.source`; `typeVersion` = manifest `version`; NO `detail` yet).
+5. Add the tool node per § Tool Node Shape (mint `inputs.source`; set `inputs.name` + `inputs.description` — the LLM selects tools by description, and validate won't flag their absence; `typeVersion` = manifest `version`; NO `detail` yet).
 6. Copy the manifest **verbatim** into `definitions[]`.
 7. Wire the artifact edge: agent `tool` → tool `input`.
 8. Update the agent's system prompt: name the tool, give per-tool call/stop criteria ([prompting guide](../prompting/autonomous-agent-prompting-guide.md)).

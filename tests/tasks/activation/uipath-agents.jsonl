@@ -33,7 +33,6 @@
 {"id": "uipath-agents-034", "prompt": "Add an Action Center escalation step to my low-code agent for low-confidence outputs", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-035", "prompt": "Add a Data Fabric entity-set context to my low-code agent", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-036", "prompt": "Add an Integration Service tool (Salesforce get-records) to my agent.json", "expected_skill": "uipath-agents"}
-{"id": "uipath-agents-037", "prompt": "Embed my low-code agent inline as a node inside a Maestro flow", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-038", "prompt": "Validate, pack, and publish my low-code agent solution", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-039", "prompt": "uip codedagent init is failing with 'No python files found in the current directory' \u2014 what's the right setup?", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-040", "prompt": "After upgrading uipath-langchain my agent gets 403 Forbidden from the LLM Gateway. Diagnose.", "expected_skill": "uipath-agents"}
@@ -62,7 +61,6 @@
 {"id": "uipath-agents-063", "prompt": "My low-code agent has no memorySpace binding after refresh. Fix the memory configuration.", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-064", "prompt": "Remove the SupportRecall memory feature from this Agent Builder project", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-065", "prompt": "List the memory spaces attached to my UiPath low-code agent and validate the generated binding", "expected_skill": "uipath-agents"}
-{"id": "uipath-agents-066", "prompt": "Add a Memory Space to an inline low-code agent in my Flow project and propagate bindings to the parent flow", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-067", "prompt": "Configure hybrid search, threshold, result count, and field weights for an agent memory feature", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-068", "prompt": "Add an escalation memory seed item to my UiPath Agent Builder project", "expected_skill": "uipath-agents"}
-{"id": "uipath-agents-069", "prompt": "I added a guardrail to my coded UiPath agent in graph.py but I'm not sure it's attached in the right place — can you check whether it's configured correctly and fix it?", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-069", "prompt": "I added a guardrail to my coded UiPath agent in graph.py but I'm not sure it's attached in the right place \u2014 can you check whether it's configured correctly and fix it?", "expected_skill": "uipath-agents"}

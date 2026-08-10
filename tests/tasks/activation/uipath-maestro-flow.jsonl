@@ -55,3 +55,5 @@
 {"id": "uipath-maestro-flow-055", "prompt": "Build a UiPath Flow that pulls vendor name, invoice number, date, and total out of PDF invoices in a SharePoint folder, then posts the result to our accounting system", "expected_skill": "uipath-maestro-flow"}
 {"id": "uipath-maestro-flow-056", "prompt": "Add a document-extraction step to my flow that reads receipt images from a folder and pulls out merchant, date, and total", "expected_skill": "uipath-maestro-flow"}
 {"id": "uipath-maestro-flow-057", "prompt": "I have a Maestro flow. Add an IxP node that classifies incoming PDF forms and extracts their fields before the next step", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-058", "prompt": "Embed my low-code agent inline as a node inside a Maestro flow", "expected_skill": "uipath-maestro-flow"}
+{"id": "uipath-maestro-flow-059", "prompt": "Add a Memory Space to an inline low-code agent in my Flow project and propagate bindings to the parent flow", "expected_skill": "uipath-maestro-flow"}
