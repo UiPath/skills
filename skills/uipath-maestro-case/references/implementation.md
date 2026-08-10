@@ -369,3 +369,4 @@ Optional `solution pack` + `solution publish` to the tenant solution feed. Full 
 Run AskUserQuestion per [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). On `Publish to Orchestrator` → run `uip solution resources refresh`, then `uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json`, then `uip solution publish "<packagePath>" --wait --output json`. Pack the solution directory, not the case project — never `uip maestro case pack`. Read `<packagePath>` from the pack response `Data.Packages` — never guess the filename. On `Done` → exit skill. Never auto-run (Rule 12).
 
 Stops at publish — `uip solution deploy run` is out of scope.
+<!-- END: implementation.md -->

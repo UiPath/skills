@@ -118,3 +118,5 @@ camelCase IDs (`=vars.claimId`). See [`impl-json.md`](impl-json.md) § Uniquenes
 ## Completeness obligation
 
 Per [planning.md §4.0](../../../planning.md), every row in the Case Variables table emits exactly one T-entry. Skipping rows because their Category cannot be determined is forbidden — invoke AskUserQuestion instead. The pre-approval cross-check counts variable-table rows against emitted variable T-entries; mismatch is a defect.
+
+<!-- END: planning.md -->

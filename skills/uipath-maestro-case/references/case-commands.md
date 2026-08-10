@@ -545,3 +545,5 @@ Options for `get`:
 |--------|-------------|
 | `--output json\|yaml\|table` | Output format (default: table in TTY, json otherwise) |
 | `--verbose` | Enable debug logging |
+
+<!-- END: case-commands.md -->

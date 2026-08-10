@@ -72,3 +72,5 @@ Ambiguous phrasing → **AskUserQuestion** with 2–3 candidate interpretations 
 - lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId
 ```
+
+<!-- END: planning.md -->

@@ -75,3 +75,5 @@ After Step 12 (validate), group issues by `plugin` and write to `tasks/build-iss
 - Plugins with zero issues: write `No issues.` under the heading
 - Write the file even if zero total issues — confirms a clean build
 - The completion report (Step 13) reads this file directly
+
+<!-- END: impl-json.md -->

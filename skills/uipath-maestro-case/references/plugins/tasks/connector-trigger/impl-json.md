@@ -129,3 +129,5 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 5. Root bindings exist for ConnectionId + folderKey with the minted ids; `data.bindings[]` is empty `[]`
 6. Each entry in `data.inputs[]` / `data.outputs[]` has `var` / `id` / `elementId` minted; uniqueness rule applied for outputs
 7. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
+
+<!-- END: impl-json.md -->

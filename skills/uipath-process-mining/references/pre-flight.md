@@ -59,9 +59,9 @@ A mapping mistake is **not** a reason to delete the app and start over. `apps
 data-mapping` reads and replaces the mapping of an existing app:
 
 ```bash
-uip pm apps data-mapping get <app> --destination ./mapping.json   # download the current mapping
+uip pm apps data-mapping get <app> --destination ./mapping.json   # download the mapping + note Data.ETag
 #   ...edit: fix the DateTimeFormatString, move a column to the right TargetName, map one more column...
-uip pm apps data-mapping update <app> --file ./mapping.json       # ETag-guarded replace
+uip pm apps data-mapping update <app> --file ./mapping.json --etag 'W/"639…"'   # --etag REQUIRED
 uip pm files upload <app> ./data.csv --input-table Event_log      # ONLY if the source columns changed
 uip pm ingestions create <app> --wait                             # the mapping applies to the NEXT ingestion
 ```
@@ -77,13 +77,17 @@ Facts worth not re-learning:
   mapping and then running `apply` looks successful and changes nothing.
 - **`dev` only.** The backend allows `PUT` on the dev stage; `published` is
   read-only, and the CLI restricts `update --stage` to `dev` up front.
-- **Concurrency is ETag-guarded.** `update` reads the current ETag and sends it as
-  `If-Match`, so you never pass one — but a concurrent edit (someone in the UI's
-  mapping editor) between read and write is rejected `409
-  UserError_ETagFileConflict`. Just re-run. `update` reports `Tables` (the mapped
-  table names) and `IngestionNeeded: true`, not an ETag; to confirm a write landed,
-  `get` again and diff — the `get` ETag is a **content checksum**, so re-pushing an
-  identical mapping leaves it unchanged.
+- **`--etag` is REQUIRED on `update`, and it must be the one *your* `get` returned.**
+  You edited the file locally, so only that ETag proves the edit was based on the
+  version you read; the CLI deliberately does not fetch a fresh one before the `PUT`
+  (which would make the `If-Match` pass no matter who wrote in between). A concurrent
+  edit (someone in the UI's mapping editor) is therefore rejected `409
+  UserError_ETagFileConflict` — recover by re-running `get` for the latest version
+  **and its new ETag**, re-applying your change on top of that, then updating with the
+  new `--etag`. Re-running the same `update` unchanged just fails again.
+- `update` reports `Tables` (the mapped table names) and `IngestionNeeded: true`, not
+  an ETag; to confirm a write landed, `get` again and diff — the `get` ETag is a
+  **content checksum**, so re-pushing an identical mapping leaves it unchanged.
 - **A table-less mapping is refused locally.** `{ "Tables": [] }` (or any file with
   no usable table) fails `No tables found in …` before any API call, so a bad file
   cannot overwrite and wipe the stored mapping.

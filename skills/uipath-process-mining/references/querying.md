@@ -3,7 +3,10 @@
 Pull numbers out of a built app. Subcommands: `info` (metadata), `run`
 (aggregate group-by + metrics), `details` (raw rows), `percentile`, `rca`
 (root-cause), `insights` (process insights), `layout`. All take `--stage
-dev|published` (default `dev`).
+dev|published` (default `dev`) — but query on **`dev`**: `--stage published` is
+currently unreachable via the CLI (`UserError_InvalidOrNoIngestion`; no `uip pm`
+path completes a published-stage ingestion — see
+[`lifecycle-and-rbac.md`](lifecycle-and-rbac.md)).
 
 ## Start with `query info`
 
