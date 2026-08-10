@@ -69,14 +69,24 @@ RUN set -euo pipefail && \
       *)      tool_tag="$CLI_VERSION" ;; \
     esac && \
     echo "CLI_VERSION=$CLI_VERSION -> tool dist-tag @$tool_tag" && \
-    npm install -g --registry=https://registry.npmjs.org "@uipath/cli@${CLI_VERSION}" && \
-    uip --version && \
+    case "$CLI_VERSION" in \
+      [0-9]*-*) public_cli=false ;; \
+      [0-9]*)   public_cli=true ;; \
+      *)        public_cli=false ;; \
+    esac && \
+    if [ "$public_cli" = true ]; then \
+      npm install -g --registry=https://registry.npmjs.org "@uipath/cli@${CLI_VERSION}"; \
+    fi && \
     npmrc="$(npm config get globalconfig)" && \
     mkdir -p "$(dirname "$npmrc")" && \
     printf '%s\n' \
       '@uipath:registry=https://npm.pkg.github.com/' \
       "//npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}" \
       > "$npmrc" && \
+    if [ "$public_cli" = false ]; then \
+      npm install -g "@uipath/cli@${CLI_VERSION}"; \
+    fi && \
+    uip --version && \
     uip tools search --output json > /tmp/uip-tools-search.json && \
     tools="$(grep -oE '@uipath/[a-z0-9-]+-tool' /tmp/uip-tools-search.json | sort -u || true)" && \
     installed=0 && \
