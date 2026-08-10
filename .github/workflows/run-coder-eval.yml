@@ -205,10 +205,12 @@ jobs:
       # Build the skills extension image (`@uipath/cli` + `@uipath/admin-tool`
       # on top of coder-eval-agent). Matches smoke-skills.yml + daily.sh.
       - name: Build skills Docker image
+        env:
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
         run: |
           docker build \
             --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_image_tag }} \
-            --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" \
+            --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \

@@ -36,8 +36,9 @@ defaults:
         - CODEX_BASE_URL
         - UIPATH_CLI_DISABLE_VERSION_SYNC
         - DISABLE_TYPED_CONNECTORS
+        - SG_UIPATH_HOME
       extra_mounts:
-        - ~/.uipath:/home/tmatup/.uipath:rw
+        - ${SG_UIPATH_HOME}:/home/tmatup/.uipath:rw
 
   agent:
     type: claude-code
