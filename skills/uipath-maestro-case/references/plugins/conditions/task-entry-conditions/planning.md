@@ -24,9 +24,9 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | `sla-target` | `sla-status-change` arg 1 | `"root"` (case-level SLA) or the SLA-owning stage name — normally the stage containing this task. Scopes the lookups below to that one SLA table. Required for `sla-status-change` |
 | `sla-display-name` | `sla-status-change` arg 2 — the target's SDD `SLA Title` (or a Variable SLA Rules `Display Name`) | Target-unique SLA rule title; resolves to the SLA rule ID emitted from §4.8 during Phase 2. Required |
 | `escalation-display-name` | `sla-status-change` arg 3 — a `Display Name` from that target's SDD escalation table | Target-unique **at-risk** escalation title; resolves to its escalation ID. **At-risk only** — omit for a breach response, which references the SLA alone ([sla-response-shapes.md § Status](../../../sla-response-shapes.md)) |
-| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline) |
+| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
 | `condition-expression` | Optional | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning). |
+| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning). |
 
 ## Rule-Type Catalog (task-entry scope)
 
@@ -101,4 +101,6 @@ For sequential tasks, preserve the frontend's ordered `data.tasks` structure, in
 - verify: Confirm Result: Success, capture ConditionId
 ```
 
-> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning).
+> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning).
+
+<!-- END: planning.md -->

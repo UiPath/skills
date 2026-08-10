@@ -43,6 +43,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  # `gh workflow run publish.yml` (POST /actions/workflows/{id}/dispatches)
+  # needs this. An explicit block sets every unlisted scope to `none`, so
+  # omitting it 403s the dispatch and the cut publishes nothing.
+  actions: write
 
 # GitHub cron runs in UTC and cannot express "every two Sundays" — fire every
 # Sunday, then gate on the 14-day cadence anchor (mirrors UiPath/cli).

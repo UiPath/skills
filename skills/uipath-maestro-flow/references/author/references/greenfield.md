@@ -41,7 +41,7 @@ Steps 0–6 are **logical phases**, not separate turns. A typical greenfield bui
 
 ### Batching anti-patterns
 
-- **One CLI per turn.** Never issue `solution init`, then `cd`, then `flow init` as three separate Bash calls — chain with `&&`. Same for `node configure && validate && format`.
+- **One CLI per turn.** Never issue `solution init`, then `cd`, then `flow init` as three separate Bash calls — chain with `&&`, the `cd` included as its own segment. Same for `node configure && validate && format`.
 - **Sequential `registry get`s.** Emit every `registry get` as a parallel `Bash` in one message alongside the T1 scaffold chain.
 - **Validating after every Edit.** Validate once at the end of T3 (or after a recovery Edit). Intermediate states are expected to be invalid.
 - **Re-reading the `.flow` every turn.** `Read` once at the start of T2; subsequent `Edit`s in the same conversation don't need re-reading unless an external command (e.g., `node configure`, `format`) rewrites the file between Edits.
@@ -92,6 +92,8 @@ uip solution init "<SolutionName>" --output json \
   && uip maestro flow registry pull \
   && uip maestro flow node add "<ProjectName>.flow" core.action.http.v2 --label "<NodeLabel>" --output json
 ```
+
+> **One creation path — never drop the `cd`.** `uip solution init "<SolutionName>"` → `cd "<SolutionName>"` → `uip maestro flow init "<ProjectName>"`, one chain. Without the `cd`, `flow init` runs in the old directory and auto-scaffolds a duplicate `<ProjectName>Solution/` (1-node husk). Never let auto-scaffold create the solution. Finish with exactly one `project.uiproj` — delete strays.
 
 Tail-append one `node add` per CLI-owned node (`uipath.connector.*`, `uipath.connector.trigger.*`, `core.action.http.v2`). Each `node add` returns the new node `id` in `Data` — capture it from the chained output for T2/T3. Drop the trailing `node add` segment when the flow is OOTB-only.
 

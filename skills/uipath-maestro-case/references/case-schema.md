@@ -353,7 +353,7 @@ An interrupting secondary-stage `sla-status-change` entry is global to the refer
 
 ### Connector-bound `wait-for-connector` rule
 
-A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** — the same block the in-stage `wait-for-connector` task carries under `data`. A bare rule (no `uipath`) is rejected by Studio Web (the FE validator requires the connector activity to resolve). It is authored from a `case spec --type trigger` scaffold; the CLI does not bind it (`buildRule` emits the bare form). `conditionExpression` is an optional `=js:` gate on **case state** (`vars.X` / `metadata`) — NOT the event payload (no `event` namespace). Inputs/outputs `elementId` = `<stageId>-<ruleId>` (stage-entry / stage-exit / task-entry — all stage-scoped) or `root-<ruleId>` (case-exit). Full recipe: [connector-trigger-common.md § Target: connector-bound condition rule](connector-trigger-common.md#target-connector-bound-condition-rule).
+A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** — the same block the in-stage `wait-for-connector` task carries under `data`. A bare rule (no `uipath`) is rejected by Studio Web (the FE validator requires the connector activity to resolve). It is authored from a `case spec --type trigger` scaffold; the CLI does not bind it (`buildRule` emits the bare form). `conditionExpression` is an optional `=js:` gate on **case state** (`vars.X` / `metadata`) — NOT the event payload (no `event` namespace). Inputs/outputs `elementId` = `<stageId>-<ruleId>` (stage-entry / stage-exit / task-entry — all stage-scoped) or `root-<ruleId>` (case-exit). Full recipe: [connector-trigger-impl.md § Target: connector-bound condition rule](connector-trigger-impl.md#target-connector-bound-condition-rule).
 
 ```json
 {
@@ -593,3 +593,5 @@ Connects Stage → Stage. Transition conditions live on the source stage's `exit
 **Type discriminator when reading:** Trigger source → `TriggerEdge`; Stage source → `Edge`. **`zIndex`** (number, optional) may appear.
 
 `edges` is empty: the skill authors no edges. The case starts because `Stage_aB3kL9` carries a `case-entered` entry condition (added by the stage-entry-conditions plugin), not because a `TriggerEdge` connects the trigger to it.
+
+<!-- END: case-schema.md -->

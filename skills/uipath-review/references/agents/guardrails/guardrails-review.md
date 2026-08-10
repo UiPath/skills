@@ -69,8 +69,11 @@ turn**. Do not delay delivery for solution packing, eval inspection, repeated ca
 architecture analysis, or unrelated project introspection. Continue beyond it only when the user's initial request
 explicitly asks for an exhaustive review or names additional non-guardrail checks.
 
-`LC_GUARDRAIL_PII_MISSING`, `LC_GUARDRAIL_MISSING`, and other descriptive variants are not valid rule IDs. When
-catalog evidence is unavailable, use rule-ID-less prose rather than inventing an identifier.
+`LC_GUARDRAIL_PII_MISSING`, `LC_GUARDRAIL_MISSING`, and other descriptive variants are not valid rule IDs — never
+invent a new one. This is about invented IDs only: if the catalog fetch itself fails, do **not** fall back to
+rule-ID-less prose for a missing-guardrail finding — `LC_GUARDRAIL_RECOMMENDED` stays the correct, valid rule ID
+per [Step 0 — If the catalog is unavailable](#if-the-catalog-is-unavailable): use generic scope/action wording and
+note "catalog-limited" in the message, but still cite `LC_GUARDRAIL_RECOMMENDED`.
 
 ---
 

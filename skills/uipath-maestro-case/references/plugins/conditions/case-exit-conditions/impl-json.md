@@ -60,7 +60,7 @@ Requires `marksCaseComplete: false`. Swap `rule` to `selected-stage-exited` for 
 
 ### wait-for-connector — bind a connector event
 
-In Phase 2, always write the canonical stub from [connector-trigger-common.md § Condition-rule phase contract](../../../connector-trigger-common.md#condition-rule-phase-contract), regardless of connector resolution. In Phase 3 Step 10.5, a resolved connector replaces only `rule.uipath`; keep this root-scoped rule's `elementId = root-<ruleId>` on BOTH final `uipath.inputs[]` and `uipath.outputs[]`. Valid for both `marksCaseComplete: true` and `false`; `conditionExpression` is preserved.
+In Phase 2, always write the canonical stub from [connector-trigger-impl.md § Condition-rule phase contract](../../../connector-trigger-impl.md#condition-rule-phase-contract), regardless of connector resolution. In Phase 3 Step 10.5, a resolved connector replaces only `rule.uipath`; keep this root-scoped rule's `elementId = root-<ruleId>` on BOTH final `uipath.inputs[]` and `uipath.outputs[]`. Valid for both `marksCaseComplete: true` and `false`; `conditionExpression` is preserved.
 
 **Rule output binding.** Defer it with the stub. After the Phase 3 upgrade produces real outputs, dispatch them per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules), before root bindings. `elementId` stays `root-<ruleId>`.
 
@@ -81,3 +81,5 @@ In Phase 2, always write the canonical stub from [connector-trigger-common.md §
 Confirm `metadata.caseExitRules[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksCaseComplete`), `marksCaseComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. Verify no `root` key exists at the top level.
 
 For `wait-for-connector`, Phase 2 verification expects the exact two-entry placeholder context plus empty inputs/outputs/bindings. After Phase 3, a resolved rule must have no `"placeholder"` values, inputs/outputs must use `root-<ruleId>`, and ConnectionId + FolderKey root bindings must exist; a remaining stub must map to a reported unresolved connector.
+
+<!-- END: impl-json.md -->

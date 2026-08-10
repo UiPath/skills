@@ -104,3 +104,5 @@ Report: file path edited, what changed (nodes/tasks/conditions added/removed/mod
 | **Something else** | Free-form. |
 
 Do not run debug or publish without explicit selection. On selection, follow the existing [phased-execution.md](phased-execution.md) Phase 5 / Phase 6 contracts.
+
+<!-- END: brownfield.md -->

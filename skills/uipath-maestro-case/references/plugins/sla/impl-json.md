@@ -146,3 +146,5 @@ A breach rule references the SLA alone (`slaId`, no `escalationId`), so a breach
 - Confirm the trailing entry's `expression === "=js:true"` when any SLA T-entry targeted this node.
 - Confirm every emitted `sla_` and `esc_` ID appears in `id-map.json`. Step 10 must resolve every `sla-status-change` rule against IDs already emitted on the declared target.
 - Run the section-boundary validation after all SLA targets have been written (not per-target); the Phase 2 preview profile runs later after conditions.
+
+<!-- END: impl-json.md -->

@@ -202,3 +202,5 @@ A `test_in_out` re-saved with two triggers — `trigger_1` (primary) and `StartE
 | `StartEvent_Trigger_OkGfLw` | **only `test_t2_in_var`** | `test_out`, `test_out_t2` |
 
 Each entry's `input` carries only the In-args whose `elementId` is that trigger; **every** entry carries **all** Out-args. An In-arg bound to a trigger with no entry — e.g. one still pointing at a `preview-node-id` ghost node (an uncommitted canvas preview that leaked into `caseplan.json`) — matches no entry and is silently dropped from the contract; the `elementId` filter skips it (Check 6's orphan guard catches it).
+
+<!-- END: entry-points-sync.md -->

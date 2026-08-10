@@ -106,7 +106,7 @@ Escalation presence carries the status: `slaId` alone is a **breach** rule (an a
 
 ### wait-for-connector — bind a connector event
 
-In Phase 2, always write the canonical stub from [connector-trigger-common.md § Condition-rule phase contract](../../../connector-trigger-common.md#condition-rule-phase-contract), regardless of connector resolution. In Phase 3 Step 10.5, a resolved connector replaces only `rule.uipath`; final inputs/outputs use stage-scoped `elementId = <stageId>-<ruleId>`. Preserve the optional `conditionExpression` and `isInterrupting` value.
+In Phase 2, always write the canonical stub from [connector-trigger-impl.md § Condition-rule phase contract](../../../connector-trigger-impl.md#condition-rule-phase-contract), regardless of connector resolution. In Phase 3 Step 10.5, a resolved connector replaces only `rule.uipath`; final inputs/outputs use stage-scoped `elementId = <stageId>-<ruleId>`. Preserve the optional `conditionExpression` and `isInterrupting` value.
 
 **Rule output binding.** Defer it with the stub. After the Phase 3 upgrade produces real outputs, dispatch them per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules), before root bindings. `elementId` stays `<stageId>-<ruleId>`.
 
@@ -119,10 +119,12 @@ In Phase 2, always write the canonical stub from [connector-trigger-common.md §
 | `selected-stage-exited` | `selectedStageId` |
 | `user-selected-stage` | — |
 | `sla-status-change` | `slaId` from the Step 11 SLA object; `escalationId` **at-risk only** (omit for breach) |
-| `wait-for-connector` | `uipath` connector configuration (see [common](../../../connector-trigger-common.md#target-connector-bound-condition-rule)) |
+| `wait-for-connector` | `uipath` connector configuration (see [common](../../../connector-trigger-impl.md#target-connector-bound-condition-rule)) |
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. **Use strict `===` / `!==`, never loose `==` / `!=` — normalize SDD shorthand like `approved == true` to `=js:vars.approved === true` (do not transcribe `==` verbatim).** Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ## Post-Write Verification
 
 Confirm target stage's `data.entryConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Entry Rule {N}` default), `isInterrupting` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `sla-status-change`, verify `slaId` resolves to an object on the declared SLA target and `isInterrupting` matches the declared response. Check `escalationId` **against the T-entry's status, not for its presence**: an at-risk T-entry must carry one that resolves on that same SLA; a breach T-entry must carry **none**. A missing `escalationId` on a breach rule is correct and complete — do **not** "repair" it by adding one, which silently converts the rule to at-risk ([sla-response-shapes.md § defects `validate` cannot see](../../../sla-response-shapes.md)). For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
+
+<!-- END: impl-json.md -->
