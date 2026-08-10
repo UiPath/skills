@@ -247,7 +247,7 @@ After the instance is created, before reporting the debug result:
 
 > **`instance cursors` is the diagnostic the other endpoints hide.** On a stalled instance, `get` returns `Running` and `incidents` returns `[]`, while `uip maestro case instance cursors <instanceId>` returns `400` with `{"type":"PIMS-400006","title":"BPMN generic workflow failure"}`. When the liveness check fails, run `cursors` and include its response in the report.
 
-> **Cancelling a stuck instance.** `uip maestro case instance cancel` may fail with `500` / `PIMS-100039`. The working fallback is `uip orchestrator jobs stop <instanceId> --strategy Kill` — the Maestro instance ID doubles as the Orchestrator job key.
+> **Cancelling a stuck instance.** `uip maestro case instance cancel` may fail with `500` / `PIMS-100039`. The working fallback is `uip or jobs stop <instanceId> --strategy Kill` — the Maestro instance ID doubles as the Orchestrator job key.
 
 ### Known platform defect — multi-stage escalations crash conversion
 

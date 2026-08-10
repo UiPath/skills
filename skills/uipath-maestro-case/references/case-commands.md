@@ -456,7 +456,7 @@ uip maestro case instance asset <instance-id>
 uip maestro case instance migrate <instance-id> <new-version>
 
 # Cancel fallback when `instance cancel` returns 500 (see note below)
-uip orchestrator jobs stop <instance-id> --strategy Kill
+uip or jobs stop <instance-id> --strategy Kill
 
 # Go-to: move execution cursor from one element to another
 uip maestro case instance goto <instance-id> '[{"sourceElementId":"A","targetElementId":"B"}]'
@@ -468,7 +468,7 @@ uip maestro case instance element-executions <instance-id>
 
 > **`cursors` surfaces what the others hide.** On a stalled instance it returns `400` with `{"type":"PIMS-400006","title":"BPMN generic workflow failure"}` — a genuine engine failure state invisible to `get` and `incidents`. Run it whenever the liveness check fails.
 
-> **`instance cancel` can return `500` / `PIMS-100039`.** Observed failing twice in a row on a stuck instance. The working fallback is `uip orchestrator jobs stop <instance-id> --strategy Kill` — the Maestro instance ID doubles as the Orchestrator job key.
+> **`instance cancel` can return `500` / `PIMS-100039`.** Observed failing twice in a row on a stuck instance. The working fallback is `uip or jobs stop <instance-id> --strategy Kill` — the Maestro instance ID doubles as the Orchestrator job key.
 
 ---
 
