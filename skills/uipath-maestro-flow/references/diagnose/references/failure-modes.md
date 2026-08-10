@@ -15,6 +15,7 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
 | [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run with `--skip-solution-registration` (opts out of auto-scaffold + registration) |
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
+| [Inline-agent and resource `source` transposed](#inline-agent-and-resource-source-transposed) | `[170002]` / `Serverless.PythonAgent.PrepareEnvironmentError` at debug after a clean `flow validate` | Agent node's `inputs.source` and a resource node's `inputs.source` swapped |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (MST-9107 + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
 
 ---
@@ -244,6 +245,26 @@ Add two entries to the top-level `bindings[]` array per resource node — `name`
 
 ---
 
+## Inline-agent and resource `source` transposed
+
+### Symptom
+
+`uip maestro flow debug` (or a deployed run) faults `[170002] Failure in the Orchestrator Job`, backend `Serverless.PythonAgent.PrepareEnvironmentError`, message `Project folder '<uuid>' not found in project <solutionId>`. `uip maestro flow validate` reported `Result: Success` immediately before.
+
+### Cause
+
+The inline-agent node's `inputs.source` and an attached resource node's `inputs.source` are transposed — the agent node points at the resource's UUID, the resource node points at the agent's `projectId`. Both are opaque UUIDs adjacent in context right after creation. The agent validators skip silently when `<source>/agent.json` is absent, so the swap passes `flow validate` and only faults when the platform tries to deploy the resource folder as an agent package.
+
+### Fix
+
+Swap the two `inputs.source` values back. Verify the agent node's `source` directory contains `agent.json`, and each resource node's `source` is the resource UUID nested at `<agentProjectId>/resources/<uuid>/`.
+
+### Reference
+
+[Author inline-agent plugin — Adding Resource Nodes](../../author/references/plugins/inline-agent/impl.md#adding-resource-nodes)
+
+---
+
 ## `flow validate` passes, `flow debug` faults
 
 ### Symptom
@@ -267,6 +288,7 @@ Multiple. `flow validate` runs a JSON schema check, cross-reference checks, expr
 
 - Reused reference IDs → see [Reused reference ID](#reused-reference-id--cross-connection-id-leakage)
 - Missing top-level `bindings[]` entries on resource nodes → see [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node)
+- Inline-agent and resource `source` transposed → see [Inline-agent and resource `source` transposed](#inline-agent-and-resource-source-transposed)
 - HITL `completed` port unwired → see [HITL `completed` port unwired](#hitl-completed-port-unwired)
 - Stale `layout` data → see [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) (cosmetic, not faulting)
 - Output-path walks against **open** output schemas — HTTP response bodies, script returns, free-text agent output. The deep-path walker is permissive by design: it skips when the producer's schema doesn't authoritatively declare the field's structure, so e.g. `=js:$vars.fetchWeather.output.body.current_weather` against an HTTP node that declares only `output: { type: "object" }` passes validate and faults only when the runtime response doesn't have that path.
