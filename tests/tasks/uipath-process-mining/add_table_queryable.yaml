@@ -1,7 +1,7 @@
 task_id: skill-pm-add-table-queryable
 description: >
   Critical Rule 1: to make a custom analytical dbt model queryable, register it
-  as a Case-linked data-model table with `apps model add-table` and RE-INGEST.
+  as a Case-linked data-model table with `apps data-model add-table` and RE-INGEST.
   Tests the headline rule of the skill and the mistake it exists to prevent —
   repurposing the pre-registered `Tags` / `Due_dates` entities to smuggle an
   unrelated aggregate through, which corrupts those features and fights their
@@ -13,7 +13,7 @@ description: >
 
   Command-construction only — no live tenant. Commands fail with auth errors;
   what matters is which commands the agent chooses.
-tags: [uipath-process-mining, mode:build, lifecycle:extend, data-model, add-table]
+tags: [uipath-process-mining, integration, mode:build, lifecycle:setup, data-model, add-table]
 
 run_limits:
   expected_turns: 8
@@ -49,7 +49,7 @@ success_criteria:
   - type: command_executed
     description: "Agent registered the custom model as a data-model table"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+apps\s+model\s+add-table\b.*--file\b'
+    command_pattern: 'uip\s+pm\s+apps\s+data-model\s+add-table\b.*--file\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
