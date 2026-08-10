@@ -90,7 +90,7 @@ Build the uniqueness pool from EVERY `var` / `id` currently in `caseplan.json`. 
 
 **Both directions.** When a connector rule mints outputs, dedupe against the union {tasks ∪ triggers ∪ rules ∪ root}. When a task or trigger mints outputs, dedupe against existing rule outputs too — NOT just tasks + triggers. The shared FE form (`FPSFormServiceTypeFields`) registers rule outputs in the same global pool (`getAllVariables()`), so any duplicate `var` / `id` across the {task, trigger, rule} space collapses in `allInputOutputsByElementMap` and cross-wires ownership at round-trip.
 
-**Skip guard.** Rules with no `uipath.outputs[]` (connector configuration unresolved — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback)) contribute zero outputs to the pool and must be skipped during enumeration. Same skip pattern as placeholder tasks (`data:{}`).
+**Skip guard.** Rules with no `uipath.outputs[]` (connector configuration unresolved — see [`connector-trigger-impl.md § Placeholder fallback`](../../../connector-trigger-impl.md#placeholder-fallback)) contribute zero outputs to the pool and must be skipped during enumeration. Same skip pattern as placeholder tasks (`data:{}`).
 
 ## Formal-arg slot ID format
 
@@ -443,6 +443,6 @@ The dispatcher logic lives in [io-binding/impl-json.md § Output Binding Shapes 
 
 Loop B (this file) handles the COMPANION emission — it scans `tasks.md` Case Variables rows agnostically of producer type. A `Category=Variable` row whose producer is a connector rule's `->` extract gets the same companion shape as one whose producer is a task's `->` extract. The producer (task plugin OR condition plugin) is responsible for writing the upstream `outputs[]` entry referencing the companion via `var: <caseVar.id>`.
 
-> **Skip guard.** Rules with no `uipath.outputs[]` (stub placeholder — connector configuration unresolved) contribute no outputs to the global pool and no companions to Loop B — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback).
+> **Skip guard.** Rules with no `uipath.outputs[]` (stub placeholder — connector configuration unresolved) contribute no outputs to the global pool and no companions to Loop B — see [`connector-trigger-impl.md § Placeholder fallback`](../../../connector-trigger-impl.md#placeholder-fallback).
 
 <!-- END: impl-json.md -->

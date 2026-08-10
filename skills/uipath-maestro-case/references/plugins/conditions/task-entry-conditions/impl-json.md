@@ -75,9 +75,9 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 ### wait-for-connector — bind a connector event
 
-In Phase 2, always write the canonical stub from [connector-trigger-common.md § Condition-rule phase contract](../../../connector-trigger-common.md#condition-rule-phase-contract), regardless of connector resolution. In Phase 3 Step 10.5, a resolved connector replaces only `rule.uipath`; final inputs/outputs use the owning stage's `elementId = <stageId>-<ruleId>` (not the task ID). Preserve the optional `conditionExpression`.
+In Phase 2, always write the canonical stub from [connector-trigger-impl.md § Condition-rule phase contract](../../../connector-trigger-impl.md#condition-rule-phase-contract), regardless of connector resolution. In Phase 3 Step 10.5, a resolved connector replaces only `rule.uipath`; final inputs/outputs use the owning stage's `elementId = <stageId>-<ruleId>` (not the task ID). Preserve the optional `conditionExpression`.
 
-Both shapes re-stated below from [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) (source of truth — keep in sync). `rule.uipath` is ALWAYS `serviceType` + the four arrays; connector identity lives inside `context[]` entries, never as flat fields (`typeId` / `connectorKey` / `operation` directly on `uipath`) — a flat shape passes `validate` but is not runnable.
+Both shapes re-stated below from [connector-trigger-impl.md § Target: connector-bound condition rule](../../../connector-trigger-impl.md#target-connector-bound-condition-rule) (source of truth — keep in sync). `rule.uipath` is ALWAYS `serviceType` + the four arrays; connector identity lives inside `context[]` entries, never as flat fields (`typeId` / `connectorKey` / `operation` directly on `uipath`) — a flat shape passes `validate` but is not runnable.
 
 Phase 2 stub (exact):
 
@@ -100,7 +100,7 @@ Phase 2 stub (exact):
 ]]
 ```
 
-Phase 3 Step 10.5 — replace only `uipath` with the `case spec --type trigger --input-details` caseShape ([common § Procedure (Phase 3)](../../../connector-trigger-common.md#procedure-phase-3)):
+Phase 3 Step 10.5 — replace only `uipath` with the `case spec --type trigger --input-details` caseShape ([common § Procedure (Phase 3)](../../../connector-trigger-impl.md#procedure-phase-3)):
 
 ```json
 "uipath": {
@@ -140,7 +140,7 @@ When a *stage* should take the case instead, the rule goes on the stage's `entry
 |---|---|
 | `current-stage-entered` | — |
 | `selected-tasks-completed` | `selectedTasksIds` (array) |
-| `wait-for-connector` | `uipath` connector configuration (see [common](../../../connector-trigger-common.md#target-connector-bound-condition-rule)) |
+| `wait-for-connector` | `uipath` connector configuration (see [common](../../../connector-trigger-impl.md#target-connector-bound-condition-rule)) |
 | `adhoc` | — |
 | `runs-sequentially` | — |
 | `sla-status-change` | `slaId`; optional at-risk `escalationId` on that same SLA |
