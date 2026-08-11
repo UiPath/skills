@@ -109,7 +109,11 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+eval\s+evaluator\s+add\b'
     min_count: 1
-    weight: 1.0
+    # weight 0.0, not 1.0: an advisory criterion left at weight 1.0 still lands in
+    # the weighted-score denominator, so a hand-writing agent would score 0.943
+    # instead of 1.000 — a residual dock for a path the skill sanctions. Matches
+    # coded/guardrails/validate and lowcode/solution_verb_probe.
+    weight: 0.0
     pass_threshold: 0.0
 
   - type: command_executed
