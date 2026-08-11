@@ -27,7 +27,7 @@ uip tm wait              → block until terminal
 uip rpa pack "<PROJECT_DIR>" "<OUTPUT_DIR>" --output json
 ```
 
-Both arguments are positional — there is no `--project-dir` / `--project-path` flag here. See [/uipath:uipath-rpa § publishing-guide.md](../../uipath-rpa/references/publishing-guide.md) for full pack flags. Capture `OutputPath` from the JSON output — that's the `.nupkg` to upload.
+Both arguments are positional — there is no `--project-dir` / `--project-path` flag here. See [/uipath:uipath-rpa § cli-reference.md § Pack & Publish to Orchestrator](../../uipath-rpa/references/cli-reference.md#pack--publish-to-orchestrator) for full pack flags. Capture `OutputPath` from the JSON output — that's the `.nupkg` to upload.
 
 ## Step 2 — Upload to Orchestrator
 
@@ -80,7 +80,7 @@ Two run modes — pick one:
 **Single test case** — uses `--test-case-id <UUID>`, NOT `--test-case-key`. Get the UUID from `uip tm testcases list --output json` (`Id` field):
 
 ```bash
-uip tm testcases run --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_UUID> --execution-type automated --output json
+uip tm testcases run --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_UUID> --name <EXECUTION_NAME> --execution-type automated --output json
 ```
 
 **Whole test set** — uses `--test-set-key`:

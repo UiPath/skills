@@ -8,7 +8,7 @@ case definition. ``case-management`` tasks are allowed to land as skeletons
 
 For tasks whose referenced resource is published on the tenant (e.g. the
 RPA / Agent / API-workflow single-node tests), this module also provides
-``run_debug``: runs ``uip solution resource refresh`` then
+``run_debug``: runs ``uip solution resources refresh`` then
 ``uip maestro case debug`` and returns the parsed JSON payload so callers
 can assert on declared output values. Mirrors the uipath-maestro-flow
 ``flow_check.run_debug`` shape.
@@ -22,7 +22,7 @@ import os
 import re
 import subprocess
 import sys
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, NoReturn, Sequence
 
 
 def find_caseplan(pattern: str = "**/caseplan.json") -> str:
@@ -44,7 +44,11 @@ def read_caseplan(path: str | None = None) -> dict:
 
 
 def iter_tasks(plan: dict):
-    """Yield every task dict from every Stage / ExceptionStage node.
+    """Yield every task dict from every Stage node (and legacy ExceptionStage).
+
+    Secondary stages are now ``case-management:Stage`` nodes with
+    ``data.stageType == "secondary"``; the legacy ``case-management:ExceptionStage``
+    node type is still yielded for back-compat with un-migrated fixtures.
 
     Tolerates a mis-nested FLAT ``data.tasks`` (``Task[]`` instead of the schema's
     ``Task[][]`` lanes) so callers don't crash on it — use ``assert_tasks_nested``
@@ -98,7 +102,7 @@ def find_tasks_of_type(plan: dict, task_type: str) -> list[dict]:
 
 def assert_validate_passes(caseplan_path: str, *, timeout: int = 60) -> None:
     cmd = ["uip", "maestro", "case", "validate", caseplan_path, "--output", "json"]
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    r = _run(cmd, timeout=timeout, what="uip maestro case validate")
     if r.returncode != 0:
         _fail(
             f"uip maestro case validate exit {r.returncode}\n"
@@ -121,8 +125,11 @@ def assert_task_type_present(task_type: str, *, caseplan_path: str | None = None
 def task_is_skeleton(task: dict) -> bool:
     """True when the task's resource hasn't been wired into ``data``.
 
-    v20 caseplan markers for a populated task:
-    - ``execute-connector-activity`` / ``wait-for-connector``: ``data.typeId`` AND ``data.connectionId``
+    Caseplan markers for a populated task:
+    - ``execute-connector-activity`` / ``wait-for-connector``:
+        Phase 2 / graceful-degradation shape: ``data.typeId`` AND ``data.connectionId``
+        Phase 3 fully-populated shape: ``data.context`` non-empty (CLI-authoritative array
+        from ``case spec``; always has ≥1 entry when the connector resolved)
     - ``action``: ``data.inputs`` present (bare ``taskTitle`` / ``priority`` is still skeleton-equivalent)
     - everything else (``process`` / ``agent`` / ``rpa`` / ``api-workflow`` / ``case-management``):
       ``data.name`` AND ``data.folderPath`` (both as ``=bindings.<id>`` refs)
@@ -132,7 +139,13 @@ def task_is_skeleton(task: dict) -> bool:
         return True
     task_type = task.get("type")
     if task_type in {"execute-connector-activity", "wait-for-connector"}:
-        return not (data.get("typeId") and data.get("connectionId"))
+        # Phase 2 / graceful-degradation: typeId + connectionId set, no context yet
+        if data.get("typeId") and data.get("connectionId"):
+            return False
+        # Phase 3 fully-populated: context array from case spec (no typeId/connectionId in this shape)
+        if isinstance(data.get("context"), list) and data["context"]:
+            return False
+        return True
     if task_type == "action":
         return "inputs" not in data
     return not (data.get("name") and data.get("folderPath"))
@@ -140,18 +153,10 @@ def task_is_skeleton(task: dict) -> bool:
 
 # ── Schema-aware structural helpers ─────────────────────────────────────────
 #
-# v19 wraps case-level metadata under a `root` node; v20 hoists it to the
-# top-level + a `metadata` block. Node internals are identical across both.
-
-
-def _is_v20(plan: dict) -> bool:
-    """Return True if ``plan`` is v20 schema (top-level metadata)."""
-    if not isinstance(plan, dict):
-        return False
-    version = plan.get("version") or ""
-    if isinstance(version, str) and version.startswith("20"):
-        return True
-    return "metadata" in plan and isinstance(plan.get("metadata"), dict)
+# Case-level metadata lives at the top level alongside a `metadata` block — the
+# flat schema introduced in v20 and inherited through v27. Node internals are
+# stable across those versions except the trigger node, which v24 rewired from
+# `case-management:Trigger` to `uipath.case.trigger` (see find_triggers).
 
 
 def assert_count(actual: int, expected: int, what: str) -> None:
@@ -166,14 +171,41 @@ def iter_nodes_of_type(plan: dict, node_type: str):
 
 
 def find_stages(plan: dict, *, include_exception: bool = False) -> list[dict]:
-    types = {"case-management:Stage"}
+    """Return stage nodes from a caseplan.
+
+    All stages are now ``case-management:Stage`` nodes; a secondary (formerly
+    "exception") stage is marked by ``data.stageType == "secondary"`` rather than a
+    distinct node type. BACK-COMPAT: a legacy ``case-management:ExceptionStage`` node
+    is also treated as a secondary stage.
+
+    - ``include_exception=False`` (default): primary-only — stage nodes whose
+      ``data.stageType != "secondary"`` and which are not legacy ExceptionStage nodes.
+    - ``include_exception=True``: all stage nodes — ``case-management:Stage`` OR legacy
+      ``case-management:ExceptionStage``.
+    """
+    def _is_stage_node(n: dict) -> bool:
+        return n.get("type") in {"case-management:Stage", "case-management:ExceptionStage"}
+
+    def _is_secondary(n: dict) -> bool:
+        return (
+            (n.get("data") or {}).get("stageType") == "secondary"
+            or n.get("type") == "case-management:ExceptionStage"
+        )
+
+    nodes = plan.get("nodes") or []
     if include_exception:
-        types.add("case-management:ExceptionStage")
-    return [n for n in plan.get("nodes") or [] if n.get("type") in types]
+        return [n for n in nodes if _is_stage_node(n)]
+    return [n for n in nodes if _is_stage_node(n) and not _is_secondary(n)]
 
 
 def find_triggers(plan: dict) -> list[dict]:
-    return list(iter_nodes_of_type(plan, "case-management:Trigger"))
+    # v24 renamed the trigger node type `case-management:Trigger` -> `uipath.case.trigger`.
+    # BACK-COMPAT: accept the legacy type for pre-v24 fixtures.
+    return [
+        n
+        for n in (plan.get("nodes") or [])
+        if n.get("type") in {"uipath.case.trigger", "case-management:Trigger"}
+    ]
 
 
 def find_node_by_label(plan: dict, label: str) -> dict:
@@ -200,6 +232,9 @@ def stage_transitions(plan: dict) -> list[dict]:
     which convention an SDD used to wire a given hop. Mirrors the connector
     graph the frontend now derives from conditions.
     """
+    # Secondary stages are now `case-management:Stage` nodes carrying
+    # `data.stageType == "secondary"`; the legacy `case-management:ExceptionStage`
+    # type is kept here so this works pre/post v22 migration.
     stage_types = {"case-management:Stage", "case-management:ExceptionStage"}
     pairs: set[tuple[str, str]] = set()
     for node in plan.get("nodes") or []:
@@ -250,6 +285,38 @@ def first_rule_of_condition(cond: dict | None) -> dict | None:
     return first_group[0]
 
 
+RETURN_TO_ORIGIN_COMPLETION_RULES = frozenset(
+    {"required-tasks-completed", "wait-for-connector"}
+)
+
+
+def partition_return_to_origin_conditions(
+    conditions: Iterable[dict],
+    *,
+    allowed_rules: frozenset[str] = RETURN_TO_ORIGIN_COMPLETION_RULES,
+) -> tuple[list[dict], list[dict]]:
+    """Return all return lanes and the subset with an invalid completion pairing."""
+    returns = [
+        condition
+        for condition in conditions
+        if condition.get("type") == "return-to-origin"
+    ]
+    invalid = []
+    for condition in returns:
+        rules = condition.get("rules")
+        has_single_rule = (
+            isinstance(rules, list)
+            and len(rules) == 1
+            and isinstance(rules[0], list)
+            and len(rules[0]) == 1
+            and isinstance(rules[0][0], dict)
+        )
+        rule = rules[0][0].get("rule") if has_single_rule else None
+        if condition.get("marksStageComplete") is not True or rule not in allowed_rules:
+            invalid.append(condition)
+    return returns, invalid
+
+
 def iter_stage_entry_conditions(node: dict):
     for cond in (node.get("data") or {}).get("entryConditions") or []:
         yield cond
@@ -261,40 +328,25 @@ def iter_stage_exit_conditions(node: dict):
 
 
 def get_variables(plan: dict) -> dict:
-    """Return ``{inputs, outputs, inputOutputs}`` — top-level in v20, ``root.data.uipath.variables`` in v19."""
-    if _is_v20(plan):
-        return plan.get("variables") or {}
-    root = get_root(plan)
-    return ((root.get("data") or {}).get("uipath") or {}).get("variables") or {}
+    """Return ``{inputs, outputs, inputOutputs}`` from the top-level ``variables`` block."""
+    return plan.get("variables") or {}
 
 
 def get_bindings(plan: dict) -> list[dict]:
-    if _is_v20(plan):
-        return plan.get("bindings") or []
-    root = get_root(plan)
-    return ((root.get("data") or {}).get("uipath") or {}).get("bindings") or []
+    return plan.get("bindings") or []
 
 
 def get_case_exit_conditions(plan: dict) -> list[dict]:
-    """v19 ``root.caseExitConditions`` / v20 ``metadata.caseExitRules`` — field rename, identical shape."""
-    if _is_v20(plan):
-        return (plan.get("metadata") or {}).get("caseExitRules") or []
-    root = get_root(plan)
-    return root.get("caseExitConditions") or []
+    """Case exit rules from ``metadata.caseExitRules``."""
+    return (plan.get("metadata") or {}).get("caseExitRules") or []
 
 
 def get_sla_rules(target: dict) -> list[dict]:
-    """Return ``slaRules[]`` from a plan (case-level) or a stage node.
-
-    Case-level in v20 lives under ``metadata.slaRules``; v19 under
-    ``root.data.slaRules``. Stage-level lives under ``node.data.slaRules``
-    in both schemas.
+    """Return ``slaRules[]`` from a plan (case-level ``metadata.slaRules``) or a
+    stage node (``node.data.slaRules``).
     """
     if "nodes" in target and isinstance(target.get("nodes"), list):
-        if _is_v20(target):
-            return (target.get("metadata") or {}).get("slaRules") or []
-        root = get_root(target)
-        return ((root.get("data") or {}).get("slaRules")) or []
+        return (target.get("metadata") or {}).get("slaRules") or []
     return ((target.get("data") or {}).get("slaRules")) or []
 
 
@@ -306,49 +358,30 @@ def get_default_sla(target: dict) -> dict | None:
     return last if (last or {}).get("expression") == "=js:true" else None
 
 
-def get_root(plan: dict) -> dict:
-    """Return root-equivalent dict.
-
-    v19: returns the actual ``case-management:root`` node from ``plan.root``
-    (or ``plan.nodes`` if embedded). v20: synthesizes a v19-shaped dict so
-    legacy paths like ``root.data.uipath.variables`` still resolve.
-    """
-    if _is_v20(plan):
-        metadata = plan.get("metadata") or {}
-        synthesized: dict = {
-            "id": plan.get("id"),
-            "name": plan.get("name"),
-            "description": plan.get("description"),
-            "version": plan.get("version"),
-            "type": "case-management:root",
-            "data": {
-                "slaRules": metadata.get("slaRules") or [],
-                "intsvcActivityConfig": metadata.get("intsvcActivityConfig"),
-                "uipath": {
-                    "bindings": plan.get("bindings") or [],
-                    "variables": plan.get("variables") or {},
-                },
-            },
-            "caseExitConditions": metadata.get("caseExitRules") or [],
-        }
-        for k, v in metadata.items():
-            if k not in {"slaRules", "intsvcActivityConfig", "caseExitRules"}:
-                synthesized.setdefault(k, v)
-        return synthesized
-    if isinstance(plan.get("root"), dict):
-        return plan["root"]
-    for node in plan.get("nodes") or []:
-        if node.get("type") == "case-management:root":
-            return node
-    _fail("no root found in caseplan (neither v19 root node nor v20 metadata)")
-
-
 def _stringify(v: Any) -> str:
     return json.dumps(v, default=str)
 
 
-def _fail(msg: str):
+def _fail(msg: str) -> NoReturn:
     sys.exit(f"FAIL: {msg}")
+
+
+def _run(cmd: Sequence[str], *, timeout: int, what: str) -> subprocess.CompletedProcess[str]:
+    """``subprocess.run`` that reports a timeout as a FAIL, not a traceback.
+
+    ``TimeoutExpired`` carries partial output as bytes even under ``text=True``,
+    so decode defensively.
+    """
+    try:
+        return subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout, check=False
+        )
+    except subprocess.TimeoutExpired as e:
+        out, err = (
+            s.decode("utf-8", "replace") if isinstance(s, bytes) else (s or "")
+            for s in (e.stdout, e.stderr)
+        )
+        _fail(f"{what} timed out after {timeout}s\nstdout: {out}\nstderr: {err}")
 
 
 def _get_ci(mapping: Any, *candidate_keys: str, default: Any = None) -> Any:
@@ -409,7 +442,7 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
 
 def find_solution_dir(pattern: str = "**/*.uipx") -> str:
     """Return the directory holding the ``*.uipx`` solution manifest.
-    Used as ``--solution-folder`` for ``uip solution resource refresh``.
+    Used as ``--solution-folder`` for ``uip solution resources refresh``.
     """
     matches = sorted(
         p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
@@ -471,22 +504,29 @@ def start_debug(
     solution_dir = find_solution_dir(solution_glob)
 
     refresh_cmd = [
-        "uip", "solution", "resource", "refresh",
+        "uip", "solution", "resources", "refresh",
         "--solution-folder", solution_dir,
         "--output", "json",
     ]
-    r = subprocess.run(refresh_cmd, capture_output=True, text=True, timeout=refresh_timeout)
+    already_refreshed = os.path.isdir(os.path.join(solution_dir, "resources"))
+    r = _run(refresh_cmd, timeout=refresh_timeout, what="uip solution resources refresh")
     if r.returncode != 0:
-        _fail(
-            f"solution resource refresh exit {r.returncode}\n"
-            f"stdout: {r.stdout}\nstderr: {r.stderr}"
-        )
+        # CLI 1.197-alpha: refresh is not idempotent — re-running it over its own
+        # output fails with "Node already added to the graph" (RetryWillNotFix).
+        # When the agent already refreshed, the resource docs are on disk and debug
+        # can proceed; only that exact re-refresh failure is tolerated.
+        duplicate_node = "Node already added to the graph" in (r.stdout + r.stderr)
+        if not (already_refreshed and duplicate_node):
+            _fail(
+                f"solution resources refresh exit {r.returncode}\n"
+                f"stdout: {r.stdout}\nstderr: {r.stderr}"
+            )
 
     debug_cmd = [
         "uip", "maestro", "case", "debug", project_dir,
         "--log-level", "debug", "--output", "json",
     ]
-    r = subprocess.run(debug_cmd, capture_output=True, text=True, timeout=timeout)
+    r = _run(debug_cmd, timeout=timeout, what="uip maestro case debug")
     if r.returncode != 0:
         _fail(
             f"case debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}"

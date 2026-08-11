@@ -1,0 +1,48 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "7d2e5a10-9c34-4f62-b18a-3e6f0c9d2b47",
+      "State": "Faulted",
+      "ProcessName": "CustomerHubSync",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-07-19T02:15:04.110Z",
+      "EndTime": "2026-07-19T02:15:41.870Z",
+      "CreationTime": "2026-07-19T02:15:04.110Z"
+    },
+    {
+      "Key": "5a9c1e83-2d47-4b16-8f30-9c2a7e1b6d54",
+      "State": "Successful",
+      "ProcessName": "CustomerHubSync",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-07-18T02:15:03.940Z",
+      "EndTime": "2026-07-18T02:16:22.410Z",
+      "CreationTime": "2026-07-18T02:15:03.940Z"
+    },
+    {
+      "Key": "3f6b0d29-7a15-4c38-9e02-4d8c1a5f9b37",
+      "State": "Successful",
+      "ProcessName": "CustomerHubSync",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "StartTime": "2026-07-17T02:15:04.220Z",
+      "EndTime": "2026-07-17T02:16:19.980Z",
+      "CreationTime": "2026-07-17T02:15:04.220Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 3,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

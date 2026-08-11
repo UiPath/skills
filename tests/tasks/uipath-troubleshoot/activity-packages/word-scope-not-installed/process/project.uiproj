@@ -1,0 +1,6 @@
+{
+  "Name": "DocGenerator",
+  "ProjectType": "Process",
+  "Description": "Generates a document by opening a template and replacing the customer-name placeholder with the customer name via Word activities.",
+  "MainFile": "Main.xaml"
+}

@@ -34,7 +34,7 @@ Then, as needed:
 Coded-specific layers:
 
 1. **Reuse before discover** — grep cwd for existing `ActivityMetadata` constants before re-running describe.
-2. **Present concrete options, then echo every pick.** At each stop point call `AskUserQuestion` with the actual candidates as selectable options (one per candidate: short label + one-line description, per the option-label format in the `uipath-platform` skill's `connectors.md`). Recommend the safest default; let the user choose. Never ask open-ended — derive options from the discovery output. After the pick, echo the chosen option back before the next call. Ambiguous answer or "other" → follow up to narrow; do not infer.
+2. **Present concrete options, then echo every pick.** At each stop point ask the user, presenting the actual candidates as concrete options (one per candidate: short label + one-line description, per the option-label format in the `uipath-platform` skill's `connectors.md`). Recommend the safest default; let the user choose. Never ask open-ended — derive options from the discovery output. After the pick, echo the chosen option back before the next step. Ambiguous answer or "other" → follow up to narrow; do not infer.
    - **Stop points:** connector (multi-hit on `connectors list --filter`), curated-vs-raw object, ambiguous operation verb (`Update` vs `Replace`), parent-field `-f` values, custom-field-by-name with >1 candidate.
    - Silent inference produces wrong-connector / wrong-form / wrong-customfield writes.
 
@@ -139,10 +139,10 @@ from uipath.platform.connections import ActivityMetadata, ActivityParameterLocat
 
 def post_to_slack(channel: str, message: str) -> dict:
     sdk = UiPath()
-    # Binding key, NOT a UUID. Locally this 400s unless resourceOverwrites
-    # is set — see § Local runtime binding. Do NOT add a try/except or a
-    # state health-check around it; gate any deployed-only probe on env.
-    connection = sdk.connections.retrieve("slack-triage")
+    # The connection id (the `Id` from `uip is connections list`) — the same
+    # value as bindings.json `ConnectionId.defaultValue`. Let it raise; don't
+    # wrap in try/except.
+    connection = sdk.connections.retrieve("<connection_id>")
     return sdk.connections.invoke_activity(
         activity_metadata=SLACK_SEND_MESSAGE,
         connection_id=connection.id,
@@ -151,7 +151,7 @@ def post_to_slack(channel: str, message: str) -> dict:
 ```
 
 - **`activity_input` is the single bucket** for query, path, header, multipart, and body values. SDK routes by `parameter_location_info`. No `query=`/`path=`/`header=` kwarg exists.
-- **`invoke_activity` calls `retrieve()` internally** (`_connections_service.py:675`), so `connection_id` can be a UUID or a binding-key string — the `@resource_override` decorator on `retrieve` resolves it. The pattern above (explicit retrieve, then pass `connection.id`) is preferred because it gives the agent a typed `Connection` for `metadata()` / `retrieve_token()`; one-shots can use `invoke_activity(connection_id="slack-triage", ...)` directly.
+- **`invoke_activity` calls `retrieve()` internally** (`_connections_service.py:675`). The pattern above (explicit retrieve, then pass `connection.id`) is preferred because it gives the agent a typed `Connection` for `metadata()` / `retrieve_token()`; one-shots can pass the connection id straight to `invoke_activity(connection_id="<connection_id>", ...)`.
 - **Return value** is `response.json()` — keys mirror `responseFields[].name`. Flat connectors return top-level; some wrap in `Data` / `result`. Auto-traced via `@traced`; see [tracing.md](tracing.md).
 - **Silent drops** — `None` values and any key not in `parameter_location_info` are skipped (`_connections_service.py:753-770`). Mistyped keys never surface as errors; echo-check writes per Error Handling § "Silent rename / typo".
 
@@ -198,7 +198,7 @@ Wrap `invoke_activity_async` in the framework's tool primitive — runtime body 
 
 ## Connection Resolution — `bindings.json`
 
-Invocation URL is `/elements_/v3/element/instances/<UUID>/…`, so the SDK ultimately needs a UUID. To let admins rebind per environment, write code against a binding key string; `@resource_override("connection", resource_identifier="key")` (`_connections_service.py:51`) on `retrieve` maps it to the deployed UUID. `uip codedagent init` writes `resources: []` — author the connection entry after picking the connection.
+Write the connection's id (the `Id` from `uip is connections list`, a GUID) as the `retrieve()` argument in code AND as `ConnectionId.defaultValue` in `bindings.json` — the two must match. That way it resolves locally (no override) and `bindings.json` lets users rebind the resource per environment when deployed. `uip codedagent init` writes `resources: []` — author the connection entry after picking the connection.
 
 Minimal connection entry (`uip codedagent init` writes `resources: []`; add this). The entry-type field is **`resource`** (NOT `type`) — the CLI bindings schema is `{ resource, key, value, metadata }`:
 
@@ -220,42 +220,28 @@ Full JSON schema lives in [`../lifecycle/bindings-reference.md`](../lifecycle/bi
 
 - Entry type field is `resource` (`"resource": "connection"`), never `type` — matches every other binding entry.
 - `key` is just `<CONNECTION_KEY>` (no `<NAME>.<FOLDER>` dot suffix used by other resources). Same string passed positionally to `retrieve()`.
-- `value.ConnectionId.defaultValue` is the binding key string, NOT a UUID. Capital-C `ConnectionId` (other resources use `name`); no `folderPath`.
+- `value.ConnectionId.defaultValue` is the connection id — the same value passed to `retrieve()` in code (and the binding `key`). Capital-C `ConnectionId` (other resources use `name`); no `folderPath`.
 - `metadata.UseConnectionService: "True"` is mandatory; `Connector: ""` (empty); `BindingsVersion: "2.2"` is the per-resource rev and is independent of the top-level envelope `version: "2.0"`.
 - `uip codedagent deploy` repackages as `content/bindings_v2.json` — never hand-author that path.
 
-### Required artifact — `__uipath/uipath.json` (local-run binding)
+### Connection value: code and bindings must match
 
-Every coded IS agent MUST write `__uipath/uipath.json`. It is the file `uipath run` reads for connection overwrites: `cli_run.py` → `read_resource_overwrites_from_file(ctx.runtime_dir)`, `runtime_dir` defaults to `__uipath` (`runtime/context.py`), config name `uipath.json` (`UIPATH_CONFIG_FILE`). Without it, local `retrieve("<KEY>")` 400s with `CNS1026 The value '<KEY>' is not valid` — `bindings.json` is deploy-time only (packed into `content/bindings_v2.json`) and ignored by local run. This is distinct from `./uipath.json` (pack/deploy config). Write both:
+Write the **same connection id** in code and in `bindings.json`:
 
-```jsonc
-{
-  "functions": { "main": "main.py:main" },
-  "runtime": {
-    "internalArguments": {
-      "resourceOverwrites": {
-        "connection.slack-triage": {
-          "connectionId": "<Id from `uip is connections list`>",
-          "folderKey":    "<FolderKey from `uip is connections list`>"
-        }
-      }
-    }
-  }
-}
-```
+- In code, pass it to `retrieve()` — `sdk.connections.retrieve("<connection_id>")`.
+- In `bindings.json`, use it as the connection's `ConnectionId.defaultValue` (and the binding `key`).
 
-`ConnectionResourceOverwrite` (`uipath/platform/common/_bindings.py:100`, **NOT** `uipath/_utils/_bindings.py`) requires exactly two fields — `connectionId` (alias accepts `ConnectionId`) and `folderKey` — and has `extra="ignore"`, so `elementInstanceId` and any other extras are silently dropped (see anti-pattern #1). Key format is `connection.<BINDING_KEY>` matching the `bindings.json` `key`. After override, `Connection.element_instance_id` (for `sdk.connections.metadata()` calls) comes from the live IS API response — never write it locally.
+Because they match, the agent resolves the connection both **locally** (run uses the code value directly, no override) and **when deployed** (`bindings.json` lets Studio Web / Orchestrator override the resource per environment). Get the connection id from the `Id` field of `uip is connections list --output json` (a GUID).
 
-**Required outputs — every coded IS agent ships all four:**
+`Connection.element_instance_id` (needed for `sdk.connections.metadata()` calls) comes from the live IS API response after `retrieve()` — never hardcode it.
+
+**Required outputs — every coded IS agent ships these three:**
 
 | File | Read by | Must contain |
 |---|---|---|
-| `main.py` | runtime | lazy `UiPath()` (not module-scope), inline `ActivityMetadata` literal, `retrieve(<KEY>)` + `invoke_activity` |
-| `bindings.json` | `uip codedagent deploy` | connection resource, `key`, `ConnectionId.defaultValue`=binding key, `UseConnectionService: "True"` |
+| `main.py` | runtime | lazy `UiPath()` (not module-scope), inline `ActivityMetadata` literal, `retrieve("<connection_id>")` + `invoke_activity` |
+| `bindings.json` | `uip codedagent deploy` | connection resource, `key` + `ConnectionId.defaultValue` = the same connection id, `UseConnectionService: "True"` |
 | `uipath.json` | `uip` pack/deploy | `functions`, `packOptions` |
-| `__uipath/uipath.json` | `uipath run` (local) | `runtime.internalArguments.resourceOverwrites["connection.<KEY>"]` = `connectionId` + `folderKey` |
-
-Omitting `__uipath/uipath.json` means the agent cannot run locally — incomplete, not optional. Personal-workspace connections also need `UIPATH_FOLDER_KEY=<KEY>` (`FolderKey` from `uip is connections list`) in the environment at local run.
 
 ## Error Handling
 
@@ -274,7 +260,7 @@ Network / 5xx are retried with exponential backoff by `BaseService.request`; onl
 
 These six are the ones the SDK / IS / vendor will NOT tell you about. Positive guidance for everything else lives in the relevant section above; do not pad this list.
 
-1. **Adding `elementInstanceId` to `resourceOverwrites`.** `ConnectionResourceOverwrite` (`_bindings.py:100`) defines only `connectionId` + `folderKey` with `extra="ignore"` — extras are silently dropped. The `element_instance_id` you need for `sdk.connections.metadata()` comes from the live `Connection.element_instance_id` after `retrieve()`, never from local config.
+1. **Hardcoding `element_instance_id`.** The `element_instance_id` needed for `sdk.connections.metadata()` comes from the live `Connection.element_instance_id` after `retrieve()` — never hardcode it.
 2. **Hand-authoring `object_path` / `method_name` / `body_fields`.** Curated activities rename fields silently between connector versions. Always source from `uip is resources describe` and re-run after upgrades. Sidecar-JSON literals also drift — keep `ActivityMetadata` literals inline in a `.py` file; `pack` bundles them and mypy / pyright catch shape errors at edit time.
 3. **Typos and unknown keys in `activity_input`.** Anything not in `parameter_location_info` is silently dropped (`_connections_service.py:753-770`); the request goes out missing the field, vendor returns 2xx, the data is just gone. Echo-check writes by reading back the created object (see Error Handling § "Silent rename / typo").
 4. **`invoke_activity` for trigger payloads.** IS-triggered jobs receive `EventArguments` as input — unwrap with `sdk.connections.retrieve_event_payload(event_args)` (`_connections_service.py:421`). Calling `invoke_activity` to "receive" anything is a category error.

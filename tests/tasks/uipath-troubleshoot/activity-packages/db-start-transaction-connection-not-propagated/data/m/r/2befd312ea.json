@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-30T08:35:00.640Z",
+      "Message": "OrderSettlementTxn execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-30T08:35:01.502Z",
+      "Message": "Start Transaction: opened connection with ProviderName 'Microsoft.Data.SqlClient' and connection string 'Server=sqlsales02;Database=Orders;Integrated Security=true;Encrypt=true'; transaction begun, connection assigned to variable 'dbTxn'"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-30T08:35:01.731Z",
+      "Message": "Execute Query: executing with ExistingDbConnection = (null) [property is empty - not bound to 'dbTxn']; Sql = 'SELECT OrderId, Status FROM Orders WHERE Status = 'Pending''"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-30T08:35:01.788Z",
+      "Message": "Execute Query: Object reference not set to an instance of an object.\r\nSystem.NullReferenceException: Object reference not set to an instance of an object.\r\n   at UiPath.Database.DatabaseConnection.ExecuteQuery(String sql, CommandType commandType, Dictionary`2 parameters, Int32 timeout)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-30T08:35:01.804Z",
+      "Message": "Execute Query: Object reference not set to an instance of an object.\r\nin Main.xaml\r\n    at ExecuteQuery \"Execute Query\"\r\n    at DatabaseTransaction \"Start Transaction\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

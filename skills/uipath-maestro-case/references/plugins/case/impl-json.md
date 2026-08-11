@@ -13,7 +13,7 @@ Create the full project on disk in a single plugin invocation — 5 scaffold fil
 1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
-Solution setup (`uip solution init`) and project registration (`uip solution project add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
+Solution setup (`uip solution init`) and project registration (`uip solution projects add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
 
 **No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
 
@@ -26,6 +26,7 @@ Solution setup (`uip solution init`) and project registration (`uip solution pro
 | `case-identifier` | no | Defaults to `name`. |
 | `identifier-type` | no | `constant` \| `external`. Defaults to `constant`. |
 | `case-app-enabled` | no | Boolean. Defaults to `false`. |
+| `directly-pass-task-outputs` | no | Boolean. Defaults to `true`. Set `false` only when sdd.md requests it. |
 | `description` | no | Defaults to empty string. Always emitted so downstream consumers read a consistent shape. |
 
 See [`planning.md`](planning.md) for how these fields are sourced from `sdd.md`.
@@ -37,12 +38,13 @@ Runs before § Write caseplan.json. Writes 5 static JSON files directly. All sub
 ### Pre-flight
 
 1. **Solution exists.** `<SolutionDir>/<SolutionName>.uipx` must exist (created by `uip solution init` — Step 6.0).
-2. **Target dir is clean.** None of the 5 scaffold files may already exist in `<SolutionDir>/<ProjectName>/`. If any is present, **hard-fail** with:
+2. **Project dir is a distinct child of the solution dir.** The target is always `<SolutionDir>/<ProjectName>/`, never `<SolutionDir>/` itself. `<ProjectName>` equal to `<SolutionName>` is normal and still nests — `Foo/Foo/`. Never collapse the two because the names match.
+3. **Target dir is clean.** None of the 5 scaffold files may already exist in `<SolutionDir>/<ProjectName>/`. If any is present, **hard-fail** with:
    ```
    <SolutionDir>/<ProjectName>/<file> already exists. Remove <SolutionDir>/<ProjectName>/ before re-scaffolding. No --force equivalent in the JSON path.
    ```
    Do not overwrite. Do not merge.
-3. **Create directory.** `mkdir -p <SolutionDir>/<ProjectName>` via Bash.
+4. **Create directory.** `mkdir -p <SolutionDir>/<ProjectName>` via Bash.
 
 ### Generate one UUID for `operate.json.projectId`
 
@@ -131,6 +133,8 @@ Hard-fail on the first write error — no rollback, no staging directory. Partia
 - `<SolutionDir>/<ProjectName>/project.uiproj` exists and parses as JSON.
 - `<SolutionDir>/<ProjectName>/operate.json` contains a non-empty `projectId` string.
 - `<SolutionDir>/<ProjectName>/entry-points.json` parses as JSON and its `entryPoints` field is `[]`.
+- **No `content/` dir on disk.** Case file is flat at `<SolutionDir>/<ProjectName>/caseplan.json`; if nested under `content/`, layout is wrong — halt. `validate`/`debug` resolve only the flat root path (an ad-hoc validate against the nested path passes, but real project-dir resolution fails).
+- **Project dir is not the solution dir.** `<SolutionName>.uipx` and `caseplan.json` must NOT be siblings — `<SolutionDir>/<ProjectName>/<SolutionName>.uipx` must not exist. Nothing downstream catches this: `validate` passes on any path given, and `uip solution projects add <SolutionDir> …` registers the solution directory as its own project without error. But `debug` walks up from the project dir for the enclosing `.uipx`, so a collapsed layout overshoots it and fails with `no .uipx file was found in <workingRoot>`. Halt; move the 6 project files into `<SolutionDir>/<ProjectName>/`.
 
 If any check fails, halt and report.
 
@@ -163,7 +167,7 @@ Pure skeleton: top-level fields + `metadata` block + empty `bindings: []` + empt
 ```json
 {
     "id": "case-aBcDeFgHiJ",
-    "version": "20.0.0",
+    "version": "27.0.0",
     "name": "<name>",
     "metadata": {
         "caseIdentifier": "<case-identifier — defaults to <name>>",
@@ -171,6 +175,7 @@ Pure skeleton: top-level fields + `metadata` block + empty `bindings: []` + empt
         "caseAppEnabled": <true|false — defaults to false>,
         "publishVersion": 2,
         "caseUnifiedSchemaEnabled": true,
+        "caseDirectlyPassTaskOutputs": <true|false — defaults to true>,
         "intsvcActivityConfig": "v2"
     },
     "bindings": [],
@@ -192,7 +197,7 @@ Adds top-level `description` field (NOT inside `metadata`):
 ```json
 {
     "id": "case-aBcDeFgHiJ",
-    "version": "20.0.0",
+    "version": "27.0.0",
     "name": "<name>",
     "description": "<description>",
     "metadata": {
@@ -201,6 +206,7 @@ Adds top-level `description` field (NOT inside `metadata`):
         "caseAppEnabled": <true|false>,
         "publishVersion": 2,
         "caseUnifiedSchemaEnabled": true,
+        "caseDirectlyPassTaskOutputs": <true|false — defaults to true>,
         "intsvcActivityConfig": "v2"
     },
     "bindings": [],
@@ -216,6 +222,8 @@ Adds top-level `description` field (NOT inside `metadata`):
 ```
 
 > **`intsvcActivityConfig` always emitted** — set `metadata.intsvcActivityConfig: "v2"` on every caseplan.
+>
+> **`caseDirectlyPassTaskOutputs` always emitted** — write `metadata.caseDirectlyPassTaskOutputs` on every caseplan, value from the T01 `directly-pass-task-outputs` field (defaults to `true` when sdd.md is silent). When `true`, task outputs pass directly through messages instead of shared variables, fixing race conditions on task outputs in cases with parallel tasks. Emit `false` only when sdd.md explicitly requests it.
 
 ## caseIdentifier — constant vs external
 
@@ -239,10 +247,11 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
 1. **File parses.** `JSON.parse(readFile('caseplan.json'))` succeeds.
 2. **Top-level shape.**
    - `id` matches `^case-[A-Za-z0-9]{10}$`
-   - `version === "20.0.0"`
+   - `version === "27.0.0"`
    - `metadata.caseUnifiedSchemaEnabled === true`
    - `metadata.publishVersion === 2`
    - `metadata.intsvcActivityConfig === "v2"`
+   - `typeof metadata.caseDirectlyPassTaskOutputs === "boolean"` (present; `true` unless sdd.md requested `false`)
    - `bindings` is an array of length 0
    - `variables.inputs`, `variables.outputs`, `variables.inputOutputs` are all arrays of length 0
 3. **Empty node/edge arrays + layout.**
@@ -254,3 +263,4 @@ If any check fails, halt and report — do not proceed to downstream plugins.
 
 **Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, so the case cannot be entered). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command"). Pre-build validate is informational only, regardless of schema.
 
+<!-- END: impl-json.md -->

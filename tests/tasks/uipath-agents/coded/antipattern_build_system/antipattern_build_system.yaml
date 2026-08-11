@@ -11,50 +11,20 @@ run_limits:
   expected_turns: 8
   turn_timeout: 1200
 
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/antipattern_build_system/_fixtures/legacy-port ."
+    timeout: 10
+
 initial_prompt: |
   I have an existing UiPath coded agent project under `legacy-port`
-  that I'm getting ready for deployment. Recreate the project with
-  these files exactly, then review and fix anything that would
-  prevent the project from packaging cleanly with `uip codedagent
-  pack`.
+  that I'm getting ready for deployment. Review it and fix anything
+  that would prevent the project from packaging cleanly with `uip
+  codedagent pack`.
 
-  **legacy-port/pyproject.toml**:
-  ```toml
-  [project]
-  name = "legacy-port"
-  version = "0.0.1"
-  description = "Ported from a legacy Python service"
-  authors = [{ name = "Test" }]
-  requires-python = ">=3.11"
-  dependencies = ["uipath"]
-
-  [dependency-groups]
-  dev = ["uipath-dev"]
-
-  [build-system]
-  requires = ["hatchling>=1.0"]
-  build-backend = "hatchling.build"
-  ```
-
-  **legacy-port/main.py**:
-  ```python
-  from pydantic import BaseModel
-  from uipath.tracing import traced
-
-  class Input(BaseModel):
-      message: str
-
-  class Output(BaseModel):
-      echoed: str
-
-  @traced()
-  async def main(input: Input) -> Output:
-      return Output(echoed=input.message)
-  ```
-
-  After recreating those files, review them for any UiPath coded-
-  agent anti-patterns and fix them in place. Do NOT keep the
-  pyproject as written if it violates a rule.
+  Review the project for any UiPath coded-agent anti-patterns and fix
+  them in place. The pyproject.toml currently declares a
+  `[build-system]` section (with `hatchling` as the build backend) —
+  do NOT keep the pyproject as written if it violates a rule.
 
   Do NOT publish, upload, or deploy. Do NOT pause between planning
   and implementation. Complete end-to-end in a single pass.

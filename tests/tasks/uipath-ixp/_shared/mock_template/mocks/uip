@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""Offline `uip` mock for the uipath-ixp SHAPE-ONLY smoke tasks.
+
+These smoke tasks are graded from complete invocations in the call log and
+must NOT authenticate or reach a live tenant.
+Without this mock the smoke harness (tests/experiments/smoke.yaml +
+.github/workflows/smoke-skills.yml) injects a live alpha bot token, so a bare
+`uip ixp ...` would hit designtime-api on alpha — 404-ing on fixture ids like
+`doc-abc-123` — i.e. real traffic with no test value. `mock_path_dirs: [mocks]`
+PATH-prepends this script so `uip` resolves here instead of the real CLI.
+
+It records each invocation and fails like an unauthenticated CLI WITHOUT any
+network call, matching each task's "commands will fail with auth errors —
+expected" prompt framing.
+
+Two sinks, deliberately (see ../README.md § Call log for the record schema):
+
+  calls.log    one flat `uip <args>` line per invocation. Byte-identical to
+               the sh mock this replaced, so criteria written against it keep
+               working unchanged.
+  calls.jsonl  one JSON object per invocation, argv preserved as a list.
+
+Standard input is deliberately NOT recorded. Reading it here would block
+whenever the sandbox leaves stdin attached to an open pipe, hanging the task
+until its timeout. No IXP command reads stdin — the skill passes payloads as
+flag VALUES (`--updates "$(cat f.json)"`), which `argv` captures in full. Add
+the field if that ever changes; a new key breaks no existing criterion.
+
+Python, not sh, because sh cannot emit correct JSON without hand-rolled
+escaping. Requires `python3` on PATH — already true of the smoke image, which
+runs the uipath-troubleshoot dispatcher (`tests/tasks/uipath-troubleshoot/
+_shared/mock_template/m/uip`) the same way. IXP smoke tasks are Linux-only
+(they carry no `windows` tag, so smoke-skills.yml never routes them to a
+Windows runner), hence no `uip.cmd` twin.
+"""
+
+import json
+import os
+import sys
+import time
+
+MOCK_DIR = os.path.dirname(os.path.abspath(__file__))
+FLAT_LOG = os.path.join(MOCK_DIR, "calls.log")
+JSON_LOG = os.path.join(MOCK_DIR, "calls.jsonl")
+
+STDERR_MESSAGE = "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+EXIT_CODE = 1
+
+
+def record(tool, args, exit_code):
+    """Append this invocation to both sinks.
+
+    Best-effort: a failed write never breaks the agent's command, matching the
+    sh mock's `|| true`. `newline="\\n"` suppresses CRLF translation if a
+    contributor runs the suite through a Windows Python, keeping the flat log
+    byte-comparable with CI.
+    """
+    # `uip %s` of the space-joined args with CR/LF folded to spaces — so a
+    # heredoc-expanded JSON argument stays ONE record. Same transform the sh
+    # mock did with `printf | tr '\r\n' '  '`.
+    flat = "{} {}".format(tool, " ".join(args)).replace("\r", " ").replace("\n", " ")
+    try:
+        with open(FLAT_LOG, "a", encoding="utf-8", errors="replace", newline="\n") as f:
+            f.write(flat + "\n")
+    except OSError:
+        pass
+
+    # argv as a list — the structural fix. The flat line above cannot say
+    # whether `--instructions "extract total, tax"` was one argument or two;
+    # this can. No verb/flag parsing here on purpose: splitting a verb from its
+    # positionals needs verb-depth knowledge, and flag parsing needs to know
+    # which flags take values. Both are interpretation, and belong in the
+    # criterion — versioned and unit-tested in one place, not duplicated as
+    # heuristics on the recording side.
+    call = {
+        "ts": round(time.time(), 3),
+        "tool": tool,
+        "argv": list(args),
+        "exit": exit_code,
+    }
+    try:
+        # ensure_ascii (the default) escapes non-ASCII and any stray surrogate
+        # from undecodable argv bytes, so an exotic argument can never make
+        # this write raise and silently drop the record.
+        with open(JSON_LOG, "a", encoding="utf-8", newline="\n") as f:
+            f.write(json.dumps(call) + "\n")
+    except OSError:
+        pass
+
+
+def main(argv):
+    record("uip", argv[1:], EXIT_CODE)
+    sys.stderr.write(STDERR_MESSAGE)
+    return EXIT_CODE
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

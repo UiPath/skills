@@ -2,6 +2,8 @@
 
 Pause agent execution for human approval, external processes, or job monitoring.
 
+> **Guardrail-triggered escalation is separate.** If the human review should fire automatically on a *guardrail violation* (e.g. PII/harmful-content detected → send to a reviewer), use `EscalateAction` as a guardrail action — see [guardrails § Escalation action (HITL)](guardrails/guardrails.md#escalation-action-human-in-the-loop). This page covers **manual** pause points you place in agent code via `interrupt(...)`.
+
 ## Pause Patterns
 
 **HITL pattern selection MUST be an interactive question unless the user named a specific pattern.** "Human in the loop", "approval", "confirmation", "review", "escalation" alone do NOT name a pattern.

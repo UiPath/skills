@@ -1,9 +1,0 @@
-{
-  "projectId": "Fixture.LinearProcess",
-  "main": "linear-process.bpmn",
-  "contentType": "ProcessOrchestration",
-  "targetFramework": "Portable",
-  "runtimeOptions": {
-    "requiresUserInteraction": false
-  }
-}

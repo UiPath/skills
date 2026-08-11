@@ -26,13 +26,18 @@ permissions:
 
 jobs:
   automerge:
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     steps:
       - name: Merge eligible refresh PRs
         env:
           # PAT so the merge commit triggers downstream workflows (e.g. any
           # post-merge job that depends on the new catalog landing on main).
-          # Same PAT used elsewhere — see activation-gate.yml.
+          # Repo-write credential: needs contents + pull-requests + issues
+          # (the `--label automated` filter below reads labels, which sit
+          # under the Issues permission) + metadata (the rules API call).
+          # Shared with refresh-uip-catalog.yml and nothing else — both
+          # trigger on `schedule`/`check_suite`, so a PR author cannot reach
+          # this token. Feed-read consumers use GH_PACKAGES_TOKEN.
           GH_TOKEN: ${{ secrets.GH_PAT }}
           # `gh pr {list,view,merge}` resolve the repo from a local git
           # remote; this job has no actions/checkout step, so GH_REPO is

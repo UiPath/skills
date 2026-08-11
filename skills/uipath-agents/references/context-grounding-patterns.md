@@ -27,7 +27,7 @@ Route by file type first, signal second:
 |---|---|---|---|
 | `.csv` | "add columns" / "classify every row" / "enrich vendor addresses" / "MCC categorization" / "1000 rows of structured output" | **BatchTransform** | Coded: [coded/capabilities/batch-transform/planning.md](coded/capabilities/batch-transform/planning.md). Low-code: [lowcode/capabilities/built-in-tools/batch-transform/planning.md](lowcode/capabilities/built-in-tools/batch-transform/planning.md). |
 | `.pdf` / `.txt` | "summarize" / "research across these docs" / "one narrative answer" | **DeepRAG** | Coded: [coded/capabilities/deeprag/planning.md](coded/capabilities/deeprag/planning.md). Low-code: [lowcode/capabilities/built-in-tools/deeprag/planning.md](lowcode/capabilities/built-in-tools/deeprag/planning.md). |
-| pre-built index, no file upload | "search the policy KB" / "look up X in our docs" | **Index search** | `sdk.context_grounding.unified_search_async` or low-code Context tool — see [coded/capabilities/context-grounding.md](coded/capabilities/context-grounding.md). |
+| pre-built index, no file upload | "search the policy KB" / "look up X in our docs" | **Index search** | Consume: `sdk.context_grounding.unified_search_async` or low-code Context tool — see [coded/capabilities/context-grounding.md](coded/capabilities/context-grounding.md). Create / ingest / inspect the index from the CLI: [uipath-platform/references/context-grounding/index-management.md](../../uipath-platform/references/context-grounding/index-management.md). |
 
 ## Surface Selection
 

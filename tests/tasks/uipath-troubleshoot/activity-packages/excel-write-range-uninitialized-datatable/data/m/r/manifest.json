@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Write Range customer-export scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "68ba941af4.json"},
+    {"match": "or folders list --output json", "file": "68ba941af4.json"},
+    {"match": "or jobs list --folder-key \"f0055555-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "5bc3340905.json"},
+    {"match": "or jobs list --folder-key f0055555-3333-4444-5555-666677778888 --state Faulted --output json", "file": "5bc3340905.json"},
+    {"match": "or jobs get \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "528a001c26.json"},
+    {"match": "or jobs get ee111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "528a001c26.json"},
+    {"match": "or jobs history \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "96003356e7.json"},
+    {"match": "or jobs history ee111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "96003356e7.json"},
+    {"match": "or jobs logs \"ee111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "da0a0f6f4f.json"},
+    {"match": "or jobs logs ee111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "da0a0f6f4f.json"}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T09:14:04.190Z",
+      "Message": "The file 'C:\\UiPath\\Legacy Docs\\data\\Contract.doc' is not a valid Office Open XML document. Only .docx files are supported by this activity.\r\nin Main.xaml\r\n    at WordReadTextStandalone \"Read Text\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ Pick this when:
 
 Confirm BatchTransform is the right mode first — see [../../../../context-grounding-patterns.md](../../../../context-grounding-patterns.md).
 
-For coded agents (Python, LangGraph) → [../../../coded/capabilities/batch-transform/planning.md](../../../coded/capabilities/batch-transform/planning.md).
+For coded agents (Python, LangGraph) → [../../../../coded/capabilities/batch-transform/planning.md](../../../../coded/capabilities/batch-transform/planning.md).
 
 ## Inputs You Need Before Building
 

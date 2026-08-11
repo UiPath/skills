@@ -26,8 +26,8 @@ run_limits:
 
 initial_prompt: |
   Build a UiPath Case Management solution named "BranchingExit" containing
-  a project also named "BranchingExit" from the sdd.md below. Use v20
-  schema. Write the sdd.md to disk first, then build from it.
+  a project also named "BranchingExit" from the sdd.md below.
+  Write the sdd.md to disk first, then build from it.
 
   ```
   # SDD — BranchingExit
@@ -48,7 +48,6 @@ initial_prompt: |
   | Case Name | BranchingExit |
   | Case Description | Triage stage routes to one of three downstream branches via stage-exit conditions covering wait-for-user, exit-only with marks-complete:false, and exit-only with marks-complete:true. |
   | Case Identifier | Prefix: BE, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
   | SLA Type | Not specified |
 
@@ -250,8 +249,6 @@ initial_prompt: |
   debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
   in a single pass and finish with `uip maestro case validate` passing on
   the resulting caseplan.json.
-  Before starting, load the uipath-maestro-case skill. Read and follow its
-  workflow steps exactly.
 
 success_criteria:
   - type: run_command

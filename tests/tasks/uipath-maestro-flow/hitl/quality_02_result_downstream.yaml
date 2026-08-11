@@ -25,13 +25,13 @@ initial_prompt: |
 
   Wire: Trigger -> HITL ->|completed| Script -> End
 
-  Use the inline quickform node (uipath.human-in-the-loop).
+  Use the inline quickform node (uipath.human-in-the-loop.quick-form).
   Validate the flow after building.
 
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip maestro flow validate ExpenseApproval/ExpenseApproval/ExpenseApproval.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -41,7 +41,7 @@ success_criteria:
     description: "Flow contains inline HITL node"
     path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 2.0
     pass_threshold: 1.0
 

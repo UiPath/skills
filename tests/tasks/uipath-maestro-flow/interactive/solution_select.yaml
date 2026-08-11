@@ -1,0 +1,139 @@
+task_id: skill-flow-solution-select-ask
+description: >
+  Interactive-mode variant of init-validate. The working directory already
+  contains two existing solutions (SolarReports, TideTracker). When asked to
+  create a new Flow project, the skill's greenfield rule
+  (`author/references/greenfield.md` — "Check for existing solutions with
+  `find . -maxdepth 2 -type f -name '*.uipx' -print`") requires the agent to
+  STOP and present a dropdown via
+  the interaction mechanism available in its runtime (one option per
+  discovered solution + "Create a new solution" + "Something else") instead of
+  guessing. A simulated user answers the prompt with a non-default solution
+  name. The resulting artifact proves that the agent used that answer before
+  building and validating the Flow.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, simulation]
+
+agent:
+  # Make the structured-question tool available to runtimes that support it.
+  # Others may ask the same question through chat.
+  # allowed_tools uses replace strategy — restate the full default list.
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
+
+run_limits:
+  # Simulation interleaves user+agent turns, so visible-turn count runs higher
+  # than a single-shot task. Advisory only — max_turns (experiment) is the cap.
+  expected_turns: 18
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures/existing_solutions
+
+# No initial_prompt — in simulation mode the simulator generates the opening
+# user message from the persona and goal below. A simulated user then answers
+# the solution-selection prompt with a non-default solution name, so the test
+# runs end-to-end without a human while verifying that the answer was used.
+simulation:
+  enabled: true
+  persona: |
+    You are a UiPath developer working in a directory that already holds a
+    couple of unrelated solutions (SolarReports and TideTracker). You want a
+    fresh, separate solution for this new work and you trust the agent to
+    drive the CLI.
+  goal: |
+    Get a new Flow project called WeatherAlert created in a separate solution
+    and validated successfully.
+  constraints:
+    - "If the agent asks which solution the new Flow project should live in, do NOT pick SolarReports or TideTracker — choose the 'Create a new solution' option and specify the exact solution name `WeatherSelection-7K4M`."
+    - "If the agent asks for the new solution's name separately, answer exactly `WeatherSelection-7K4M`."
+    - "If asked any other clarifying question, pick the recommended / first sensible option and keep moving."
+    - "Keep replies short — one sentence or a single chosen option."
+    - "Never tell the agent to stop, skip validation, or reuse an existing solution."
+  max_turns: 6
+
+success_criteria:
+  # ── Selection honored: Flow landed in the user-chosen new solution ─────
+  # WeatherSelection-7K4M has an unguessable suffix, so landing here proves the
+  # agent surfaced the choice AND used the answer — without grading the ask
+  # mechanism (Claude AskUserQuestion vs Codex chat).
+  - type: json_check
+    description: "Flow project registered in the user-selected solution .uipx"
+    path: "WeatherSelection-7K4M/WeatherSelection-7K4M.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+      - expression: "length(Projects[?Type=='Flow'])"
+        operator: "gte"
+        expected: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file created inside the user-selected solution"
+    path: "WeatherSelection-7K4M/WeatherAlert/WeatherAlert.flow"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # ── Did NOT silently adopt an existing solution ────────────────────────
+  - type: command_executed
+    description: "Agent did not init the Flow project inside a pre-existing solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init\b.*(SolarReports|TideTracker)'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "SolarReports solution left untouched (no project registered)"
+    path: "SolarReports/SolarReports.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "equals"
+        expected: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "TideTracker solution left untouched (no project registered)"
+    path: "TideTracker/TideTracker.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "equals"
+        expected: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ── Build is valid in the selected solution ────────────────────────────
+  - type: run_command
+    description: "Flow validates in the selected solution"
+    command: "uip maestro flow validate WeatherSelection-7K4M/WeatherAlert/WeatherAlert.flow --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized a Flow project with uip maestro flow init"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ── Advisory: recorded in the report, never gates the run ──────────────
+  - type: command_executed
+    description: "Agent created a solution with uip solution init (or legacy new)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(init|new)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: outcome already enforced by the WeatherSelection-7K4M json_check; records the explicit-init convention only
+
+  - type: command_not_executed
+    description: "Advisory: no default WeatherAlert solution before the name was given — records the default-then-repair inefficiency; nondeterministic on simulator name-timing, so non-gating"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(init|new)\s+["'']?WeatherAlert(?:["'']?\s|$)'
+    weight: 1.0
+    pass_threshold: 0.0

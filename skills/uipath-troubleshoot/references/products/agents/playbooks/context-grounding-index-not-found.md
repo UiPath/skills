@@ -7,7 +7,7 @@ confidence: high
 ## Context
 
 What this looks like:
-- Agent job faults during a tool call; `uip agent run status <job-id> --output json` shows `Faulted`
+- A deployed agent job or `uip agent debug` run faults during a context tool call
 - `uip traces spans get <trace-id> --output json` contains a span with `SPANTYPE: contextGroundingTool` or `toolCall` whose `ATTRIBUTES.error` contains:
   ```
   ContextGroundingIndex not found Code: AGENT_RUNTIME.UNEXPECTED_ERROR
@@ -15,22 +15,25 @@ What this looks like:
 - Full error prefix: `Unexpected Error Details: An unexpected error occurred during agent execution, please try again later or contact your Administrator. Error Details: ContextGroundingIndex not found`
 
 What can cause it:
-- The grounding index referenced in the agent's configuration was deleted from Data Service after the agent was published
-- The agent was published pointing to an index in a different folder or tenant than where it is deployed
-- The index name or ID in `agent.json` was changed manually and does not match any existing index
-- The index was never created — the agent was published with a placeholder or stale reference
+- The grounding index referenced in the agent's context `resource.json` was deleted after the solution was uploaded or published
+- The solution was uploaded or published pointing to an index in a different folder or tenant than where it is deployed
+- The `indexName` or `folderPath` in `<AgentName>/resources/<ContextName>/resource.json` does not match any existing index
+- The index was never created — the solution was uploaded or published with a placeholder or stale reference
 
 What to look for:
 - The `contextGroundingTool` span appears before the `agentRun` fault — the index lookup happens at tool-call time, not at startup
 - Whether the agent was recently re-deployed or the index was recently modified
+- For the agent-side context resource shape, use the context capability references in [`uipath-agents`](/uipath:uipath-agents).
 
 ## Investigation
 
-1. Get the job trace ID:
+1. Get the spans for the failing run. If you already have a trace ID, use it directly. If you only have an Orchestrator job key, resolve it through traces:
 
    ```bash
-   uip agent run status <job-id> --output json \
-     --output-filter "traceId"
+   uip traces spans get <trace-id> --output json
+
+   # or
+   uip traces spans get --job-key <job-key> --folder-path "<folder-path>" --output json
    ```
 
 2. Find the `contextGroundingTool` span and extract the index reference:
@@ -42,13 +45,11 @@ What to look for:
 
 3. Note the span `name` and any index identifier visible in `attrs` — this is the index the agent tried to resolve.
 
-4. Open the local agent project and list configured context resources:
-
-   ```bash
-   uip agent context list --output json
-   ```
-
-   Note the index name the agent references.
+4. Open the local agent project and inspect the matching context resource at `<AgentName>/resources/<ContextName>/resource.json`. Confirm:
+   - `$resourceType` is `context`
+   - `contextType` is `index`
+   - `indexName` matches the index from the trace exactly
+   - top-level `folderPath` is the literal folder path where the index exists
 
 5. Check whether that index exists in the deployment folder:
 
@@ -65,30 +66,40 @@ What to look for:
   ```bash
   uip context-grounding create --index-name "<index-name>" --bucket-source "<bucket-name>" --folder-path "<folder-path>" --output json
   uip context-grounding ingest --index-name "<index-name>" --folder-path "<folder-path>" --output json
+  uip context-grounding retrieve --index-name "<index-name>" --folder-path "<folder-path>" --output json
   ```
 
-  No agent republish needed — the runtime resolves by name.
+  Ingestion is async: after `ingest`, poll `retrieve` until `last_ingestion_status` is `Successful` before searching — the index is not queryable earlier. No agent project change or publication is needed when the existing resource reference already names this index and folder; the runtime resolves it directly.
 
 **If the index exists but is in a different folder — re-link the agent:**
+- Edit `<AgentName>/resources/<ContextName>/resource.json`; set `indexName` to the correct index name and `folderPath` to the literal folder path returned by resource discovery.
+- Refresh and validate the agent:
 
   ```bash
-  uip agent context remove --name "<old-index-name>" --output json
-  uip agent context add --name "<correct-index-name>" --folder-key "<folder-key>" --output json
-  uip agent publish --output json
+  uip agent refresh "<AGENT_PROJECT_DIR>" --output json
+  uip agent validate "<AGENT_PROJECT_DIR>" --output json
   ```
 
-**If the index reference in `agent.json` is stale or wrong:**
-- Correct the index name in `agent.json` → `context` block to match an existing index from `uip context-grounding list`
-- Republish: `uip agent publish --output json`
+**If the index reference in `resource.json` is stale or wrong:**
+- Correct the matching context `resource.json` to use the existing index's `indexName` and `folderPath`; do not use the deprecated context-management commands.
+- Run the same refresh/validate sequence above.
 
 **If the index was never created:**
 
   ```bash
   uip context-grounding create --index-name "<index-name>" --bucket-source "<bucket-name>" --folder-path "<folder-path>" --output json
   uip context-grounding ingest --index-name "<index-name>" --folder-path "<folder-path>" --output json
-  uip agent context add --name "<index-name>" --folder-key "<folder-key>" --output json
-  uip agent publish --output json
+  uip context-grounding retrieve --index-name "<index-name>" --folder-path "<folder-path>" --output json
   ```
+
+  After ingestion is `Successful`, add `<AgentName>/resources/<ContextName>/resource.json` using the `contextType: "index"` shape from the Index Context reference, then refresh and validate the agent:
+
+  ```bash
+  uip agent refresh "<AGENT_PROJECT_DIR>" --output json
+  uip agent validate "<AGENT_PROJECT_DIR>" --output json
+  ```
+
+After a successful validation of any agent project change, report the result and ask whether the user wants to upload the corrected solution to Studio Web or publish/deploy it to Orchestrator. Do not perform any upload, publish, or deployment action without explicit approval.
 
 **If none of the above — the index exists but the runtime cannot resolve it:**
 - Capture `uip traces spans get <trace-id> --output json` and escalate to the Agents team with the full span output and the index name

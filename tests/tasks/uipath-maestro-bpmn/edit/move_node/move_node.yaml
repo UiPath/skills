@@ -1,0 +1,59 @@
+task_id: skill-bpmn-edit-move-node
+description: >
+  Brownfield edit: reorder two adjacent tasks in an existing, valid Maestro BPMN
+  by rewiring the sequence flows (BPMN has no positional move — the edit is a
+  pure rewiring), keeping both node payloads and the diagram consistent.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 70
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  A valid Maestro BPMN file `Onboarding.bpmn` is in the working directory. Its
+  flow is: "Create Account" (Task_Create) -> "Send Welcome" (Task_Welcome).
+
+  Reorder the process so "Send Welcome" runs BEFORE "Create Account": the flow
+  must become Start -> Send Welcome -> Create Account -> end. Rewire the sequence
+  flows and keep the diagram edges consistent with the new order.
+
+  Make a SURGICAL edit: both tasks' names, uipath:* extension payloads, element
+  ids, uipath:migrationVersion, and the process variables must round-trip
+  untouched — only the wiring changes.
+
+  Validate the edited file locally before finishing. Do not upload, publish,
+  deploy, debug, run, or pack anything, and do not pause for approval — make the
+  edit end to end in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "The edited BPMN file is still present"
+    path: "Onboarding.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Preserve-only payload round-tripped untouched"
+    path: "Onboarding.bpmn"
+    includes:
+      - "preserve-only-do-not-touch"
+      - 'uipath:migrationVersion'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Tasks reordered by rewiring flows, payloads preserved, file still structurally sound"
+    command: "python3 $TASK_DIR/check_move_node.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

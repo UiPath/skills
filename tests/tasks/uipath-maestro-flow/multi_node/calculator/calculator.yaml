@@ -15,13 +15,12 @@ initial_prompt: |
 
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
-  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate Calculator/Calculator/Calculator.flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -31,7 +30,7 @@ success_criteria:
   - type: run_command
     description: "Flow debug runs and output contains 391 (17 * 23)"
     command: "python3 $TASK_DIR/check_calculator_flow.py"
-    timeout: 120
+    timeout: 300  # must exceed run_debug's internal subprocess timeout (240s)
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

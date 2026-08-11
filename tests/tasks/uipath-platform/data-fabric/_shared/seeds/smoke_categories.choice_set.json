@@ -1,0 +1,6 @@
+{
+  "name": "CE_SmokeCategories",
+  "displayName": "Smoke Categories",
+  "description": "Tenant-scoped categories for smoke_choice_relationship (travel/meals/lodging).",
+  "values": ["travel", "meals", "lodging"]
+}

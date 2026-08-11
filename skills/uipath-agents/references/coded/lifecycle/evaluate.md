@@ -40,23 +40,25 @@ evaluations/
 ├── eval-sets/
 │   └── smoke-test.json              # Test cases
 └── evaluators/
-    └── llm-judge-trajectory.json    # Evaluator config
+    └── llm-judge-output.json        # Evaluator config
 ```
 
 Every evaluator referenced in an eval set's `evaluatorRefs` must have a matching config file in `evaluations/evaluators/` — the `id` in the config must match the `evaluatorRefs` value exactly. Evaluators are auto-discovered from this directory.
 
-Example `evaluations/evaluators/llm-judge-trajectory.json`:
+Pick by output type: deterministic/structured → `uipath-exact-match` / `uipath-contains` / `uipath-json-similarity`; natural language → `uipath-llm-judge-output-semantic-similarity` (shown below). Use trajectory/tool-call evaluators only for multi-step / tool-using agents — they score 0.0 on single-step agents. Full guide: [evaluators.md](evaluations/evaluators.md), [best-practices.md](evaluations/best-practices.md).
+
+Example `evaluations/evaluators/llm-judge-output.json`:
 
 ```json
 {
   "version": "1.0",
-  "id": "LLMJudgeTrajectoryEvaluator",
-  "evaluatorTypeId": "uipath-llm-judge-trajectory-similarity",
+  "id": "LLMJudgeOutputEvaluator",
+  "evaluatorTypeId": "uipath-llm-judge-output-semantic-similarity",
   "evaluatorConfig": {
-    "name": "LLMJudgeTrajectoryEvaluator",
+    "name": "LLMJudgeOutputEvaluator",
     "model": "gpt-4o-mini-2024-07-18",
     "defaultEvaluationCriteria": {
-      "expectedAgentBehavior": "Agent should process the input and return a response."
+      "expectedOutput": {"<output_field>": "A correct, on-topic response for the given input."}
     }
   }
 }

@@ -58,8 +58,8 @@ Allowed `status` values:
 The agent runs the review command once per agent, capturing JSON:
 
 ```bash
-uip agent review --project-dir "<PROJECT_DIR>" --output json        # low-code
-uip codedagent review --project-dir "<PROJECT_DIR>" --output json   # coded
+uip agent review "<PROJECT_DIR>" --output json        # low-code
+uip codedagent review "<PROJECT_DIR>" --output json   # coded
 ```
 
 It returns `Data.Issues[]` — deterministic findings keyed by `RuleId`, in the same severity/category/description/file/fix shape as a catalog row. The agent carries these into the report verbatim. The catalog does not list these `RuleId`s; the CLI's registry is their source of truth.

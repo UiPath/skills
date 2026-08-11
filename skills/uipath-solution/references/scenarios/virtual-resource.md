@@ -4,8 +4,8 @@ You're shipping a **brand-new** asset (or queue, or bucket) as part of the solut
 
 There are two paths to create a virtual resource:
 
-- **From a binding** — write the resource into `bindings_v2.json` (typically via the owning product: Maestro Flow / Case, Studio Web, agent scaffold), then `solution resource refresh` reconciles it into a virtual stub. The flow this page covers.
-- **Atomically, no binding** — `uip solution resource add --source local --kind <kind> --name <name>` (see [develop-solution.md Step 9](../develop-solution.md#step-9-add-a-resource-atomically)). Useful when no project consumes the resource yet (CI provisioning ahead of code), or when an agent is mutating one resource at a time and doesn't want to touch any binding file. Same end state on disk; same deploy behavior. Offline-friendly (no auth round-trip).
+- **From a binding** — write the resource into `bindings_v2.json` (typically via the owning product: Maestro Flow / Case, Studio Web, agent scaffold), then `solution resources refresh` reconciles it into a virtual stub. The flow this page covers.
+- **Atomically, no binding** — `uip solution resources add --source local --kind <kind> --name <name>` (see [develop-solution.md Step 9](../develop-solution.md#step-9-add-a-resource-atomically)). Useful when no project consumes the resource yet (CI provisioning ahead of code), or when an agent is mutating one resource at a time and doesn't want to touch any binding file. Same end state on disk; same deploy behavior. Offline-friendly (no auth round-trip).
 
 ## Setup
 
@@ -36,7 +36,7 @@ The stub has `value: ""` (or the type's placeholder default — `false` for bool
 
 ## Idempotency on re-refresh
 
-Re-running `solution resource refresh` is a no-op for virtuals at the same `(kind, folder, name)` — the second pass detects the existing stub and skips:
+Re-running `solution resources refresh` is a no-op for virtuals at the same `(kind, folder, name)` — the second pass detects the existing stub and skips:
 
 ```
 Synced 0 resources (1 already in solution)
@@ -79,7 +79,7 @@ uip solution deploy run -n MyDeployment --package-name MySolution --package-vers
 
 ```bash
 # Virtual exists locally
-uip solution resource list --source local --kind Asset --output json
+uip solution resources list --source local --kind Asset --output json
 
 # Deploy config has the resource and its `configuration.value`
 uip solution deploy config get MySolution -d deploy-config.json --output json

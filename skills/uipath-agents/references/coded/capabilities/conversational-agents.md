@@ -1,5 +1,7 @@
 # Conversational Agents
 
+> **Coded conversational agents are currently not intended for production use-cases.** For conversational use-cases, use **low-code conversational agents** by referring to [../../lowcode/lowcode.md](../../lowcode/lowcode.md). Only use coded conversational agents if the user is strongly requesting to use coded agents and the agent will only be tested and ran on a local machine.
+
 Chat-style coded agents where the UiPath runtime feeds **one message per turn** and threads history across turns.
 
 Supported on **LangGraph** and **LlamaIndex**. Coded Function and OpenAI Agents are not conversational.

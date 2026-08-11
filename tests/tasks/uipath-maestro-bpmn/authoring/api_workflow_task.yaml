@@ -1,16 +1,18 @@
 task_id: skill-bpmn-api-workflow-task
 description: >
   Author a Maestro BPMN API workflow invocation, covering the
-  Orchestrator.ExecuteApiWorkflowAsync service-task row with an eval.
-tags: [uipath-maestro-bpmn, e2e, lifecycle:generate, "node:service-task", "feature:api-workflow"]
+  Orchestrator.ExecuteApiWorkflowAsync service-task row with an eval. This task
+  catches the Claude-vs-Codex metadata drift: Claude passed by using the
+  minimal local synthetic package shape, while Codex failed after copying
+  CLI-style metadata where operate.json main used /content/<bpmn>#<start> and
+  package-descriptor.json used a files object.
+tags: [uipath-maestro-bpmn, e2e, "mode:build", lifecycle:generate, "node:service-task", "feature:api-workflow"]
 
 run_limits:
   expected_turns: 32
   turn_timeout: 1200
 
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Create a UiPath Maestro BPMN Process Orchestration project at:
     ApiWorkflowDispatch/ApiWorkflowDispatch
 
@@ -22,8 +24,8 @@ initial_prompt: |
   - A `bpmn:serviceTask` named "Run Customer Sync API Workflow".
   - The service task must use a `uipath:activity` shell with type
     `Orchestrator.ExecuteApiWorkflowAsync`.
-  - Map a request object input and map invocation/status/result outputs to
-    declared variables.
+  - Map a request object input and map invocation/status/result outputs directly
+    on that API workflow service task to declared variables.
   - Add a boundary error path to a failure end event and a success end event.
   - Include BPMN DI for visible elements.
 

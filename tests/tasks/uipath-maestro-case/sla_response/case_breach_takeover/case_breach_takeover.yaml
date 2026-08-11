@@ -1,0 +1,59 @@
+task_id: skill-case-sla-case-breach-takeover
+description: >
+  T5a of the SLA-response battery. A case-SLA BREACH that takes over the case enters a
+  separate interrupting lane which ends the case as a non-completing outcome. Pairs with
+  case_breach_oversight (identical requirement except the interrupting clause) to prove
+  isInterrupting tracks what the response does to active work rather than being stamped
+  true. Isolates the breach shape on a separate target: slaId alone, NO escalationId —
+  pre-PR guidance demanded both IDs resolve, which forced authors to invent a Breached
+  escalation the requirement never asked for. Also asserts exit-only plus a root case-exit
+  row with marksCaseComplete false, with normal completion left intact.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 50
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates
+
+initial_prompt: |
+  The SlaResponse case solution already exists on disk under SlaResponse/. Its case
+  definition is SlaResponse/SlaResponse/caseplan.json: three stages (Intake → Review →
+  Decision) and a 10-day case SLA.
+
+  Ops wants this: when a case blows the full 10 days, it escalates into a "Case SLA Review"
+  lane where a director decides how to close it out. The case team stops working the case
+  while that happens, and the case ends there — closed as escalated, which is not the same
+  as finishing the process normally. A case that never breaches must still complete the
+  normal way.
+
+  Model the director's work as one placeholder task in that lane — no action app or agent
+  is resolvable on this tenant, so leave its identity unresolved per the skill's rules and
+  do NOT query the tenant registry, connections, or users.
+
+  Do NOT run `uip maestro case debug`, publish, or upload anything. Do NOT ask for
+  approval, confirmation, or feedback — make the change end-to-end in a single pass and
+  finish with `uip maestro case validate` passing on the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the edited caseplan.json"
+    command: "uip maestro case validate SlaResponse/SlaResponse/caseplan.json --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "One interrupting secondary lane entered by sla-status-change on the root SLA with slaId alone and no escalationId; exits exit-only; a non-completing case-exit rule exists alongside the intact normal completion rule; 4 stages total"
+    command: "python3 $TASK_DIR/check_case_breach_takeover.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

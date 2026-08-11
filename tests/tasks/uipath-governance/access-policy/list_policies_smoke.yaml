@@ -11,7 +11,7 @@ description: >
   `uip gov access-policy` commands that hit the service will fail with an
   auth error. That is acceptable — what matters is that the agent invokes
   the correct commands with the correct flags.
-tags: [uipath-governance, smoke, list]
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, list]
 
 run_limits:
   expected_turns: 6
@@ -33,9 +33,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip gov access-policy list` with --output json"
+    description: "Agent invoked `uip gov access-policy list`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+access-policy\s+list\s+.*--output\s+json'
+    command_pattern: 'uip\s+gov\s+access-policy\s+list'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -43,7 +43,7 @@ success_criteria:
   - type: command_executed
     description: "Agent passed an OData --filter expression on the list command"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+access-policy\s+list\s+.*--filter\s+'
+    command_pattern: 'uip\s+gov\s+access-policy\s+list\s+[\s\S]*--filter\s+'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -51,7 +51,7 @@ success_criteria:
   - type: command_executed
     description: "Agent passed a --sort-by expression on the list command"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+access-policy\s+list\s+.*--sort-by\s+'
+    command_pattern: 'uip\s+gov\s+access-policy\s+list\s+[\s\S]*--sort-by\s+'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

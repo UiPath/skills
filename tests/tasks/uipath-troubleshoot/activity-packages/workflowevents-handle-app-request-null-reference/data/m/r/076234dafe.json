@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-25T14:22:13.402Z",
+      "Message": "Handle Apps Request: Object reference not set to an instance of an object.\r\nin ProcessRequest.xaml\r\n    at Assign 'Compute row count'\r\n    at Sequence 'Handle request'\r\n    at HandleAppRequest\r\n\r\n--- .NET stack trace ---\r\nSystem.NullReferenceException\r\n   at lambda_method(Closure , ActivityContext )\r\n   at System.Activities.CodeActivity`1.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at UiPath.Robot.Activities.Api.WorkflowExecutor.EndExecute(IAsyncResult result)\r\n   at UiPath.WorkflowEvents.Activities.HandleAppRequest.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

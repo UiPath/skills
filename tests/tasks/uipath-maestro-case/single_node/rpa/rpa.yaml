@@ -32,7 +32,6 @@ initial_prompt: |
   | Case Name | RpaSingleCase |
   | Case Description | Single-node case that runs the ProjectEuler RPA workflow on a fixed problem number. |
   | Case Identifier | Prefix: RSC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | 1 d |
   | SLA Type | Static |
 
@@ -87,7 +86,7 @@ initial_prompt: |
 
   | Field | Value |
   |---|---|
-  | Process Reference | Name "ProjectEuler", Folder "Shared" |
+  | Process Reference | Name "ProjectEuler RPA", Folder "Shared/uipath-maestro-flow" |
   | Component Type | RPA |
 
   **Inputs**
@@ -106,8 +105,6 @@ initial_prompt: |
   debug` yourself — the test harness runs it. Do NOT ask for approval,
   confirmation, or feedback. Build end-to-end in a single pass and finish
   with `uip maestro case validate` passing on the resulting caseplan.json.
-  Before starting, load the uipath-maestro-case skill. Read and follow its
-  workflow steps exactly.
 
 success_criteria:
   - type: run_command

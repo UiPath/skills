@@ -18,7 +18,7 @@ Validates:
        - properties.processName == "WeatherAPI"
        - properties.folderPath == "Shared/uipath-agents/WeatherAPI"
        - referenceKey is a UUID-shaped non-empty string (copied from
-         `uip solution resource list`'s `Key`)
+         `uip solution resources list`'s `Key`)
 """
 
 import os
@@ -118,7 +118,7 @@ def main() -> None:
     if not isinstance(rkey, str) or "-" not in rkey:
         sys.exit(
             f"FAIL: resource.referenceKey must be a UUID-shaped string copied "
-            f"from `uip solution resource list`'s `Key`, got {rkey!r}"
+            f"from `uip solution resources list`'s `Key`, got {rkey!r}"
         )
     print(f"OK: resource.referenceKey={rkey!r} (UUID-shaped)")
 

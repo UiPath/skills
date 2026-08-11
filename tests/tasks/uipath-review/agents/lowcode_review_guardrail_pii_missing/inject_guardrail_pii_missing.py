@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Scaffold a lowcode agent and inject LC_GUARDRAIL_PII_MISSING.
+"""Scaffold a lowcode agent and set up the PII flavor of LC_GUARDRAIL_RECOMMENDED.
 
 Rewrites the input schema so the agent clearly processes personal data
 (customer_email, full_name, ssn) and leaves the guardrails array absent.
-The judgment rule fires when the agent processes personal data (inferred
+The recommendation rule fires when the agent processes personal data (inferred
 from field names/descriptions) but has no pii_detection guardrail — an
-inference a regex cannot make reliably.
+inference a regex cannot make reliably; the reviewer recommends adding one.
 """
 
 import json
@@ -19,7 +19,7 @@ sys.path.insert(
         os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
     ),
 )
-from lowcode_scaffold import write_baseline_lowcode_agent  # noqa: E402
+from lowcode_scaffold import set_message, write_baseline_lowcode_agent  # noqa: E402
 
 SOLUTION = Path("ReviewSol")
 PII_SCHEMA = {
@@ -40,9 +40,7 @@ USER_MSG = (
 def _patch_agent(agent_json: Path) -> None:
     data = json.loads(agent_json.read_text(encoding="utf-8"))
     data["inputSchema"] = PII_SCHEMA
-    for msg in data.get("messages", []):
-        if msg.get("role") == "user":
-            msg["content"] = USER_MSG
+    set_message(data, "user", USER_MSG)
     data.pop("guardrails", None)
     agent_json.write_text(json.dumps(data, indent=2), encoding="utf-8")
 

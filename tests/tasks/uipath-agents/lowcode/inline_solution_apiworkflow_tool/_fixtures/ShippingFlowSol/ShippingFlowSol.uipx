@@ -1,0 +1,13 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.04.0",
+  "SolutionId": "c4c5d099-7249-484e-0de2-08dec66143ea",
+  "Projects": [
+    {
+      "Type": "Api",
+      "ProjectRelativePath": "CalculateShippingRate/project.uiproj",
+      "Id": "df62b010-0b1d-46ad-8405-afce731b6d65"
+    }
+  ],
+  "AutomationHubIdeaUrl": null
+}

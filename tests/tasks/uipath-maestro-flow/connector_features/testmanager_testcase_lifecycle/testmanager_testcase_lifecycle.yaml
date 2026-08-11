@@ -1,0 +1,67 @@
+# skip:true, tenant-gated. CONFIRMED available in Maestro Flow (2026-06-16):
+# `uip maestro flow registry pull` then search returns the
+# uipath.connector.uipath-uipath-testmanager.<op> nodes for this object group. A stale manifest
+# returns 0 — the agent MUST run `registry pull` first. Same manifest backs
+# Maestro BPMN. skip:true: agent-reliability-gated (multi-node build + debug flakes on turns/rate-limits). The codereval TM connection now exists.
+task_id: skill-flow-testmanager-testcase-lifecycle
+description: >
+  Coverage (Maestro Flow connector): agent uses the uipath-maestro-flow skill to
+  build a Flow that uses every UiPath Test Manager connector node for the
+  TestCase group — adding one connector node per operation. Drives
+  `registry pull` -> `registry search`/`get` -> `node add` -> `flow validate`.
+  Graded on those commands plus the produced .flow referencing each
+  uipath.connector.uipath-uipath-testmanager.* node type.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector]
+skip: true
+
+run_limits:
+  task_timeout: 3000
+  max_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a Maestro Flow (inside a solution of the same name) that uses the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
+
+  - Create a test case
+  - Get the test case
+  - Update the test case
+  - Delete the test case
+  - Execute the test case(s)
+
+  The task is not complete until validation passed for the flow.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent refreshed the node manifest (`uip maestro flow registry pull`) before searching"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+pull'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added connector nodes to the flow (`uip maestro flow node add`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow (`uip maestro flow validate`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Produced .flow references every TestCase connector node type (5 nodes)"
+    command: 'for n in create-test-case get-test-case update-test-case delete-test-case execute-test-cases; do grep -rqsF "uipath-uipath-testmanager.$n" --include="*.flow" . || { echo "missing node $n"; exit 1; }; done'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

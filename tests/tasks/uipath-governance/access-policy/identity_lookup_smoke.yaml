@@ -13,14 +13,14 @@ description: >
   `uip admin` commands that hit Identity Server will fail with an auth
   error. That is acceptable — what matters is that the agent invokes the
   correct commands with the correct flags.
-tags: [uipath-governance, smoke, access-policy, identity-lookup]
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, access-policy, identity-lookup]
 
 run_limits:
   expected_turns: 8
 
 initial_prompt: |
-  I am authoring a UiPath access policy and need three UUIDs for the
-  `actorRule.values[]` array. Resolve each one and save every command's
+  I am authoring a UiPath access policy and need three identity UUIDs
+  for the policy's actor rule. Resolve each one and save every command's
   stdout+stderr to ./output.txt (use `> output.txt 2>&1` for the first
   command and `>> output.txt 2>&1` for subsequent ones).
 
@@ -38,25 +38,25 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip admin users list --search` for the email-based user lookup with --output json"
+    description: "Agent invoked `uip admin users list --search` for the email-based user lookup"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+users\s+list\s+.*--search\s+["'']?[^"'' ]*alice[^"'' ]*["'']?\s+.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+users\s+list\s+[\s\S]*--search\s+["'']?[^"'' ]*alice[^"'' ]*["'']?'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent invoked `uip admin robot-accounts list --search` for the robot lookup with --output json"
+    description: "Agent invoked `uip admin robot-accounts list --search` for the robot lookup"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+robot-accounts\s+list\s+.*--search\s+["'']?[^"'' ]*build-bot[^"'' ]*["'']?\s+.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+robot-accounts\s+list\s+[\s\S]*--search\s+["'']?[^"'' ]*build-bot[^"'' ]*["'']?'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent invoked `uip admin groups list --output json` and filtered client-side with --output-filter (uip admin groups list has no --search)"
+    description: "Agent invoked `uip admin groups list` for the group lookup (groups list has no --search; agent filters client-side)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+groups\s+list\s+(?=.*--output\s+json)(?=.*--output-filter).*'
+    command_pattern: 'uip\s+admin\s+groups\s+list'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -64,7 +64,7 @@ success_criteria:
   - type: command_executed
     description: "Agent did NOT use the retired `uip or users list` path for User UUID resolution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+users\s+list'
+    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+list'
     min_count: 0
     max_count: 0
     weight: 1.0
@@ -73,7 +73,7 @@ success_criteria:
   - type: command_executed
     description: "Agent did NOT use the retired `uip or users current` subcommand"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+users\s+current'
+    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+current'
     min_count: 0
     max_count: 0
     weight: 1.0

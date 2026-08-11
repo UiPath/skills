@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T11:30:02.510Z",
+      "Message": "[Jira Scope] Could not load file or assembly 'RestSharp, Version=106.15.0.0, Culture=neutral, PublicKeyToken=598062e77f915f75' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T11:30:02.590Z",
+      "Message": "System.IO.FileLoadException: Could not load file or assembly 'RestSharp, Version=106.15.0.0, Culture=neutral, PublicKeyToken=598062e77f915f75' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)\r\nin Main.xaml\r\n    at JiraApplicationScope \"Jira Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

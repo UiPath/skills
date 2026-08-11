@@ -1,0 +1,62 @@
+task_id: skill-gov-aops-policy-deployment-group-smoke
+description: >
+  Smoke test: agent uses the deployment group verbs (list, get, delete)
+  that are currently untested. Only deployment user and tenant scopes
+  are covered; the group scope is entirely missing.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command shape.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, deployment]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  I need to see which AOps governance policy deployments are assigned
+  at the group scope. List all group-level deployments, then fetch
+  the deployment details for group ID
+  `00000000-0000-0000-0000-0000000000b2`.
+
+  If the list command fails, still run the get command with the
+  placeholder group ID.
+
+  Save all command output to ./output.txt.
+
+  Important:
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail with auth errors — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - Use --output json on every uip gov aops-policy command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-governance skill"
+    skill_name: "uipath-governance"
+    expected_skill: "uipath-governance"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked deployment group list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+group\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked deployment group get with group ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+group\s+get\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to ./output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

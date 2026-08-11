@@ -6,8 +6,9 @@ description: >
   skeleton TaskId reachable from stage-exit `selected-tasks-completed`
   rules, and (c) produce a completion report that distinguishes skeleton
   vs resolved tasks and lists the external resources the user must
-  register before the skeleton can be upgraded. Replaces flow's
-  brownfield-insert test (case skill regenerates from scratch).
+  register before the skeleton can be upgraded. Greenfield generation
+  path (Rule 6 regenerate-from-scratch); in-place brownfield edits are a
+  separate journey (see references/brownfield.md).
 tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl, skeleton]
 initial_prompt: |
   Create a UiPath Case Management project named "ContractReviewCase" with
@@ -53,7 +54,6 @@ initial_prompt: |
   | Case Name | ContractReviewCase |
   | Case Description | Legal reviewer approves a contract before close. |
   | Case Identifier | Prefix: CRC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 
@@ -214,11 +214,13 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: json_check
     description: "Caseplan contains an action-typed task"
     path: "ContractReviewCase/ContractReviewCase/caseplan.json"
-    includes:
-      - '"type": "action"'
+    assertions:
+      - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
+        operator: gt
+        expected: 0
     weight: 2.0
     pass_threshold: 1.0
 

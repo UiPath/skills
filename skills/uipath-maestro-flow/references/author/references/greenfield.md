@@ -35,13 +35,13 @@ Steps 0–6 are **logical phases**, not separate turns. A typical greenfield bui
 
 | Turn | Steps | What you emit in ONE assistant message |
 |---|---|---|
-| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) **+** optional `uip login status` |
+| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) **+** optional `uip login status`. **If existing `.uipx` solutions are present, the Step 2 gate fires first in its own turn** — resolve it before this chain. |
 | **T2 — Read + author** | 4 | One `Read` of the `.flow` **+** a batch of `Edit` calls (or one `Write` if ≥70% of nodes change). Claude Code serializes Edits on the same file, so they don't race |
 | **T3 — Finalize** | 5, 6 | One chained `Bash` (`node configure && validate && format`). On validate failure: one Edit turn, then re-chain `validate && format` |
 
 ### Batching anti-patterns
 
-- **One CLI per turn.** Never issue `solution init`, then `cd`, then `flow init` as three separate Bash calls — chain with `&&`. Same for `node configure && validate && format`.
+- **One CLI per turn.** Never issue `solution init`, then `cd`, then `flow init` as three separate Bash calls — chain with `&&`, the `cd` included as its own segment. Same for `node configure && validate && format`.
 - **Sequential `registry get`s.** Emit every `registry get` as a parallel `Bash` in one message alongside the T1 scaffold chain.
 - **Validating after every Edit.** Validate once at the end of T3 (or after a recovery Edit). Intermediate states are expected to be invalid.
 - **Re-reading the `.flow` every turn.** `Read` once at the start of T2; subsequent `Edit`s in the same conversation don't need re-reading unless an external command (e.g., `node configure`, `format`) rewrites the file between Edits.
@@ -73,9 +73,9 @@ When you do need it, emit `uip login status --output json` as a parallel `Bash` 
 
 ## Step 2 — Create a solution, THEN a Flow project inside it **[T1]**
 
-> **A Flow project cannot exist outside a solution** (universal rule in [SKILL.md](../../../SKILL.md)). Scaffold or select a solution (Step 2a) BEFORE running `uip maestro flow init` (Step 2b). Skipping the solution step produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload and packaging. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c).
+> **A Flow project cannot exist outside a solution** (universal rule in [SKILL.md](../../../SKILL.md)). Run `uip maestro flow init` (Step 2b) outside a solution and it now **auto-scaffolds** one — `<Project>Solution/<Project>Solution.uipx` with the project nested at `<Project>Solution/<Project>/` (response carries `Data.AutoCreatedSolution`). Still scaffold or select the solution first (Step 2a) so you set the solution name yourself rather than the auto `<Project>Solution`, and so discovery is unambiguous. The solution and project names are independent — they need not match. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c). Passing `--skip-solution-registration` opts out of both auto-scaffold and registration, leaving a bare single-nested layout that fails Studio Web upload and packaging.
 
-Check the current directory for existing `.uipx` files. If existing solutions are found, use `AskUserQuestion` to present a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option (for a custom path). If no existing solutions are found, create a new one automatically. See the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md).
+Check for existing solutions with `find . -maxdepth 2 -type f -name '*.uipx' -print` (each solution is its own folder — `<Solution>/<Solution>.uipx` — so a bare `*.uipx` glob misses them). If any are found, **STOP before the T1 chain — do not run `uip solution init` yet** — and ask the user which solution to use per the dropdown question rule in [SKILL.md](../../../SKILL.md) (rules #5 and #6): one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** last. Rule #5 owns the ask mechanism (structured `AskUserQuestion` where the runtime offers it, a numbered chat list otherwise, recommended-option fallback when non-interactive) — do not re-specify a tool here. Applies even when the user wants a new solution. If none are found, create a new one automatically.
 
 - If the user specifies an existing `.uipx` file path or solution name, use that (skip to Step 2b)
 - Otherwise, create a new solution (Step 2a)
@@ -93,6 +93,8 @@ uip solution init "<SolutionName>" --output json \
   && uip maestro flow node add "<ProjectName>.flow" core.action.http.v2 --label "<NodeLabel>" --output json
 ```
 
+> **One creation path — never drop the `cd`.** `uip solution init "<SolutionName>"` → `cd "<SolutionName>"` → `uip maestro flow init "<ProjectName>"`, one chain. Without the `cd`, `flow init` runs in the old directory and auto-scaffolds a duplicate `<ProjectName>Solution/` (1-node husk). Never let auto-scaffold create the solution. Finish with exactly one `project.uiproj` — delete strays.
+
 Tail-append one `node add` per CLI-owned node (`uipath.connector.*`, `uipath.connector.trigger.*`, `core.action.http.v2`). Each `node add` returns the new node `id` in `Data` — capture it from the chained output for T2/T3. Drop the trailing `node add` segment when the flow is OOTB-only.
 
 In the SAME assistant message (parallel to this chain): emit one `Bash` per OOTB `registry get <NODE_TYPE>` you'll need in T2 (always `core.control.end` — see Step 4), and parallel `Read` calls for any plugin `impl.md`s you'll consult.
@@ -109,7 +111,7 @@ uip solution init "<SolutionName>" --output json
 
 Creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **`cd` into the new solution directory before Step 2b.**
 
-> **Naming convention:** Use the same name for both the solution and the project unless the user specifies otherwise. If the user only provides a project name, use it as the solution name too.
+> **Naming convention:** In **pure greenfield** (no existing solutions), default the solution name to the project name unless the user specifies otherwise. When solutions already exist and the user chooses "Create a new solution", **ask for the new solution's name** — do not reuse the project name (SKILL.md rule #6). The two names are independent.
 
 ### 2b. Create the Flow project inside the solution folder
 
@@ -117,7 +119,7 @@ Creates `<cwd>/<SolutionName>/<SolutionName>.uipx`. **`cd` into the new solution
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 ```
 
-The `cd` is required. Running `uip maestro flow init` from outside the solution directory (or from the parent of `<SolutionName>/`) is wrong — it produces a single-nested layout and breaks every later step.
+The `cd` puts the project inside the solution you just created. Skip it and `flow init` won't find that solution (discovery walks **up**, not down into `<SolutionName>/`) — it auto-scaffolds a **second, separate** `<ProjectName>Solution/` beside your empty `<SolutionName>/`, leaving two solutions. The project no longer single-nests, but `cd` first to land in the right one.
 
 > **Bash session state persists across tool calls.** This `cd` is **not scoped to one Bash invocation** — your cwd remains inside `<SolutionName>/` for every subsequent `Bash` call until you `cd` somewhere else. Plan the rest of Step 2 (and Steps 3–6) accordingly: either keep using paths relative to the solution dir, or anchor with `$(pwd)` / the absolute `Data.Path` returned by `flow init`. Do NOT prefix later commands with the original `<directory>/<SolutionName>/...` — that would resolve as `<SolutionName>/<directory>/<SolutionName>/...` and look like a layout bug when it isn't.
 
@@ -125,7 +127,7 @@ The `cd` is required. Running `uip maestro flow init` from outside the solution 
 
 ### 2c. Verify the project is registered in the solution
 
-When `uip maestro flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx`. The success envelope reports this in `Data.SolutionRegistration`:
+When `uip maestro flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx`. Run outside any solution, it **auto-scaffolds** `<Project>Solution/` and registers the project in it — the response then also carries `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`) and `Status: Registered`. Pass `--skip-solution-registration` to opt out of both (Status `OptedOut`, bare single-nested layout). The success envelope always reports the outcome in `Data.SolutionRegistration`:
 
 ```json
 {
@@ -144,17 +146,17 @@ When `uip maestro flow init` is run from inside a solution directory (Step 2b), 
 }
 ```
 
-If `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`, **you are done** with this step — proceed to the layout check.
+If `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`, **you are done** with this step — proceed to the layout check. If it is `OptedOut`, you passed `--skip-solution-registration` and the skip was intentional.
 
-**Fallback** — only if `Status` is `Skipped` or `Failed` (e.g., `init` was run outside the solution directory and produced a single-nested layout, or the `.uipx` write failed): wire the project manually.
+**Fallback** — when `Status` is `Skipped` (ambiguous discovery — e.g. multiple `.uipx`), `Failed` (the `.uipx` write failed), or `NotInSolution` (rare — auto-scaffold did not run and no parent `.uipx` was found): wire the project manually.
 
 ```bash
-uip solution project add \
+uip solution projects add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx
 ```
 
-If the registration was skipped because of single-nesting, **delete the partial scaffold and restart from Step 2a** — do not try to patch the layout by hand. See [diagnose/references/failure-modes.md — Single-nested layout](../../diagnose/references/failure-modes.md#single-nested-layout).
+If you ended up with a bare single-nested layout (e.g. `--skip-solution-registration` was passed), **delete the partial scaffold and restart from Step 2a** — do not try to patch the layout by hand. See [diagnose/references/failure-modes.md — Single-nested layout](../../diagnose/references/failure-modes.md#single-nested-layout).
 
 ### Expected layout after Steps 2a–2c
 
@@ -216,7 +218,7 @@ Then pick the first match down this ladder:
 1. **Curated connector activity** (`uipath.connector.<key>.<op>` in the results) → use it.
 2. **Connector exists but no activity for what you need** → `core.action.http.v2` (connector mode).
 3. **No connector at all** → `core.action.http.v2` (manual mode).
-4. **No API** (desktop app) → [rpa](references/plugins/rpa/planning.md).
+4. **No API** (desktop app) → [rpa](plugins/rpa/planning.md).
 
 Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../../SKILL.md#critical-rules-universal).
 
@@ -241,9 +243,9 @@ Run from inside the flow project directory. Returns the same manifest format as 
    - Edit `nodes[]` — add the End node (and any other user-owned nodes).
    - Edit `definitions[]` — paste the End definition verbatim from T1's `registry get core.control.end` output.
    - Edit `edges[]` — wire `trigger → <httpNode> → end`. End-node `outputs` mapping goes here too if you declared an `out` variable in `variables.globals`.
-   - Edit `layout.nodes` — placeholder `{ position: { x: 0, y: 0 }, size: { width: 96, height: 96 }, collapsed: false }` per new node; `format` rewrites positions in T3.
+   - Edit `layout.nodes` — placeholder `{ position: { x: 0, y: 0 }, size: { width: 96, height: 96 }, collapsed: false }` per new node; `format` rewrites both position and size (by node shape) in T3.
 
-   `Write` of the whole file is allowed but token-costly on flows >~10 nodes — only fall back to `Write` when ≥70% of nodes change AND the file is small (see [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder)).
+   `Write` of the whole file is allowed but token-costly on flows >~10 nodes — only fall back to `Write` when ≥70% of nodes change AND the file is small (see [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder)). **Never `Write` a flow that already has connector / connector-trigger / managed-HTTP nodes** — the rewrite clobbers their CLI-owned `bindings[]` / `inputs.detail` (invisible to `flow validate`); `Edit` in place, or re-run `node configure` as the last write. See [CAPABILITY.md — Node ownership](../CAPABILITY.md#node-ownership--who-authors-the-node).
 
 #### Anchoring parallel `.flow` Edits — anchor on what you Read, not on key order
 
@@ -276,11 +278,11 @@ See [shared/file-format.md — Top-level structure](../../shared/file-format.md#
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-> **Tool selection by ownership.** Use `Edit` for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change. For CLI-owned nodes (above), use `uip maestro flow node add` + `node configure` — see the relevant plugin's `impl.md` for the full configuration workflow. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON (the agent node itself is user-owned).
+> **Tool selection by ownership.** Use `Edit` for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change **and the flow has no CLI-owned nodes** (a full-file `Write` over connector / managed-HTTP nodes clobbers their `bindings[]` — see the Step 4 `Write` note above). For CLI-owned nodes (above), use `uip maestro flow node add` + `node configure` — see the relevant plugin's `impl.md` for the full configuration workflow. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON (the agent node itself is user-owned).
 
 Read [editing-operations.md](editing-operations.md) for strategy selection and per-operation recipes.
 
-> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user via `AskUserQuestion` (per the dropdown rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
+> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user (per the dropdown question rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
 For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/remove/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
 
@@ -300,6 +302,8 @@ uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<D
 
 **On validate failure:** one `Edit` turn to fix, then re-chain `validate && format` in one Bash. Do not validate after every individual Edit during T2 — intermediate states are expected to be invalid.
 
+> **A passing exit code with warnings is NOT done.** `flow validate` returns 0 even when `Data.Warnings` is non-empty — read the warnings, don't just check the exit code. The connector-keyword warning (`node "…" mentions the "<connector>" connector keyword but uses the generic Managed HTTP type core.action.http.v2 with no connection binding`) means the flow took the brand-name shortcut and will run against an undefined endpoint at debug time — resolve it by switching to the connector before reporting the flow complete (see [SKILL.md rule #3](../../../SKILL.md#critical-rules-universal) and the anti-pattern list). Treat this class of warning as a build failure for your own definition of "done."
+
 ### Common error categories
 
 - **Missing targetPort** — every edge needs a `targetPort` string
@@ -312,7 +316,7 @@ uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<D
 This is the last segment of the [canonical T3 chain](#canonical-t3-chain--issue-this-as-one-bash-call) above. After validation passes, format must run before publishing or debugging (see "Always run `flow format` after edits" in [the Author capability index](../CAPABILITY.md)). Format:
 
 - Arranges nodes horizontally (left-to-right) using ELK with `nodeSpacing: 96`, anchored to the leftmost node's original position
-- Sets every non-stickyNote node's `size` to `{ "width": 96, "height": 96 }` so Studio Web renders square nodes (skipping this leaves any non-96 dimensions intact and produces misshapen rectangles — the MST-9061 failure mode)
+- Sets each non-stickyNote node's `size` by its canvas shape so Studio Web renders it correctly: inline agents (`shape: rectangle`) → `{ "width": 288, "height": 96 }`, containers (loops/groups) → `{ "width": 560, "height": 320 }`, everything else (incl. referenced `uipath.core.agent.<guid>`) → `{ "width": 96, "height": 96 }` (skipping this leaves stale dimensions intact and produces misshapen nodes — the MST-9061 failure mode)
 - Recurses into subflows and rewrites `subflows[<id>].layout`
 - Backfills missing `position`/`size` entries
 
@@ -332,7 +336,7 @@ When you finish building the flow, report to the user:
 4. **Format status** — confirm `flow format` was run
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 6. **Missing connections** — any connector nodes that need connections the user must create
-7. **What's next** — use `AskUserQuestion` to present the dropdown below (see the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md))
+7. **What's next** — ask the user, presenting the dropdown below (see the dropdown question rule in [SKILL.md](../../../SKILL.md))
 
 ### What's next dropdown
 

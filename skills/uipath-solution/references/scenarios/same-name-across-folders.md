@@ -24,7 +24,7 @@ Two bindings in the agent's `bindings_v2.json`, same `value.name.defaultValue`, 
 
 Each tool's `resource.json` carries the cloud key in `referenceKey` and the cloud FQN in `properties.folderPath`.
 
-## What happens at `solution resource refresh`
+## What happens at `solution resources refresh`
 
 ```
 Synced 2 resources (0 already in solution)
@@ -49,7 +49,7 @@ The `_1` suffix is **expected and stable** — re-running refresh does not bump 
 ## Verify
 
 ```bash
-uip solution resource list --kind Process --solution-folder ./MySolution --source local --output json
+uip solution resources list --kind Process --solution-folder ./MySolution --source local --output json
 ```
 
 You should see two `process`/`api` entries with **different keys** but matching the cloud GUIDs you wanted (compare against `uip maestro flow registry search "API Workflow"`).

@@ -20,9 +20,9 @@ Every case-exit condition declared in sdd.md gets its own T-task — **including
 | `marks-case-complete` | sdd.md | `true` for normal completion, `false` for non-completing exits |
 | `rule-type` | From catalog below | See §Rule-type catalog |
 | `selected-stage-id` | Required for `selected-stage-*` rule-types | Resolved from stage capture map |
-| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline) |
+| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
 | `condition-expression` | Optional on any rule-type | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning). |
+| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning). |
 
 ## Rule-Type Catalog (case-exit scope)
 
@@ -47,6 +47,8 @@ Allowed `ruleType` values depend on `marks-case-complete`:
 
 For most cases, define a single completion condition with `required-stages-completed` + `marks-case-complete: true`. The `isRequired` flag on each stage (from [`plugins/stages/`](../../stages/planning.md)) controls which stages count toward completion.
 
+This is the case-close contract: at least one root `caseExitRules[]` entry must have `marksCaseComplete: true`, otherwise the case can never close. Stage completion is separate — a stage exit with `marksStageComplete: true` advances the case but does not mark the case complete. Add `marks-case-complete: false` rules only for explicit non-completing exits such as rejection, withdrawal, or cancellation; they do not replace the positive completion rule.
+
 Add non-completing exit conditions only when the sdd.md explicitly describes an exit path that does NOT close the case (rare).
 
 ## Ordering
@@ -66,4 +68,6 @@ Case exit conditions are created **after** all stages exist (so `selectedStageId
 - verify: Confirm Result: Success, capture ConditionId
 ```
 
-> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning).
+> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning).
+
+<!-- END: planning.md -->

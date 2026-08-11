@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "bb222222-7777-bbbb-cccc-ddddeeeeffff",
+      "StartTime": "2026-06-18T11:02:10.300Z",
+      "EndTime": "2026-06-18T11:02:12.180Z",
+      "State": "Faulted",
+      "ReleaseName": "PythonHelloWorld",
+      "Source": "Manual",
+      "Reference": "HelloRunA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "fb222222-2222-3333-4444-555566667777",
+      "Info": "Python Scope: The specified Python path is not valid: C:\\Program Files\\Python311\\python.exe",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

@@ -13,10 +13,14 @@ from _shared.flow_check import (  # noqa: E402
 
 
 def main():
-    # Coded and low-code agents share the `uipath.core.agent.{guid}` node-type
-    # family on this tenant — distinguished only by registry DisplayName, not
-    # by node-type prefix. The prompt drives the coded-vs-lowcode choice;
-    # this check just verifies an agent node was used.
+    # The prompt names the EXISTING, published "CountLetters" low-code agent.
+    # The skill must discover it in the registry and wire it as a published
+    # agent resource node — `uipath.core.agent.{guid}` (published coded and
+    # low-code agents share this node-type family, distinguished only by
+    # registry DisplayName). Scaffolding a NEW inline agent
+    # (`uipath.agent.autonomous`) is the wrong shape here: it ignores the
+    # existing resource the task targets, so it fails this assert even when it
+    # returns the right count.
     assert_flow_has_node_type(["uipath.core.agent"])
     payload = run_debug(timeout=240)
     # 2 r's in 'arrow'.

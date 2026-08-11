@@ -184,20 +184,40 @@ A `Sequence` task groups child tasks. Most workflows have a single root `Sequenc
 
 Child tasks execute in order. `$context` flows from one to the next via `export.as`.
 
-## Project Structure (Packaging Context)
+<!--skill-flavor:project-structure:start-->
+## Project Structure (Studio Web editable contract)
 
-When part of a UiPath solution, the workflow JSON sits in a project folder with `Type: "Api"` declared in the solution `.uipx`:
+An API workflow project that must open and edit in **Studio Web** ships a specific on-disk shape. **`uip api-workflow init <name>` generates this shape for you** (and registers the project in the solution `.uipx`) — use it for new projects instead of writing these files by hand. The layout below is the contract `init` produces and what `uip solution pack` reads via `project.uiproj`; it also documents what to recreate when converting a legacy `project.json` project:
 
 ```
 <solutionDir>/
-├── <solution>.uipx          # Lists all projects with their Type
-└── <projectFolder>/
-    ├── project.json         # Project metadata
-    ├── <main-workflow>.json # Your API workflow
-    └── <other-workflow>.json
+├── <solution>.uipx                 # Projects[].Type "Api", ProjectRelativePath "<projectFolder>/project.uiproj"
+└── <projectFolder>/                # created by `uip api-workflow init <projectFolder>`
+    ├── project.uiproj              # { "ProjectType": "Api", "Name": "...", "Description": null, "MainFile": "Workflow.json" }
+    ├── Workflow.json               # the API workflow — canonical fixed name, project root
+    ├── entry-points.json           # entryPoints[0]: filePath "content/Workflow.json", type "Api"
+    ├── bindings_v2.json            # IntSvc connector bindings ({"version":"2.0","resources":[]} when none)
+    └── .local/ProjectSettings.json # NOT written by init — Studio Web creates it on first open. Do not author by hand.
 ```
 
 `uip solution pack` auto-generates `operate.json` and `package-descriptor.json` during build — do NOT commit these.
+
+### Field rules (what Studio Web enforces)
+
+| File | Field | Rule |
+|------|-------|------|
+| `.uipx` | `Projects[].ProjectRelativePath` | MUST end with `/project.uiproj`. Pointing at `project.json` → folder isn't recognized as a project. |
+| `.uipx` | `Projects[].Type` | `"Api"`. |
+| `project.uiproj` | `ProjectType` | Exactly `"Api"` (capital A). Studio Web parses this with a strict enum — `"api"` is rejected with `InvalidUiprojFileError`. |
+| `project.uiproj` | `MainFile` | `"Workflow.json"`. Studio Web technically accepts any name, but the CLI packager + solution reconcile assume `Workflow.json`. |
+| `Workflow.json` | — | Must exist at project root (the file `MainFile` points to). |
+| `entry-points.json` | `entryPoints[0].filePath` | `"content/Workflow.json"` — relative, **no leading slash**. (`/content/...` is non-canonical.) |
+| `entry-points.json` | `entryPoints[0].type` | `"Api"`. (Studio Web's schema accepts any string here, but stay consistent.) `input`/`output` may be `null` or mirror the workflow's input/output JSON schema so the designer shows parameters. |
+
+> **Why this matters — the runtime shape is a trap.** A `project.json` + `workflows/WF_*.json` layout (no `.uiproj`) runs under `uip api-workflow run`, and packs/publishes/deploys as an API process — every runtime gate passes. But Studio Web's import only recognizes a folder as a project if it contains a `.uiproj` file (`isProjectFolder`); a `project.json`-only project is rejected as `invalid_project_folder` and never appears in Studio Web. Runtime success is NOT proof of Studio Web editability. Scaffold with `uip api-workflow init` — it can't produce the wrong shape (SKILL.md rule 19a).
+
+> **Standalone (CLI-only) projects** that never open in Studio Web — run purely via `uip api-workflow run` — don't need solution registration; `uip api-workflow init <name> --skip-solution-registration` still emits the same files but skips the `.uipx` wiring. The `.uiproj` contract is required the moment the project must be editable in Studio Web or shipped in a solution uploaded to Studio Web.
+<!--skill-flavor:project-structure:end-->
 
 ## Sources
 

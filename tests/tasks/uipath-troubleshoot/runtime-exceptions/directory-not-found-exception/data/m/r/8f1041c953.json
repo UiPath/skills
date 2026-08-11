@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-24T06:45:02.210Z",
+      "Message": "List Inbound Files: Could not find a part of the path 'D:\\Reports\\2026\\Inbound'.\r\nin Main.xaml\r\n    at Assign \"List Inbound Files\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.IO.DirectoryNotFoundException\r\n   at System.IO.Enumeration.FileSystemEnumerator`1.CreateDirectoryHandle(String path, Boolean ignoreNotFound)\r\n   at System.IO.Enumeration.FileSystemEnumerator`1..ctor(String directory, Boolean isNormalized, EnumerationOptions options)\r\n   at System.IO.Directory.GetFiles(String path)\r\n   at Namespace_c3e4a5b6fs.Main_Expressions.Main_Expressions_TypedDataContext2_ForReadOnly.__Expr2Get()\r\n   at Namespace_c3e4a5b6fs.Main_Expressions.Main_Expressions_TypedDataContext2_ForReadOnly.ValueType___Expr2Get()\r\n   at Namespace_c3e4a5b6fs.Main_Expressions.InvokeExpression(Int32 expressionId, IList`1 locations, ActivityContext activityContext)\r\n   at Microsoft.CSharp.Activities.CSharpValue`1.Execute(CodeActivityContext context)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteInResolutionContext[T](ActivityInstance parentInstance, Activity`1 expressionActivity)\r\n   at System.Activities.InArgument`1.TryPopulateValue(LocationEnvironment targetEnvironment, ActivityInstance activityInstance, ActivityExecutor executor)\r\n   at System.Activities.ActivityInstance.InternalTryPopulateArgumentValueOrScheduleExpression(RuntimeArgument argument, Int32 nextArgumentIndex, ActivityExecutor executor, IDictionary`2 argumentValueOverrides, Location resultLocation, Boolean isDynamicUpdate)\r\n   at System.Activities.ActivityInstance.ResolveArguments(ActivityExecutor executor, IDictionary`2 argumentValueOverrides, Location resultLocation, Int32 startIndex)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)"
+    }
+  ]
+}

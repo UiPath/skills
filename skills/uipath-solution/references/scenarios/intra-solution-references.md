@@ -20,7 +20,7 @@ MySolution/
     └── process/agent/Worker.json         (auto on add)
 ```
 
-The right `referenceKey` for the Worker tool is the **solution-resource key** of `Worker.json` (read from `uip solution resource list --kind Process --source local --output json`), **not** the `projectId` from `.uipx`.
+The right `referenceKey` for the Worker tool is the **solution-resource key** of `Worker.json` (read from `uip solution resources list --kind Process --source local --output json`), **not** the `projectId` from `.uipx`.
 
 ```jsonc
 // Coordinator/resources/WorkerTool/resource.json
@@ -39,7 +39,7 @@ The right `referenceKey` for the Worker tool is the **solution-resource key** of
 
 ## What happens at refresh + pack
 
-- `solution project add` writes `Worker.json` and `Coordinator.json` under `resources/solution_folder/process/agent/` with stable solution-resource keys (UUIDs minted by the SDK at add time).
+- `solution projects add` writes `Worker.json` and `Coordinator.json` under `resources/solution_folder/process/agent/` with stable solution-resource keys (UUIDs minted by the SDK at add time).
 - `resource refresh` doesn't re-mint those keys — they're stable for the life of the solution.
 - At pack, the Coordinator's `runtimeDependencies` entry for the Worker tool carries the same solution-resource key as `referenceKey`. Orchestrator's deploy pipeline resolves intra-solution links by matching this key to a sibling resource in the deployment.
 
@@ -53,7 +53,7 @@ The right `referenceKey` for the Worker tool is the **solution-resource key** of
 ## Verify
 
 ```bash
-uip solution resource list --kind Process --source local --output json
+uip solution resources list --kind Process --source local --output json
 ```
 
 The keys you see here are what `referenceKey` should be in any `location: "solution"` tool resource file.

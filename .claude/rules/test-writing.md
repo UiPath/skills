@@ -47,13 +47,32 @@ Or omit `node:` entirely if no other Node packages are needed.
 
 The template at `tests/templates/test-task-template.yaml` does not include `env_packages` — do not add it unless installing a package other than `@uipath/cli`.
 
+### Preinstall `@uipath/uipath-typescript` in offline coded-apps tasks
+
+Coded-apps references defer SDK signatures/scopes to files inside the npm package. If a task bans `npm` AND grades code that calls SDK services, preinstall the package — otherwise agents fetch `.d.ts` files from unpkg and exhaust the turn budget:
+
+```yaml
+sandbox:
+  node:
+    env_packages:
+      - "@uipath/uipath-typescript"   # unpinned (same rationale as @uipath/cli above)
+```
+
+Do NOT add when:
+
+- Task grades install/build/deploy (e2e) — preinstall pre-solves graded steps
+- Graded facts are inlined in the skill (UI patterns, wiring, widget must-knows)
+- Refusal test — setup's install creates a root `package.json` declaring the SDK, auto-failing "nothing was built" criteria
+
+Setup runs `npm install` at the sandbox root before the agent starts (creates `package.json`, `package-lock.json`, `node_modules/`). Never pair with criteria asserting a pristine sandbox or `package.json` contents. Keep per-task — experiment defaults hit every suite; the image's global npm space is `uip` tool-discovery territory.
+
 ## Success Criteria — Grade Behavior, Not Self-Reports
 
 Use side effects (`command_executed`, `file_exists`, `file_contains`, `json_check`, `run_command`, `skill_triggered`, `command_not_executed`). Never grade on agent monologue.
 
 Weight: `1.0` supporting · `1.5` core command/artifact · `2.0` artifact content · `3.0` primary validation · `5.0–6.0` e2e execution. `pass_threshold: 1.0` unless the criterion has multiple sub-assertions.
 
-When criteria parse CLI output, steer the prompt toward `--output json` and add a low-weight check matching `(uip|\$UIP)\s+.*--output\s+json`.
+When criteria parse CLI output, steer the prompt toward `--output json`, but grade the **outcome** (the parsed value, via `run_command` / `file_check`), NOT the literal flag. Never add a gating `command_executed` check on `(uip|\$UIP)\s+.*--output\s+json`: the flag is outcome-invisible (often the CLI default), so gating on it docks agents that reach the same result without typing it. To record convention adherence, use an advisory check (`pass_threshold: 0`).
 
 ## Prompts
 

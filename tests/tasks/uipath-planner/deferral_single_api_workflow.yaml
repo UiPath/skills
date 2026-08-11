@@ -1,0 +1,53 @@
+task_id: skill-planner-smoke-deferral-single-api-workflow
+description: >
+  Negative / boundary coverage: a single self-contained API workflow (one
+  JSON "Api" project) must route to ONE specialist (uipath-api-workflow), NOT
+  fan out through the multi-project planner. Guards the SKILL.md single-project
+  deferral rule against planner over-triggering on standalone API-workflow work.
+tags: [uipath-planner, smoke, mode:build, lifecycle:discover]
+
+initial_prompt: |
+  I want to build ONE UiPath API workflow: a JSON workflow that calls a public
+  REST endpoint, transforms the response with a JavaScript step, and returns
+  the result. It is one self-contained project — I am NOT orchestrating other,
+  separately-built automations.
+
+  Load the appropriate UiPath skill to decide how this work should be routed.
+  Do NOT build anything. Do NOT generate a plan, an SDD, or a task list.
+
+  Write exactly one line to `routing.txt`: the name of the single skill that
+  should own this work end-to-end (for example `uipath-api-workflow`). Output
+  only the skill name — no explanation, no punctuation, no quotes. Write
+  `uipath-planner` ONLY if the work genuinely spans multiple separately-built
+  projects that each need their own specialist.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent produced routing.txt"
+    path: "routing.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Routed to the single owning specialist (uipath-api-workflow)"
+    path: "routing.txt"
+    includes:
+      - "uipath-api-workflow"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Did NOT route a single-project request to the multi-project planner"
+    command: "! grep -qi planner routing.txt"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Did not over-plan — no planner plan/tasks/SDD artifact was produced"
+    command: "! find . \\( -name '*-tasks.md' -o -name '*-plan.md' -o -name '*-sdd.md' \\) -not -path '*/.venv/*' -not -path '*/node_modules/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

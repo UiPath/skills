@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Excel Read Range daily-import scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "858738168e.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "858738168e.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json",
+      "file": "3dbf2901c1.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json",
+      "file": "3dbf2901c1.json"
+    },
+    {
+      "match": "or jobs get \"cc333333-9999-aaaa-bbbb-ccccddddeeee\" --output json",
+      "file": "60e1c2d756.json"
+    },
+    {
+      "match": "or jobs get cc333333-9999-aaaa-bbbb-ccccddddeeee --output json",
+      "file": "60e1c2d756.json"
+    },
+    {
+      "match": "or jobs history \"cc333333-9999-aaaa-bbbb-ccccddddeeee\" --output json",
+      "file": "32c77da18d.json"
+    },
+    {
+      "match": "or jobs history cc333333-9999-aaaa-bbbb-ccccddddeeee --output json",
+      "file": "32c77da18d.json"
+    },
+    {
+      "match": "or jobs logs \"cc333333-9999-aaaa-bbbb-ccccddddeeee\" --output json",
+      "file": "159669d361.json"
+    },
+    {
+      "match": "or jobs logs cc333333-9999-aaaa-bbbb-ccccddddeeee --output json",
+      "file": "159669d361.json"
+    }
+  ]
+}

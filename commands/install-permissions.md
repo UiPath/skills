@@ -60,7 +60,7 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
       "Bash(uip flow edge *)",
       "Bash(uip solution new *)",
       "Bash(uip solution project *)",
-      "Bash(uip solution resource *)",
+      "Bash(uip solution resources *)",
       "Bash(uip agent init)",
       "Bash(uip agent init *)",
       "Bash(uip agent validate *)",

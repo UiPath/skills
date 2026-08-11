@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    { "Level": "Error", "TimeStamp": "2026-06-06T06:00:35.360Z", "Message": "[Send SMTP Mail Message] Transport connection dropped during TLS negotiation on smtp.office365.com:465" },
+    { "Level": "Error", "TimeStamp": "2026-06-06T06:00:35.420Z", "Message": "Send SMTP Mail Message: Failure sending mail.\r\nin Main.xaml\r\n    at SmtpSendMail \"Send SMTP Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.Net.Mail.SmtpException: Failure sending mail. ---> System.IO.IOException: Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host. ---> System.Net.Sockets.SocketException: An existing connection was forcibly closed by the remote host" }
+  ]
+}

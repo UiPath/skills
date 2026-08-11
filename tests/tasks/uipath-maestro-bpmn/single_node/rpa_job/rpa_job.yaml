@@ -1,0 +1,60 @@
+task_id: skill-bpmn-rpa-job
+description: >
+  Resource-node eval: agent uses the uipath-maestro-bpmn skill to model an RPA
+  job invocation as a bpmn:serviceTask with the registry Orchestrator.StartJob
+  wrapper, binding job arguments as input and capturing the job response into a
+  declared variable. Differentiates from the hitl/rpa wrapper-presence eval by
+  grading input/output variable binding. Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", resource]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a local BPMN project named "InvoiceExtractionRpa" with the main file at
+  InvoiceExtractionRpa/InvoiceExtractionRpa.bpmn. Model this process:
+  manual start -> run an RPA workflow that extracts an invoice title -> end.
+
+  Requirements:
+  - Discover the RPA-job extension type via the registry and author its node
+    from the registry template. Do not hand-author uipath:* XML from prose.
+  - Model the RPA invocation as a bpmn:serviceTask using the documented
+    Orchestrator.StartJob uipath:activity wrapper.
+  - Bind at least one job argument as the task's request input, and capture the
+    job response into a declared process variable (BPMN.Variables).
+  - Use synthetic placeholder resource keys only. Do not invent or paste real
+    tenant URLs, folder keys, connection IDs, release keys, or user names.
+  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+    for every sequence flow.
+  - Do not upload, publish, deploy, debug, run, or pack anything, and do not
+    pause for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "BPMN source was created"
+    path: "InvoiceExtractionRpa/InvoiceExtractionRpa.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run any cloud-side Maestro BPMN lifecycle command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(upload|publish|deploy|debug|run|pack)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "RPA job serviceTask uses Orchestrator.StartJob with input and a declared output variable"
+    command: "python3 $TASK_DIR/check_rpa_job.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

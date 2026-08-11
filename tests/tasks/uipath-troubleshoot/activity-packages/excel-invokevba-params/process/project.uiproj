@@ -1,0 +1,6 @@
+{
+  "Name": "LedgerPoster",
+  "ProjectType": "Process",
+  "Description": "Runs the PostRow VBA macro against the Ledger workbook via Invoke VBA inside an Excel Process Scope.",
+  "MainFile": "Main.xaml"
+}

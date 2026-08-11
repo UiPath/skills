@@ -48,7 +48,7 @@ Go in this order — cheaper checks first.
    - `COMException` with "protected" / "read-only" / `0x800A03EC` near `Worksheet.Protect` → branch 5; go to step 5.
    - `BusinessException: ... cell reference '<x>' is invalid` or `Application-defined or object-defined error` → branch 6; go to step 6.
 
-3. **Distinguish branch 1's two variants (lock vs. scope conflict).** If the activity is **Classic Workbook `Write Cell`** (no surrounding scope) and the workflow ALSO has an `Excel Application Scope` or `Use Excel File` for the same path elsewhere in the call graph, the scope-conflict variant applies — the Modern/Classic scope still holds the file when the Classic Workbook activity tries to write. Fix is structural (don't mix), not host-side (no killing required). If the Write Cell is the only Excel reference to that path, the issue is an external locker — pivot to [`read-range-file-locked.md`](./read-range-file-locked.md) for the full lock-investigation chain (orphan EXCEL.EXE, user editing, network share, AV scanner, concurrent jobs).
+3. **Distinguish branch 1's two variants (lock vs. scope conflict).** If the activity is **Classic Workbook `Write Cell`** (no surrounding scope) and the workflow ALSO has an `Excel Application Scope` or `Use Excel File` for the same path elsewhere in the call graph, the scope-conflict variant applies — the Modern/Classic scope still holds the file when the Classic Workbook activity tries to write. Fix is structural (don't mix), not host-side (no killing required). If the Write Cell is the only Excel reference to that path, the issue is an external locker — pivot to [`workbook-file-locked.md`](./workbook-file-locked.md) for the full lock-investigation chain (orphan EXCEL.EXE, user editing, network share, AV scanner, concurrent jobs).
 
 4. **Distinguish branch 2 from branch 3 (formula syntax vs. loop thrash).** Both surface with the "wrong format, or Excel is busy" wording.
    - If the activity is inside a `For Each` / `For Each Row` / `While` loop AND fails partway through (some iterations succeeded before the failure) → branch 3 (loop thrash). The misleading "wrong format" wording masks Excel COM instability. Confirm: `uip or jobs logs <key>` shows successful iterations preceding the fault.
@@ -77,7 +77,7 @@ Map the branch identified in Investigation to the fix:
 
 - **Branch 1 — Workbook locked OR Classic/Modern scope conflict:**
   - **Scope-conflict variant**: replace the standalone Classic Workbook `Write Cell` with one nested inside the surrounding scope. If the scope is Modern (`Use Excel File`), use Modern `Write Cell`. If the scope is Classic `Excel Application Scope`, use Classic `Write Cell` nested inside it. Do not mix Modern scopes with Classic Workbook activities — they own the file by different mechanisms.
-  - **External locker variant**: the file is held by something outside the workflow. Follow [`read-range-file-locked.md`](./read-range-file-locked.md)'s investigation and resolution chain — orphan EXCEL.EXE kill, user-coordinated close, network-share unlock, AV exclusion, etc.
+  - **External locker variant**: the file is held by something outside the workflow. Follow [`workbook-file-locked.md`](./workbook-file-locked.md)'s investigation and resolution chain — orphan EXCEL.EXE kill, user-coordinated close, network-share unlock, AV exclusion, etc.
   - Stop-gap (any variant): add a `Kill Process` activity targeting `EXCEL` immediately before the failing `Write Cell` to terminate stragglers. Treat this as a diagnostic patch, not a permanent fix — it masks scope-cleanup bugs in the workflow.
 
 - **Branch 2 — Formula syntax rejected:**
@@ -127,5 +127,5 @@ Common quick-fixes for `Write Cell` failures hide the bug without fixing it. The
 ## Related
 
 - Branch 4 (sheet not found) shares its diagnostic with [`read-range-sheet-not-found.md`](./read-range-sheet-not-found.md) — the same investigation steps and resolutions apply on the write side.
-- Branch 1's external-locker variant shares its diagnostic with [`read-range-file-locked.md`](./read-range-file-locked.md) — orphan EXCEL.EXE, user editing, network-share locks, AV/EDR scanners, and concurrent jobs all surface identically on Write Cell.
+- Branch 1's external-locker variant shares its diagnostic with [`workbook-file-locked.md`](./workbook-file-locked.md) — orphan EXCEL.EXE, user editing, network-share locks, AV/EDR scanners, and concurrent jobs all surface identically on Write Cell.
 - For shared / cloud Excel workbooks accessed via Microsoft Graph rather than the local filesystem, see [`../../o365-activities/overview.md`](../../o365-activities/overview.md) — the Write Cell equivalents on the cloud surface have entirely different fault modes (auth, throttling, eTag conflicts) covered there.

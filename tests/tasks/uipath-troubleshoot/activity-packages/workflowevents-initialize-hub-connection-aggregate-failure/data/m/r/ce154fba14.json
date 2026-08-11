@@ -1,0 +1,40 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "c0a4f7e2-1b58-4d36-9a72-8e3c5f0d2b61",
+      "State": "Faulted",
+      "ProcessName": "AppRuntimeHost",
+      "ReleaseKey": "f1c2b3a4-5d6e-4071-8293-0a1b2c3d4e5f",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-25T16:02:44.880Z",
+      "EndTime": "2026-06-25T16:02:48.190Z",
+      "CreationTime": "2026-06-25T16:02:44.470Z"
+    },
+    {
+      "Key": "5e1a9c30-7b48-4d2f-91a6-3c0e8f2b1d64",
+      "State": "Successful",
+      "ProcessName": "AppRuntimeHost",
+      "ReleaseKey": "f1c2b3a4-5d6e-4071-8293-0a1b2c3d4e5f",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-25T15:40:18.700Z",
+      "EndTime": "2026-06-25T15:40:25.110Z",
+      "CreationTime": "2026-06-25T15:40:18.360Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

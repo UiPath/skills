@@ -1,0 +1,180 @@
+task_id: uipath-coded-apps-dashboard-gov-live-deploy-e2e
+description: >
+  Live governance-mode deploy of a runtime-compliance dashboard into a
+  DISPOSABLE per-run shared folder (codedapp-govtest-<uuid>), NOT the real
+  shared AdminDashboards — because `uip codedapp` has no delete verb, the only
+  teardown is folder-delete, which cascades to the deployed app. Exercises the
+  governance branch end-to-end: provision the disposable folder via
+  setup-admin-folder.mjs, pack -> publish -> deploy with governance tags, and
+  record the folder in report.json so post_run cleans it up.
+tags: [uipath-coded-apps, e2e, dashboard, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+  turn_timeout: 1200
+  task_timeout: 1500
+
+sandbox:
+  node: {}
+
+pre_run:
+  # App name + routingName carry a per-run EPOCH suffix so repeated runs never
+  # collide on the published package version (name+version) or the fresh-deploy
+  # routing slug. Without this, re-runs publish the SAME app name at 1.0.0, hit
+  # "version already exists", and the agent burns turns looping version bumps.
+  - command: |
+      EPOCH=$(date +%s)
+      mkdir -p .dashboard dist
+      # Seed a "built" dashboard the skill's deploy gates accept:
+      #  - the deploy flow runs `npm run build`; with no package.json it fails
+      #    ENOENT and a strict agent (set -euo pipefail) aborts before pack. A
+      #    no-op build succeeds and leaves the seeded dist/ intact.
+      #  - the deploy step greps dist/index.html for the uipath:org-name meta tag
+      #    (CONFIG_OK, deploy/impl.md) and refuses to deploy a bundle without it —
+      #    so bake it into the seeded html.
+      cat > package.json << 'PKGEOF'
+      { "name": "runtime-compliance-dashboard", "private": true, "scripts": { "build": "true" } }
+      PKGEOF
+      printf '%s\n' '<html><head><meta name="uipath:org-name" content="testorg"></head><body></body></html>' > dist/index.html
+      cat > .dashboard/state.json <<EOF
+      {
+        "app": { "name": "Runtime Compliance Dashboard $EPOCH", "routingName": "runtime-compliance-$EPOCH", "semver": "1.0.0" },
+        "env": "alpha", "org": "testorg", "tenant": "testTenant",
+        "cloudUrl": "https://alpha.uipath.com",
+        "widgets": ["policy-denials", "rule-compliance"],
+        "deployment": { "systemName": null, "folderKey": null, "folderName": null, "appUrl": null, "pinnedToGovernance": false, "lastDeployedAt": null }
+      }
+      EOF
+    timeout: 15
+    fail_on_error: true
+
+initial_prompt: |
+  Deploy my Runtime Compliance dashboard to Automation Cloud as a governance
+  dashboard, pinned to the Governance UI.
+
+  This dashboard is a governance dashboard, so it needs a governance home
+  folder with elevated access. Do NOT use the real shared AdminDashboards
+  folder for this run — instead provision a fresh per-run shared folder named
+  exactly `codedapp-govtest-<EPOCH>` (substitute a unique value for <EPOCH>)
+  using the skill's governance provisioning script, and deploy into it. This
+  isolates the run so it can be cleaned up afterward.
+
+  IMMEDIATELY after `uip codedapp deploy` succeeds — before any further work —
+  write `report.json` at the sandbox root:
+    {
+      "app_name": "Runtime Compliance Dashboard",
+      "deployment_id": "<systemName or deploymentId from .uipath/app.config.json>",
+      "folder": "<the codedapp-govtest-<EPOCH> folder name you created>"
+    }
+  The `folder` field is REQUIRED — post_run reads it to clean up.
+
+  This is a non-interactive automated test — treat the plan as pre-approved and
+  complete the whole deploy in this same turn. Do NOT wait for confirmation and
+  do NOT ask any question. Before starting, load the uipath-coded-apps skill.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Grade the OUTCOME the provisioning script records, not the command string.
+  # The two tokens (setup-admin-folder.mjs + codedapp-govtest-<epoch>) need not
+  # co-occur in one command: agents bind the name to a shell var OR stash it in a
+  # temp file and read it back (`FOLDER=$(cat /tmp/name)`; node …/setup-admin-folder.mjs
+  # "$FOLDER"), so no command-string regex reliably sees both. Instead check what
+  # setup-admin-folder.mjs itself writes: updateState() records the provisioned
+  # folder into .dashboard/state.json as deployment.folderName + folderKey. pre_run
+  # seeds both as null, so a populated codedapp-govtest-* name with a real key can
+  # only come from the script actually provisioning a disposable folder this run —
+  # variable/idiom-immune, and not a self-report (the script writes it, not the agent).
+  - type: run_command
+    description: "Governance provisioning created a DISPOSABLE codedapp-govtest-* folder (recorded in .dashboard/state.json), not the real AdminDashboards"
+    command: |
+      python3 -c "
+      import json
+      dep = json.load(open('.dashboard/state.json')).get('deployment', {})
+      name = dep.get('folderName') or ''
+      key  = dep.get('folderKey') or ''
+      assert name.startswith('codedapp-govtest-'), f'folderName is not a disposable govtest folder: {name!r}'
+      assert key, 'no folderKey recorded — folder was not actually provisioned'
+      print(f'OK: provisioned disposable folder {name} (key {key})')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT provision the real shared AdminDashboards folder"
+    tool_name: "Bash"
+    command_pattern: 'setup-admin-folder\.mjs.*AdminDashboards'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Per-verb, not a 3-command count: agents batch pack;publish;deploy into one
+  # shell script, so the count scored 1/3 and false-failed a correct run. Each
+  # verb checked once matches whether batched or separate; a skipped step still
+  # fails (its check hits 0). This is a live deploy, so all three are gating.
+  - type: command_executed
+    description: "Agent ran uip codedapp pack"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pack\b'
+    min_count: 1
+    weight: 0.83
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedapp publish"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+publish\b'
+    min_count: 1
+    weight: 0.83
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedapp deploy"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy\b'
+    min_count: 1
+    weight: 0.84
+    pass_threshold: 1.0
+
+  # Order/variable-tolerant: agents bind tags to a var (TAGS="governance,dashboard";
+  # deploy … --tags "$TAGS"), so `governance` appears in the assignment, not
+  # literally after --tags. Require a deploy command + a --tags flag + the
+  # governance token anywhere in the same command (DOTALL lookaheads).
+  - type: command_executed
+    description: "Deploy used governance tags (governance or governance,dashboard)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*uip\s+codedapp\s+deploy)(?=.*--tags)(?=.*governance)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deploy ran non-interactively into the provisioned folder via --folder-key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy\b.*--folder-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+# report.json is written by the agent (see initial_prompt) purely so the
+# post_run cleanup below can find the disposable folder to delete. It is
+# deliberately NOT a success_criterion — the disposable folder name is already
+# graded via the setup-admin-folder.mjs check above, and grading a self-written
+# file is a self-report anti-pattern. post_run reads it as cleanup infra only.
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
+    timeout: 60
+# No external-app cleanup here: this is a DEPLOY-only test (pre-seeded dist/, no
+# build flow), so it never mints an OAuth external app — nothing records a Client
+# ID for cleanup_external_app.py to act on. That cleanup lives on the dashboard
+# BUILD tests (dashboard_full_e2e / dashboard_scaffold), which run the build flow
+# that mints one.

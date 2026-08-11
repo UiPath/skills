@@ -55,7 +55,7 @@ Connector body sinks (`bodyParameters`, `queryParameters`, `pathParameters`) req
 | `"=metadata.X"` | `"=js:(metadata.X)"` |
 | `"=bindings.X"` | `"=js:(bindings.X)"` |
 | `"=<other-prefix>.X"` (e.g. `=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments[0]`) | `"=js:(<other-prefix>.X)"` — strip leading `=`, wrap in `=js:(...)` |
-| `"<- "Stage"."Task".out"` | resolve to `"=vars.<outputVar>"` → `"=js:(vars.<outputVar>)"` |
+| `"<- "Stage"."Task".out"` | resolve through the common [output-reference-ID algorithm](../../variables/io-binding/impl-json.md#output-reference-id-authoritative) to `"=vars.<outputReferenceId>"` → `"=js:(vars.<outputReferenceId>)"` |
 | `"=js:(<expr>)"` (pre-wrapped operator expression) | pass-through unchanged |
 | `"<literal value>"` (no leading `=`) | pass-through unchanged |
 
@@ -74,7 +74,7 @@ ERROR: bodyParameters key '<key>' contains literal '[*]'.
         Fix in tasks.md input-values.bodyParameters; do NOT pass [*] keys to the CLI.
 ```
 
-The CLI accepts the literal `field[*]` key (well-formed JSON) and validate passes, but runtime APIs reject with HTTP 400 `UnableToDeserializePostBody`. The check repeats as a post-write verification — see [Step 8 Post-Write Verification](#post-write-verification) item #11.
+The CLI accepts the literal `field[*]` key (well-formed JSON) and validate passes, but runtime APIs reject with HTTP 400 `UnableToDeserializePostBody`. The check repeats as a post-write verification — see [Step 8 Post-Write Verification](#post-write-verification) item #12.
 
 ### Step 2 — Run `case spec` with input-details
 
@@ -158,7 +158,7 @@ The **entire** `caseShape.context[]` array, and every nested subtree under it, i
 
 > **Mechanical contract.** At gather time (Step 2), persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task). At write time, **Read that file and splice `Data.caseShape.context` verbatim** into `data.context`, then re-case keys (next paragraph). The skill is a substituter, not a composer — the only edits between Read and Write are the placeholder substitutions above and that keys-only re-casing. **Never retype `context` content from agent reasoning.**
 
-> **Normalize key casing (PascalCase → camelCase).** `case spec --output json` emits PascalCase keys (`Name`/`Type`/`Value`/`Target`/`Body`/`DisplayName`/`Source`; nested `ActivityPropertyConfiguration`/`UiPathActivityTypeId`/…; response-schema `Properties`/`Definitions`/`Title`/`Items`); the caseplan disk schema is camelCase. After splicing `context` / `inputs` / `outputs` (and their nested `body`), lower-case the first character of every object **key**, preserving the rest (`DisplayName`→`displayName`, `UiPathActivityTypeId`→`uiPathActivityTypeId`). **Keys only — never values:** `"name": "Subject"`, `"source": "=response.Subject"`, and `=jsonString:` / `=js:` blobs are case-sensitive identifiers and stay verbatim. Full rule + rationale: [connector-trigger-common.md § Normalize key casing](../../../connector-trigger-common.md#normalize-key-casing-pascalcase--camelcase).
+> **Normalize key casing (PascalCase → camelCase).** `case spec --output json` emits PascalCase keys (`Name`/`Type`/`Value`/`Target`/`Body`/`DisplayName`/`Source`; nested `ActivityPropertyConfiguration`/`UiPathActivityTypeId`/…; response-schema `Properties`/`Definitions`/`Title`/`Items`); the caseplan disk schema is camelCase. After splicing `context` / `inputs` / `outputs` (and their nested `body`), lower-case the first character of every object **key**, preserving the rest (`DisplayName`→`displayName`, `UiPathActivityTypeId`→`uiPathActivityTypeId`). **Keys only — never values:** `"name": "Subject"`, `"source": "=response.Subject"`, and `=jsonString:` / `=js:` blobs are case-sensitive identifiers and stay verbatim. Full rule + rationale: [connector-trigger-impl.md § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase).
 
 ### Step 7 — Mint `var` / `id` / `elementId` on inputs and outputs
 
@@ -205,7 +205,7 @@ Generate the task skeleton:
 }
 ```
 
-Append the task to the target stage's `tasks[]` array. Default: own task set (one task per lane). **Exception:** if this task is a parallel member of a `runs-sequentially` group, push into the shared lane of that group (shared lane = parallel siblings inside the sequence, semantic).
+Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle or ordered task-set rule is selected; if `lane` conflicts with mode, mode wins.
 
 ### Step 9 — Append root-level bindings
 
@@ -247,8 +247,9 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 7. Root bindings exist for ConnectionId + folderKey with the minted ids
 8. `data.bindings[]` is empty `[]`
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` minted (uniqueness rule applied for outputs)
-10. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
-11. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
+10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 3–8 across every connector node
+11. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
+12. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
 
 ## What NOT to Do
 
@@ -257,7 +258,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT add top-level `errorState` to the metadata body.** Error state belongs inside `activityPropertyConfiguration.errorState` only — that's already the shape in `caseShape.context`.
 - **Do NOT copy root bindings into `data.bindings[]`.** Leave it as `[]`. The FE crashes if activity tasks have task-level binding copies.
 - **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and splice `Data.caseShape.context` verbatim. See Step 6.
-- **Do NOT write the spec's PascalCase keys to disk verbatim.** `case spec` emits PascalCase; the caseplan disk schema is camelCase. After splicing, lower-case the first character of every object key in the spec subtree — keys only, never values. See Step 6 and [connector-trigger-common.md § Normalize key casing](../../../connector-trigger-common.md#normalize-key-casing-pascalcase--camelcase).
+- **Do NOT write the spec's PascalCase keys to disk verbatim.** `case spec` emits PascalCase; the caseplan disk schema is camelCase. After splicing, lower-case the first character of every object key in the spec subtree — keys only, never values. See Step 6 and [connector-trigger-impl.md § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase).
 - **Do NOT pass a raw CEQL string under `queryParameters.where`** (or whichever connector-specific name) when authoring a filter. Pass the structured tree under `filter:` in tasks.md and let the CLI compile both halves.
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
 - **Do NOT pass `bodyParameters` for synthetic HTTP request activities.** Use `queryParameters` instead, or omit.
@@ -269,3 +270,5 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 ## Known Limitations
 
 - The CLI-produced `essentialConfiguration` uses `essentialConfiguration` only (not `optionalConfiguration`). Tasks work at runtime (debug/publish) but the FE editor may not render certain fields until the user re-configures the task in the UI. DAP repopulates these on form open.
+
+<!-- END: impl-json.md -->

@@ -1,0 +1,33 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionList",
+  "Data": [
+    {
+      "Id": "29aae689-111d-459f-9a4a-d1ad1d9d2761",
+      "Name": "uipath",
+      "ConnectorKey": "uipath-freshworks-freshdesk",
+      "ConnectorName": "Freshdesk",
+      "State": "Enabled",
+      "Owner": "replacement_email@test.com",
+      "IsDefault": "No",
+      "Folder": "uipath-rpa-isActivities",
+      "FolderKey": "b262689d-e2a9-4c1a-8e68-04382a7fff76",
+      "Created": "2026-06-18T13:24:02.950Z",
+      "Updated": "2026-06-19T11:50:51.870Z"
+    },
+    {
+      "Id": "989fd9d2-4b07-443e-86e3-ed6f1b00079b",
+      "Name": "original_email@test.com",
+      "ConnectorKey": "uipath-box-box",
+      "ConnectorName": "Box",
+      "State": "Failed",
+      "Owner": "replacement_email@test.com",
+      "IsDefault": "Yes",
+      "Folder": "uipath-rpa-isActivities",
+      "FolderKey": "b262689d-e2a9-4c1a-8e68-04382a7fff76",
+      "Created": "2026-06-19T07:46:21.196Z",
+      "Updated": "2026-06-19T12:08:33.426Z"
+    }
+  ],
+  "Warning": "Connection(s) not enabled: 989fd9d2-4b07-443e-86e3-ed6f1b00079b. Only Enabled connections can be used for operations. Run 'uip is connections edit <connection-id>' to re-authenticate."
+}

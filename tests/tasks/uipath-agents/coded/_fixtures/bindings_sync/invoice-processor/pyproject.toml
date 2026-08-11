@@ -1,0 +1,10 @@
+[project]
+name = "invoice-processor"
+version = "0.1.0"
+description = "Multi-module project for bindings sync"
+authors = [{ name = "Test" }]
+requires-python = ">=3.11"
+dependencies = ["uipath"]
+
+[dependency-groups]
+dev = ["uipath-dev"]

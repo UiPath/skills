@@ -1,0 +1,6 @@
+{
+  "Name": "InboundDocReader",
+  "ProjectType": "Process",
+  "Description": "Opens an inbound Word document and reads its full text for downstream processing.",
+  "MainFile": "Main.xaml"
+}

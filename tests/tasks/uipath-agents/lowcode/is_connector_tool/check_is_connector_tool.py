@@ -15,10 +15,10 @@ Validates:
 
   2. At least one bindings_v2.json file exists somewhere under the
      agent project. Agent authors it manually as the source for
-     `uip solution resource refresh`. Shape is under-asserted for
+     `uip solution resources refresh`. Shape is under-asserted for
      now — we just verify presence and valid JSON.
 
-  3. After `uip solution resource refresh`, at least one connection
+  3. After `uip solution resources refresh`, at least one connection
      resource file exists under
      ResearchSol/resources/solution_folder/connection/. The exact
      filename depends on the connector and connection name chosen by
@@ -72,7 +72,7 @@ def assert_bindings_v2_authored() -> Path:
         sys.exit(
             f"FAIL: no bindings_v2.json authored under {AGENT} (outside "
             ".agent-builder/). Agent must create it manually as the source "
-            "for `uip solution resource refresh`."
+            "for `uip solution resources refresh`."
         )
     path = authored[0]
     try:

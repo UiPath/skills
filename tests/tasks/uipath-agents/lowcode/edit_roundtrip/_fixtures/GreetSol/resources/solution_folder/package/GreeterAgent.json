@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GreeterAgent",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "bbdc32dc-adb5-45db-ae6b-fafe9d238cb7",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "GreeterAgent"
+    },
+    "locks": [],
+    "key": "e44a5360-1cd6-49dd-82fc-23af04fb75e5",
+    "files": []
+  }
+}

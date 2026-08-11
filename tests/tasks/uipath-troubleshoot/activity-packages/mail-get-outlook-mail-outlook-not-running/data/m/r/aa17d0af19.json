@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T04:00:04.061Z",
+      "Message": "[Get Outlook Mail Messages] The Outlook application is not running."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T04:00:04.140Z",
+      "Message": "Get Outlook Mail Messages: The Outlook application is not running.\r\nin Main.xaml\r\n    at GetOutlookMailMessages \"Get Outlook Mail Messages\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\nUiPath.Mail.Exception: The Outlook application is not running. ---> System.Runtime.InteropServices.COMException: The RPC server is unavailable. (Exception from HRESULT: 0x800706BA)"
+    }
+  ]
+}

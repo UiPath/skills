@@ -114,3 +114,111 @@ def write_baseline_function_agent(root: Path) -> None:
         json.dumps({"version": "2.0", "resources": []}, indent=2),
         encoding="utf-8",
     )
+
+
+# ---------------------------------------------------------------------------
+# LangChain (LangGraph) baseline — for coded guardrail review tasks.
+#
+# A clean, correctly-wired LangChain agent: guardrail symbols imported from
+# `uipath_langchain.guardrails` (registers the LangChain adapter), a PII guardrail
+# decorating the LLM factory. Guardrail review tasks pass their own `graph_py`
+# variant to exercise a specific rule (wrong import, missing/ineffective/misapplied
+# guardrail).
+# ---------------------------------------------------------------------------
+
+BASELINE_LANGCHAIN_GRAPH = '''from langchain.agents import create_agent
+from langchain_core.tools import tool
+from pydantic import BaseModel, Field
+from uipath_langchain.chat import UiPathChat
+from uipath_langchain.guardrails import (
+    BlockAction,
+    GuardrailExecutionStage,
+    PIIDetectionEntity,
+    PIIDetectionEntityType,
+    PIIValidator,
+    guardrail,
+)
+
+SYSTEM_PROMPT = (
+    "You are a customer-support assistant. Answer the customer's question, "
+    "using the lookup_order tool when an order status is requested."
+)
+
+
+class Input(BaseModel):
+    message: str = Field(description="The customer's message")
+    customer_email: str = Field(description="The customer's email address")
+
+
+class Output(BaseModel):
+    reply: str = Field(description="The reply to send to the customer")
+
+
+@tool
+def lookup_order(order_id: str) -> str:
+    """Look up an order's status by its order id."""
+    return f"Order {order_id}: shipped"
+
+
+@guardrail(
+    validator=PIIValidator(
+        entities=[PIIDetectionEntity(PIIDetectionEntityType.EMAIL, 0.5)],
+    ),
+    action=BlockAction(),
+    name="PII detection",
+    stage=GuardrailExecutionStage.PRE,
+)
+def create_llm():
+    return UiPathChat(model="gpt-4o-2024-08-06")
+
+
+graph = create_agent(
+    model=create_llm(),
+    tools=[lookup_order],
+    system_prompt=SYSTEM_PROMPT,
+)
+'''
+
+BASELINE_LANGCHAIN_PYPROJECT = '''[project]
+name = "langchain-agent"
+version = "0.1.0"
+description = "A sample LangChain coded agent for guardrail review testing"
+requires-python = ">=3.11"
+authors = [{ name = "Test Fixture" }]
+dependencies = ["uipath", "uipath-langchain", "langchain", "langgraph"]
+'''
+
+
+def write_baseline_langchain_agent(root: Path, *, graph_py: str | None = None) -> None:
+    """Write a LangChain (LangGraph) coded agent at `root`.
+
+    Pass `graph_py` to override the entry source (`graph.py`) for a specific
+    guardrail-review scenario; defaults to the clean, correctly-wired baseline.
+    """
+    root.mkdir(parents=True, exist_ok=True)
+
+    (root / "graph.py").write_text(
+        graph_py if graph_py is not None else BASELINE_LANGCHAIN_GRAPH,
+        encoding="utf-8",
+    )
+    (root / "pyproject.toml").write_text(
+        BASELINE_LANGCHAIN_PYPROJECT, encoding="utf-8"
+    )
+    (root / "langgraph.json").write_text(
+        json.dumps(
+            {"dependencies": ["."], "graphs": {"agent": "./graph.py:graph"}},
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    (root / "uipath.json").write_text(
+        json.dumps(
+            {
+                "$schema": "https://cloud.uipath.com/draft/2024-12/uipath",
+                "runtimeOptions": {"isConversational": False},
+                "packOptions": {"includeUvLock": True},
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )

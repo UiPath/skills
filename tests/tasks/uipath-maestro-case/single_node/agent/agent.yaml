@@ -32,7 +32,6 @@ initial_prompt: |
   | Case Name | AgentSingleCase |
   | Case Description | Single-node case that runs the CountLetters agent on a fixed input word. |
   | Case Identifier | Prefix: ASC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | 1 d |
   | SLA Type | Static |
 
@@ -106,8 +105,6 @@ initial_prompt: |
   debug` yourself — the test harness runs it. Do NOT ask for approval,
   confirmation, or feedback. Build end-to-end in a single pass and finish
   with `uip maestro case validate` passing on the resulting caseplan.json.
-  Before starting, load the uipath-maestro-case skill. Read and follow its
-  workflow steps exactly.
 
 success_criteria:
   - type: run_command

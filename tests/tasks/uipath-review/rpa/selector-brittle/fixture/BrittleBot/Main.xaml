@@ -1,0 +1,201 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" this:Main.prompt="for the new employee create account in workday and send welcome email. Also, if she is a manager send a notification to direct reports" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:this="clr-namespace:" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uix="http://schemas.uipath.com/workflow/activities/uix" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="prompt" Type="InArgument(x:String)" />
+  </x:Members>
+  <VisualBasic.Settings>
+    <x:Null />
+  </VisualBasic.Settings>
+  <sap2010:Annotation.AnnotationText>UPTF00000088eyI8SGVscExpbms+a19fQmFja2luZ0ZpZWxkIjpudWxsLCI8SW5pdGlhbFRvb2x0aXA+a19fQmFja2luZ0ZpZWxkIjpudWxsLCI8VmVyc2lvbj5rX19CYWNraW5nRmllbGQiOjF9</sap2010:Annotation.AnnotationText>
+  <sap:VirtualizedContainerService.HintSize>774,1551</sap:VirtualizedContainerService.HintSize>
+  <sap2010:WorkflowViewState.IdRef>ActivityBuilder_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>System.Runtime.Serialization</x:String>
+      <x:String>UiPath.UIAutomationNext.Enums</x:String>
+      <x:String>UiPath.UIAutomationCore.Contracts</x:String>
+      <x:String>UiPath.UIAutomationNext.Activities</x:String>
+      <x:String>UiPath.Shared.Activities</x:String>
+      <x:String>UiPath.Platform.ObjectLibrary</x:String>
+      <x:String>System.Reflection</x:String>
+      <x:String>System.Linq.Expressions</x:String>
+      <x:String>System.Numerics</x:String>
+      <x:String>System.Security</x:String>
+      <x:String>System.ComponentModel</x:String>
+      <x:String>UiPath.UIAutomationNext.Contracts</x:String>
+      <x:String>UiPath.UIAutomationNext.Models.CV</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>PresentationCore</AssemblyReference>
+      <AssemblyReference>PresentationFramework</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Drawing.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing.Primitives</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Net.Mail</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>WindowsBase</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Constants</AssemblyReference>
+      <AssemblyReference>System.Private.ServiceModel</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Formatters</AssemblyReference>
+      <AssemblyReference>System.Private.DataContractSerialization</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Primitives</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationCore</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.OCR.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Testing.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Platform</AssemblyReference>
+      <AssemblyReference>System.Reflection.DispatchProxy</AssemblyReference>
+      <AssemblyReference>System.Reflection.TypeExtensions</AssemblyReference>
+      <AssemblyReference>System.Reflection.Metadata</AssemblyReference>
+      <AssemblyReference>System.Console</AssemblyReference>
+      <AssemblyReference>System.Configuration.ConfigurationManager</AssemblyReference>
+      <AssemblyReference>System.Security.Permissions</AssemblyReference>
+      <AssemblyReference>System.ComponentModel</AssemblyReference>
+      <AssemblyReference>System.Memory</AssemblyReference>
+      <AssemblyReference>System.Private.Uri</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.Collections.NonGeneric</AssemblyReference>
+      <AssemblyReference>System.Linq.Expressions</AssemblyReference>
+      <AssemblyReference>System.Runtime.Numerics</AssemblyReference>
+      <AssemblyReference>System.Runtime.InteropServices</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.EventBasedAsync</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.Primitives</AssemblyReference>
+      <AssemblyReference>System.Linq.Parallel</AssemblyReference>
+      <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>System.Linq.Queryable</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities.Design</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities.ViewModels</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap:VirtualizedContainerService.HintSize="688,1486" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:Double" Name="delay" />
+      <Variable x:TypeArguments="x:Double" Name="delayAfter" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <uix:NApplicationCard AttachMode="ByInstance" CloseMode="Never" DisplayName="Use Application: refd1 - UiPath Studio" sap:VirtualizedContainerService.HintSize="626,1398" sap2010:WorkflowViewState.IdRef="NApplicationCard_1" OpenMode="Never" ScopeGuid="5564fb00-52e3-4c2f-bd2d-59393b996ccc" Version="V2">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Do" sap:VirtualizedContainerService.HintSize="592,1084" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <Sequence.Variables>
+              <Variable x:TypeArguments="ui:UiElement" Name="searchInput" />
+            </Sequence.Variables>
+            <sap:WorkflowViewStateService.ViewState>
+              <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+              </scg:Dictionary>
+            </sap:WorkflowViewStateService.ViewState>
+            <uix:NTypeInto ActivateBefore="True" ClickBeforeMode="None" ContinueOnError="True" DelayAfter="[delay]" DelayBefore="[delay]" DisplayName="Type Into 'Search for'" EmptyFieldMode="None" sap:VirtualizedContainerService.HintSize="530,258" sap2010:WorkflowViewState.IdRef="NTypeInto_2" InteractionMode="HardwareEvents" OutUiElement="[searchInput]" ScopeIdentifier="5564fb00-52e3-4c2f-bd2d-59393b996ccc" Text="[prompt.Substring(0, 1)]" Version="V3">
+              <uix:NTypeInto.Target>
+                <uix:TargetAnchorable DesignTimeRectangle="27, 5, 218, 15" DesignTimeScaleFactor="1" ElementType="Text" FullSelectorArgument="&lt;ctrl idx='3' /&gt;&lt;ctrl idx='12' /&gt;&lt;ctrl idx='7' /&gt;" FuzzySelectorArgument="&lt;ctrl automationid='SearchTextBox' /&gt;&lt;ctrl name='Search for activity to add (Ctrl + Shift + T)' role='text' /&gt;&lt;ctrl name='Search for activity to add (Ctrl + Shift + T)' role='text' automationid='' check:text='Search for activity to add (Ctrl + Shift + T)' /&gt;" Guid="d1641b90-dc1c-44aa-9ddb-27a7f697ffa2" InformativeScreenshot="2aa13e7dca41f449a9a7eaec9fe5fd33.png" ScopeSelectorArgument="&lt;wnd app='uipath.studio.exe' cls='HwndWrapper*' idx='*' /&gt;" SearchSteps="Selector, FuzzySelector" Version="V3" Visibility="Interactive">
+                  <uix:TargetAnchorable.Anchors>
+                    <scg:List x:TypeArguments="uix:ITarget" Capacity="1">
+                      <uix:Target DesignTimeRectangle="5, 6, 15, 13" ElementType="Icon" FullSelectorArgument="&lt;ctrl role='graphic' /&gt;" FuzzySelectorArgument="&lt;ctrl role='graphic' automationid='' /&gt;" SearchSteps="Selector, FuzzySelector" />
+                    </scg:List>
+                  </uix:TargetAnchorable.Anchors>
+                </uix:TargetAnchorable>
+              </uix:NTypeInto.Target>
+            </uix:NTypeInto>
+            <ui:ForEach x:TypeArguments="x:Char" CurrentIndex="{x:Null}" DisplayName="For Each" sap:VirtualizedContainerService.HintSize="530,739" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[prompt.Skip(1)]">
+              <ui:ForEach.Body>
+                <ActivityAction x:TypeArguments="x:Char">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="x:Char" Name="currentChar" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Body" sap:VirtualizedContainerService.HintSize="496,550" sap2010:WorkflowViewState.IdRef="Sequence_3">
+                    <sap:WorkflowViewStateService.ViewState>
+                      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                      </scg:Dictionary>
+                    </sap:WorkflowViewStateService.ViewState>
+                    <Assign sap:VirtualizedContainerService.HintSize="434,122" sap2010:WorkflowViewState.IdRef="Assign_1">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:Double">[delay]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:Double">[((New Random().NextDouble() * (0.09 - 0.02) + 0.02) * 0.75)]</InArgument>
+                      </Assign.Value>
+                    </Assign>
+                    <Assign sap:VirtualizedContainerService.HintSize="434,122" sap2010:WorkflowViewState.IdRef="Assign_2">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:Double">[delayAfter]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:Double">[((New Random().NextDouble() * (0.09 - 0.02) + 0.02) * 0.75)]</InArgument>
+                      </Assign.Value>
+                    </Assign>
+                    <uix:NTypeInto ActivateBefore="True" ClickBeforeMode="None" ContinueOnError="True" DelayAfter="[delayAfter]" DelayBefore="[delay]" DisplayName="Type Into 'Search for'" EmptyFieldMode="None" sap:VirtualizedContainerService.HintSize="434,221" sap2010:WorkflowViewState.IdRef="NTypeInto_1" InUiElement="[searchInput]" InteractionMode="HardwareEvents" ScopeIdentifier="5564fb00-52e3-4c2f-bd2d-59393b996ccc" Text="[currentChar]" Version="V3">
+                      <uix:NTypeInto.Target>
+                        <uix:TargetAnchorable DesignTimeRectangle="27, 5, 218, 15" DesignTimeScaleFactor="1" ElementType="Text" FullSelectorArgument="&lt;ctrl idx='3' /&gt;&lt;ctrl idx='12' /&gt;&lt;ctrl idx='7' /&gt;" FuzzySelectorArgument="&lt;ctrl automationid='SearchTextBox' /&gt;&lt;ctrl name='Search for activity to add (Ctrl + Shift + T)' role='text' /&gt;&lt;ctrl name='Search for activity to add (Ctrl + Shift + T)' role='text' automationid='' check:text='Search for activity to add (Ctrl + Shift + T)' /&gt;" Guid="d1641b90-dc1c-44aa-9ddb-27a7f697ffa2" InformativeScreenshot="2aa13e7dca41f449a9a7eaec9fe5fd33.png" ScopeSelectorArgument="&lt;wnd app='uipath.studio.exe' cls='HwndWrapper*' idx='*' /&gt;" SearchSteps="Selector, FuzzySelector" Version="V3" Visibility="Interactive">
+                          <uix:TargetAnchorable.Anchors>
+                            <scg:List x:TypeArguments="uix:ITarget" Capacity="1">
+                              <uix:Target DesignTimeRectangle="5, 6, 15, 13" ElementType="Icon" FullSelectorArgument="&lt;ctrl role='graphic' /&gt;" FuzzySelectorArgument="&lt;ctrl role='graphic' automationid='' /&gt;" SearchSteps="Selector, FuzzySelector" />
+                            </scg:List>
+                          </uix:TargetAnchorable.Anchors>
+                        </uix:TargetAnchorable>
+                      </uix:NTypeInto.Target>
+                    </uix:NTypeInto>
+                  </Sequence>
+                </ActivityAction>
+              </ui:ForEach.Body>
+            </ui:ForEach>
+          </Sequence>
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+      <uix:NApplicationCard.TargetApp>
+        <uix:TargetApp Area="-8, -8, 1456, 868" FilePath="C:\Program Files\UiPath\Studio\uipath.studio.exe" IconBase64="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" InformativeScreenshot="ea3eeaf1289ece6523ae84e24ba7752e.png" Selector="&lt;wnd app='uipath.studio.exe' cls='HwndWrapper*' title='*UiPath Studio' /&gt;" Title="refd1 - UiPath Studio" />
+      </uix:NApplicationCard.TargetApp>
+    </uix:NApplicationCard>
+  </Sequence>
+</Activity>

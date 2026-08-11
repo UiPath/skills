@@ -32,7 +32,7 @@ What to look for:
 
 ## Resolution
 
-- **If Personal Automation quota exhausted:** request a license upgrade via [self-service license increase](https://uipath.atlassian.net/wiki/spaces/LIC/pages/2834596253), or wait for the monthly quota reset
+- **If Personal Automation quota exhausted:** request a license upgrade via the organization admin or UiPath account manager, or wait for the monthly quota reset
 - **If Agentic Units expired:** allocate AU from **Admin > Organization > Subscriptions** or contact the UiPath account manager
 - **If recurring:** redesign the workflow to use a tenant-level Unattended robot instead of Personal Automation so quotas come from the shared pool
 

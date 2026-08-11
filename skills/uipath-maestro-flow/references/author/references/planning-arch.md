@@ -9,6 +9,36 @@ Discover available capabilities, then design the flow topology — select node t
 
 ---
 
+## Before You Build: Is Maestro the Right Home?
+
+Run this gate **before** designing the topology. Maestro is the right tool for a *long-running case* — but not every automation is one, and reaching for a flow by default leads to orchestration overhead that a simpler design would avoid. If the answer below is "queue + Action Center," stop here and hand the work to [/uipath:uipath-rpa](/uipath:uipath-rpa) + [/uipath:uipath-platform](/uipath:uipath-platform) instead of authoring a flow.
+
+### The one question
+
+> **Where does the case live right now — and where should it live between steps?**
+
+A business case (an invoice being approved, a claim being recovered, an onboarding in progress) needs a home for its state while it waits. There are two legitimate homes:
+
+- **One durable instance — Maestro.** A single orchestrated process holds the whole case, survives every wait, and shows you exactly where each case is at any moment.
+- **Scattered across infrastructure — a queue + Action Center state machine.** The case's state lives spread across queue items, asset values, and Action Center tasks; whichever robot picks the work up next reassembles it. RPA does the steps, a queue carries the work between them, Action Center holds the human-wait, and the "state" is implicit in which queue/task the item currently sits in.
+
+### Decision table
+
+| Factor | Lean **Maestro flow** | Lean **queue + Action Center state machine** |
+|---|---|---|
+| Number of distinct waits in the lifecycle | Several waits / branches / parallel paths | A **single** human-wait or external-wait |
+| Per-case visibility | You need to see "where is case #1234 right now" | Per-item queue status is enough |
+| Branching & parallelism | Real branching, fan-out/merge, SLAs | Mostly linear: do work → wait → finish |
+| Who maintains it | Team comfortable with orchestration as a first-class artifact | RPA-only team, existing queue infrastructure |
+| Cross-product composition | Coordinates RPA + Agents + connectors + humans | Pure RPA + Action Center, no agent reasoning |
+| Cost of the orchestration layer | Justified by the above | Overhead you won't repay for a one-shot process |
+
+**Rule of thumb:** a **single-wait** lifecycle (do work → wait for one approval → finish) is a legitimate and *simpler* job for a queue + Action Center state machine. **Multi-wait, branched, or visibility-critical** lifecycles are where Maestro earns its keep. Both are valid — choose deliberately, not by habit.
+
+> **Converting an existing RPA project to Maestro?** You don't rewrite the project into a flow — you keep the executors and lift only the orchestration. See [brownfield.md — Converting an existing project to Maestro](brownfield.md#converting-an-existing-project-to-maestro).
+
+---
+
 ## Process
 
 1. Analyze the user's requirements
@@ -112,7 +142,7 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | `core.logic.delay` | [delay](plugins/delay/planning.md) | Pause execution for a duration or until a specific date |
 | `core.action.queue.create` | [queue](plugins/queue/planning.md) | Distribute work to robots — fire-and-forget |
 | `core.action.queue.create-and-wait` | [queue](plugins/queue/planning.md) | Distribute work to robots — wait for result |
-| `uipath.human-in-the-loop` | [hitl](plugins/hitl/planning.md) | Pause flow for a human to review, approve, or fill in data — inline schema, no app required |
+| `uipath.human-in-the-loop.quick-form` | [hitl](plugins/hitl/planning.md) | Pause flow for a human to review, approve, or fill in data — inline schema, no app required |
 
 ### Control Flow
 
@@ -133,7 +163,6 @@ Connector nodes call external services via Integration Service. They are **not**
 | When to Select | Plugin |
 | --- | --- |
 | A pre-built connector exists for the target service (Jira, Slack, Salesforce, etc.) | [connector](plugins/connector/planning.md) |
-| The flow needs to read/write UiPath Data Fabric entities (Query / Create / Update / Delete / Get by ID) | [connector/data-fabric](plugins/connector/data-fabric/planning.md) |
 
 **In this phase:** Use [Capability Discovery](#capability-discovery) to confirm the connector exists and note it as `connector: <service-name>` with the intended operation. Phase 2 resolves the exact type, connection, and fields via [connector/impl.md](plugins/connector/impl.md).
 
@@ -217,7 +246,7 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `uipath.connector.*` (activities) | `input` | `output`, `error` |
 | `core.action.queue.create` | `input` | `success` |
 | `core.action.queue.create-and-wait` | `input` | `success` |
-| `uipath.human-in-the-loop` | `input` | `completed` |
+| `uipath.human-in-the-loop.quick-form` | `input` | `completed` |
 | `uipath.core.human-task.{key}` | `input` | `output` |
 
 > **`error` is an implicit source port** on every action node (any node with `supportsErrorHandling: true`). Wire it whenever the flow needs to survive a failed HTTP call, script exception, transform error, agent fault, etc. — otherwise the flow faults as a whole. This is a **different mechanism** from content-based `inputs.branches` on HTTP. See [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes) for wiring, when it fires, and the decision matrix vs branches/decision/switch.
@@ -294,11 +323,26 @@ Use a downstream Decision/Switch only for **content-based routing on a successfu
 
 ### Orchestration (Mixed Resources)
 
+The canonical composition when more than one product is in play. Default division of labor — most "where does this step go?" questions resolve against it:
+
+> **RPA = hands. Maestro = conductor. Agents = brain. Humans approve.**
+
+- **Maestro orchestrates** — owns the case, the waits, the branching, the SLA, the long-running state (this flow).
+- **RPA executes** — mechanical work against systems with no clean API (desktop apps, terminals, legacy web) — a `uipath.core.rpa-workflow.*` resource node. See [rpa/planning.md](plugins/rpa/planning.md).
+- **Agents reason** — judgment calls: classify, summarize, decide which branch a fuzzy input belongs to — an agent node. See [agent/planning.md](plugins/agent/planning.md) / [inline-agent/planning.md](plugins/inline-agent/planning.md).
+- **Humans approve** — a HITL / human-task node wraps the point where a person must look before the case continues. See [hitl/planning.md](plugins/hitl/planning.md).
+
+Worked example — extract, classify, and route with one human approval branch:
+
 ```
-Trigger -> Script (prepare) -> RPA Process (extract) -> Agent (classify) -> Decision
-  |-- approved -> Script (format) -> End
-  |-- rejected -> Human Task (review) -> End
+Trigger -> Script (prepare) -> RPA Process (extract from legacy app) -> Agent (classify) -> Decision (confidence high)
+  |-- true  -> Script (format) -> End (auto-approved)
+  |-- false -> HITL (human approves or rejects) -> Decision (approved)
+                 |-- true  -> Script (format) -> End (approved)
+                 |-- false -> Script (log rejection) -> End (rejected)
 ```
+
+Here Maestro holds the case across the agent call and the human wait; RPA does the extraction the source app gives no API for; the agent makes the confidence call; the human is the gate only when the agent is unsure. Each non-Maestro piece is a separate published (or in-solution) artifact the flow references as a node — you do **not** rebuild them inside the flow.
 
 ### Scheduled Batch Processing
 
@@ -307,6 +351,30 @@ Scheduled Trigger -> HTTP (fetch batch) -> Loop
   |-- Queue Create (per item) -> (loopBack)
   |-- success -> Script (summary) -> End
 ```
+
+### No-API Source (RPA Feeder Bridge)
+
+When the source application has **no API and no connector** (legacy desktop app, terminal, mainframe screen), the flow cannot be triggered by the source directly. Bridge it: a **scheduled RPA bot scrapes the source and drops the result onto something Maestro can watch** — a Queue or a Storage Bucket — and the flow triggers off that.
+
+```
+[Scheduled RPA bot]  (outside the flow — uipath-rpa + a time trigger)
+   scrape legacy app -> push item to Queue (or file to Bucket)
+        |
+        v
+Queue/Bucket item created
+        |
+        v
+Maestro flow trigger -> Process item -> ... -> End
+```
+
+Two ways to wire the Maestro side:
+
+- **Queue → flow:** the RPA bot calls `Add Queue Item`; the flow is started by a queue trigger (configured in Orchestrator — see [/uipath:uipath-platform](/uipath:uipath-platform)) or polls/consumes the queue. Best when each scraped row is a separate case.
+- **Bucket → flow:** the RPA bot uploads a file; a scheduled flow picks it up. Best for batch drops.
+
+> **Tradeoff — polling latency equals the scraper schedule.** The case starts no sooner than the next RPA run. A bot scheduled every 15 minutes means up to 15 minutes of trigger latency. There is no event from a no-API source, so "real-time" is not achievable this way — tighten the RPA schedule to lower latency, at the cost of more bot runs. If the source *does* expose an event/webhook or has a connector, prefer a connector trigger ([connector-trigger/planning.md](plugins/connector-trigger/planning.md)) over this bridge.
+
+The scraper bot itself is an RPA project ([/uipath:uipath-rpa](/uipath:uipath-rpa)) with a time trigger ([/uipath:uipath-platform](/uipath:uipath-platform)); only the consuming flow belongs to this skill.
 
 ---
 

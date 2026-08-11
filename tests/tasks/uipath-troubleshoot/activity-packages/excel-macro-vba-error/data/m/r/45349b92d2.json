@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "bb222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "StartTime": "2026-05-20T08:00:01.300Z",
+      "EndTime": "2026-05-20T08:00:02.812Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelMacroProcess",
+      "Source": "Schedule",
+      "Reference": "HourlyMacroA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0011111-2222-3333-4444-555566667777",
+      "Info": "System.Runtime.InteropServices.COMException (0x80020009): Exception occurred. ---> Run-time error '91': Object variable or With block variable not set",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

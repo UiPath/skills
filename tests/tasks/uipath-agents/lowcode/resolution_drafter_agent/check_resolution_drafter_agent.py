@@ -12,9 +12,11 @@ Confluence spec for the Billing Dispute Resolution golden scenario:
      customer, invoice, adjustment, disputeAnalysis.
   4. Output schema declares `subject` and `body` by name. Types and
      `required` arrays are not enforced.
-  5. The user-message template inlines every input field via
-     {{input.<field>}} with a matching variable contentTokens entry
-     (Critical Rules 5 and 6).
+  5. The user-message template inlines every input field — either the
+     whole object ({{input.<field>}}) or one of its members
+     ({{input.<field>.<sub>}}) — with a matching variable contentTokens
+     entry (Critical Rules 5 and 6). Nested member access is valid
+     agent syntax.
 
 System-prompt quality is judged separately by the task's
 `type: llm_judge` success criterion.
@@ -22,6 +24,7 @@ System-prompt quality is judged separately by the task's
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -126,17 +129,29 @@ def assert_user_message_inlines(agent: dict) -> None:
         sys.exit(f"FAIL: user message contentTokens is not a list: {tokens!r}")
 
     for field in INPUT_FIELDS:
-        placeholder = "{{input." + field + "}}"
-        if placeholder not in content:
+        # Whole-object ({{input.customer}}) or any nested member
+        # ({{input.customer.name}}) — both are valid agent syntax.
+        pattern = re.compile(
+            r"\{\{\s*input\." + re.escape(field) + r"(\.[A-Za-z0-9_]+)*\s*\}\}"
+        )
+        if not pattern.search(content):
             sys.exit(
-                f"FAIL: user message content does not inline {placeholder}; "
-                f"content={content!r}"
+                f"FAIL: user message content does not inline input.{field} "
+                f"(whole object or a nested member); content={content!r}"
             )
-        expected = {"type": "variable", "rawString": f"input.{field}"}
-        if expected not in tokens:
+        token_ok = any(
+            isinstance(t, dict)
+            and t.get("type") == "variable"
+            and (
+                t.get("rawString") == f"input.{field}"
+                or str(t.get("rawString", "")).startswith(f"input.{field}.")
+            )
+            for t in tokens
+        )
+        if not token_ok:
             sys.exit(
                 f"FAIL: user message contentTokens missing variable token for "
-                f"input.{field}\n  expected: {expected}\n"
+                f"input.{field} (or a nested member of it)\n"
                 f"  got tokens: {json.dumps(tokens, indent=2)}"
             )
     print(f"OK: user message inlines all 4 inputs with matching contentTokens")

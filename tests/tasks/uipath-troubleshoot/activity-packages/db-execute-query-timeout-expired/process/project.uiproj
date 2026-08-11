@@ -1,0 +1,6 @@
+{
+  "Name": "OrderNotesSearch",
+  "ProjectType": "Process",
+  "Description": "Searches order notes by running a SELECT over the Orders table via Execute Query into a DataTable.",
+  "MainFile": "Main.xaml"
+}

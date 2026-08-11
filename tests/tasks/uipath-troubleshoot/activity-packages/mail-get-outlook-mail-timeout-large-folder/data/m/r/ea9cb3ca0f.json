@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T02:00:30.541Z",
+      "Message": "[Get Outlook Mail Messages] The operation has timed out."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T02:00:30.602Z",
+      "Message": "The operation has timed out.\r\nin Main.xaml\r\n    at GetOutlookMailMessages \"Get Outlook Mail Messages\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

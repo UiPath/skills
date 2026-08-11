@@ -1,0 +1,54 @@
+task_id: skill-agent-guardrail-coded-intellectual-property
+description: >
+  Middleware-style intellectual property guardrail for a coded agent. A simple
+  LangGraph customer support agent is seeded with no guardrails. Use the skill
+  to add an intellectual_property detection guardrail (middleware style) that
+  blocks copyrighted text and licensed code in the LLM output. Verifies the
+  correct middleware class is imported from uipath_langchain.guardrails and
+  spread into create_agent(), uses Text+Code entities, a POST stage (IP is
+  output-only), an LLM/Agent scope (NOT Tool), and a BlockAction. Closes the
+  coded intellectual_property gap (untested in both coded and low-code before).
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  # Disallow subagent dispatch — Critical Rule 13: a context-less subagent reports
+  # the module where symbols physically live (uipath.platform.guardrails), the
+  # no-op import path for LangChain agents. Force inline authoring where the
+  # skill's import-source rule (uipath_langchain.guardrails) still applies.
+  disallowed_tools: ["Task"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded UiPath LangGraph agent in graph.py. It handles customer support
+  questions. I want to add a UiPath intellectual property guardrail using the
+  middleware style — the agent's LLM output should be checked for copyrighted
+  text and licensed source code (Text and Code), and blocked when detected.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation. Complete the entire task
+  end-to-end in a single pass.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not claude-api or another skill)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Intellectual property middleware guardrail correctly added to graph.py"
+    command: "python3 $TASK_DIR/check_intellectual_property_coded.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 11
+  turn_timeout: 1200

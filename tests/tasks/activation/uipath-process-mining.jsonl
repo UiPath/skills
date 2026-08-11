@@ -1,0 +1,19 @@
+{"id": "uipath-process-mining-001", "prompt": "Build a UiPath Process Mining app from this event log CSV", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-002", "prompt": "Which process-app templates are available on my org?", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-003", "prompt": "Ingest this incident log into my process app and transform it", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-004", "prompt": "My Cases.sql transformation fails with invalid identifier 'EVENT_LOG.\"Case\"'", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-005", "prompt": "Why can't I query the custom table I added to my process app?", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-006", "prompt": "Add a table to my process app's data model so it shows up in queries", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-007", "prompt": "Group my cases by service component and give me the average number of events", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-008", "prompt": "I set the wrong date format in my data mapping — do I have to recreate the app?", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-009", "prompt": "Read the current input data mapping of my process app and change a column mapping", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-010", "prompt": "Show me the throughput time and rework loops for this process", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-011", "prompt": "Publish my dev process app so the dashboards pick up the full dataset", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-012", "prompt": "Edit the dbt models of my process app and re-run the transformation", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-013", "prompt": "Run a steps-to-resolution analysis on my ServiceNow incident data with uip pm", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-014", "prompt": "My ingestion finished with SUCCESS_WITH_WARNINGS — what do those mapping warnings mean?", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-015", "prompt": "Set up UiPath Process Mining to analyze bottlenecks in my procure-to-pay process", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-016", "prompt": "My Process Mining dashboards won't open — I get 'Must be duration, not numeric, for the lt input'. How do I fix it?", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-017", "prompt": "Change a field's data kind from numeric to duration in my process app", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-018", "prompt": "Add a calculated field to my process app model", "expected_skill": "uipath-process-mining"}
+{"id": "uipath-process-mining-019", "prompt": "After I changed a field's datakind my process app is locked to the data-upload screen — how do I recover it?", "expected_skill": "uipath-process-mining"}

@@ -1,0 +1,61 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mail="clr-namespace:System.Net.Mail;assembly=System.Net.Mail" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Mail</x:String>
+      <x:String>UiPath.Mail.Activities</x:String>
+      <x:String>UiPath.Mail.Outlook.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Net.Mail</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="scg:List(mail:MailMessage)" Name="mailList" />
+      <Variable x:TypeArguments="mail:MailMessage" Name="mailToDelete" />
+      <Variable x:TypeArguments="x:Int32" Name="processedCount" />
+    </Sequence.Variables>
+    <ui:GetOutlookMailMessages Account="{x:Null}" DisplayName="Get Outlook Mail Messages" MailFolder="Inbox" Messages="[mailList]" OnlyUnreadMessages="False" Private="False" Top="50" sap2010:WorkflowViewState.IdRef="GetOutlookMailMessages_1" />
+    <Assign DisplayName="Pick oldest message" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="mail:MailMessage">[mailToDelete]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="mail:MailMessage">[mailList[0]]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ForEach x:TypeArguments="mail:MailMessage" DisplayName="Process each message (long per-item work)" Values="[mailList]" sap2010:WorkflowViewState.IdRef="ForEach_1">
+      <ActivityAction x:TypeArguments="mail:MailMessage">
+        <ActivityAction.Argument>
+          <DelegateInArgument x:TypeArguments="mail:MailMessage" Name="currentMail" />
+        </ActivityAction.Argument>
+        <Sequence DisplayName="Per-item processing" sap2010:WorkflowViewState.IdRef="Sequence_2">
+          <ui:LogMessage DisplayName="Log progress" Level="Info" Message="[&quot;Processing message: &quot; + currentMail.Subject]" Private="False" sap2010:WorkflowViewState.IdRef="LogMessage_1" />
+          <ui:Delay DisplayName="Per-item delay (downstream API + attachment save)" Duration="00:00:00.5000000" Private="False" sap2010:WorkflowViewState.IdRef="Delay_1" />
+          <Assign DisplayName="Increment counter" sap2010:WorkflowViewState.IdRef="Assign_2">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:Int32">[processedCount]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:Int32">[processedCount + 1]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </ActivityAction>
+    </ForEach>
+    <ui:DeleteOutlookMailMessage Account="{x:Null}" DisplayName="Delete Outlook Mail Message" MailMessage="[mailToDelete]" Private="False" sap2010:WorkflowViewState.IdRef="DeleteOutlookMailMessage_1" />
+  </Sequence>
+</Activity>

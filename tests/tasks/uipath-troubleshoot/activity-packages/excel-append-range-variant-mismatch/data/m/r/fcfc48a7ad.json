@@ -1,0 +1,66 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-ff1111cc-001",
+      "JobKey": "ff111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-27T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelPayrollProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ff1111cc-002",
+      "JobKey": "ff111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-27T08:00:01.418Z",
+      "Message": "[ExcelPayrollProcess] Appending current pay period rows to C:\\Robot\\Data\\payroll-ledger.xlsx",
+      "ProcessName": "ExcelPayrollProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ff1111cc-003",
+      "JobKey": "ff111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-27T08:00:02.010Z",
+      "Message": "Invoke: BuildPayrollRows.xaml — returned dtPayroll with 47 rows, 7 columns (EmployeeId, FullName, Hours, RateUSD, Gross, TaxUSD, NetUSD)",
+      "ProcessName": "ExcelPayrollProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ff1111cc-004",
+      "JobKey": "ff111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-27T08:00:02.310Z",
+      "Message": "Append Range: payroll rows — resolved config WorkbookPath='C:\\Robot\\Data\\payroll-ledger.xlsx' Sheet='Payroll' DataTable='dtPayroll' AddHeaders=False",
+      "ProcessName": "ExcelPayrollProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ff1111cc-005",
+      "JobKey": "ff111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-27T08:00:02.510Z",
+      "Message": "Append Range: payroll rows — scope validation: no enclosing Use Excel File / Excel Application Scope found; this is the Modern AppendRangeX surface which requires a Use Excel File container",
+      "ProcessName": "ExcelPayrollProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ff1111cc-006",
+      "JobKey": "ff111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-27T08:00:02.802Z",
+      "Message": "Append Range: payroll rows — UiPath.Excel.BusinessException: The 'Append Range' activity must be placed inside a 'Use Excel File' container, which manages the workbook context for the activity.",
+      "ProcessName": "ExcelPayrollProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

@@ -4,9 +4,11 @@
 Validates:
   1. features/SupportRecall/feature.json declares a CLI-managed
      memorySpace feature for the expected tenant memory space and folder.
-  2. Dynamic few-shot retrieval uses the requested settings and weights
-     the `userQuestion` input field.
-  3. The requested episodic seed item and JSON metadata are present.
+  2. Dynamic few-shot retrieval uses the requested hybrid search, result
+     count, and similarity threshold, weighting the `userQuestion` field.
+  3. A starter memory item was seeded (matched loosely by content — the
+     prompt describes the example in plain language, so ids/metadata/memory
+     type are left to the agent and not asserted).
   4. agent.json schemas stay synchronized with entry-points.json.
   5. bindings_v2.json contains a generated memorySpace binding with
      the expected name and folderPath.
@@ -27,12 +29,6 @@ BUILDER = ROOT / ".agent-builder" / "agent.json"
 EXPECTED_FEATURE_NAME = "SupportRecall"
 EXPECTED_MEMORY_SPACE = "UiPathAgentsSupportMemory"
 EXPECTED_FOLDER_PATH = "Shared/uipath-agents"
-EXPECTED_ITEM_KEY = "refund-policy-tone"
-EXPECTED_FEEDBACK_ID = "d640fe25-3c05-4f2e-bd8d-42bdb20704c1"
-EXPECTED_ITEM_VALUE = (
-    "Use empathetic wording and cite the remembered support precedent "
-    "when a refund case resembles a prior escalation."
-)
 
 
 def load(path: Path) -> dict:
@@ -135,22 +131,15 @@ def assert_dynamic_few_shot(feature: dict) -> None:
 
 def assert_seed_item(feature: dict) -> None:
     items = feature.get("items")
-    if not isinstance(items, list):
-        sys.exit(f"FAIL: feature items must be a list, got {items!r}")
-    matches = [i for i in items if isinstance(i, dict) and i.get("key") == EXPECTED_ITEM_KEY]
-    if len(matches) != 1:
-        sys.exit(f"FAIL: expected exactly one item keyed {EXPECTED_ITEM_KEY!r}, got {len(matches)}")
-    item = matches[0]
-    if item.get("value") != EXPECTED_ITEM_VALUE:
-        sys.exit(f"FAIL: seed item value mismatch: {item.get('value')!r}")
-    if item.get("memoryType") not in (0, "episodic"):
-        sys.exit(f"FAIL: seed item memoryType should be episodic/0, got {item.get('memoryType')!r}")
-    if item.get("feedbackId") != EXPECTED_FEEDBACK_ID:
-        sys.exit(f"FAIL: seed item feedbackId should be {EXPECTED_FEEDBACK_ID!r}, got {item.get('feedbackId')!r}")
-    metadata = item.get("metadata")
-    if metadata != {"source": "seed", "scenario": "support"}:
-        sys.exit(f"FAIL: seed item metadata mismatch: {metadata!r}")
-    print("OK: episodic seed item, feedbackId, and metadata are present")
+    if not isinstance(items, list) or not items:
+        sys.exit(f"FAIL: feature must contain at least one seeded item, got {items!r}")
+    values = [i.get("value", "") for i in items if isinstance(i, dict)]
+    # The prompt describes the starter example in plain language ("a refund
+    # case that looks like a past escalation"); match on that gist rather than
+    # an exact string, and don't assert key/feedbackId/memoryType/metadata.
+    if not any(isinstance(v, str) and "refund" in v.lower() for v in values):
+        sys.exit(f"FAIL: expected a seeded item about the refund example, got {values!r}")
+    print("OK: a starter memory item about the refund example is present")
 
 
 def assert_memory_binding(bindings: dict) -> None:

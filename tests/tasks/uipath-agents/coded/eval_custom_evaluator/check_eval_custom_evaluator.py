@@ -140,11 +140,37 @@ def check_eval_set(evaluator_id: str) -> int:
     return len(cases)
 
 
+def _find_results_file() -> Path:
+    """Locate the eval-results JSON by content, not a dictated filename.
+
+    `uip codedagent eval --output-file <name>` lets the caller pick the
+    name (the skill's examples use `results.json`); accept any JSON in the
+    project or cwd carrying the documented `evaluationSetResults` shape so
+    the prompt doesn't have to dictate the filename.
+    """
+    skip = {".venv", "node_modules", "__pycache__", ".git"}
+    roots = [ROOT, Path(os.getcwd())]
+    seen: set[Path] = set()
+    for base in roots:
+        for p in sorted(base.rglob("*.json")):
+            if p in seen or any(part in skip for part in p.parts):
+                continue
+            seen.add(p)
+            try:
+                doc = json.loads(p.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+            if isinstance(doc, dict) and isinstance(doc.get("evaluationSetResults"), list):
+                return p
+    sys.exit(
+        "FAIL: no eval-results JSON with a top-level `evaluationSetResults` "
+        "list found — `uip codedagent eval --output-file` likely never "
+        "produced results"
+    )
+
+
 def check_results(evaluator_id: str, expected_case_count: int) -> None:
-    # agent may write results to cwd or inside the project dir
-    path = ROOT / "eval-results.json"
-    if not path.is_file():
-        path = Path(os.getcwd()) / "eval-results.json"
+    path = _find_results_file()
     doc = _load_json(path)
     cases = doc.get("evaluationSetResults")
     if not isinstance(cases, list) or not cases:

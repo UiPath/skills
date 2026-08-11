@@ -18,7 +18,7 @@ Antipatterns specific to UiPath Studio 2024.10+ (Modern design experience, coded
 
 **Symptom:** Project contains more than one `Single Excel Process Scope` activity across its workflows.
 
-**Impact:** COM object error at runtime. This activity manages a single Excel COM instance — multiple scopes conflict. Documented erratum since June 2025.
+**Impact:** COM object error at runtime. This activity manages a single Excel COM instance — multiple scopes conflict.
 
 **Detection:** Grep all `.xaml` files for `SingleExcelProcessScope`. Flag if count > 1 across the project.
 
@@ -30,7 +30,7 @@ Antipatterns specific to UiPath Studio 2024.10+ (Modern design experience, coded
 
 **Symptom:** Using Modern `Use Excel File` + `Read Range` for large datasets (>10K rows) without mitigation.
 
-**Impact:** ~100x slower than Classic `Excel Application Scope` + `Read Range`. 30K rows: ~5s Classic vs >15 minutes Modern. 17K rows reported at 30 minutes. Affects SAP-exported data with special characters / images especially badly.
+**Impact:** Orders of magnitude slower than Classic `Excel Application Scope` + `Read Range` on large sheets — community reports range from minutes to tens of minutes for 10K+ rows. Affects SAP-exported data with special characters / images especially badly.
 
 **Detection:** Project uses Modern design + `Use Excel File` + `Read Range` on datasets known to exceed 10K rows. `ReadOnly` property not set.
 

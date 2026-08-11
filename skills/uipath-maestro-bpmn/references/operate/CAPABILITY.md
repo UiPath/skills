@@ -7,7 +7,7 @@ These actions may contact UiPath services or external systems.
 
 > **Where you came from / where to go next.** Operate is downstream of Author (model-authored BPMN plus CLI
 > validation/enrichment) and upstream of Diagnose (runtime faults and state inspection).
-> BPMN source work lives in [author/CAPABILITY.md](../author/CAPABILITY.md);
+> BPMN source work lives in [registry-workflow.md](../registry-workflow.md);
 > post-run investigation lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
 >
 > **Inherits universal rules from [SKILL.md](../../SKILL.md).** In particular: BPMN XML is source, generated package
@@ -86,6 +86,6 @@ These actions may contact UiPath services or external systems.
 ### Cross-capability
 
 - [shared/project-layout.md](../shared/project-layout.md) - package files and content
-- [shared/cli-conventions.md](../shared/cli-conventions.md) - side effects, login, JSON output
-- [author/validation.md](../author/references/validation.md) - pre-operate validation
+- [shared/cli-conventions.md](../cli-conventions.md) - side effects, login, JSON output
+- [author/validation.md](../structural-bpmn.md) - pre-operate validation
 - [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) - failure investigation

@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-cc333333-001",
+      "JobKey": "cc333333-7777-bbbb-cccc-ddddeeeeffff",
+      "Level": "Info",
+      "Timestamp": "2026-06-18T13:40:05.260Z",
+      "Message": "Execution started.",
+      "ProcessName": "PythonDataCruncher",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333333-002",
+      "JobKey": "cc333333-7777-bbbb-cccc-ddddeeeeffff",
+      "Level": "Info",
+      "Timestamp": "2026-06-18T13:40:05.330Z",
+      "Message": "[PythonDataCruncher] Opening Python Scope (Target=x86)",
+      "ProcessName": "PythonDataCruncher",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-cc333333-003",
+      "JobKey": "cc333333-7777-bbbb-cccc-ddddeeeeffff",
+      "Level": "Error",
+      "Timestamp": "2026-06-18T13:40:07.870Z",
+      "Message": "Python Scope: One or more errors occurred. (Error initializing the Python engine) ---> System.BadImageFormatException: An attempt was made to load a program with an incorrect format. (0x8007000B)",
+      "ProcessName": "PythonDataCruncher",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

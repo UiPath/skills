@@ -39,6 +39,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from typing import Any, Iterable, Sequence
 
 
@@ -53,6 +54,34 @@ from typing import Any, Iterable, Sequence
 _LAST_DEBUG_RAW: str | None = None
 
 
+# A `uip maestro flow debug` run can die on a transient server-side error — a
+# gateway timeout / 5xx while polling the debug instance, which the CLI reports
+# as `Result:Failure`, `ErrorCode:server_error`, `Retry:RetryLater` (the CLI's
+# own Instructions say "retry once before reporting"). This is orchestration
+# infrastructure hiccuping mid-run, NOT the built flow being wrong: a single
+# 504 on GET /debug-instances/<id>/element-executions failed a whole seeded
+# check (customer-escalation-triage). Distinct from a real flow failure (a
+# `finalStatus` that completed-with-fault, or wrong outputs), which must fail
+# immediately. Retry ONLY on the transient markers below.
+_DEBUG_RETRY_MARKERS = ('"retry": "retrylater"', '"errorcode": "server_error"')
+
+
+def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
+    """True iff a failed ``flow debug`` invocation looks like a transient
+    server-side error (5xx / RetryLater) worth retrying, rather than a real
+    flow fault. Case-insensitive so CLI key casing can't slip past."""
+    if result.returncode == 0:
+        return False
+    blob = f"{result.stdout}\n{result.stderr}".lower()
+    if any(marker in blob for marker in _DEBUG_RETRY_MARKERS):
+        return True
+    # Fall back to an explicit 5xx HttpStatus in the error Context.
+    data = _parse_json(result.stdout)
+    status = _get_ci(data or {}, "Context", default={})
+    http = _get_ci(status if isinstance(status, dict) else {}, "HttpStatus")
+    return isinstance(http, int) and 500 <= http < 600
+
+
 # ── Public helpers ──────────────────────────────────────────────────────────
 
 
@@ -62,9 +91,17 @@ def run_debug(
     attachments: dict[str, str] | None = None,
     timeout: int = 240,
     project_glob: str = "**/project.uiproj",
+    retries: int = 3,
+    backoff_seconds: float = 5.0,
 ) -> dict:
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing.
+
+    Transient server-side errors (5xx / ``RetryLater`` while polling the debug
+    instance — see :func:`_is_transient_debug_error`) are retried up to
+    ``retries`` times with ``backoff_seconds`` between attempts. A real flow
+    fault (non-transient failure, or a run that completes with the wrong
+    ``finalStatus``) fails immediately without burning retries.
 
     ``attachments`` maps a file-typed input variable ``id`` to a local file path;
     each pair is passed as ``--attachment <id>=<path>`` (repeatable). The variable
@@ -76,9 +113,14 @@ def run_debug(
         cmd.extend(["--inputs", json.dumps(inputs)])
     for var_id, local_path in (attachments or {}).items():
         cmd.extend(["--attachment", f"{var_id}={local_path}"])
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     global _LAST_DEBUG_RAW
-    _LAST_DEBUG_RAW = r.stdout
+    for attempt in range(retries):
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        _LAST_DEBUG_RAW = r.stdout
+        if r.returncode == 0 or not _is_transient_debug_error(r):
+            break
+        if attempt + 1 < retries:
+            time.sleep(backoff_seconds)
     if r.returncode != 0:
         _fail(f"flow debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}")
     data = _parse_json(r.stdout)
@@ -334,6 +376,73 @@ def assert_outputs_contain(
         )
 
 
+def get_last_debug_raw() -> str | None:
+    """Return the raw stdout of the most recent ``run_debug`` call (the full
+    ``uip maestro flow debug`` JSON envelope), or ``None`` if none ran yet.
+    Useful for persisting the execution trace for post-run inspection."""
+    return _LAST_DEBUG_RAW
+
+
+def assert_output_nonempty(payload: dict, name: str) -> Any:
+    """Assert a named output global (e.g. an End-node-mapped ``out`` variable)
+    is present and non-empty, and return its value.
+
+    Looks the variable up by name in the runtime payload's ``variables.globals``
+    dict and ``variables.globalVariables`` array (both casings). "Non-empty"
+    means: present, not ``None``, and — once stringified — not whitespace-only
+    (so ``""``, ``"   "``, ``{}``, ``[]`` all fail)."""
+    variables = _get_ci(payload, "variables", "Variables") or {}
+    globals_dict = _get_ci(variables, "globals", "Globals") or {}
+    value = _get_ci(globals_dict, name)
+    if value is None:
+        for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []:
+            if str(_get_ci(v, "id", "Id", "name", "Name") or "").lower() == name.lower():
+                value = _get_ci(v, "value", "Value")
+                break
+    text = "".join(str(v) for v in _leaves(value) if v is not None).strip()
+    if not text:
+        present = list(globals_dict.keys())
+        _fail_with_capture(
+            f"Output {name!r} is missing or empty; present globals={present}\n"
+            f"value={value!r}"
+        )
+    return value
+
+
+def assert_named_output_contains(
+    payload: dict,
+    name: str,
+    needles: str | Sequence[str],
+    *,
+    require_all: bool = True,
+) -> str:
+    """Assert a NAMED output global is present, non-empty, and contains the
+    needle(s). Returns the stringified value.
+
+    Unlike :func:`assert_outputs_contain` — which flattens the WHOLE payload and
+    so matches trigger-input echoes (e.g. an ``invoiceNumber`` input global makes
+    the invoice string "present" even when the agent never drafted it) — this
+    scopes the match to one declared output global, the value a downstream
+    consumer actually receives. Use it to grade that an agent's drafted text
+    landed in the mapped flow output, not merely that a string appears somewhere
+    in the debug dump.
+    """
+    value = assert_output_nonempty(payload, name)  # fails if missing/empty
+    haystack = _stringify(_leaves(value))
+    if isinstance(needles, str):
+        needles = [needles]
+    present = [n for n in needles if n.lower() in haystack]
+    missing = [n for n in needles if n.lower() not in haystack]
+    ok = len(missing) == 0 if require_all else len(present) > 0
+    if not ok:
+        mode = "all of" if require_all else "any of"
+        _fail_with_capture(
+            f"Output {name!r} missing {mode} {list(needles)}; present={present}; "
+            f"missing={missing}\n{name}={haystack[:1000]}"
+        )
+    return haystack
+
+
 def assert_output_int_in_range(payload: dict, lo: int, hi: int) -> int:
     """Assert at least one integer in [lo, hi] appears in the outputs, and
     return the first match. Extracts integers from output values only, not
@@ -457,6 +566,11 @@ def _non_empty_binding_value(value: Any) -> bool:
     )
 
 
+# A project whose ``.flow`` declares at most this many nodes is an abandoned
+# `flow init` scaffold, not a build: init seeds a single trigger node.
+_HUSK_MAX_NODES = 1
+
+
 def _find_project(pattern: str) -> str:
     """Locate the *Flow* project directory matching ``pattern``.
 
@@ -468,6 +582,9 @@ def _find_project(pattern: str) -> str:
     declare ``"ProjectType": "Agent"`` / ``"Coded"`` / ``"Process"``.
     Filtering by manifest avoids a 1-of-N glob collision the symptom of
     MST-9734.
+
+    Two Flow projects can also mean one build plus one abandoned scaffold —
+    see :func:`_split_off_scaffold_husks`. Anything else stays a refusal.
     """
     candidates = sorted(glob.glob(pattern, recursive=True))
     if not candidates:
@@ -480,11 +597,69 @@ def _find_project(pattern: str) -> str:
             f'candidates exist but none declare ProjectType="Flow":\n  - {joined}'
         )
     if len(flow_projects) > 1:
-        joined = "\n  - ".join(flow_projects)
+        counts = [(p, _flow_node_count(os.path.dirname(p))) for p in flow_projects]
+        selected, husks = _split_off_scaffold_husks(counts)
+        if selected is not None:
+            listed = ", ".join(_describe_candidate(p, n) for p, n in husks)
+            print(f"note: ignoring {len(husks)} abandoned scaffold(s): {listed}")
+            return os.path.dirname(selected)
+        joined = "\n  - ".join(_describe_candidate(p, n) for p, n in counts)
         _fail(
             f"Multiple Flow projects match {pattern!r} — refusing to guess:\n  - {joined}"
         )
     return os.path.dirname(flow_projects[0])
+
+
+def _split_off_scaffold_husks(
+    counts: list[tuple[str, int | None]],
+) -> tuple[str | None, list[tuple[str, int | None]]]:
+    """Separate the one project carrying real work from abandoned init husks.
+
+    `uip maestro flow init` run outside a solution auto-scaffolds a duplicate
+    `<Project>Solution/` holding a trigger-only project (cli#2470). An agent that
+    then rebuilds in the right solution leaves two `project.uiproj` files, one of
+    which is dead weight — a configuration this checker used to refuse outright.
+
+    Returns ``(selected, husks)`` only when exactly one candidate has a known
+    node count above the husk ceiling and every other candidate has a known
+    count at or below it. Any unknown count (missing / unreadable / malformed
+    ``.flow``) makes the split ambiguous, so the caller keeps refusing.
+    """
+    substantive = [(p, n) for p, n in counts if n is None or n > _HUSK_MAX_NODES]
+    husks = [(p, n) for p, n in counts if n is not None and n <= _HUSK_MAX_NODES]
+    if len(substantive) != 1 or substantive[0][1] is None:
+        return None, []
+    return substantive[0][0], husks
+
+
+def _flow_node_count(project_dir: str) -> int | None:
+    """Total ``nodes`` declared across every ``.flow`` under ``project_dir``.
+
+    ``None`` means unknown — no ``.flow``, or one that will not parse. Unknown is
+    never read as a husk.
+    """
+    flows = glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
+    if not flows:
+        return None
+    total = 0
+    for path in flows:
+        try:
+            with open(path, encoding="utf-8") as f:
+                flow = json.load(f)
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            return None
+        nodes = flow.get("nodes") if isinstance(flow, dict) else None
+        if not isinstance(nodes, list):
+            return None
+        total += len(nodes)
+    return total
+
+
+def _describe_candidate(project_uiproj: str, node_count: int | None) -> str:
+    project_dir = os.path.dirname(project_uiproj)
+    if node_count is None:
+        return f"{project_dir} (node count unknown — .flow missing or unreadable)"
+    return f"{project_dir} ({node_count} node{'' if node_count == 1 else 's'})"
 
 
 def _is_flow_project(path: str) -> bool:

@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "TraceSpans",
+  "Data": [
+    {
+      "spanId": "run-0002",
+      "traceId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "name": "agentRun",
+      "spanType": "agentRun",
+      "SPANTYPE": "agentRun",
+      "attributes": {
+        "error": "Input validation failed Details: Data failed json schema validation: 1 validation error for DynamicType_0 BatchJson customerEmail Field required [type=missing, input_value={'request': 'create onboarding case'}, input_type=dict]",
+        "agentName": "IntakeAgent"
+      },
+      "ATTRIBUTES": {
+        "error": "Input validation failed Details: Data failed json schema validation: 1 validation error for DynamicType_0 BatchJson customerEmail Field required [type=missing, input_value={'request': 'create onboarding case'}, input_type=dict]",
+        "agentName": "IntakeAgent"
+      }
+    }
+  ],
+  "spans": [
+    {
+      "name": "agentRun",
+      "spanType": "agentRun",
+      "attributes": {
+        "error": "Input validation failed Details: Data failed json schema validation: 1 validation error for DynamicType_0 BatchJson customerEmail Field required"
+      }
+    }
+  ]
+}

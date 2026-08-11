@@ -1,0 +1,103 @@
+# Data-grounded CRUD coverage (self-seeding round-trip). skip:false, integration tier
+# -> runs in nightly (codereval has a TM connection), NOT the required PR smoke gate.
+# pre_run seeds a unique name; the agent creates the TestSet with it, reads it back,
+# and check.py asserts retrieved == created (a real round-trip through the connector,
+# not just invocation). Self-cleaning (deletes at the end).
+task_id: skill-platform-is-testmanager-testset-lifecycle
+description: >
+  Data-grounded coverage: agent exercises the UiPath Test Manager TestSet
+  operations through the uipath-uipath-testmanager connector ('uip is resources
+  run'), creating a uniquely-seeded record and verifying the create->read
+  round-trip — plus invoking every operation in the group for coverage.
+tags: [uipath-platform, integration, integration-service, test-manager, resources, execute]
+
+sandbox:
+  python: {}
+  node: {}
+
+run_limits:
+  expected_turns: 28
+  max_turns: 45
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/testmanager/_tm_shared/seed.py"
+    timeout: 30
+
+initial_prompt: |
+  Using the UiPath Test Manager Integration Service connector, work with a test set end to end and confirm the data round-trips.
+
+  Read seed.json for a unique `name` and a `project_key`, then:
+  1. Create a test set with that exact name under that project.
+  2. Read it back and confirm the name that comes back matches the name you created.
+  3. Record result.json with `created_name`, `retrieved_name`, and `id`.
+  4. Update the test set.
+  5. Assign test cases to the test set.
+  6. List the test cases assigned to the test set.
+  7. Run (execute) the test set.
+  Finally, delete the test set you created to clean up.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Create Test Set"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestSet'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+    require_success: true
+  - type: command_executed
+    description: "Get Test Set"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestSet'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+    require_success: true
+  - type: command_executed
+    description: "Update Test Set"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestSet'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+    require_success: true
+  - type: command_executed
+    description: "Delete Test Set"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestSet'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+    require_success: true
+  - type: command_executed
+    description: "Assign Test Cases to Test Set"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?AssignTestCasesToTestSet'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Get Assigned Test Cases for Test Set"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetAssignedTestCasesForTestSet'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Execute Test Set"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?ExecuteTestSet'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Data-grounded: retrieved name == created (seeded) name — real round-trip through the connector"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/testmanager/_tm_shared/check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

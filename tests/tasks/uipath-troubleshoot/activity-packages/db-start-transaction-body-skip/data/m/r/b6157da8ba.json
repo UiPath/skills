@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "c4a7e2f9-1b3d-4e5a-8c6f-9d0e1f2a3b4c",
+      "Name": "Finance Operations",
+      "Path": "Finance Operations",
+      "Description": "Folder hosting the ledger posting and reconciliation processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "a7c9e1b3-5d7f-4a2c-8b6d-9e0f1a2b3c4d",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

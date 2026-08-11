@@ -1,0 +1,61 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay: ConnectorHttpActivity faults with GeneralException DAP-GE-3005 (connection disabled). Signature mined verbatim from failed-job telemetry. First-match-wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "897a8be769.json"
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --state Faulted",
+      "file": "af051405d6.json"
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "file": "af051405d6.json"
+    },
+    {
+      "match": "or jobs get 3f8a1c7e-9b2d-4e6a-8c11-5d7e9f0a1b2c",
+      "file": "d7498cee88.json"
+    },
+    {
+      "match": "or jobs logs 3f8a1c7e-9b2d-4e6a-8c11-5d7e9f0a1b2c",
+      "file": "b80769b46b.json"
+    },
+    {
+      "match": "is connections ping c4d8f0a2-6b1e-4d93-a7c5-8f201b3e9d40",
+      "file": "c9926c29b1.json",
+      "exit_code": 1
+    },
+    {
+      "match": "is connections list",
+      "file": "ec89315fd6.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get 3f8a1c7e-9b2d-4e6a-8c11-5d7e9f0a1b2c",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the GeneralException DAP-GE-3005 'Connection is disabled' signature and the ConnectorHttpActivity stack frame."
+    },
+    {
+      "pattern": "is connections",
+      "min": 0,
+      "description": "OPTIONAL — agent may ping/list the connection to corroborate the disabled state, but the job Info already names the cause. min:0 means tracked-but-not-required."
+    }
+  ]
+}

@@ -14,7 +14,7 @@ Monitor robot sessions, check runtime availability, toggle debug mode, and manag
 
 ## Prerequisites
 
-- Authenticated (`uip login`)
+- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Environment set up with folders and machines (see [setup-environment.md](setup-environment.md))
 
 ---

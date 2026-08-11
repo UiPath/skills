@@ -10,6 +10,9 @@ tags: [uipath-rpa, windows, integration, mode:build, feature:test-case]
 
 run_limits:
   expected_turns: 36
+  max_turns: 40
+  turn_timeout: 900
+  task_timeout: 900
 
 initial_prompt: |
   I need a UiPath XAML test project called "LoginTests" with a first XAML
@@ -28,16 +31,8 @@ initial_prompt: |
   - Register the test case in `project.json` so it shows up in the test
     runner.
   - The generated test must validate cleanly:
-    `uip rpa validate --file-path LoginTests/TestLoginSuccess.xaml --project-dir LoginTests --output json`.
-
-  Write a `report.json` IMMEDIATELY after scaffolding the project (with
-  placeholder values) and update it as you complete each piece. Do not
-  leave it as the last step. Final shape:
-    {
-      "test_case_file": "TestLoginSuccess.xaml",
-      "verify_activity": "<class name of the Verify activity used, e.g. VerifyExpression>",
-      "validate_passed": true
-    }
+    `uip rpa validate --file-path TestLoginSuccess.xaml --project-dir LoginTests --output json`
+    (`--file-path` is relative to `--project-dir`).
 
   Important:
   - The `uip` CLI is already available in the environment.
@@ -46,7 +41,6 @@ initial_prompt: |
 success_criteria:
   - type: command_executed
     description: "Agent invoked uip rpa init for the Tests project"
-    tool_name: "Bash"
     command_pattern: 'uip\s+rpa\s+init.*TestAutomationProjectTemplate'
     min_count: 1
     weight: 1.0
@@ -58,13 +52,16 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Test case uses the canonical Given-When-Then sub-sequence structure"
+  - type: file_check
+    description: "Test case uses the Given-When-Then sub-sequence structure (with or without the '... ' prefix)"
     path: "LoginTests/TestLoginSuccess.xaml"
-    includes:
-      - '"... Given"'
-      - '"... When"'
-      - '"... Then"'
+    patterns:
+      - pattern: 'DisplayName="[^"]*\bGiven\b'
+        must_match: true
+      - pattern: 'DisplayName="[^"]*\bWhen\b'
+        must_match: true
+      - pattern: 'DisplayName="[^"]*\bThen\b'
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
@@ -96,24 +93,24 @@ success_criteria:
 
   - type: command_executed
     description: "Agent ran uip rpa validate on the test case"
-    tool_name: "Bash"
     command_pattern: 'uip\s+rpa\s+validate.*TestLoginSuccess\.xaml'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json claims validate passed"
-    path: "report.json"
-    assertions:
-      - expression: "validate_passed"
-        operator: equals
-        expected: true
-    weight: 1.0
+  # Grades the validate OUTCOME, not the agent's claim about it: the
+  # command_executed check above only proves the command was typed (a run that
+  # failed on a bad --file-path and then succeeded on a retry still matches).
+  # `--file-path` resolves relative to `--project-dir`, hence the bare filename.
+  # coder_eval's `run_command` runs through subprocess(shell=True) → cmd.exe on
+  # Windows, /bin/sh on Linux; the Python wrapper resolves the project path via
+  # os.path.abspath and the `uip` shim via shutil.which (Windows `uip.cmd`
+  # PATHEXT resolution).
+  - type: run_command
+    description: "uip rpa validate exits 0 against the agent's test case"
+    command: |-
+      python3 -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; sys.exit(subprocess.call([uip, 'rpa', 'validate', '--file-path', 'TestLoginSuccess.xaml', '--project-dir', os.path.abspath('LoginTests'), '--output', 'json']))"
+    expected_exit_code: 0
+    timeout: 180
+    weight: 2.0
     pass_threshold: 1.0

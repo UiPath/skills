@@ -12,14 +12,34 @@ Maestro BPMN Process Orchestration projects use BPMN XML as source and generated
   directory as the main BPMN file: `InvoiceTriageBpmn/project.uiproj`, not next
   to the project directory.
 
-For a new local project, create a single project directory and place source
-files under it:
+For a new local project, place source files under a single project directory.
+`uip maestro bpmn init <ProjectName> --output json` nests that directory inside
+a solution. Inside a solution it registers the project with the parent `.uipx`;
+outside any solution it auto-scaffolds `<ProjectName>Solution/` and nests the
+project inside (the response adds `Data.AutoCreatedSolution` =
+`{ Name, Path, SolutionFile }` and reports `SolutionRegistration.Status:
+Registered`; re-running is idempotent and reports `AlreadyRegistered`):
+
+```text
+ProjectNameSolution/             ← auto-scaffolded when init runs outside a solution
+  ProjectNameSolution.uipx
+  ProjectName/
+    ProjectName.bpmn
+    project.uiproj
+```
+
+With `--skip-solution-registration`, the project lands bare instead, with no
+solution wrapper:
 
 ```text
 ProjectName/
   ProjectName.bpmn
   project.uiproj
 ```
+
+If a **non-empty** directory already exists at the path you typed, init warns
+and leaves it untouched — the project still lands in
+`<ProjectName>Solution/<ProjectName>/`, not the existing directory.
 
 ## Generated or CLI-managed package files
 
@@ -38,6 +58,14 @@ the BPMN and `project.uiproj`.
 For the regeneration and drift-check contract, see [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
 
 ## Package content
+
+A synthetic local project authored without a CLI generator must still match the
+executable and metadata contract before packing: the BPMN root process includes
+`isExecutable="true"`, `project.uiproj` has lowercase `"main"`,
+`operate.json` has `"main"` plus `"contentType": "ProcessOrchestration"`, and
+`package-descriptor.json` has top-level `"content"` entries under `content/`.
+For the exact minimal JSON, see
+[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
 
 A Process Orchestration package content folder contains:
 

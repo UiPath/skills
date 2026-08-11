@@ -1,0 +1,52 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Text</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Windows.Markup</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>Microsoft.CSharp</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="StatusAfterSubmit" />
+    </Sequence.Variables>
+    <ui:Click ClickType="CLICK_SINGLE" DisplayName="Click 'Submit Claim'" MouseButton="BTN_LEFT" sap2010:WorkflowViewState.IdRef="Click_1" SimulateClick="True">
+      <ui:Click.Target>
+        <ui:Target ClippingRegion="0,0,0,0" Selector="&lt;wnd app='java.exe' cls='SunAwtFrame' title='Claims Entry System' /&gt;&lt;java role='push button' name='Submit Claim' /&gt;" TimeoutMS="30000" WaitForReady="INTERACTIVE" />
+      </ui:Click.Target>
+    </ui:Click>
+    <ui:GetText DisplayName="Get Text 'Claim Status'" sap2010:WorkflowViewState.IdRef="GetText_1" Text="[StatusAfterSubmit]">
+      <ui:GetText.Target>
+        <ui:Target Selector="&lt;wnd app='java.exe' cls='SunAwtFrame' title='Claims Entry System' /&gt;&lt;java role='label' name='Claim Status' /&gt;" TimeoutMS="30000" WaitForReady="COMPLETE" />
+      </ui:GetText.Target>
+    </ui:GetText>
+    <ui:LogMessage DisplayName="Log Claim Status" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Claim status after submit: &quot; + StatusAfterSubmit]" />
+  </Sequence>
+</Activity>

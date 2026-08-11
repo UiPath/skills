@@ -15,7 +15,7 @@ Allocate license units (`UNATT`, `RU`, `PLTU`, `NONPR`, etc.) from the account p
 
 ## Prerequisites
 
-1. Authenticated: `uip login`
+1. Authenticated — verify with `uip login status`; if not, ask the user to run `uip login` (interactive browser flow)
 2. Org admin permissions to allocate licenses
 3. Tenant key (GUID) of the target tenant — discover with `uip or settings list --tenant <name>` or the Automation Cloud portal
 

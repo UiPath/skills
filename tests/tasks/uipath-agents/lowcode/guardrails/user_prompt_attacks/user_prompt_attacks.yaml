@@ -1,0 +1,85 @@
+task_id: skill-agent-guardrail-user-prompt-attacks
+description: >
+  User prompt attacks guardrail (low-code, builtInValidator) with Llm-only
+  scope. End-to-end test: scaffold a standalone low-code agent and add a
+  builtInValidator guardrail for user_prompt_attacks that blocks adversarial
+  inputs before they reach the LLM. Verifies the agent restricts scopes to
+  ["Llm"] only (not Agent or Tool — anti-pattern 3), uses an empty
+  validatorParameters array (this validator takes no parameters), and a block
+  action. Complements the coded decorator-style test by covering the low-code
+  builtInValidator path.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
+initial_prompt: |
+  Create a UiPath low-code agent "UPAAgent" that answers user questions. Add a
+  guardrail that detects jailbreak / prompt-attack attempts in the user prompt
+  and blocks them before they reach the LLM, with the message "Adversarial
+  input detected." The solution should be named "UPASol".
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "UPASol/UPASol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "UPAAgent/agent.json was created"
+    path: "UPASol/UPAAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+
+  - type: run_command
+    description: "User prompt attacks guardrail shape (Llm-only scope, no params, block action)"
+    command: "python3 $TASK_DIR/check_user_prompt_attacks.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 15
+  max_turns: 30
+  turn_timeout: 1200

@@ -8,7 +8,7 @@ Consumers: Maestro Flow, Maestro BPMN, API Workflows, Case Management, etc. Each
 
 ## What is Managed HTTP Request?
 
-A built-in way to make an HTTP call from a UiPath automation when there's no curated activity for it. Runs in two modes - **connector mode** and **manual mode**:
+A built-in way to make an HTTP call from a UiPath automation. Runs in two modes - **connector mode** and **manual mode**:
 
 | Mode | When | `url` | Auth |
 |---|---|---|---|
@@ -17,9 +17,11 @@ A built-in way to make an HTTP call from a UiPath automation when there's no cur
 
 ## Connector-Mode Rules
 
+- **Connector mode only works if the connector supports HTTP request activity** — verify by running `uip is connectors get "<connector-key>"` and checking the `HasHttpRequest` flag.
 - `url` must be **relative**. Wrong: `"url": "https://example.atlassian.net/rest/api/2/issue"`. Right: `"url": "/issue"`.
 - The connection's base URL is prepended automatically.
 - The auth header is applied automatically - do not set `Authorization`.
+- **`application/json` only - request and response.** No other content type is supported. File upload/download operations are the most common violation (`multipart/form-data`, `application/octet-stream`, binary/stream responses) - check the operation's request and response content types before authoring. If non-JSON, connector mode cannot call it - use a curated connector activity; if none exists, surface to the user.
 - Get the exact vendor base URL for a connection via (so you can compose the relative `url` correctly):
 
 ```bash
@@ -31,6 +33,18 @@ uip is connections base-url "<connection-id>" --output json
 
 - `url` is the **fully qualified URL**.
 - No connection is bound - you supply everything needed to make the call: URL, headers (including auth if needed), query params, and body.
+
+## Step 0: Ground Against the Vendor's API Docs (registry) — connector mode only
+
+> **Connector mode only.** This grounding step applies when `authentication: "connector"` (a connector exists and the `url` is **relative** to its vendor base URL). Manual mode targets an arbitrary REST API with a full URL and has no connector to look up — skip this step for manual mode.
+
+**Before composing any `url` / `query` / `body`, ground the endpoint against the vendor's documentation.** Skipping this is the most common cause of a wrong-but-plausible endpoint that still "completes" at runtime (many vendors return HTTP 200 with an error body for an unknown path — e.g. Slack `{"ok":false,"error":"unknown_method"}` — so a bad path does not fault).
+
+1. Look the target connector up in [`vendor-docs-registry.json`](vendor-docs-registry.json) (same directory). Match by `connectorKey`.
+2. **If listed:** read its `docsUrl` (authoritative API reference) and `notes` (vendor-specific conventions: endpoint shape, custom-field keys, query quirks). Honor the `notes` verbatim, then confirm the exact path with the `http-request` probe below (the live call is the final authority — the registry only grounds the baseline).
+3. **If NOT listed:** this registry-grounding step does not apply. Proceed with the normal authoring flow — resolve the endpoint and any missing values via the `http-request` probe below, as you would otherwise.
+
+> **Pass endpoint paths verbatim — do NOT "REST-ify" them.** Many vendor APIs name operations with **literal dots**, where the whole dotted token is a single path segment: Slack`chat.postMessage`, `conversations.replies`. The dot is **not** a namespace separator — never rewrite `chat.postMessage` as `/chat/postMessage`. Copy the method exactly as the docs/registry show it (`"url": "/chat.postMessage"`).
 
 ## Authoring Helper: `http-request` command
 
@@ -58,7 +72,7 @@ uip is resources run create "<connector-key>" http-request \
 | `method` | Yes | Uppercase HTTP verb |
 | `url` | Yes | **Relative** to the connection's vendor base URL (same convention as Managed HTTP Request connector mode) |
 | `headers` | No | Extra headers. Do NOT set `Authorization`. |
-| `body` | For POST/PUT/PATCH | **Stringified** JSON. Only `application/json` is supported today - non-JSON content types (form-urlencoded, XML, multipart, plain text) are not. |
+| `body` | For POST/PUT/PATCH | **Stringified** JSON. Only `application/json` is supported today — no other content type. |
 
 `http-request` command uses the same connection that Managed HTTP Request will use at runtime, so auth + base URL are applied automatically - same convention as Managed HTTP Request itself.
 
@@ -114,3 +128,6 @@ All steps 1-2 are GETs because we are in the authoring phase. The POST to `/issu
 2. **Do NOT use an absolute URL in connector-mode `url`.** Wrong: `"url": "https://example.atlassian.net/rest/api/2/project"`. Right: `"url": "/project"`.
 3. **Do NOT issue writes via CLI during authoring.** See "Read-Only During Authoring" above.
 4. **Do NOT guess the base URL.** Use `uip is connections base-url <connection-id>`.
+5. **(Connector mode) Ground the endpoint before authoring.** Look the vendor up in [`vendor-docs-registry.json`](vendor-docs-registry.json), read its `docsUrl` + `notes`, and confirm the path with the `http-request` probe. See [Step 0](#step-0-ground-against-the-vendors-api-docs-registry--connector-mode-only).
+6. **(Connector mode) Pass endpoint paths verbatim.** 
+7. **In connector mode, request and response bodies are `application/json` only.** No other content type is supported; do NOT set `Content-Type` to anything else. Same rule applies to the `http-request` helper command body (it runs through a connection). Manual mode has no such limit — you supply your own `Content-Type` and body.

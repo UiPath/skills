@@ -7,54 +7,30 @@ description: >
 tags: [uipath-agents, smoke, coded, lifecycle:edit, feature:antipattern]
 
 run_limits:
-  expected_turns: 8
+  expected_turns: 14
   turn_timeout: 1200
 
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/antipattern_wrong_sdk_import/_fixtures/bad-import ."
+    timeout: 10
+
 initial_prompt: |
-  I have an existing UiPath coded agent that I'm trying to run.
-  Recreate the project under `bad-import` exactly as below, then
-  review for any UiPath coded-agent anti-patterns and fix them in
-  place.
-
-  **bad-import/pyproject.toml**:
-  ```toml
-  [project]
-  name = "bad-import"
-  version = "0.0.1"
-  description = "Has the wrong SDK import path"
-  authors = [{ name = "Test" }]
-  requires-python = ">=3.11"
-  dependencies = ["uipath"]
-
-  [dependency-groups]
-  dev = ["uipath-dev"]
-  ```
-
-  **bad-import/main.py**:
-  ```python
-  from uipath import UiPath  # this import path does not exist
-  from pydantic import BaseModel
-
-  class Input(BaseModel):
-      asset_name: str
-
-  class Output(BaseModel):
-      value: str
-
-  async def main(input: Input) -> Output:
-      sdk = UiPath()
-      asset = await sdk.assets.retrieve_async(input.asset_name, folder_path="Shared")
-      return Output(value=str(asset))
-  ```
-
-  After recreating those files, review for anti-patterns and fix
-  them in place. The agent should still call `sdk.assets.retrieve_
-  async` with the same arguments.
+  I've got a UiPath coded agent at `bad-import/` that won't run - it
+  blows up on import before it does anything. Can you review it for
+  UiPath coded-agent anti-patterns and fix them in place? It still
+  needs to call `sdk.assets.retrieve_async` with the same arguments.
 
   Do NOT publish, upload, or deploy. Do NOT pause between planning
   and implementation. Complete end-to-end in a single pass.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: file_exists
     description: "main.py exists under bad-import/"
     path: "bad-import/main.py"

@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Name": "HR",
+      "ID": 2983200,
+      "Key": "3a4b5c6d-7e8f-4901-a2b3-c4d5e6f7a8b9",
+      "Path": "Shared/HR",
+      "Type": "Standard",
+      "Description": ""
+    },
+    {
+      "Name": "Onboarding",
+      "ID": 2983207,
+      "Key": "6b8d0f21-3a4c-4e5f-9012-a3b4c5d6e7f8",
+      "Path": "Shared/HR/Onboarding",
+      "Type": "Standard",
+      "Description": ""
+    }
+  ]
+}

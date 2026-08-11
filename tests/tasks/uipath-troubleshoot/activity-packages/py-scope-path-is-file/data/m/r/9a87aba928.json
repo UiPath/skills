@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-bb222222-001",
+      "JobKey": "bb222222-7777-bbbb-cccc-ddddeeeeffff",
+      "Level": "Info",
+      "Timestamp": "2026-06-18T11:02:10.360Z",
+      "Message": "Execution started.",
+      "ProcessName": "PythonHelloWorld",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb222222-002",
+      "JobKey": "bb222222-7777-bbbb-cccc-ddddeeeeffff",
+      "Level": "Info",
+      "Timestamp": "2026-06-18T11:02:10.440Z",
+      "Message": "[PythonHelloWorld] Opening Python Scope",
+      "ProcessName": "PythonHelloWorld",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-bb222222-003",
+      "JobKey": "bb222222-7777-bbbb-cccc-ddddeeeeffff",
+      "Level": "Error",
+      "Timestamp": "2026-06-18T11:02:12.150Z",
+      "Message": "Python Scope: The specified Python path is not valid: C:\\Program Files\\Python311\\python.exe",
+      "ProcessName": "PythonHelloWorld",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

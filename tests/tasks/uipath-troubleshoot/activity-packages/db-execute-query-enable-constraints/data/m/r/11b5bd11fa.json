@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-18T07:32:12.041Z",
+      "Message": "Execute Query: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.\r\nSystem.Data.ConstraintException: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-18T07:32:12.060Z",
+      "Message": "Execute Query: Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.\r\nin Main.xaml\r\n    at ExecuteQuery \"Execute Query 'Customer Orders'\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

@@ -6,6 +6,12 @@ description: >
   case validates. Action-app likely unresolved in test env — skeleton task
   (empty data) is acceptable.
 tags: [uipath-maestro-case, smoke, lifecycle:generate, shape:single-node, node:hitl]
+
+run_limits:
+  task_timeout: 2100
+  max_turns: 150
+  turn_timeout: 2100
+
 initial_prompt: |
   Create a UiPath Case Management project named "InvoiceApprovalCase" with a
   manual trigger and a single stage "Review" that contains one HITL action
@@ -28,7 +34,6 @@ initial_prompt: |
   | Case Name | InvoiceApprovalCase |
   | Case Description | Tracks an invoice through manager approval. |
   | Case Identifier | Prefix: IAC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 
@@ -108,11 +113,13 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: json_check
     description: "Caseplan contains an action-typed task"
     path: "InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json"
-    includes:
-      - '"type": "action"'
+    assertions:
+      - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
+        operator: gt
+        expected: 0
     weight: 3.0
     pass_threshold: 1.0
 

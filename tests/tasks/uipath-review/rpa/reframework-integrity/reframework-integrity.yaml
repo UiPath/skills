@@ -1,0 +1,79 @@
+task_id: skill-review-rpa-reframework-integrity
+description: >
+  Judgment test for uipath-review on a real Robotic Enterprise Framework
+  performer (XAML). The framework's Framework/Process.xaml wraps the transaction
+  in a Try/Catch whose System.Exception catch only logs the error and does NOT
+  Rethrow — so a system exception is swallowed and the framework's
+  SetTransactionStatus reports the failed queue item to Orchestrator as
+  Successful (the single most common REFramework failure). The reviewer must
+  read the workflows and flag the swallowed system exception.
+
+  Integration tier: longer, non-gating run. `uip rpa validate/build/analyze`
+  require Windows and may not run on Linux CI — those CLI checks are advisory.
+  The defects are caught by reading the workflows, which is platform-independent.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1500
+  task_timeout: 1800
+  max_turns: 50
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+initial_prompt: |
+  A UiPath REFramework project exists at `REFrameworkBot` in the current
+  directory. Review it for quality, reliability, and best-practice issues,
+  focusing on transaction processing and exception handling, and produce a
+  structured review report with Critical / Warning / Info findings.
+
+  Use the `uipath-review` skill to perform this review.
+
+  This is a read-only review. Do NOT modify, create, or delete any files
+  inside `REFrameworkBot/`. Do NOT run the automation. Do NOT ask for approval,
+  confirmation, or feedback.
+
+  Produce the review in TWO places, identical content:
+    1. As the chat output (the normal review surface), AND
+    2. Saved to a file at `./_review_report.md` at the sandbox root
+       (NOT inside `REFrameworkBot/`).
+
+  Writing the file copy first, before the chat report, is encouraged — the
+  file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside REFrameworkBot/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*REFrameworkBot'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside REFrameworkBot/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*REFrameworkBot'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Advisory: uip rpa validate/build/analyze ran (Critical Rule 2) — recorded, not gating"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+(validate|build|analyze)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Report flags the swallowed system exception (no Rethrow -> item marked success)"
+    command: "python3 $TASK_DIR/check_reframework_integrity.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

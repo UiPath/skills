@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "f1a2b3c4-5d6e-4f7a-8b9c-9d0e1f2a3b4c",
+      "Name": "RPA Production",
+      "Path": "RPA Production",
+      "Description": "Production folder for the mail automation portfolio.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "c4d5e6f7-8a9b-4c0d-9e1f-2a3b4c5d6e7f",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

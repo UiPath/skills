@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Excel Read Range sheet-not-found scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "858738168e.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "858738168e.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json",
+      "file": "37b3818139.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json",
+      "file": "37b3818139.json"
+    },
+    {
+      "match": "or jobs get \"aa111111-7777-8888-9999-000011112222\" --output json",
+      "file": "758a37b323.json"
+    },
+    {
+      "match": "or jobs get aa111111-7777-8888-9999-000011112222 --output json",
+      "file": "758a37b323.json"
+    },
+    {
+      "match": "or jobs history \"aa111111-7777-8888-9999-000011112222\" --output json",
+      "file": "1d986c3977.json"
+    },
+    {
+      "match": "or jobs history aa111111-7777-8888-9999-000011112222 --output json",
+      "file": "1d986c3977.json"
+    },
+    {
+      "match": "or jobs logs \"aa111111-7777-8888-9999-000011112222\" --output json",
+      "file": "d8080423b7.json"
+    },
+    {
+      "match": "or jobs logs aa111111-7777-8888-9999-000011112222 --output json",
+      "file": "d8080423b7.json"
+    }
+  ]
+}

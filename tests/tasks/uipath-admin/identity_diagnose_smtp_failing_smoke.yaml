@@ -1,0 +1,49 @@
+task_id: skill-admin-smtp-test-failing-smoke
+description: >
+  Diagnose smoke: agent troubleshoots email-delivery failure by retrieving the
+  current SMTP configuration. Graded on the SMTP settings object read back from
+  the tenant, not the command string.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, troubleshoot, identity, smtp]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  Our platform invitation emails stopped working — users aren't receiving
+  invites. Retrieve the current SMTP configuration so it can be reviewed for
+  the cause, and save the complete JSON result to ./smtp.json.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "smtp.json holds the SMTP settings object retrieved from the tenant"
+    command: |
+      python3 -c "
+      import json
+      d = json.load(open('smtp.json', encoding='utf-8-sig'))
+      res = d.get('Result') if isinstance(d, dict) else None
+      assert res in (None, 'Success'), f'SMTP retrieval not successful: Result={res}'
+      def keys(o):
+          if isinstance(o, dict):
+              for k, v in o.items():
+                  yield k
+                  yield from keys(v)
+          elif isinstance(o, list):
+              for v in o: yield from keys(v)
+      sig = ('fromaddress', 'fromdisplayname', 'host', 'port', 'enablessl', 'smtp')
+      found = [k for k in keys(d) if any(s in k.lower().replace('_', '') for s in sig)]
+      assert found, f'no SMTP settings fields found in response; keys seen={list(keys(d))[:15]}'
+      print(f'OK: SMTP settings retrieved (found {found[0]})')
+      "
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Diagnosis is read-only — agent must NOT modify or delete SMTP settings while investigating"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+smtp\s+(update|delete)'
+    weight: 1.0
+    pass_threshold: 1.0

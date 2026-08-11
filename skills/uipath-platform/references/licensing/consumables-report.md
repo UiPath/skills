@@ -4,6 +4,24 @@ Report consumption of consumable license units (`AIU`, `AGU`, `RU`, `PLTU`, `HEA
 
 > For full option details, run `uip platform licenses consumables get --help`.
 
+## Command Shape
+
+ONE verb produces all three reports:
+
+```bash
+uip platform licenses consumables get [--mode <summary|daily|folders>] [flags] --output json
+```
+
+1. `get` is mandatory. `uip platform licenses consumables` alone prints group help — no report.
+2. `summary` / `daily` / `folders` are `--mode` VALUES, never subcommands or positionals.
+3. Summary report: omit `--mode` (summary is the default) or pass `--mode summary`.
+
+| Wrong | Right |
+|-------|-------|
+| `uip platform licenses consumables --output json` (missing `get`) | `uip platform licenses consumables get --output json` |
+| `uip platform licenses summary` (verb does not exist) | `uip platform licenses consumables get --output json` |
+| `uip platform licenses consumables get summary` (mode as positional) | `uip platform licenses consumables get --mode summary --output json` |
+
 ---
 
 ## When to Use
@@ -16,7 +34,7 @@ Report consumption of consumable license units (`AIU`, `AGU`, `RU`, `PLTU`, `HEA
 
 ## Prerequisites
 
-1. Authenticated: `uip login`
+1. Authenticated — verify with `uip login status`; if not, ask the user to run `uip login` (interactive browser flow)
 2. Org admin permissions to read account product allocations
 3. For `daily` / `folders` modes: know the target tenant name and consumable unit code
 

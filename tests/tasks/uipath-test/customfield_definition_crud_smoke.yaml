@@ -1,0 +1,89 @@
+task_id: skill-test-customfield-definition-crud-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to manage a custom field
+  *definition* through its lifecycle — create a Text field scoped to
+  Requirement, list to confirm, rename it, then delete it. The task is
+  self-contained and deterministic: it creates its own field with a fixed
+  name in the HEALTH project and removes it again, and it self-heals
+  leftover state — an earlier interrupted run can strand an "Eval
+  Reviewer" field (observed in CI: the agent found the leftover, stopped
+  to ask how to proceed, and the single-turn run ended at 3/5 criteria),
+  so the prompt pre-authorizes deleting leftovers and continuing. Every
+  assertion validates the complete command — the case-sensitive
+  `--object-type Requirement` and `--data-type Text`, the exact field
+  name, `--rename-to`, and `--output json` — not a fragment.
+tags: [uipath-test, smoke, mode:operate, lifecycle:manage, feature:customfield]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 35
+
+# Clean slate + safety net: main's consent-less runs (and any failed run)
+# leave "Eval Reviewer"/"Eval Reviewer Team" behind on shared HEALTH, which
+# collides with this run's create/rename (blocked the PR smoke gate on
+# 2026-08-03). Delete both names before and after each run.
+pre_run:
+  - command: |
+      uip tm customfield delete --project-key HEALTH --name "Eval Reviewer" --object-type Requirement --yes --output json || true
+      uip tm customfield delete --project-key HEALTH --name "Eval Reviewer Team" --object-type Requirement --yes --output json || true
+    timeout: 60
+
+post_run:
+  - command: |
+      uip tm customfield delete --project-key HEALTH --name "Eval Reviewer" --object-type Requirement --yes --output json || true
+      uip tm customfield delete --project-key HEALTH --name "Eval Reviewer Team" --object-type Requirement --yes --output json || true
+    timeout: 60
+
+initial_prompt: |
+  I'm in the HEALTH project in Test Manager. Can you add a custom field on
+  requirements called "Eval Reviewer" — just free text, to note who
+  reviewed a requirement. Show me the project's custom fields so I can
+  check it's there. Actually, rename it to "Eval Reviewer Team". And once
+  we're done, remove it so we don't leave anything behind — you have my
+  confirmation to delete it, so go ahead without asking again.
+
+  Heads up: HEALTH is our disposable eval project. If an "Eval Reviewer"
+  or "Eval Reviewer Team" field is already lying around from an earlier
+  interrupted session, just delete it first and proceed with the flow
+  above — no need to check with me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete create command: `uip tm customfield create --project-key HEALTH --name \"Eval Reviewer\" --data-type Text --object-type Requirement --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval Reviewer)(?=.*--data-type\s+Text)(?=.*--object-type\s+Requirement)uip\s+tm\s+customfield\s+create'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete list command: `uip tm customfield list --project-key HEALTH`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)uip\s+tm\s+customfield\s+list\s'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete rename command: `uip tm customfield update --project-key HEALTH --rename-to \"Eval Reviewer Team\" --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--rename-to\s+["\x27]?Eval Reviewer Team)uip\s+tm\s+customfield\s+update'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete delete command: `uip tm customfield delete --project-key HEALTH (--field-ids <uuid> | --name \"Eval Reviewer Team\" --object-type Requirement) --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*(--field-ids\s+\S+|--object-type\s+Requirement))uip\s+tm\s+customfield\s+delete'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

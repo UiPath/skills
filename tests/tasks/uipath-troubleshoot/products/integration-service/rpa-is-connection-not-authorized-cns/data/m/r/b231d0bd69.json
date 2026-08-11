@@ -1,0 +1,5 @@
+{
+  "Result": "Failure",
+  "Message": "HTTP 400: Connection [5a7b9c1d-2e4f-4608-a1b3-c5d7e9f0a2b4] is not in an authorized state (error code CNS1008). Re-authenticate the connection to continue.",
+  "Instructions": "Run 'uip is connections edit <connection-id>' to re-authenticate the connection."
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelLedgerProcess",
+  "ProjectType": "Process",
+  "Description": "Fetches the day's transactions and appends them as rows to the ledger workbook via Append Range inside a Use Excel File scope.",
+  "MainFile": "Main.xaml"
+}

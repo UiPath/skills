@@ -1,0 +1,12 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-23T17:38:05.423Z",
+      "Message": "Deserialize JSON: Value cannot be null. (Parameter 'JSON string')\r\nin Wf_ReadConfig.xaml\r\n    at DeserializeJson`1 \"Deserialize JSON\"\r\n    at Sequence \"Read Config\"\r\n    at Wf_ReadConfig \"Wf_ReadConfig\"\r\n\r\n--- .NET stack trace ---\r\nSystem.ArgumentNullException\r\n   at UiPath.Web.Activities.DeserializeJson`1.Execute(CodeActivityContext context)\r\n   at System.Activities.CodeActivity.InternalExecute(ActivityInstance instance, ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)"
+    }
+  ]
+}
+

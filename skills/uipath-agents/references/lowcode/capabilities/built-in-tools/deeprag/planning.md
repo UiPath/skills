@@ -11,7 +11,7 @@ Pick this when:
 
 Confirm DeepRAG is the right mode first — see [../../../../context-grounding-patterns.md](../../../../context-grounding-patterns.md).
 
-For coded agents (Python, LangGraph) → [../../../coded/capabilities/deeprag/planning.md](../../../coded/capabilities/deeprag/planning.md).
+For coded agents (Python, LangGraph) → [../../../../coded/capabilities/deeprag/planning.md](../../../../coded/capabilities/deeprag/planning.md).
 
 ## Inputs You Need Before Building
 

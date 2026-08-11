@@ -1,0 +1,26 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "HumanReviewEscalation",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "27abdfdb-a42b-4f19-9001-d62011329cc3",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "fileName": null,
+      "fileReference": null,
+      "name": "HumanReviewEscalation",
+      "description": null
+    },
+    "locks": [],
+    "key": "a933d0db-4258-485a-a131-32c7aeb56ee2"
+  }
+}

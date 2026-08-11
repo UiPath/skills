@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Word export-pdf com-hang scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "4ba50747c8.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"e7f8a9b0-c1d2-4193-de4f-5061728394a5\" --state Faulted --output json",
+      "file": "be7145ebf8.json"
+    },
+    {
+      "match": "or jobs list --folder-key e7f8a9b0-c1d2-4193-de4f-5061728394a5 --state Faulted --output json",
+      "file": "be7145ebf8.json"
+    },
+    {
+      "match": "or jobs get \"f8a9b0c1-d2e3-4204-ef50-61728394a5b6\" --output json",
+      "file": "e773619b2a.json"
+    },
+    {
+      "match": "or jobs get f8a9b0c1-d2e3-4204-ef50-61728394a5b6 --output json",
+      "file": "e773619b2a.json"
+    },
+    {
+      "match": "or jobs logs \"f8a9b0c1-d2e3-4204-ef50-61728394a5b6\" --level Error --output json",
+      "file": "8180738813.json"
+    },
+    {
+      "match": "or jobs logs f8a9b0c1-d2e3-4204-ef50-61728394a5b6 --level Error --output json",
+      "file": "8180738813.json"
+    },
+    {
+      "match": "or jobs logs \"f8a9b0c1-d2e3-4204-ef50-61728394a5b6\" --output json",
+      "file": "b654210dee.json"
+    },
+    {
+      "match": "or jobs logs f8a9b0c1-d2e3-4204-ef50-61728394a5b6 --output json",
+      "file": "b654210dee.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

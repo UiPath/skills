@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-16T08:05:01.470Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-16T08:05:02.310Z",
+      "Message": "Validation Error: The 'Read Text' activity must be placed inside a 'Use Word File' or 'Word Application Scope' container.\r\nin Main.xaml\r\n    at ReadTextInDocument \"Read Text\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-16T08:05:02.360Z",
+      "Message": "Execution ended in: 00:00:00"
+    }
+  ]
+}

@@ -17,7 +17,7 @@ Assign user-bundle licenses (e.g., `RPADEVPRONU`, `ATTUNU`, `TSTNU`) directly to
 
 ## Prerequisites
 
-1. Authenticated: `uip login`
+1. Authenticated — verify with `uip login status`; if not, ask the user to run `uip login` (interactive browser flow)
 2. Org admin permissions for license allocation
 3. For `users licenses set/get`: the user is resolvable from a directory search — name or email prefix must match **exactly one** user
 4. For `groups rules details/set`: the group name prefix must match **exactly one** group

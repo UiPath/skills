@@ -7,7 +7,7 @@ confidence: medium
 ## Context
 
 What this looks like:
-- Agent job faults mid-run; `uip agent run status <job-id> --output json` shows `Faulted`
+- A deployed agent job or `uip agent debug` run faults mid-run
 - `uip traces spans get <trace-id> --output json` contains a span with `SPANTYPE: completion` or `agentRun` whose `ATTRIBUTES.error` is a JSON string starting with `{"detail":"Insufficient information..."}` or `{"detail":"Insufficient information to <action>..."}`
 - The error detail names a missing piece of context: recipient, topic, date range, scope, etc.
 
@@ -23,11 +23,13 @@ What to look for:
 
 ## Investigation
 
-1. Get the job trace ID:
+1. Get the spans for the failing run. If you already have a trace ID, use it directly. If you only have an Orchestrator job key, resolve it through traces:
 
    ```bash
-   uip agent run status <job-id> --output json \
-     --output-filter "traceId"
+   uip traces spans get <trace-id> --output json
+
+   # or
+   uip traces spans get --job-key <job-key> --folder-path "<folder-path>" --output json
    ```
 
 2. Pull spans and find the failing `completion` or `agentRun` span:
@@ -54,25 +56,30 @@ What to look for:
 ## Resolution
 
 **If the system prompt is too vague — improve it:**
-- Edit `agent.json` → `messages[0].content`: add explicit instructions covering the missing context named in the `detail` field; add constraints or clarification prompts (e.g., "If the user does not specify X, ask for clarification before proceeding")
-- Validate and republish:
+- Edit `agent.json` → `messages[0].content` and rebuild its `contentTokens`: add explicit instructions covering the missing context named in the `detail` field; add constraints or clarification prompts (e.g., "If the user does not specify X, ask for clarification before proceeding")
+- Refresh and validate the agent:
 
   ```bash
-  uip agent refresh --output json   # upgrades agent.json to the latest schema version and regenerates derived files
-  uip agent validate --output json
-  uip agent publish --output json
+  uip agent refresh "<AGENT_PROJECT_DIR>" --output json
+  uip agent validate "<AGENT_PROJECT_DIR>" --output json
   ```
+
+- After successful validation, report the result and ask whether the user wants to upload the corrected solution to Studio Web or publish/deploy it to Orchestrator. Do not perform any delivery action without explicit approval.
 
 **If a required input is missing from the caller's payload:**
 - Inspect the declared input schema: open `agent.json` locally, check `inputSchema`
 - If the parameter exists but the caller omitted it — fix the caller or add a default in the schema
-- If the parameter does not exist in the schema — add it:
+- If the parameter does not exist in the schema — add it directly to `agent.json` → `inputSchema.properties`; add the field name to `inputSchema.required` only when every invocation must provide it. Then refresh and validate so `entry-points.json` is regenerated:
 
   ```bash
-  uip agent input add --name "<param-name>" --type string --required true --output json
-  uip agent publish --output json
+  uip agent refresh "<AGENT_PROJECT_DIR>" --output json
+  uip agent validate "<AGENT_PROJECT_DIR>" --output json
   ```
 
+  After successful validation, report the result and ask whether the user wants to upload or publish/deploy the corrected solution. Do not perform any delivery action without explicit approval.
+
 **If the agent is invoked with a sparse programmatic payload:**
-- Ensure all required `inputSchema` fields are populated before calling `uip agent run start`
+- Ensure all required `inputSchema` fields are populated before calling the deployed agent/API, or before local reproduction with `uip agent debug <AGENT_PROJECT_DIR> --inputs '<json>' --output json`
+- Run `uip agent debug` only after explicit user approval because it uploads the enclosing solution and executes the agent; otherwise provide the command for the user to run
 - Pass missing context as inline input arguments rather than relying on the LLM to infer them
+- A payload-only correction does not require publishing or deploying the agent project

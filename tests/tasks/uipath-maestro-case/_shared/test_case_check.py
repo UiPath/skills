@@ -10,6 +10,7 @@ opt-out). A checker must not depend on which CLI build the eval image runs.
 """
 
 import os
+import subprocess
 import sys
 
 import pytest
@@ -19,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from case_check import (  # noqa: E402
     _get_ci,
     collect_outputs,
+    partition_return_to_origin_conditions,
     run_debug,
 )
 import case_check  # noqa: E402
@@ -64,6 +66,44 @@ def test_collect_outputs_pascalcase_matches_camelcase():
     assert sorted(map(str, collect_outputs(camel))) == sorted(map(str, collect_outputs(pascal)))
 
 
+def test_return_to_origin_partition_checks_every_return_condition():
+    valid_required = {
+        "type": "return-to-origin",
+        "marksStageComplete": True,
+        "rules": [[{"rule": "required-tasks-completed"}]],
+    }
+    valid_connector = {
+        "type": "return-to-origin",
+        "marksStageComplete": True,
+        "rules": [[{"rule": "wait-for-connector"}]],
+    }
+    malformed = {
+        "type": "return-to-origin",
+        "marksStageComplete": False,
+        "rules": [[{"rule": "selected-tasks-completed"}]],
+    }
+    malformed_extra_rule = {
+        "type": "return-to-origin",
+        "marksStageComplete": True,
+        "rules": [[
+            {"rule": "required-tasks-completed"},
+            {"rule": "selected-tasks-completed"},
+        ]],
+    }
+
+    returns, invalid = partition_return_to_origin_conditions(
+        [valid_required, valid_connector, malformed, malformed_extra_rule]
+    )
+
+    assert returns == [
+        valid_required,
+        valid_connector,
+        malformed,
+        malformed_extra_rule,
+    ]
+    assert invalid == [malformed, malformed_extra_rule]
+
+
 def test_run_debug_gate_accepts_pascalcase_finalstatus(monkeypatch):
     """run_debug's Completed gate must pass on a PascalCase payload (the exact
     #2266 break that made case debug look like it 'did not complete')."""
@@ -75,3 +115,21 @@ def test_run_debug_gate_still_rejects_incomplete(monkeypatch):
     monkeypatch.setattr(case_check, "start_debug", lambda **kw: {"FinalStatus": "Faulted"})
     with pytest.raises(SystemExit, match="Case did not complete"):
         run_debug()
+
+
+def test_timeout_reports_fail_not_traceback(monkeypatch):
+    """A CLI that outruns its timeout must exit FAIL, with the partial output.
+
+    ``TimeoutExpired`` carries bytes even under ``text=True`` on POSIX, so the
+    handler has to decode before formatting.
+    """
+    def timing_out(cmd, **kw):
+        raise subprocess.TimeoutExpired(cmd, kw["timeout"], output=b"half a payload\xff")
+
+    monkeypatch.setattr(case_check.subprocess, "run", timing_out)
+    with pytest.raises(SystemExit) as excinfo:
+        case_check.assert_validate_passes("caseplan.json", timeout=7)
+
+    msg = str(excinfo.value)
+    assert "uip maestro case validate timed out after 7s" in msg
+    assert "half a payload" in msg

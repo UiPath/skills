@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-29T09:14:01.560Z",
+      "Message": "Connect to Database: A database error occurred.\r\nSystem.ArgumentException: Format of the initialization string does not conform to specification starting at index 0."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-29T09:14:01.575Z",
+      "Message": "Connect to Database: A database error occurred.\r\nin Main.xaml\r\n    at DatabaseConnect \"Connect to Database\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

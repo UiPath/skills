@@ -1,0 +1,28 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "9d4f1b2e-7a3c-4e8f-b5a6-2c1d0e9f8b7a",
+      "Name": "t.varga@meridianlogistics.example's workspace",
+      "Path": "t.varga@meridianlogistics.example's workspace",
+      "Description": "",
+      "Type": "Personal",
+      "ParentKey": ""
+    },
+    {
+      "Key": "4a7b9c1d-2e3f-4a5b-8c7d-6e5f4a3b2c1d",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

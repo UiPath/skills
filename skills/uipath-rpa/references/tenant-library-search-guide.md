@@ -85,7 +85,7 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
    > 3. **Provide names manually** — name libraries to install even if not yet deployed; flag as `[VERIFY DEPLOYMENT]`
    > 4. **Pause and re-authenticate to a different tenant** — if libraries live elsewhere
 
-6. **Record the user's selection.** For each accepted library, run `uip rpa packages install --packages '[{"id": "<PackageId>", "version": "<Version>"}]' --output json` to add it to `project.json`. Verify after install with `uip rpa validate --output json`.
+6. **Record the user's selection.** For each accepted library, run `uip rpa packages install --packages 'id=<PackageId>,version=<Version>' --output json` to add it to `project.json`. Verify after install with `uip rpa validate --output json`.
 
 ## Skip when
 

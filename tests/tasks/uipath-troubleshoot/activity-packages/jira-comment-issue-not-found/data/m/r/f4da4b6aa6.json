@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-17T10:18:03.920Z",
+      "Message": "[Add Comment] Response status code does not indicate success: 404 (Not Found). Issue Not Found. The issue '1450' does not exist or you do not have permission to view it."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-17T10:18:03.990Z",
+      "Message": "UiPath.Jira.Activities.JiraException: Issue Not Found. The issue '1450' does not exist or you do not have permission to view it.\r\nin Main.xaml\r\n    at JiraApplicationScope \"Jira Scope\"\r\n    at AddComment \"Add Comment\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

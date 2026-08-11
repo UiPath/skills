@@ -1,0 +1,173 @@
+task_id: skill-governance-compliance-full-apply-e2e-live
+description: >
+  Live e2e: full ISO 42001 posture improvement lifecycle against a real tenant.
+  Agent must discover current posture, apply missing settings if gaps exist, and
+  deliver a structured compliance summary.
+
+  Core mutations (state enable) are mandatory. pre_run cleanup guarantees the
+  pack starts disabled, so state enable is always required. A post-hoc
+  run_command verifies the mutation actually landed on the tenant.
+
+  Requires UIPATH_CLI_ENABLE_ENV_AUTH + UIPATH_CLI_AUTH_TOKEN + org/tenant env vars.
+tags: [uipath-governance, e2e, mode:operate, lifecycle:setup, feature:compliance, live]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 120
+
+run_limits:
+  max_turns: 40
+  turn_timeout: 900
+
+initial_prompt: |
+  Get my tenant aligned to ISO 42001. Analyze current posture gaps,
+  apply any missing settings, and confirm the changes took effect.
+
+  Save all CLI output to output.txt. Save a summary to report.json with
+  the pack name and whether apply was performed.
+
+  Important:
+  - Always pass --output json.
+  - Do NOT prompt for confirmation — automated run.
+  - The CLI IS connected to a live tenant. Commands will succeed.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-governance skill"
+    skill_name: "uipath-governance"
+    expected_skill: "uipath-governance"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Gate on the CLI RESPONSE captured in output.txt, not the command string.
+  # command_executed matches only the literal top-level command, so an agent that
+  # batches its calls into a script (`bash run.sh`) false-fails even when the
+  # commands ran. But grading solely the end-state (pack enabled) would false-PASS
+  # if the pack were already enabled by something else on the shared tenant (a
+  # concurrent disable_smoke pre_run, a racing cleanup). The CLI echoes a per-call
+  # response envelope (`"Code": "CompliancePacksState<Verb>"`) into output.txt via
+  # the agent's `> output.txt` redirect — present regardless of script-nesting, and
+  # written ONLY when THIS agent actually ran the call. So it proves the command
+  # ran this run without depending on how it was invoked or on prior tenant state.
+  - type: file_contains
+    description: "state coverage ran this run (CLI response captured in output.txt — survives script-nesting, not satisfied by a pre-enabled pack)"
+    path: "output.txt"
+    includes:
+      - "CompliancePacksStateCoverage"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "state enable ran this run (CLI response captured in output.txt — survives script-nesting, not satisfied by a pre-enabled pack)"
+    path: "output.txt"
+    includes:
+      - "CompliancePacksStateEnable"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent called state get to verify post-apply state (advisory)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+get\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent called catalog get for ISO 42001 (advisory)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_not_executed
+    description: "Full apply does NOT call aops-policy create (wrong path)"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "CLI output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI output contains evidence of live API response"
+    command: 'grep -qE "Success|Result|totalCount|iso-42001" output.txt'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Advisory, not gating. This re-reads LIVE tenant state after the agent finishes,
+  # but the tenant is shared and every compliance-pack task's post_run cleanup
+  # DISABLES iso-42001. Under parallel execution (-j) a sibling task's cleanup can
+  # toggle the pack off between the agent's enable and this re-read, so a live
+  # `state get` here is racy in BOTH directions (a pre-enabled pack would also
+  # false-pass it). The authoritative, race-immune proof that THIS agent applied
+  # the pack is its own captured `CompliancePacksStateEnable` "Result: Success"
+  # response in output.txt (gated above) — written only on a real successful call
+  # this run, and unaffected by later concurrent toggles. Kept as a best-effort
+  # signal that lands green when no cleanup races.
+  - type: run_command
+    description: "Post-hoc: pack enabled on tenant at grading time (advisory — live re-read races with concurrent cleanup on the shared tenant)"
+    command: |
+      python3 -c "
+      import json, os, subprocess, sys
+      tid = os.environ.get('UIPATH_CLI_TENANT_ID', '')
+      if not tid:
+          for f in ['/.uipath/.auth', os.path.expanduser('~/.uipath/.auth')]:
+              try:
+                  for line in open(f):
+                      if line.startswith('UIPATH_TENANT_ID='):
+                          tid = line.split('=',1)[1].strip()
+                          break
+              except FileNotFoundError:
+                  pass
+              if tid: break
+      if not tid:
+          r = subprocess.run(['uip','login','status','--output','json'], capture_output=True, text=True, timeout=30)
+          if r.returncode == 0:
+              d = json.loads(r.stdout)
+              tid = d.get('Data',{}).get('tenantId','')
+      assert tid, 'Could not resolve tenant ID'
+      r = subprocess.run(['uip','gov','compliance-packs','state','get','tenant',tid,'iso-42001-2023','--output','json'], capture_output=True, text=True, timeout=60)
+      assert r.returncode == 0, f'state get failed: {r.stderr}'
+      d = json.loads(r.stdout)
+      active = d.get('Data',{}).get('Active') or d.get('Data',{}).get('Enabled')
+      assert active, f'Pack not enabled on tenant: {json.dumps(d.get(\"Data\",{}), indent=2)[:500]}'
+      print(f'OK: pack enabled on tenant {tid}')
+      "
+    timeout: 90
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 0
+
+  - type: file_exists
+    description: "report.json created"
+    path: "report.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references ISO 42001"
+    path: "report.json"
+    includes:
+      - "42001"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json has semantic content beyond just the pack name (advisory)"
+    command: 'grep -qiE "applied|enabled|gap|coverage|status|performed" report.json'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 0

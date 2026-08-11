@@ -6,13 +6,13 @@ direct-json: supported
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../case-editing-operations.md).
 
-> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`.
+> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.typeVersion`, `data.display`, `data.description`.
 
 ## Purpose
 
 Append one secondary manual trigger to the schema. This plugin performs **two file writes as an atomic pair**:
 
-1. Append a `case-management:Trigger` node to `caseplan.json.nodes`.
+1. Append a `uipath.case.trigger` node to `caseplan.json.nodes`.
 2. Append a matching entry to `entry-points.json.entryPoints` (sibling of `caseplan.json`).
 
 The sibling-file sync is the main reason this plugin needs a dedicated JSON recipe rather than reusing a generic "add node" primitive — orchestrator discovers entry points via `entry-points.json`, so a trigger node without a matching entry is invisible to runtime.
@@ -41,14 +41,14 @@ Position is not a user input. It is computed statefully (see below).
   node -e "console.log(crypto.randomUUID())"
   ```
 
-Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference (e.g., In-argument companions whose `elementId` is this trigger's id).
+Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference — e.g., the global-vars plugin resolves this trigger's node id for an In-argument whose `sourceTriggers` names this trigger's T-number (or when it is the primary trigger and the In-arg leaves `sourceTriggers` blank).
 
 ## Default-name fallback
 
 If the T-entry does not supply `display-name`:
 
 ```text
-existingTriggers = schema.nodes.filter(n => n.type === "case-management:Trigger")
+existingTriggers = schema.nodes.filter(n => n.type === "uipath.case.trigger")
 displayName = `Trigger ${existingTriggers.length + 1}`
 ```
 
@@ -61,16 +61,18 @@ Append (not prepend) the trigger node:
 ```json
 {
   "id": "<trigger_XXXXXX>",
-  "type": "case-management:Trigger",
+  "type": "uipath.case.trigger",
   "data": {
     "parentElement": { "id": "root", "type": "case-management:root" },
-    "label": "<displayName>",
-    "description": "<description from sdd.md or LLM-inferred>"
+    "description": "<description from sdd.md or LLM-inferred>",
+    "typeVersion": "1.0.0",
+    "display": { "label": "<displayName>" },
+    "inputs": { "serviceType": "None" }
   }
 }
 ```
 
-**No `data.uipath` key.** Absence of `uipath` is the manual trigger's signature. `serviceType` only appears on timer (`Intsvc.TimerTrigger`) and event (`Intsvc.EventTrigger`) variants.
+**`data.inputs.serviceType` is `"None"` for manual triggers.** Older schemas may omit `inputs` entirely — both forms are valid when reading. Always emit `"inputs": {"serviceType": "None"}` when writing.
 
 ## Recipe — `entry-points.json` (append to `entryPoints`)
 
@@ -89,6 +91,8 @@ Read the file, parse, append:
 
 Where `basename(caseplanFile)` is the schema file's base name including extension (typically `caseplan.json`), yielding a `filePath` fragment like `/content/caseplan.json.bpmn#trigger_xY2mNp`.
 
+Leave this entry's `input`/`output` schemas (the `entry-points.json` fields above — not the trigger node's I/O) empty here — Step 6.3 back-fills them from the case's In/Out args ([entry-points-sync.md](../../../entry-points-sync.md)).
+
 Write back with **4-space indent** (`JSON.stringify(obj, null, 4)`).
 
 ## Write order
@@ -105,12 +109,15 @@ If the second write fails, the `caseplan.json` mutation must be rolled back to a
 After writing, confirm:
 
 - `caseplan.json.nodes` contains the new node with the generated `trigger_XXXXXX` id, at the end of the array.
-- `nodes[].type === "case-management:Trigger"`.
-- `nodes[].data.label` matches the resolved `displayName`.
+- `nodes[].type === "uipath.case.trigger"`.
+- `nodes[].data.display.label` matches the resolved `displayName`.
 - `nodes[].data.description` is present and non-empty (direct-JSON-write divergence — always emitted).
+- `nodes[].data.typeVersion === "1.0.0"`.
 - `nodes[].data.parentElement` always present. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18).
-- `nodes[].data.uipath` is **absent** (manual triggers have no `uipath` key).
+- `nodes[].data.inputs.serviceType === "None"` (or `inputs` absent in older schemas — both are valid).
+- **`schema.edges` is still `[]`** (Rule 20) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
 
 Run `uip maestro case validate <caseplan.json> --output json` after all triggers for this plugin's batch are added.
 
+<!-- END: impl-json.md -->

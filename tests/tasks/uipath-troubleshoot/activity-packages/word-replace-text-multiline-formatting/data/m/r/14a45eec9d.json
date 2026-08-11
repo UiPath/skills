@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "e5f6a7b8-c9d0-4204-9b1c-6f7081920314",
+      "State": "Successful",
+      "ProcessName": "AddressBlockFill",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT-09",
+      "MachineKey": "",
+      "StartTime": "2026-06-15T10:48:01.250Z",
+      "EndTime": "2026-06-15T10:48:07.640Z",
+      "CreationTime": "2026-06-15T10:48:01.030Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

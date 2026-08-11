@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """MCP server resource check.
 
-Validates resources/orchestrator/resource.json declares the UiPath
-Orchestrator MCP server reference in the authoritative shape
+Validates that an MCP server resource for the UiPath Orchestrator MCP server is
+authored under DevAssistantAgent/resources/ in the authoritative shape
 (agents-storage-schemas `mcpStorageSchemaV16`):
   - $resourceType == "mcp"  (not "tool" — MCP is a distinct resource type)
-  - name == "orchestrator"  (the resource is named after the MCP server itself,
-    matching its folder; the job-subset lives in availableTools, not the name)
+  - name is a non-empty string. The resource name is the agent's choice (the
+    job-subset lives in availableTools, not the name), so it is NOT pinned to a
+    specific value — we locate the resource by $resourceType, not by folder name.
   - description is a non-empty string
   - id is a UUID-shaped non-empty string (agent-local id)
   - slug is a non-empty string (the AgentHub server slug)
@@ -26,16 +27,25 @@ import sys
 from pathlib import Path
 
 ROOT = Path(os.getcwd()) / "DevToolsSol" / "DevAssistantAgent"
-RESOURCE = ROOT / "resources" / "orchestrator" / "resource.json"
+RESOURCES = ROOT / "resources"
 
 
-def load(path: Path) -> dict:
-    if not path.is_file():
-        sys.exit(f"FAIL: Missing {path}")
-    try:
-        return json.loads(path.read_text())
-    except json.JSONDecodeError as e:
-        sys.exit(f"FAIL: {path} is not valid JSON: {e}")
+def find_mcp_resource() -> dict:
+    if not RESOURCES.is_dir():
+        sys.exit(
+            f"FAIL: {RESOURCES} does not exist — the agent authored no MCP resource"
+        )
+    for path in sorted(RESOURCES.rglob("resource.json")):
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if data.get("$resourceType") == "mcp":
+            print(f"OK: found MCP resource at {path.relative_to(ROOT.parent)}")
+            return data
+    sys.exit(
+        f'FAIL: no MCP resource ($resourceType=="mcp") found under {RESOURCES}'
+    )
 
 
 def require_nonempty_str(resource: dict, field: str) -> str:
@@ -51,13 +61,8 @@ def assert_mcp_resource(resource: dict) -> None:
         sys.exit(
             f'FAIL: $resourceType should be "mcp" (distinct from "tool"), got {rtype!r}'
         )
-    name = resource.get("name")
-    if name != "orchestrator":
-        sys.exit(
-            f'FAIL: MCP resource name should be "orchestrator" (named after the '
-            f"MCP server itself, matching its folder), got {name!r}"
-        )
 
+    name = require_nonempty_str(resource, "name")
     require_nonempty_str(resource, "description")
     require_nonempty_str(resource, "slug")
     require_nonempty_str(resource, "folderPath")
@@ -89,14 +94,14 @@ def assert_mcp_resource(resource: dict) -> None:
             )
 
     print(
-        f'OK: resource.json is $resourceType="mcp", name="orchestrator", id={rid}, '
+        f'OK: resource.json is $resourceType="mcp", name={name!r}, id={rid}, '
         f'slug={resource.get("slug")!r}, folderPath={resource.get("folderPath")!r}, '
-        f'resourceKey present, availableTools list present ({len(tools)} selected)'
+        f"resourceKey present, availableTools list present ({len(tools)} selected)"
     )
 
 
 def main() -> None:
-    resource = load(RESOURCE)
+    resource = find_mcp_resource()
     assert_mcp_resource(resource)
 
 

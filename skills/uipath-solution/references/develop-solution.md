@@ -2,7 +2,7 @@
 
 Create a solution, add automation projects, and sync resource declarations.
 
-> For full option details on any command, use `--help` (e.g., `uip solution project add --help`).
+> For full option details on any command, use `--help` (e.g., `uip solution projects add --help`).
 
 ## When to Use
 
@@ -12,7 +12,7 @@ Create a solution, add automation projects, and sync resource declarations.
 
 ## Prerequisites
 
-- Authenticated (`uip login`) -- required for remote resource lookup during `resource refresh` and for `upload`
+- Authenticated — verify with `uip login status` (required for remote resource lookup during `resource refresh` and for `upload`); if not logged in, ask the user to run `uip login` (interactive browser flow)
 - Projects to add must contain `project.uiproj` or `project.json`
 
 ## Flow
@@ -44,15 +44,15 @@ Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live insid
 
 ## Step 2: Add Existing Projects
 
-> **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution project add`, run `uip functions init` (Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. Registration without it creates an incomplete solution entry.
+> **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution projects add`, run `uip function init` (Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. Registration without it creates an incomplete solution entry.
 
 Register a project that already lives inside the solution directory.
 
 ```bash
-uip solution project add ./InvoiceAutomation/Processor --output json
+uip solution projects add ./InvoiceAutomation/Processor --output json
 
 # With explicit solution file
-uip solution project add ./InvoiceAutomation/Reporter ./InvoiceAutomation/InvoiceAutomation.uipx --output json
+uip solution projects add ./InvoiceAutomation/Reporter ./InvoiceAutomation/InvoiceAutomation.uipx --output json
 ```
 
 The `.uipx` is auto-discovered by walking up from the project path if not specified. `Type` is auto-detected from `project.uiproj` / `project.json` — do not pass it.
@@ -64,7 +64,7 @@ The `.uipx` is auto-discovered by walking up from the project path if not specif
 Copy a project from outside the solution tree into the solution directory and register it.
 
 ```bash
-uip solution project import --source /path/to/ExternalProject --output json
+uip solution projects import --source /path/to/ExternalProject --output json
 ```
 
 Unlike `add`, `import` copies source files into the solution directory first, then registers the copy.
@@ -76,7 +76,7 @@ Unlike `add`, `import` copies source files into the solution directory first, th
 Unregister a project from the `.uipx` manifest. Does NOT delete files from disk.
 
 ```bash
-uip solution project remove ./InvoiceAutomation/OldProject --output json
+uip solution projects remove ./InvoiceAutomation/OldProject --output json
 ```
 
 ## Step 5: List Projects
@@ -87,10 +87,10 @@ When the user asks to show or list registered projects, run this command. Readin
 
 ```bash
 # from inside the solution dir
-uip solution project list --output json
+uip solution projects list --output json
 
 # or with an explicit solution folder
-uip solution project list --solution-folder ./InvoiceAutomation --output json
+uip solution projects list --solution-folder ./InvoiceAutomation --output json
 ```
 
 `Name` is read from each project's `project.uiproj`, falling back to the directory basename if the manifest is missing or unreadable. Empty solutions return `Data: []`.
@@ -101,12 +101,12 @@ Show resources declared in the solution, available in Orchestrator, or both. Pas
 
 ```bash
 # from inside the solution dir
-uip solution resource list --kind Queue --output json
-uip solution resource list --kind Process --source local --output json
-uip solution resource list --kind Queue --search "Invoice" --output json
+uip solution resources list --kind Queue --output json
+uip solution resources list --kind Process --source local --output json
+uip solution resources list --kind Queue --search "Invoice" --output json
 
 # explicit folder
-uip solution resource list --kind App --solution-folder ./InvoiceAutomation --output json
+uip solution resources list --kind App --solution-folder ./InvoiceAutomation --output json
 ```
 
 | Option | Values | Default |
@@ -123,10 +123,10 @@ Re-scan all projects and sync resource declarations from their `bindings_v2.json
 
 ```bash
 # from inside the solution dir
-uip solution resource refresh --output json
+uip solution resources refresh --output json
 
 # explicit folder
-uip solution resource refresh --solution-folder ./InvoiceAutomation --output json
+uip solution resources refresh --solution-folder ./InvoiceAutomation --output json
 ```
 
 | Field | Meaning |
@@ -168,6 +168,30 @@ When a name (e.g. `orders` queue) exists in multiple cloud folders, refresh pref
 
 The placeholder `solution_folder` (and `.`) in a binding's folder field means "no folder" / tenant scope — they're not real cloud folders.
 
+### Repointing a connection leaves the old resource behind
+
+Repointing a connector activity to a *different* connection (a different connection GUID) does **not** update the existing connection resource in place. Refresh is import-only, so it imports the new connection as a new resource and leaves the old one alone. Because both carry the same connection display name, the newcomer gets suffixed:
+
+```
+resources/solution_folder/connection/<connector>/<name>.json      # old GUID — now unreferenced
+resources/solution_folder/connection/<connector>/<name>_1.json    # new GUID
+```
+
+`bindings_v2.json` cleanly references only the new GUID, but both resources stay in `resources list` and in `userProfile/<uid>/debug_overwrites.json`, and every subsequent refresh reports `Imported: 1` for the new one.
+
+**Clean it up yourself** — refresh will not, by design:
+
+```bash
+# find the key of the resource for the old connection
+uip solution resources list --output json
+
+uip solution resources remove <old-resource-key> --solution-folder <dir> --output json
+```
+
+This is intentional. Refresh never removes resources, so it cannot silently drop something you added on purpose. The trade-off is that a repoint needs one manual `remove`.
+
+> A connection can be `Enabled` and pingable and still not be importable: the Resource Catalog is indexed per folder, so `refresh` may warn `Connection <guid> not found in Resource Catalog in the required folder "<folder>"` and import nothing. Membership in `uip is connections list` does not guarantee a connection is refresh-resolvable from a given `folderPath`.
+
 > For single-resource mutations that don't need a full project scan, see [Step 9: Add a Resource Atomically](#step-9-add-a-resource-atomically), [Step 10: Remove a Resource](#step-10-remove-a-resource), and [Step 11: Edit a Resource](#step-11-edit-a-resource). `refresh` and these solve different problems — `refresh` reconciles every binding in every project (and **never overwrites** a resource already in the solution); `add`/`remove`/`edit` operate on one resource at a time. To change an existing resource's spec, `edit` is the only path — `refresh` won't.
 
 ## Step 8: Get a Single Resource Configuration
@@ -176,10 +200,10 @@ Fetch the full configuration (`spec`, `apiVersion`, `isOverridable`, `resourceOv
 
 ```bash
 # from inside the solution dir
-uip solution resource get <resource-key> --output json
+uip solution resources get <resource-key> --output json
 
 # explicit folder + transitive deps
-uip solution resource get <resource-key> --solution-folder ./InvoiceAutomation --include-dependencies --output json
+uip solution resources get <resource-key> --solution-folder ./InvoiceAutomation --include-dependencies --output json
 ```
 
 | Option | Purpose |
@@ -190,7 +214,7 @@ uip solution resource get <resource-key> --solution-folder ./InvoiceAutomation -
 
 ### How resolution works
 
-`get` accepts any key from `solution resource list` — local or remote — and dispatches accordingly:
+`get` accepts any key from `solution resources list` — local or remote — and dispatches accordingly:
 
 1. **Local first** — calls SDK `getConfigurationAsync(key)`, which reads `resources/solution_folder/**/<resource>.json` and returns the design-time spec (plus any debug overwrite). This is what's bundled at pack time. Output is a subset of the cloud spec — good enough for most planning work.
 2. **Fallback to RCS + FPS** — if the key isn't in the local solution, the CLI scans the resource catalog (`searchFolderEntities`) for it. On match, it builds a `ResourceReferenceModel` and calls the SDK's `IImportResourceHelper.exportResourceAsync` (the same workhorse `refresh` uses). The returned `ResourceDefinition` is mapped to the same `ResourceConfiguration` shape, so callers get a uniform output regardless of source.
@@ -198,7 +222,7 @@ uip solution resource get <resource-key> --solution-folder ./InvoiceAutomation -
 
 ### Local vs remote spec — they're not identical
 
-The local file is what `refresh` (and `solution project add`) wrote to disk: a declarative subset of the cloud entity. The remote (FPS) spec includes server-resolved fields the local can't have:
+The local file is what `refresh` (and `solution projects add`) wrote to disk: a declarative subset of the cloud entity. The remote (FPS) spec includes server-resolved fields the local can't have:
 
 | Field | Local | Remote (FPS) |
 |-------|-------|--------------|
@@ -210,7 +234,7 @@ The local file is what `refresh` (and `solution project add`) wrote to disk: a d
 
 If you need the full server spec for a resource that's already in the solution (e.g., for a deploy override), `--include-dependencies` paired with manual inspection of the dependency graph is one option; the cleaner path is to delete the local file and let `refresh` re-import it from the cloud.
 
-### Why `solution resource list` and `get` aren't symmetric
+### Why `solution resources list` and `get` aren't symmetric
 
 `list --source remote` returns entities from RCS that are **visible to your user** — including ones not bound to this solution. `get` is solution-context-aware: it considers anything in your `.uipx`'s solution_folder as "local", and falls back to RCS for everything else. A key shown by `list --source remote` that isn't bound to the solution will resolve via the FPS fallback.
 
@@ -225,16 +249,16 @@ Add a single resource to the solution without touching `bindings_v2.json` or re-
 
 ```bash
 # Create a local virtual queue (no auth required)
-uip solution resource add --source local --kind Queue --name InvoiceQueue --output json
+uip solution resources add --source local --kind Queue --name InvoiceQueue --output json
 
 # Local asset with explicit subtype
-uip solution resource add --source local --kind Asset --name ApiKey --type Text --output json
+uip solution resources add --source local --kind Asset --name ApiKey --type Text --output json
 
 # Import an existing remote queue (folder disambiguates same-name resources)
-uip solution resource add --source remote --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json
+uip solution resources add --source remote --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json
 
 # Skip RCS lookup if you already know the cloud key
-uip solution resource add --source remote --kind Queue --name InvoiceQueue \
+uip solution resources add --source remote --kind Queue --name InvoiceQueue \
     --cloud-key 8f3a1b2c-1234-4abc-9def-0123456789ab --output json
 ```
 
@@ -243,7 +267,7 @@ uip solution resource add --source remote --kind Queue --name InvoiceQueue \
 | `--source <source>` | `local`, `remote` | **required** |
 | `--kind <kind>` | Any kind RCS indexes (e.g. Queue, Asset, Bucket, Process, Connection, App, Index, Trigger). Case-insensitive lookup; trimmed and lowerFirstChar-applied before persistence | **required** |
 | `--name <name>` | Resource name (max 256 chars; path separators, control chars, and `: * ? " < > |` are rejected). Per-kind Orchestrator limits are stricter — queues cap at 50 | **required** |
-| `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection) | None |
+| `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection). On `--source remote` it is inferred from the matched resource when omitted; pass it only to override | None |
 | `--folder-path <path>` | Orchestrator folder for remote lookup. **Not valid with `--source local`** — virtual stubs live under the solution folder | None |
 | `--cloud-key <guid>` | Skip RCS search, import this exact resource key. Only valid with `--source remote`; must be a GUID | None |
 | `--solution-folder <path>` | Path to solution root (must directly contain a `.uipx`) | Current working directory |
@@ -272,17 +296,36 @@ uip solution resource add --source remote --kind Queue --name InvoiceQueue \
 
 ### Ambiguous remote match
 
-When `--source remote` is given without `--cloud-key` and the RCS search returns multiple resources with the same `(kind, name)` across different folders, `add` does **not** guess — it emits a structured error with every candidate inline so an agent can re-call without a separate `resource list`:
+When `--source remote` is given without `--cloud-key` and the RCS search returns multiple resources with the same `(kind, name)`, `add` does **not** guess — it emits a structured error listing every candidate (with its folder, subtype, and key) inline so an agent can re-call without a separate `resources list`:
 
 ```json
 {
   "Result": "Failure",
-  "Message": "Ambiguous match: 3 remote resources matching kind=queue name=InvoiceQueue",
-  "Instructions": "Candidates (use one folder via --folder-path, or pass --cloud-key directly):\n  - Folder=Sales/CRM  Key=8f3a1b2c-...\n  - Folder=Operations/Reporting  Key=21a07d4e-...\n  - Folder=Shared  Key=c0e9f7a3-..."
+  "Message": "Ambiguous match: 2 remote resources matching kind=connection name=orders@example.com",
+  "Instructions": "Candidates (disambiguate with --cloud-key <key>; --folder-path only helps when they are in different folders):\n  - Folder=Shared  Type=uipath-google-gmail  Key=8f3a1b2c-...\n  - Folder=Shared  Type=uipath-google-drive  Key=21a07d4e-..."
 }
 ```
 
-Resolve by re-running with `--folder-path <one-of-the-candidates>` or `--cloud-key <one-of-the-keys>`.
+Two cases produce this:
+
+- **Same name across different folders** — resolve with `--folder-path <one-of-the-candidates>` *or* `--cloud-key <one-of-the-keys>`.
+- **Same name *and* folder, different subtype** (e.g. a `uipath-google-gmail` and a `uipath-google-drive` connection both named `orders@example.com` in the same folder). `--folder-path` can't separate these — only `--cloud-key` will. The `Type` column in each candidate tells them apart.
+
+### `--cloud-key` that can't be resolved
+
+`--cloud-key` skips the name search and looks the resource up by key to recover its source folder (the folder context is required — without it the deploy-time FPS export of connection/app resources fails). If the key resolves to nothing — wrong key, a resource not visible to your user, or (when `--folder-path` is also given) a resource that isn't in that folder — `add` fails clearly instead of importing a folderless resource:
+
+```json
+{
+  "Result": "Failure",
+  "Message": "No remote resource found with key 8f3a1b2c-... in folder \"Sales/CRM\"",
+  "Instructions": "Verify the key via 'uip solution resources list --source remote' (and that --folder-path, if given, matches the resource's folder)."
+}
+```
+
+Distinguish this from a **transient lookup failure**: if the Orchestrator search itself errors (RCS/API outage), `add` reports a separate `"Failed to look up the resource in Orchestrator by key"` instead of the not-found message above. Treat that one as retry-able; treat `"No remote resource found with key …"` as a key/folder to fix.
+
+An *already-imported* key is not an error — the idempotency check runs first, so re-adding it returns `Status: "Unchanged"`. On a successful by-key import the resource's subtype is taken from the match automatically (same as the name-search path), so `--type` is only needed to override it.
 
 ### How it relates to `refresh`
 
@@ -298,10 +341,10 @@ Resolve by re-running with `--folder-path <one-of-the-candidates>` or `--cloud-k
 Delete a single resource from the solution by key. Purely local: no auth round-trip, no `bindings_v2.json` mutation.
 
 ```bash
-uip solution resource remove 8f3a1b2c-1234-4abc-9def-0123456789ab --output json
+uip solution resources remove 8f3a1b2c-1234-4abc-9def-0123456789ab --output json
 
 # explicit folder
-uip solution resource remove 8f3a1b2c-... --solution-folder ./InvoiceAutomation --output json
+uip solution resources remove 8f3a1b2c-... --solution-folder ./InvoiceAutomation --output json
 ```
 
 `<resource-key>` is positional and required, validated as a GUID. Use `resource list --source local` to discover keys.
@@ -331,17 +374,17 @@ If the key isn't in the local solution, the command exits with `Failure` and `Re
 
 ## Step 11: Edit a Resource
 
-Change a resource's `spec` properties by key. This is the only command that mutates an existing resource — `refresh` is import-only (it skips resources already in the solution, never overwrites them).
+Change a resource's `spec` properties by key. This is the only command that mutates an existing resource — `refresh` is import-only (it skips resources already in the solution, never overwrites them). Repointing a binding to a different connection is not an edit either: refresh imports the new one and leaves the old behind for you to `remove` — see [Repointing a connection leaves the old resource behind](#repointing-a-connection-leaves-the-old-resource-behind).
 
 ```bash
 # Patch a single spec property
-uip solution resource edit <resource-key> --patch '{"maxNumberOfRetries":5}' --output json
+uip solution resources edit <resource-key> --patch '{"maxNumberOfRetries":5}' --output json
 
 # Patch several properties from a JSON object
-uip solution resource edit <resource-key> --patch '{"acceptAutomaticallyRetry":false,"retentionPeriod":14}' --output json
+uip solution resources edit <resource-key> --patch '{"acceptAutomaticallyRetry":false,"retentionPeriod":14}' --output json
 
 # Read the patch from stdin (pipeline-friendly)
-echo '{"slaInHours":"4"}' | uip solution resource edit <resource-key> --patch - --output json
+echo '{"slaInHours":"4"}' | uip solution resources edit <resource-key> --patch - --output json
 ```
 
 | Option | Values | Default |
@@ -412,21 +455,21 @@ Create a solution with two projects, sync resources, and verify:
 uip solution init "InvoiceAutomation" --output json
 
 # 2. Add projects (already inside the solution directory)
-uip solution project add ./InvoiceAutomation/Processor --output json
-uip solution project add ./InvoiceAutomation/Reporter --output json
+uip solution projects add ./InvoiceAutomation/Processor --output json
+uip solution projects add ./InvoiceAutomation/Reporter --output json
 
 # 3. Move into the solution dir so subsequent commands default --solution-folder
 cd ./InvoiceAutomation
 
 # 4. Sync resource declarations from project bindings
-uip solution resource refresh --output json
+uip solution resources refresh --output json
 
 # 5. Verify resources are tracked (per kind)
-uip solution resource list --kind Process --source local --output json
-uip solution resource list --kind Queue --source local --output json
+uip solution resources list --kind Process --source local --output json
+uip solution resources list --kind Queue --source local --output json
 
 # 6. Inspect one resource's full configuration (local + RCS fallback)
-uip solution resource get <resource-key> --output json
+uip solution resources get <resource-key> --output json
 ```
 
 ---
@@ -453,7 +496,7 @@ ls -1 ./MySolution/resources/solution_folder/process/
 Steps 1–3 verify *project* mutations (`project add`/`remove`, `refresh`). For *resource* mutations (`resource add`/`remove`) the relevant files live under other `resources/solution_folder/<kind>/` subtrees (`queue/`, `asset/`, `bucket/`, …), so verify at the resource level instead:
 
 ```bash
-uip solution resource list --source local --output json
+uip solution resources list --source local --output json
 ```
 
 If `.uipx` and `resources/solution_folder/` disagree, follow the recovery procedure in the matching gotcha below.
@@ -463,7 +506,7 @@ If `.uipx` and `resources/solution_folder/` disagree, follow the recovery proced
 | File | Created by | Read by |
 |---|---|---|
 | `bindings.json` | `uipath init` (coded agent) | the agent at runtime |
-| `bindings_v2.json` | `uip maestro flow new`, Maestro Case scaffold, Studio Web (mirrors agent bindings up to solution root) | `uip solution resource refresh` |
+| `bindings_v2.json` | `uip maestro flow new`, Maestro Case scaffold, Studio Web (mirrors agent bindings up to solution root) | `uip solution resources refresh` |
 
 Copying `bindings.json` → `bindings_v2.json` does **not** work — the schemas differ, and `resource refresh` will silently fail (see "false success" gotcha above). Naive hand-authoring or copy-paste from `bindings.json` produces the opaque error `TypeError: Cannot read properties of undefined (reading 'toLowerCase')`. When a project's tooling already manages `bindings_v2.json` (Flow / Case / agent solutions), edit through that product's commands rather than the file directly, then run `resource refresh` to reconcile.
 
@@ -536,7 +579,7 @@ When `[solutionFile]` is omitted, the CLI walks up from the project path looking
 
 ### `--solution-folder` defaults to cwd
 
-`resource list / refresh / get / add / remove / edit` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resource list`) or pass `--solution-folder <path>` explicitly.
+`resource list / refresh / get / add / remove / edit` default `--solution-folder` to the current working directory. Run them from inside the solution dir for the shortest invocation (`uip solution resources list`) or pass `--solution-folder <path>` explicitly.
 
 ### `add` / `remove` / `edit` / `refresh` require a `.uipx` manifest in the target folder
 
@@ -544,7 +587,7 @@ Unlike `resource get` and `list` (which fall back to RCS when local state is mis
 
 ### `resource get` for cross-folder inspection
 
-Because `get` falls back to RCS + FPS export when the key isn't local, it works as a quick way to fetch the full server spec for any resource your tenant exposes — even ones that aren't yet bound to this solution. Pair with `solution resource list --kind <kind> --source remote` to discover keys.
+Because `get` falls back to RCS + FPS export when the key isn't local, it works as a quick way to fetch the full server spec for any resource your tenant exposes — even ones that aren't yet bound to this solution. Pair with `solution resources list --kind <kind> --source remote` to discover keys.
 
 ---
 
@@ -553,15 +596,15 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 | Want to... | Command | Watch for |
 |---|---|---|
 | Create a fresh solution | `uip solution init <name>` | Accepts an existing empty directory; drops `.uipx` inside |
-| Add a project already in the solution dir | `uip solution project add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
-| Pull in an external project | `uip solution project import --source <path>` | Rename source folder first to avoid 3-name divergence |
-| Remove a project | `uip solution project remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
-| Sync resource bindings | `uip solution resource refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
-| Add a virtual queue / asset / bucket | `uip solution resource add --source local --kind <kind> --name <name>` | Offline-friendly; idempotent (re-run returns `Status: "Unchanged"`) |
-| Import an existing remote resource | `uip solution resource add --source remote --kind <kind> --name <name> --folder-path <folder>` | On ambiguous match, the error lists every candidate with its key — pick one and re-call |
-| Remove a single resource | `uip solution resource remove <resource-key>` | Purely local — no auth; doesn't touch `bindings_v2.json`, next `refresh` re-imports if a binding still references it |
-| Edit a resource's spec | `uip solution resource edit <resource-key> --patch '{...}'` | Only command that mutates an existing resource; unknown/reference/read-only props are silently ignored. JSON is the only input — types preserved verbatim |
-| List resources | `uip solution resource list --solution-folder <solution-dir> --source local` | Good sanity check after any mutation; add `--kind <kind>` to narrow to one resource kind |
+| Add a project already in the solution dir | `uip solution projects add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
+| Pull in an external project | `uip solution projects import --source <path>` | Rename source folder first to avoid 3-name divergence |
+| Remove a project | `uip solution projects remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
+| Sync resource bindings | `uip solution resources refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
+| Add a virtual queue / asset / bucket | `uip solution resources add --source local --kind <kind> --name <name>` | Offline-friendly; idempotent (re-run returns `Status: "Unchanged"`) |
+| Import an existing remote resource | `uip solution resources add --source remote --kind <kind> --name <name> --folder-path <folder>` | On ambiguous match, the error lists every candidate with its key — pick one and re-call |
+| Remove a single resource | `uip solution resources remove <resource-key>` | Purely local — no auth; doesn't touch `bindings_v2.json`, next `refresh` re-imports if a binding still references it |
+| Edit a resource's spec | `uip solution resources edit <resource-key> --patch '{...}'` | Only command that mutates an existing resource; unknown/reference/read-only props are silently ignored. JSON is the only input — types preserved verbatim |
+| List resources | `uip solution resources list --solution-folder <solution-dir> --source local` | Good sanity check after any mutation; add `--kind <kind>` to narrow to one resource kind |
 | Pack | `uip solution pack <solution-dir> <output-dir>` | See [pack-and-deploy.md](pack-and-deploy.md) for full pack/publish/deploy flow |
 
 ---

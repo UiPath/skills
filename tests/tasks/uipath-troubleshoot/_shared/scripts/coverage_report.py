@@ -1,10 +1,13 @@
 """Coverage reporter: expected vs performed uip commands per replicate.
 
 Reads:
-  - <run_dir>/<NN>/artifacts/<task_id>/mocks/.calls.jsonl
-      one JSON record per uip invocation written by the mock dispatcher
-  - <run_dir>/<NN>/artifacts/<task_id>/mocks/responses/manifest.json
+  - <run_dir>/<NN>/artifacts/<task_id>/m/.log
+      one record per uip invocation written by the mock dispatcher —
+      zlib+base64-encoded on sealed runs, plain JSON on unsealed local runs
+      (legacy artifacts used plain `.calls.jsonl`; both are handled)
+  - <run_dir>/<NN>/artifacts/<task_id>/m/r/manifest.json
       the manifest's `expected_calls` declares minimum-coverage patterns
+      (on sealed runs `r/` is gone; the manifest is read from `m/.store`)
 
 Writes per replicate:
   - <run_dir>/<NN>/coverage.json         structured comparison
@@ -14,26 +17,76 @@ Also prints a run-level table to stdout.
 
 Usage:
     python tmp/coverage_report.py runs/<run-timestamp>/default/<task_id>
+    python tmp/coverage_report.py --dump <path-to-call-log>   # decoded JSONL
 """
 
 from __future__ import annotations
 
+import base64
 import json
 import sys
+import zlib
 from collections import Counter, defaultdict
 from pathlib import Path
+
+CALL_LOG_NAMES = (".log", ".calls.jsonl")
+
+
+def _parse_call_line(line: str) -> dict | None:
+    """Parse one call-log line: plain JSON first, then zlib+base64."""
+    try:
+        return json.loads(line)
+    except json.JSONDecodeError:
+        pass
+    try:
+        return json.loads(zlib.decompress(base64.b64decode(line)).decode("utf-8"))
+    except (ValueError, zlib.error):
+        return None
+
+
+def _read_calls(calls_path: Path) -> list[dict]:
+    calls: list[dict] = []
+    with calls_path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            rec = _parse_call_line(line)
+            if rec is not None:
+                calls.append(rec)
+    return calls
+
+
+def _find_call_log(sandbox: Path) -> Path | None:
+    for name in CALL_LOG_NAMES:
+        path = sandbox / "m" / name
+        if path.is_file():
+            return path
+    return None
+
+
+def _load_manifest(sandbox: Path) -> dict | None:
+    """Load the manifest from `m/r/` (unsealed) or the sealed `m/.store`."""
+    manifest_path = sandbox / "m" / "r" / "manifest.json"
+    if manifest_path.is_file():
+        return json.loads(manifest_path.read_text(encoding="utf-8"))
+    store_path = sandbox / "m" / ".store"
+    if store_path.is_file():
+        blob = json.loads(zlib.decompress(base64.b64decode(store_path.read_bytes())).decode("utf-8"))
+        return blob.get("manifest")
+    return None
 
 
 def analyze_replicate(rep_dir: Path) -> dict:
     """Build a coverage record for one replicate."""
     sandbox = rep_dir / "artifacts" / rep_dir.parent.name
-    calls_path = sandbox / "mocks" / ".calls.jsonl"
-    manifest_path = sandbox / "mocks" / "responses" / "manifest.json"
+    calls_path = _find_call_log(sandbox)
+    manifest = _load_manifest(sandbox)
 
     rec: dict = {
         "replicate": rep_dir.name,
-        "calls_log_present": calls_path.is_file(),
-        "manifest_present": manifest_path.is_file(),
+        "calls_log_present": calls_path is not None,
+        "manifest_present": manifest is not None,
         "expected": [],
         "calls": [],
         "missing_expected": [],
@@ -41,21 +94,11 @@ def analyze_replicate(rep_dir: Path) -> dict:
         "rule_hits": {},
         "match_rate": None,
     }
-    if not calls_path.is_file() or not manifest_path.is_file():
+    if calls_path is None or manifest is None:
         return rec
 
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     expected = manifest.get("expected_calls", [])
-    calls: list[dict] = []
-    with calls_path.open(encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                calls.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
+    calls = _read_calls(calls_path)
 
     # Per-pattern hit counts
     expected_status = []
@@ -131,7 +174,7 @@ def main(run_dir_arg: str) -> int:
     for rep_dir in rep_dirs:
         rec = analyze_replicate(rep_dir)
         if not rec["calls_log_present"]:
-            print(f"{rep_dir.name:>4}  (no .calls.jsonl)")
+            print(f"{rep_dir.name:>4}  (no call log)")
             continue
         write_outputs(rep_dir, rec)
         nm = len(rec["expected"]) - len(rec["missing_expected"])
@@ -143,8 +186,25 @@ def main(run_dir_arg: str) -> int:
     return 0
 
 
+def dump(log_path_arg: str) -> int:
+    """Print a call log as decoded JSONL (manual triage of sealed runs)."""
+    log_path = Path(log_path_arg)
+    if not log_path.is_file():
+        print(f"Call log not found: {log_path}", file=sys.stderr)
+        return 2
+    for rec in _read_calls(log_path):
+        print(json.dumps(rec))
+    return 0
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--dump":
+        sys.exit(dump(sys.argv[2]))
     if len(sys.argv) != 2:
-        print("Usage: python tmp/coverage_report.py <run_dir>/default/<task_id>", file=sys.stderr)
+        print(
+            "Usage: python tmp/coverage_report.py <run_dir>/default/<task_id>\n"
+            "       python tmp/coverage_report.py --dump <path-to-call-log>",
+            file=sys.stderr,
+        )
         sys.exit(2)
     sys.exit(main(sys.argv[1]))

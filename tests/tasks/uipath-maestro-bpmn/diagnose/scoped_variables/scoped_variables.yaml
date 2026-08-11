@@ -1,0 +1,64 @@
+task_id: skill-bpmn-diagnose-scoped-variables
+description: >
+  Diagnose coverage for the uipath-maestro-bpmn skill: a run completed but a
+  downstream value is semantically wrong. The agent inspects subprocess-scoped
+  runtime state with `instance variables --parent-element-id <id>` to find the
+  offending variable inside the child scope, proving that "completed" does not
+  mean "semantically correct". Read-only mocked CLI; no lifecycle mutations.
+tags: [uipath-maestro-bpmn, integration, "mode:diagnose", "lifecycle:discover"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+initial_prompt: |
+  A UiPath Maestro BPMN run finished with status Completed, but a stakeholder
+  reports the tax on the invoice came out wrong. Diagnose using the mocked `uip`
+  CLI on PATH. Public-safe identifiers:
+  - instance id: inst-triage-001
+  - folder key: folder-public
+  - subprocess element id: SubProcess_TaxCalc
+
+  Process-level variables look plausible. The tax is computed inside the
+  subprocess `SubProcess_TaxCalc`, so inspect the variables scoped to that
+  parent element to find the offending value. A Completed status only proves
+  control-flow finished, not that the values are correct.
+
+  Write your conclusion to diagnosis.md. Include these EXACT labeled lines:
+    OFFENDING_VARIABLE: <the subprocess-scoped variable that is wrong>
+    OFFENDING_VALUE: <its wrong value>
+  Then add a short prose note on why a Completed run can still be semantically
+  wrong.
+
+  Use `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,
+  `fixtures/`, or any response JSON files directly. Do NOT retry, cancel,
+  migrate, move a cursor, debug, run, upload, publish, or deploy anything.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent read subprocess-scoped variables via --parent-element-id"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+variables\s+inst-triage-001\b.*--parent-element-id\s+SubProcess_TaxCalc'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Diagnosis names the offending subprocess-scoped variable and its wrong value"
+    path: "diagnosis.md"
+    includes:
+      - "OFFENDING_VARIABLE: taxRate"
+      - "OFFENDING_VALUE: 0.00"
+    weight: 3.0
+    pass_threshold: 1.0

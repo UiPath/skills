@@ -1,0 +1,54 @@
+task_id: skill-api-workflow-trycatch-continue
+description: >
+  Skill-guided evaluation: agent wraps a failing JavaScript activity in a
+  TryCatch and returns a handled fallback instead of crashing. Tests whether
+  the skill teaches TryCatch structure and the $-prefixed catch error variable
+  (rule 11 — $error is a ProblemDetails object).
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node]
+
+initial_prompt: |
+  Author a UiPath API Workflow — in a project named `HandleError` (its workflow
+  file will be `HandleError/Workflow.json`) — that:
+  - Runs a JavaScript activity that deliberately throws an error
+  - Catches it with a TryCatch
+  - From the catch branch, returns { "status": "handled" }
+
+  The run must succeed (the error is caught, not fatal). Validate and run it
+  locally to confirm; it must survive a StudioWeb designer roundtrip.
+
+success_criteria:
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Uses a TryCatch with a catch error variable"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "TryCatch" "$WF" && grep -q "catch" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Caught error yields a handled response, run succeeds"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --output json | grep -q ''handled'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30

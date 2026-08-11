@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "f2b3c4d5-6e7f-4a8b-9c0d-1e2f3a4b5c6d",
+      "State": "Faulted",
+      "ProcessName": "InvoiceMailer",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-02T06:15:00.120Z",
+      "EndTime": "2026-06-02T06:15:03.470Z",
+      "CreationTime": "2026-06-02T06:14:59.900Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

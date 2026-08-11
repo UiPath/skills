@@ -1,0 +1,89 @@
+# skip:true, tenant-gated. CONFIRMED available in API Workflow (2026-06-15).
+# Covers all 7 TestSet-related activities. skip:true: agent-reliability-gated (multi-activity build + run flakes
+# on turns/rate-limits). The codereval TM connection now exists.
+task_id: skill-api-workflow-testmanager-testset-lifecycle
+description: >
+  Coverage (API Workflow connector): agent authors an API Workflow using every
+  UiPath Test Manager connector activity for the TestSet object — Create / Get /
+  Update / Delete Test Set, Assign Test Cases to Test Set, Get Assigned Test
+  Cases for Test Set, and Execute Test Set. Drives registry resolve → connection
+  ping → stub per activity → validate for `uipath-uipath-testmanager`.
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector]
+skip: true
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a UiPath API Workflow — in a project named `TMTestSet` (its workflow file will be `TMTestSet/Workflow.json`) — that uses the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
+
+  - Create a test set
+  - Get the test set
+  - Update the test set
+  - Delete the test set
+  - Assign test cases to the test set
+  - List the test cases assigned to the test set
+  - Run (execute) the test set
+
+  The task is not complete until validation passed for the workflow.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent loaded the uipath-api-workflow skill"
+    skill_name: "uipath-api-workflow"
+    expected_skill: "uipath-api-workflow"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Discovered connector activities via the registry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+registry\s+resolve\s'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed or pinged the testmanager connection"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+connections\s+(list[\s\S]{0,200}?uipath-uipath-testmanager|ping)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Stubbed each TestSet activity (7) with a real connection id"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+registry\s+stub[\s\S]+?--connection-id'
+    min_count: 7
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Validated the workflow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow uses the testmanager IntSvc connector"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "uipath-uipath-testmanager" "$WF" && grep -q "UiPath.IntSvc" "$WF" && ! grep -q "<REPLACE_WITH_" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

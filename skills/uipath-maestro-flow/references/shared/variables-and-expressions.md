@@ -375,8 +375,9 @@ Every `$vars` / `$metadata` / `$self` reference inside `inputs.detail.bodyParame
 | `"recordId": "$vars.createEntityRecord1.output.Id"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
 | `"recordId": "nodes.createEntityRecord1.output.Id"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
 | `"recordId": "{vars.createEntityRecord1.output.Id}"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
+| `"recordId": "=js:createEntityRecord1.output.Id"` | `"recordId": "=js:$vars.createEntityRecord1.output.Id"` |
 
-The serializer rewrites `$vars` → `vars` whether or not `=js:` is present, so a missing prefix yields a confusing failure: the runtime field is bound to the literal string `"vars.X.output.Id"` (which looks like an unevaluated expression). `flow validate` catches this (cli-side `expression-prefix-validator`, error with remediation hint) — older cli versions without the validator still let it through to `flow debug`. See [node-output-wiring.md](node-output-wiring.md) for the full per-node-type field reference (MST-9107).
+The serializer rewrites `$vars` → `vars` whether or not `=js:` is present, so a missing prefix yields a confusing failure: the runtime field is bound to the literal string `"vars.X.output.Id"` (which looks like an unevaluated expression). The last row above is the opposite mistake — `=js:` is present but the `$vars.` prefix on the node reference is missing, so the expression evaluates a bare (undefined) identifier instead of the node's output. `flow validate` catches this (cli-side `expression-prefix-validator`, error with remediation hint) — older cli versions without the validator still let it through to `flow debug`. See [node-output-wiring.md](node-output-wiring.md) for the full per-node-type field reference (MST-9107).
 
 ### Comparison
 
@@ -665,8 +666,8 @@ A flow with input, state, and output variables:
       "outputs": {
         "output": {
           "type": "object",
-          "description": "The return value of the trigger.",
-          "source": "=result.response",
+          "description": "Data passed when the flow is triggered manually.",
+          "source": "null",
           "var": "output"
         }
       }
@@ -688,7 +689,7 @@ A flow with input, state, and output variables:
         "error": {
           "type": "object",
           "description": "Error information if the script fails",
-          "source": "=result.Error",
+          "source": "=Error",
           "var": "error"
         }
       }

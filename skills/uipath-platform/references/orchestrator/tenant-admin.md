@@ -17,7 +17,7 @@ Configure tenant settings, manage calendars for scheduling, export audit logs, a
 
 ## Prerequisites
 
-- Authenticated (`uip login`)
+- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Tenant selected (`uip login tenant set "<tenant>"`)
 - Appropriate admin permissions (Settings and Audit Logs require tenant admin; other commands vary by role)
 
@@ -29,11 +29,11 @@ Tenant settings are dot-notation key-value pairs that control tenant behavior. U
 
 | Command | What it does |
 |---------|--------------|
-| `uip or settings list` | List all settings. Filter with `--scope Application\|Tenant\|User\|All`. |
+| `uip or settings list` | List all settings as curated `{Name, Value, Scope}` rows. Filter with `--scope Application\|Tenant\|User\|All`; `--all-fields` for the raw DTO. |
 | `uip or settings get <key>` | Get a single setting value by key. |
 | `uip or settings update <key> <value>` | Update a setting value. |
 | `uip or settings execution` | Get execution settings with display names, types, and allowed values. Use `--scope 0` (Global) or `--scope 1` (Robot). |
-| `uip or settings timezones` | List all valid timezone IDs (for use with `Abp.Timing.TimeZone`). |
+| `uip or settings timezones` | List all valid timezone IDs as `{Name, Value}` rows — pass the `Value` to `Abp.Timing.TimeZone`. |
 
 **Common setting keys:**
 
@@ -91,7 +91,9 @@ uip or triggers create --type time --name "WeekdayReport" \
 
 ## Audit Logs
 
-Audit logs record who did what and when across the tenant. Filter by component, action, user, or date range. Export to CSV for compliance reporting.
+> **Two audit surfaces — route by intent.** `uip or audit-logs` (this section) is Orchestrator's **operational** audit: entity/operation changes *inside Orchestrator* (folder / queue / asset / process / job / setting CRUD; `Component, User, Action, Operation, Time`). For the **organization/tenant audit trail** — audit events / history / trail, login or sign-in history, who-did-what-when-where, cross-service activity, or a compliance dump/export — use `uip admin audit <org|tenant>` (the **uipath-admin** skill), *not* this command, **even when the request is worded generically** ("audit logs", "export the audit", "the last 7 days of audit"). Reach for `uip or audit-logs` only when the user explicitly wants Orchestrator's own operational audit view (e.g., filtering by Orchestrator `--component` / `--action`).
+
+`uip or audit-logs` records Orchestrator entity/operation changes — who created, updated, deleted, or ran Orchestrator resources. Filter by component, action, user, or date range; export to CSV for Orchestrator-scoped reporting.
 
 | Command | What it does |
 |---------|--------------|
@@ -221,5 +223,5 @@ uip or attachments download "<attachment-id>" -o error-screenshot.png
 ## Related
 
 - [setup-environment.md](setup-environment.md) -- Credential stores are used during unattended user setup.
-- Triggers & Webhooks (calendars are referenced by `--calendar-key` when creating time triggers) → [`uipath-resources`](../resources/triggers-and-webhooks.md)
+- Triggers & Webhooks (calendars are referenced by `--calendar-key` when creating time triggers) → [triggers-and-webhooks.md](triggers-and-webhooks.md)
 - [orchestrator.md](orchestrator.md) -- Parent reference with common flags and pagination patterns.

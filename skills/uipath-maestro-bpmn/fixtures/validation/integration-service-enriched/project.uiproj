@@ -1,7 +1,0 @@
-{
-  "projectVersion": "1.0.0",
-  "ProjectType": "ProcessOrchestration",
-  "Name": "IntegrationServiceEnriched",
-  "description": "Synthetic Integration Service enrichment validation fixture.",
-  "main": "integration-service-enriched.bpmn"
-}

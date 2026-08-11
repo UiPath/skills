@@ -1,0 +1,9 @@
+{
+  "instanceId": "debug-run-042",
+  "variables": [
+    { "name": "orderId", "value": "ORD-9001" },
+    { "name": "amount", "value": 1875 },
+    { "name": "approvalDecision", "value": "AutoApproved" },
+    { "name": "reviewerTier", "value": "Tier2" }
+  ]
+}

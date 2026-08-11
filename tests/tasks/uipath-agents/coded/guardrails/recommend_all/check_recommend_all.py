@@ -15,9 +15,16 @@ produces:
 """
 
 import ast
+import os
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(
+    0,
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+)
+from _shared.guardrail_middleware import call_name, spread_middleware_calls  # noqa: E402
 
 GRAPH = Path("graph.py")
 
@@ -60,42 +67,64 @@ def main() -> None:
 
     # 1. Syntactic — graph.py still parses
     try:
-        ast.parse(src)
+        tree = ast.parse(src)
     except SyntaxError as e:
         sys.exit(f"FAIL: graph.py no longer parses as Python: {e}")
     print("OK: graph.py parses as valid Python")
 
-    # 1b. Adapter-registration import: guardrail symbols must come from
-    #     uipath_langchain.guardrails (registers the LangChain adapter as an import
-    #     side effect). Importing from uipath.platform.guardrails type-checks and runs
-    #     but makes every guardrail silently no-op.
+    # 1b. Adapter-registration import. The guardrail WRAPPING symbols — the
+    #     `guardrail` decorator and the *Middleware classes — must come from
+    #     uipath_langchain.guardrails, whose import registers the LangChain adapter as a
+    #     side effect. A wrapping symbol imported from uipath.platform.guardrails bypasses
+    #     that registration and the guardrail silently no-ops. Bare validators
+    #     (CustomValidator, PIIValidator, …), action classes, entity enums, and
+    #     GuardrailScope carry no adapter dependency and are re-exports of the same
+    #     objects, so they may be imported from either module.
     if "uipath_langchain.guardrails" not in src:
         sys.exit(
             "FAIL: graph.py never imports from uipath_langchain.guardrails. Without it the "
             "LangChain guardrail adapter is not registered and every guardrail silently "
-            "no-ops. Import guardrail/validators from uipath_langchain.guardrails."
+            "no-ops. Import the guardrail decorator / middleware from uipath_langchain.guardrails."
         )
-    if re.search(r"from\s+uipath\.platform\.guardrails\s+import", src):
+    platform_wrapping = sorted(
+        {
+            alias.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom)
+            and node.module == "uipath.platform.guardrails"
+            for alias in node.names
+            if alias.name == "guardrail"
+            or alias.name.endswith("Middleware")
+            or alias.name == "*"
+        }
+    )
+    if platform_wrapping:
         sys.exit(
-            "FAIL: graph.py imports guardrail symbols from uipath.platform.guardrails. Use "
-            "uipath_langchain.guardrails instead — the platform module exposes identical "
-            "names but does not register the adapter, so guardrails silently no-op."
+            f"FAIL: graph.py imports guardrail wrapping symbol(s) {platform_wrapping} from "
+            "uipath.platform.guardrails. The `guardrail` decorator and *Middleware classes "
+            "must come from uipath_langchain.guardrails — only that import registers the "
+            "LangChain adapter, without which the decorator/middleware never wraps the "
+            "LLM/tool/agent and the guardrail silently no-ops. (Validators, actions, and "
+            "enums may be imported from either module.)"
         )
-    print("OK: guardrail symbols imported from uipath_langchain.guardrails (adapter registers)")
+    print("OK: guardrail wrapping symbols imported from uipath_langchain.guardrails (adapter registers)")
 
-    # 2. Count distinct guardrails added.
+    # 2. Count distinct guardrails added. Middleware may be spread inline
+    #    (`[*Foo(...)]`) or via a variable (`m = Foo(...); [*m]`) — count both.
     decorator_matches = re.findall(r"@guardrail\s*\(", src)
-    middleware_matches = re.findall(r"\*([A-Za-z_][A-Za-z0-9_]*Middleware)\s*\(", src)
-    total = len(decorator_matches) + len(middleware_matches)
+    middleware_spreads = [
+        c for c in spread_middleware_calls(tree) if (call_name(c) or "").endswith("Middleware")
+    ]
+    total = len(decorator_matches) + len(middleware_spreads)
     if total < 2:
         sys.exit(
             f"FAIL: expected >= 2 guardrails, found {total} "
             f"(@guardrail decorators: {len(decorator_matches)}, "
-            f"*Middleware spreads: {len(middleware_matches)})"
+            f"*Middleware spreads: {len(middleware_spreads)})"
         )
     print(
         f"OK: {total} guardrail(s) added "
-        f"(@guardrail x{len(decorator_matches)}, *Middleware x{len(middleware_matches)})"
+        f"(@guardrail x{len(decorator_matches)}, *Middleware x{len(middleware_spreads)})"
     )
 
     # 3. LLM-scoped adversarial-input guardrail
@@ -129,10 +158,18 @@ def main() -> None:
     print(f"OK: content-safety guardrail(s) present: {sorted(content_hits)}")
 
     # 5. Every middleware class must be spread with `*` — no bare middleware object
-    #    in middleware=[...]. Look for "<ClassName>Middleware(" not preceded by "*".
-    bare_middleware = re.findall(r"(?<!\*)\b([A-Za-z_][A-Za-z0-9_]*Middleware)\s*\(", src)
-    # Filter to only those that are actually used (also appear in middleware spread or as bare)
-    # — but the regex above already finds the bare uses. Any hit is a violation.
+    #    in middleware=[...]. A `…Middleware(...)` call is bare iff it is never spread,
+    #    whether inline (`[*Foo(...)]`) or via a variable (`m = Foo(...); [*m]`).
+    spread_ids = {id(c) for c in spread_middleware_calls(tree)}
+    bare_middleware = sorted(
+        {
+            call_name(node)
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and (call_name(node) or "").endswith("Middleware")
+            and id(node) not in spread_ids
+        }
+    )
     if bare_middleware:
         sys.exit(
             f"FAIL: middleware class(es) not spread with `*`: {bare_middleware}. "

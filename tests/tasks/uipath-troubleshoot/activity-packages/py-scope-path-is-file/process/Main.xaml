@@ -1,0 +1,34 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" VisualBasic.Settings="{x:Null}" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:upa="clr-namespace:UiPath.Python.Activities;assembly=UiPath.Python.Activities" xmlns:upc="clr-namespace:UiPath.Python;assembly=UiPath.Python" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>UiPath.Python</x:String>
+      <x:String>UiPath.Python.Activities</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Python</AssemblyReference>
+      <AssemblyReference>UiPath.Python.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="upc:PythonObject" Name="scriptResult" />
+    </Sequence.Variables>
+    <ui:LogMessage DisplayName="Log: starting" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[PythonHelloWorld] Opening Python Scope&quot;]" />
+    <upa:PythonScope DisplayName="Python Scope" sap2010:WorkflowViewState.IdRef="PythonScope_1" Path="C:\Program Files\Python311\python.exe" Library="" Target="x64" Version="Python_311" WorkingFolder="" Timeout="30000">
+      <upa:PythonScope.Body>
+        <ActivityAction>
+          <Sequence DisplayName="Python Scope Body" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <upa:RunScript DisplayName="Run Python Script: hello.py" sap2010:WorkflowViewState.IdRef="RunScript_1" File="hello.py" Result="[scriptResult]" />
+          </Sequence>
+        </ActivityAction>
+      </upa:PythonScope.Body>
+    </upa:PythonScope>
+    <ui:LogMessage DisplayName="Log: done" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[PythonHelloWorld] Done&quot;]" />
+  </Sequence>
+</Activity>

@@ -1,0 +1,62 @@
+task_id: skill-api-workflow-nested-loops
+description: >
+  Skill-guided evaluation: agent authors a ForEach inside a ForEach to count
+  every element of a list-of-lists. Tests whether the skill teaches that nested
+  loops MUST use distinct iterator names (rule 10) — reusing the same iterator
+  shadows the outer loop and produces a wrong count.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, node:loop]
+
+initial_prompt: |
+  Author a UiPath API Workflow — in a project named `MatrixCount` (its workflow
+  file will be `MatrixCount/Workflow.json`) — that:
+  - Takes a `matrix` input (an array of arrays of integers)
+  - Uses a ForEach inside a ForEach to count every inner element
+  - Returns { "cells": <total inner elements> }  (e.g. [[1,2],[3,4,5]] → 5, [[9]] → 1)
+
+  Validate and run it locally to confirm it works; it must survive a StudioWeb
+  designer roundtrip.
+
+success_criteria:
+  - type: run_command
+    description: "A Workflow.json exists inside a project folder (not a bare root file)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); test -n "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); python -c "import json,sys; json.load(open(sys.argv[1]))" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Contains two ForEach loops (nested)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); grep -q "ForEach" "$WF" && grep -q "#Body" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Counts 5 cells in [[1,2],[3,4,5]] (wrong iterator names would shadow and miscount)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"matrix":[[1,2],[3,4,5]]}'' --output json | grep -qiE ''"cells"[ :]+5'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Counts 1 cell in [[9]] (proves real nested iteration)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | head -1); uip api-workflow run "$WF" --no-auth --input-arguments ''{"matrix":[[9]]}'' --output json | grep -qiE ''"cells"[ :]+1'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 12
+  max_turns: 35

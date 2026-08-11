@@ -36,12 +36,34 @@ if not os.path.exists("seed.json"):
     sys.exit(0)
 
 try:
-    uuid8 = json.load(open("seed.json")).get("uuid8", "").lower()
+    seed = json.load(open("seed.json"))
+    uuid8 = seed.get("uuid8", "").lower()
 except Exception:
     sys.exit(0)
 
 if not uuid8:
     sys.exit(0)
+
+# 0) Folder-scoped debris in the seeded folder. Tasks create uuid-tagged
+# assets/queues/buckets/triggers inside the pre-existing folder_a_path
+# (usually 'Shared'); the folder itself is never deleted, so without this
+# step they pile up across runs.
+folder = seed.get("folder_a_path") or seed.get("folder_path") or ""
+if folder:
+    for a in items_of(uip("or", "assets", "list", "--folder-path", folder)):
+        if has_uuid(a, uuid8) and a.get("Key"):
+            uip("or", "assets", "delete", str(a["Key"]), "--yes")
+    for q in items_of(uip("or", "queues", "list", "--folder-path", folder)):
+        if has_uuid(q, uuid8) and q.get("Key"):
+            uip("or", "queues", "delete", str(q["Key"]), "--yes", "--force")
+    for b in items_of(uip("or", "buckets", "list", "--folder-path", folder)):
+        if has_uuid(b, uuid8) and (b.get("Identifier") or b.get("Key")):
+            uip("or", "buckets", "delete", str(b.get("Identifier") or b["Key"]),
+                "--folder-path", folder, "--yes", "--force")
+    for tr in items_of(uip("or", "triggers", "list", "--folder-path", folder)):
+        if has_uuid(tr, uuid8) and tr.get("Key"):
+            uip("or", "triggers", "delete", str(tr["Key"]),
+                "--folder-path", folder, "--yes")
 
 
 # 1) Tenant-scoped roles
@@ -49,20 +71,20 @@ for r in items_of(uip("or", "roles", "list")):
     if has_uuid(r, uuid8):
         key = r.get("Key") or r.get("Id")
         if key:
-            uip("or", "roles", "delete", str(key))
+            uip("or", "roles", "delete", str(key), "--yes")
 
 # 2) Tenant-scoped webhooks
-for w in items_of(uip("resource", "webhooks", "list")):
+for w in items_of(uip("or", "webhooks", "list")):
     if has_uuid(w, uuid8):
         key = w.get("Key") or w.get("Id")
         if key:
-            uip("resource", "webhooks", "delete", str(key))
+            uip("or", "webhooks", "delete", str(key), "--yes")
 
 # 3) Solution deploys (uninstall by name; cascades to folder + processes)
 for d in items_of(uip("solution", "deploy", "list")):
     name = d.get("Name") or d.get("DeploymentName") or ""
     if uuid8 in name.lower():
-        uip("solution", "deploy", "uninstall", name)
+        uip("solution", "deploy", "uninstall", name, "--yes")
 
 # 4) Folders — delete recursively (cascades to child assets/queues/buckets/triggers)
 for f in items_of(uip("or", "folders", "list", "--limit", "200")):
@@ -70,6 +92,6 @@ for f in items_of(uip("or", "folders", "list", "--limit", "200")):
     if uuid8 in name.lower():
         key = f.get("Key")
         if key:
-            uip("or", "folders", "delete", str(key))
+            uip("or", "folders", "delete", str(key), "--yes")
 
 sys.exit(0)

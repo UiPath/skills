@@ -1,0 +1,64 @@
+task_id: skill-platform-context-grounding-diagnose-missing-ingestion
+description: >
+  Diagnose-mode coverage for the context-grounding CLI. The platform skill's #1
+  anti-pattern is "create does not ingest" — a freshly created index has no
+  searchable content until ingestion is triggered separately. The prompt gives
+  only the user-visible symptom (the index reports created but searches come
+  back empty); the agent must diagnose the missing ingestion step and write the
+  remediation to a fix script. Graded on the script's contents (deterministic)
+  and on NOT mutating the tenant — not on executing commands against a
+  non-existent index, which would fail yet still satisfy a command_executed
+  check (false pass).
+tags: [uipath-platform, integration, mode:diagnose, lifecycle:generate, context-grounding]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  I set up a knowledge index called "support-kb" in our "Shared" folder from
+  our "SupportDocs" storage bucket last week. The setup reported success, but
+  whenever an agent searches it, nothing comes back — it behaves like the index
+  is completely empty, even though the bucket is full of documents.
+
+  Can you work out what went wrong and give me the exact steps to get
+  "support-kb" actually returning results? Put the fix commands in a script
+  called `fix.sh` so I can hand it to my teammate — don't run anything against
+  our tenant yourself. Don't ask me to confirm; just produce the script.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote the remediation script"
+    path: "fix.sh"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Remediation triggers the missing ingestion step"
+    path: "fix.sh"
+    includes:
+      - "context-grounding ingest"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Remediation re-checks index status with retrieve before searching"
+    path: "fix.sh"
+    includes:
+      - "context-grounding retrieve"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Advisory: remediation reads status as JSON (informational, non-gating)"
+    path: "fix.sh"
+    includes:
+      - "--output json"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Agent diagnosed and scaffolded the fix rather than mutating the tenant"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+context-grounding\s+(create|ingest|delete)\b'
+    weight: 2.0
+    pass_threshold: 1.0

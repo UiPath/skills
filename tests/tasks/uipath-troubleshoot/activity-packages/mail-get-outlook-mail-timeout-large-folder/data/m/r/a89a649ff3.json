@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678",
+      "State": "Faulted",
+      "ProcessName": "ArchiveMailScanner",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-03T02:00:00.180Z",
+      "EndTime": "2026-06-03T02:00:30.620Z",
+      "CreationTime": "2026-06-03T02:00:00.010Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

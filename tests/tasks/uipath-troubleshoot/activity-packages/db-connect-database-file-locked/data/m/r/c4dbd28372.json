@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-01T05:40:02.290Z",
+      "Message": "[Connect to Database] The process cannot access the file 'C:\\Finance\\Invoices.xlsx' because it is being used by another process."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-01T05:40:02.318Z",
+      "Message": "System.IO.IOException: The process cannot access the file 'C:\\Finance\\Invoices.xlsx' because it is being used by another process.\r\n   at System.Data.OleDb.OleDbConnectionInternal..ctor(OleDbConnectionString constr, OleDbConnection connection)\r\n   at System.Data.OleDb.OleDbConnection.Open()\r\n   at UiPath.Database.DatabaseConnection.Connect(String connString, String provider, Int32 timeout)\r\nin Main.xaml\r\n    at DatabaseConnect \"Connect to Database\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

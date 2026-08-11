@@ -1,0 +1,6 @@
+{
+  "name": "CE_SmokeTags",
+  "displayName": "Smoke Tags",
+  "description": "Tenant-scoped tags for smoke_choice_relationship (urgent/reimbursable/client).",
+  "values": ["urgent", "reimbursable", "client"]
+}

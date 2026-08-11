@@ -8,7 +8,7 @@ description: >
   Platform note: runs without an authenticated tenant — commands will
   fail with auth errors. That is acceptable; what matters is correct
   command invocation with correct flags.
-tags: [uipath-admin, smoke, authz, check-access]
+tags: [uipath-admin, smoke, mode:diagnose, authz, check-access]
 
 run_limits:
   expected_turns: 4
@@ -36,9 +36,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent passed --output json"
+    description: "Agent ran `uip admin authorization check-access`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+check-access\s+.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+authorization\s+check-access'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-13T11:40:02.380Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-13T11:40:04.110Z",
+      "Message": "[Word Application Scope] Starting Microsoft Word"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-13T11:40:05.420Z",
+      "Message": "[Word Application Scope] Document 'data\\TermsTemplate.docx' opened"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-13T11:40:05.840Z",
+      "Message": "Value cannot be longer than 256 characters. (Parameter 'Replace')\r\nin Main.xaml\r\n    at WordReplaceText \"Replace Text\"\r\n    at WordApplicationScope \"Word Application Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-13T11:40:05.900Z",
+      "Message": "Execution ended in: 00:00:03"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "version": 2,
+  "_doc": "Agents input schema validation scenario. Covers trace-first diagnosis and command-shape coverage for uip agent debug without allowing live debug execution in diagnose-only mode.",
+  "rules": [
+    {
+      "match": "traces spans get bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "file": "trace-input-schema.json"
+    },
+    {
+      "match": "agent debug process/IntakeSolution/IntakeAgent --inputs {\"request\":\"create onboarding case\"}",
+      "file": "debug-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "agent debug process/IntakeSolution/IntakeAgent --inputs {\"request\":\"create onboarding case\",\"customerEmail\":\"customer@example.com\"}",
+      "file": "debug-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "agent refresh process/IntakeSolution/IntakeAgent",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "agent validate process/IntakeSolution/IntakeAgent",
+      "file": "agent-validate.json"
+    },
+    {
+      "match": "solution upload .",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "solution pack . ./dist --version 1.0.1",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "solution publish ./dist/IntakeSolution.1.0.1.zip",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    },
+    {
+      "match": "solution deploy run --name IntakeAgent-prod --package-name IntakeSolution --package-version 1.0.1 --folder-name Agents --parent-folder-path Shared",
+      "file": "repair-command-denied.json",
+      "exit_code": 2
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for exploratory read-only commands."
+  },
+  "expected_calls": [
+    {
+      "pattern": "traces spans get bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "min": 1,
+      "description": "Agent inspects the trace for the agentRun validation error."
+    }
+  ]
+}

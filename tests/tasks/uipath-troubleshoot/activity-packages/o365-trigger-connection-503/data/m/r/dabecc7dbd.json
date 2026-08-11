@@ -1,0 +1,5 @@
+{
+  "Result": "Failure",
+  "Message": "HTTP 503: no healthy upstream",
+  "Instructions": "Verify the connector key and folder key, then retry. Use 'uip is connections list --help' for accepted options.\n\nDetails: no healthy upstream"
+}

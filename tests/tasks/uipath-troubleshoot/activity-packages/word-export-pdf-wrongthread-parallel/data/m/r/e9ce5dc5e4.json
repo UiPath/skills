@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-19T10:05:21.380Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-19T10:05:22.640Z",
+      "Message": "[Word Application Scope] Starting Microsoft Word"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-19T10:05:24.010Z",
+      "Message": "[Word Application Scope] Document 'data\\Invoice.docx' opened"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-19T10:05:24.520Z",
+      "Message": "Dispatching invoice export to PDF"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-19T10:05:27.840Z",
+      "Message": "Save Document as PDF: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. This operation failed because the QueryInterface call on the COM component for the interface with IID '{0002096B-0000-0000-C000-000000000046}' failed due to the following error: The application called an interface that was marshalled for a different thread. (0x8001010E (RPC_E_WRONG_THREAD)).\r\nin Main.xaml\r\n    at WordExportToPdf \"Save Document as PDF\"\r\n    at Parallel \"Parallel — export + audit log\"\r\n    at WordApplicationScope \"Word Application Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-19T10:05:27.890Z",
+      "Message": "Execution ended in: 00:00:06"
+    }
+  ]
+}

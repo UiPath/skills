@@ -1,0 +1,137 @@
+task_id: skill-coded-apps-ui-polling-hook-smoke
+description: >
+  Smoke test (mode:build): agent authors the `usePolling` React hook +
+  a master-detail component using it, per the skill's `patterns.md
+  §Polling for Real-Time Updates`. Covers the whole real-time-updates
+  UI pattern — hook signature (returns `data`, `isLoading`, `isActive`,
+  `error`), the mandatory `deps` array for master-detail state resets,
+  the `enabled` gate, and the `key` prop pattern in the parent that
+  forces detail-component remount on selection change. Zero test in
+  the suite covers this today.
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, implement the `usePolling` UI pattern
+  the skill teaches for auto-refreshing SDK data.
+
+  Author two files at the sandbox root:
+
+  1. `src/hooks/usePolling.ts` — a generic polling hook. Signature:
+
+     ```
+     usePolling<T>({
+       fetcher: () => Promise<T>,
+       intervalMs: number,
+       deps?: unknown[],
+       enabled?: boolean,
+     }): {
+       data: T | null,
+       isLoading: boolean,
+       isActive: boolean,
+       error: Error | null,
+     }
+     ```
+
+     `deps` and `enabled` are critical:
+     - `deps` — when any value changes, reset `data` to `null`, set
+       `isLoading` to `true`, and immediately refetch. Without this,
+       switching selection in a master-detail UI shows stale data.
+     - `enabled` — polling only runs when true (tie to a condition
+       like `!!selectedInstance`).
+
+  2. `src/components/InstanceDetail.tsx` — a master-detail-style
+     component that USES `usePolling` to poll a mock fetcher every
+     3 seconds. Must:
+     - Accept an `instanceId` prop.
+     - Pass `[instanceId]` as `deps` to `usePolling` (master-detail
+       correctness).
+     - Pass `enabled: !!instanceId` so polling only runs when an
+       instance is selected.
+
+  Also write `src/App.tsx` — the parent that renders `<InstanceDetail>`
+  with the `key={instanceId}` prop so React unmounts + remounts the
+  detail component when selection changes. This is the mandatory
+  master-detail pattern per `patterns.md`.
+
+  Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/hooks/usePolling.ts was created"
+    path: "src/hooks/usePolling.ts"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "src/components/InstanceDetail.tsx was created"
+    path: "src/components/InstanceDetail.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "src/App.tsx was created (master parent)"
+    path: "src/App.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "usePolling is exported from the hook file (any export form: inline `export function/const usePolling`, `export default usePolling`, or `export { usePolling }`)"
+    command: "grep -E '^export\\b.*\\busePolling\\b' src/hooks/usePolling.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "usePolling hook returns all 4 fields: data, isLoading, isActive, error"
+    command: "grep -q '\\bdata\\b' src/hooks/usePolling.ts && grep -q '\\bisLoading\\b' src/hooks/usePolling.ts && grep -q '\\bisActive\\b' src/hooks/usePolling.ts && grep -q '\\berror\\b' src/hooks/usePolling.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "usePolling hook signature declares `deps` and `enabled` parameters (mandatory master-detail correctness)"
+    command: "grep -qE '\\bdeps\\b' src/hooks/usePolling.ts && grep -qE '\\benabled\\b' src/hooks/usePolling.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "InstanceDetail imports and uses usePolling"
+    path: "src/components/InstanceDetail.tsx"
+    includes:
+      - "usePolling"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "InstanceDetail passes `[instanceId]` as `deps` to usePolling (master-detail state reset)"
+    command: "grep -E 'deps\\s*:\\s*\\[\\s*instanceId\\s*\\]' src/components/InstanceDetail.tsx"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "InstanceDetail gates polling with `enabled: !!instanceId` (only runs when instance selected)"
+    command: "grep -E 'enabled\\s*:\\s*!!\\s*instanceId' src/components/InstanceDetail.tsx"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+    # Accept any variable expression inside `key={...}` — agent may name the
+    # selected-id variable `instanceId`, `selectedId`, `id`, etc. What matters
+    # is that a variable expression (not a literal) drives the key.
+  - type: run_command
+    description: "App.tsx uses a `key={<expression>}` prop on <InstanceDetail /> (mandatory master-detail remount pattern — the key must depend on the selected id so React remounts the detail on selection change)"
+    command: "grep -qE 'key=\\{[^}]+\\}' src/App.tsx && grep -qE 'InstanceDetail' src/App.tsx"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0

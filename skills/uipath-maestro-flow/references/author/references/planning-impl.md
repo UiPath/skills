@@ -56,7 +56,6 @@ uip maestro flow registry get <node-type> --output json
 | `uipath.core.flow.*`            | [flow/impl.md](plugins/flow/impl.md)                           |
 | `uipath.core.api-workflow.*`    | [api-workflow/impl.md](plugins/api-workflow/impl.md)           |
 | `uipath.core.hitl.*`            | [hitl/impl.md](plugins/hitl/impl.md)                           |
-| `uipath.connector.uipath-uipath-dataservice.*` | [connector/data-fabric/impl.md](plugins/connector/data-fabric/impl.md) |
 | `uipath.ixp.*`                  | [ixp/impl.md](plugins/ixp/impl.md)                             |
 | `uipath.connector.*`            | [connector/impl.md](plugins/connector/impl.md)                 |
 | `uipath.connector.trigger.*`    | [connector-trigger/impl.md](plugins/connector-trigger/impl.md) |
@@ -130,7 +129,7 @@ Update the node table from the `.uipath.flow.arch.plan.md`:
 - Replace `connector: <service>` annotations with actual node types
 - Replace `resource: <name>` annotations with actual node types
 - Update inputs with resolved reference field values
-- Update outputs based on `outputDefinition` from registry
+- Update outputs based on `outputDefinition` from registry — mirror its keys AND their `source`. An invented `source` passes `flow validate` and resolves to null at runtime
 
 ### Step 6 — Write the Implementation Plan
 

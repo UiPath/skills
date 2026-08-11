@@ -2,7 +2,7 @@
 
 Companion to [`sdd-template.md`](sdd-template.md). Each section shows the SDD authoring snippets for a common pattern an author will encounter. Use as a reference when writing a new `sdd.md`.
 
-Thirteen v1-supported patterns. Two intentionally-dropped patterns documented at the end with workarounds.
+Fourteen v1-supported patterns. Two intentionally-dropped patterns documented at the end with workarounds.
 
 ## Quick lookup
 
@@ -13,6 +13,7 @@ Thirteen v1-supported patterns. Two intentionally-dropped patterns documented at
 | 2b | Multi-trigger Variable (same slot from N triggers) | `Variable` | Case Variables + Triggers tables | — |
 | 2c | Trigger-sourced file Variable (event payload carries an attachment) | `Variable` (file) | Case Variables + Triggers tables | — |
 | 3 | Caller-supplied / Default-initialized input | `In` | Case Variables table | — |
+| 3b | In-arg bound to a specific trigger | `In` | Case Variables + Triggers tables | — |
 | 4 | Returned output to caller | `Out` | Case Variables + producer task's Outputs | `->` |
 | 5 | Task extracts response field → case var | (any) | Task's Outputs table | `->` |
 | 6 | Task writes literal/computed value to existing var | (any) | Task's Outputs table | `=` |
@@ -98,6 +99,7 @@ In Case Variables — one row with CSV + keyed format:
 - Each T-number in `sourceTriggers` MUST have a matching keyed entry in `sourceFields`. Mismatch → Phase 2 validation error.
 - Order of T-numbers doesn't matter — the keyed format disambiguates per-trigger.
 - Same Type and same Default apply across all listed triggers.
+- CSV `sourceTriggers` is a `Variable`-only construct. An `In`-arg binds to exactly ONE trigger — a single `sourceTriggers` T-number with **empty** `sourceFields` (see Use Case 3b).
 
 **When to use Use Case 2b vs declaring per-trigger Variables:**
 - **Use Case 2b** when the value is *semantically the same thing* across triggers (e.g., "the initiator", "the customer ID"). One variable, one downstream reference.
@@ -163,7 +165,38 @@ In Case Variables:
 
 **Runtime behavior:** caller submits `{applicantId: "ALC-123", requestedAmount: 50000}` via API. Engine routes these to `vars.applicantId` and `vars.requestedAmount` at case start. Downstream tasks read them via `=vars.applicantId` etc.
 
-**Trigger type:** `In` works with any trigger type — manual, timer, or event. For event triggers, the In-arg's `Default` value propagates through to the case variable at trigger fire (no caller-override path, since events don't have an API caller). Use `In` when authoring a value that *could* be caller-supplied; use `Variable` + `sourceTriggers` + `sourceFields` (Use Case 2) when the value is *extracted from* the trigger's payload directly.
+**Trigger type:** `In` works with any trigger type — manual, timer, or event. For event triggers, the In-arg's `Default` value propagates through to the case variable at trigger fire (no caller-override path, since events don't have an API caller). Use `In` when authoring a value that *could* be caller-supplied; use `Variable` + `sourceTriggers` + `sourceFields` (Use Case 2) when the value is *extracted from* the trigger's payload directly. In a multi-trigger case, bind an In-arg to a specific (non-primary) trigger via a single `sourceTriggers` T-number — see Use Case 3b.
+
+---
+
+## Use Case 3b — In-arg bound to a specific trigger
+
+**Scenario:** A case starts from more than one trigger. By default an In-arg binds to the **primary trigger** (T02). To bind a caller-supplied value to a *different* trigger, name that trigger in `sourceTriggers`.
+
+**SDD authoring:**
+
+In Case Triggers (two triggers):
+```markdown
+| T# | Trigger Type        | Source | Configuration             |
+|----|---------------------|--------|---------------------------|
+| T02 | Manual              | API    | N/A                       |
+| T03 | Intsvc.EventTrigger | Slack  | Message posted in #intake |
+```
+
+In Case Variables:
+```markdown
+| Name       | Category | Type   | sourceTriggers | sourceFields | Default      | Description                                       |
+|------------|----------|--------|----------------|--------------|--------------|---------------------------------------------------|
+| caseId     | In       | string |                |              |              | Bound to the primary trigger (T02) — blank sourceTriggers |
+| approverId | In       | string | T03            |              | "unassigned" | Bound to the T03 event trigger; events have no caller, so it initializes from Default at trigger fire |
+```
+
+**Rules:**
+- `sourceTriggers` on an `In` row is a SINGLE T-number — never a CSV. A CSV is the multi-trigger `Variable` form (Use Case 2b).
+- `sourceFields` stays EMPTY on `In` rows. An In-arg *selects* a trigger; it does not *extract* a payload field — that's the `Variable` operation (Use Case 2).
+- Blank `sourceTriggers` = bind to the primary trigger (T02) — backward compatible with the single-trigger case.
+
+**Runtime behavior:** `caseId` is supplied by the API caller at case start via the primary manual trigger (T02). `approverId` is bound to the T03 event trigger, which has no API caller — so it initializes from its `Default` (`"unassigned"`) when that trigger fires. Downstream tasks read each via `=vars.caseId` / `=vars.approverId`.
 
 ---
 
@@ -473,6 +506,16 @@ In v1, **every variable accessible via `=vars.X` must appear in the Case Variabl
 
 **Workaround:** if you want a "task-local" variable that doesn't pollute Case Variables, rely on the task's auto-emitted schema fields directly via their natural names. The skill auto-emits all of a task's response fields; you only need a Case Variables row when you want to RENAME the variable or expose it as case-level state with custom Default / Type / Description.
 
+**In an expression — `vars.$xref(...)`.** When the upstream output is one term *inside* a larger `=js:` expression (a composite payload, an `IF`, an SLA expression) rather than the whole input value, embed the in-expression marker `vars.$xref('Stage Name','Task Name','output_name')` (single quotes only). It resolves to the source output's runtime reference ID at build time (Step 11.5) — no Case Variables row, no "middle variable". Use whole-value `<- "Stage"."Task".out` when the output IS the entire input.
+
+**Worked example** — a composite input payload built from two upstream decisions, no Case Variables rows:
+
+```json
+"value": "=js:({ approvalDecision: vars.$xref('AP Review','AP lead approval','outcome'), urgentPaymentDecision: vars.$xref('AP Review','Urgent payment','outcome') })"
+```
+
+Full marker semantics: [bindings-and-expressions.md § In-expression references](../../references/bindings-and-expressions.md#in-expression-references-varsxref).
+
 ---
 
 ## Authoring checklist
@@ -481,8 +524,8 @@ When writing a new SDD, run through this list:
 
 - [ ] Every variable referenced via `=vars.X` somewhere (input bindings, conditions, SLA expressions) — declared in Case Variables OR is a task's auto-emitted schema field
 - [ ] Every `Out` Category row has either a `Default` value OR a producer task with a matching binding row
-- [ ] Every `In` Category row has `sourceTriggers` empty (trigger ownership is implicit — case is assumed to have one start-path trigger that owns all `In` args)
-- [ ] Every `Variable` with `sourceTriggers` set has matching entries in `sourceFields` — single path for one trigger; keyed `T<N>: <path>` format for CSV multi-trigger
+- [ ] Every `In` Category row has `sourceFields` empty, and `sourceTriggers` either blank (binds the primary trigger) or a single `T<N>` (binds that trigger) — never a CSV
+- [ ] Every `Variable` with `sourceTriggers` set has matching entries in `sourceFields` — single path for one trigger; keyed `T<N>: <path>` format for CSV multi-trigger (an `In` row is the exception: a single `sourceTriggers` T-number with **no** `sourceFields`)
 - [ ] Every `sourceFields` is a valid dot-path (no `[0]` indexing)
 - [ ] In each task's Outputs table: each target case variable appears in ≤1 row
 - [ ] In each task's Outputs table: `->` rows have a non-empty Field column; `=` rows have `Field` as `—`

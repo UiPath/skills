@@ -111,11 +111,32 @@ def test_max_drop_frac_out_of_range_is_rejected(bad):
     assert "between 0 and 1" in (proc.stderr + proc.stdout)
 
 
+# --- dist-tag derivation ----------------------------------------------------
+
+@pytest.mark.parametrize("version,expected", [
+    ("1.199.0-dev.7923", "dev"),           # GitHub Packages dev train (cli/main)
+    ("1.199.0-dev.20260716.25", "dev"),    # rpa-tool's date-stamped dev build
+    ("1.198.0-preview.84", "preview"),     # npmjs preview train (release/*)
+    ("1.197.1", None),                     # plain release -> npm `latest`
+    ("1.197.0", None),
+    ("unknown", None),                     # uip not found -> no tag
+])
+def test_tool_dist_tag_from_cli_version(monkeypatch, version, expected):
+    """Tools install at the CLI's own prerelease train so they version-match it:
+    -dev.* -> dev, -preview.* -> preview, a plain release -> None (npm latest).
+    cli PR #2650 made `dev` a publish dist-tag (not a release channel), so
+    `uip tools install` can't resolve it — we npm-install at this tag instead."""
+    monkeypatch.setattr(build, "get_cli_version", lambda: version)
+    assert build.tool_dist_tag() == expected
+
+
 # --- install_all_tools all-fail fatal path (#1203 prevention) ----------------
 
 def test_install_all_tools_exits_when_every_install_fails(monkeypatch):
-    """Tools were found but every `uip tools install` failed → abort rather
-    than build a base-CLI-only catalog (the #1203 collapse)."""
+    """Tools were found but every `npm install -g` failed → abort rather than
+    build a base-CLI-only catalog (the #1203 collapse)."""
+    monkeypatch.setattr(build, "get_cli_version", lambda: "1.199.0-dev.7923")
+
     def fake_run_uip(argv):
         if argv == ["tools", "list"]:
             return {"Data": []}
@@ -133,16 +154,15 @@ def test_install_all_tools_exits_when_every_install_fails(monkeypatch):
 
 
 def test_install_all_tools_ok_when_nothing_to_install(monkeypatch):
-    """Empty search (nothing to install) must NOT exit — distinguishes 'tried
-    and all failed' from 'nothing to do'."""
-    def fake_run_uip(argv):
-        return {"Data": []}
-    monkeypatch.setattr(build, "run_uip", fake_run_uip)
+    """Empty search (nothing to install) must NOT run any install —
+    distinguishes 'tried and all failed' from 'nothing to do'."""
+    monkeypatch.setattr(build, "get_cli_version", lambda: "1.199.0-dev.7923")
+    monkeypatch.setattr(build, "run_uip", lambda argv: {"Data": []})
 
-    def boom(*a, **k):
-        raise AssertionError("subprocess.run should not be called")
+    def boom(argv, *a, **k):
+        raise AssertionError(f"subprocess.run should not be called, got {argv}")
     monkeypatch.setattr(build.subprocess, "run", boom)
-    build.install_all_tools()  # no SystemExit
+    build.install_all_tools()  # no SystemExit, no npm install
 
 
 # --- PascalCase tool-name handling (#1203 real root cause) ------------------
@@ -172,9 +192,12 @@ def test_ci_reads_pascalcase_and_lowercase():
 
 def test_install_all_tools_handles_pascalcase_names(monkeypatch):
     """The exact #1203 break: `uip tools search` returns tool names under
-    `Name` (PascalCase). install_all_tools must still attempt to install every
-    discovered tool — reading lowercase `name` skipped them all and collapsed
-    the catalog to 31 base verbs."""
+    `Name` (PascalCase). install_all_tools must still install every discovered
+    tool — reading lowercase `name` skipped them all and collapsed the catalog
+    to 31 base verbs. Tools install via `npm install -g <scoped>@<dist-tag>`,
+    not `uip tools install` (which can't resolve a -dev tool; see #2650)."""
+    monkeypatch.setattr(build, "get_cli_version", lambda: "1.199.0-dev.7923")
+
     def fake_run_uip(argv):
         if argv == ["tools", "list"]:
             return {"Data": []}                       # fresh: nothing installed
@@ -192,13 +215,15 @@ def test_install_all_tools_handles_pascalcase_names(monkeypatch):
 
     build.install_all_tools()
 
-    attempted = [c[3] for c in installs if c[:3] == ["uip", "tools", "install"]]
-    assert attempted == ["@uipath/solution-tool", "@uipath/df-tool"]
+    specs = [c[3] for c in installs if c[:3] == ["npm", "install", "-g"]]
+    assert specs == ["@uipath/solution-tool@dev", "@uipath/df-tool@dev"]
 
 
 def test_install_all_tools_skips_already_installed_pascalcase(monkeypatch):
     """`tools list` is also PascalCase; an already-installed tool (matched on
     short name) is not reinstalled."""
+    monkeypatch.setattr(build, "get_cli_version", lambda: "1.199.0-dev.7923")
+
     def fake_run_uip(argv):
         if argv == ["tools", "list"]:
             return {"Data": [{"Name": "solution-tool"}]}   # already installed
@@ -214,5 +239,113 @@ def test_install_all_tools_skips_already_installed_pascalcase(monkeypatch):
             returncode=0, stdout="{}", stderr=""),
     )
     build.install_all_tools()
-    attempted = [c[3] for c in installs if c[:3] == ["uip", "tools", "install"]]
-    assert attempted == ["@uipath/df-tool"]            # solution-tool skipped
+    specs = [c[3] for c in installs if c[:3] == ["npm", "install", "-g"]]
+    assert specs == ["@uipath/df-tool@dev"]            # solution-tool skipped
+
+
+# --- subtree-loss guard (unwalkable regression) ------------------------------
+#
+# Added after 2026-07-30, where a build lost the whole `rpa debug` subtree
+# (16 verbs) plus `rpa analyzer-rules list` and `rpa files diff`. The group
+# nodes survived, so the loss was only 0.5% of a 1384-verb catalog and sailed
+# past --max-drop-frac 0.2 into a PR that would have auto-merged.
+
+def test_lost_subtree_is_rejected():
+    """A group that was walked before and is unwalkable now trips the guard."""
+    err = build.unwalkable_regression_error(
+        new_unwalkable={"rpa debug"},
+        prev_unwalkable=[],
+        prev_verbs=["rpa debug", "rpa debug start", "rpa debug step-over", "rpa run"],
+    )
+    assert err is not None
+    assert "rpa debug" in err
+    assert "-2" in err                      # start + step-over, not the group node
+
+
+def test_leaf_command_does_not_trip_the_guard():
+    """Leaves legitimately fail to walk — no children before, so not a regression."""
+    err = build.unwalkable_regression_error(
+        new_unwalkable={"rpa pack", "rpa validate"},
+        prev_unwalkable=[],
+        prev_verbs=["rpa pack", "rpa validate", "rpa run"],
+    )
+    assert err is None
+
+
+def test_already_unwalkable_group_does_not_trip_the_guard():
+    """A group unwalkable in both builds is the status quo, not a regression."""
+    err = build.unwalkable_regression_error(
+        new_unwalkable={"coder", "context-grounding"},
+        prev_unwalkable=["coder", "context-grounding"],
+        prev_verbs=["coder", "coder foo", "context-grounding", "context-grounding bar"],
+    )
+    assert err is None
+
+
+def test_genuinely_deleted_group_does_not_trip_the_guard():
+    """A group removed from the CLI never enters the walk, so never lands here."""
+    err = build.unwalkable_regression_error(
+        new_unwalkable=set(),
+        prev_unwalkable=[],
+        prev_verbs=["agenthub mcp-tools create-is-activity", "agenthub mcp-tools list"],
+    )
+    assert err is None
+
+
+def test_new_group_appearing_unwalkable_does_not_trip_the_guard():
+    """A group absent from the previous snapshot has no children to lose."""
+    err = build.unwalkable_regression_error(
+        new_unwalkable={"brand-new-tool"},
+        prev_unwalkable=[],
+        prev_verbs=["rpa run"],
+    )
+    assert err is None
+
+
+def test_multiple_regressions_are_all_reported():
+    """Every regressed group is named, with a total verb count."""
+    err = build.unwalkable_regression_error(
+        new_unwalkable={"rpa debug", "rpa files"},
+        prev_unwalkable=[],
+        prev_verbs=["rpa debug start", "rpa debug resume", "rpa files diff"],
+    )
+    assert err is not None
+    assert "2 group(s)" in err and "3 verb(s)" in err
+    assert "rpa debug" in err and "rpa files" in err
+
+
+def test_no_previous_snapshot_is_not_a_regression():
+    """First build (no committed snapshot) cannot regress."""
+    assert build.unwalkable_regression_error({"rpa debug"}, [], []) is None
+    assert build.unwalkable_regression_error({"rpa debug"}, None, None) is None
+
+
+def test_group_help_retries_before_marking_unwalkable(monkeypatch):
+    """A transient help failure is retried and does not lose the subtree."""
+    build.UNWALKABLE.clear()
+    monkeypatch.setattr(build.time, "sleep", lambda _s: None)
+    calls = []
+
+    def flaky_run_uip(argv):
+        calls.append(argv)
+        if len(calls) == 1:
+            return None                     # transient failure
+        return {"Data": {"Subcommands": [{"Name": "start"}]}}
+
+    monkeypatch.setattr(build, "run_uip", flaky_run_uip)
+    found = build.collect_group("rpa debug")
+    assert found == {"rpa debug start"}
+    assert "rpa debug" not in build.UNWALKABLE
+    assert len(calls) == 2                  # failed once, succeeded on retry
+
+
+def test_group_help_gives_up_after_max_attempts(monkeypatch):
+    """A persistent failure is marked unwalkable after the retry budget."""
+    build.UNWALKABLE.clear()
+    monkeypatch.setattr(build.time, "sleep", lambda _s: None)
+    calls = []
+    monkeypatch.setattr(build, "run_uip", lambda argv: calls.append(argv) or None)
+    found = build.collect_group("rpa debug")
+    assert found == set()
+    assert "rpa debug" in build.UNWALKABLE
+    assert len(calls) == build.GROUP_HELP_ATTEMPTS

@@ -6,11 +6,18 @@ Reference for XAML test automation features in UiPath RPA projects — XAML test
 
 ## Table of Contents
 
+- [Test Manager Setup (CLI)](#test-manager-setup-cli)
 - [XAML Test Case Structure (Given-When-Then)](#xaml-test-case-structure-given-when-then)
 - [Data-Driven Testing](#data-driven-testing)
 - [XAML Test Activities](#xaml-test-activities)
 - [Execution Templates](#execution-templates)
 - [Mock Testing (XAML Only) — WIP](#mock-testing-xaml-only--wip)
+
+---
+
+## Test Manager Setup (CLI)
+
+Linking a project to Test Manager (server connection + default project) can be done headlessly with `uip rpa tm`, without opening Studio — useful before authoring test cases that reference Test Manager test cases. Commands, ordering constraints (`connect` before `set-default-project`, server switches clearing the default project), and `reloadHint` handling: [cli-reference.md § Test Manager](cli-reference.md#test-manager). The CLI does **not** validate the project id against the server; obtain a real id from Test Manager (the runtime `uip tm project list` tool can list them).
 
 ---
 
@@ -92,21 +99,7 @@ If the workflow has arguments, pass them in the `InvokeWorkflowFile.Arguments` d
 
 Register every XAML test case in `designOptions.fileInfoCollection` — this is **Common Rule 10** in SKILL.md and applies to both XAML and coded test cases. Test cases live **only** in `fileInfoCollection`, never in `entryPoints` — `entryPoints` is for executable workflow files in Process projects (e.g. `Main.xaml`), and test cases are not workflow entry points regardless of project type.
 
-```json
-{
-  "designOptions": {
-    "fileInfoCollection": [
-      {
-        "editingStatus": "InProgress",
-        "testCaseId": "<UNIQUE_GUID>",
-        "testCaseType": "TestCase",
-        "executionTemplateInvokeIsolated": false,
-        "fileName": "TestCase.xaml"
-      }
-    ]
-  }
-}
-```
+Copy-paste JSON snippet (including `publishAsTestCase` for coded test cases and `dataVariationFilePath` for data-driven): [../assets/json-template.md](../assets/json-template.md).
 
 **Required keys per entry:**
 
@@ -264,7 +257,7 @@ Authoritative reference: `{projectRoot}/.local/docs/packages/UiPath.Testing.Acti
 
 Verifies a UI element's attribute (text, enabled state, visibility, etc.) against an expected value.
 
-> **Requires UI automation targets.** This activity inspects live UI elements at runtime. [ui-automation-guide.md](ui-automation-guide.md) MUST be read IN FULL first. The agent must configure targets using `uia-configure-target` before using this activity. The test case must run against a live application instance.
+> **Requires UI automation targets.** This activity inspects live UI elements at runtime. The UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). The agent must configure targets using `uia-configure-target` before using this activity. The test case must run against a live application instance.
 
 **Properties:**
 - `Target` — the UI element to inspect (configured via `uia-configure-target`)

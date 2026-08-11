@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the python-scope-arch-mismatch scenario; mock dispatcher only — do not treat as investigation evidence.",
+  "rules": [
+    { "match": "or folders list", "file": "7194e07d97.json" },
+    { "match": "or jobs list", "file": "995237c075.json" },
+    { "match": "or jobs get", "file": "81a306ef46.json" },
+    { "match": "or jobs history", "file": "c969796076.json" },
+    { "match": "or jobs logs", "file": "ed55fa9565.json" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-01T09:50:01.288Z",
+      "Message": "[Connect to Database] A database error occurred. The runtime resolved an empty ProviderName to the SqlClient provider (Microsoft.Data.SqlClient), but the connection string is an ACE/Excel OLE DB string (Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\\Finance\\Ledger.xlsx)."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-01T09:50:01.312Z",
+      "Message": "System.TypeInitializationException: The type initializer for 'Microsoft.Data.SqlClient.SqlConnection' threw an exception.\r\n   at Microsoft.Data.SqlClient.SqlConnection..ctor(String connectionString)\r\n   at UiPath.Database.DatabaseConnection.Connect(String connectionString, String provider)\r\nin Main.xaml\r\n    at DatabaseConnect \"Connect to Database\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

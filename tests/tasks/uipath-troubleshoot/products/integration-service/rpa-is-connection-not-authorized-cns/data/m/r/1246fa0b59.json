@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "9c1d3e5f-7a8b-4c2d-90e1-f2a3b4c5d6e7",
+      "State": "Faulted",
+      "ProcessName": "LeadImport",
+      "Source": "Trigger",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "StartTime": "2026-07-08T05:30:04.220Z",
+      "EndTime": "2026-07-08T05:30:11.610Z",
+      "Id": 50263417
+    }
+  ]
+}

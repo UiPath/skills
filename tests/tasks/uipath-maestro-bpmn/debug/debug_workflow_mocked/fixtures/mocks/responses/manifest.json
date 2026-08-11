@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "_doc": "Mocked public-safe BPMN debug workflow. A debug session runs to completion and its runtime variables are inspected via debug-instance commands. debug-instance rules are listed first so the bare `debug ` rule never shadows them.",
+  "rules": [
+    {
+      "match": "maestro bpmn debug-instance variables-all debug-run-042",
+      "file": "debug-variables-all.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn debug-instance variables debug-run-042",
+      "file": "debug-variables.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn debug-instance incidents debug-run-042",
+      "file": "debug-incidents-empty.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn debug ",
+      "file": "debug-run.json",
+      "exit_code": 0
+    }
+  ],
+  "unmocked_default": {
+    "response": "{}\n",
+    "exit_code": 0
+  }
+}

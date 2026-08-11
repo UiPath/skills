@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-13T09:30:41.240Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-13T09:30:42.480Z",
+      "Message": "[Read CSV] Read 12 rows from data\\incoming.csv"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-13T09:30:43.360Z",
+      "Message": "[Append To CSV] The process cannot access the file 'C:\\ProgramData\\UiPath\\Packages\\CsvDailyAppend\\data\\daily.csv' because it is being used by another process."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-13T09:30:43.420Z",
+      "Message": "Append To CSV: The process cannot access the file because it is being used by another process.\r\nin Main.xaml\r\n    at AppendToCsvFile \"Append To CSV\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-13T09:30:43.450Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

@@ -23,12 +23,12 @@ Assign policies to a user, group, or tenant by writing a JSON assignment file an
 |---------|------------|
 | user   | `[{ "productIdentifier": "<PRODUCT_NAME>", "policyIdentifier": "<POLICY_GUID>\|null" }, ...]` |
 | group  | `[{ "productIdentifier": "<PRODUCT_NAME>", "policyIdentifier": "<POLICY_GUID>\|null" }, ...]` |
-| tenant | `[{ "productIdentifier": "<PRODUCT_NAME>", "licenseTypeIdentifier": "<LICENSE_TYPE_GUID>", "policyIdentifier": "<POLICY_GUID>\|null" }, ...]` |
+| tenant | `[{ "productIdentifier": "<PRODUCT_NAME>", "licenseTypeIdentifier": "<LICENSE_TYPE_NAME>", "policyIdentifier": "<POLICY_GUID>\|null" }, ...]` |
 
 Semantics:
 
 - `productIdentifier` — product `name` (not label). See [aops-policy-commands.md — product list](./aops-policy-commands.md#uip-gov-aops-policy-product-list).
-- `licenseTypeIdentifier` (tenant only) — license type **`identifier` (GUID)** from `license-type list`, not the `name` and not the label. See [aops-policy-commands.md — license-type list](./aops-policy-commands.md#uip-gov-aops-policy-license-type-list).
+- `licenseTypeIdentifier` (tenant only) — license type **`name`** (e.g. `Attended`, `E2E`) from `license-type list`, not the label. The live CLI exposes no GUID for license types — the `name` is the identifier. See [aops-policy-commands.md — license-type list](./aops-policy-commands.md#uip-gov-aops-policy-license-type-list).
 - `policyIdentifier`:
   - a policy GUID → assign that policy to this product (and license type, for tenants)
   - `null` → **No Policy** explicitly (overrides any inherited policy)
@@ -249,7 +249,7 @@ uip gov aops-policy deployment group get "$GROUP_ID" --output json
 
 Tenant deployments are keyed by `(product, license type)`. List license types via `uip gov aops-policy license-type list --output json` — see [aops-policy-commands.md — license-type list](./aops-policy-commands.md#uip-gov-aops-policy-license-type-list) for the full output shape and sample rendering.
 
-> **Use the license type's `identifier` (GUID) — not its `name`, not its label — as `licenseTypeIdentifier` in tenant assignment entries.** The `name` is only accepted by `deployed-policy get` / `deployed-policy list` as the positional `<license-type>` argument.
+> **Use the license type's `name` (e.g. `Attended`, `E2E`) — not its label — as `licenseTypeIdentifier` in tenant assignment entries.** `license-type list` exposes no GUID. The same `name` is also the positional `<license-type>` argument for `deployed-policy get` / `deployed-policy list`.
 
 ### Step 2 — Identify the tenant
 
@@ -273,13 +273,13 @@ Parse `Data.result[]` (output shape in [aops-policy-commands.md — deployment l
 ```bash
 cat > "$SESSION_DIR/tenant-policies.json" <<'EOF'
 [
-  { "productIdentifier": "AITrustLayer", "licenseTypeIdentifier": "<NOLICENSE_GUID>",    "policyIdentifier": "<POLICY_GUID>" },
-  { "productIdentifier": "Development",  "licenseTypeIdentifier": "<DEVELOPMENT_GUID>",  "policyIdentifier": null }
+  { "productIdentifier": "AITrustLayer", "licenseTypeIdentifier": "NoLicense",   "policyIdentifier": "<POLICY_GUID>" },
+  { "productIdentifier": "Development",  "licenseTypeIdentifier": "Development", "policyIdentifier": null }
 ]
 EOF
 ```
 
-> `licenseTypeIdentifier` is the GUID from `license-type list` (`Data[].identifier`), NOT the license-type `name`. Resolve each license type's GUID from Step 1 before writing the file.
+> `licenseTypeIdentifier` is the license-type `name` (`Data[].name`) from `license-type list`, NOT a GUID and NOT the label. The live CLI exposes no GUID for license types. Resolve each license type's `name` from Step 1 before writing the file.
 
 ### Step 5 — Final review before configure (single confirmation gate)
 
@@ -352,7 +352,7 @@ Confirmation prompt (verbatim): `Remove <PRODUCT_LABEL> assignment from <TENANT_
 |-------|-------|-----|
 | `401 Unauthorized` | User token expired or missing | `uip login` and retry — see [aops-policy-commands.md — Authentication](./aops-policy-commands.md#authentication) |
 | `unknown productIdentifier` | Used the product label instead of its `name` | Re-run `uip gov aops-policy product list --output json` and pass the `name` field |
-| `unknown licenseTypeIdentifier` | Used the license `name` or label instead of its `identifier` (GUID) | Re-run `uip gov aops-policy license-type list --output json` and copy the `identifier` field (GUID) |
+| `unknown licenseTypeIdentifier` | Used the license type's label instead of its `name` | Re-run `uip gov aops-policy license-type list --output json` and copy the `name` field |
 | `unknown policyIdentifier` (GUID) | Stale or wrong policy GUID | Re-run `uip gov aops-policy list --product-name "<PRODUCT_NAME>" --output json` and copy the `identifier` |
 | `missing licenseTypeIdentifier in tenant entries` | Tenant entry omitted `licenseTypeIdentifier` | Add it to every tenant-subject entry (required key) |
 | `configure rejects the JSON` | Any of the above + malformed array | Validate with `jq type` and `jq '.[0] | keys'` before resubmitting |

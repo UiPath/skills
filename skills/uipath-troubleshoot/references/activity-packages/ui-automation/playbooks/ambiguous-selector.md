@@ -129,3 +129,5 @@ The following are NOT valid fixes for `NodeAmbiguousException`:
 - **Wrap the activity in a try / catch and ignore the exception** — the action never happened; downstream workflow state is invalid.
 - **Wrap the activity in a Retry Scope** — ambiguity is structural, not transient. Retrying the same selector returns the same multiple matches every time.
 - **Add `idx='1'` unconditionally** — only valid in branch (B) when position is stable across runs. Doing it blindly hides selector drift and masks future regressions.
+
+**Applying these fixes.** Adding a specific attribute, wrapping with a `Find Anchor`, narrowing the window scope, using a wildcard, or adding an `NCheckAppState` gate all change the workflow `.xaml` / Object Repository descriptor — interactive: the troubleshooter never edits them itself; on the user's approval it delegates the apply, otherwise it recommends only.

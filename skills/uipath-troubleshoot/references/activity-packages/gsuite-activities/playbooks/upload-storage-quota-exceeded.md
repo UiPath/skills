@@ -19,7 +19,7 @@ What this looks like — `GSuiteException` with the format `Upload failed after 
 
 What activities can produce this error:
 - **Drive uploads** — `UploadFilesConnections` (modern), legacy `UploadFile`
-- **Gmail attachment uploads** — `SendEmailConnections`, `ReplyToEmailConnections`, `ForwardEmailConnections` when the email carries an attachment large enough to require a multipart upload
+- **Gmail attachment uploads** — `SendEmailConnections`, `ReplyToEmailConnections`, `ForwardEmailConnections`, legacy `SendEmail` when the email carries an attachment large enough to require a multipart upload
 
 What can cause it — two underlying quota conditions, both surfaced as Google 403:
 - **`storageQuotaExceeded`** — the authenticated user's Drive storage is full. Applies to the entire account quota (free tier, Workspace plan storage, or pooled storage).

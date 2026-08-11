@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceMacroRunner",
+  "ProjectType": "Process",
+  "Description": "Runs the RefreshPivotTables VBA macro against the Q3Pivot workbook via Invoke VBA inside an Excel Process Scope.",
+  "MainFile": "Main.xaml"
+}

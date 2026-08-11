@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="x-uipath-initial-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="Process_1" name="CustomerExport" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="vExport" name="ExportResult" type="json" elementId="Task_Export"/>
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="bFolder" name="folderKey" type="string" default="folder-key-11111111-2222-3333-4444-555555555555" resource="folder" propertyAttribute="Key"/>
+        <uipath:binding id="bConn" name="connectionId" type="string" default="connection-id-99999999-8888-7777-6666-000000000000" resource="connection" propertyAttribute="Id"/>
+      </uipath:bindings>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start">
+      <bpmn:outgoing>Flow_start_export</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_Export" name="Export from tenant">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1"/>
+          <uipath:context>
+            <uipath:input name="tenantUrl" type="string" value="https://acme-corp.example.uipath.com"/>
+            <uipath:input name="folderKey" type="string" value="=bindings.bFolder"/>
+            <uipath:input name="connectionId" type="string" value="=bindings.bConn"/>
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{}]]></uipath:input>
+          <uipath:output name="ExportResult" type="json" source="=ExportResult" var="vExport"/>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_start_export</bpmn:incoming>
+      <bpmn:outgoing>Flow_export_notify</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Task_Notify" name="Notify Jane Doe (Contoso)">
+      <bpmn:incoming>Flow_export_notify</bpmn:incoming>
+      <bpmn:outgoing>Flow_notify_escalate</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_Escalate" name="Escalate to John Smith (Fabrikam)">
+      <bpmn:incoming>Flow_notify_escalate</bpmn:incoming>
+      <bpmn:outgoing>Flow_escalate_end</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_end">
+      <bpmn:incoming>Flow_escalate_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_start_export" sourceRef="Event_start" targetRef="Task_Export"/>
+    <bpmn:sequenceFlow id="Flow_export_notify" sourceRef="Task_Export" targetRef="Task_Notify"/>
+    <bpmn:sequenceFlow id="Flow_notify_escalate" sourceRef="Task_Notify" targetRef="Task_Escalate"/>
+    <bpmn:sequenceFlow id="Flow_escalate_end" sourceRef="Task_Escalate" targetRef="Event_end"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="160" y="200" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Export" bpmnElement="Task_Export">
+        <dc:Bounds x="260" y="178" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Notify" bpmnElement="Task_Notify">
+        <dc:Bounds x="420" y="178" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_Escalate" bpmnElement="Task_Escalate">
+        <dc:Bounds x="580" y="178" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_end" bpmnElement="Event_end">
+        <dc:Bounds x="740" y="200" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_start_export" bpmnElement="Flow_start_export">
+        <di:waypoint x="196" y="218"/>
+        <di:waypoint x="260" y="218"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_export_notify" bpmnElement="Flow_export_notify">
+        <di:waypoint x="360" y="218"/>
+        <di:waypoint x="420" y="218"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_notify_escalate" bpmnElement="Flow_notify_escalate">
+        <di:waypoint x="520" y="218"/>
+        <di:waypoint x="580" y="218"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_escalate_end" bpmnElement="Flow_escalate_end">
+        <di:waypoint x="680" y="218"/>
+        <di:waypoint x="740" y="218"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

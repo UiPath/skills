@@ -1,0 +1,6 @@
+{
+  "Name": "ConfigSyncProcess",
+  "ProjectType": "Process",
+  "Description": "Connects to a SQL Server database and runs a configuration-sync statement via Execute Non Query to apply pending updates.",
+  "MainFile": "Main.xaml"
+}

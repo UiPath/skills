@@ -17,26 +17,59 @@ sys.path.insert(
         os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
     ),
 )
-from lowcode_scaffold import write_baseline_lowcode_agent  # noqa: E402
+from lowcode_scaffold import (  # noqa: E402
+    process_binding,
+    write_baseline_lowcode_agent,
+    write_bindings,
+)
 
 SOLUTION = Path("ReviewSol")
-BASE = Path("ReviewSol/SampleAgent/resources/VagueTool")
 TOOL_NAME = "vague_tool"
 
 
 def main() -> None:
-    write_baseline_lowcode_agent(SOLUTION)
-    BASE.mkdir(parents=True, exist_ok=True)
+    project = write_baseline_lowcode_agent(SOLUTION)
+    base = project / "resources" / TOOL_NAME
+    base.mkdir(parents=True, exist_ok=True)
     resource = {
         "$resourceType": "tool",
-        "type": "external",
-        "id": "cccccccc-cccc-4ccc-cccc-cccccccccccc",
+        "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "type": "process",
+        "location": "external",
         "name": TOOL_NAME,
         "description": "",
         "isEnabled": True,
-        "properties": {},
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "request": {
+                    "type": "string",
+                    "description": "Request for the tool",
+                },
+            },
+            "required": ["request"],
+        },
+        "outputSchema": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "string",
+                    "description": "Tool result",
+                },
+            },
+        },
+        "settings": {},
+        "guardrail": {"policies": []},
+        "properties": {
+            "processName": TOOL_NAME,
+            "folderPath": "Shared",
+            "exampleCalls": [],
+        },
+        "referenceKey": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        "argumentProperties": {},
     }
-    (BASE / "resource.json").write_text(json.dumps(resource, indent=2))
+    (base / "resource.json").write_text(json.dumps(resource, indent=2))
+    write_bindings(project, [process_binding(TOOL_NAME)])
     print(f"Injected tool {TOOL_NAME!r} with empty description")
 
 

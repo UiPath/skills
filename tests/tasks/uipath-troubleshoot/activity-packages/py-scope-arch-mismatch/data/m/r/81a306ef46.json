@@ -1,0 +1,38 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "cc333333-7777-bbbb-cccc-ddddeeeeffff",
+    "StartTime": "2026-06-18T13:40:05.200Z",
+    "EndTime": "2026-06-18T13:40:07.900Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "Info": "Python Scope: One or more errors occurred. (Error initializing the Python engine) ---> System.BadImageFormatException: An attempt was made to load a program with an incorrect format. (0x8007000B)\r\n   at UiPath.Python.Service.PythonProcessClient.Start(PythonConfig config)\r\n   at UiPath.Python.Activities.PythonScope.OnExecuteAsync(NativeActivityContext context)\r\n",
+    "CreationTime": "2026-06-18T13:40:05.000Z",
+    "ReleaseName": "PythonDataCruncher",
+    "Type": "Unattended",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "OrganizationUnitId": 6020003,
+    "FolderKey": "fc333333-2222-3333-4444-555566667777",
+    "Reference": "CrunchRunA",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\AUTOMATION1",
+    "OrchestratorUserIdentity": "automation1",
+    "LastModificationTime": "2026-06-18T13:40:07.900Z",
+    "JobError": {
+      "ErrorCode": "Activity",
+      "Type": "AggregateException",
+      "ActivityName": "PythonScope_1",
+      "ActivityDisplayName": "Python Scope",
+      "WorkflowFilePath": "Main.xaml"
+    },
+    "ErrorCode": "Activity",
+    "TraceId": "cc333333-7777-bbbb-cccc-ddddeeeeffff",
+    "Id": 680078303
+  }
+}

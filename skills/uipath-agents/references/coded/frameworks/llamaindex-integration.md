@@ -106,7 +106,7 @@ from uipath_llamaindex.llms import UiPathOpenAI, OpenAIModel
 llm = UiPathOpenAI(model=OpenAIModel.GPT_4O_2024_11_20)
 ```
 
-The enum is `OpenAIModel` (singular). `GeminiModel` and `BedrockModel` are also available from `uipath_llamaindex.llms` for non-OpenAI vendors. Use `sdk.agenthub.get_available_llm_models()` to list the models available in your tenant.
+The enum is `OpenAIModel` (singular). `GeminiModel` and `BedrockModel` are also available from `uipath_llamaindex.llms` for non-OpenAI vendors. Run `uip codedagent list-models` to list the models available in your tenant.
 
 ---
 

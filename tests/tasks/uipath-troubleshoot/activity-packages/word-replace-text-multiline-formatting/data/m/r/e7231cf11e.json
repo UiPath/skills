@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T10:48:01.300Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T10:48:03.020Z",
+      "Message": "[Word Application Scope] Starting Microsoft Word"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T10:48:04.410Z",
+      "Message": "[Word Application Scope] Document 'data\\AddressTemplate.docx' opened"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T10:48:05.690Z",
+      "Message": "[Replace Text] Executed. Replaced 1 occurrence(s) of '[AddressBlock]'."
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T10:48:07.610Z",
+      "Message": "Execution ended in: 00:00:06"
+    }
+  ]
+}
