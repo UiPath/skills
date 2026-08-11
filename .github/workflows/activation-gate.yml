@@ -93,12 +93,24 @@ jobs:
       - name: Install coder-eval
         run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
+      # Agent's plugin view must exclude tests/ — activation.yaml's
+      # `plugins[].path` is `$SKILLS_PLUGIN_PATH`. See smoke-skills.yml's
+      # equivalent step for why (leaks the answer key otherwise). tempdir
+      # driver has no container jail, so this is defense-in-depth here
+      # rather than a hard boundary, but kept consistent.
+      - name: Build tests-excluded skills copy for agent plugin mount
+        run: |
+          rm -rf /tmp/skills
+          mkdir -p /tmp/skills
+          tar --exclude='./tests' --exclude='./.git' -C "${GITHUB_WORKSPACE}" -cf - . | tar -C /tmp/skills -xf -
+
       - name: Run activation gate
         env:
           # Pass matrix value via env (not direct ${{ }} interpolation in run:)
           # to avoid shell expansion of any special chars in the skill name.
           SKILL: ${{ matrix.skill }}
           SKILLS_REPO_PATH: ${{ github.workspace }}
+          SKILLS_PLUGIN_PATH: /tmp/skills
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION: ${{ secrets.AWS_REGION }}

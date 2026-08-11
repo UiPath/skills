@@ -1,8 +1,12 @@
 .PHONY: help install all smoke smoke_rpa e2e tags
 
 SKILLS_REPO_PATH ?= $(shell cd .. && pwd)
+# Agent's mounted plugin view. CI builds a tests/-excluded copy of the repo
+# and points this at it (closes the answer-key leak); local dev defaults it
+# to the full checkout since there's no adversarial grading boundary here.
+SKILLS_PLUGIN_PATH ?= $(SKILLS_REPO_PATH)
 VENV := .venv
-CODER_EVAL := SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) $(VENV)/bin/coder-eval
+CODER_EVAL := SKILLS_REPO_PATH=$(SKILLS_REPO_PATH) SKILLS_PLUGIN_PATH=$(SKILLS_PLUGIN_PATH) $(VENV)/bin/coder-eval
 TASKS := $(shell find tasks -name '*.yaml' -type f)
 TASK_PARALLELISM ?= 1
 
