@@ -41,10 +41,10 @@
     {
       "id": 4,
       "prompt": "I want to create a case management project",
-      "expected_output": "Skill triggers, shows the new-case roadmap, and hands the design to its delegated design lane — no entry menu, no interview run by this skill",
+      "expected_output": "Skill triggers, shows the new-case roadmap, and hands the design to the uipath-planner Case Design Lane in the same conversation — no entry menu, no interview run by this skill",
       "expectations": [
         "The case-management skill was triggered",
-        "Shows the journey-specific roadmap with the design prefix line before design work begins — user-facing language never mentions the delegation or subagents",
+        "Shows the journey-specific roadmap with the design prefix line before design work begins — user-facing language never mentions the handoff or skill mechanics",
         "Does not offer an entry menu or ask for an sdd.md path before the user names one",
         "Does not run a per-dimension interview of its own; the design comes back as one decision-first Case Review for the single confirmation"
       ]
@@ -79,11 +79,11 @@
     {
       "id": 7,
       "prompt": "I want to create a new case but I do not have an sdd.md yet",
-      "expected_output": "Skill delegates the design (planner-authored, best assumption) and confirms it in ONE decision-first Case Review that is complete enough to approve without opening sdd.md",
+      "expected_output": "Skill hands the design to the planner lane (planner-authored, best assumption) and confirms it in ONE decision-first Case Review that is complete enough to approve without opening sdd.md",
       "expectations": [
         "The case-management skill was triggered",
         "Shows the high-level journey first: designs the case from the request with tenant checks along the way, one review packet with every decision for confirmation, then build and validate without interruptions, pausing only before any run or publish",
-        "Does not expose internal phase labels, the delegation, or subagent mechanics in user-facing output",
+        "Does not expose internal phase labels, the handoff, or skill mechanics in user-facing output",
         "No per-dimension question walk about trigger, task types, exits, or SLAs — open fields are decided best-assumption and disclosed as decisions",
         "Presents ONE Case Review with the required sections: Case Snapshot, Primary Journey, Other Paths Considered, SLA and Escalations, Rules and Outcomes, Resources and Integrations, Decisions I Made, Review Flags, and Caller obligation when relevant",
         "The Case Review names every stage and every task in the Primary Journey or Other Paths tables, with task type, activation mode, required/optional status, routing/exit behavior, and SLA context",
@@ -92,22 +92,22 @@
         "The confirmation includes a complete Decisions I Made table with a plain-language provenance per assumption",
         "A manually triggered task is presented as optional adhoc worker-launched work without exposing schema mechanics",
         "The confirmation carries the build continuation choice (build straight through vs pause at the build preview) so it is never asked mid-build",
-        "sdd.md is already on disk from the delegated design when the review is shown; on a Build answer the build starts (solution init + planning) and the design doc is mentioned in one line as a reference artifact — never presented for review"
+        "On a Build answer the lane writes sdd.md (write-early cadence), then the build starts (solution init + planning); the design doc is mentioned in one line as a reference artifact — never presented for review, and never written before the Build answer"
       ]
     },
     {
       "id": 8,
       "prompt": "Create a vendor onboarding case. I attached two process documents. It uses VendorRiskAgent, Salesforce Prod, and a Slack notification connector.",
-      "expected_output": "Design-time grounding runs inside the delegated design lane — registry pulled once when the case first shows tenant-bound work, identities resolved at design time — and the build's planning pass runs verify-only from the returned resolution ledger",
+      "expected_output": "Design-time grounding runs inside the planner lane — the login and registry chain fires in the background at lane entry on a build handoff, identities resolve at design time — and the build's planning pass runs verify-only from the in-context resolution ledger",
       "expectations": [
-        "Does not touch the tenant at entry — the login and registry chain starts only once the case shows tenant-bound work (the agent, Salesforce, the Slack connector), inside the delegated design",
+        "Never blocks on the tenant — on a build handoff the login and registry chain fires in the background at lane entry (batched with the document reads) and resolution lands before the Case Review",
         "Reads all supplied documents in parallel while the chain resolves",
         "Runs registry pull only after login succeeds and does not treat a failed pull as zero matches",
         "Identity resolution completes at design time: one batched cache-lookup pass, no tasks describe, no case spec, no schema discovery before the build phases",
         "If the pull has not finished when the review is ready, presents anyway with resolve-at-build on tenant-bound items — the confirmation is never delayed by the tenant",
-        "A single confident match is adopted silently and shown as a decision; multiple matches, cross-folder names, missing connections, and empty lookups surface in the review as gate decisions or resolve-at-build — never re-asked at build",
+        "A single confident match is adopted silently and shown as a decision; multiple matches, cross-folder names, missing connections, and empty lookups surface in the review as gate items — user-answered gate decisions are never re-asked at build, while defaulted resolve-at-build items (no session, pending pull) stay open for the build's gate",
         "Does not let tenant inventory add or rename business stages or tasks",
-        "On the Build answer, Phase 1 reuses this session's successful pull instead of re-pulling and runs verify-only from the returned resolution ledger; recorded gate decisions execute without re-asking (Rule 17 short-circuit)"
+        "On the Build answer, Phase 1 reuses this session's successful pull instead of re-pulling and runs verify-only from the in-context resolution ledger; user-answered gate decisions execute without re-asking (Rule 17 short-circuit), defaulted deferrals go through the Rule 17 gate"
       ]
     },
     {

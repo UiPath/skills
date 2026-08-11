@@ -66,7 +66,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 ]]
 ```
 
-`selectedTasksIds` is a JSON string array, not a comma-separated string. Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required routing cannot depend on optional user-launched work.
+`selectedTasksIds` is a JSON string array, not a comma-separated string. Resolve each planned selector to its taskId via `tasks/id-map.json` using the task's EXACT `tasks.md` display name — never a paraphrase or shortened form (a rule labeled `Determine sign-off level` does not match a task named `Confirm funds and determine sign-off level`; the selector carries the task's exact name). Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required routing cannot depend on optional user-launched work. **Never write a `selected-tasks-completed` rule with an empty or partially resolved `selectedTasksIds`** — an unresolvable name is a stop-and-ask (AskUserQuestion: name the intended task, or repair the plan), never an empty emit. `uip maestro case validate`'s `has no task(s) selected` finding must never be the discovery mechanism (Step 12 Check 13 catches it first).
 
 ### wait-for-connector — bind a connector event
 

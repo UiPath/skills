@@ -82,7 +82,7 @@ If the parser response names `--skeleton-v2` as unknown or unsupported (typicall
 
 ### Phase 2 hard stop
 
-**Gated by the up-front build-review preference (SKILL.md Rule 11) — never a mid-build surprise.** The preference was captured at journey start: the delegated design's Case Review Build options on the greenfield journey, the single post-roadmap question on the provided-SDD journey. Always print the §Summary content below, then branch:
+**Gated by the up-front build-review preference (SKILL.md Rule 11) — never a mid-build surprise.** The preference was captured at journey start: the design-handoff Case Review Build options on the greenfield journey, the single post-roadmap question on the provided-SDD journey. Always print the §Summary content below, then branch:
 
 - **Straight-through** → continue directly into Phase 3 with no prompt; the summary doubles as the milestone narration line.
 - **Pause-at-preview** → present the §Prompt below; only a user response transitions out of Phase 2.

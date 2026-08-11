@@ -57,7 +57,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 ]]
 ```
 
-`selectedTasksIds` is a JSON string array. Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required downstream flow cannot depend on optional user-launched work.
+`selectedTasksIds` is a JSON string array. Resolve each planned selector to its taskId via `tasks/id-map.json` using the task's EXACT `tasks.md` display name — never a paraphrase or shortened form. Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required downstream flow cannot depend on optional user-launched work. **Never write a `selected-tasks-completed` rule with an empty or partially resolved `selectedTasksIds`** — an unresolvable name is a stop-and-ask (AskUserQuestion: name the intended task, or repair the plan), never an empty emit. `uip maestro case validate`'s `has no task(s) selected` finding must never be the discovery mechanism (Step 12 Check 13 catches it first).
 
 ### adhoc — expression gate
 

@@ -20,7 +20,7 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 ---
 
-> **Kickoff overview first (if not already shown).** When the design delegation did not run (user-provided `sdd.md`), this is the run's start — present the greenfield flow overview once before Step 0 so the dev knows the phases and the decision points. See [SKILL.md § Kickoff — set dev expectations](../SKILL.md#kickoff--set-dev-expectations-first). If the delegation window already showed it, skip.
+> **Kickoff overview first (if not already shown).** When the design handoff did not run (user-provided `sdd.md`), this is the run's start — present the greenfield flow overview once before Step 0 so the dev knows the phases and the decision points. See [SKILL.md § Kickoff — set dev expectations](../SKILL.md#kickoff--set-dev-expectations-first). If the delegation window already showed it, skip.
 
 ## Step 0 — Resolve the `uip` binary
 
@@ -59,7 +59,7 @@ Outside the fast path, do not inspect `~/.uip/case-resources/` first to decide w
 
 Accept the `sdd.md` file path from the user, or ask if not provided. When the directory contains multiple `.md` files, use **AskUserQuestion** with the candidates + "Something else" to disambiguate.
 
-If the resolved path has **no `sdd.md`**, the skill delegates the design to a `uipath-planner` subagent before this step (SKILL.md Rule 15 + § Design delegation). Phase 1 begins after the Case Review's Build answer. Read the subagent-written `sdd.md` ONCE and plan from it (Rule 2 — trust as written; the design model stays in the subagent). The returned Case Review is approval context, not a parsing source.
+If the resolved path has **no `sdd.md`**, the skill hands the design to the `uipath-planner` Case Design Lane in this conversation before this step (SKILL.md Rule 15 + § Design handoff). Phase 1 begins after the Case Review's Build answer, once the lane has written `sdd.md`. The in-memory model that rendered the file drives planning directly (Rule 2 — do not re-read the just-written file); the Case Review is approval context, not a parsing source.
 
 `sdd.md` is the **sole required input**. It describes stages, tasks, conditions, SLA, component types, persona information, and provides the search keys for registry lookups. The portable name is type-specific: `Resolved Resource` for process/agent/rpa/api-workflow, the Action App title in `HITL Implementation` for action, and `Child Case` for case-management. The corresponding identity cell (`Resource Identity` or `Action App ID`) says whether an earlier phase resolved it. (The SDD does not describe edges — transitions are stage entry/exit conditions; Rule 20.) The skill does not validate or gap-fill sdd.md — trust it as written. (The delegated design lane may have produced it; once approved, Rule 2 applies regardless of source.)
 

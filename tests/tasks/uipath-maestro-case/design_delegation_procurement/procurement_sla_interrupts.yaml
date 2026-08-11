@@ -1,6 +1,6 @@
 task_id: skill-case-phase-0-procurement-sla-interrupts
 description: >
-  Delegated design (uipath-planner Case Design Lane) through maestro-case planning for a supplier application with global withdrawn and
+  Design handoff (uipath-planner Case Design Lane, in-conversation) through maestro-case planning for a supplier application with global withdrawn and
   SLA events, explicit sequential work, and design-rationale requirements.
   Verifies that global events enter interrupting secondary stages instead of
   being duplicated across every primary stage.
@@ -16,7 +16,8 @@ tags:
   - feature:trigger
 
 # Inherit agent from the experiment; override only allowed_tools — the Rule 15
-# design delegation spawns a uipath-planner subagent (Agent/Task tool).
+# design handoff loads the uipath-planner skill in the same conversation
+# (Skill tool); Agent/Task stay allowed for the Rule 17 inline-create path.
 agent:
   type: claude-code
   permission_mode: acceptEdits
@@ -25,8 +26,8 @@ agent:
 run_limits:
   task_timeout: 7200
   max_turns: 120
-  # The design delegation runs one planner subagent inside a single parent
-  # turn — the whole design phase is one turn of wall clock.
+  # The design handoff runs in-conversation across normal turns; the generous
+  # turn_timeout only guards long single-turn SDD/plan writes.
   turn_timeout: 5400
 
 initial_prompt: |
