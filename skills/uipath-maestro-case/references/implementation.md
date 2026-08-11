@@ -68,7 +68,7 @@ Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_
 4. Refresh entry-points.json input/output (Step 6.3)
 5. Add stages (Step 7)
 6. Write task shapes (Step 9)
-7. Verify bindings_v2.json parity (Step 9.4 — per-group appends happen inside Step 9)
+7. Verify bindings_v2.json parity (Step 9.4)
 8. Write SLA + escalation objects (Step 11)
 9. Add conditions with connector-rule stubs (Step 10)
 10. Preview validate + boundary (Step 11.9)
@@ -170,7 +170,7 @@ Placeholder tasks integrate with the rest of the graph:
 
 ## Step 9.4 — Verify bindings_v2.json parity
 
-Each Step 9 task appended its sidecar entry as its binding pair was written ([bindings-v2-sync.md § Append one resource entry](bindings-v2-sync.md)). Verify here: every distinct `resourceKey` group in top-level `bindings[]` has exactly ONE converted entry in `bindings_v2.json.resources[]` (`key` + `value` shape — `propertyAttribute` / `id` in an entry means a raw caseplan copy, wrong format). On any gap or format finding, regenerate once per [bindings-v2-sync.md § Regenerate](bindings-v2-sync.md) and re-verify.
+Step 9 tasks appended sidecar entries as their bindings were written ([bindings-v2-sync.md](bindings-v2-sync.md)). Verify: every `resourceKey` group in `bindings[]` has exactly one `key`+`value` entry in `resources[]` (no `propertyAttribute` / `id`). On drift, regenerate once (§ Regenerate) and re-verify.
 
 ## Step 11 — Write SLA and escalation objects (per-target Edit batch)
 

@@ -6,47 +6,30 @@ Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.
 
 ## When to Run
 
-**Sync-as-you-write — one group at a time, never deferred.** Immediately after a plugin writes a binding pair to top-level `bindings[]` in `caseplan.json` (non-connector `name`+`folderPath`, or connector `ConnectionId`+`folderKey`), append that group's ONE converted entry to `bindings_v2.json` per § Append one resource entry (below). The caseplan pair and its sidecar entry are one unit of work; the plugin's Post-Write Verification checks both.
+**Sync-as-you-write — one group at a time, never deferred.** Immediately after writing a group's bindings to top-level `bindings[]` in `caseplan.json`, append that group's ONE converted entry to `bindings_v2.json` (§ Append one resource entry, below). A group = the entries sharing one `resourceKey` — non-connector: `name` + `folderPath`; connector: `ConnectionId`, plus `FolderKey` only when present. The writing plugin's Post-Write Verification checks the entry.
 
-Never defer the append to an end-of-phase batch. The sidecar has no execution-time feedback — `validate` never reads it; only `resources refresh` consumes it, and in eval/CI that often runs harness-side after the agent finishes. A deferred batch is a checkpoint that one-pass agent runs demonstrably skip (observed artifacts: an untouched scaffold `resources: []`, and a partial raw-format copy — both alongside a complete `bindings[]`). A one-group append with the shape in front of you is mechanical; a 16-entry batch recalled later is not.
+Never defer to an end-of-phase batch: the sidecar has no execution-time feedback (`validate` never reads it; `resources refresh` often runs harness-side), and deferred batches get skipped — observed: an untouched scaffold `resources: []` and a partial raw-format copy, both beside a complete `bindings[]`.
 
-**Full regeneration (§ Regenerate, below) is the repair path, not the primary path.** Run it only on:
-
-1. **Step 12 Check 7 drift** — parity mismatch at the Phase 3 exit gate ([implementation.md](implementation.md)): regenerate once, re-check, halt if still divergent
-2. **Task / rule removal** — [§ Cleanup](#cleanup-on-task-or-rule-removal)
-3. **Edit-mode flows** that re-point resource bindings ([case-editing-operations.md](case-editing-operations.md))
+**Full regeneration (§ Regenerate, below) is the repair path.** Run it whenever a parity check finds drift (Step 9.4, Step 9.7 Phase C, Step 10.5, Step 12 Check 7 — [implementation.md](implementation.md)), on task / rule removal ([§ Cleanup](#cleanup-on-task-or-rule-removal)), or in edit-mode flows ([case-editing-operations.md](case-editing-operations.md)).
 
 ---
 
 ## § Append one resource entry (primary)
 
-Run immediately after writing a group's binding pair to `caseplan.json`:
-
-1. Take the pair just written — both entries share one `resourceKey`.
-2. Convert to ONE entry per the shapes in § Regenerate below (non-connector vs connector; the inline-built-sibling exception applies here too).
-3. Edit `bindings_v2.json`: if it is still the empty scaffold (`"resources": []`), replace the empty array with `[ <entry> ]`; otherwise insert the entry before the closing `]` of `resources`. If an entry with the same `key` already exists, update it in place — never duplicate.
-
-Example — the caseplan pair and its ONE sidecar entry:
+1. Take the group just written (one or two entries sharing a `resourceKey`).
+2. Convert to ONE sidecar entry per the shapes in § Regenerate below (inline-built-sibling exception applies). Connector group without a FolderKey binding (`spec.connection.folderKey` null): omit `value.folderKey`.
+3. Edit `bindings_v2.json`: replace the empty scaffold `"resources": []` with `[ <entry> ]`, or insert the entry before the closing `]`. Same `key` already present → update in place, never duplicate.
 
 ```jsonc
-// caseplan.json bindings[] — two entries, one per property
-{ "id": "bRpaName1", "name": "name",       "type": "string", "resource": "process", "resourceKey": "Shared/FinOps.RPA Workflow", "default": "RPA Workflow",  "propertyAttribute": "name" },
-{ "id": "bRpaFold1", "name": "folderPath", "type": "string", "resource": "process", "resourceKey": "Shared/FinOps.RPA Workflow", "default": "Shared/FinOps", "propertyAttribute": "folderPath" }
+// caseplan.json pair — one entry per property (id/name/type fields elided)
+{ "resourceKey": "Shared/FinOps.RPA Workflow", "default": "RPA Workflow",  "propertyAttribute": "name" },
+{ "resourceKey": "Shared/FinOps.RPA Workflow", "default": "Shared/FinOps", "propertyAttribute": "folderPath" }
+// → ONE bindings_v2 entry — properties nested under value
+{ "resource": "process", "key": "Shared/FinOps.RPA Workflow",
+  "value": { "name": { "defaultValue": "RPA Workflow" }, "folderPath": { "defaultValue": "Shared/FinOps" } } }
 ```
 
-```jsonc
-// bindings_v2.json resources[] — ONE entry, properties nested under value
-{
-  "resource": "process",
-  "key": "Shared/FinOps.RPA Workflow",
-  "value": {
-    "name":       { "defaultValue": "RPA Workflow" },
-    "folderPath": { "defaultValue": "Shared/FinOps" }
-  }
-}
-```
-
-> **Format sentinel (hard rule).** A `resources[]` entry has exactly `resource` / `key` / `value` (+ `metadata` when applicable). If an entry contains `id`, `propertyAttribute`, or a per-property `default`, caseplan bindings were copied RAW into the sidecar — wrong file format; rebuild that entry via the conversion above. Empty `resources: []` alongside a non-empty `bindings[]` means the sync never ran. Step 12 Check 7 halts on both.
+> **Format sentinel (hard rule).** A `resources[]` entry has exactly `resource` / `key` / `value` (+ `metadata`). `id` / `propertyAttribute` / per-property `default` in an entry = caseplan copied raw (wrong format); `resources: []` beside non-empty `bindings[]` = sync never ran. Check 7 halts on both.
 
 ---
 
@@ -90,6 +73,8 @@ Example — the caseplan pair and its ONE sidecar entry:
   "metadata": { "connector": "<connectorKey>" }
 }
 ```
+
+Omit `value.folderKey` when the group has no FolderKey binding (`spec.connection.folderKey` was null).
 
 > **Known CLI bug:** `syncConnectionResources` reads `value.connectionId` (lowercase c) but `flow-schema` writes `value.ConnectionId` (uppercase C). Use **lowercase `connectionId`** until fixed.
 

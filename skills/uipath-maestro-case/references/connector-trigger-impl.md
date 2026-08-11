@@ -213,7 +213,7 @@ Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of
 
 After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Skip if `case spec` failed.
 
-> **`bindings_v2.json` sync is immediate, per group — never deferred.** Right after writing a target's root Connection/Folder binding pair, append that connection's ONE converted entry to `bindings_v2.json` ([bindings-v2-sync.md § Append one resource entry](bindings-v2-sync.md#when-to-run)). The end-of-phase passes (Step 9.4 / Step 9.7 Phase C / Step 10.5) only VERIFY parity; full regeneration is the drift-repair path. Deferred batch sync is retired — it was observed skipped wholesale under one-pass execution, shipping empty or partial sidecars that `validate` cannot catch.
+> **`bindings_v2.json` sync is immediate, per group — never deferred.** Append the connection's converted entry right after writing its root bindings ([bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run)); omit `value.folderKey` when the FolderKey binding is absent. Step 9.4 / Step 9.7 Phase C / Step 10.5 only verify parity; § Regenerate is the drift repair.
 
 ---
 
