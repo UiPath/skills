@@ -32,6 +32,7 @@ Every node in a `.flow` file has exactly one author. The validator enforces this
 | Patterns | `uipath.pattern.batch-transform`, `uipath.pattern.deep-rag` |
 | Agents | `uipath.agent.autonomous` (inline; after `uip agent init --inline-in-flow`) |
 | Resource nodes | `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, `uipath.core.human-task.*` |
+| Document extraction | `uipath.ixp.*` — the extraction step must always land a node ([ixp/impl.md](references/plugins/ixp/impl.md#landing-the-node-when-you-cannot-fully-configure-it)) |
 | Queue | `core.action.queue.create`, `core.action.queue.create-and-wait` |
 
 **CLI-owned nodes (`uip maestro flow node add` + `uip maestro flow node configure`):**

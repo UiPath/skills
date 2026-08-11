@@ -108,6 +108,8 @@ Confirm:
 
 For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure below for the node-specific `inputs` and `outputs` fields. Author CAPABILITY rule #15 (no top-level `model` block on the instance) and rule #14 (`variables.nodes[]` entry for every data-producing node) both apply. One IxP-specific difference: general action-node guidance treats the instance `outputs` block as optional, but on `uipath.ixp.*` it is required — see [Authoring rule #4](#authoring-rules).
 
+If you can't fully configure the node this turn (greenfield exploration, upstream not wired, planning-only, unconfirmed model), you must STILL land it rather than drop the extraction step — see [Landing the node when you cannot fully configure it](#landing-the-node-when-you-cannot-fully-configure-it).
+
 ## JSON Structure
 
 The IxP node instance carries `inputs` and `outputs` — and **no top-level `model` block**. The slim manifest `model` (`{ type, serviceType }`) lives only in `definitions[]`; the runtime `model.context` / `model.version` / `model.inputs` / `model.outputs` envelope is injected by the BPMN serializer at compile time.
@@ -337,6 +339,13 @@ Agent call sequence:
 4. Author downstream consumers with `$vars.<id>.output.ExtractionResult.ResultsDocument.Fields.find(f => f.FieldName === '<fieldName from step 3>')?.Values?.[0]`.
 
 If the command fails (login expired, deployment not yet published, transient failure), fall back to defensive `find`-by-`FieldName` patterns with assumed field names and surface the assumptions to the user under **Open Questions**. Do NOT substitute a one-off extraction or IxP-product-UI inspection in the agent loop — `get-taxonomy` is the agent-loop path.
+
+## Landing the node when you cannot fully configure it
+
+**The extraction step must ALWAYS land a node — never drop it because configuration is incomplete.** A greenfield/exploration turn, an unwired upstream, a "you don't need a working flow" instruction, or an unconfirmed model are NOT reasons to skip it. The common failure is landing the steps around extraction while the extraction node itself goes missing.
+
+- **Model published** (`registry search "uipath.ixp"` returns entries) → land the real `uipath.ixp.*` node. When you can't finish configuring it this turn, still build the instance from `registry get` (copy `inputs.model` and the fixed `outputs` literal — no user input needed), set `inputs.fileRef` to a placeholder expression, and defer the model choice, `fileRef` source, and taxonomy to **Open Questions**. Do NOT downgrade to `core.logic.mock` — a published model exists, so land the real node.
+- **No model published** (`Data: []`) → land a `core.logic.mock` placeholder per [If the Model Does Not Exist Yet](#if-the-model-does-not-exist-yet).
 
 ## If the Model Does Not Exist Yet
 
