@@ -4,6 +4,7 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 > For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
 
+<!--skill-flavor:project-creation:start-->
 ## uip maestro flow init
 
 Scaffold a new Flow project directory. Outside a solution, `flow init` auto-scaffolds `<ProjectName>Solution/` and nests the project in it. **Prefer creating the solution first** so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
@@ -31,6 +32,7 @@ uip solution projects add \
 ```
 
 Creates `<ProjectName>/` with `project.uiproj`, `<ProjectName>.flow`, `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` inside the solution directory.
+<!--skill-flavor:project-creation:end-->
 
 ## uip maestro flow validate
 

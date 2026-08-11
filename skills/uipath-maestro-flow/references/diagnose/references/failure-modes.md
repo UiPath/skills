@@ -177,6 +177,7 @@ uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_
 
 ---
 
+<!--skill-flavor:project-creation-recovery:start-->
 ## Single-nested layout
 
 ### Symptom
@@ -213,6 +214,7 @@ If the absolute path doesn't exist, the `init` step was wrong — do not try to 
 ### Reference
 
 [Author greenfield journey — Step 2](../../author/references/greenfield.md) — the canonical scaffold sequence.
+<!--skill-flavor:project-creation-recovery:end-->
 
 ---
 

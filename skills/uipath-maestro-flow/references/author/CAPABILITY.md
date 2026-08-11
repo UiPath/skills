@@ -8,7 +8,9 @@ Capability index for building new flows (greenfield) and editing existing flows 
 
 ## When to use this capability
 
+<!--skill-flavor:project-creation-scope:start-->
 - Create a new Flow project with `uip maestro flow init`
+<!--skill-flavor:project-creation-scope:end-->
 - Edit a `.flow` file — adding nodes, edges, or logic
 - Explore available node types via the registry
 - Validate a Flow file locally
@@ -113,7 +115,9 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 
 ## Anti-patterns
 
+<!--skill-flavor:project-creation-antipatterns:start-->
 - **Prefer running `uip maestro flow init` from inside the solution you named** — run outside one it auto-scaffolds `<Project>Solution/`, but the auto name won't match your chosen solution name. Never pass `--skip-solution-registration` for a project you intend to upload (it leaves a bare single-nested layout). See [SKILL.md rule #6](../../SKILL.md#critical-rules-universal) for the required double-nested `<Solution>/<Project>/<Project>.flow` layout and the self-check.
+<!--skill-flavor:project-creation-antipatterns:end-->
 - **Never guess node schemas** — use `registry get` for all node types. Guessed port names or input fields cause silent wiring failures.
 - **Never guess the value or format of a business output** — when a request names an output (`caseKey`, `ticketId`, `severity`, …) without saying how to derive it, elicit the rule ([SKILL.md rule #5](../../SKILL.md#critical-rules-universal)) or confirm your assumption before building. Inventing a format — e.g. prefixing an id that should pass through unchanged — yields a flow that passes `flow validate` but returns the wrong business outcome at runtime. See rule #16 above.
 - **Never skip capability discovery for connector nodes** — run `registry search` to confirm the connector exists and what operations it supports before building. See [connector/planning.md](references/plugins/connector/planning.md). Skipping this is the #1 cause of designing around a connector that doesn't exist or an operation it doesn't support.

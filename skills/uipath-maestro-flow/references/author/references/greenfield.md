@@ -71,6 +71,7 @@ uip login --authority https://alpha.uipath.com     # non-production environments
 
 When you do need it, emit `uip login status --output json` as a parallel `Bash` inside T1.
 
+<!--skill-flavor:project-creation:start-->
 ## Step 2 — Create a solution, THEN a Flow project inside it **[T1]**
 
 > **A Flow project cannot exist outside a solution** (universal rule in [SKILL.md](../../../SKILL.md)). Run `uip maestro flow init` (Step 2b) outside a solution and it now **auto-scaffolds** one — `<Project>Solution/<Project>Solution.uipx` with the project nested at `<Project>Solution/<Project>/` (response carries `Data.AutoCreatedSolution`). Still scaffold or select the solution first (Step 2a) so you set the solution name yourself rather than the auto `<Project>Solution`, and so discovery is unambiguous. The solution and project names are independent — they need not match. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c). Passing `--skip-solution-registration` opts out of both auto-scaffold and registration, leaving a bare single-nested layout that fails Studio Web upload and packaging.
@@ -188,6 +189,7 @@ Equivalent: use the absolute project dir reported by `flow init` in `Data.Path` 
 If the file does not exist at the absolute double-nested path, Step 2 is wrong. Delete the partial scaffold and restart from Step 2a — do not try to patch the layout by hand.
 
 See [shared/file-format.md](../../shared/file-format.md) for the full project structure.
+<!--skill-flavor:project-creation:end-->
 
 ## Step 3 — Refresh the registry **[T1 — chained tail of Step 2]**
 
