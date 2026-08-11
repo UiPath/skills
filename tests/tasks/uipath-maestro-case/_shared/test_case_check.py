@@ -10,6 +10,7 @@ opt-out). A checker must not depend on which CLI build the eval image runs.
 """
 
 import os
+import subprocess
 import sys
 
 import pytest
@@ -114,3 +115,21 @@ def test_run_debug_gate_still_rejects_incomplete(monkeypatch):
     monkeypatch.setattr(case_check, "start_debug", lambda **kw: {"FinalStatus": "Faulted"})
     with pytest.raises(SystemExit, match="Case did not complete"):
         run_debug()
+
+
+def test_timeout_reports_fail_not_traceback(monkeypatch):
+    """A CLI that outruns its timeout must exit FAIL, with the partial output.
+
+    ``TimeoutExpired`` carries bytes even under ``text=True`` on POSIX, so the
+    handler has to decode before formatting.
+    """
+    def timing_out(cmd, **kw):
+        raise subprocess.TimeoutExpired(cmd, kw["timeout"], output=b"half a payload\xff")
+
+    monkeypatch.setattr(case_check.subprocess, "run", timing_out)
+    with pytest.raises(SystemExit) as excinfo:
+        case_check.assert_validate_passes("caseplan.json", timeout=7)
+
+    msg = str(excinfo.value)
+    assert "uip maestro case validate timed out after 7s" in msg
+    assert "half a payload" in msg

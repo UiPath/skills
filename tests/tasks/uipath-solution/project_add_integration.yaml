@@ -5,6 +5,13 @@ description: >
   confirms it appears in the manifest. Covers the project-registration
   surface that all current tests skip (every other task uses empty
   solutions). Runs entirely in the sandbox tempdir — no tenant interaction.
+
+  The prompt deliberately carries a runtime signal ("cross-platform") and a
+  don't-block instruction: the scaffolded project is incidental to the
+  tested surface, and without a framework signal uipath-rpa SKILL.md Rule
+  2a mandates AskUserQuestion — which dead-ends a headless eval (nightly
+  2026-08-07: agent stopped at "Windows or cross-platform?" and never ran
+  projects add).
 tags: [uipath-solution, integration, mode:build, lifecycle:setup]
 
 run_limits:
@@ -15,9 +22,13 @@ initial_prompt: |
 
   1. Create a new UiPath solution called "OrderFlow" in the current
      directory.
-  2. Scaffold a separate project on disk (outside the solution), then
-     register that EXISTING project into the OrderFlow solution.
+  2. Scaffold a separate project on disk (outside the solution) — a
+     minimal cross-platform one is fine — then register that EXISTING
+     project into the OrderFlow solution.
   3. Tell me which projects are registered in the solution afterwards.
+
+  Pick sensible defaults for anything I haven't pinned down — please take
+  it all the way through without stopping to ask me questions.
 
 success_criteria:
   - type: command_executed

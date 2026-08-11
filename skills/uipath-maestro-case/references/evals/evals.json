@@ -83,8 +83,8 @@
       "expectations": [
         "The case-management skill was triggered",
         "Shows the high-level journey first: designs the case from the request with tenant checks along the way, one review packet with every decision for confirmation, then build and validate without interruptions, pausing only before any run or publish",
-        "Does not expose internal phase labels, the handoff, or skill mechanics in user-facing output",
-        "No per-dimension question walk about trigger, task types, exits, or SLAs — open fields are decided best-assumption and disclosed as decisions",
+        "Does not expose internal Phase 0 through Phase 7 labels, the handoff, or skill mechanics in user-facing output",
+        "Asks the Listen opener once (bare request only), then fills every open field by best assumption — no per-dimension question walk about trigger, task types, exits, or SLAs; open fields are disclosed as decisions",
         "Presents ONE Case Review with the required sections: Case Snapshot, Primary Journey, Other Paths Considered, SLA and Escalations, Rules and Outcomes, Resources and Integrations, Decisions I Made, Review Flags, and Caller obligation when relevant",
         "The Case Review names every stage and every task in the Primary Journey or Other Paths tables, with task type, activation mode, required/optional status, routing/exit behavior, and SLA context",
         "The approval surface omits the data contract, variables, task inputs, task outputs, and duplicated stage/task detail cards; those technical details remain in sdd.md",
