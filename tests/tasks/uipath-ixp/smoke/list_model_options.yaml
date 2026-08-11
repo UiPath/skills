@@ -8,8 +8,8 @@ description: >
   names none) while one that knows the distinction answers from the skill.
 
   `model_options.md` is not a self-report — it carries ground truth the agent must
-  retrieve, not a claim about work performed. The guard reads the mock's calls.log
-  rather than Bash text because a correct answer quotes `configure-model --model
+  retrieve, not a claim about work performed. The guard reads the mock's invocation
+  log rather than Bash text because a correct answer quotes `configure-model --model
   <id>` and may cite `list-models` to contrast it, which a text regex false-matches.
   A correct run makes no `uip` call, so no guaranteed log line exists for the
   positive control the mock README requires — hence its documented fallback, a
@@ -73,20 +73,25 @@ success_criteria:
     pass_threshold: 1.0
 
   # Log of ACTUAL executions: quoting the verb to contrast it is fine, running it
-  # is not. `includes:` only proves the log exists and is readable.
-  - type: file_contains
-    description: "Agent did NOT mistake the catalog for version listing: mock call log has no executed `projects list-models`"
-    path: "mocks/calls.log"
-    includes: ["# seeded by mock_template"]
-    excludes: ["uip ixp projects list-models"]
+  # is not. cli_called errors out when the log is absent, so a deleted sink can no
+  # longer read as "the forbidden verb never ran".
+  - type: cli_called
+    description: "Agent did NOT mistake the catalog for version listing: no executed `projects list-models`"
+    log: "mocks/calls.jsonl"
+    verb: "ixp projects list-models"
+    min_count: 0
+    max_count: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  # Without this, re-pointing the mock's sink leaves the seeded log clean and the
-  # guard above passes vacuously.
+  # A present-but-unwritten log still passes the guard above, so assert the sink
+  # in the mock source. Both strings are needed: the constant names the file the
+  # guard reads, the open() proves invocations are appended to it.
   - type: file_contains
-    description: "Mock still records invocations to the graded calls.log (guard is not vacuous)"
+    description: "Mock still records invocations to the graded calls.jsonl (guard is not vacuous)"
     path: "mocks/uip"
-    includes: ['>> "$(dirname "$0")/calls.log"']
+    includes:
+      - 'JSON_LOG = os.path.join(MOCK_DIR, "calls.jsonl")'
+      - 'with open(JSON_LOG, "a"'
     weight: 1.0
     pass_threshold: 1.0

@@ -25,19 +25,26 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  - type: cli_called
     description: "Agent renamed field \"Amount\" to \"Total Amount\" via `fields rename` (right group)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+rename\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Invoice Header)(?=.*--field\s+["']?Amount)(?=.*--new-name\s+["']?Total Amount).*)[^\r\n]*$
+    log: "mocks/calls.jsonl"
+    verb: "ixp fields rename"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      group: "Invoice Header"
+      field: "Amount"
+      new-name: "Total Amount"
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_matches_regex
+  # A rename must not destroy the field. min_count: 0 + max_count: 0 is the
+  # must-NOT-match form; extra facets here would only give a delete more ways to
+  # slip past the guard.
+  - type: cli_called
     description: "Agent did NOT delete the field (rename must not destroy it)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+delete\b)[^\r\n]*$
-    must_match: false
+    log: "mocks/calls.jsonl"
+    verb: "ixp fields delete"
+    min_count: 0
+    max_count: 0
     weight: 1.0
     pass_threshold: 1.0
