@@ -296,11 +296,11 @@ The architectural core sections differ per template. For each product, generate 
 - §12 Project Structure
 
 **Case Management:**
-- `## Section 1: Case Definition` (case metadata, SLA rules, triggers, case exit conditions, case variables)
-- `## Section 2: Stages & Tasks` (one complete stage block per stage; task summary table plus one complete detail block per task)
-- `## Section 3: Personas & App Views`
-- `## Section 4: Integrations` (resource roll-up for connectors, API workflows, agents, processes/RPA, child cases, external agents, IXP models, coded functions)
-- Case SDDs MUST use the downstream `uipath-maestro-case` blueprint shape: `# SDD — {Case Name}`, `## Table of Contents`, `## Section 1: Case Definition`, `## Section 2: Stages & Tasks`, `## Section 3: Personas & App Views`, `## Section 4: Integrations`. Do not emit the legacy planner-only `§3 Stages` / `§4 Tasks Grid` / `§13 Task Type Registry` format.
+- §1 Case Definition (case metadata, SLA rules, triggers, case exit conditions, case variables)
+- §2 Stages & Tasks (one complete stage block per stage; task summary table plus one complete detail block per task)
+- §3 Personas & App Views
+- §4 Integrations (resource roll-up for connectors, API workflows, agents, processes/RPA, child cases, external agents, IXP models, coded functions)
+- Case section headings render in the template's long form (`## Section 1: Case Definition`, …) — the heading TEXT is load-bearing downstream (`uipath-maestro-case` parses it verbatim); `§N` is the reference notation in planner docs only. Do not emit the legacy planner-only `§3 Stages` / `§4 Tasks Grid` / `§13 Task Type Registry` format.
 - Case body content obeys [case-authoring-rules-guide.md](case-authoring-rules-guide.md) (task-type choice + compliance override, lifecycle rule legality, §1.5 declare-vs-xref, variable lineage, finalization checks); tenant grounding runs per [case-design-lane-guide.md § Tenant grounding](case-design-lane-guide.md#tenant-grounding--full-resolution-at-design-time). For conversational (non-PDD) case requests, delegated case design, and case draft finalization, the whole flow is the Case Design Lane — [case-design-lane-guide.md](case-design-lane-guide.md) — not the generic 3-phase model in this guide.
 
 **Agents:**
@@ -353,7 +353,7 @@ Type each step's verb and place it on the best-fit component per [Product Select
 
 For each integrated component detected in Phase 1 (and each non-primary placement from Step 3), flag it in the appropriate section of the template:
 
-- **HITL** — host-aware routing: Flow hosts → flag touchpoints; implementation task routes to `uipath-human-in-the-loop`. Coded Agents → escalation is part of the `uipath-agents` build task (the HITL skill defers coded-agent wiring to it). BPMN userTask → flagged in §9 HITL Touchpoints, authored inline by `uipath-maestro-bpmn` (no HITL-skill task). Case → `action` task detail block in `## Section 2: Stages & Tasks` with Action App intent (never the HITL skill). RPA → Action Center / long-running workflow flagged in the RPA template.
+- **HITL** — host-aware routing: Flow hosts → flag touchpoints; implementation task routes to `uipath-human-in-the-loop`. Coded Agents → escalation is part of the `uipath-agents` build task (the HITL skill defers coded-agent wiring to it). BPMN userTask → flagged in §9 HITL Touchpoints, authored inline by `uipath-maestro-bpmn` (no HITL-skill task). Case → `action` task detail block in §2 Stages & Tasks with Action App intent (never the HITL skill). RPA → Action Center / long-running workflow flagged in the RPA template.
 - **Integration Service connectors** → list in Application Inventory (RPA) or Connectors section (others); check `uip is connectors list` — implementation task routes to `uipath-platform` to configure an existing connector, or `uipath-connector-builder` to build a custom one when none exists
 - **IXP / Document Understanding models** (extraction from semi-structured documents) → list in the host template's "IXP / Document Understanding Models" table (Flow / BPMN / Case / Agent / RPA templates carry it); for an API Workflow or Coded App primary, record the model as its own row in §Solution / Project Breakdown instead. Implementation task routes to `uipath-ixp`, ordered before its consumers
 - **Coded Functions** (TypeScript / JavaScript / Python — atomic deterministic transform / compute: parsing, scoring, custom-auth API calls, IS-connection queries) — only when extraction is justified per [placement rule 6](product-selection-guide.md#per-task-component-placement-the-to-be-per-step); host-native logic stays in the host's own inventory → list in the host template's "Coded Functions" table (Flow / BPMN / Case / Agent templates carry it). Implementation task routes to `uipath-functions`, ordered before its consumers; no per-project SDD file (see [Template Mapping](product-selection-guide.md#template-mapping))
@@ -528,7 +528,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    Minimum required H2 headings per template:
    - **RPA template:** §1 Process Overview, §2 Process Map, §3 Detailed Process Steps, §4 Business Rules, §5 Data Definitions, §6 Value Mappings, §7 Exception Handling, §8 Error Handling, §9 Application Inventory, §10 Master Project Architecture, §11 Project Structure, §12 Queue Architecture (omit only when the design defines or consumes no Orchestrator queue), §13 Implementation Mode, §14 Packages, §15 Credentials & Assets, §16 Deployment Environment, §17 Testing Strategy, §18 Next Steps
-   - **Case template:** `## Document History`, `## Planner Handoff`, `## Table of Contents`, `## Section 1: Case Definition`, `## Section 2: Stages & Tasks`, `## Section 3: Personas & App Views`, `## Section 4: Integrations`, `## Non-Functional Requirements`, `## Testing Strategy`, `## Next Steps`. Also verify every modeled stage has a `### Stage ...` or `### Secondary Stage ...` block, every modeled task has a `##### Task ...` detail block, and every task detail block contains the exact marker `**Task envelope**` before its Required / Run Only Once / Skip Condition table.
+   - **Case template:** §1 Case Definition, §2 Stages & Tasks, §3 Personas & App Views, §4 Integrations, plus the unnumbered H2s `## Document History`, `## Planner Handoff`, `## Table of Contents`, `## Non-Functional Requirements`, `## Testing Strategy`, `## Next Steps`. Also verify every modeled stage has a `### Stage ...` or `### Secondary Stage ...` block, every modeled task has a `##### Task ...` detail block, and every task detail block contains the exact marker `**Task envelope**` before its Required / Run Only Once / Skip Condition table.
    - **Other templates:** check the template file's TOC; the rule is the same — every H2 in the template appears in the generated SDD.
 
    For any missing required H2:
