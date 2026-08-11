@@ -74,6 +74,19 @@ Map the letter to the verdict word (this is the only place the letter→word map
 - **Single-agent review:** the overall Agent Grade IS the agent's grade.
 - **Solution with multiple agents:** the overall Agent Grade = the **worst** per-agent grade. A solution is only as deployable as its weakest agent — do not average grades. Non-agent projects do not contribute a grade (phase 1).
 
+## Low-code agent reports — omit these sections
+
+Low-code agent review (`agent.json`): omit entirely — no placeholder, no "not applicable" note.
+
+| Section | Omit when |
+|---|---|
+| PDD Alignment | No PDD available |
+| Per-Project Summary | Review scope is a single project, including a single project inside a solution |
+| Grade derivation | Always — the `Agent Grade` line carries the letter and verdict label only: no binding constraint, sub-grades, or `Data.Grade` comparison |
+| Optimization Notes | Always |
+
+The `**Final grade: <A–F>**` last line still prints.
+
 ## Edge cases
 
 | Situation | Handling |
@@ -97,7 +110,7 @@ Because **G_det = `Data.Grade`** and the final grade is `min(G_det, G_jud)`:
 
 - **G_det is reproducible because it is the CLI's deterministic grade** — same agent, same `Data.Grade`, every run. The skill does not recompute it.
 - **G_jud is reproducible given the principle scores** — reason from the same evidence (architecture-assessment-guide.md §4 criteria + the judgment catalog) in the same order so the scores, and therefore the grade, are stable run-to-run.
-- The grade is **derived, never asserted.** Every grade must trace to `Data.Grade` (G_det), the G_jud average, and the `min()` binding constraint. A grade with no shown derivation is invalid.
+- The grade is **derived, never asserted.** Every grade must trace to `Data.Grade` (G_det), the G_jud average, and the `min()` binding constraint. A grade with no shown derivation is invalid, except where the report omits derivation (low-code).
 - Do not introduce grade values outside `A` / `B` / `C` / `D` / `F`. No `+`/`-` modifiers, no `A*`, no numeric-only grade.
 
 ## Worked examples
