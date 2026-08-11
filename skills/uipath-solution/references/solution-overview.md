@@ -62,7 +62,7 @@ MySolution/
 │   └── source/dist/                      <- Build output (bundlePath: "source/dist").
 ├── resources/                            <- Auto-generated on add/import. NEVER hand-edit.
 │   └── solution_folder/
-│       ├── package/<name>.json           <- Auto-created on add. NOT cleaned by `project remove`.
+│       ├── package/<name>.json           <- Auto-created on add. Auto-cleaned on remove.
 │       ├── process/{process,flow}/<name>.json   <- Auto-created on add. Auto-cleaned on remove.
 │       └── app/{Coded,CodedAction}/<name>.json  <- AppV2 apps only. `kind: "app"`, `apiVersion: apps.uipath.com/v1`.
 └── userProfile/<user-uuid>/              <- Appears after first `project remove`.

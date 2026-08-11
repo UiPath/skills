@@ -1,6 +1,6 @@
 ---
 name: uipath-solution
-description: "Always invoke for `.uipx` files. UiPath Solution lifecycle via `uip solution`: init, pack, publish, deploy, activate, uninstall, upload, and the projects and resources inside a multi-project solution — plus diagnosing any of those failing. Also consuming a published Solution from the tenant feed. For PDD/SDD design→uipath-planner. For non-solution Orchestrator/IS/auth/traces→uipath-platform. For .xaml/.cs→uipath-rpa. For .flow→uipath-maestro-flow. For .bpmn→uipath-maestro-bpmn. For agent.json/.py agents→uipath-agents. For standalone coded apps→uipath-coded-apps."
+description: "Always invoke for `.uipx` files. UiPath Solution lifecycle via `uip solution`: init, pack, publish, deploy, activate, uninstall, upload, and the projects and resources inside a multi-project solution — plus diagnosing any of those failing, and consuming a published Solution from the tenant feed. Member projects are built with their own skill; this skill owns the `.uipx` container. For .xaml/.cs→uipath-rpa. For .flow→uipath-maestro-flow. For agent.json/.py→uipath-agents. For caseplan.json→uipath-maestro-case. For PDD/SDD→uipath-planner. For non-solution Orchestrator/IS→uipath-platform."
 when_to_use: "Fires on .uipx, 'uip solution', 'pack/publish/deploy the solution', activate, deploy configs, environment promotion, Solution scope or Solution Folder, and solution resources (a queue/asset/bucket/connection declared in the solution). Also fires to diagnose solution build-time faults: pack/publish/deploy/activate errors, stale or missing bindings, unresolved resources, deploy error codes, publish name+version collisions. Build-time and CLI faults belong here; faulted Orchestrator jobs at runtime→uipath-troubleshoot. Load BEFORE editing .uipx or running uip solution commands."
 ---
 
@@ -22,9 +22,28 @@ Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via
 
 **Skip this skill** when:
 - The task is PDD → SDD architecture/design (sdd.md / pdd.md) — load `uipath-planner`.
-- The deployable is a single non-solution package. An RPA Library uses `uip rpa pack` → `uip or libraries upload`; a standalone coded app uses its own pack/publish/deploy lifecycle. Route authoring to the relevant specialist.
-- The task is authoring or publishing the shared Library itself, not the Solution that consumes it — load `uipath-rpa`.
+- The deployable is a single non-solution package (a standalone RPA package, an RPA Library, a standalone coded app) — load the owning skill from the table below.
 - The task is non-solution Orchestrator work (folders, jobs, assets, queues, IS connections) — load `uipath-platform`.
+
+## Build Member Projects with Their Own Skill
+
+This skill owns the **container**: `init`, registration, resources, `pack`, `publish`, `deploy`. It does not author what is inside a member project. When a task requires building or editing a member, **load that member's skill, implement the project there, then return here** to register and ship it. Route by file signal:
+
+| Member / signal | `.uipx` `Type` | Load |
+|---|---|---|
+| `.xaml`, `.cs` workflows | `Process`, `Tests` | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
+| `.flow` | `Flow` | [/uipath:uipath-maestro-flow](/uipath:uipath-maestro-flow) |
+| `.bpmn` | `ProcessOrchestration` | [/uipath:uipath-maestro-bpmn](/uipath:uipath-maestro-bpmn) |
+| `caseplan.json` | `CaseManagement` | [/uipath:uipath-maestro-case](/uipath:uipath-maestro-case) |
+| `agent.json`, `.py` agents | `Agent` | [/uipath:uipath-agents](/uipath:uipath-agents) |
+| coded app (`webAppManifest.json`) | `AppV2` | [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps) |
+| API workflow (`Workflow.json`) | `Api` | [/uipath:uipath-api-workflow](/uipath:uipath-api-workflow) |
+| Python / TS Function | `Function` | [/uipath:uipath-functions](/uipath:uipath-functions) |
+| RPA Library — build-time only, outside the solution root | not a member | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
+| Design before any project exists (PDD / SDD) | — | [/uipath:uipath-planner](/uipath:uipath-planner) |
+| Orchestrator / Integration Service work outside the solution | — | [/uipath:uipath-platform](/uipath:uipath-platform) |
+
+Never hand-author a member's source from here — a project scaffolded outside its owning skill misses required manifests and derived files, and `pack` rejects it.
 
 ## CLI Surface Probe
 

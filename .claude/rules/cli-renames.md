@@ -9,13 +9,10 @@ The catalog at `assets/uip-catalog-snapshot.json` is the source of truth for whi
 | `flow`                 | `maestro flow`       | uip 1.2.0  |
 | `solution new`         | `solution init`      | uip 1.2.0  |
 | `solution resource`    | `solution resources` | uip 1.196.0|
+| `solution project`     | `solution projects`  | uip 1.199.0|
 | `is resources execute` | `is resources run`   | uip 1.1.0  |
 | `resource`             | `or`                 | uip 1.196.0|
-
-`solution project` (stable 1.198.x) / `solution projects` (1.199+ preview) and
-`functions` (stable 1.198.x) / `function` (1.200+ development) are intentional
-cross-version surfaces. Both forms remain in the catalog; skills must probe the
-live command group instead of treating either form as globally retired.
+| `functions`            | `function`           | uip 1.200.0|
 
 
 ## When to add an entry
