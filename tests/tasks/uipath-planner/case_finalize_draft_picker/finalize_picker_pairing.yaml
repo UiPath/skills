@@ -8,7 +8,7 @@ description: >
   lane is unreachable. Finalization must supply the missing half of the pair.
   Finalization-only (no interview, no build) so the run stays inside a handful
   of turns; graded on authored condition tables, never on rationale prose.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node]
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-node]
 
 run_limits:
   task_timeout: 1800
@@ -31,9 +31,10 @@ initial_prompt: |
   finalized design; nothing built yet.
 
   This is a Maestro case-management SDD finalization. Keep it inside the Case
-  Management SDD template; do not route it through cross-product planning.
-  Use the direct finalization path: read the draft and SDD template, write the
-  finalized `sdd.md`, and do not spawn subagents or inspect planning/plugin docs.
+  Management SDD template shape; finalize the draft into `sdd.md` in this
+  folder. Use the direct draft-finalization fast path: read the draft and the
+  case SDD template, write the finalized `sdd.md`, and do not spawn subagents,
+  run tenant discovery, or derive implementation tasks.
   Repair mechanically required rule pairings without changing business intent:
   a manual stage-picker lane needs `wait-for-user` exposure from every primary
   stage where it may be selected. That exposure is not automatic event, SLA,
@@ -58,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "finalized sdd.md passes the shared mechanical SDD contract"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/sdd_check.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/sdd_check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -86,6 +87,6 @@ simulation:
     - "Confirm that the Compliance Officer launches Compliance Hold by hand from the stage picker; there is no event, SLA, or decision button that routes there."
     - "If asked about wait-for-user, confirm it is the required picker exposure and does not add automatic routing."
     - "Do not request design changes or add requirements."
-    - "Keep the agent in Phase 0. If it offers to plan tasks.md or build a caseplan, tell it to stop at the approved sdd.md."
+    - "Keep the agent at design/finalization only. If it offers to plan tasks.md or build a caseplan, tell it to stop at the approved sdd.md."
     - "Keep replies to one sentence."
   max_turns: 8

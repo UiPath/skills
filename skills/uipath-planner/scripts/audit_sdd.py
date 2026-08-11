@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic template-shape audit for a finalized Case Management sdd.md.
+"""Deterministic template-shape audit for a planner-authored Case Management SDD.
 
 Usage:
     python3 audit_sdd.py <sdd.md> [--draft <sdd.draft.md>]

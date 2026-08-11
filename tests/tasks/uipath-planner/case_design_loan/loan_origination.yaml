@@ -1,16 +1,14 @@
 task_id: skill-case-phase-0-loan-origination
 description: >
-  Phase 0 INTERVIEW ONLY — simulated interview → sdd.draft.md for a
-  commercial-loan origination case at a mid-market bank. Tests whether the
-  Phase 0 interview captures a logically coherent design: 6 primary stages in
+  CASE DESIGN ONLY (planner Case Design Lane) — simulated interview → sdd.draft.md for a
+  commercial-loan origination case at a mid-market bank. Tests whether the design conversation captures a logically coherent design: 6 primary stages in
   order (Intake → Loan Setup → Underwriting → QA/QC → Closing → Resolved), 4
   exception lanes (Customer Comms, Escalation, Withdrawn, Rejected), and the
-  conditional >$5M Credit-Analyst gate. STOPS at the draft — no Finalization,
-  no sdd.md — and an LLM judge rates the draft's design coherence. Mechanical
+  conditional >$5M Credit-Analyst gate. STOPS at the draft — no Finalization, no final SDD — and an LLM judge rates the draft's design coherence. Mechanical
   validity is covered separately by the finalize-from-draft task. Second domain
   alongside candidate_interview.
 tags:
-  - uipath-maestro-case
+  - uipath-planner
   - integration
   - lifecycle:generate
   - mode:build
@@ -46,13 +44,13 @@ initial_prompt: |
   polish or validate it yet, just capture the design.
 
 success_criteria:
-  # The interview grades the captured DESIGN, in whichever file Phase 0 leaves it:
+  # The run grades the captured DESIGN, in whichever file the design lane leaves it:
   # sdd.draft.md if it stopped at the draft, or sdd.md if it finalized. All
   # content criteria read whichever exists, so the test does not hinge on the
   # agent stopping at exactly the draft step.
   - type: run_command
-    description: "Phase 0 interview produced a design document (draft or finalized)"
-    command: "test -f sdd.draft.md || test -f sdd.md"
+    description: "design lane produced a design document (draft or finalized)"
+    command: "ls *sdd*.md 2>/dev/null | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
@@ -60,7 +58,7 @@ success_criteria:
 
   - type: run_command
     description: "design models the conditional >$5M Credit-Analyst gate"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/check_credit_analyst_gate.py sdd.draft.md sdd.md"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/check_credit_analyst_gate.py sdd.draft.md sdd.md"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -68,7 +66,7 @@ success_criteria:
 
   - type: run_command
     description: "design declares all 4 exception lanes"
-    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'customer comms' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'escalation' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'withdrawn' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'rejected'"
+    command: "cat *sdd*.md 2>/dev/null | grep -Eiq 'customer comms' && cat *sdd*.md 2>/dev/null | grep -Eiq 'escalation' && cat *sdd*.md 2>/dev/null | grep -Eiq 'withdrawn' && cat *sdd*.md 2>/dev/null | grep -Eiq 'rejected'"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -76,14 +74,14 @@ success_criteria:
 
   - type: run_command
     description: "design captures all 6 primary stages (not truncated)"
-    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 6 ]"
+    command: "f=$(ls *sdd*.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 6 ]"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "stayed in Phase 0 — did not run ahead into a caseplan build"
+    description: "stayed at design — did not run ahead into a caseplan build"
     command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
     timeout: 10
     expected_exit_code: 0
@@ -98,7 +96,7 @@ success_criteria:
     max_file_chars: 150000
     include_agent_output: false
     prompt: |
-      You are reviewing a Phase-0 design document for a COMMERCIAL LOAN
+      You are reviewing a design-lane draft document for a COMMERCIAL LOAN
       ORIGINATION case. The design is in whichever file is attached —
       `sdd.draft.md` (a pre-finalization draft) or `sdd.md` (the finalized
       version); grade whichever is present. Do NOT penalize unresolved connector
@@ -141,7 +139,7 @@ simulation:
     DocuSign for closing documents). A solution designer is interviewing you to
     map this process into a compact case definition.
   goal: |
-    Get a complete Phase-0 sdd.draft.md for the LoanOrigination case. Answer the
+    Get a complete design draft (sdd.draft.md) for the LoanOrigination case. Answer the
     designer's interview questions so the design reaches full depth. When the
     designer has written the draft and asks whether to finalize, produce sdd.md,
     or proceed, tell them to STOP at the draft — the draft is all you need.

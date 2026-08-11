@@ -1,6 +1,6 @@
 # SDD Authoring — Worked Examples by Use Case
 
-Companion to [`sdd-template.md`](sdd-template.md). Each section shows the SDD authoring snippets for a common pattern an author will encounter. Use as a reference when writing a new `sdd.md`.
+Companion to [`case-sdd-template.md`](case-sdd-template.md). Each section shows the SDD authoring snippets for a common pattern an author will encounter. Use as a reference when writing a new `sdd.md`.
 
 Fourteen v1-supported patterns. Two intentionally-dropped patterns documented at the end with workarounds.
 
@@ -514,7 +514,7 @@ In v1, **every variable accessible via `=vars.X` must appear in the Case Variabl
 "value": "=js:({ approvalDecision: vars.$xref('AP Review','AP lead approval','outcome'), urgentPaymentDecision: vars.$xref('AP Review','Urgent payment','outcome') })"
 ```
 
-Full marker semantics: [bindings-and-expressions.md § In-expression references](../../references/bindings-and-expressions.md#in-expression-references-varsxref).
+Full marker semantics: the build skill's `bindings-and-expressions.md` § In-expression references (`uipath-maestro-case`).
 
 ---
 

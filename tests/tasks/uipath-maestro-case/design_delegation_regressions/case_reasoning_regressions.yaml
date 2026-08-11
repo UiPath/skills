@@ -56,7 +56,7 @@ success_criteria:
 
   - type: run_command
     description: "Known case-reasoning invariants are represented in sdd.md and tasks/tasks.md"
-    command: "python3 \"$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/phase_0_to_case/case_reasoning_regressions/check_case_reasoning_regressions.py\""
+    command: "python3 \"$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/design_delegation_regressions/check_case_reasoning_regressions.py\""
     timeout: 10
     expected_exit_code: 0
     weight: 4.0

@@ -1,4 +1,4 @@
-"""Deterministic guards for the SDD **SLA Response Map** contract (sdd-generation-rules §1.2b).
+"""Deterministic guards for the SDD **SLA Response Map** contract (case-authoring-rules-guide §1.2b).
 
 The map is the single place SLA breach / at-risk behavior is decided:
 
