@@ -37,7 +37,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL node has input-direction fields (read-only context for reviewer)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"direction\": \"input\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"direction\": \"input\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -45,7 +45,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL node has output-direction fields (reviewer fills in)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"direction\": \"output\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"direction\": \"output\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -53,7 +53,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow has Approve and Reject outcomes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'Approve' 'Reject'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview 'Approve' 'Reject'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -61,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "Priority is set to High"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"High\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"High\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

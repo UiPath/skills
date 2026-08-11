@@ -29,7 +29,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Flow file was created at the expected path"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -37,7 +37,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow contains the inline HITL node type"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"uipath.human-in-the-loop.quick-form\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval '\"uipath.human-in-the-loop.quick-form\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -45,7 +45,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow exposes Approve and Reject outcomes"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'Approve' 'Reject'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval 'Approve' 'Reject'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -53,7 +53,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow wires the completed handle"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'completed'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name GdprDeletionApproval 'completed'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

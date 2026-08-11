@@ -47,7 +47,7 @@ success_criteria:
 
   - type: run_command
     description: "Input fields have binding expressions pointing to upstream script output"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"binding\": \"vars.' 'fetchSupplier' '.output.supplierName'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SupplierOnboarding '\"binding\": \"vars.' 'fetchSupplier' '.output.supplierName'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -55,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "Risk score field is bound and uses number type"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '.output.riskScore' '\"number\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SupplierOnboarding '.output.riskScore' '\"number\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -63,7 +63,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL has boolean output field for approved"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"direction\": \"output\"' '\"boolean\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SupplierOnboarding '\"direction\": \"output\"' '\"boolean\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -71,7 +71,7 @@ success_criteria:
 
   - type: run_command
     description: "Decision node references HITL output by field ID"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '$vars.' '.output.approved'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SupplierOnboarding '$vars.' '.output.approved'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5

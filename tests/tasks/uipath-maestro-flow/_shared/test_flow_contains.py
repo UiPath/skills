@@ -1,10 +1,13 @@
-"""Unit tests for ``flow_contains.py`` — substring and ``--regex`` assertions.
+"""Unit tests for ``flow_contains.py`` — substring, ``--regex``, ``--flow-name``
+and ``--absent-regex`` assertions.
 
 Covers the path-agnostic replacements for the ``file_contains`` /
-``file_matches_regex`` criterion types: substrings and regexes must match at
-least one discovered ``.flow`` file, exit 1 when absent (the negative-check
-contract relied on by quality_08_variable_binding_fieldid), and exit 2 on a
-dangling ``--regex`` flag.
+``file_matches_regex`` criterion types and the three PR-review contracts:
+positive assertion sets must be satisfied by ONE file (no split-matching
+across subflows), ``--flow-name`` restores the basename enforcement the
+literal paths had, and ``--absent-regex`` succeeds (exit 0) only after
+discovery + reads complete without the forbidden pattern — so a missing flow
+can never score a negative criterion.
 """
 
 import json
@@ -25,12 +28,18 @@ FLOW_BODY = json.dumps(
 )
 
 
-@pytest.fixture()
-def sandbox(tmp_path, monkeypatch):
-    proj = tmp_path / "DemoSolution" / "Demo"
+def _make_project(tmp_path, solution="DemoSolution", project="Demo", flows=None):
+    proj = tmp_path / solution / project
     proj.mkdir(parents=True)
     (proj / "project.uiproj").write_text(json.dumps({"ProjectType": "Flow"}))
-    (proj / "Demo.flow").write_text(FLOW_BODY)
+    for name, body in (flows or {"Demo": FLOW_BODY}).items():
+        (proj / f"{name}.flow").write_text(body)
+    return proj
+
+
+@pytest.fixture()
+def sandbox(tmp_path, monkeypatch):
+    _make_project(tmp_path)
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
@@ -59,5 +68,62 @@ def test_mixed_substring_and_regex(sandbox):
     assert main(["quick-form", "--regex", r"\$vars\."]) == 0
 
 
-def test_dangling_regex_flag_exits_2(sandbox):
-    assert main(["--regex"]) == 2
+def test_dangling_flag_exits_2(sandbox):
+    with pytest.raises(SystemExit) as exc:
+        main(["--regex"])
+    assert exc.value.code == 2
+
+
+def test_assertion_set_must_match_single_file(tmp_path, monkeypatch):
+    # Split across two flows: "alpha" in one, "beta" in the other — must FAIL.
+    _make_project(
+        tmp_path,
+        flows={"Main": '{"nodes": ["alpha"]}', "Sub": '{"nodes": ["beta"]}'},
+    )
+    monkeypatch.chdir(tmp_path)
+    assert main(["alpha", "beta"]) == 1
+    assert main(["alpha"]) == 0
+    assert main(["beta"]) == 0
+
+
+def test_flow_name_match(sandbox):
+    assert main(["--flow-name", "Demo"]) == 0
+    assert main(["--flow-name", "Demo", "quick-form"]) == 0
+
+
+def test_flow_name_mismatch_exits_1(sandbox):
+    assert main(["--flow-name", "VendorApproval"]) == 1
+
+
+def test_flow_name_scopes_assertions(tmp_path, monkeypatch):
+    # "beta" only exists in Sub.flow; scoping to Main must fail on it.
+    _make_project(
+        tmp_path,
+        flows={"Main": '{"nodes": ["alpha"]}', "Sub": '{"nodes": ["beta"]}'},
+    )
+    monkeypatch.chdir(tmp_path)
+    assert main(["--flow-name", "Main", "alpha"]) == 0
+    assert main(["--flow-name", "Main", "beta"]) == 1
+
+
+def test_absent_regex_passes_when_absent(sandbox):
+    assert main(["--absent-regex", r"\.output\.(legalApproval|legalNotes)"]) == 0
+
+
+def test_absent_regex_fails_when_present(sandbox):
+    assert main(["--absent-regex", r"\.output\.approved"]) == 1
+
+
+def test_absent_regex_fails_without_flow(tmp_path, monkeypatch):
+    # No flow at all: the negative assertion must NOT succeed (exit != 0) —
+    # discovery aborts before the absence check can pass.
+    proj = tmp_path / "Empty" / "Empty"
+    proj.mkdir(parents=True)
+    (proj / "project.uiproj").write_text(json.dumps({"ProjectType": "Flow"}))
+    monkeypatch.chdir(tmp_path)
+    assert main(["--absent-regex", "anything"]) != 0
+
+
+def test_absent_and_positive_combined(sandbox):
+    assert main(["quick-form", "--absent-regex", "forbidden-token"]) == 0
+    assert main(["quick-form", "--absent-regex", r"\.output\.approved"]) == 1

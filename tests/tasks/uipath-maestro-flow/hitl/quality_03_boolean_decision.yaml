@@ -40,7 +40,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL node has a boolean output field"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"boolean\"' '\"direction\": \"output\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorApproval '\"boolean\"' '\"direction\": \"output\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -48,7 +48,7 @@ success_criteria:
 
   - type: run_command
     description: "Decision node condition references field-level HITL output"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '$vars.' '.output.approved'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorApproval '$vars.' '.output.approved'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -56,7 +56,7 @@ success_criteria:
 
   - type: run_command
     description: "Both Decision branches wired (true and false handles)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"true\"' '\"false\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorApproval '\"true\"' '\"false\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

@@ -42,7 +42,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL node has approved field with correct id and variable"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"id\": \"approved\"' '\"variable\": \"vars.legalApproval\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"id\": \"approved\"' '\"variable\": \"vars.legalApproval\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -50,7 +50,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL node has comments field with id reviewcomments"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"id\": \"reviewcomments\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"id\": \"reviewcomments\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -58,7 +58,7 @@ success_criteria:
 
   - type: run_command
     description: "Downstream script references output by field ID .approved"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '.output.approved'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '.output.approved'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -66,19 +66,20 @@ success_criteria:
 
   - type: run_command
     description: "Downstream script references output by field ID .reviewcomments"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '.output.reviewcomments'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '.output.reviewcomments'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  # Negative check: exit 1 = the forbidden pattern is absent from every
-  # discovered .flow file (flow existence is asserted by the criteria above).
+  # Negative check via --absent-regex: exit 0 only when discovery succeeded,
+  # the ContractReview flow was read, and the forbidden pattern is absent —
+  # a missing or unreadable flow can never score these points.
   - type: run_command
     description: "Script does NOT reference output by variable name (.output.legalApproval or .output.legalNotes)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --regex '\\.output\\.(legalApproval|legalNotes)'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview --absent-regex '\\.output\\.(legalApproval|legalNotes)'"
     timeout: 30
-    expected_exit_code: 1
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 

@@ -25,7 +25,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "HITL node with specified ID is present in the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"uipath.human-in-the-loop.quick-form\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ReviewAndRoute '\"uipath.human-in-the-loop.quick-form\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -49,7 +49,7 @@ success_criteria:
 
   - type: run_command
     description: "Downstream script references the HITL output runtime variable"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --regex '\\$vars\\.[A-Za-z0-9_-]+\\.output'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ReviewAndRoute --regex '\\$vars\\.[A-Za-z0-9_-]+\\.output'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -57,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "Downstream script references the HITL status runtime variable"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --regex '\\$vars\\.[A-Za-z0-9_-]+\\.status'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ReviewAndRoute --regex '\\$vars\\.[A-Za-z0-9_-]+\\.status'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

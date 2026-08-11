@@ -40,7 +40,7 @@ success_criteria:
 
   - type: run_command
     description: "approved field uses boolean type"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"boolean\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseReview '\"boolean\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -48,7 +48,7 @@ success_criteria:
 
   - type: run_command
     description: "amount fields use number type"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"number\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseReview '\"number\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

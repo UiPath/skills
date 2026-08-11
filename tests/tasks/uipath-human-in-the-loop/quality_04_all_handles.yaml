@@ -26,7 +26,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "HITL node is present in the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"uipath.human-in-the-loop.quick-form\"'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name PurchaseOrderApproval '\"uipath.human-in-the-loop.quick-form\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -34,7 +34,7 @@ success_criteria:
 
   - type: run_command
     description: "completed handle is wired in the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'completed'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name PurchaseOrderApproval 'completed'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

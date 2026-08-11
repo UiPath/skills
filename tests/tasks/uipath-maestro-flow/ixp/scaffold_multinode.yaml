@@ -76,7 +76,7 @@ success_criteria:
 
   - type: run_command
     description: "All three script nodes are present by name"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py 'postReceipt' 'sendToValidation' 'logError'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ReceiptIntake 'postReceipt' 'sendToValidation' 'logError'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
@@ -84,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "Scripts reference the extraction output via $vars expression"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '$vars.'"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ReceiptIntake '$vars.'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
