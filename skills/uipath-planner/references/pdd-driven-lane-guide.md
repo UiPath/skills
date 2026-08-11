@@ -6,7 +6,7 @@ When the planner detects a Solution Design Document (SDD) at entry, it runs Lane
 
 ## Step 1 — Read the SDD's Planner Handoff header
 
-The header appears near the top of every SDD — immediately after `## Document History` in most per-project SDDs, immediately after the Case Blueprint TOC in Case Management SDDs, or as section 2 (right after Solution Overview) in a solution-overview SDD.
+The header appears near the top of every SDD — immediately after `## Document History` in per-project SDDs, or as section 2 (right after Solution Overview) in a solution-overview SDD.
 
 **Status gate — check before everything else.** `Status: draft` marks an unfinished Phase D run: sections or the completeness check are missing, or an architecture-blocking SME item is open. Do NOT derive tasks from it. Tell the user the SDD is an unfinished draft and offer: **resume Phase D** (finish the remaining sections, resolve blocking SME items, run the superset check, flip Status to ready) or **regenerate from the PDD**. A missing Status field (hand-written or legacy SDD) → treat as `ready` for backward compatibility and note it in the Step 8 summary. Only `ready` (explicit or legacy-implied) proceeds.
 
@@ -65,7 +65,7 @@ Common section locations per template:
 | RPA Master Project | §10 Master Project Architecture (sub-project list) + §11 Workflow Inventory per sub-project |
 | Flow | §3 Nodes Inventory + §7 Integrated Components |
 | BPMN | §4 Activities Inventory + §9 Integrated Components |
-| Case | Section 2: Stages & Tasks + Section 4: Integrations |
+| Case | §2: Stages & Tasks + §4: Integrations |
 | Agent | §9 Project Structure + §3 Tools |
 | Coded App | §10 Project Structure + §9 Integrated Components |
 | API Workflow | §10 Project Structure + §5 Connectors |
@@ -96,8 +96,8 @@ Based on the project list, pick the matching pattern from [multi-skill-patterns-
 | Flow whose §7 integrated components are pre-existing | Pattern 3 |
 | BPMN with §9 Integrated Components that reference unbuilt resources | Pattern 2 (substitute `uipath-maestro-bpmn` for `uipath-maestro-flow`) |
 | BPMN whose §9 integrated components are pre-existing | Pattern 3 (substitute `uipath-maestro-bpmn`) |
-| Case Management with Section 4 integrations that reference unbuilt resources | Build external components first, then `uipath-maestro-case`; inline `action`, connector, timer, and child-case task details stay with the Case specialist |
-| Case Management whose Section 4 integrations are pre-existing or unresolved portable intent | `uipath-maestro-case` build task first; unresolved IDs/folders travel as review items for the Case specialist's registry discovery |
+| Case Management with §4 integrations that reference unbuilt resources | Build external components first, then `uipath-maestro-case`; inline `action`, connector, timer, and child-case task details stay with the Case specialist |
+| Case Management whose §4 integrations are pre-existing or unresolved portable intent | `uipath-maestro-case` build task first; unresolved IDs/folders travel as review items for the Case specialist's registry discovery |
 | Any SDD with a filled "IXP / Document Understanding Models" table | Add an IXP model build + validation task via `uipath-ixp` per model, ordered before its consumer's build tasks |
 | Any SDD with a filled "Coded Functions" table | Add a Function build + validation task via `uipath-functions` per function, ordered before its consumer's build tasks |
 | Agent with RPA tools in §3 Tools | Pattern 5 |

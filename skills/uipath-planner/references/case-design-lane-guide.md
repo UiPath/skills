@@ -162,7 +162,7 @@ The exact rendered SDD text must pass this gate before it leaves the lane — in
 Required shape:
 
 - First heading: `# SDD — {Case Name}`.
-- `## Table of Contents`, then the `## Planner Handoff` header + `<!-- planner-handoff:v1 -->` marker per the template (the blueprint TOC stays first; the handoff follows it).
+- `## Document History`, then the `## Planner Handoff` header + `<!-- planner-handoff:v1 -->` marker, then `## Table of Contents` — the universal planner scaffold (Rule 5); the case body follows.
 - Exact section headings: `## Section 1: Case Definition`, `## Section 2: Stages & Tasks`, `## Section 3: Personas & App Views`, `## Section 4: Integrations`.
 - Section 1 contains `### Case Metadata`, `### Case Triggers`, `### Case Exit Conditions`, and `### Case Variables`.
 - Every modeled primary stage has `### Stage {N}: {Stage Name}`; every modeled secondary stage has `### Secondary Stage: {Stage Name}`.
@@ -184,7 +184,7 @@ On the confirmation's accept answer, execute the mode's terminal step (§Entry m
 
 Never compose the whole SDD in-head and Write once at the end: a long silent composition turn risks context compaction that destroys unwritten work, and the on-disk partial file is the only cheap recovery point. Cadence:
 
-1. **Seed Write immediately** after the accept answer: title + Table of Contents + Planner Handoff header with `Status: draft`, `Template validation: pending`.
+1. **Seed Write immediately** after the accept answer: title + Document History + Planner Handoff header (`Status: draft`, `Template validation: pending`) + Table of Contents.
 2. **Per-section Edit-appends**, in template order: Section 1 → Section 2 one stage block at a time → Section 3 → Section 4 → Next Steps. No re-Read between sibling appends. Compose each section just before its append — not the whole document up front.
 3. **Gate on the on-disk file:** run the §Template conformance gate against the assembled file (one structural Read is allowed here).
 4. **Ready flip is the LAST Edit:** `Status: ready`, `Template validation: passed` (drafts keep `Status: draft`). An interrupted run leaves a resumable `draft` on disk.

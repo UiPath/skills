@@ -1,6 +1,6 @@
 # Package Selection Guide
 
-Load this guide whenever an SDD section needs to list dependencies — typically §14 Packages in the RPA template, package/tool tables in Agent templates, or package notes attached to a downstream specialist task. Case Management now uses the downstream Case Definition Blueprint shape; do not add a planner-only Packages subsection to the Case SDD.
+Load this guide whenever an SDD section needs to list dependencies — typically §14 Packages in the RPA template, package/tool tables in Agent templates, or package notes attached to a downstream specialist task. Case Management follows the Case Definition Blueprint shape shared with `uipath-maestro-case` and carries no planner-only Packages subsection — dependencies surface in §4 Integrations.
 
 Two things this guide disambiguates:
 
