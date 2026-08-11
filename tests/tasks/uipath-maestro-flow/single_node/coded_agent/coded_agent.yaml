@@ -5,12 +5,12 @@ task_id: skill-flow-coded-agent
 description: |
   Create a UiPath Flow that uses an ApproverCount coded agent to count, from a free-text sentence describing each reviewer's stance, how many people approved a proposal and return that integer. The sentence is deliberately withheld from the prompt and injected by the check script at debug time via --inputs, so the agent cannot hardcode the answer or fit a regex to known text — a deterministic Function is not a viable design. The prompt explicitly asks for a coded agent on a natural-language task, so the resulting flow node must be uipath.core.agent (an Agent project), not uipath.core.function — verifying the skill honors an explicit agent request instead of substituting a deterministic Function. Exercises agent resource node discovery and wiring for coded (vs low-code) agents.
 tags:
-- uipath-maestro-flow
-- e2e
-- lifecycle:generate
-- shape:single-node
-- resource
-- path-to-ga
+  - uipath-maestro-flow
+  - e2e
+  - lifecycle:generate
+  - shape:single-node
+  - resource
+  - path-to-ga
 run_limits:
   expected_turns: 35
   max_turns: 200
@@ -27,20 +27,20 @@ initial_prompt: |
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 success_criteria:
-- type: run_command
-  description: uip maestro flow validate passes on the flow file
-  command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
-  timeout: 30
-  expected_exit_code: 0
-  weight: 3.0
-  pass_threshold: 1.0
-- type: run_command
-  description: Flow has an agent node and debug returns the approver count
-  command: python3 $TASK_DIR/check_coded_agent_flow.py
-  timeout: 360
-  expected_exit_code: 0
-  weight: 5.0
-  pass_threshold: 1.0
+  - type: run_command
+    description: uip maestro flow validate passes on the flow file
+    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+  - type: run_command
+    description: Flow has an agent node and debug returns the approver count
+    command: python3 $TASK_DIR/check_coded_agent_flow.py
+    timeout: 360
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
 post_run:
-- command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
-  timeout: 120
+  - command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
+    timeout: 120
