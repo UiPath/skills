@@ -11,7 +11,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a flow called "SlackWeatherPipeline". Read the #office-bellevue Slack channel description — it holds the office's full US mailing address (street, optional suite/unit, city, state, ZIP) — identify the city (the locality, not the street or suite line). Then fetch the current weather for that city from open-meteo. If it's above 60F the flow must output the text 'warm office today', otherwise 'cold office today'.
+  Create a flow called "SlackWeatherPipeline". Read the #office-bellevue Slack channel description — it holds the office's full US mailing address (street, suite/unit, city, state, ZIP) — identify the city (the locality, not the street or suite line). Then fetch the current weather for that city from open-meteo. If it's above 60F the flow must output the text 'warm office today', otherwise 'cold office today'.
 
   Declare an out variable named `weatherVerdict` (string) whose value is exactly `warm office today` or `cold office today`.
 
