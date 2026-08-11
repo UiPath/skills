@@ -65,19 +65,6 @@ Discovery call is **always**:
 uip is connections list "<connector-key>" --all-folders --output json
 ```
 
-> **Connector folder bindings collide by name — `node configure` keeps only ONE.** Every connector manifest names its folder binding with the bare literal `FolderKey`; only `ConnectionId` is namespaced (`<connector-key> connection`). `node configure` falls back to matching `(name, resource, propertyAttribute)` and ignores `resourceKey`, so configuring a **second** connection overwrites the **first** connection's `FolderKey` row instead of adding a row of its own (MST-13421). The first connector then resolves `<bindings.FolderKey>` against a row that now points at the other connection, ships the placeholder literal, and faults `[102001] Integration Services resource not found` at `flow debug` after a clean `flow validate`.
->
-> **Simplest path: take every connection from ONE Orchestrator folder.** One folder key, one row, bug never fires. `--all-folders` widens discovery, not selection.
->
-> **Cross-folder works but needs one manual row per extra connection.** `binding add` dedupes on the full `(name, resource, resourceKey, propertyAttribute)` quadruple, so it holds rows `node configure` cannot:
->
-> ```bash
-> uip maestro flow binding add <FLOW_FILE> FolderKey connection <FOLDER_KEY> \
->   --resource-key <CONNECTION_UUID> --property-attribute FolderKey
-> ```
->
-> Resource type is case-sensitive and lowercase (`connection`). Run once per connection whose folder differs, then confirm with `uip maestro flow binding list <FLOW_FILE> --output json`. Re-running `node configure` does NOT repair the state — it re-triggers the overwrite.
-
 `connections list` returns `Data` as a flat array. Do **not** parse `Data.Connections` or `Data.Items`; those wrapper objects are not part of the CLI JSON contract. Read each candidate from `Data[]` and use PascalCase fields:
 
 ```json
@@ -546,7 +533,7 @@ At BPMN emit time, the runtime rewrites each `<bindings.{name}>` placeholder to 
 
 `uip maestro flow node configure` populates these entries — you do not author them by hand. The schema below is the shape the CLI emits, for **inspection** when debugging a flow's binding state and as the planned shape for the **No-Live-Tenant** flow's sidecar `<nodeId>.detail.json` (see § No-Live-Tenant / Planned Configuration above). Per the [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node) rules, `bindings[]` is part of the CLI-owned envelope for connector / connector-trigger / managed HTTP nodes.
 
-Per connection, the shape is **two entries** in top-level `bindings[]` — a `ConnectionId` row and a `FolderKey` row. `node configure` appends both for the first connection; for later connections it appends only the `ConnectionId` row and overwrites the existing `FolderKey` row (MST-13421, see Step 1):
+For every unique connection used in the flow, `node configure` appends **two entries** to top-level `bindings[]`:
 
 ```json
 "bindings": [
@@ -626,7 +613,7 @@ Two unique connections → four entries in `bindings[]` (two per connection):
 ]
 ```
 
-Both `FolderKey` entries share the same `name` but have distinct `resourceKey`s — that's how the runtime keeps them separate, and it is the **healthy target state**, not what `node configure` produces on its own. Configuring the second connection overwrites the first `FolderKey` row rather than appending this one (MST-13421); reach this shape with `binding add --resource-key` per extra connection (Step 1).
+Both `FolderKey` entries share the same `name` but have distinct `resourceKey`s — that's how the runtime keeps them separate.
 
 ### Generated `bindings_v2.json` (reference only — do not edit)
 
@@ -694,7 +681,6 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | `connectorMethodInfo` missing method/path | Used `registry get` without `--connection-id` | Re-run with `--connection-id` for enriched metadata (Step 2) |
 | `bindings_v2.json` malformed or stale | It was hand-edited (the CLI overwrites edits on next debug/pack), or top-level `bindings[]` was mutated by hand | Never edit `bindings_v2.json` directly. Re-run `uip maestro flow node configure` on the affected connector node(s) so the CLI re-emits top-level `bindings[]`; `bindings_v2.json` is regenerated from those at the next debug/pack. Compare the emitted shape against the CLI-emitted reference in § Top-level `bindings[]` shape. |
 | Connector key not found | Wrong key name | Run `uip is connectors list --output json` — keys are often prefixed with `uipath-` |
-| `[102001] Integration Services resource not found` at `flow debug` after a clean `flow validate`, often with `Unresolved context binding placeholder "<bindings.FolderKey>"` | Connections from different Orchestrator folders + `node configure`'s `FolderKey` overwrite (MST-13421): the bare `FolderKey` name collides, so the second connection claims the first's row — common when `--all-folders` surfaced a same-named connection in another folder | Take every connection from the same folder, or `binding add` a `FolderKey` row per extra connection with `--resource-key <CONNECTION_UUID>` (Step 1). Re-running `node configure` is NOT sufficient — it re-triggers the overwrite |
 | FilterBuilder UI shows `undefined` when activity is reopened in Studio Web; flow runs at debug | A raw `queryParameters.<filterParamName>` string was passed instead of a structured filter tree, so `essentialConfiguration.savedFilterTrees.<filterParamName>` is empty. The runtime side works but Studio Web has no tree to render. | Re-run `uip maestro flow node configure` with `--detail '{"filter": {...tree...}}'` — the CLI populates both halves. See Step 6a above and [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). |
 | `node configure` fails with `'<name>' is a FilterBuilder parameter — pass a structured filter tree under --detail.filter` | Same root cause — raw string under `queryParameters` for a FilterBuilder param | Move the value into `--detail.filter` as a structured tree. The CLI catches this at configure time so it never reaches Studio Web. |
 | Node faults `[102003] Integration Services bad request`, IS 400 `"Expected a field name expression but got 'StringValue'"` — `flow validate` passed | Hand-authored CEQL string (e.g. Data Service `queryExpression`) quotes the **field name**: `'accountNumber' = '...'`. CEQL reads a quoted token as a string literal. Only `node configure --detail.filter` validates the expression; a string hand-written into the `.flow` JSON reaches IS unchecked. | Field names bare, only values quoted: `` `accountNumber = '${$vars...}'` ``. Or author via `--detail.filter` so the CLI compiles the CEQL. |

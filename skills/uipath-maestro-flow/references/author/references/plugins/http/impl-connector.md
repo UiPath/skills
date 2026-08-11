@@ -23,7 +23,7 @@ The CLI copies the manifest into `definitions[]`, adds the node instance, regist
 uip is connections list "<target-connector-key>" --all-folders --output json
 ```
 
-`--all-folders` is mandatory for discovery. Selection rules, empty-result recovery, and ping verification live in the platform skill — do not duplicate them here. One selection constraint is Maestro-specific: `node configure` keeps only ONE connector `FolderKey` binding (MST-13421), so same-folder connections are the simple path — cross-folder needs a manual `binding add` per connection; see [connector/impl.md](../connector/impl.md) Step 1.
+`--all-folders` is mandatory for discovery. Selection rules, empty-result recovery, and ping verification live in the platform skill — do not duplicate them here.
 
 > **MUST READ before any `uip is connections ...` call:** [/uipath:uipath-platform — connections.md](../../../../../../uipath-platform/references/integration-service/connections.md).
 
