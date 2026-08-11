@@ -8,7 +8,7 @@ Create, pack, publish, deploy, and manage UiPath solution packages.
 
 ## What is a Solution?
 
-A UiPath Solution is a container that groups multiple automation projects (processes, libraries, tests) into a single deployable unit. Solutions enable:
+A UiPath Solution is a container that groups multiple deployable automation projects (processes, tests, agents, flows, cases, apps, and API workflows) into a single unit. Solutions enable:
 
 - **Bundled deployment** -- Deploy multiple projects together as one package
 - **Version management** -- Track and version the entire solution as a single entity
@@ -72,7 +72,9 @@ MySolution/
 >
 > The `.uipx` also carries a `StudioMinVersion` field (e.g. `2025.10.0`). If users hit a version-mismatch when opening the solution, that's the constraint to check.
 
-> **AppV2 coded apps are first-class solution members when authored inside a `.uipx`.** They emit under `resources/solution_folder/app/{Coded,CodedAction}/`, pack / publish / deploy via `uip solution`, and are registered by `uip codedapp init` (run from inside the solution — auto-registers), `uip solution projects add`, or `uip solution projects import`. `uip codedapp init` is the solution-side entry point; standalone coded apps are scaffolded with `npx create-vite` instead and deploy through `uip codedapp pack` / `publish` / `deploy`. See [SKILL.md Rule 7](../SKILL.md#critical-rules) and [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
+> **Which projects belong in the `.uipx` — and how a Solution is itself consumed.** Members are run-time deployables; code shared at build time ships as a pinned Library package outside the solution root. See [develop-solution.md - Project Structure](develop-solution.md#project-structure--what-belongs-in-the-uipx) and [pack-and-deploy.md - Consuming a Published Solution](pack-and-deploy.md#consuming-a-published-solution).
+
+> **AppV2 coded apps are first-class solution members when authored inside a `.uipx`.** They emit under `resources/solution_folder/app/{Coded,CodedAction}/`, pack / publish / deploy via `uip solution`, and are registered by `uip codedapp init` (run from inside the solution — auto-registers), `uip solution project add`, or `uip solution project import`. `uip codedapp init` is the solution-side entry point; standalone coded apps are scaffolded with `npx create-vite` instead and deploy through `uip codedapp pack` / `publish` / `deploy`. See [SKILL.md Rule 8](../SKILL.md#critical-rules) and [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
 
 > **`.uis` bundles and the `pack` `.zip` are plain zip archives — unzip to inspect bundled contents.**
 

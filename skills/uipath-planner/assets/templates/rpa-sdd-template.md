@@ -362,13 +362,13 @@ public enum <EnumName>
 
 > **Sub-type column:** one of Process / Library / Test Automation. Libraries and Test Automation projects do not use Orchestrator queues — put `—` in Input Queue / Output Queue for those rows.
 
-| # | Project Name | Sub-type | Role | Framework | Input Queue | Output Queue | PDD Steps |
-|---|---|---|---|---|---|---|---|
-| 1 | `<NAME>_Dispatcher` | Process | <ROLE_DESCRIPTION> | Sequence | — | `<QUEUE_1>` | <STEP_NUMBERS> |
-| 2 | `<NAME>_Performer` | Process | <ROLE_DESCRIPTION> | REFramework | `<QUEUE_1>` | `<QUEUE_2>` | <STEP_NUMBERS> |
-| 3 | `<NAME>_Reporting` | Process | <ROLE_DESCRIPTION> | Sequence | `<QUEUE_2>` | — | — |
-| 4 | `<NAME>_SharedLib` | Library | <ROLE_DESCRIPTION> | — | — | — | — |
-| 5 | `<NAME>_Regression` | Test Automation | <ROLE_DESCRIPTION> | — | — | — | <TEST_STEPS> |
+| # | Project Name | Sub-type | Role | Framework | Packaging | Solution member | Input Queue | Output Queue | PDD Steps |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | `<NAME>_Dispatcher` | Process | <ROLE_DESCRIPTION> | Sequence | Solution `.uipx` | yes | — | `<QUEUE_1>` | <STEP_NUMBERS> |
+| 2 | `<NAME>_Performer` | Process | <ROLE_DESCRIPTION> | REFramework | Solution `.uipx` | yes | `<QUEUE_1>` | `<QUEUE_2>` | <STEP_NUMBERS> |
+| 3 | `<NAME>_Reporting` | Process | <ROLE_DESCRIPTION> | Sequence | Solution `.uipx` | yes | `<QUEUE_2>` | — | — |
+| 4 | `<NAME>_SharedLib` | Library | <ROLE_DESCRIPTION> | — | External NuGet package | no | — | — | — |
+| 5 | `<NAME>_Regression` | Test Automation | <ROLE_DESCRIPTION> | — | Solution `.uipx` | yes | — | — | <TEST_STEPS> |
 
 #### Data flow diagram
 
@@ -392,11 +392,11 @@ flowchart LR
 
 ### Solution / Project Breakdown
 
-<!-- Every buildable project in the solution: its product, source repo, Orchestrator folder, and run mode. Solution-wide — fill once. One row per project (single row for a single-project solution). -->
+<!-- Every buildable project in the architecture: its product, source repo, Orchestrator folder, run mode, delivery unit, and Solution membership. Solution-wide — fill once. One row per project (single row for a single-project solution). -->
 
-| Project | Product (RPA / API / Agent / …) | GitHub Repository | Folder | Attended / Unattended |
-|---|---|---|---|---|
-| <PROJECT_NAME> | <PRODUCT> | <GIT_URL_OR_REPO> | <FOLDER_PATH> | <ATTENDED / UNATTENDED / N-A> |
+| Project | Product (RPA / API / Agent / …) | GitHub Repository | Folder | Attended / Unattended | Delivery Unit | Solution member |
+|---|---|---|---|---|---|---|
+| <PROJECT_NAME> | <PRODUCT> | <GIT_URL_OR_REPO> | <FOLDER_PATH> | <ATTENDED / UNATTENDED / N-A> | <Solution `.uipx` / External NuGet package / Independent component package> | <yes / no> |
 
 ### Reusable Components
 
@@ -430,7 +430,7 @@ Select the sub-type **per project** (sourced from Level 1.5 / Level 1.75 Pass C)
 Sub-type reference:
 
 - **Process** — standard end-to-end automation (default)
-- **Library** — reusable component consumed by other automations (no queue I/O; published as NuGet)
+- **Library** — reusable component consumed by other automations at build time (no queue I/O; published as NuGet, referenced by exact version)
 - **Test Automation** — test cases validating application behavior (Test Manager integration; no Master Project queue I/O)
 
 ### Project Mode Decision
@@ -624,6 +624,8 @@ Sub-type reference:
 > **Do NOT list Integration Service connectors in this table.** Integration Service connections are declared in §9 Application Inventory (Access Method = `Integration Service — <CONNECTOR_SLUG>`) and run on `UiPath.IntegrationService.Activities` — that package is the only §14 entry needed for them. See the Package Selection Guide's "Integration Service Connectors vs NuGet Packages" section for side-by-side examples.
 
 > **Pin exact versions — "Latest" is not reproducible.** When the version cannot be known at design time, write the literal `pin at build` — the build skill resolves it and writes the exact version back here. Verify pinned versions against the §16 Studio/Robot versions for compatibility.
+>
+> **Consumed RPA Libraries:** list every one here at its exact version. Each is built and published before this project.
 
 | Package | Version | Purpose |
 |---|---|---|
@@ -873,14 +875,14 @@ The build is not finished when the project folder compiles — a bare `MyProject
 
 ```bash
 uip solution init <SOLUTION_NAME>
-uip solution projects add <PROJECT_PATH> [--solution-file <SOLUTION_FILE>]    # repeat per project in the unified list
+uip solution project add <PROJECT_PATH> [SOLUTION_FILE]    # repeat per Solution-member project
 uip solution resources refresh
 uip solution pack <SOLUTION_DIR> <OUTPUT_DIR>
 ```
 
 The `.uipx` promotes via `uip solution publish` / `uip solution deploy run`. Full lifecycle: `uipath-solution` skill.
 
-**Packaging = Standalone package** — a single independently-published RPA project (`.nupkg` to an Orchestrator feed) is a valid terminal artefact; UiPath supports development with and without Solutions. Package/publish routes to `uipath-rpa` (build) + `uipath-platform` (feed publish, process creation). `[DEFAULT for a single-project scope]` — pick Solution instead only when cross-product composition or team standardization on Solutions applies.
+**Packaging = Standalone package** — a single independently-published RPA project (`.nupkg` to an Orchestrator feed) is a valid terminal artefact; UiPath supports development with and without Solutions. For a Library, route pack + feed upload to `uipath-rpa`. For a Process or Test Automation package, route build to `uipath-rpa` and Orchestrator feed/process operations to `uipath-platform`. `[DEFAULT for a single-project scope]` — pick Solution instead only when cross-product composition or team standardization on Solutions applies.
 
 ---
 

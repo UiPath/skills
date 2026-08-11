@@ -2,7 +2,7 @@
 
 Create a solution, add automation projects, and sync resource declarations.
 
-> For full option details on any command, use `--help` (e.g., `uip solution projects add --help`).
+> For full option details on any command, use `--help` (e.g., `uip solution project add --help`).
 
 ## When to Use
 
@@ -13,7 +13,8 @@ Create a solution, add automation projects, and sync resource declarations.
 ## Prerequisites
 
 - Authenticated — verify with `uip login status` (required for remote resource lookup during `resource refresh` and for `upload`); if not logged in, ask the user to run `uip login` (interactive browser flow)
-- Projects to add must contain `project.uiproj` or `project.json`
+- Solution-member projects must contain `project.uiproj` or `project.json`
+- Project structure decided — see [Project Structure](#project-structure--what-belongs-in-the-uipx)
 
 ## Flow
 
@@ -32,27 +33,77 @@ graph LR
 
 ---
 
+## Project Structure — what belongs in the `.uipx`
+
+Settle this **before** `solution init`. One question decides it: **when do consumers need this code?**
+
+| Consumers need it… | Build it as | Source lives | Consumed via | Shipped by |
+|---|---|---|---|---|
+| **at build time** — activities/workflows called in-process | RPA **Library** | **outside** the solution root | exact version pin in each consumer's `project.json` `dependencies` | `uip rpa pack` → `uip or libraries upload` (tenant library feed) |
+| **at run time** — a separately deployed unit it invokes | **Solution member** (Process, Tests, Flow, CaseManagement, Agent, Api, AppV2, …) | inside the solution root, registered in `.uipx` | Orchestrator process / agent / flow reference after deploy | `uip solution pack` → `publish` → `deploy run` |
+
+Canonical layout for a solution whose processes share a Library:
+
+```text
+repo-root/
+├── Company.Shared.Automation/     # Library — OUTSIDE the solution root
+│   └── project.json               #   designOptions.outputType: "Library"
+└── InvoiceSolution/               # solution root — .uipx lives here
+    ├── InvoiceSolution.uipx       #   Projects[]: Dispatcher + Performer only
+    ├── InvoiceDispatcher/
+    │   └── project.json           #   dependencies: {"Company.Shared.Automation": "[1.4.2]"}
+    └── InvoicePerformer/
+        └── project.json           #   same exact pin
+```
+
+**Keep Library source outside the solution root.** `init` / `create-project` scaffolders auto-register into the surrounding `.uipx` when run inside a solution directory, so a Library folder sitting inside is one scaffold away from being registered — through a path the `add` gate never sees. If it must live inside the tree, pass `--skip-solution-registration` where the scaffolder supports it, then verify with `uip solution project list --output json`.
+
+**`uip solution project add` / `import` reject a Library.** Trust that error over any `--help` text or generated project-type table — it is the authority on what `.uipx` accepts today. Registering one buys nothing regardless: a Library has no runnable entry point, so the generated `resources/solution_folder/process/process/<Name>.json` describes it as an Orchestrator **Process** (job priority, retention, recording) — a resource nothing can run, which Studio deletes on the next open. Its workflows also never load in the solution's designer; they open as raw XAML text with no error dialog and no log entry (UV-15794).
+
+If a future CLI accepts Library membership, the table above is unchanged: build-time reuse is still delivered by version pin.
+
+### Pinned Library versions must exist in the target feed
+
+`solution restore` / `pack` resolves each consumer's pinned dependency against the target tenant's library feed. Confirm the exact version is present first — `libraries list` returns 50 rows by default:
+
+```bash
+uip or libraries list --search "<LIBRARY_NAME>" --limit 500 --output json
+```
+
+Match `Title` + `Version` exactly (or `Key` == `<NAME>:<VERSION>`), not a contains hit; page with `--offset` until a short page proves the search exhausted. If the version is absent, pack and upload it before continuing:
+
+```bash
+uip rpa pack "<LIBRARY_PROJECT_DIR>" "<OUTPUT_DIR>" --output json
+uip or libraries upload --file "<OUTPUT_DIR>/<LIBRARY_NAME>.<VERSION>.nupkg" --output json
+```
+
+Re-run the check after switching tenants for each promotion target — a consumer cannot restore against a feed that lacks its pin.
+
+---
+
 ## Step 1: Create a New Solution
 
 ```bash
 uip solution init "InvoiceAutomation" --output json
 ```
 
-Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All projects must live inside this directory (or be imported into it).
+Creates `InvoiceAutomation/InvoiceAutomation.uipx`. All Solution-member projects must live inside this directory (or be imported into it); build-time-only projects stay outside it (see [Project Structure](#project-structure--what-belongs-in-the-uipx)).
 
 > If the target folder already exists and is empty, `solution init` drops the `.uipx` inside without nesting or erroring. No need to pre-delete an empty target.
 
 ## Step 2: Add Existing Projects
 
-> **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution projects add`, run `uip function init` (Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. Registration without it creates an incomplete solution entry.
+> **Project-type gate:** read `project.uiproj` → `ProjectType` and `project.json` → `designOptions.outputType` first. `add` accepts run-time deployables; `Library` is build-time-only and the CLI rejects it — see [Project Structure](#project-structure--what-belongs-in-the-uipx).
+>
+> **Prerequisite for Coded Function and Coded Agent projects:** before running `uip solution project add`, run `uip function init` (Coded Functions) or `uip codedagent init` (LangGraph/LlamaIndex/OpenAI Agents) inside the project directory to generate `entry-points.json`. Registration without it creates an incomplete solution entry.
 
 Register a project that already lives inside the solution directory.
 
 ```bash
-uip solution projects add ./InvoiceAutomation/Processor --output json
+uip solution project add ./InvoiceAutomation/Processor --output json
 
 # With explicit solution file
-uip solution projects add ./InvoiceAutomation/Reporter ./InvoiceAutomation/InvoiceAutomation.uipx --output json
+uip solution project add ./InvoiceAutomation/Reporter ./InvoiceAutomation/InvoiceAutomation.uipx --output json
 ```
 
 The `.uipx` is auto-discovered by walking up from the project path if not specified. `Type` is auto-detected from `project.uiproj` / `project.json` — do not pass it.
@@ -63,20 +114,25 @@ The `.uipx` is auto-discovered by walking up from the project path if not specif
 
 Copy a project from outside the solution tree into the solution directory and register it.
 
+The same project-type gate as `add` applies.
+
 ```bash
-uip solution projects import --source /path/to/ExternalProject --output json
+uip solution project import /path/to/ExternalProject --output json
+
+# With explicit solution file (current stable surface uses camelCase)
+uip solution project import /path/to/ExternalProject --solutionFile ./InvoiceAutomation/InvoiceAutomation.uipx --output json
 ```
 
 Unlike `add`, `import` copies source files into the solution directory first, then registers the copy.
 
-> **Three names can diverge after `import`.** The destination folder name is the basename of `--source`. The `ProjectRelativePath` in `.uipx` matches the folder. The auto-generated package resource name is taken from the project metadata (e.g., `pyproject.toml [project].name` for Python coded agents) — which may differ from the folder. Rename the source directory to the intended project name **before** importing, or trace the relationship via the `projectKey` UUID inside the resource files.
+> **Three names can diverge after `import`.** The destination folder name is the basename of the positional source path. The `ProjectRelativePath` in `.uipx` matches the folder. The auto-generated package resource name is taken from the project metadata (e.g., `pyproject.toml [project].name` for Python coded agents) — which may differ from the folder. Rename the source directory to the intended project name **before** importing, or trace the relationship via the `projectKey` UUID inside the resource files.
 
 ## Step 4: Remove a Project
 
 Unregister a project from the `.uipx` manifest. Does NOT delete files from disk.
 
 ```bash
-uip solution projects remove ./InvoiceAutomation/OldProject --output json
+uip solution project remove ./InvoiceAutomation/OldProject --output json
 ```
 
 ## Step 5: List Projects
@@ -87,10 +143,10 @@ When the user asks to show or list registered projects, run this command. Readin
 
 ```bash
 # from inside the solution dir
-uip solution projects list --output json
+uip solution project list --output json
 
 # or with an explicit solution folder
-uip solution projects list --solution-folder ./InvoiceAutomation --output json
+uip solution project list --solution-folder ./InvoiceAutomation --output json
 ```
 
 `Name` is read from each project's `project.uiproj`, falling back to the directory basename if the manifest is missing or unreadable. Empty solutions return `Data: []`.
@@ -222,7 +278,7 @@ uip solution resources get <resource-key> --solution-folder ./InvoiceAutomation 
 
 ### Local vs remote spec — they're not identical
 
-The local file is what `refresh` (and `solution projects add`) wrote to disk: a declarative subset of the cloud entity. The remote (FPS) spec includes server-resolved fields the local can't have:
+The local file is what `refresh` (and `solution project add`) wrote to disk: a declarative subset of the cloud entity. The remote (FPS) spec includes server-resolved fields the local can't have:
 
 | Field | Local | Remote (FPS) |
 |-------|-------|--------------|
@@ -455,8 +511,8 @@ Create a solution with two projects, sync resources, and verify:
 uip solution init "InvoiceAutomation" --output json
 
 # 2. Add projects (already inside the solution directory)
-uip solution projects add ./InvoiceAutomation/Processor --output json
-uip solution projects add ./InvoiceAutomation/Reporter --output json
+uip solution project add ./InvoiceAutomation/Processor --output json
+uip solution project add ./InvoiceAutomation/Reporter --output json
 
 # 3. Move into the solution dir so subsequent commands default --solution-folder
 cd ./InvoiceAutomation
@@ -514,9 +570,9 @@ Copying `bindings.json` → `bindings_v2.json` does **not** work — the schemas
 
 See [Step 7](#step-7-refresh-resources). Always capture stderr and grep for `ERROR`. The `Warnings` field stays empty even when the underlying parser throws.
 
-### `project remove` leaves orphan package resources
+### `project remove` does not delete project source
 
-See [Step 4](#step-4-remove-a-project). After `remove`, manually delete `resources/solution_folder/package/<name>.json` if you plan to re-add with the same name. To fully delete a project, also remove the project folder — `remove` does not touch source files.
+See [Step 4](#step-4-remove-a-project). A successful `remove` unregisters the project and cleans its generated Solution resource entries, but deliberately leaves the project folder and source files on disk. Delete or relocate source separately only when that is explicitly intended. If `.uipx` and generated resource entries disagree after `remove`, do not edit `resources/solution_folder/` manually; inspect stderr and recover through the supported project commands.
 
 ---
 
@@ -596,9 +652,9 @@ Because `get` falls back to RCS + FPS export when the key isn't local, it works 
 | Want to... | Command | Watch for |
 |---|---|---|
 | Create a fresh solution | `uip solution init <name>` | Accepts an existing empty directory; drops `.uipx` inside |
-| Add a project already in the solution dir | `uip solution projects add ./<dir>` | Transactional — `.uipx` and `resources/solution_folder/{package,process}/` agree on success |
-| Pull in an external project | `uip solution projects import --source <path>` | Rename source folder first to avoid 3-name divergence |
-| Remove a project | `uip solution projects remove ./<dir>` | Manually delete `resources/.../package/<name>.json` afterwards |
+| Add a project already in the solution dir | `uip solution project add ./<dir>` | Run-time deployables only; on success `.uipx` and `resources/solution_folder/{package,process}/` agree |
+| Pull in an external project | `uip solution project import <path> [--solutionFile <file>]` | Current stable syntax uses a positional source and camelCase `--solutionFile` |
+| Remove a project | `uip solution project remove ./<dir>` | CLI unregisters the project and cleans its generated Solution resource entries; do not edit them manually |
 | Sync resource bindings | `uip solution resources refresh --solution-folder <solution-dir>` | **Check stderr for ERROR**; `Result: Success` with 0/0/0 counts is suspicious if `bindings_v2.json` exists |
 | Add a virtual queue / asset / bucket | `uip solution resources add --source local --kind <kind> --name <name>` | Offline-friendly; idempotent (re-run returns `Status: "Unchanged"`) |
 | Import an existing remote resource | `uip solution resources add --source remote --kind <kind> --name <name> --folder-path <folder>` | On ambiguous match, the error lists every candidate with its key — pick one and re-call |
