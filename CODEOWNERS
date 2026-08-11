@@ -14,6 +14,9 @@
 # CLI versions config (per-environment CLI versions)
 /assets/cli-versions.json @vlad-uipath
 
+# Studio Web flavor overrides
+/skill-flavors/studioweb/ @astridstaicu
+
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
 
