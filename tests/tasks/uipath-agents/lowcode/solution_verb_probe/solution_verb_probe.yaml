@@ -1,0 +1,81 @@
+task_id: skill-agent-solution-verb-probe
+description: >
+  SKILL.md Hard Rule 3 — probe the `solution` verb once per session before the
+  first scaffold. The CLI renamed `solution new` to `solution init` (and
+  `--folder-path` to `--parent-folder-path`), so the skill mandates a
+  `uip solution init --help --output json` probe and a documented fallback for
+  older CLIs. Nothing in the suite tests this today: all 16 `--help` occurrences
+  are `exclude_pattern` carve-outs that *tolerate* the probe on brownfield tasks
+  without ever requiring it. The prompt states only the goal — the probe is the
+  skill's job to teach.
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code]
+
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  Create a UiPath solution named `ProbeSol` in this directory.
+
+  Stop once the solution exists — do not add an agent or any other project to
+  it, and do not publish, upload, or deploy.
+
+  Do NOT ask for approval, confirmation, or feedback. Complete the task in a
+  single pass.
+
+success_criteria:
+  # PRIMARY — the capability under test. Hard Rule 3 requires this before the
+  # first scaffold; `--output json` is included because the rule specifies the
+  # parseable form the branch decision is made from.
+  # Accepts `uip solution init --help` (the literal form in Hard Rule 3) and
+  # `uip solution --help`, which resolves the same branch — grade the outcome,
+  # not the exact spelling.
+  - type: command_executed
+    description: "Agent probed the solution verb before scaffolding (SKILL.md Hard Rule 3)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(init\s+)?[^|;&]*--help'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory: the rule names `--output json` as the probe form, but the branch
+  # decision is observable from the exit code alone, so a probe without the flag
+  # still reaches the correct outcome. Recorded, never gating
+  # (.claude/rules/test-writing.md forbids gating on --output json).
+  - type: command_executed
+    description: "Advisory: probe used --output json as Hard Rule 3 specifies"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(init\s+)?[^|;&]*--help[^|;&]*--output\s+json'
+    min_count: 1
+    weight: 0.0
+    pass_threshold: 0.0
+
+  # The probe must precede real work, not replace it: the agent still scaffolds,
+  # via whichever verb the probe selected.
+  - type: command_executed
+    description: "Agent scaffolded the solution using the verb the probe selected"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(init|new)\b'
+    exclude_pattern: '--help'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ProbeSol solution manifest was created"
+    path: "ProbeSol/ProbeSol.uipx"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # A bare `solution init` leaves Projects empty; this pins the task to the
+  # stated scope (solution only) and catches an agent that scaffolds an agent
+  # project it was told not to add.
+  - type: json_check
+    description: "Solution is a bare, freshly-initialized manifest with no projects added"
+    path: "ProbeSol/ProbeSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "equals"
+        expected: 0
+    weight: 1.0
+    pass_threshold: 1.0

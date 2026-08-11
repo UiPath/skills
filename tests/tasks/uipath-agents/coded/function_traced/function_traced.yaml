@@ -1,0 +1,77 @@
+task_id: skill-agent-coded-function-traced
+description: >
+  Coded Function (Simple Direct Agent) project shape. Verifies the agent
+  scaffolds the plain-`uipath` variant — `uipath.json` carrying a `functions`
+  entrypoint map and NO `<framework>.json` — and that `@traced()` is applied to
+  the entry function, which `build.md` makes mandatory for Orchestrator
+  visibility on non-LangGraph projects. This is the only one of the skill's five
+  documented paths with no coverage; two existing tasks (deploy-my-workspace,
+  eval-exact-match) build no-LLM agents but assert nothing about the project
+  shape, so an agent emitting the wrong scaffold passes today.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, coded]
+
+run_limits:
+  expected_turns: 34   # observed 29 on the 2026-08-11 passing run
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a UiPath coded agent named `calc-agent` in this directory, following
+  the Simple Direct Agent pattern from the uipath-agents skill — a plain
+  `uipath` project whose entrypoint is declared in `uipath.json`, not a
+  LangGraph / LlamaIndex / OpenAI Agents graph.
+
+  Behaviour: it takes `a` (number), `b` (number) and `operator` (string, one of
+  `add`, `subtract`, `multiply`, `divide`) and returns `result` (number).
+
+  Instrument it for Orchestrator trace visibility as the skill requires for
+  this project type.
+
+  Finally, run it locally with a = 17, b = 23, operator = multiply to confirm
+  it works.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in a
+  single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent generated entry-points.json with uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Graded as an outcome by the check script (run_result.json contents); this
+  # criterion only records that the local-run step was attempted via `run`
+  # rather than the interactive `dev` server (CQ7).
+  - type: command_executed
+    description: "Agent ran the agent locally with uip codedagent run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+run'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT use the interactive dev server for a non-interactive run (CQ7)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+dev\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Coded Function project shape: uipath.json functions map, matching entry-points.json, @traced() on the entry function, and no framework config"
+    command: "python3 $TASK_DIR/check_function_shape.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

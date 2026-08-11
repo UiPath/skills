@@ -1,0 +1,90 @@
+task_id: skill-agents-lowcode-solution-deploy-activate
+description: >
+  Low-code solution promotion end to end: pack → publish → deploy run
+  --skip-activate → deploy activate → deploy uninstall. Five `uip solution`
+  components and workflow step 20 had zero coverage — the suite runs
+  `solution init` in 54 tasks but never packs, publishes or deploys, and
+  `uipath-solution` carries no agent-flavoured deploy coverage either, so this
+  path had no test owner anywhere in the repo. Also pins the post-2026-08-06
+  package naming (`<NAME>_<VERSION>.zip`, underscore not dot). The task
+  uninstalls the deployment it creates so the tenant is left clean and the run
+  is repeatable.
+tags: [uipath-agents, e2e, mode:operate, lifecycle:setup, low-code, feature:deploy]
+
+run_limits:
+  expected_turns: 40
+  max_turns: 60
+  task_timeout: 1800
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a minimal low-code agent `EchoAgent` inside a solution named
+  `DeploySol` — one required input `message` (string), one output `reply`
+  (string) — and take it all the way to a live, activated Orchestrator
+  deployment.
+
+  Promote it as version `1.0.0`, deploying into the `Shared` folder. Activate
+  the deployment as a separate, explicit step rather than letting the deploy
+  auto-activate, so the two stages are independently verifiable.
+
+  Once you have confirmed the deployment is active, uninstall it again — this
+  is an evaluation tenant and must be left clean.
+
+  The tenant may already hold this package from an earlier run. If publishing
+  reports the version already exists, treat that step as done and carry on.
+
+  I authorise the publish, deploy and uninstall — proceed without stopping to
+  confirm. Do NOT ask for approval, confirmation, or feedback. Do NOT pause
+  between planning and implementation. Complete the entire task end-to-end in
+  a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent packed the solution into a versioned archive"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+pack\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent published the package to Orchestrator"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+publish\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The two-stage branch: deploy must explicitly opt out of auto-activation,
+  # otherwise `deploy activate` is never exercised as its own capability.
+  - type: command_executed
+    description: "Agent deployed with --skip-activate (deferred activation branch)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+run\b[^|;&]*--skip-activate'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent activated the deployment as a separate step"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+activate\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uninstalled the deployment, leaving the tenant clean"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+uninstall\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Packaged archive uses the canonical <NAME>_<VERSION>.zip naming and the agent validated before promoting"
+    command: "python3 $TASK_DIR/check_deploy_activate.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
