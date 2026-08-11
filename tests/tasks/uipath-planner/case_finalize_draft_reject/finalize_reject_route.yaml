@@ -1,0 +1,88 @@
+task_id: skill-case-reject-route
+description: >
+  Regression: deterministic rejection is routed from the decision fact, not from
+  `user-selected-stage`. A small GrantReview draft is staged whose Application
+  Rejected lane is authored as a picker entry even though its Requirements say
+  Reject on the Reviewer Decision routes there automatically. Finalization must
+  re-key the lane on the decision and add the origin's gated diverting exit plus
+  a mutually-exclusive completion gate. Finalization-only (no interview, no
+  build) so the run stays inside a handful of turns; graded on authored
+  condition tables, never on rationale prose.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-node]
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 60
+  turn_timeout: 1500
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have a draft design document for our GrantReview case-management solution —
+  it's saved as `sdd.draft.md` in this folder. Please finalize it into the final
+  design document.
+
+  The Requirements section at the top is authoritative and the design is
+  settled, so don't re-interview me or redesign it. The two api-workflow
+  resource identities are unresolved on purpose — leave them that way. I just
+  need the finalized design; nothing built yet.
+
+  This is a Maestro case-management SDD finalization. Keep it inside the Case
+  Management SDD template shape; finalize the draft into `sdd.md` in this
+  folder. Use the direct draft-finalization fast path: read the draft and the
+  case SDD template, write the finalized `sdd.md`, and do not spawn subagents,
+  run tenant discovery, or derive implementation tasks.
+
+success_criteria:
+  - type: file_exists
+    description: "Finalization produced the approved sdd.md"
+    path: "sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Application Rejected is entered from the reviewDecision fact, not user-selected-stage"
+    command: "python3 $TASK_DIR/check_reject_route.py --scope lane"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory. Rule 5's origin diverting-exit clause predates #2393, so a gap there is not a
+  # regression in this PR — it is recorded, not graded. Promote to pass_threshold 1.0 once
+  # the diverting-exit behavior is fixed on its own.
+  - type: run_command
+    description: "Advisory: Eligibility Review carries a gated diverting exit whose guard is the complement of its completion exit"
+    command: "python3 $TASK_DIR/check_reject_route.py --scope origin"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "stopped at the finalized sdd.md — did not run ahead into a caseplan build"
+    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+simulation:
+  enabled: true
+  persona: |
+    You are the grants operations lead at Rivermark Foundation who wrote the
+    GrantReview draft. The design is settled; you are only confirming its
+    finalization into an approved sdd.md.
+  goal: |
+    Get sdd.draft.md finalized into an approved sdd.md, then stop.
+  constraints:
+    - "If asked how to proceed with the existing draft, say to use it as-is and finalize it — you do not want to be re-interviewed."
+    - "Approve the finalized sdd.md on the first pass. Approve anyway if it warns about the unresolved api-workflow identities or raises review items."
+    - "Confirm that choosing Reject on the Reviewer Decision routes to Application Rejected automatically, and that nobody picks that lane by hand."
+    - "Do not request design changes or add requirements."
+    - "Keep the agent at design/finalization only. If it offers to plan tasks.md or build a caseplan, tell it to stop at the approved sdd.md."
+    - "Keep replies to one sentence."
+  max_turns: 8

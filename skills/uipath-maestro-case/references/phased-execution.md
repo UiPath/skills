@@ -84,7 +84,7 @@ If the parser response names `--skeleton-v2` as unknown or unsupported (typicall
 
 ### Phase 2 hard stop
 
-**Gated by the up-front build-review preference (SKILL.md Rule 11) — never a mid-build surprise.** The preference was captured at journey start: the final design confirmation on the interview journey, the single post-roadmap question on the provided-SDD journey. Always print the §Summary content below, then branch:
+**Gated by the up-front build-review preference (SKILL.md Rule 11) — never a mid-build surprise.** The preference was captured at journey start: the design-handoff Case Review Build options on the greenfield journey, the single post-roadmap question on the provided-SDD journey. Always print the §Summary content below, then branch:
 
 - **Straight-through** → continue directly into Phase 3 with no prompt; the summary doubles as the milestone narration line.
 - **Pause-at-preview** → present the §Prompt below; only a user response transitions out of Phase 2.
@@ -161,6 +161,8 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 
 ### Phase 3 — Execution order
 
+> **In-session schema memo.** `tasks describe` / `case spec` results fetched this session are carried forward — in memory and in their persisted artifacts (`tasks/registry-resolved.json`, `tasks/spec-cache.<elementId>.json`, `tasks/trigger-spec-cache.json`). NEVER re-run an identical describe/spec call this session (same type + id): re-read the persisted artifact instead. Observed failure: the same 5-type `tasks describe` set re-ran verbatim 12m45s later, costing ~2–4 minutes and redundant turns per build.
+
 After re-entry:
 
 1. **Connector task detail** — for each connector task in `tasks.md`, run plugin's `impl-json.md` detail steps: `case spec --type {activity,trigger} --input-details`, then mint `data.context[]` / `data.inputs[]` / `data.outputs[]` from the populated `caseShape` (placeholder substitution + var/id minting).
@@ -183,9 +185,13 @@ On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "V
 
 On failure: output lists `[error]` and `[warning]` entries with path and message. Fix reported issues (usually via targeted re-run of earlier step) and re-run `validate`.
 
+### Validate-loop guard — no re-validate without an intervening edit
+
+**Never re-run `uip maestro case validate` unless `caseplan.json` (or a sidecar it validates) changed since the last run.** A validate that follows another validate with zero edits in between is a no-op that costs a full CLI round-trip and a turn — observed worst case: 20 validates in one session, 14 of 19 re-runs with no intervening edit, 36% of wall clock. The guard applies in every phase: Phase 2's informational validate runs once, Phase 4's authoritative validate runs once per fix. Fix → edit → validate is the only legal loop shape; validate → validate is a defect.
+
 ### Retry policy
 
-Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
+Up to **3 validation retries** per session — each retry MUST be preceded by a fix edit (validate-loop guard above). After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
 
 - `Retry with fix` — agent attempts fix, re-runs validate (counter does not reset).
 - `Pause for manual edit` — exit skill mid-flight; user edits `caseplan.json` directly and re-runs skill.

@@ -6,7 +6,7 @@ Usage:
 
 Read-only. Exit 0 = grammar-clean. Exit 1 = numbered findings on stderr;
 repair the plan with Write/Edit and re-run until clean. Enforces the compact
-`tasks/tasks.md` contract: `## T{N}: task "{Task Name}"` headings, one
+`tasks/tasks.md` contract (planning.md § Compact no-build T-entry shape): `## T{N}: task "{Task Name}"` headings, one
 `field: value` per line, lanes on sequential runs, no registry-derived keys.
 `--sdd` additionally checks every `sla-status-change(...)` reference in the
 SDD for the 2-arg (breach) / 3-arg (at-risk) quoted shape.
@@ -25,7 +25,11 @@ TASK_FIELDS = [
 # `lane` is only mandatory for sequential runs; checked separately.
 ALWAYS_REQUIRED = [f for f in TASK_FIELDS if f != "lane"]
 
-TASK_HEADING = re.compile(r'^## T\d+: task "[^"\n]+"\s*$')
+# Compact form (`## T{N}: task "Name"`) or canonical full-form build title
+# (`## T{N}: Add <type> task "Name" to "Stage"`) — both are addressable.
+TASK_HEADING = re.compile(
+    r'^## T\d+: (?:task "[^"\n]+"|Add [a-z][a-z-]* task "[^"\n]+" to "[^"\n]+")\s*$'
+)
 ANY_T_HEADING = re.compile(r"^## T\d+\s*[:.]", re.M)
 FORBIDDEN_KEYS = ["taskTypeId", "activityTypeId", "connectionId", "registry-resolved", "recipients-resolved"]
 
@@ -63,8 +67,8 @@ def audit(path: Path) -> list[str]:
 
         if not is_task_entry and looks_like_task:
             findings.append(
-                f'{label}: task heading must be exactly `## {label}: task "{{Task Name}}"` — '
-                f"no verb phrases or stage suffixes in the heading (got: {head_line!r})"
+                f'{label}: task heading must be `## {label}: task "{{Task Name}}"` or the canonical '
+                f'`## {label}: Add <type> task "{{Task Name}}" to "{{Stage}}"` (got: {head_line!r})'
             )
 
         if not (is_task_entry or looks_like_task):
