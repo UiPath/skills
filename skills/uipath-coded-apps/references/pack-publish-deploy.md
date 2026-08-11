@@ -68,9 +68,7 @@ The `.nupkg` includes auto-generated UiPath metadata files:
 
 ### OAuth Client ID
 
-`pack` **copies `uipath.json` verbatim** into the package — it does **not** create, mint, or modify the OAuth client ID. The `clientId` is set once at **scaffold time** (from the External Application) and carried through unchanged by every pack.
-
-> **Do NOT pass `--reuse-client`.** The flag was removed from the CLI — passing it errors `unknown option '--reuse-client'`, and `pack` has no client option at all. `uipath.json` is the single source of truth: ensure `clientId` is correct there before packing.
+`pack` **copies `uipath.json` verbatim** into the package — it does **not** create, mint, or modify the OAuth client ID. The `clientId` is set once at **scaffold time** (from the External Application) and carried through unchanged by every pack. `uipath.json` is the single source of truth — ensure its `clientId` is correct before packing.
 
 ### Dry Run
 
@@ -365,4 +363,3 @@ uip codedapp deploy -n my-webapp --folder-key "$FOLDER_KEY"
 | `Missing tenant name` on publish | `UIPATH_TENANT_NAME` not set | Set in `.env` or pass `--tenant-name` |
 | `dist/ not found` | App not built | Run `npm run build` |
 | Pack shows wrong clientId | Stale `uipath.json` | `pack` copies `uipath.json` verbatim — fix `clientId` there. |
-| `unknown option '--reuse-client'` | Passing a removed flag | Drop it — `pack` has no client option; the client ID comes from `uipath.json`. |
