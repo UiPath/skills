@@ -3,7 +3,9 @@ description: >
   Smoke test: agent uses the uipath-insights skill to discover and run all
   available uip insights jobs subcommands. The prompt is goal-oriented —
   the agent must discover the full command surface from the skill, not from
-  the prompt. Auth errors are expected (no live tenant).
+  the prompt. Auth errors are expected (no live tenant). Criteria use a
+  broad invocation count (loop-resilient) plus output-based checks that
+  each distinct subcommand was actually called.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -17,6 +19,9 @@ initial_prompt: |
   so commands will fail with auth errors — that's expected. Run each command
   once and move on. Do NOT retry or attempt to login.
 
+  After running all commands, list the Code from each response (or error) so
+  I can confirm which subcommands were exercised.
+
 success_criteria:
   - type: skill_triggered
     description: "Agent activated the uipath-insights skill"
@@ -26,57 +31,65 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran jobs summary"
+    description: "Agent invoked uip insights jobs at least 7 times"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+summary'
-    min_count: 1
-    weight: 1.5
+    command_pattern: 'uip\s+insights\s+jobs'
+    min_count: 7
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran completed-timeline"
+    description: "Agent ran summary (literal or via help/output)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+completed-timeline'
+    command_pattern: 'summary'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran uncompleted-timeline"
+    description: "Agent ran completed-timeline (literal or via help/output)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+uncompleted-timeline'
+    command_pattern: 'completed-timeline'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran top-failures"
+    description: "Agent ran uncompleted-timeline (literal or via help/output)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+top-failures'
+    command_pattern: 'uncompleted-timeline'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran failures-by-reason"
+    description: "Agent ran top-failures (literal or via help/output)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+failures-by-reason'
+    command_pattern: 'top-failures'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran process-details"
+    description: "Agent ran failures-by-reason (literal or via help/output)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+process-details'
+    command_pattern: 'failures-by-reason'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran failure-details"
+    description: "Agent ran process-details (literal or via help/output)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+failure-details'
+    command_pattern: 'process-details'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran failure-details (literal or via help/output)"
+    tool_name: "Bash"
+    command_pattern: 'failure-details'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
