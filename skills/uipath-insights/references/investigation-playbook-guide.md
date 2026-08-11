@@ -106,12 +106,11 @@ uip insights jobs summary \
 User asks about a specific Orchestrator folder.
 
 ```bash
-# Step 1: Find the folder key — Insights-active folders first
+# Step 1: Find the folder key. Two sources return the same GUID:
+# Insights-active folders (last 30 days): GUID is the folderKey field
 uip insights filter-folders list --output json
-# Look for the folder's FolderKey in the output.
-# Fallback for folders without recent activity (requires uipath-platform):
+# Fallback, full folder inventory (requires uipath-platform): GUID is the Key field
 uip or folders list --output json
-# There the GUID is the folder's Key field (not FolderKey)
 
 # Step 2: Query insights with folder filter
 uip insights jobs summary --time-range 1440 \
