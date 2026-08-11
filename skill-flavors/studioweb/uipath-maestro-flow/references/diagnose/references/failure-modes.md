@@ -1,3 +1,3 @@
 <!--skill-flavor:project-creation-recovery:start-->
-TODO Studio Web Project Creation Recovery
+TODO(STUDIO_WEB_FLAVOR_STUB): Project Creation Recovery
 <!--skill-flavor:project-creation-recovery:end-->
