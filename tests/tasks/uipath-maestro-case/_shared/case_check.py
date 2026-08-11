@@ -22,7 +22,7 @@ import os
 import re
 import subprocess
 import sys
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, NoReturn, Sequence
 
 
 def find_caseplan(pattern: str = "**/caseplan.json") -> str:
@@ -102,7 +102,7 @@ def find_tasks_of_type(plan: dict, task_type: str) -> list[dict]:
 
 def assert_validate_passes(caseplan_path: str, *, timeout: int = 60) -> None:
     cmd = ["uip", "maestro", "case", "validate", caseplan_path, "--output", "json"]
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    r = _run(cmd, timeout=timeout, what="uip maestro case validate")
     if r.returncode != 0:
         _fail(
             f"uip maestro case validate exit {r.returncode}\n"
@@ -362,8 +362,26 @@ def _stringify(v: Any) -> str:
     return json.dumps(v, default=str)
 
 
-def _fail(msg: str):
+def _fail(msg: str) -> NoReturn:
     sys.exit(f"FAIL: {msg}")
+
+
+def _run(cmd: Sequence[str], *, timeout: int, what: str) -> subprocess.CompletedProcess[str]:
+    """``subprocess.run`` that reports a timeout as a FAIL, not a traceback.
+
+    ``TimeoutExpired`` carries partial output as bytes even under ``text=True``,
+    so decode defensively.
+    """
+    try:
+        return subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout, check=False
+        )
+    except subprocess.TimeoutExpired as e:
+        out, err = (
+            s.decode("utf-8", "replace") if isinstance(s, bytes) else (s or "")
+            for s in (e.stdout, e.stderr)
+        )
+        _fail(f"{what} timed out after {timeout}s\nstdout: {out}\nstderr: {err}")
 
 
 def _get_ci(mapping: Any, *candidate_keys: str, default: Any = None) -> Any:
@@ -491,7 +509,7 @@ def start_debug(
         "--output", "json",
     ]
     already_refreshed = os.path.isdir(os.path.join(solution_dir, "resources"))
-    r = subprocess.run(refresh_cmd, capture_output=True, text=True, timeout=refresh_timeout)
+    r = _run(refresh_cmd, timeout=refresh_timeout, what="uip solution resources refresh")
     if r.returncode != 0:
         # CLI 1.197-alpha: refresh is not idempotent — re-running it over its own
         # output fails with "Node already added to the graph" (RetryWillNotFix).
@@ -508,7 +526,7 @@ def start_debug(
         "uip", "maestro", "case", "debug", project_dir,
         "--log-level", "debug", "--output", "json",
     ]
-    r = subprocess.run(debug_cmd, capture_output=True, text=True, timeout=timeout)
+    r = _run(debug_cmd, timeout=timeout, what="uip maestro case debug")
     if r.returncode != 0:
         _fail(
             f"case debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}"
