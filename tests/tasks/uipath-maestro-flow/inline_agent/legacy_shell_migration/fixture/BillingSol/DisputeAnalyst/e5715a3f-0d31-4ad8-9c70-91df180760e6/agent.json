@@ -1,0 +1,119 @@
+{
+  "version": "1.1.0",
+  "type": "lowCode",
+  "id": "e5715a3f-0d31-4ad8-9c70-91df180760e6",
+  "projectId": "e5715a3f-0d31-4ad8-9c70-91df180760e6",
+  "name": "Dispute Analyst Agent",
+  "settings": {
+    "model": "gpt-4.1-mini-2025-04-14",
+    "maxTokens": 8192,
+    "temperature": 0.2,
+    "engine": "basic-v2",
+    "maxIterations": 12,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "start__output__disputeDescription": {
+        "type": "string"
+      },
+      "start__output__invoiceNumber": {
+        "type": "string"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "determination": {
+        "type": "string",
+        "description": "SOP-based determination for the dispute"
+      },
+      "rationale": {
+        "type": "string",
+        "description": "Why this determination, citing the SOP"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "guardrails": [
+    {
+      "$guardrailType": "builtInValidator",
+      "id": "3f2a91c4-5e7b-4d18-9a26-0b8c7d41e5f2",
+      "name": "Block customer PII in analyst output",
+      "description": "Blocks emails and phone numbers leaking into the analysis",
+      "validatorType": "pii_detection",
+      "validatorParameters": [
+        {
+          "$parameterType": "enum-list",
+          "id": "entities",
+          "value": [
+            "Email",
+            "PhoneNumber"
+          ]
+        },
+        {
+          "$parameterType": "map-enum",
+          "id": "entityThresholds",
+          "value": {
+            "Email": 0.5,
+            "PhoneNumber": 0.5
+          }
+        }
+      ],
+      "action": {
+        "$actionType": "block",
+        "reason": "Customer PII detected in the analysis output."
+      },
+      "enabledForEvals": true,
+      "selector": {
+        "scopes": [
+          "Agent"
+        ]
+      }
+    }
+  ],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a billing dispute analyst for the accounts-receivable team. Decide how a customer billing dispute should be handled using the company SOP guidance you are given. Return a determination of valid, invalid, or needs-review, plus a short rationale that cites the SOP guidance you applied. Never promise a refund amount and never contact the customer directly.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a billing dispute analyst for the accounts-receivable team. Decide how a customer billing dispute should be handled using the company SOP guidance you are given. Return a determination of valid, invalid, or needs-review, plus a short rationale that cites the SOP guidance you applied. Never promise a refund amount and never contact the customer directly."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Dispute: {{input.start__output__disputeDescription}}\nInvoice number: {{input.start__output__invoiceNumber}}\n\nAnalyze the dispute now.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Dispute: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__disputeDescription"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\nInvoice number: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.start__output__invoiceNumber"
+        },
+        {
+          "type": "simpleText",
+          "rawString": "\n\nAnalyze the dispute now."
+        }
+      ]
+    }
+  ]
+}

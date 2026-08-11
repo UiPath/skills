@@ -1,0 +1,141 @@
+task_id: skill-flow-inline-tool-api-solution
+description: >
+  Add an inline-agent API workflow tool inside an existing solution
+  (brownfield), flow-file-first. The fixture ships a `ShippingFlowSol`
+  solution that already contains a registered `CalculateShippingRate`
+  API workflow project. The agent must add a NEW `ShippingFlow` Flow
+  project whose inline low-code agent (full definition embedded in the
+  `uipath.agent.autonomous` node's `inputs`) delegates to the
+  pre-existing `CalculateShippingRate` as a tool — reusing it, NOT
+  re-creating it and NOT re-initializing the solution. Verifies a
+  `uipath.agent.resource.tool.api.<key>` node carries the tool config
+  in its `inputs` (UUID `source`,
+  `properties.processName: "CalculateShippingRate"`,
+  `properties.folderPath: "solution_folder"`), is wired to the agent's
+  `tool` handle with its registry definition present, and the flow
+  validates. No sidecar authored, no `uip agent` lifecycle commands.
+  Validate-only by design: `uip maestro flow debug` cannot yet run
+  flow-only inline agents (no sidecar synthesis — known CLI gap
+  pinned at roadmap M0), so `flow validate` is the grading ceiling.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, node:inline-agent, shape:multi-node, resource]
+
+run_limits:
+  expected_turns: 70
+  turn_timeout: 1200
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/inline_agent/tool_api_solution/_fixtures/ShippingFlowSol ."
+    timeout: 10
+
+initial_prompt: |
+  Create a new UiPath Flow project named "ShippingFlow" inside the existing
+  "ShippingFlowSol" solution (in the current directory). Its inline low-code
+  agent should get shipping rates from the existing "CalculateShippingRate" API
+  workflow that's already in the solution, rather than working them out itself.
+
+  The task is NOT complete until `uip maestro flow validate` passes for the
+  flow file.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  # Brownfield: the solution already exists in the fixture.
+  - type: command_not_executed
+    description: "Agent did NOT re-initialize the pre-existing solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+init'
+    exclude_pattern: '--help'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Brownfield: CalculateShippingRate ships in the fixture. The agent must
+  # reuse it, not scaffold a fresh API workflow over it.
+  - type: command_not_executed
+    description: "Agent did NOT re-create the existing CalculateShippingRate project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+init\s+["'']?CalculateShippingRate'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Global transform (roadmap §7): the sidecar lifecycle verbs must not run —
+  # the definition lives in the .flow.
+  - type: command_not_executed
+    description: "No legacy inline-agent lifecycle commands (definition lives in the .flow)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+(init|refresh|validate)\s+.*--inline-in-flow'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Informational discovery criteria: the agent may use file reads instead of
+  # CLI discovery. pass_threshold:0 means these never block the run.
+  - type: command_executed
+    description: "Agent discovered the existing CalculateShippingRate via solution resources list (informational)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources?\s+list\b.*--source\s+local'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent fetched the CalculateShippingRate configuration with uip solution resources get (informational)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources?\s+get\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Local-registry discovery: informational. The agent may discover node types
+  # via file reads or resources list output instead of registry search/list.
+  - type: command_executed
+    description: "Agent searched or listed the local flow registry for the API workflow tool manifest (informational)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+(?=[^\n]*--local)(search|list)\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Outcome-based check: the fixture .uipx starts with CalculateShippingRate
+  # registered; auto-registration of the new Flow project must bring
+  # Projects[] to 2.
+  - type: json_check
+    description: "ShippingFlow is registered alongside CalculateShippingRate in the parent solution .uipx"
+    path: "ShippingFlowSol/ShippingFlowSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "ShippingFlowSol/ShippingFlow/ShippingFlow.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow embeds the inline agent and the API workflow tool node types"
+    path: "ShippingFlowSol/ShippingFlow/ShippingFlow.flow"
+    includes:
+      - '"uipath.agent.autonomous"'
+      - 'uipath.agent.resource.tool.api.'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline solution API workflow tool: embedded agent + tool node inputs (processName/folderPath) + tool-handle edge + definitions"
+    command: 'python3 "$TASK_DIR/check_tool_api_solution.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the authored flow"
+    command: 'python3 "$TASK_DIR/../../_shared/validate_flow.py"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

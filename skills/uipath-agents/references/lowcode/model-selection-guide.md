@@ -69,4 +69,4 @@ Edit `settings.model` (and `settings.maxTokens`) in `agent.json`, then refresh a
 3. `uip agent refresh --output json`
 4. `uip agent validate --output json`
 
-For inline-in-flow agents add `--inline-in-flow` to both commands. Full field reference: [agent-definition.md](agent-definition.md#change-model-settings).
+Full field reference: [agent-definition.md](agent-definition.md#change-model-settings).

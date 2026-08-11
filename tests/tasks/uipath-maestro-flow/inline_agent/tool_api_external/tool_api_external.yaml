@@ -1,0 +1,138 @@
+task_id: skill-flow-inline-tool-api-external
+description: >
+  Add API workflow tool (inline agent, external resource) —
+  flow-file-first. End-to-end test: scaffold a flow project whose
+  inline low-code agent (full definition embedded in the
+  `uipath.agent.autonomous` node's `inputs`) calls an EXTERNAL API
+  workflow deployed to Orchestrator. Verifies a
+  `uipath.agent.resource.tool.api.<key>` node carries the tool config
+  in its `inputs` (UUID `source`,
+  `properties.processName: "WeatherAPI"`, the real deployed
+  `folderPath`), is wired to the agent's `tool` handle with its
+  registry definition present, flow data is wired into the cluster,
+  the agent declares the typed `temperature` output, and the flow
+  validates. No sidecar authored, no `uip agent` lifecycle commands.
+  Validate-only by design: `uip maestro flow debug` cannot yet run
+  flow-only inline agents (no sidecar synthesis — known CLI gap
+  pinned at roadmap M0), so `flow validate` is the grading ceiling.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, node:inline-agent, shape:multi-node, resource]
+
+run_limits:
+  expected_turns: 87
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow project "WeatherFlow" that runs an inline low-code agent
+  which takes a required `location` (string) and returns a number
+  `temperature`. The agent shouldn't figure out the temperature itself — the
+  value should come from our existing "WeatherAPI" workflow, which is already
+  deployed in our tenant. Wire it into the flow. The solution should be named
+  "WeatherFlowSol".
+
+  The task is NOT complete until `uip maestro flow validate` passes for the
+  flow file.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+
+  # Global transform (roadmap §7): the sidecar lifecycle verbs must not run —
+  # the definition lives in the .flow.
+  - type: command_not_executed
+    description: "No legacy inline-agent lifecycle commands (definition lives in the .flow)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+(init|refresh|validate)\s+.*--inline-in-flow'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the API workflow identity with uip solution resources list (informational)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources\s+list\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0  # advisory: the registry manifest carries name+folder (bindings defaults), so resources list is outcome-invisible for external targets
+
+  - type: command_executed
+    description: "Agent fetched the API workflow configuration with uip solution resources get (informational)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources\s+get\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent searched the flow registry for the external API workflow manifest"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+search\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the external API workflow tool node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.resource\.tool\.api\.'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the inline autonomous agent node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.autonomous'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "WeatherFlowSol/WeatherFlowSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "WeatherFlowSol/WeatherFlow/WeatherFlow.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow embeds the inline agent and the API workflow tool node types"
+    path: "WeatherFlowSol/WeatherFlow/WeatherFlow.flow"
+    includes:
+      - '"uipath.agent.autonomous"'
+      - 'uipath.agent.resource.tool.api.'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline external API workflow tool: embedded agent + tool node inputs (processName/real folderPath) + tool-handle edge + definitions + typed output"
+    command: 'python3 "$TASK_DIR/check_tool_api_external.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the authored flow"
+    command: 'python3 "$TASK_DIR/../../_shared/validate_flow.py"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

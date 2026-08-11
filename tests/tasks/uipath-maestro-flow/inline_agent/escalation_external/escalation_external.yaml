@@ -1,0 +1,152 @@
+task_id: skill-flow-inline-escalation-external
+description: >
+  Escalation to an EXTERNAL Action Center app for a flow inline agent,
+  flow-file-first. End-to-end test: scaffold a flow project with an
+  inline low-code agent (full definition embedded in the
+  `uipath.agent.autonomous` node's `inputs`) that escalates uncertain
+  cases to the "FraudEscalation" Action Center app already deployed to
+  Orchestrator (not inside this solution). Verifies a
+  `uipath.agent.resource.escalation.*` node carries the flat flow-form
+  config in its `inputs` (UUID `source`, full `app` object bound to the
+  deployed app — `appName: "FraudEscalation"`, the real deployed
+  Orchestrator folder in `folderName`, UUID `resourceKey` from
+  `resources list`, action schemas built from the app's ActionSchema —
+  >= 1 recipient, no derived `channels[]`/`$resourceType`
+  contamination), is wired to the agent's `escalation` handle with its
+  registry definition present, and the flow validates. No sidecar
+  authored, no `uip agent` lifecycle commands. Validate-only by design:
+  `uip maestro flow debug` cannot yet run flow-only inline agents (no
+  sidecar synthesis — known CLI gap pinned at roadmap M0), so
+  `flow validate` is the grading ceiling.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, node:inline-agent, shape:multi-node, resource]
+
+run_limits:
+  expected_turns: 66
+  turn_timeout: 1200
+
+# An agent left to itself often models "escalate to a human" as a human-in-the-loop
+# flow node — fine in general, but this task specifically exercises the agent
+# Escalation capability, so the prompt asks for it explicitly.
+initial_prompt: |
+  Create a UiPath Flow project "FraudFlow" that runs an inline low-code agent
+  which triages transactions and, when it isn't confident, escalates the case to
+  a human reviewer through our existing "FraudEscalation" Action Center app —
+  it's already running in Orchestrator, not part of this solution. Set this up
+  using the agent's Escalation capability, wired into the flow — not a standalone
+  human-in-the-loop node. The solution should be named "FraudFlowSol".
+
+  The task is NOT complete until `uip maestro flow validate` passes for the
+  flow file.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+
+  # Global transform (roadmap §7): the sidecar lifecycle verbs must not run —
+  # the definition lives in the .flow.
+  - type: command_not_executed
+    description: "No legacy inline-agent lifecycle commands (definition lives in the .flow)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+(init|refresh|validate)\s+.*--inline-in-flow'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Enforced: the app is EXTERNAL — its identity (UUID Key, deployed folder)
+  # exists only in the tenant; there is no file to read it from. Pattern
+  # deliberately does NOT require --kind App: a plain `resources list
+  # --source remote` also surfaces the app, and the checker's expected_app
+  # asserts grade the outcome (M2 external posture).
+  - type: command_executed
+    description: "Agent discovered the FraudEscalation app identity with uip solution resources list"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources?\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Enforced: the app's action schema (task-form fields, outcomes, appVersion)
+  # is only available via `resources get` — without it the authored app object
+  # carries empty schemas and the task form shows no data.
+  - type: command_executed
+    description: "Agent fetched the app action schema with uip solution resources get"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources?\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent searched the flow registry to confirm escalation variant availability (informational, non-gating — the node types are static and pinned in the capability doc)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+search\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent fetched the escalation node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.resource\.escalation'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the inline autonomous agent node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.autonomous'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "FraudFlowSol/FraudFlowSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "FraudFlowSol/FraudFlow/FraudFlow.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow embeds the inline agent and the escalation node types"
+    path: "FraudFlowSol/FraudFlow/FraudFlow.flow"
+    includes:
+      - '"uipath.agent.autonomous"'
+      - 'uipath.agent.resource.escalation'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline external escalation: embedded agent + flat escalation node inputs (full app object bound to the deployed FraudEscalation app, recipients) + escalation-handle edge + definitions"
+    command: 'python3 "$TASK_DIR/check_escalation_external.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the authored flow"
+    command: 'python3 "$TASK_DIR/../../_shared/validate_flow.py"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

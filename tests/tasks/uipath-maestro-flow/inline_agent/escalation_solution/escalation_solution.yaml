@@ -1,0 +1,145 @@
+task_id: skill-flow-inline-escalation-solution
+description: >
+  Add an inline-agent escalation wired to a solution-internal Action
+  Center app (brownfield), flow-file-first. The fixture ships a
+  `ReviewFlowSol` solution that already contains a registered
+  `HumanReviewEscalation` Action Center app (workflow Action). The agent
+  must add a NEW `ReviewFlow` Flow project whose inline low-code agent
+  (full definition embedded in the `uipath.agent.autonomous` node's
+  `inputs`) escalates uncertain cases to a human reviewer via the
+  pre-existing `HumanReviewEscalation` app — reusing it, NOT re-creating
+  it and NOT re-initializing the solution. Verifies a
+  `uipath.agent.resource.escalation.*` node carries the flat flow-form
+  config in its `inputs` (UUID `source`, full `app` object with
+  `appName: "HumanReviewEscalation"` + `folderName: "solution_folder"` +
+  action schemas, >= 1 recipient, no derived `channels[]`/`$resourceType`
+  contamination), is wired to the agent's `escalation` handle with its
+  registry definition present, and the flow validates. No sidecar
+  authored, no `uip agent` lifecycle commands. Validate-only by design:
+  `uip maestro flow debug` cannot yet run flow-only inline agents (no
+  sidecar synthesis — known CLI gap pinned at roadmap M0), so
+  `flow validate` is the grading ceiling.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, node:inline-agent, shape:multi-node, resource]
+
+run_limits:
+  expected_turns: 63
+  turn_timeout: 1200
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/inline_agent/escalation_solution/_fixtures/ReviewFlowSol ."
+    timeout: 10
+
+# An agent left to itself often models "escalate to a human" as a human-in-the-loop
+# flow node — fine in general, but this task specifically exercises the agent
+# Escalation capability, so the prompt asks for it explicitly.
+initial_prompt: |
+  Create a new UiPath Flow project named "ReviewFlow" inside the existing
+  "ReviewFlowSol" solution (in the current directory). The flow must use an inline
+  low-code agent to moderate user content and escalate uncertain cases to a human
+  reviewer using the existing "HumanReviewEscalation" Action Center app that's
+  already in the solution. Set this up using the agent's Escalation capability,
+  wired into the flow — not a standalone human-in-the-loop node.
+
+  The task is NOT complete until `uip maestro flow validate` passes for the
+  flow file.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  # Brownfield: the solution already exists in the fixture. The
+  # exclude_pattern lets a read-only `uip solution init --help` verb-probe
+  # through.
+  - type: command_not_executed
+    description: "Agent did NOT re-initialize the pre-existing solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+init'
+    exclude_pattern: '--help'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Global transform (roadmap §7): the sidecar lifecycle verbs must not run —
+  # the definition lives in the .flow.
+  - type: command_not_executed
+    description: "No legacy inline-agent lifecycle commands (definition lives in the .flow)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+(init|refresh|validate)\s+.*--inline-in-flow'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Informational discovery criteria: the agent may read the fixture app's
+  # files instead of CLI discovery. pass_threshold:0 means these never block.
+  - type: command_executed
+    description: "Agent discovered the existing HumanReviewEscalation app via solution resources list (informational)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources?\s+list\b.*--source\s+local'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Informational: the app's action schema is also readable from the fixture
+  # app project files. The checker grades the outcome (full app object with
+  # non-empty schemas) instead.
+  - type: command_executed
+    description: "Agent fetched the HumanReviewEscalation action schema with uip solution resources get (informational)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources?\s+get\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Informational: the escalation node types are static and pinned in the
+  # capability doc; the definitions-or-nothing outcome is covered by the
+  # checker + flow validate (a missing definitions[] entry fails both).
+  - type: command_executed
+    description: "Agent consulted the flow registry for the escalation node manifest (informational)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+(search|list|get)\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Outcome-based check: the fixture .uipx starts with the HumanReviewEscalation app
+  # registered; auto-registration of the new Flow project must bring
+  # Projects[] to 2.
+  - type: json_check
+    description: "ReviewFlow is registered alongside HumanReviewEscalation in the parent solution .uipx"
+    path: "ReviewFlowSol/ReviewFlowSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "ReviewFlowSol/ReviewFlow/ReviewFlow.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow embeds the inline agent and the escalation node types"
+    path: "ReviewFlowSol/ReviewFlow/ReviewFlow.flow"
+    includes:
+      - '"uipath.agent.autonomous"'
+      - 'uipath.agent.resource.escalation'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline solution escalation: embedded agent + flat escalation node inputs (full app object bound to the solution-internal app, recipients) + escalation-handle edge + definitions"
+    command: 'python3 "$TASK_DIR/check_escalation_solution.py"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the authored flow"
+    command: 'python3 "$TASK_DIR/../../_shared/validate_flow.py"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
