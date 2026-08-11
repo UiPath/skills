@@ -354,10 +354,13 @@ jobs:
       # old `alpha` tag → `dev` on 2026-06-26), so smoke tracks main — not stale
       # `latest` from public npm (which lags by ~2 weeks).
       - name: Build skills smoke Docker image
+        env:
+          DOCKER_BUILDKIT: "1"
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
         run: |
           docker build \
             --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }} \
-            --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" \
+            --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .

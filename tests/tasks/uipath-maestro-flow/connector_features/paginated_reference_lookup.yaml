@@ -1,3 +1,6 @@
+# Same-ground campaign contract (Tao, 2026-08-10): loop-neutral v1-base
+# prompt; v1-weighted intersection criteria plus report-only offline advisories;
+# paired limit envelope. Cross-arm parity is enforced by the sync gate.
 task_id: skill-flow-paginated-reference-lookup
 description: >
   Build a Flow with a Slack `Send Message to Channel` node targeting the
