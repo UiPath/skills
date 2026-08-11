@@ -6,6 +6,10 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 > **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution). Explicit plan-only / no-build runs stop at `tasks/tasks.md` and skip registry-derived audit files because tenant lookup is deferred to the later build run.
 >
+> **`tasks/` is keyed to the SDD, not to the solution — one build per working directory.** Every solution built from the same `sdd.md` writes to the *same* `tasks/` files. Giving two concurrent builds different solution names does **not** isolate them: solution-name separation buys nothing for artifacts that are not namespaced by solution. Observed: two concurrent runs from one `sdd.md` silently overwrote each other's `tasks.md` and `registry-resolved.json` mid-build, and neither noticed until a harness file-change notification surfaced it.
+>
+> Before starting, if `tasks/` already exists and was not written by this run, treat it as a **hard stop** — do not overwrite. Either the run is a re-run (regenerate per Rule 6, which is fine) or another build is live in this directory (which is not). To build two variants of one SDD, give each its own working directory with its own copy of `sdd.md`; do not rely on distinct solution names.
+>
 > **Exit:** Auto-proceeds to Phase 2 — plan treated as approved, no prompt by default. Stops after `tasks.md` only when the request explicitly asked for a plan-only / review-first run. Re-read `tasks.md` before execution.
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting planning workflow. For how to fill fields for a specific node, consult the relevant plugin:
@@ -387,5 +391,17 @@ Re-read `tasks.md` before proceeding to Phase 2 (see [implementation.md](impleme
 **Known failure pattern:** deferring the rule to a *separate* §4.7 task-entry-condition entry (`rule-type:`) does not satisfy this gate — `caseplan.json` can end up fully correct while `tasks.md` itself still fails this check, because §4.6 and §4.7 are graded as separate artifacts. See [task-entry-conditions/planning.md § Phase 1 Plan Presentation Contract](plugins/conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract) for the compliant §4.6 shape.
 
 Correct the plan before building; validation of `caseplan.json` cannot detect a malformed Phase 1 handoff.
+
+**Artifact-existence gate.** Before Phase 2 begins, confirm on disk that BOTH `tasks/tasks.md` and `tasks/registry-resolved.json` exist and are non-empty (plus `tasks/recipients-resolved.json` when SLA escalations are present). Planning "in memory" and proceeding straight to `caseplan.json` is a Phase 1 failure even when the resulting case validates: the audit trail for how every resource was resolved is then unrecoverable. If either file is missing, write it before continuing. Nothing downstream detects the absence — `validate` and the Step 12 checks read `caseplan.json`, never the planning trail.
+
+**One-T-entry-per-declaration gate.** Count the `## T<n>:` headings in the finished `tasks.md` and compare against the SDD's declaration count (case + triggers + every variable/argument + every stage + every task + every entry/exit/task-entry/case-exit condition row + every SLA rule + every escalation). The two numbers must match.
+
+**Range headings are a hard failure.** A heading covering more than one declaration — `## T03-T32: Case Variables (30 rows)`, `## T41-T60: Tasks`, `## T61-T94: Conditions` — violates Rule 6 and voids the plan's purpose:
+
+- a reviewer cannot cite or comment on `T57`;
+- a later phase cannot re-read one declaration;
+- the "lossless" property is gone, because a range heading records the count but not the content.
+
+Observed in a real 8-stage / 20-task build: 106 mandated entries were emitted as 7 range headings and the run still produced a `Valid` caseplan, so **no downstream signal will catch this.** If a run is short of budget, reduce prose per entry — never collapse entries. Regenerate the plan before building.
 
 <!-- END: planning.md -->

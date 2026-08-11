@@ -490,17 +490,32 @@ uip maestro case instance variables <instance-id> --parent-element-id <id>
 # Incidents for a specific instance
 uip maestro case instance incidents <instance-id>
 
+# Liveness: which elements actually executed (THE health check — see note below)
+uip maestro case instance element-executions <instance-id> --output json
+
+# Engine cursor state — surfaces failures the two commands above hide
+uip maestro case instance cursors <instance-id> --output json
+
 # Get the Case definition (JSON) for a process instance
 uip maestro case instance asset <instance-id>
 
 # Migration: migrate instance to a different package version
 uip maestro case instance migrate <instance-id> <new-version>
 
+# Cancel fallback when `instance cancel` returns 500 (see note below)
+uip or jobs stop <instance-id> --strategy Kill
+
 # Go-to: move execution cursor from one element to another
 uip maestro case instance goto <instance-id> '[{"sourceElementId":"A","targetElementId":"B"}]'
 uip maestro case instance cursors <instance-id>
 uip maestro case instance element-executions <instance-id>
 ```
+
+> **`get` and `incidents` can both report healthy on a dead instance.** A case whose first required task is a placeholder launches, finishes its case-lifecycle scaffolding, and stops — `instance get` shows `LatestRunStatus: "Running"` and `instance incidents` shows `[]` indefinitely. Use **`element-executions`** to confirm a stage or task element actually ran; trigger / variable-setup / case-started / SLA-subprocess elements complete on a dead case too. Contract: [phased-execution.md § Liveness check](phased-execution.md#liveness-check--mandatory-after-a-debug-instance-launches).
+
+> **`cursors` surfaces what the others hide.** On a stalled instance it returns `400` with `{"type":"PIMS-400006","title":"BPMN generic workflow failure"}` — a genuine engine failure state invisible to `get` and `incidents`. Run it whenever the liveness check fails.
+
+> **`instance cancel` can return `500` / `PIMS-100039`.** Observed failing twice in a row on a stuck instance. The working fallback is `uip or jobs stop <instance-id> --strategy Kill` — the Maestro instance ID doubles as the Orchestrator job key.
 
 ---
 

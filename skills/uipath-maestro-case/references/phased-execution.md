@@ -236,6 +236,33 @@ Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams resul
 
 After debug completes, return to Phase 6 prompt so user can re-run or move on. Leave the phase only on `Continue to publish`.
 
+### Liveness check — MANDATORY after a debug instance launches
+
+**A launched instance reporting `Running` with `Incidents: null` is not evidence that anything ran.** A case whose first required task is a placeholder starts, completes its case-lifecycle scaffolding, and then sits forever. Both `instance get` and `instance incidents` report it healthy the entire time.
+
+After the instance is created, before reporting the debug result:
+
+1. Poll `uip maestro case instance element-executions <instanceId> --output json`.
+2. Look for **at least one element belonging to a stage or a task**. Trigger, variable setup, case-started and SLA subprocess elements completing prove only that the case started — they appear on a dead case too.
+3. If no stage/task element appears after a reasonable settle period, **report the run as failed, not as running.** State plainly: the instance launched but executed no stage work.
+4. Then diagnose before re-running: the first suspect is a placeholder on a required, case-gating task ([placeholder-tasks.md § Placeholder position risk](placeholder-tasks.md#placeholder-position-risk--mandatory-classification)).
+
+> **`instance cursors` is the diagnostic the other endpoints hide.** On a stalled instance, `get` returns `Running` and `incidents` returns `[]`, while `uip maestro case instance cursors <instanceId>` returns `400` with `{"type":"PIMS-400006","title":"BPMN generic workflow failure"}`. When the liveness check fails, run `cursors` and include its response in the report.
+
+> **Cancelling a stuck instance.** `uip maestro case instance cancel` may fail with `500` / `PIMS-100039`. The working fallback is `uip or jobs stop <instanceId> --strategy Kill` — the Maestro instance ID doubles as the Orchestrator job key.
+
+### Known platform defect — multi-stage escalations crash conversion
+
+`uip maestro case pack` and `uip maestro case debug` throw `Cannot read properties of undefined (reading 'get')` during BPMN conversion whenever **more than one stage carries a non-empty `slaRules[].escalationRule[]`**. `uip maestro case validate` reports the same file `Valid` with zero warnings, so nothing catches it before Phase 5/6.
+
+Confirmed across two independent builds and four isolation methods. One escalation-bearing stage converts fine; two or more crash, regardless of which stages or their content.
+
+When this fires:
+
+- Recognise it from the error text plus the presence of escalations on ≥2 stages. The CLI's `Instructions: "Check authentication and case file"` is misleading — authentication and the file are both fine.
+- **Do not silently strip escalations to get past it.** Dropping them changes the case's escalation behavior, which is often its most compliance-sensitive part.
+- Report it as a blocking platform defect and let the user decide. If they authorise a workaround, keep the most load-bearing escalation and record every dropped one in `build-issues.md` under HIGH as a deliberate fidelity loss.
+
 Before this prompt, include `Suggested next steps: run a debug session if you are ready to exercise the case, or continue to the Orchestrator publish gate if validation (and publish) is enough for now.` After debug results, print `Suggested next steps: inspect the debug output, fix and re-run, re-publish with the Phase 5 commands if a fix changed the build, or continue to the Orchestrator publish gate.`
 
 ### Debug notes

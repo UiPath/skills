@@ -232,7 +232,9 @@ SDD row: `Category=In`, optional `sourceTriggers: T<N>` (a single T-number selec
 
 **Trigger resolution.** `<triggerId>` in the entries below = `id-map.json[T<N>].id` for the trigger named by `sourceTriggers`; blank `sourceTriggers` → `id-map["T02"].id` (the primary trigger). Entries 1 (formal slot) and 2 (companion) carry it as `elementId`; entry 3 (bridge) is written on that same trigger node's `data.inputs.outputs[]`. `sourceFields` is not consulted for In.
 
-> **Bare manual bound trigger:** a manual trigger has no `data.inputs` key (its signature — see [`../../triggers/manual/impl-json.md`](../../triggers/manual/impl-json.md)). When the bound trigger is manual (the common case — the primary trigger is usually manual), create `data.inputs = { "outputs": [] }` on that node before appending the bridge. Do NOT add a `serviceType` — its absence is what keeps the trigger manual.
+> **Bare manual bound trigger:** when the bound trigger is manual (the common case — the primary trigger is usually manual), append the bridge to that node's `data.inputs.outputs[]`, creating the `outputs` array if it is absent. **Keep `data.inputs.serviceType: "None"`** — the manual trigger plugin writes it and it is the manual trigger's signature under schema v27; see [`../../triggers/manual/impl-json.md`](../../triggers/manual/impl-json.md). The resulting node carries both: `data.inputs = { "serviceType": "None", "outputs": [ …bridge… ] }`.
+>
+> Earlier revisions of this file told you to omit `serviceType` on a manual trigger. That was wrong and contradicted the trigger plugin. Verified on schema 27.0.0: a manual trigger carrying both `serviceType: "None"` and a populated `outputs[]` validates and runs; the trigger plugin's recipe is authoritative.
 
 Three entries — formal slot + companion + bridge:
 

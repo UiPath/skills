@@ -437,10 +437,12 @@ Escalation `id` and `displayName` are both **required** (as of schema v27). Defa
 | `expression` | string | Rule predicate. `"=js:true"` marks the default / fallback rule. Non-default rules require a non-empty expression. |
 | `count` | number? | SLA duration count (optional — a bare escalation-only rule may omit this). |
 | `unit` | `"min" \| "h" \| "d" \| "w" \| "m"` ? | SLA duration unit (optional — paired with `count`). |
-| `escalationRule` | EscalationRule[]? | Notifications to fire at-risk or on breach. Each escalation requires a non-empty target-unique `displayName` without `:`, at least one recipient, and an at-risk percentage when its trigger type is `at-risk`. Runtime attaches escalations to whichever rule is active. |
+| `escalationRule` | EscalationRule[]? | Notifications to fire at-risk or on breach. **`action.type` accepts only `"notification"`** — see the note below. Each escalation requires a non-empty target-unique `displayName` without `:`, at least one recipient, and an at-risk percentage when its trigger type is `at-risk`. Runtime attaches escalations to whichever rule is active. |
 
 Evaluated in array order; the first truthy expression wins. The trailing `"=js:true"` entry acts as the default.
 
+> **`action.type` is `"notification"` and nothing else.** The runtime schema rejects `"start-task"`, `"enter-stage"`, `"exit-stage"` and `"exit-case"` with `Invalid input: expected "notification"`. Those are SLA *response categories* (SKILL.md Rule 21), not escalation action types: an escalation only ever notifies, and every routing response is authored as a separate `sla-status-change` condition rule on the destination task or stage. Observed: two runs authored `"enter-stage"` / `"exit-case"` here and had to re-model them after `validate` rejected the case.
+>
 > **SLA capabilities** — escalation rules can attach to any rule (not only the default `"=js:true"`). `slaRules[]` is supported on a secondary Stage (`data.stageType: "secondary"`). A single `EscalationRule` may carry multiple `recipients[]`. See [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
 
 ---
