@@ -168,13 +168,36 @@ def probe_live_cli(timeout: int = LIVE_PROBE_TIMEOUT) -> bool:
     return True
 
 
+def _get_ci(mapping, *candidate_keys: str, default=None):
+    """Case-insensitively read the first present candidate key from ``mapping``.
+
+    The envelope wrapper's ``Result``/``Code``/``Data`` casing IS the shipped
+    contract and stays literally asserted in `check_envelope`. The keys INSIDE
+    ``Data`` are not what these checkers grade, so runtime-payload reads go
+    through this accessor (same pattern as `_get_ci` in
+    uipath-maestro-flow/_shared/flow_check.py): a camelCase ``processName``
+    would otherwise return nothing silently and skip the report-grounding
+    branch while the task still passes.
+    """
+    if not isinstance(mapping, dict):
+        return default
+    lowered = {k.lower(): k for k in mapping.keys() if isinstance(k, str)}
+    for candidate in candidate_keys:
+        actual = lowered.get(candidate.lower())
+        if actual is not None:
+            return mapping[actual]
+    return default
+
+
 def process_names(data) -> list:
     """Process names carried by a jobs envelope's `Data.ProcessName`.
 
     The row columns come back as arrays that are sometimes nested one level per
     grouping bucket (`JobCountByTime` is `[[1]]` on the same response), so
     collect strings at any depth and drop blanks. Empty list when the column is
-    absent or null, which is what an empty window returns.
+    absent or null, which is what an empty window returns. The column is read
+    case-insensitively so a serialization change to camelCase can't silently
+    turn a populated window into an empty-looking one.
     """
     names: list = []
 
@@ -187,5 +210,5 @@ def process_names(data) -> list:
                 walk(item)
 
     if isinstance(data, dict):
-        walk(data.get("ProcessName"))
+        walk(_get_ci(data, "ProcessName"))
     return names

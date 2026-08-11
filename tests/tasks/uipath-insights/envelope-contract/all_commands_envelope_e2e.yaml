@@ -48,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran summary with the 24-hour window (or an absolute epoch-ms range)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+summary\s.*--(time-range[=\s]+1440|started-after[=\s]+\d{13})'
+    command_pattern: 'uip\s+insights\s+jobs\s+summary\s(?:[^&;|\n]|\\\n)*--(time-range[=\s]+1440|started-after[=\s]+\d{13})'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -56,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran completed-timeline with a time-range flag"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+completed-timeline\s.*--(time-range|started-after)[=\s]+\d'
+    command_pattern: 'uip\s+insights\s+jobs\s+completed-timeline\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -64,7 +64,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran uncompleted-timeline with a time-range flag"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+uncompleted-timeline\s.*--(time-range|started-after)[=\s]+\d'
+    command_pattern: 'uip\s+insights\s+jobs\s+uncompleted-timeline\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -72,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran top-failures with a time-range flag"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+top-failures\s.*--(time-range|started-after)[=\s]+\d'
+    command_pattern: 'uip\s+insights\s+jobs\s+top-failures\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -80,7 +80,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran failures-by-reason with a time-range flag"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+failures-by-reason\s.*--(time-range|started-after)[=\s]+\d'
+    command_pattern: 'uip\s+insights\s+jobs\s+failures-by-reason\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -88,7 +88,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran process-details with a time-range flag"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+process-details\s.*--(time-range|started-after)[=\s]+\d'
+    command_pattern: 'uip\s+insights\s+jobs\s+process-details\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -96,7 +96,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran failure-details with a time-range flag"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+failure-details\s.*--(time-range|started-after)[=\s]+\d'
+    command_pattern: 'uip\s+insights\s+jobs\s+failure-details\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -124,7 +124,7 @@ success_criteria:
   - type: command_executed
     description: "Advisory: agent used --output json on the queries"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s.*--output[=\s]+json'
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s(?:[^&;|\n]|\\\n)*--output[=\s]+json'
     min_count: 2
     weight: 1.0
     pass_threshold: 0
