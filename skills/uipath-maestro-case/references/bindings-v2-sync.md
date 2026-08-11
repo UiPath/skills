@@ -6,21 +6,53 @@ Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.
 
 ## When to Run
 
-**Batched, not per-task.** `bindings_v2.json` is only consumed by `uip solution resources refresh` (which runs once before upload/debug). No intermediate step reads it. Regenerating after every task wastes Read→convert→Write cycles on a growing file.
+**Sync-as-you-write — one group at a time, never deferred.** Immediately after a plugin writes a binding pair to top-level `bindings[]` in `caseplan.json` (non-connector `name`+`folderPath`, or connector `ConnectionId`+`folderKey`), append that group's ONE converted entry to `bindings_v2.json` per § Append one resource entry (below). The caseplan pair and its sidecar entry are one unit of work; the plugin's Post-Write Verification checks both.
 
-Run at these three points only:
+Never defer the append to an end-of-phase batch. The sidecar has no execution-time feedback — `validate` never reads it; only `resources refresh` consumes it, and in eval/CI that often runs harness-side after the agent finishes. A deferred batch is a checkpoint that one-pass agent runs demonstrably skip (observed artifacts: an untouched scaffold `resources: []`, and a partial raw-format copy — both alongside a complete `bindings[]`). A one-group append with the shape in front of you is mechanical; a 16-entry batch recalled later is not.
 
-1. **End of Phase 2 Step 9** (after all non-connector tasks written) — covers all process/agent/rpa/action/api-workflow/case-management bindings
-2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache for tasks
-3. **End of Phase 3 Step 10.5** (after Phase 2 connector-rule stubs are upgraded across the 4 scopes — stage-entry, stage-exit, case-exit, task-entry) — adds Connection bindings + populates IS cache for resolved rules. Phase 2 stubs add no bindings; without this sync, rule-introduced Connection/Folder bindings + IS-cache entries would be absent when `resource refresh` runs.
+**Full regeneration (§ Regenerate, below) is the repair path, not the primary path.** Run it only on:
 
-Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (top-level `bindings[]`). The batch regeneration reads the full bindings array once and converts everything in one pass.
+1. **Step 12 Check 7 drift** — parity mismatch at the Phase 3 exit gate ([implementation.md](implementation.md)): regenerate once, re-check, halt if still divergent
+2. **Task / rule removal** — [§ Cleanup](#cleanup-on-task-or-rule-removal)
+3. **Edit-mode flows** that re-point resource bindings ([case-editing-operations.md](case-editing-operations.md))
+
+---
+
+## § Append one resource entry (primary)
+
+Run immediately after writing a group's binding pair to `caseplan.json`:
+
+1. Take the pair just written — both entries share one `resourceKey`.
+2. Convert to ONE entry per the shapes in § Regenerate below (non-connector vs connector; the inline-built-sibling exception applies here too).
+3. Edit `bindings_v2.json`: if it is still the empty scaffold (`"resources": []`), replace the empty array with `[ <entry> ]`; otherwise insert the entry before the closing `]` of `resources`. If an entry with the same `key` already exists, update it in place — never duplicate.
+
+Example — the caseplan pair and its ONE sidecar entry:
+
+```jsonc
+// caseplan.json bindings[] — two entries, one per property
+{ "id": "bRpaName1", "name": "name",       "type": "string", "resource": "process", "resourceKey": "Shared/FinOps.RPA Workflow", "default": "RPA Workflow",  "propertyAttribute": "name" },
+{ "id": "bRpaFold1", "name": "folderPath", "type": "string", "resource": "process", "resourceKey": "Shared/FinOps.RPA Workflow", "default": "Shared/FinOps", "propertyAttribute": "folderPath" }
+```
+
+```jsonc
+// bindings_v2.json resources[] — ONE entry, properties nested under value
+{
+  "resource": "process",
+  "key": "Shared/FinOps.RPA Workflow",
+  "value": {
+    "name":       { "defaultValue": "RPA Workflow" },
+    "folderPath": { "defaultValue": "Shared/FinOps" }
+  }
+}
+```
+
+> **Format sentinel (hard rule).** A `resources[]` entry has exactly `resource` / `key` / `value` (+ `metadata` when applicable). If an entry contains `id`, `propertyAttribute`, or a per-property `default`, caseplan bindings were copied RAW into the sidecar — wrong file format; rebuild that entry via the conversion above. Empty `resources: []` alongside a non-empty `bindings[]` means the sync never ran. Step 12 Check 7 halts on both.
 
 ---
 
 ## § Regenerate bindings_v2.json
 
-After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`. This file uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
+**Repair / edit-mode path** — primary sync is § Append one resource entry (above); run this full pass only per the triggers in § When to Run. The sidecar uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
 
 ### Procedure
 

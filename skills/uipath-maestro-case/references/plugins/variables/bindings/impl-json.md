@@ -136,6 +136,6 @@ IDs use `b` prefix + 8 alphanumeric chars (e.g., `bG0SraLpg`).
 
 ## bindings_v2.json Sync
 
-`bindings_v2.json` must mirror top-level `bindings[]` in SDK format. Regenerated in batch (not per-task) at end of Step 9 and Step 9.7. See [bindings-v2-sync.md](../../../bindings-v2-sync.md).
+`bindings_v2.json` must mirror top-level `bindings[]` in SDK format. Sync per group, immediately: after writing a binding pair, append that group's converted entry ([bindings-v2-sync.md § Append one resource entry](../../../bindings-v2-sync.md)). Full regeneration is the repair path only (Step 12 Check 7 drift, removals, edit-mode).
 
 <!-- END: impl-json.md -->

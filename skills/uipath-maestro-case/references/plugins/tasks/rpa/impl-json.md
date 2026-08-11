@@ -62,6 +62,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - `type: "rpa"` (NOT `"process"`)
 - `data.name` and `data.folderPath` start with `=bindings.`
 - the bindings array has 2 entries: `resource: "process"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
+- `bindings_v2.json.resources[]` has this task's ONE converted entry (`key` == the pair's `resourceKey`, `key` + `value` shape) — appended per [bindings-v2-sync.md § Append one resource entry](../../../bindings-v2-sync.md); an entry carrying `propertyAttribute` / `id` is a raw caseplan copy (wrong format)
 - `data.inputs` and `data.outputs` populated (unless placeholder)
 - `id` captured in `id-map.json`
 
