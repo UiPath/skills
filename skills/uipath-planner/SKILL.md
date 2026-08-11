@@ -55,8 +55,8 @@ Run this guard before anything else.
 ```text
 0. Product design-lane signals — checked first. Some products register a
    dedicated Phase D design lane (today: Case Management —
-   references/case-design-lane-guide.md). Route to Phase D through the
-   product's lane when any of these fire (the path taxonomy stays the three
+   references/case-design-lane-guide.md). Route to Phase D — Design through
+   the product's lane when any of these fire (the path taxonomy stays the three
    paths above; a lane is Phase D's product-specific entrance):
    - a build request handed off by that product's build skill because its
      design input is missing (same conversation) → the lane's Build
@@ -68,30 +68,30 @@ Run this guard before anything else.
 1. No document path?
    - Explicit design/architect language ("design this", "architect this",
      "generate an SDD"), OR an inline-described process with enough detail to
-     substitute for a PDD (process steps + applications + exceptions) → Phase D.
+     substitute for a PDD (process steps + applications + exceptions) → Phase D — Design.
      A design/SDD request that is thin on process detail still routes to Phase D —
      elicit the missing steps/applications/exceptions via `AskUserQuestion`
      (Phase 1) rather than degrading to a Lane B plan.
-   - Otherwise → Lane B. Lane B is the default for document-less
+   - Otherwise → Lane B — Non-PDD. Lane B is the default for document-less
      multi-project requests.
 
 2. Document path → read its first ~50 lines.
-   - Contains `## Planner Handoff` OR `<!-- planner-handoff:v1 -->` → Lane A.
+   - Contains `## Planner Handoff` OR `<!-- planner-handoff:v1 -->` → Lane A — PDD-driven.
      (Either signal alone is sufficient — redundant on purpose.)
    - Reads as a PDD **or any process-knowledge source** — a process
      description (steps + applications + exceptions) in a PDD, Confluence
      page, BPMN model, meeting/Zoom transcript, SOP, or requirements doc;
-     or a binary .pdf/.docx the user calls a PDD → Phase D. Less-structured
+     or a binary .pdf/.docx the user calls a PDD → Phase D — Design. Less-structured
      sources (transcripts, thin wikis) still route to Phase D but trigger
      heavier Phase 1 elicitation.
 
 3. Otherwise (no marker, ambiguous, or unparseable) — ask via AskUserQuestion:
 
    > What is the document at <path>?
-   > 1. Process Design Document (PDD) — author the SDD (Phase D), then derive tasks
-   > 2. Solution Design Document (SDD) — proceed with task generation (Lane A)
+   > 1. Process Design Document (PDD) — author the SDD (Phase D — Design), then derive tasks
+   > 2. Solution Design Document (SDD) — proceed with task generation (Lane A — PDD-driven)
    > 3. Other context — read it; use its content to resolve Lane B elicitation
-   >    questions (skip any question it answers) and as plan input (Lane B)
+   >    questions (skip any question it answers) and as plan input (Lane B — Non-PDD)
 
 4. Route per the choice. For an SDD with no handoff header, proceed with safe
    defaults — see pdd-driven-lane-guide.md Step 1 for the default set and how
