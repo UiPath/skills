@@ -32,6 +32,7 @@ Every node in a `.flow` file has exactly one author. The validator enforces this
 | Patterns | `uipath.pattern.batch-transform`, `uipath.pattern.deep-rag` |
 | Agents | `uipath.agent.autonomous` (inline; after `uip agent init --inline-in-flow`) |
 | Resource nodes | `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, `uipath.core.human-task.*` |
+| Document extraction | `uipath.ixp.*` — the extraction step must always land a node ([ixp/impl.md](references/plugins/ixp/impl.md#landing-the-node-when-you-cannot-fully-configure-it)) |
 | Queue | `core.action.queue.create`, `core.action.queue.create-and-wait` |
 
 **CLI-owned nodes (`uip maestro flow node add` + `uip maestro flow node configure`):**
@@ -48,6 +49,7 @@ For CLI-owned nodes:
 - Use `uip maestro flow node add` to insert the node and copy the definition into `definitions[]`.
 - Use `uip maestro flow node configure --detail '{...}'` to populate `inputs.detail` and `bindings[]`.
 - Subsequent edits to `inputs.detail` are also CLI-only — re-run `node configure` (it's a full rebuild; see [connector/impl.md](references/plugins/connector/impl.md)).
+- **Never `Write` (full-file rewrite) a flow that contains CLI-owned nodes** — it silently clobbers their `bindings[]` / `inputs.detail`, leaving a corrupted connection binding that `flow validate` passes but `flow debug` fails on. `Edit` user-owned nodes in place; if a `Write` is unavoidable, re-run `node configure` for every CLI-owned node as the **last** write to touch `inputs.detail` / `bindings[]` (a later `Write` re-clobbers what `configure` just fixed).
 - You may still `Edit` the node's `display.label`, edges, layout, and outputs — those are not part of the envelope.
 
 If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bindings[]` entries for a connector node — stop. Use the CLI.
@@ -133,7 +135,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 - **Never hand-write `definitions[]` or `inputs.*` for managed HTTP nodes** — use `uip maestro flow node add` (with `--input` for `branches` / `timeout` / `retryCount`) and `uip maestro flow node configure` (for `inputs.detail`). These are the only supported authoring paths. Hand-written `definitions[]` strips required manifest fields; hand-written `inputs.detail` misses `essentialConfiguration` and fails at runtime. See [http/impl.md](references/plugins/http/impl.md).
 - **Never write `$vars.X` (or `$metadata.X`, `$self.X`) without `=js:` in value fields** — `flow validate` flags this as MST-9107. See rule #11 above and [shared/node-output-wiring.md](../shared/node-output-wiring.md) for the per-node-type field reference.
 - **Never reuse a reference ID (mailbox folder, Slack channel, Jira project, Google Sheet, etc.) from a prior flow or session** — reference IDs are scoped to the specific authenticated account behind the connection. A `parentFolderId` from one Outlook mailbox is invalid in another; a Slack channel ID from one workspace is invalid in another. A reused ID passes `flow validate` and `node configure` cleanly, then faults silently at runtime with no resolvable error. Always re-resolve via `uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_CONNECTION_ID> --output json` against the connection bound to this flow — do not paste a value you saw in another flow. See [connector/impl.md — Step 4](references/plugins/connector/impl.md) and [connector-trigger/impl.md — Step 3](references/plugins/connector-trigger/impl.md).
-- **Never include `[*]` literally in a connector `bodyParameters` / `queryParameters` / `pathParameters` key** — `[*]` in `requestFields[].name` is an array marker, not part of the wire key. Strip it and pass an array value of the field's `dataType` (e.g. `"fields.labels[*]"` → `"fields.labels": ["a", "b"]`). Supported only when `[*]` is the name suffix; `[*].` (segments after) is not authorable. `flow validate` misses this; runtime rejects the key. See [connector/impl.md — Step 6b](references/plugins/connector/impl.md) for the full table including expression-value handling.
+- **Never include `[*]` literally in a connector `bodyParameters` / `queryParameters` / `pathParameters` key** — `[*]` in `requestFields[].name` is an array marker. Strip it and pass a `=js:` expression returning the array (e.g. `"fields.labels[*]"` → `"fields.labels": "=js:(['a', 'b'])"`). Never a literal JSON array — it validates but does not bind. Supported only when `[*]` is the name suffix; `[*]. See [connector/impl.md — Step 6b](references/plugins/connector/impl.md) for the full table including expression-value handling.
 
 ## References
 

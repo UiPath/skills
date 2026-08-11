@@ -29,7 +29,6 @@ initial_prompt: |
   | Case Name | TimerLogCase |
   | Case Description | Two-stage timer flow. |
   | Case Identifier | Prefix: TLC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 

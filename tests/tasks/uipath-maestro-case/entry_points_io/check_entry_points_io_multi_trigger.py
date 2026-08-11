@@ -59,10 +59,10 @@ def load_sibling_caseplan(ep_path):
 
 
 def trigger_service_type(caseplan, node_id):
-    """serviceType of the trigger node — 'Intsvc.TimerTrigger' for a timer, None/other for a manual."""
+    """serviceType of the trigger node — 'timer' for a timer, None/other for a manual."""
     for n in caseplan.get("nodes", []):
         if n.get("id") == node_id:
-            up = n.get("data", {}).get("uipath")
+            up = n.get("data", {}).get("inputs")
             return up.get("serviceType") if isinstance(up, dict) else None
     fail(f"trigger node {node_id!r} (from an entry-point filePath fragment) not found in caseplan.json")
 
@@ -105,10 +105,10 @@ def main():
     prio_frag = prio_entry.get("filePath", "").split("#")[-1]
     claim_svc = trigger_service_type(caseplan, claim_frag)
     prio_svc = trigger_service_type(caseplan, prio_frag)
-    if claim_svc == "Intsvc.TimerTrigger":
+    if claim_svc == "timer":
         fail(f"claimId is bound to the TIMER trigger ({claim_frag}); expected the manual trigger (T02) — bindings swapped?")
-    if prio_svc != "Intsvc.TimerTrigger":
-        fail(f"priority is bound to a non-timer trigger ({prio_frag}, serviceType={prio_svc!r}); expected the timer trigger (T03, Intsvc.TimerTrigger) — bindings swapped?")
+    if prio_svc != "timer":
+        fail(f"priority is bound to a non-timer trigger ({prio_frag}, serviceType={prio_svc!r}); expected the timer trigger (T03, timer) — bindings swapped?")
 
     # Types / defaults of the scoped In-args.
     claim = (claim_entry.get("input") or {}).get("properties", {}).get("claimId", {})

@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-uia-out-of-screen-bounds
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   Faithful replay of a real UiPath troubleshooting investigation where an
   NClick activity faulted with `UiAutomationException: Cannot send input

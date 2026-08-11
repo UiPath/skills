@@ -26,6 +26,7 @@
 ```
 
 - `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
+- `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope via `tasks.md`; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
 - `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
 
 ## Action-Specific Fields
@@ -70,7 +71,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 
    **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is the `tasks describe` output (Step 0 above).
-5. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. If the task is `sequential` or its entry rule is `runs-sequentially`, append it as a new single-task inner array in planned order. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks also get their own single-task inner array. Only `activation-mode: parallel` tasks with explicit same-lane intent and rationale may share `tasks[laneIndex][]`; if `lane` conflicts with mode, mode wins.
+5. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share `tasks[laneIndex][]`; if `lane` conflicts with mode, mode wins.
 
 > Entry conditions added in Step 10. Only `data.inputs[].value` is deferred to Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md); the scalar `data.*` fields above are final at Step 2.
 
@@ -82,9 +83,12 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - the bindings array has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
 - `data.inputs` and `data.outputs` populated (unless placeholder)
 - `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever tasks.md recorded a `recipient:` line (omitted only for group/role, Skip, or no-Type-maps)
+- `entryConditions` is present and non-empty — a task with no entry condition is never triggered, and `validate` does NOT catch it (it accepts an empty array and a missing key). Use the activation the T-entry declares (`current-stage-entered`, `runs-sequentially`, `adhoc`, `sla-status-change` for an SLA `start-task` response — see [sla-response-shapes.md](../../../sla-response-shapes.md))
 - `id` captured in `id-map.json`
 
 ## Anti-patterns
 
 - **Do NOT emit `data.recipient` as a bare string, drop it, or "resolve" it.** It is always the object `{ Type, Value }` written at Step 2 (not an io-binding target). The tasks.md value (`=vars.X`, email, UUID) is the `Value` — wrap it, don't pass it through. `Type 3` `=vars.X` is the finished runtime reference; copying it through as a string, deferring to Phase 3, or rewriting it to the var's email each break the task. Symptoms: `data.recipient` is a string, or missing while `tasks.md` has `recipient: =vars.X`.
 - **CLI `validate` does NOT check `data.recipient`** — verify presence/shape explicitly (Post-Write Verification).
+
+<!-- END: impl-json.md -->

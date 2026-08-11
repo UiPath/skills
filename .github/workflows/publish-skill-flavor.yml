@@ -1,0 +1,110 @@
+name: Publish skill flavor package
+
+on:
+  workflow_call:
+    inputs:
+      flavor:
+        description: Lowercase kebab-case skill flavor to publish
+        required: true
+        type: string
+      channel:
+        description: GitHub Packages dist-tag and prerelease label
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    # Operator-controlled fail-closed switch. Enable only after an
+    # administrator has bootstrapped every explicitly published flavor as an
+    # Internal GitHub Package and granted this repository Actions write
+    # access. This switch does not query live package visibility; an absent
+    # variable evaluates false.
+    if: ${{ vars.ENABLE_SKILL_FLAVOR_PUBLISH == 'true' }}
+    name: Publish ${{ inputs.flavor }} ${{ inputs.channel }} to GitHub Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@uipath"
+
+      - name: Validate inputs and stamp version
+        id: package_metadata
+        shell: bash
+        env:
+          FLAVOR: ${{ inputs.flavor }}
+          CHANNEL: ${{ inputs.channel }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          if [[ ! "$FLAVOR" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || [ "$FLAVOR" = "default" ]; then
+            echo "Unsupported skill flavor: $FLAVOR" >&2
+            exit 1
+          fi
+          if [ ! -d "skill-flavors/$FLAVOR" ] || [ -L "skill-flavors/$FLAVOR" ]; then
+            echo "Skill flavor is not a real directory: $FLAVOR" >&2
+            exit 1
+          fi
+          case "$CHANNEL" in
+            dev|preview) ;;
+            *) echo "Unsupported flavor package channel: $CHANNEL" >&2; exit 1 ;;
+          esac
+
+          PACKAGE_NAME=$(node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            import { packageName } from "./scripts/compose-skill-flavor.mjs";
+            const manifest = JSON.parse(readFileSync("package.json", "utf8"));
+            process.stdout.write(packageName(manifest.name, process.env.FLAVOR));
+          ')
+          echo "package_name=$PACKAGE_NAME" >> "$GITHUB_OUTPUT"
+
+          BASE=$(node -p "require('./package.json').version")
+          VERSION="${BASE}-${CHANNEL}.${RUN_NUMBER}"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          node scripts/sync-version.mjs
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Publishing $PACKAGE_NAME@$VERSION to dist-tag $CHANNEL"
+
+      - name: Build verified skill packages
+        run: npm run skills:pack
+
+      - name: Select and inspect the requested flavor tarball
+        id: package
+        shell: bash
+        env:
+          PACKAGE_NAME: ${{ steps.package_metadata.outputs.package_name }}
+          FLAVOR: ${{ inputs.flavor }}
+          VERSION: ${{ steps.package_metadata.outputs.version }}
+        run: |
+          TARBALL=$(node scripts/select-skill-package.mjs \
+            --directory build/npm \
+            --name "$PACKAGE_NAME" \
+            --flavor "$FLAVOR" \
+            --version "$VERSION")
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+
+      - name: Require the GitHub Packages registry
+        run: |
+          REGISTRY=$(npm config get @uipath:registry)
+          if [ "$REGISTRY" != "https://npm.pkg.github.com/" ]; then
+            echo "Unexpected flavor package registry: $REGISTRY" >&2
+            exit 1
+          fi
+
+      - name: Publish only the selected flavor tarball
+        env:
+          TARBALL: ${{ steps.package.outputs.tarball }}
+          CHANNEL: ${{ inputs.channel }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          npm publish "$TARBALL"
+          --registry https://npm.pkg.github.com/
+          --tag "$CHANNEL"

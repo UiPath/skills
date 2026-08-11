@@ -167,7 +167,7 @@ Pure skeleton: top-level fields + `metadata` block + empty `bindings: []` + empt
 ```json
 {
     "id": "case-aBcDeFgHiJ",
-    "version": "23.0.0",
+    "version": "27.0.0",
     "name": "<name>",
     "metadata": {
         "caseIdentifier": "<case-identifier — defaults to <name>>",
@@ -197,7 +197,7 @@ Adds top-level `description` field (NOT inside `metadata`):
 ```json
 {
     "id": "case-aBcDeFgHiJ",
-    "version": "23.0.0",
+    "version": "27.0.0",
     "name": "<name>",
     "description": "<description>",
     "metadata": {
@@ -247,7 +247,7 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
 1. **File parses.** `JSON.parse(readFile('caseplan.json'))` succeeds.
 2. **Top-level shape.**
    - `id` matches `^case-[A-Za-z0-9]{10}$`
-   - `version === "23.0.0"`
+   - `version === "27.0.0"`
    - `metadata.caseUnifiedSchemaEnabled === true`
    - `metadata.publishVersion === 2`
    - `metadata.intsvcActivityConfig === "v2"`
@@ -263,3 +263,4 @@ If any check fails, halt and report — do not proceed to downstream plugins.
 
 **Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, so the case cannot be entered). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command"). Pre-build validate is informational only, regardless of schema.
 
+<!-- END: impl-json.md -->

@@ -15,9 +15,19 @@ while _directory != os.path.dirname(_directory) and not os.path.isdir(
     os.path.join(_directory, "_shared")
 ):
     _directory = os.path.dirname(_directory)
-sys.path.insert(0, _directory)
 
-from _shared.flow_check import assert_output_nonempty, run_debug  # noqa: E402
+# Load by file path under a suite-unique module name: three sibling suites each
+# ship a `_shared` package, so a plain `from _shared... import` resolves against
+# whichever suite loaded first in the same process (pytest full-tree runs).
+import importlib.util  # noqa: E402
+
+_spec = importlib.util.spec_from_file_location(
+    "maestro_flow_shared_flow_check", os.path.join(_directory, "_shared", "flow_check.py")
+)
+_flow_check = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_flow_check)
+assert_output_nonempty = _flow_check.assert_output_nonempty
+run_debug = _flow_check.run_debug
 
 
 def normalized(value: Any) -> Any:

@@ -11,7 +11,7 @@
   "displayName": "Classify Purchase Order",
   "elementId": "Stage_aB3kL9-tH3kLmNp9",
   "isRequired": true,
-  "shouldRunOnlyOnce": true,
+  "shouldRunOnlyOnce": false,
   "data": {
     "name": "=bindings.bG0SraLpg",
     "folderPath": "=bindings.bH1iJK2lm",
@@ -22,6 +22,7 @@
 ```
 
 - `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
+- `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope via `tasks.md`; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
 - `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
 
 ## Procedure
@@ -55,7 +56,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 
    **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is the `tasks describe` output (Step 0 above).
-4. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. If the task is `sequential` or its entry rule is `runs-sequentially`, append it as a new single-task inner array in planned order. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks also get their own single-task inner array. Only `activation-mode: parallel` tasks with explicit same-lane intent and rationale may share `tasks[laneIndex][]`; if `lane` conflicts with mode, mode wins.
+4. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share `tasks[laneIndex][]`; if `lane` conflicts with mode, mode wins.
 
 > Entry conditions added in Step 10. Input value bindings in Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md).
 
@@ -66,3 +67,5 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 - the bindings array has 2 entries: `resource: "process"`, `resourceSubType: "Agent"`, `propertyAttribute` = `name` / `folderPath`
 - `data.inputs` and `data.outputs` populated (unless placeholder)
 - `id` captured in `id-map.json`
+
+<!-- END: impl-json.md -->

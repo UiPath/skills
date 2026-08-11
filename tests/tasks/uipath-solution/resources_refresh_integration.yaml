@@ -6,6 +6,13 @@ description: >
   core sync mechanism (Critical Rule "refresh before pack/upload") that
   every binding-dependent test relies on implicitly but none asserts.
   Runs entirely in the sandbox tempdir — no tenant interaction.
+
+  The prompt deliberately carries a runtime signal ("cross-platform") and a
+  don't-block instruction: the scaffolded project is incidental to the
+  tested surface, and without a framework signal uipath-rpa SKILL.md Rule
+  2a mandates AskUserQuestion — which dead-ends a headless eval (nightly
+  2026-08-07: agent stopped at "which runtime should I register?" and never
+  ran resources refresh).
 tags: [uipath-solution, integration, mode:build, lifecycle:setup]
 
 run_limits:
@@ -15,10 +22,14 @@ initial_prompt: |
   I'm preparing a UiPath solution for packaging.
 
   1. Create a new UiPath solution called "BillingSuite" and register a
-     project into it.
+     project into it — scaffold a minimal cross-platform project if you
+     need one.
   2. Make sure the solution's bundled resources / bindings are synced to
      the current solution state so it's ready to pack.
   3. Confirm the resources are in sync and tell me you're ready to pack.
+
+  Pick sensible defaults for anything I haven't pinned down — please take
+  it all the way through without stopping to ask me questions.
 
 success_criteria:
   - type: command_executed

@@ -39,46 +39,41 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip maestro flow validate SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Input fields have binding expressions pointing to upstream script output"
-    path: "SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow"
-    includes:
-      - '"binding": "vars.'
-      - "fetchSupplier"
-      - ".output.supplierName"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SupplierOnboarding '\"binding\": \"vars.' 'fetchSupplier' '.output.supplierName'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Risk score field is bound and uses number type"
-    path: "SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow"
-    includes:
-      - ".output.riskScore"
-      - '"number"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SupplierOnboarding '.output.riskScore' '\"number\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "HITL has boolean output field for approved"
-    path: "SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow"
-    includes:
-      - '"direction": "output"'
-      - '"boolean"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SupplierOnboarding '\"direction\": \"output\"' '\"boolean\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Decision node references HITL output by field ID"
-    path: "SupplierOnboarding/SupplierOnboarding/SupplierOnboarding.flow"
-    includes:
-      - "$vars."
-      - ".output.approved"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SupplierOnboarding '$vars.' '.output.approved'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 

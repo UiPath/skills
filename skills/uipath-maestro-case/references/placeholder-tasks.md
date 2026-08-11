@@ -73,11 +73,11 @@ Timers are a built-in type — they are never placeholders because they have no 
 
 ### Case-level event triggers
 
-Case-level event triggers (`type: "case-management:Trigger"` with `serviceType: "Intsvc.EventTrigger"`) follow the same pattern but use a different shape — trigger nodes need `data.label` / `description` / `parentElement` to render at all, so the placeholder keeps those plus `data.uipath: { serviceType: "Intsvc.EventTrigger" }`. Full spec in [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md). Manual and timer triggers are never placeholders (no registry dependency).
+Case-level event triggers (`type: "uipath.case.trigger"` with `data.inputs.serviceType: "Intsvc.EventTrigger"`) follow the same pattern but use a different shape — trigger nodes need `data.display.label` / `description` / `parentElement` / `typeVersion` to render at all, so the placeholder keeps those plus `data.inputs: { serviceType: "Intsvc.EventTrigger" }`. Full spec in [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md). Manual and timer triggers are never placeholders (no registry dependency).
 
 ### Connector condition rules
 
-When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit the rule with a **stub `uipath`** (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`) — a deliberate mock that validates clean but fails at Studio Web / debug / run until replaced. Full recipe + skip behavior + upgrade path: [connector-trigger-common.md § Placeholder fallback](connector-trigger-common.md#placeholder-fallback).
+When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit the rule with a **stub `uipath`** (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`) — a deliberate mock that validates clean but fails at Studio Web / debug / run until replaced. Full recipe + skip behavior + upgrade path: [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
 
 ## `tasks.md` Planning-Entry Shape
 
@@ -215,3 +215,5 @@ The user uses the placeholder/external lists to drive external resource creation
 - **Do NOT create a placeholder for an agent or API workflow the user chose to build inline.** It is built + bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a resolved task, not a placeholder.
 - **Do NOT build an agent or API workflow from SDD content alone.** Inline create runs only for resources the user explicitly selected at the Rule 17 gate. The built resource is an in-solution **sibling** that co-deploys with the case — never a separate tenant publish.
 - **Invoking `uipath-agents` / `uipath-api-workflow` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (regular RPA process, action, case-management, connectors, agentic process) and to `uipath-planner`.
+
+<!-- END: placeholder-tasks.md -->

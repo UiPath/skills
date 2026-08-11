@@ -1,0 +1,92 @@
+task_id: skill-case-picker-pairing
+description: >
+  Regression: a `user-selected-stage` lane entry is only reachable when an
+  upstream stage exposes it through a `wait-for-user` exit. A small
+  VendorOnboarding draft is staged whose Compliance Hold lane — the one trigger
+  for which `user-selected-stage` is genuinely correct, a person launching the
+  lane from the stage picker — carries no upstream `wait-for-user` exit, so the
+  lane is unreachable. Finalization must supply the missing half of the pair.
+  Finalization-only (no interview, no build) so the run stays inside a handful
+  of turns; graded on authored condition tables, never on rationale prose.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-node]
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 60
+  turn_timeout: 1500
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have a draft design document for our VendorOnboarding case-management
+  solution — it's saved as `sdd.draft.md` in this folder. Please finalize it
+  into the final design document.
+
+  The Requirements section at the top is authoritative and the design is
+  settled, so don't re-interview me or redesign it. The api-workflow resource
+  identity is unresolved on purpose — leave it that way. I just need the
+  finalized design; nothing built yet.
+
+  This is a Maestro case-management SDD finalization. Keep it inside the Case
+  Management SDD template shape; finalize the draft into `sdd.md` in this
+  folder. Use the direct draft-finalization fast path: read the draft and the
+  case SDD template, write the finalized `sdd.md`, and do not spawn subagents,
+  run tenant discovery, or derive implementation tasks.
+  Repair mechanically required rule pairings without changing business intent:
+  a manual stage-picker lane needs `wait-for-user` exposure from every primary
+  stage where it may be selected. That exposure is not automatic event, SLA,
+  or decision routing. Replace each primary stage's existing completing
+  `required-tasks-completed` row with one `wait-for-user` / Marks Complete Yes
+  row; do not add a second, non-completing row.
+
+success_criteria:
+  - type: file_exists
+    description: "Finalization produced the approved sdd.md"
+    path: "sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Compliance Hold keeps its user-selected-stage entry and every eligible primary stage exposes it through wait-for-user"
+    command: "python3 $TASK_DIR/check_picker_pairing.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "finalized sdd.md passes the shared mechanical SDD contract"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/sdd_check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "stopped at the finalized sdd.md — did not run ahead into a caseplan build"
+    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+simulation:
+  enabled: true
+  persona: |
+    You are the procurement operations lead at Northwind who wrote the
+    VendorOnboarding draft. The design is settled; you are only confirming its
+    finalization into an approved sdd.md.
+  goal: |
+    Get sdd.draft.md finalized into an approved sdd.md, then stop.
+  constraints:
+    - "If asked how to proceed with the existing draft, say to use it as-is and finalize it — you do not want to be re-interviewed."
+    - "Approve the finalized sdd.md on the first pass only after the manual picker lane has its required wait-for-user exposure; the unresolved api-workflow identity is still acceptable."
+    - "Confirm that the Compliance Officer launches Compliance Hold by hand from the stage picker; there is no event, SLA, or decision button that routes there."
+    - "If asked about wait-for-user, confirm it is the required picker exposure and does not add automatic routing."
+    - "Do not request design changes or add requirements."
+    - "Keep the agent at design/finalization only. If it offers to plan tasks.md or build a caseplan, tell it to stop at the approved sdd.md."
+    - "Keep replies to one sentence."
+  max_turns: 8

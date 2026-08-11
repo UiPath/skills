@@ -31,7 +31,7 @@ The Category column is REQUIRED in the SDD template.
 3. Record the user's answer in memory and emit the T-entries as if the Category column had been authored that way.
 4. Strongly recommend (via plain-text output before/after the prompts) that the user migrate their SDD to include the column for future regenerate-from-scratch runs.
 
-Never default missing categories to a guess. The pre-α "Listed in Trigger Initial Variable Mapping → In argument" inference rule is removed under α and MUST NOT be re-implemented as a fallback. See [`assets/templates/sdd-template.md`](../../../../assets/templates/sdd-template.md) § Case Variables for the post-α table shape.
+Never default missing categories to a guess. The pre-α "Listed in Trigger Initial Variable Mapping → In argument" inference rule is removed under α and MUST NOT be re-implemented as a fallback. The post-α table shape is defined by the case SDD template (authored by `uipath-planner`); canonical Category semantics live in [impl-json.md](impl-json.md).
 
 ## Phase 2 Structural Validation
 
@@ -118,3 +118,5 @@ camelCase IDs (`=vars.claimId`). See [`impl-json.md`](impl-json.md) § Uniquenes
 ## Completeness obligation
 
 Per [planning.md §4.0](../../../planning.md), every row in the Case Variables table emits exactly one T-entry. Skipping rows because their Category cannot be determined is forbidden — invoke AskUserQuestion instead. The pre-approval cross-check counts variable-table rows against emitted variable T-entries; mismatch is a defect.
+
+<!-- END: planning.md -->

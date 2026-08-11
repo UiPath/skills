@@ -6,8 +6,8 @@ cannot be resolved against the registry. Per Rule 8 the skill must write a
 PLACEHOLDER event trigger rather than fabricate connector IDs. This grader
 asserts the placeholder shape and its sibling-file coupling:
 
-  1. A trigger node carries `data.uipath.serviceType == "Intsvc.EventTrigger"`.
-  2. It is a true placeholder — `data.uipath` carries ONLY `serviceType`
+  1. A trigger node carries `data.inputs.serviceType == "Intsvc.EventTrigger"`.
+  2. It is a true placeholder — `data.inputs` carries ONLY `serviceType`
      (no `context` / `inputs` / `outputs` / `bindings` / `metadata`).
   3. No trigger edge is created (edges retired) — `schema.edges` stays `[]`.
   4. The case still starts: some stage has a `case-entered` entry condition
@@ -45,27 +45,27 @@ def main():
     event_triggers = [
         t
         for t in find_triggers(plan)
-        if ((t.get("data") or {}).get("uipath") or {}).get("serviceType")
+        if ((t.get("data") or {}).get("inputs") or {}).get("serviceType")
         == "Intsvc.EventTrigger"
     ]
     if not event_triggers:
         serviceTypes = [
-            ((t.get("data") or {}).get("uipath") or {}).get("serviceType")
+            ((t.get("data") or {}).get("inputs") or {}).get("serviceType")
             for t in find_triggers(plan)
         ]
         _fail(
-            "no trigger node with data.uipath.serviceType == 'Intsvc.EventTrigger'; "
+            "no trigger node with data.inputs.serviceType == 'Intsvc.EventTrigger'; "
             f"trigger serviceTypes seen: {serviceTypes}"
         )
     trig = event_triggers[0]
     trig_id = trig.get("id")
 
-    # 2. True placeholder — only serviceType under data.uipath.
-    uipath = (trig.get("data") or {}).get("uipath") or {}
+    # 2. True placeholder — only serviceType under data.inputs.
+    uipath = (trig.get("data") or {}).get("inputs") or {}
     extra = [k for k in uipath if k != "serviceType"]
     if extra:
         _fail(
-            f"placeholder event trigger data.uipath must carry ONLY 'serviceType'; "
+            f"placeholder event trigger data.inputs must carry ONLY 'serviceType'; "
             f"found extra keys {extra} (Rule 8 — no fabricated connector config)"
         )
 

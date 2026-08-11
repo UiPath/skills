@@ -15,7 +15,7 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
   "displayName": "Approval Escalation Timer",
   "elementId": "Stage_aB3kL9-tWm4Vx9Tp",
   "isRequired": false,
-  "shouldRunOnlyOnce": true,
+  "shouldRunOnlyOnce": false,
   "skipCondition": "=js:vars.skipReview === true",
   "data": {
     "timerType": "timeDuration",
@@ -24,6 +24,7 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
 }
 ```
 
+> **Envelope source.** `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope via `tasks.md`; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from timer task type.
 > **`data` holds ONLY `timerType` + the duration field.** `skipCondition` and all other envelope fields are top-level siblings of `data`, never nested inside it (a misplaced one passes `validate` silently but is never applied). See [case-schema.md](../../../case-schema.md) §7 Tasks — BaseTask shape.
 
 ## Procedure
@@ -32,7 +33,7 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
 
 1. Generate task ID: `t` + 8 alphanumeric chars (unique across all tasks)
 2. Generate elementId: `<stageId>-<taskId>`
-3. Write the task with `"data": {}` to the target stage's `data.tasks` structure using the common placement contract: sequential / `runs-sequentially`, adhoc, event-driven, fan-in, conditional-gate, and standalone timers get their own single-task inner array; only explicitly parallel timers may share an inner array.
+3. Write the task with `"data": {}` to the target stage's `data.tasks` structure using the common placement contract: strict sequential timers get their own single-task inner array, `parallel-after-predecessor` timers share the planned same next inner array even though their entry rule is `runs-sequentially`, adhoc/event-driven/fan-in/conditional-gate/standalone timers get their own single-task inner array, and only explicitly parallel or parallel-after-predecessor timers may share an inner array.
 
 ```json
 {
@@ -41,7 +42,7 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
   "displayName": "Approval Escalation Timer",
   "elementId": "Stage_aB3kL9-tWm4Vx9Tp",
   "isRequired": false,
-  "shouldRunOnlyOnce": true,
+  "shouldRunOnlyOnce": false,
   "data": {}
 }
 ```
@@ -98,3 +99,5 @@ Omit repeatCount segment for infinite (`R/...`). Omit datetime segment if no sta
 ## Post-Write Verification
 
 Confirm task exists in the correct stage with `type: "wait-for-timer"` and `data.timerType` + duration field set.
+
+<!-- END: impl-json.md -->

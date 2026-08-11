@@ -260,7 +260,7 @@ The end boundary is exclusive: "July 1st to July 5th" inclusive means `--started
 
 - **Don't call `uip insights jobs` without a time range.** The server returns a 500 with a misleading success-shaped response. Always pass `--time-range` or `--started-after`/`--started-before`.
 - **Don't embed `$(date ...)` or shell variables in `uip insights` flag values.** Resolve times in a separate command first, then pass literal epoch-millisecond numbers. Literal values make the executed command auditable and immune to platform `date` differences.
-- **Don't chain multiple `uip insights` subcommands with `&&` or `;` in one invocation.** Run each subcommand as its own command so each one's exit status and output are attributable.
+- **Don't chain, loop, or parameterize `uip insights` subcommands in one invocation.** Run each subcommand as its own command with the subcommand name written literally — no `&&`/`;` chains, no `for` loops, no shell variables holding the subcommand name. One command per invocation keeps each subcommand's exit status and output attributable.
 - **Don't start, stop, or manage individual jobs.** This skill is for monitoring and analytics only. Use `uip or jobs start/stop` via uipath-platform to manage jobs.
 - **Don't construct raw API calls to the Insights endpoint.** The CLI handles auth headers (`X-UiPath-Internal-AccountName`, `X-UiPath-Internal-TenantName`), URL construction, and error handling. Hand-rolling `curl` or `fetch` calls will miss these.
 - **Don't retry on auth errors.** If `uip insights jobs` returns 401 or "Not logged in", the fix is `uip login`, not retrying the same command.

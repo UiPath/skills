@@ -10,10 +10,10 @@ name: Sprint Release Cut
 #
 #   1. cuts release/v<M.N> from main at the version ALREADY in main (M.N.0) —
 #      the release branch matches main's current version, it is NOT bumped
-#   2. publishes a DEV build (GitHub Packages) AND a PREVIEW (npmjs) by
-#      dispatching publish.yml twice on the release branch (channel=dev,
-#      channel=preview) and WAITING for both to succeed. The bot's own branch
-#      push can't trigger publish.yml (GITHUB_TOKEN recursion guard), so the
+#   2. dispatches publish.yml twice and waits for both runs: channel=dev sends
+#      default to GitHub Packages and Studio Web when enabled; channel=preview
+#      sends default to npmjs and Studio Web to GitHub Packages when enabled. The bot's own branch push
+#      can't trigger publish.yml (GITHUB_TOKEN recursion guard), so the
 #      dispatches are explicit. Stable (`latest`) is NOT published here —
 #      promote a line to stable MANUALLY (see docs/RELEASE.md)
 #   3. opens a PR bumping main to the NEXT line (M.(N+1).0). The PR is opened
@@ -43,6 +43,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  # `gh workflow run publish.yml` (POST /actions/workflows/{id}/dispatches)
+  # needs this. An explicit block sets every unlisted scope to `none`, so
+  # omitting it 403s the dispatch and the cut publishes nothing.
+  actions: write
 
 # GitHub cron runs in UTC and cannot express "every two Sundays" — fire every
 # Sunday, then gate on the 14-day cadence anchor (mirrors UiPath/cli).
@@ -56,14 +60,14 @@ concurrency:
 
 jobs:
   cut:
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
           ref: main
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "22.x"
 
@@ -125,8 +129,8 @@ jobs:
             echo ""
             echo "- current line (main): \`${{ steps.target.outputs.current_line }}\`"
             echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` — branch \`release/v${{ steps.target.outputs.cut_line }}\` @ \`$(git rev-parse --short HEAD)\` at version \`${{ steps.target.outputs.cut_line }}.0\`"
-            echo "- would publish (and WAIT for success): DEV \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0-dev.<run>\` to GitHub Packages AND PREVIEW \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0-preview.<run>\` to npmjs (dispatch publish.yml channel=dev + channel=preview) — stable stays MANUAL"
-            echo "- would open a bump PR: \`main\` -> \`${{ steps.target.outputs.next_line }}.0\` (only if both publishes succeeded; a maintainer merges it)"
+            echo "- would publish (and wait): DEV default to GitHub Packages; PREVIEW default to npmjs; Studio Web DEV/PREVIEW to GitHub Packages when custom publishing is enabled (dispatch publish.yml channel=dev + channel=preview) — stable stays MANUAL"
+            echo "- would open a bump PR: \`main\` -> \`${{ steps.target.outputs.next_line }}.0\` after the branch cut; a failed publish is carried as a warning for maintainer review"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Cut release branch
@@ -189,8 +193,9 @@ jobs:
           # `gh run watch --exit-status` it (non-zero if the run failed). If a
           # publish fails, this step fails; the bump PR is still opened (with a
           # warning) and the notification reports the failure — see those steps.
-          #   - channel=dev     -> $LINE.0-dev.<run>     on GitHub Packages
-          #   - channel=preview -> $LINE.0-preview.<run> on npmjs (--provenance)
+          #   - channel=dev     -> default on GitHub Packages + Studio Web when enabled
+          #   - channel=preview -> default on npmjs (--provenance) + Studio Web
+          #                        on GitHub Packages when enabled
           # Stable (`latest`) is intentionally NOT published — promote a line
           # to stable manually when it is ready (see docs/RELEASE.md).
           RESULT_RUN_ID=""
@@ -225,7 +230,7 @@ jobs:
           PREVIEW_RUN_NUMBER=$(gh run view "$RESULT_RUN_ID" --json number --jq '.number')
           PREVIEW_VERSION="$LINE.0-preview.$PREVIEW_RUN_NUMBER"
           echo "preview_version=$PREVIEW_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Both publishes ($LINE.0-dev / $PREVIEW_VERSION) succeeded."
+          echo "Both default publish runs succeeded ($LINE.0-dev / $PREVIEW_VERSION); Studio Web counterparts succeeded when custom publishing was enabled."
 
       - name: Open version-bump PR against main
         id: mainbump
@@ -273,7 +278,7 @@ jobs:
           fi
           BODY="Automated sprint cut: \`release/v$CUT_LINE\` was cut. Merge to advance \`main\` to \`$NEXT_LINE.0\` so development continues on the next line. Stable \`$CUT_LINE.0\` is promoted manually — see docs/RELEASE.md."
           if [ "${PUBLISH_OUTCOME:-}" = "success" ]; then
-            BODY="$BODY"$'\n\n'":white_check_mark: dev + preview builds published from \`release/v$CUT_LINE\`."
+            BODY="$BODY"$'\n\n'":white_check_mark: default dev + preview builds published from \`release/v$CUT_LINE\`; Studio Web counterparts were published when custom publishing was enabled."
           else
             BODY="$BODY"$'\n\n'":warning: The dev/preview publish did **not** succeed (outcome: \`${PUBLISH_OUTCOME:-unknown}\`). This bump PR was opened anyway — verify the publish from the run logs before merging."
           fi
@@ -294,7 +299,7 @@ jobs:
             echo ""
             echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` (main was on this line)"
             echo "- \`release/v${{ steps.target.outputs.cut_line }}\` @ \`${{ steps.cutbranch.outputs.short_sha }}\`"
-            echo "- published (waited for success): DEV (GitHub Packages) + PREVIEW (npmjs) of \`@uipath/skills@${{ steps.target.outputs.cut_line }}.0\` (stable stays manual)"
+            echo "- published (waited for success): default DEV (GitHub Packages) + PREVIEW (npmjs), plus Studio Web DEV + PREVIEW (GitHub Packages) when custom publishing was enabled, for line \`${{ steps.target.outputs.cut_line }}.0\` (stable stays manual)"
             echo "- bump PR opened (-> \`${{ steps.target.outputs.next_line }}.0\`): ${{ steps.mainbump.outputs.url }} — approve + merge to advance main"
           } >> "$GITHUB_STEP_SUMMARY"
 

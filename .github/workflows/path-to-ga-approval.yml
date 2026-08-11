@@ -19,7 +19,7 @@ permissions:
 jobs:
   gate:
     name: path-to-ga approval
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     timeout-minutes: 5
     env:
       # GitHub logins whose latest PR review may approve new path-to-ga tags.

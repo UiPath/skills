@@ -68,7 +68,7 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | `--version <version>` | Set the package version | `1.0.0` |
 | `--nuget-sources-config-path <path>` | Local `NuGet.config` that sets the package sources used for resolution | -- |
 
-The output is a `.zip` file named `<name>.<version>.zip` written under `<output-path>/` (e.g., `MySolution.2.0.0.zip`). Run `solution resources refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
+The output is a `.zip` file named `<name>_<version>.zip` — **underscore between name and version, not a dot** — written under `<output-path>/` (e.g., `MySolution_2.0.0.zip`). Don't guess the filename: read it from the command's `Data.Packages` field, or list `<output-path>/`. Run `solution resources refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
 **Controlling package sources.** In offline or air-gapped environments, or when packages must be resolved from specific feeds, pass `--nuget-sources-config-path <path>` pointing at a local `NuGet.config`. Both `pack` and `restore` accept the flag; the sources declared in that file determine where each project's dependencies are resolved from, giving you precise control over feed selection.
 
@@ -77,10 +77,10 @@ The output is a `.zip` file named `<name>.<version>.zip` written under `<output-
 Upload the packed .zip so it appears in the UiPath solution feed:
 
 ```bash
-uip solution publish ./output/MySolution.2.0.0.zip --output json
+uip solution publish ./output/MySolution_2.0.0.zip --output json
 
 # Target a specific tenant
-uip solution publish ./output/MySolution.2.0.0.zip --tenant "Production" --output json
+uip solution publish ./output/MySolution_2.0.0.zip --tenant "Production" --output json
 ```
 
 After publishing, the package is visible via `uip solution packages list` and available for deployment.
@@ -122,7 +122,7 @@ Key options:
 | `-n, --name <name>` | Deployment name (required) | -- |
 | `--package-name <name>` | Published solution package name (required) | -- |
 | `--package-version <version>` | Package version to deploy (required) | -- |
-| `--folder-name <name>` | New Orchestrator folder to create (required) | -- |
+| `--folder-name <name>` | New Orchestrator folder to create (required). Always creates; a taken name is collision-renamed, never reused — see [`deploy run` Always Creates a New Folder](#deploy-run-always-creates-a-new-folder) | -- |
 | `--parent-folder-path <path>` | Parent folder under which the new folder is created | -- |
 | `--parent-folder-key <key>` | Parent folder key (GUID, alternative to `--parent-folder-path`) | -- |
 | `--config-file <path>` | Configuration file from `deploy config get` | -- |
@@ -270,7 +270,7 @@ jobs:
       - run: uip login --client-id "${{ secrets.UIPATH_CLIENT_ID }}" --client-secret "${{ secrets.UIPATH_CLIENT_SECRET }}" --tenant "${{ secrets.UIPATH_TENANT }}" --output json
       - run: uip solution restore ./MySolution --output json   # optional: fail fast on a missing feed before pack
       - run: uip solution pack ./MySolution ./output --version "1.0.${{ github.run_number }}" --output json
-      - run: uip solution publish ./output/MySolution.*.zip --output json
+      - run: uip solution publish ./output/MySolution_*.zip --output json
       - run: uip solution deploy run -n "MySolution-${{ github.run_number }}" --package-name "MySolution" --package-version "1.0.${{ github.run_number }}" --folder-name "MySolution" --config-file deploy-config.json --output json
 ```
 
@@ -285,13 +285,13 @@ uip solution pack ./MySolution ./output --version "1.2.0" --output json
 
 # Staging
 uip login tenant set "Staging" --output json
-uip solution publish ./output/MySolution.1.2.0.zip --output json
+uip solution publish ./output/MySolution_1.2.0.zip --output json
 uip solution deploy run -n "MySolution-Staging" --package-name "MySolution" --package-version "1.2.0" \
   --folder-name "MySolution" --config-file staging-config.json --output json
 
 # Production (after validation)
 uip login tenant set "Production" --output json
-uip solution publish ./output/MySolution.1.2.0.zip --output json
+uip solution publish ./output/MySolution_1.2.0.zip --output json
 uip solution deploy run -n "MySolution-Prod" --package-name "MySolution" --package-version "1.2.0" \
   --folder-name "MySolution" --config-file production-config.json --output json
 ```
@@ -315,9 +315,43 @@ These are different commands with different destinations:
 | `solution publish` | Solution feed | For deployment via `deploy run` |
 | `solution upload` | Studio Web | For browser-based editing |
 
-### `deploy run` Creates a New Folder
+### `deploy run` Always Creates a New Folder
 
-`--folder-name` specifies a folder to **create**, not an existing folder to deploy into. If the folder already exists, deployment will fail. Use `--parent-folder-path` to set the parent folder where the new folder is created.
+`--folder-name` specifies a folder to **create**, not an existing folder to deploy into. Use `--parent-folder-path` to set the parent folder where the new folder is created.
+
+**Re-running with a name that is already taken does not fail and does not reuse the folder** — Orchestrator collision-renames the new one (`MySolution` → `MySolution 1`) and the deployment lands there. Repeated deploys therefore accumulate `MySolution 1`, `MySolution 2`, …
+
+The CLI resolves the real folder and says so when it differs from what you asked for:
+
+```json
+{
+  "FolderName": "MySolution 4",
+  "FolderPath": "MySolution 4",
+  "RequestedFolderName": "MySolution",
+  "FolderNote": "Requested folder 'MySolution' already existed, so Orchestrator created 'MySolution 4' instead. ..."
+}
+```
+
+`RequestedFolderName` and `FolderNote` appear **only** on a rename, so their presence is the signal to check. Always provision against `Data.FolderPath`, never against the name you passed.
+
+**There is no way to deploy into a pre-existing folder.** The install API takes `solutionRootFolderName` — a name, not a folder key — so the target cannot be addressed. This matters when the folder you want already holds hand-provisioned assets, an IXP folder-deployment, or an assigned robot: the deployment will land somewhere else and runtime resolution then fails on the missing resources.
+
+Two ways around it:
+
+```bash
+# A. Let deploy create the folder FIRST, then provision into it.
+uip solution deploy run --name my-deployment --package-name my-package \
+  --package-version 1.0.0 --folder-name MySolution --output json
+# → read Data.FolderPath / Data.FolderKey from the response, then create the
+#   assets, folder-deploy IXP, and assign the robot into THAT folder.
+
+# B. Skip solution deploy and bind each piece into the existing folder.
+uip or packages upload ./piece.nupkg --output json
+uip or processes create --package-key <id> --package-version <ver> \
+  --folder-key <existing-folder-key> --output json
+```
+
+Option A is preferred — it keeps the solution deployment intact. Option B loses the solution grouping, so use it only when the folder's existing contents cannot be recreated.
 
 ### `--parent-folder-path` is the Parent
 

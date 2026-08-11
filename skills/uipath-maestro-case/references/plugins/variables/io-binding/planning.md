@@ -37,18 +37,28 @@ The SDD Inputs table has separate `Field`, `Type`, and `Binding` columns, exactl
 | `APIInput1` | `string` | `=vars.caseInput` | `APIInput1 = =vars.caseInput` |
 | `APIInput1` | `string` | `<- "Binding Matrix"."Echo literal".APIOutput1` | `APIInput1 <- "Binding Matrix"."Echo literal".APIOutput1` |
 
+**SDD `Binding` cells are Markdown code spans — unwrap them.** The SDD template wraps every Inputs `Binding` cell in backticks (`` `=vars.caseInput` ``, `` `<- "Stage"."Task".out` ``). Those backticks are presentation, not value. Strip them and copy the cell contents verbatim. Never re-wrap the projected value in backticks, single quotes, or double quotes, and never separate the input name from its value with `:` — the separator IS the operator (`<-` or `=`). A cell that already carries its own quotes (`` `"literal-seed"` ``) keeps exactly those and gains no others.
+
 ```markdown
 <!-- INVALID: leaked the SDD Type column as a literal pipe segment -->
 - APIInput1 | string | <- "Binding Matrix"."Echo literal".APIOutput1
+
+<!-- INVALID: re-quoted the code-span cell and replaced the operator with `:` -->
+- APIInput1: '<- "Binding Matrix"."Echo literal".APIOutput1'
+
+<!-- INVALID: kept the SDD cell's backticks -->
+- APIInput1 <- `"Binding Matrix"."Echo literal".APIOutput1`
 
 <!-- VALID -->
 - APIInput1 <- "Binding Matrix"."Echo literal".APIOutput1
 ```
 
+Before the Phase 1 approval gate, reject any `tasks.md` input item that wraps its value in backticks or in a quote pair the SDD `Binding` cell did not itself contain, and any item whose name and value are separated by `:` rather than `<-` or `=`.
+
 ## Discovering Input/Output Names
 
 1. **SDD per-task tables** — primary source. Each task lists input/output field names, types, and variable bindings.
-2. **`uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json`** — validates SDD names and discovers additional fields (e.g., standard `Error` output). The SDD per-task Outputs table uses TWO operators (per v1 contract — see [`assets/templates/sdd-template.md`](../../../../assets/templates/sdd-template.md) Section 2):
+2. **`uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json`** — validates SDD names and discovers additional fields (e.g., standard `Error` output). The SDD per-task Outputs table uses TWO operators (per v1 contract — see the case SDD template (`uipath-planner`) Section 2):
 
    **`->` operator — extract a field into a case variable.** Left side is the **full runtime path** the value lives at relative to the task's root scope; right side is the target case variable name:
    ```markdown
@@ -117,12 +127,14 @@ Do not reduce this to a comma-separated list of names: that representation loses
 
 > **Planner emits SDD-natural form; impl applies the per-sink canonical wrap.** Values in `tasks.md` use the natural prefix notation shown above — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<-`. The implementation step rewrites each value to its canonical sink form when constructing `caseplan.json` (e.g., `=js:(vars.X)` for connector body fields, `=js:metadata.X` for `=metadata` references in any sink that runs the JS evaluator). Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
-## Outputs table validation rules
+## I/O table validation rules
 
-Apply at planning time (Phase 1):
+Apply at planning time (Phase 1). The first two rules cover Inputs; the rest cover Outputs:
 
 | Rule | Severity | Detail |
 |---|---|---|
+| `tasks.md` input item wraps its value in backticks or quotes the SDD `Binding` cell did not contain | ERROR | The SDD cell is a Markdown code span. Unwrap it and copy the contents verbatim. |
+| `tasks.md` input item separates name from value with `:` | ERROR | The separator is the operator itself — `<-` for a cross-task reference, `=` otherwise. |
 | `->` row's target case variable not in Case Variables table | ERROR | Outputs declare bindings, not new variables. Target must pre-exist. |
 | `=` row's target case variable not in Case Variables table | ERROR | Same — `=` writes to existing variable's slot. |
 | `->` row missing left-side Field | ERROR | `->` requires a schema field name on the left. |
@@ -139,3 +151,5 @@ Apply at planning time (Phase 1):
 | Regular stage task | Earlier stages + same stage earlier tasks + root variables |
 | Secondary stage task | ALL tasks across ALL stages |
 | Adhoc task | ALL tasks |
+
+<!-- END: planning.md -->

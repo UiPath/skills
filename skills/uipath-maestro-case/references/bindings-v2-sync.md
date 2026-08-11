@@ -12,7 +12,7 @@ Run at these three points only:
 
 1. **End of Phase 2 Step 9** (after all non-connector tasks written) — covers all process/agent/rpa/action/api-workflow/case-management bindings
 2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache for tasks
-3. **End of Phase 3 Step 10** (after all connector condition RULES written across the 4 scopes — stage-entry, stage-exit, case-exit, task-entry) — adds Connection bindings + populates IS cache for rules. Required because connector rules are written in Step 10 (conditions), not Step 9.7 (tasks); without this third sync point, rule-introduced Connection/Folder bindings + IS-cache entries wouldn't land until the post-Phase-3 catch-all, and `resource refresh` would miss them.
+3. **End of Phase 3 Step 10.5** (after Phase 2 connector-rule stubs are upgraded across the 4 scopes — stage-entry, stage-exit, case-exit, task-entry) — adds Connection bindings + populates IS cache for resolved rules. Phase 2 stubs add no bindings; without this sync, rule-introduced Connection/Folder bindings + IS-cache entries would be absent when `resource refresh` runs.
 
 Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (top-level `bindings[]`). The batch regeneration reads the full bindings array once and converts everything in one pass.
 
@@ -67,7 +67,7 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 
 ## § Populate IS connection cache
 
-`uip solution resources refresh` reads a local IS cache that connector plugins must populate after `get-connection`. Applies to all three connector-resolving paths: connector **tasks** (Step 9.7), connector **triggers** (Step 6.1), and connector **condition rules** in any of the 4 scopes (Step 10).
+`uip solution resources refresh` reads a local IS cache that connector plugins must populate after `get-connection`. Applies to all three connector-resolving paths: connector **tasks** (Step 9.7), connector **triggers** (Step 6.1), and connector **condition-rule upgrades** in any of the 4 scopes (Step 10.5).
 
 **Path:** `~/.uipath/cache/integrationservice/<connectorKey>/connections.json`
 
@@ -135,3 +135,5 @@ All three required for `uip solution upload` and `uip maestro case debug` to wor
 When any task or connector condition rule is removed and its root bindings are pruned (per [case-editing-operations.md](case-editing-operations.md) § Delete a node / § Delete a condition rule / § Delete a task):
 
 1. After pruning root bindings, regenerate `bindings_v2.json` from the updated array.
+
+<!-- END: bindings-v2-sync.md -->

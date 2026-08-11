@@ -1,0 +1,45 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EscalationWorksApp",
+    "kind": "app",
+    "type": "workflow Action",
+    "apiVersion": "apps.uipath.com/v1",
+    "projectKey": "e5ca1a7e-0005-4005-8005-000000000005",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "name": "EscalationWorksApp",
+        "kind": "appVersion"
+      },
+      {
+        "name": "EscalationWorksApp",
+        "kind": "process"
+      }
+    ],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "EscalationWorksApp",
+      "description": "Escalation works queue app (generic single input/output form).",
+      "type": "workflow Action",
+      "version": null,
+      "appSystemName": null,
+      "appVersionRef": {
+        "key": "e5ca1a7e-0002-4002-8002-000000000002"
+      },
+      "codeBehindProcess": {
+        "key": "e5ca1a7e-0003-4003-8003-000000000003"
+      },
+      "actionSchema": "{\"version\": 1, \"inputs\": [{\"name\": \"input\", \"type\": \"System.String\", \"description\": \"Generic input value\"}], \"inOuts\": [], \"outputs\": [{\"name\": \"output\", \"type\": \"System.String\", \"description\": \"Generic output value\"}], \"outcomes\": [{\"name\": \"Submit\"}, {\"name\": \"Reject\"}]}",
+      "manualActivationActions": null
+    },
+    "locks": [],
+    "key": "e5ca1a7e-0001-4001-8001-000000000001"
+  }
+}

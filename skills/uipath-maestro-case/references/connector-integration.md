@@ -109,7 +109,7 @@ Spec output carries the full operation contract:
 | `inputs.multipart` | `null` for non-multipart; `{ bodyFieldName, parameters[] }` otherwise |
 | `outputs.responseFields[]` | Response shape; `[?responseCurated]` are FE-broken-out outputs, `[?primaryKey]` are id fields |
 | `outputs.pagination` | `null` for non-list; `{ maxPageSize: N }` for list ops |
-| `filter` | `undefined` when server-side filtering is not supported. Present when supported, with `builder: "ceql"` (activity) / `"jmes"` (trigger) and `fields[]` listing every searchable field |
+| `filter` | Structured FilterBuilder contract (`ceql` activity / `jmes` trigger); `undefined` means no structured authoring. Plain filter fields remain native-syntax query/body inputs |
 | `references[]` | Cross-references with pre-built `discoverCommand` runnable strings |
 | `caseShape` | FE-canonical `inputs[]` / `outputs[]` / `context[]` ready to drop into `caseplan.json` (after binding-id substitution); only present when `--skip-case-shape` is NOT set |
 | `diagnostics` | Per-endpoint `fetched` / `fallbacks` |
@@ -182,3 +182,5 @@ Record the resolved values in `tasks.md` under the task entry:
 ```
 
 Also record in `registry-resolved.json`: search query, matched entry, selected connection, connector metadata, and (when surfaced) `spec.diagnostics.fallbacks[]`.
+
+<!-- END: connector-integration.md -->

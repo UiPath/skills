@@ -1,6 +1,6 @@
 # uip — Surviving CLI Command Reference
 
-`caseplan.json` mutations are direct file edits, not CLI calls. The commands below are the only `uip` invocations the skill issues — read-only metadata fetches, registry discovery, validation, debug, runtime/instance management, and solution scaffold/upload.
+`caseplan.json` mutations are direct file edits, not CLI calls. The commands below are the only `uip` invocations the skill issues — read-only metadata fetches, registry discovery, validation, debug, runtime/instance management, solution scaffold/upload, and the consent-gated Phase 7 pack/publish.
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
@@ -11,6 +11,7 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 | Commands | What | Auth |
 |----------|------|------|
 | `solution init`, `solution projects add`, `solution resources refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
+| `solution pack`, `solution publish` | Phase 7 Publish to Orchestrator — pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
 | `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
@@ -94,22 +95,25 @@ Upload a solution directly to Studio Web. **Requires `uip login`.**
 
 ```bash
 uip solution resources refresh --solution-folder <SolutionDir> --output json
-uip solution upload <SolutionDir> --output json
+uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"
 ```
 
 `uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step. Uploads to Studio Web where the user can visualize, inspect, edit, and publish the case from the browser.
 
-> **This is the default publish path.** When the user asks to "publish" without specifying where, run `resource refresh` then `uip solution upload <SolutionDir>`. Share the resulting URL with the user.
+> **`--output-filter` is mandatory on upload.** The raw upload response is large enough that the agent truncates it and loses `DesignerUrl`. The JMESPath projection `{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}` (applied to the response envelope's `Data` field) reduces the response to the three fields the skill actually reads, so `DesignerUrl` always survives.
+
+> **On a missing `DesignerUrl`**, re-run the upload once **without** `--output-filter` and dump the unfiltered response to `tasks/upload-response.json` — the filter hides any error/diagnostic fields that explain why the URL is absent.
+
+> **This is the default publish path.** When the user asks to "publish" without specifying where, run `resource refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"`. Share the resulting URL with the user.
 
 ---
 
 ## uip maestro case pack
 
-Pack a Case project directory into a `.nupkg` file. Only used when the user explicitly requests Orchestrator deployment via `uip solution publish` — not the default publish path.
+Pack a single Case project directory into a `.nupkg` file.
 
 ```bash
-uip maestro case pack <project-path> <output-path>
-uip maestro case pack ./my-case-project ./dist --name MyCase --version 2.0.0
+uip maestro case pack <project-path> <output-path> --output json
 ```
 
 | Flag | Description |
@@ -119,7 +123,54 @@ uip maestro case pack ./my-case-project ./dist --name MyCase --version 2.0.0
 | `-n, --name <name>` | Package name (default: project folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
 
-> `pack` + `uip solution publish` deploys directly to Orchestrator — bypasses Studio Web. Default publish path is `uip solution upload`.
+> **Not the deploy path.** `uip solution publish` accepts a solution `.zip`, not a project `.nupkg`, and `uip solution pack` already produces the project `.nupkg` internally. Phase 7 uses `uip solution pack` — see below.
+
+---
+
+## uip solution pack
+
+Pack the solution directory into a deployable `.zip`. Phase 7 step 2 — consent-gated. Offline.
+
+```bash
+uip solution pack <SolutionDir> <SolutionDir>/dist --output json
+uip solution pack ./MySolution ./MySolution/dist --version 2.0.0 --output json
+```
+
+| Flag | Description |
+|------|-------------|
+| `<solutionPath>` | **(required)** Solution directory (the folder containing the `.uipx`) — **not** the case project directory |
+| `<output-path>` | **(required)** Output directory for the `.zip` |
+| `-n, --name <name>` | Package name (default: solution folder name) |
+| `-v, --version <version>` | Package version (default: `1.0.0`) |
+
+Packs each contained project into a `.nupkg` and bundles them into one `<name>_<version>.zip` — **underscore between name and version, not a dot**.
+
+> **Read the produced filename from the response `Data.Packages`** (or list `<output-path>/`) — do not construct it by hand.
+
+> Run `uip solution resources refresh` first so artefact files and debug overwrites are current before they are bundled (Rule 14).
+
+---
+
+## uip solution publish
+
+Publish a packed solution `.zip` to the tenant solution feed. **Requires `uip login`.** Phase 7 step 3 — consent-gated.
+
+```bash
+uip solution publish <packagePath> --wait --output json
+```
+
+| Flag | Description |
+|------|-------------|
+| `<packagePath>` | **(required)** Path to the `.zip` produced by `uip solution pack` |
+| `--wait` | Block until the published package reaches `Ready` / `Active` |
+| `--timeout <seconds>` | Package-state polling timeout (default: `360`) |
+| `--personal-workspace` | Publish to the current user's Personal Workspace feed instead of the tenant feed |
+
+> The feed rejects duplicate `name+version` pairs. On a `processKey` collision, bump `--version` on `uip solution pack` and re-run.
+
+> **On failure**, print the CLI error verbatim, log it in `build-issues.md`, and re-show the Phase 7 prompt. Full contract: [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator).
+
+> Publish only lists the package on the feed. Installing it into an Orchestrator folder needs `uip solution deploy run` — out of Phase 7 scope.
 
 ---
 
@@ -129,15 +180,25 @@ Validate a case management JSON file against case management rules.
 
 ```bash
 uip maestro case validate <file> --output json
+uip maestro case validate <file> --skeleton-v2 --output json
 uip maestro case validate <file> --skeleton --output json
 ```
 
 | Flag | Description |
 |------|-------------|
 | `<file>` | **(required)** Path to the case management JSON file |
-| `--skeleton` | Skeleton profile — runs structural checks only (nodes, edges, identity, types, topology). Skips tasks, SLAs, escalations, and entry/exit rules. Use during skeleton-phase authoring before tasks/conditions/SLA are wired. |
+| `--skeleton-v2` | Preferred Phase 2 preview profile: structure plus entry/exit rules, SLA, and escalation, while task values and connector schemas are still incomplete. Availability depends on the installed CLI. |
+| `--skeleton` | Legacy structural profile. Skips tasks, SLAs, escalations, and entry/exit rules. Used only as the Phase 2 fallback when `--skeleton-v2` is unavailable. |
 
 Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported inline.
+
+### Phase 2 profile probe
+
+1. Run `validate ... --skeleton-v2 --output json`.
+2. Only when the parser response names `--skeleton-v2` as unknown or unsupported (typically `ErrorCode: "invalid_argument"` and exit code 3), re-run once with `--skeleton`. Exit code 3 without that flag-specific message is not sufficient.
+3. Any genuine v2 validation result, including case validation errors, proves the profile ran. Report those findings; do not mask them with the legacy fallback.
+
+Always name the selected profile in the Phase 2 summary. A legacy `--skeleton` fallback checks structure only, so conditions/SLA remain covered by authoritative full validation in Phase 4.
 
 ---
 
@@ -185,7 +246,7 @@ uip maestro case spec --type <activity|trigger> \
 | `--type <activity\|trigger>` | **(required)** Whether the typeId is an activity or trigger TypeCache entry. |
 | `--activity-type-id <uuid>` | **(required)** Studio Web `uiPathActivityTypeId` from the relevant TypeCache index. |
 | `--connection-id <uuid>` | **(required)** IS connection UUID. Pick from `case registry get-connection` first. |
-| `--object-name <name>` | Override the typecache `objectName`. Required in two cases: (1) **entity-typed Curated triggers** whose typecache stores a placeholder (e.g. Data Service `{tenantEntityName\|folderEntityName}`); (2) **Generic-typed activities/triggers** (activity typecache `activityType === "Generic"`; trigger typecache `activityType === "GenericTrigger"`) whose typecache definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord` covering Account/Contact/Lead/...). The CLI errors at spec-fetch time when missing in case (2) — opaque `unknown_error`, see [`connector-trigger-common.md`](connector-trigger-common.md). Discovery: `uip is resources list/describe` (Generic) or `uip is triggers objects` (entity-typed Curated). See [`connector-integration.md`](connector-integration.md) and [`connector-trigger-common.md`](connector-trigger-common.md). |
+| `--object-name <name>` | Override the typecache `objectName`. Required in two cases: (1) **entity-typed Curated triggers** whose typecache stores a placeholder (e.g. Data Service `{tenantEntityName\|folderEntityName}`); (2) **Generic-typed activities/triggers** (activity typecache `activityType === "Generic"`; trigger typecache `activityType === "GenericTrigger"`) whose typecache definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord` covering Account/Contact/Lead/...). The CLI errors at spec-fetch time when missing in case (2) — opaque `unknown_error`, see [`connector-trigger-planning.md`](connector-trigger-planning.md). Discovery: `uip is resources list/describe` (Generic) or `uip is triggers objects` (entity-typed Curated). See [`connector-integration.md`](connector-integration.md) and [`connector-trigger-planning.md`](connector-trigger-planning.md). |
 | `--skip-case-shape` | Omit `caseShape` from the response. Use during planning for a leaner payload. Mutually exclusive with `--input-details`. |
 | `--input-details <json>` | Pre-fill values into the generated `caseShape`. Activity accepts `{bodyParameters?, queryParameters?, pathParameters?, filter?}`; trigger accepts `{eventParameters?, filter?}`. Connection identity is NOT in input — derived from `--connection-id` and TypeCache. Mutually exclusive with `--skip-case-shape`. Full contract: [`case-spec-input-details.md`](case-spec-input-details.md). |
 
@@ -484,3 +545,5 @@ Options for `get`:
 |--------|-------------|
 | `--output json\|yaml\|table` | Output format (default: table in TTY, json otherwise) |
 | `--verbose` | Enable debug logging |
+
+<!-- END: case-commands.md -->

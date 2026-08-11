@@ -11,7 +11,7 @@ Declare to the builder **only the fields the case wires**. Per wired field:
 - **Wired to a typed Case Variable** — output `O -> var` (the `->` extract operator) or input bound `=vars.<v>` → **required, type pinned** from the variable's `Type` (SDD Case Variables table; the only planning-authoritative type source).
 - **Wired but type not knowable at planning** — cross-task ref (`<- "Stage"."Task".out`), literal, or `=metadata.*` → **required, name only**; the builder picks the type that best fits the field's purpose. Reconciled at verify (the consumer's real type, known at implementation).
 - **Unwired** — the case neither stores the output into a var nor feeds/consumes the field → **omit from the contract**; the builder free-styles whatever the resource's purpose needs.
-- **`=`-computed output row** (`<caseVar> = <expr>` — set / compute / copy, per [sdd-generation-rules.md § Outputs cell operators](../../sdd-generation-rules.md#outputs-cell-operators)) → **not a resource output**: the case computes it at task completion, the resource never emits it → **exclude from the contract**. Only `->` extract rows are resource outputs.
+- **`=`-computed output row** (`<caseVar> = <expr>` — set / compute / copy, per [io-binding planning § SDD Outputs projection](../variables/io-binding/planning.md#sdd-outputs-table-to-tasksmd-projection-mandatory)) → **not a resource output**: the case computes it at task completion, the resource never emits it → **exclude from the contract**. Only `->` extract rows are resource outputs.
 
 No field-name heuristic, no silent `string` default. The case vocabulary (`string`/`integer`/`float`/`double`/`boolean`/`datetime`/`date`/`jsonSchema`/`file`) is passed through; mapping it onto the type's native I/O schema is the type skill's concern.
 
@@ -36,7 +36,7 @@ Rules:
 
 ## Step 3 — Binding invariants
 
-After the sibling is built, registered, and verified (orchestration §), bind the task by name+folder: two bindings `resource:"process"`, `resourceSubType` per the table below, shared `resourceKey="solution_folder.<Name>"`; `name` default `<Name>`, **`folderPath` default `""` (empty string)**. The sibling ships **inside** the solution `.uipx` (registered as a sibling project), so it co-deploys with the case when the solution is published (Phase 6 `uip solution upload`); it is **not** published separately to the tenant.
+After the sibling is built, registered, and verified (orchestration §), bind the task by name+folder: two bindings `resource:"process"`, `resourceSubType` per the table below, shared `resourceKey="solution_folder.<Name>"`; `name` default `<Name>`, **`folderPath` default `""` (empty string)**. The sibling ships **inside** the solution `.uipx` (registered as a sibling project), so it co-deploys with the case when the solution is published (Phase 5 `uip solution upload`); it is **not** published separately to the tenant.
 
 | Type | `resourceSubType` |
 |------|-------------------|
@@ -53,3 +53,5 @@ After the sibling is built, registered, and verified (orchestration §), bind th
 Mirrors [connector-integration.md § Creating a Connection](../../connector-integration.md#creating-a-connection) step 4. If a build sub-agent returns `built:false` (or dies), show its `error` verbatim, then AskUserQuestion: `Retry create` / `Skip (defer)`. On `Skip` or repeated failure, fall to the type's Unresolved Fallback (placeholder + completion-report note) and finish planning — never halt. A verify-time I/O mismatch is a **warning**, not a failure: rewire matched fields, report missing/extra, continue.
 
 > **"Already exists" is NOT a failure** — an interrupted prior run already built the sibling; adopt it per [registry-discovery.md § Create-on-Missing → 3b](../../registry-discovery.md#create-on-missing-build-and-rediscovery). Per-type adopt tokens (init verb, kind markers, stale-declaration subpath) live in each type's § Failure blockquote.
+
+<!-- END: create-inline-common.md -->

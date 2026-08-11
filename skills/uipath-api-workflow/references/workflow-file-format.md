@@ -1,6 +1,8 @@
 # API Workflow File Format
 
+<!--skill-flavor:runtime-description:start-->
 JSON files conforming to **CNCF Serverless Workflow DSL 1.0.0** with UiPath task-type extensions. Executed by `@uipath/api-workflow-executor` via `uip api-workflow run`.
+<!--skill-flavor:runtime-description:end-->
 
 ## Top-Level Structure
 
@@ -127,9 +129,11 @@ Workflow-level I/O is declared at the root via JSON Schema:
 }
 ```
 
+<!--skill-flavor:runtime-input-output:start-->
 Inputs come from `--input-arguments` JSON or the calling workflow. Read them as `$workflow.input.<name>` from any task. (Reading as `$input.<name>` only works on the very first task — see [expressions-and-context.md](expressions-and-context.md).)
 
 Outputs are read from the final `Response` task's `response` value.
+<!--skill-flavor:runtime-input-output:end-->
 
 ## WorkflowStart — System Activity
 
@@ -184,6 +188,7 @@ A `Sequence` task groups child tasks. Most workflows have a single root `Sequenc
 
 Child tasks execute in order. `$context` flows from one to the next via `export.as`.
 
+<!--skill-flavor:project-structure:start-->
 ## Project Structure (Studio Web editable contract)
 
 An API workflow project that must open and edit in **Studio Web** ships a specific on-disk shape. **`uip api-workflow init <name>` generates this shape for you** (and registers the project in the solution `.uipx`) — use it for new projects instead of writing these files by hand. The layout below is the contract `init` produces and what `uip solution pack` reads via `project.uiproj`; it also documents what to recreate when converting a legacy `project.json` project:
@@ -216,6 +221,7 @@ An API workflow project that must open and edit in **Studio Web** ships a specif
 > **Why this matters — the runtime shape is a trap.** A `project.json` + `workflows/WF_*.json` layout (no `.uiproj`) runs under `uip api-workflow run`, and packs/publishes/deploys as an API process — every runtime gate passes. But Studio Web's import only recognizes a folder as a project if it contains a `.uiproj` file (`isProjectFolder`); a `project.json`-only project is rejected as `invalid_project_folder` and never appears in Studio Web. Runtime success is NOT proof of Studio Web editability. Scaffold with `uip api-workflow init` — it can't produce the wrong shape (SKILL.md rule 19a).
 
 > **Standalone (CLI-only) projects** that never open in Studio Web — run purely via `uip api-workflow run` — don't need solution registration; `uip api-workflow init <name> --skip-solution-registration` still emits the same files but skips the `.uipx` wiring. The `.uiproj` contract is required the moment the project must be editable in Studio Web or shipped in a solution uploaded to Studio Web.
+<!--skill-flavor:project-structure:end-->
 
 ## Sources
 

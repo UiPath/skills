@@ -11,7 +11,6 @@ forms against existing deterministic tenant resources.
 | Case Name | IoBindingCase |
 | Case Description | Sequential task I/O binding matrix using existing tenant resources. |
 | Case Identifier | Prefix: IOB, Type: constant |
-| Priority | Choiceset: Low, Medium, High - Default: Medium |
 | Case-Level SLA | 1 d |
 | SLA Type | Static |
 
@@ -90,7 +89,7 @@ forms against existing deterministic tenant resources.
 **Inputs**
 | Field | Type | Binding |
 |---|---|---|
-| APIInput1 | string | "literal-seed" |
+| APIInput1 | string | `"literal-seed"` |
 
 ##### Task 1.2: Echo case variable (`bindingMatrix.echoCaseVariable`)
 
@@ -114,7 +113,7 @@ forms against existing deterministic tenant resources.
 **Inputs**
 | Field | Type | Binding |
 |---|---|---|
-| APIInput1 | string | =vars.caseInput |
+| APIInput1 | string | `=vars.caseInput` |
 
 **Outputs**
 | Field | Type | Binding / Value |
@@ -175,7 +174,7 @@ forms against existing deterministic tenant resources.
 **Inputs**
 | Field | Type | Binding |
 |---|---|---|
-| APIInput1 | string | =js:vars.renamedResult + '-input-expression' |
+| APIInput1 | string | `=js:vars.renamedResult + '-input-expression'` |
 
 **Outputs**
 | Field | Type | Binding / Value |
@@ -204,7 +203,7 @@ forms against existing deterministic tenant resources.
 **Inputs**
 | Field | Type | Binding |
 |---|---|---|
-| name | string | =vars.caseInput |
+| name | string | `=vars.caseInput` |
 
 **Outputs**
 | Field | Type | Binding / Value |
@@ -233,7 +232,7 @@ forms against existing deterministic tenant resources.
 **Inputs**
 | Field | Type | Binding |
 |---|---|---|
-| name | string | =vars.caseInput |
+| name | string | `=vars.caseInput` |
 
 **Outputs**
 | Field | Type | Binding / Value |

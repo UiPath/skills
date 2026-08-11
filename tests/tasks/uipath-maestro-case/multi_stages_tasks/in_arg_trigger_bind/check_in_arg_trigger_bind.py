@@ -9,7 +9,7 @@ Two triggers — manual (primary, T02) + timer (T03). Three In-args:
 
 Asserts each In-arg's formal slot (variables.inputs) + companion
 (variables.inputOutputs) elementId, and its trigger-output bridge
-(data.uipath.outputs[]), land on the correct trigger node — and that neither
+(data.inputs.outputs[]), land on the correct trigger node — and that neither
 bridge leaks onto the other trigger. This proves sourceTriggers SELECTS the
 bound trigger (blank → primary) instead of defaulting every In-arg to one
 trigger. Structural-only (no debug): the binding is fully determined by
@@ -30,11 +30,11 @@ from _shared.case_check import (  # noqa: E402
 
 
 def _service_type(node: dict):
-    return ((node.get("data") or {}).get("uipath") or {}).get("serviceType")
+    return ((node.get("data") or {}).get("inputs") or {}).get("serviceType")
 
 
 def _trigger_outputs(node: dict) -> list:
-    return ((node.get("data") or {}).get("uipath") or {}).get("outputs") or []
+    return ((node.get("data") or {}).get("inputs") or {}).get("outputs") or []
 
 
 def _find_bridge(node: dict, arg: str) -> dict | None:
@@ -57,14 +57,14 @@ def main():
     assert_count(len(triggers), 2, "trigger node(s)")
 
     # Manual trigger carries no serviceType (or explicit "None"); timer carries
-    # "Intsvc.TimerTrigger". See triggers/{manual,timer}/impl-json.md.
+    # "timer". See triggers/{manual,timer}/impl-json.md.
     manual = [t for t in triggers if _service_type(t) in (None, "None")]
-    timer = [t for t in triggers if _service_type(t) == "Intsvc.TimerTrigger"]
+    timer = [t for t in triggers if _service_type(t) == "timer"]
     if len(manual) != 1 or len(timer) != 1:
         sts = [_service_type(t) for t in triggers]
         sys.exit(
             f"FAIL: expected exactly 1 manual (serviceType None/'None') + 1 timer "
-            f"(serviceType 'Intsvc.TimerTrigger') trigger; got serviceTypes {sts}"
+            f"(serviceType 'timer') trigger; got serviceTypes {sts}"
         )
     manual_node, timer_node = manual[0], timer[0]
     manual_id, timer_id = manual_node.get("id"), timer_node.get("id")
@@ -139,7 +139,7 @@ def main():
             outs = [(o.get("name"), o.get("var")) for o in _trigger_outputs(want_node)]
             sys.exit(
                 f"FAIL: In-arg {arg!r} bridge (name={arg}, var={arg}) missing from the "
-                f"{label} node's data.uipath.outputs; got {outs}"
+                f"{label} node's data.inputs.outputs; got {outs}"
             )
         # The bridge forwards the formal slot into the companion: its source MUST
         # read the formal slot by id (=vars.<slot id>). Without this the runtime

@@ -11,7 +11,6 @@
 | Case Name | StaleRunnableRegistryHandoff |
 | Case Description | Runs two existing tenant resources from an approved SDD whose staged Phase-0 registry cache named the runnable resources differently (stale). |
 | Case Identifier | Type: constant. Prefix: SRH |
-| Priority | Choiceset: Low, Medium, High — Default: Medium |
 | Case-Level SLA | — |
 | SLA Type | — |
 | Case App | Disabled |

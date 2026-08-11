@@ -66,7 +66,7 @@ Validation differs by command:
 - `documents upload` rejects an unsupported file with `Unsupported file type "<ext>"` before any network call.
 - `projects create` scans only the top level of `<folder-path>` (sub-folders are ignored), silently skips unsupported files, and fails only when **no** supported files exist (`No supported documents found in <folder>`).
 
-Each upload triggers a retrain — wait ~2 min before reading metrics or predictions for new docs.
+Each upload triggers a retrain — wait it out before reading metrics or predictions for new docs, under the bounded wait in [Improve Prompts Guide § Waiting for retrain](improve-prompts-guide.md#waiting-for-retrain).
 
 ### Uploading documents to an existing project
 

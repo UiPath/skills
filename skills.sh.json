@@ -38,17 +38,16 @@
         "uipath-test",
         "uipath-governance",
         "uipath-insights",
+        "uipath-process-mining",
         "uipath-tasks",
-        "uipath-mcp-servers"
+        "uipath-mcp-servers",
+        "uipath-automationhub"
       ]
     },
     {
       "title": "Diagnostics & Feedback",
       "description": "Investigate failures across any UiPath product and send bug reports or improvement suggestions to the team.",
-      "skills": [
-        "uipath-troubleshoot",
-        "uipath-feedback"
-      ]
+      "skills": ["uipath-troubleshoot", "uipath-feedback"]
     }
   ]
 }
