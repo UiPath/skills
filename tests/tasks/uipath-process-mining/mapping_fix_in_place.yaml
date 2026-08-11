@@ -16,7 +16,7 @@ description: >
   to edit when the unauthenticated `data-mapping get` cannot return one — without
   it the agent correctly refuses to push a garbage file and the run stalls after
   the `get`.
-tags: [uipath-process-mining, mode:fix, lifecycle:maintain, custom, data-mapping]
+tags: [uipath-process-mining, integration, mode:diagnose, lifecycle:setup, custom, data-mapping]
 
 run_limits:
   expected_turns: 8

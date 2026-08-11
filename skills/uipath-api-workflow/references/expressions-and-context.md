@@ -6,7 +6,9 @@ API workflows use **JavaScript** for all expressions (`evaluate.language: "javas
 
 | Scope | Source | Lifetime |
 |-------|--------|----------|
+<!--skill-flavor:workflow-input-source:start-->
 | `$workflow.input` | The workflow's input arguments (from `--input-arguments` JSON or caller). Constant for the entire run. | Workflow run |
+<!--skill-flavor:workflow-input-source:end-->
 | `$workflow` | Workflow runtime info: `{ id, definition, input, startedAt }`. Use `$workflow.input` to read inputs. | Workflow run |
 | `$input` | The **current task's input** = the previous task's `$output`. **NOT the workflow's input arguments.** Only equals workflow input on the very first task. | Per-task |
 | `$context` | Mutable shared state: `$context.variables.<name>`, `$context.outputs.<Activity>` | Workflow run |
@@ -95,7 +97,9 @@ ${$context.outputs.listEmails_1.content?.length}
 ${$context.outputs?.getNewestEmail_1?.content?.subject ?? "(no subject)"}
 ```
 
+<!--skill-flavor:runtime-content-normalization:start-->
 Inside a JsInvoke script, the local CLI runtime sometimes returns `content` as a JSON string while cloud returns it pre-parsed — handle both:
+<!--skill-flavor:runtime-content-normalization:end-->
 
 ```javascript
 const out = $context.outputs.getNewestEmail_1;
@@ -166,7 +170,9 @@ $context.outputs.Javascript_1.tier
 ## Reading Workflow Inputs
 
 ```js
+<!--skill-flavor:workflow-input-example:start-->
 // User ran: uip api-workflow run wf.json --input-arguments '{"name":"Alice","count":3}'
+<!--skill-flavor:workflow-input-example:end-->
 
 $workflow.input.name    // "Alice"
 $workflow.input.count   // 3

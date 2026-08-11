@@ -51,9 +51,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow file exists at correct double-nested path"
-    command: "test -f ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
-    timeout: 10
+    description: "Flow file exists (path-agnostic discovery)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseApproval"
+    timeout: 30
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
