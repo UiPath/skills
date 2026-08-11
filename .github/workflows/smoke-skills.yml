@@ -355,6 +355,7 @@ jobs:
       # `latest` from public npm (which lags by ~2 weeks).
       - name: Build skills smoke Docker image
         env:
+          DOCKER_BUILDKIT: "1"
           NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
         run: |
           docker build \

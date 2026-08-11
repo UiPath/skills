@@ -7,6 +7,7 @@ description: |
 tags:
   - uipath-maestro-flow
   - e2e
+  - mode:build
   - lifecycle:generate
   - shape:single-node
   - resource
