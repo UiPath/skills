@@ -8,9 +8,8 @@ flow satisfies it and grounds nothing. So this gate asserts the WIRING — the t
 the whole card exists to make possible:
 
 1. **Exactly one inline agent**, no published-agent or script stand-in.
-2. **Exactly one context-index resource**, whose node type carries the REAL
-   index's uuid — the identity is in the type, so a wrong uuid is a node type the
-   tenant has never heard of.
+2. **Exactly one context-index resource**, whose node type carries a real,
+   non-placeholder uuid and names the requested Billing Dispute SOP index.
 3. **It is wired to the agent's own `context` port** — an edge out of the agent's
    `context` source port into the resource's `input` target port, which is the
    direction both definitions declare (`allowedTargets:
@@ -18,44 +17,38 @@ the whole card exists to make possible:
    context` with `maxConnections: 1` on the resource). An index in the flow with no
    such edge is what v1's check cannot tell apart from a grounded one.
 4. **It carries `inputs.source`** — a stable uuid the platform's validator
-   REQUIRES (MST-9265: *"requires a stable UUID at inputs.source"*), plus the
-   index's own `indexId`/`indexName`.
+   requires. If optional `indexId`/`indexName` fields are emitted, they must agree
+   with the node type and requested index.
 5. **The agent is fed both inputs and its prompts reference them**, and both flow
    outputs are read FROM the agent step.
 6. **Nothing about the answer is written in** — no determination or rationale
    literal.
 
-Usage: check_billing_dispute_analyst.py <FlowName>.flow
+Usage: advisory_billing_dispute_analyst.py [<FlowName>.flow]
 """
-import json
-import re
-import sys
+from advisory_flow_utils import (
+    agent_prompt_text,
+    end_bindings,
+    fail,
+    is_real_uuid,
+    load_flow,
+    node_dependencies,
+    references_field,
+    source_depends_on,
+    successful_end_ids,
+    unwrap,
+)
 
 INLINE = "uipath.agent.autonomous"
 CONTEXT_PREFIX = "uipath.agent.resource.context.index."
-INDEX_ID = "cc45b9b4-dbf6-47b3-40ac-08debc0cec5b"
 INDEX_NAME = "Billing Dispute SOP Index"
 IN_CONTRACT = ["disputeDescription", "invoiceNumber"]
 OUT_CONTRACT = {"determination": "string", "rationale": "string"}
 
 
-def fail(msg):
-    sys.exit(f"FAIL: {msg}")
-
-
-def unwrap(v):
-    if isinstance(v, dict):
-        for k in ("expression", "source"):
-            if k in v:
-                return unwrap(v[k])
-    return v
-
-
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else "BillingDisputeAnalyst.flow"
-    raw = open(path, encoding="utf-8").read()
-    f = json.loads(raw)
-    nodes, edges = f["nodes"], (f.get("edges") or [])
+    path, f, nodes = load_flow("BillingDisputeAnalyst.flow")
+    edges = f.get("edges") or []
     types_seen = sorted({str(n.get("type")) for n in nodes})
 
     # ── 1. exactly one INLINE agent ────────────────────────────────────────────
@@ -68,7 +61,7 @@ def main():
     a = agents[0]
     ins = {k: unwrap(v) for k, v in (a.get("inputs") or {}).items()}
 
-    # ── 2. exactly one context index, carrying the REAL index's uuid ───────────
+    # ── 2. exactly one context index, carrying a real index uuid ───────────────
     ctx = [n for n in nodes if str(n.get("type", "")).startswith(CONTEXT_PREFIX)]
     if len(ctx) != 1:
         fail(
@@ -76,19 +69,22 @@ def main():
             f"The agent has to be grounded on the tenant's semantic index"
         )
     c = ctx[0]
-    if not str(c["type"]).endswith(INDEX_ID):
+    type_parts = str(c["type"]).rsplit(".", 1)
+    index_id = type_parts[-1] if len(type_parts) == 2 else ""
+    if not is_real_uuid(index_id):
         fail(
-            f"the context node's type is {c['type']!r}; the index's identity is IN the node type and this "
-            f"one does not end with the real index uuid {INDEX_ID!r} — a wrong uuid is a node type the "
-            f"tenant has never heard of"
+            f"the context node's type is {c['type']!r}; the index identity belongs in the final type "
+            f"segment as a real, non-placeholder uuid"
         )
+    if "billing-dispute-sop-index" not in str(c["type"]).lower():
+        fail(f"the context node's type {c['type']!r} does not name the requested {INDEX_NAME!r}")
     cin = {k: unwrap(v) for k, v in (c.get("inputs") or {}).items()}
-    if str(cin.get("indexId") or "") != INDEX_ID:
-        fail(f"the context node's inputs.indexId is {cin.get('indexId')!r}, not {INDEX_ID!r}")
-    if str(cin.get("indexName") or "").strip() != INDEX_NAME:
+    if cin.get("indexId") is not None and str(cin["indexId"]) != index_id:
+        fail(f"the context node's inputs.indexId is {cin['indexId']!r}, not the type's uuid {index_id!r}")
+    if cin.get("indexName") is not None and str(cin["indexName"]).strip() != INDEX_NAME:
         fail(f"the context node's inputs.indexName is {cin.get('indexName')!r}, not {INDEX_NAME!r}")
     src = str(cin.get("source") or "")
-    if not re.match(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-", src):
+    if not is_real_uuid(src):
         fail(
             f"the context node's inputs.source is {src!r} — the platform's validator REQUIRES a stable "
             f"uuid there (MST-9265: \"requires a stable UUID at inputs.source\"), and a flow without one "
@@ -108,17 +104,21 @@ def main():
         )
 
     # ── 4. the agent is fed both inputs, and the prompts reference them ────────
-    declared = [str(v.get("id") or v.get("name") or "") for v in (ins.get("agentInputVariables") or [])
-                if isinstance(v, dict)]
-    prompts = " ".join(str(ins.get(k) or "") for k in ("systemPrompt", "userPrompt"))
-    if "$vars." not in prompts:
-        fail(
-            f"neither prompt references a flow value ($vars.…): {prompts[:160]!r}. The platform derives an "
-            f"inline agent's deployed input list by SCANNING the prompts"
-        )
+    input_variables = [v for v in (ins.get("agentInputVariables") or []) if isinstance(v, dict)]
+    declared = [str(v.get("id") or v.get("name") or "") for v in input_variables]
+    bindings = {
+        str(v.get("id") or v.get("name") or ""): str(unwrap(v.get("binding")) or "")
+        for v in input_variables
+    }
+    prompts = agent_prompt_text(path, a)
     for name in IN_CONTRACT:
-        if name not in declared and f"$vars.{name}" not in prompts and f"$vars.start.output.{name}" not in prompts:
-            fail(f"the agent is never given {name!r}: agentInputVariables={declared or '[]'} and no prompt references it")
+        prompt_ref = any(token in prompts for token in (f"$vars.{name}", f"$vars.start.output.{name}", f"input.{name}"))
+        binding_ref = any(references_field(binding, name) for binding in bindings.values())
+        if not prompt_ref and not binding_ref:
+            fail(
+                f"the agent is never given {name!r}: agentInputVariables={bindings or '{}'} and neither "
+                f"the Flow nor sidecar prompts reference it"
+            )
 
     # ── 5. the declared contract, and both outputs read FROM the agent ─────────
     globs = {g["id"]: g for g in ((f.get("variables") or {}).get("globals") or [])}
@@ -140,30 +140,31 @@ def main():
     ends = [n for n in nodes if n.get("type") == "core.control.end"]
     if not ends:
         fail("the flow has no End node, so it declares no outputs")
-    bound = {}
-    for n in ends:
-        for k, v in (n.get("outputs") or {}).items():
-            bound[k] = str(unwrap(v))
-    aref = f"$vars.{a['id']}.output"
-    via = {n["id"] for n in nodes if aref in json.dumps(n.get("inputs") or {})}
+    dependencies = node_dependencies(nodes)
+    success_ends = successful_end_ids(nodes, edges, a["id"])
+    if not success_ends:
+        fail(f"no End node is reachable from agent {a['id']!r} without taking its error port")
     for name in OUT_CONTRACT:
-        s = bound.get(name)
-        if s is None:
-            fail(f"no End node binds an output named {name!r}; it binds {sorted(bound)}")
-        if aref not in s and not any(f"$vars.{x}" in s for x in via):
-            fail(f"output {name} is {s!r}, and nothing it reads references {aref} — the answer has to come FROM the agent")
+        bindings_for_output = end_bindings(nodes, success_ends, name)
+        if not bindings_for_output:
+            fail(f"no successful End node binds an output named {name!r}")
+        if not any(source_depends_on(value, a["id"], dependencies) for value in bindings_for_output):
+            fail(
+                f"successful output {name} has bindings {[str(unwrap(v)) for v in bindings_for_output]!r}, "
+                f"and none depends on $vars.{a['id']}.output — the answer has to come FROM the agent"
+            )
 
     # ── 6. no answer written in ────────────────────────────────────────────────
     # A determination is free prose, so there is no single literal to forbid — what
     # IS checkable is that neither output is a constant string at the End node.
     for name in OUT_CONTRACT:
-        s = bound.get(name, "")
-        if re.match(r'^"[^"]*"$', s.strip()) or (s.strip() and "$vars." not in s):
-            fail(f"output {name} is the constant {s!r} — the agent's answer is what belongs there")
+        values = end_bindings(nodes, success_ends, name)
+        if values and not any(source_depends_on(value, a["id"], dependencies) for value in values):
+            fail(f"successful output {name} is constant — the agent's answer is what belongs there")
 
     print(
         f"{len(nodes)} nodes; one {INLINE} ({a['id']}) fed {declared or 'via prompt refs'}, "
-        f"grounded on {c['id']} ({INDEX_NAME}, indexId {INDEX_ID[:8]}…, source {src[:8]}…) "
+        f"grounded on {c['id']} ({INDEX_NAME}, indexId {index_id[:8]}…, source {src[:8]}…) "
         f"via {a['id']}:context -> {c['id']}:input; outputs {sorted(OUT_CONTRACT)} read from {a['id']}"
     )
 

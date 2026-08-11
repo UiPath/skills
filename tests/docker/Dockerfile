@@ -1,9 +1,9 @@
-# syntax=docker/dockerfile:1.7
 # Custom image for UiPath skills smoke tests
 # Extends coder-eval-agent with UiPath CLI tools pre-installed
 ARG CODER_EVAL_IMAGE=coder-eval-agent:latest
 FROM ${CODER_EVAL_IMAGE}
 
+ARG NPM_AUTH_TOKEN=
 # `dev` = the live prerelease train on GitHub Packages (published on every push
 # to cli/main). cli PR #2650 (2026-06-26) renamed the old `alpha` dist-tag →
 # `dev`; `alpha` is frozen at the last build (1.197.0-alpha.20260626), so it must
@@ -53,16 +53,13 @@ ENV UIPATH_CLI_DISABLE_VERSION_SYNC=1
 # the whitelist (toolLoader.ts), so a plain global install is found with no
 # registry work at eval time.
 #
-# The token-bearing npmrc is written and removed inside this single RUN, while
-# the credential itself arrives through a BuildKit secret mount. Using an ARG
-# here exposes the expanded credential in build output and image history even
-# when the npmrc is removed. The @uipath→GHP mapping isn't needed at eval time —
-# tools are on disk and version-sync is off.
-RUN --mount=type=secret,id=npm_auth_token,required=true \
-    set -euo pipefail && \
-    npm_auth_token="$(cat /run/secrets/npm_auth_token)" && \
-    if [ -z "$npm_auth_token" ]; then \
-      echo "Error: npm_auth_token BuildKit secret is empty"; exit 1; \
+# The token-bearing npmrc is written and removed inside this single RUN, so it
+# never persists in an image layer. Keep the build-arg interface used by the
+# nightly runner and both GitHub workflows; changing it requires a coordinated
+# rollout across all three callers.
+RUN set -euo pipefail && \
+    if [ -z "$NPM_AUTH_TOKEN" ]; then \
+      echo "Error: NPM_AUTH_TOKEN must be passed as build arg"; exit 1; \
     fi && \
     # Derive the tool dist-tag from CLI_VERSION: an exact prerelease pin
     # (1.199.0-dev.7923) → its train tag (dev); a bare stable semver → latest;
@@ -85,7 +82,7 @@ RUN --mount=type=secret,id=npm_auth_token,required=true \
     mkdir -p "$(dirname "$npmrc")" && \
     printf '%s\n' \
       '@uipath:registry=https://npm.pkg.github.com/' \
-      "//npm.pkg.github.com/:_authToken=${npm_auth_token}" \
+      "//npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}" \
       > "$npmrc" && \
     if [ "$public_cli" = false ]; then \
       npm install -g "@uipath/cli@${CLI_VERSION}"; \
@@ -109,7 +106,6 @@ RUN --mount=type=secret,id=npm_auth_token,required=true \
     fi && \
     rm -f "$npmrc" && \
     uip tools list
-LABEL org.uipath.cli.version="${CLI_VERSION}"
 
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
 # Without it, RPA tasks running under driver: docker fail their build criterion

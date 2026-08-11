@@ -25,6 +25,7 @@ from __future__ import annotations
 import glob
 import json
 import sys
+from pathlib import Path
 
 SCAFFOLD_MODEL = "gpt-4o-2024-11-20"
 
@@ -38,18 +39,36 @@ PLACEHOLDER_PROMPTS = {
     "what is the current date?",
 }
 MIN_PROMPT_LEN = 40
+EXCLUDED_PARTS = {
+    ".agent-builder",
+    ".cli-stage",
+    ".v1stage",
+    "_lib",
+    "_outputs",
+    "example",
+    "fixtures",
+    "node_modules",
+    "reference_agents",
+    "references",
+    "v1stage",
+}
 
 
 def main() -> int:
     pattern = sys.argv[1] if len(sys.argv) > 1 else "**/agent.json"
-    paths = [p for p in glob.glob(pattern, recursive=True) if "/.agent-builder/" not in p]
+    paths = [
+        path
+        for path in glob.glob(pattern, recursive=True)
+        if not EXCLUDED_PARTS.intersection(Path(path).parts)
+    ]
     if not paths:
         print(f"FAIL: no inline agent.json matched {pattern!r}")
         return 1
 
-    path = sorted(paths)[0]
+    path = min(paths)
     try:
-        agent = json.load(open(path))
+        with open(path) as source:
+            agent = json.load(source)
     except (OSError, json.JSONDecodeError) as e:
         print(f"FAIL: could not read {path}: {e}")
         return 1

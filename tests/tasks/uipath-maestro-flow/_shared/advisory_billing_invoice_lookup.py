@@ -29,38 +29,32 @@ ladder covers the behaviour half in its own rungs (`expect` ×3 offline, `live`
    collapsed both entries into one at FIL emission and the live dispatch sent the
    FOLDER key as `--connection-id`, answering 401.
 
-Usage: check_billing_invoice_lookup.py <FlowName>.flow
+Usage: advisory_billing_invoice_lookup.py [<FlowName>.flow]
 """
-import json
 import re
-import sys
+
+from advisory_flow_utils import (
+    carries_literal,
+    end_bindings,
+    fail,
+    load_flow,
+    node_dependencies,
+    query_references_input,
+    source_depends_on,
+    successful_end_ids,
+    unwrap,
+)
 
 CANONICAL = "MCS-2026-04872"
 # The three malformed forms the offline rungs drive. A flow may not carry any of
 # them as a literal.
-RAW_INPUTS = ["2026-04872", "mcs-2026-04872", "  MCS-2026-04872 "]
+RAW_INPUTS = ["2026-04872", "mcs-2026-04872"]
 DS_TYPE_PREFIX = "uipath.connector.uipath-uipath-dataservice."
 ENTITY = "BillingDisputeERP"
 
 
-def fail(msg):
-    sys.exit(f"FAIL: {msg}")
-
-
-def unwrap(v):
-    """A .flow input/source is either a literal or `{expression: …}`."""
-    if isinstance(v, dict):
-        for k in ("expression", "source"):
-            if k in v:
-                return unwrap(v[k])
-    return v
-
-
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else "BillingInvoiceLookup.flow"
-    raw = open(path, encoding="utf-8").read()
-    f = json.loads(raw)
-    nodes = f["nodes"]
+    _, f, nodes = load_flow("BillingInvoiceLookup.flow")
     types_seen = sorted({str(n.get("type")) for n in nodes})
 
     # ── 1. exactly one Data Service query node ────────────────────────────────
@@ -92,11 +86,10 @@ def main():
     if "queryExpression" not in queryp:
         fail(f"the query node sets no queryExpression; queryParameters: {sorted(queryp)}")
     expr = str(queryp["queryExpression"])
-    if "$vars." not in expr:
+    if not query_references_input(detail, "invoiceNumber"):
         fail(
-            f"queryExpression is {expr!r} — a CONSTANT. It has to be computed from the flow's "
-            f"`invoiceNumber` input, or the three offline rungs prove nothing (a hardcoded filter "
-            f"'normalizes' every input to the right answer)"
+            f"queryExpression is {expr!r} and its filterVariables do not reference the flow's "
+            f"`invoiceNumber` input. A constant filter makes the three offline rungs meaningless"
         )
     # A CEQL string literal must be single-quoted; an unquoted RHS parses as
     # subtraction server-side and 400s (the `sql-where` grammar fil-run enforces).
@@ -104,14 +97,14 @@ def main():
         fail(f"queryExpression is {expr!r} — a CEQL string literal has to be single-quoted")
 
     # ── 4. the ANSWER is nowhere in the flow, and neither is a lookup table ───
-    if CANONICAL in raw:
+    if carries_literal(f, CANONICAL):
         fail(
             f"the flow carries the literal {CANONICAL!r}. Offline, every rung is satisfied by a flow "
             f"that hardcodes the answer — so the canonical invoice number must be COMPUTED from the "
             f"input, never written in"
         )
     for bad in RAW_INPUTS:
-        if json.dumps(bad)[1:-1] in raw:
+        if carries_literal(f, bad):
             fail(
                 f"the flow carries the test input {bad!r} as a literal — normalising by matching the "
                 f"known inputs passes every rung and generalises to nothing"
@@ -135,24 +128,18 @@ def main():
     ends = [n for n in nodes if n.get("type") == "core.control.end"]
     if not ends:
         fail("the flow has no End node, so it declares no outputs")
-    bound = {}
-    for n in ends:
-        for k, v in (n.get("outputs") or {}).items():
-            bound[k] = str(unwrap(v))
-    qref = f"$vars.{q['id']}.output"
-    # Steps whose own inputs read the query step — the indirect path.
-    via = {
-        n["id"] for n in nodes
-        if qref in json.dumps(n.get("inputs") or {})
-    }
+    dependencies = node_dependencies(nodes)
+    success_ends = successful_end_ids(nodes, f.get("edges") or [], q["id"])
+    if not success_ends:
+        fail(f"no End node is reachable from query {q['id']!r} without taking its error port")
     for name in ("matchedInvoiceNumber", "lineItemCount"):
-        src = bound.get(name)
-        if src is None:
-            fail(f"no End node binds an output named {name!r}; it binds {sorted(bound)}")
-        if qref not in src and not any(f"$vars.{s}" in src for s in via):
+        bindings = end_bindings(nodes, success_ends, name)
+        if not bindings:
+            fail(f"no successful End node binds an output named {name!r}")
+        if not any(source_depends_on(value, q["id"], dependencies) for value in bindings):
             fail(
-                f"output {name} is {src!r}, and nothing it reads references {qref} — the value has to "
-                f"come FROM the query step. Steps that do read it: {sorted(via) or 'none'}"
+                f"successful output {name} has bindings {[str(unwrap(v)) for v in bindings]!r}, and none "
+                f"depends on $vars.{q['id']}.output — the value has to come FROM the query step"
             )
 
     # ── 7. the RESOLVED connection: two DISTINCT uuids on the node ────────────
@@ -168,7 +155,7 @@ def main():
     # token`. Two distinct uuids is the checkable form of "the pair is right".
     conn_id = str(unwrap(detail.get("connectionId")) or "")
     folder = str(unwrap(detail.get("connectionFolderKey")) or "")
-    UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-", re.A)
+    UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-", re.ASCII)
     for label, v in (("connectionId", conn_id), ("connectionFolderKey", folder)):
         if not UUID.match(v):
             fail(

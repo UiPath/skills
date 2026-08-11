@@ -73,10 +73,7 @@ success_criteria:
   pass_threshold: 0.0
 - type: run_command
   description: 'Advisory: STRUCTURAL (covering): two DS queries (ERP + CRM) on MUTUALLY UNREACHABLE branches from the trigger, converging on one bpmn:ParallelGateway merge that continues downstream; each filter computed from its own input; no answer literals; each output read from its own side'
-  command: |
-    FLOW="$(find . -name BillingDiscrepancyDetector.flow -not -path '*/_outputs/*' -not -path '*/.v1stage*/*' -not -path '*/v1stage/*')"
-    test -f "$FLOW"
-    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_discrepancy_detector.py "$FLOW"
+  command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_discrepancy_detector.py
   timeout: 30
   expected_exit_code: 0
   weight: 1.0

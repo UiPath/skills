@@ -63,11 +63,8 @@ success_criteria:
   weight: 1.0
   pass_threshold: 0.0
 - type: run_command
-  description: 'Advisory: STRUCTURAL (covering): the grounding is WIRED — one inline agent, one context-index resource carrying the REAL index uuid + name + the validator-required source, joined by an edge from the agent''s `context` port to the resource''s `input` port, both inputs reaching the agent, both outputs read from it'
-  command: |
-    FLOW="$(find . -name BillingDisputeAnalyst.flow -not -path '*/_outputs/*' -not -path '*/.v1stage*/*' -not -path '*/v1stage/*')"
-    test -f "$FLOW"
-    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_dispute_analyst.py "$FLOW"
+  description: 'Advisory: STRUCTURAL (covering): the grounding is WIRED — one inline agent, one context-index resource carrying a real non-stub index uuid and validator-required source, joined by an edge from the agent''s `context` port to the resource''s `input` port, both inputs reaching the agent, both outputs read from it'
+  command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_dispute_analyst.py
   timeout: 30
   expected_exit_code: 0
   weight: 1.0

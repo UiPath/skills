@@ -26,12 +26,22 @@ bolted on. So this gate asserts the SHAPE:
 7. **The connection resolves to a connection/folder PAIR of distinct uuids** on
    both query nodes.
 
-Usage: check_billing_discrepancy_detector.py <FlowName>.flow
+Usage: advisory_billing_discrepancy_detector.py [<FlowName>.flow]
 """
-import json
 import re
-import sys
 from collections import Counter, defaultdict
+
+from advisory_flow_utils import (
+    carries_literal,
+    end_bindings,
+    fail,
+    load_flow,
+    node_dependencies,
+    query_references_input,
+    source_depends_on,
+    successful_end_ids,
+    unwrap,
+)
 
 MERGE = "core.logic.merge"
 DS_PREFIX = "uipath.connector.uipath-uipath-dataservice."
@@ -48,24 +58,9 @@ IN_CONTRACT = ["invoiceNumber", "accountNumber", "disputedLineNumber",
                "disputedUnitPrice", "disputedQuantity"]
 
 
-def fail(msg):
-    sys.exit(f"FAIL: {msg}")
-
-
-def unwrap(v):
-    if isinstance(v, dict):
-        for k in ("expression", "source"):
-            if k in v:
-                return unwrap(v[k])
-    return v
-
-
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else "BillingDiscrepancyDetector.flow"
-    raw = open(path, encoding="utf-8").read()
-    f = json.loads(raw)
-    nodes, edges = f["nodes"], (f.get("edges") or [])
-    by_id = {n["id"]: n for n in nodes}
+    _, f, nodes = load_flow("BillingDiscrepancyDetector.flow")
+    edges = f.get("edges") or []
     types_seen = sorted({str(n.get("type")) for n in nodes})
 
     # ── 1. two Data Service query nodes, one per entity ───────────────────────
@@ -161,19 +156,17 @@ def main():
         if "queryExpression" not in q:
             fail(f"the {label} query sets no queryExpression; queryParameters: {sorted(q)}")
         expr = str(q["queryExpression"])
-        if "$vars." not in expr:
-            fail(f"the {label} queryExpression is {expr!r} — a CONSTANT; it must be computed from the flow's inputs")
-        if wanted_input not in expr:
+        if not query_references_input(detail(node), wanted_input):
             fail(
-                f"the {label} queryExpression is {expr!r} and never mentions {wanted_input!r} — each lookup "
-                f"filters on its own input ({ERP} by invoiceNumber, {CRM} by accountNumber)"
+                f"the {label} queryExpression is {expr!r} and its filterVariables do not reference "
+                f"{wanted_input!r} — each lookup must filter on its own flow input"
             )
         if "'" not in expr:
             fail(f"the {label} queryExpression is {expr!r} — a CEQL string literal has to be single-quoted")
 
     # ── 5. no answer is written in ─────────────────────────────────────────────
     for bad in FORBIDDEN_LITERALS:
-        if re.search(r"(?<![0-9A-Za-z])" + re.escape(bad) + r"(?![0-9A-Za-z])", raw):
+        if carries_literal(f, bad):
             fail(
                 f"the flow carries the literal {bad!r}. Every one of the answers "
                 f"({', '.join(FORBIDDEN_LITERALS)}) has to come from the tenant — a flow that writes one in "
@@ -196,39 +189,27 @@ def main():
     ends = [n for n in nodes if n.get("type") == "core.control.end"]
     if not ends:
         fail("the flow has no End node, so it declares no outputs")
-    bound = {}
-    for n in ends:
-        for k, v in (n.get("outputs") or {}).items():
-            bound[k] = str(unwrap(v))
+    dependencies = node_dependencies(nodes)
 
-    def readers_of(node_id):
-        """Steps whose own inputs read `$vars.<node_id>.output`."""
-        ref = f"$vars.{node_id}.output"
-        return {n["id"] for n in nodes if ref in json.dumps(n.get("inputs") or {})}
-
-    erp_readers, crm_readers = readers_of(erp["id"]), readers_of(crm["id"])
-
-    def sourced_from(out_name, node_id, readers, what):
-        src = bound.get(out_name)
-        if src is None:
-            fail(f"no End node binds an output named {out_name!r}; it binds {sorted(bound)}")
-        if f"$vars.{node_id}.output" in src:
-            return
-        if any(f"$vars.{s}" in src for s in readers):
+    def sourced_from(out_name, node_id, what):
+        success_ends = successful_end_ids(nodes, edges, node_id)
+        bindings = end_bindings(nodes, success_ends, out_name)
+        if not bindings:
+            fail(f"no successful End node binds an output named {out_name!r}")
+        if any(source_depends_on(value, node_id, dependencies) for value in bindings):
             return
         fail(
-            f"output {out_name} is {src!r}, and nothing it reads references $vars.{node_id}.output — "
-            f"{what}. Steps that read that query: {sorted(readers) or 'none'}"
+            f"successful output {out_name} has bindings {[str(unwrap(v)) for v in bindings]!r}, and none "
+            f"depends on $vars.{node_id}.output — {what}"
         )
 
-    sourced_from("accountTier", crm["id"], crm_readers, f"the tier comes from the {CRM} query")
-    sourced_from("matchedInvoiceNumber", erp["id"], erp_readers, f"the matched invoice comes from the {ERP} query")
+    sourced_from("accountTier", crm["id"], f"the tier comes from the {CRM} query")
+    sourced_from("matchedInvoiceNumber", erp["id"], f"the matched invoice comes from the {ERP} query")
     for name in ("totalOvercharge", "discrepancyCount"):
-        sourced_from(name, erp["id"], erp_readers,
-                     f"the contracted amount it is computed from lives in the {ERP} rows")
+        sourced_from(name, erp["id"], f"the contracted amount it is computed from lives in the {ERP} rows")
 
     # ── 7. the resolved connection: two DISTINCT uuids, on BOTH query nodes ───
-    UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-", re.A)
+    UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-", re.ASCII)
     for label, node in ((ERP, erp), (CRM, crm)):
         conn = str(unwrap(detail(node).get("connectionId")) or "")
         folder = str(unwrap(detail(node).get("connectionFolderKey")) or "")

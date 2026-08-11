@@ -12,33 +12,24 @@ defaults:
     docker:
       image: skills-image:sg1
       network: bridge
-      env_passthrough_extra:
-        - FULLPATH_LIVE
+      # Restrict the agent-visible environment to the model route plus the
+      # task/plugin paths. UiPath authentication comes only from the mounted
+      # campaign cache; package/build credentials are never forwarded.
+      env_passthrough:
+        - HOME
         - API_BACKEND
         - AWS_BEARER_TOKEN_BEDROCK
         - AWS_REGION
         - BEDROCK_MODEL
-        - ANTHROPIC_API_KEY
+        - CLAUDE_CODE_USE_BEDROCK
         - ANTHROPIC_MODEL
-        - NODE_AUTH_TOKEN
-        - FLOW_SDK_PKG_VERSION
+      env_passthrough_extra:
+        - FULLPATH_LIVE
         - SKILLS_REPO_PATH
-        - TASK_PARALLELISM
-        - UIPATH_CLI_ENABLE_ENV_AUTH
-        - UIPATH_CLI_AUTH_TOKEN
-        - UIPATH_CLI_ORGANIZATION_NAME
-        - UIPATH_CLI_ORGANIZATION_ID
-        - UIPATH_CLI_TENANT_NAME
-        - UIPATH_CLI_TENANT_ID
-        - E2E_PROCESS_KEY
-        - E2E_LONG_PROCESS_KEY
-        - CODEX_API_KEY
-        - CODEX_BASE_URL
         - UIPATH_CLI_DISABLE_VERSION_SYNC
-        - DISABLE_TYPED_CONNECTORS
-        - SG_UIPATH_HOME
-        - SG_EMPTY_SKILLS
       extra_mounts:
+        # coder-eval forwards the host HOME into this image, so the destination
+        # must match that path until UiPath/coder_eval#100 makes HOME portable.
         - ${SG_UIPATH_HOME}:/home/tmatup/.uipath:rw
         - ${SG_EMPTY_SKILLS}:/home/tmatup/.uipath/.skills:ro
 

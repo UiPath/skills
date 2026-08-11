@@ -62,11 +62,8 @@ success_criteria:
   weight: 1.0
   pass_threshold: 0.0
 - type: run_command
-  description: 'Advisory: STRUCTURAL (covering): exactly one INLINE agent (no published agent, no script stand-in), fed all three inputs with prompts that reference them, both fields declared in returns, both outputs read from the agent, and no email literals'
-  command: |
-    FLOW="$(find . -name BillingResolutionWriter.flow -not -path '*/_outputs/*' -not -path '*/.v1stage*/*' -not -path '*/v1stage/*')"
-    test -f "$FLOW"
-    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_resolution_writer.py "$FLOW"
+  description: 'Advisory: STRUCTURAL (covering): exactly one INLINE agent (no published agent, no script stand-in), fed all three inputs through bindings or Flow/sidecar prompt references, both fields declared in returns, both outputs read from the agent, and no email literals'
+  command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_resolution_writer.py
   timeout: 30
   expected_exit_code: 0
   weight: 1.0

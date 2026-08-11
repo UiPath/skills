@@ -68,10 +68,7 @@ success_criteria:
   pass_threshold: 0.0
 - type: run_command
   description: 'Advisory: STRUCTURAL (covering): one DS query node, entityName in the PATH slot, the filter COMPUTED from the input, no canonical/test-input literals, both outputs read from the query, and a connection/folder pair of distinct uuids'
-  command: |
-    FLOW="$(find . -name BillingInvoiceLookup.flow -not -path '*/_outputs/*' -not -path '*/.v1stage*/*' -not -path '*/v1stage/*')"
-    test -f "$FLOW"
-    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_invoice_lookup.py "$FLOW"
+  command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_invoice_lookup.py
   timeout: 30
   expected_exit_code: 0
   weight: 1.0

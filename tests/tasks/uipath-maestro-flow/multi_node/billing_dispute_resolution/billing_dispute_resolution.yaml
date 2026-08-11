@@ -127,10 +127,7 @@ success_criteria:
   pass_threshold: 1.0
 - type: run_command
   description: 'Advisory: COVERING (offline): the connector''s CONNECTION bindings carry a real tenant key (G-19''s [102010]), the IxP `fileRef` is the plain `=js:` string `flow validate` requires (FC419), and all five outputs are declared with no drafted email on a rejection path'
-  command: |
-    FLOW="$(find . -name BillingDisputeResolution.flow -not -path '*/_outputs/*' -not -path '*/.v1stage*/*' -not -path '*/v1stage/*')"
-    test -f "$FLOW"
-    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_dispute_resolution.py "$FLOW"
+  command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_dispute_resolution.py
   timeout: 30
   expected_exit_code: 0
   weight: 1.0

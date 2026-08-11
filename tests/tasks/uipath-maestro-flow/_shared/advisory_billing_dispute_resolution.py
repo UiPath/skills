@@ -8,8 +8,8 @@ three things v1 CANNOT see — each one a contract measured on the product runti
 each one a defect this campaign already paid for once.
 
 1. **The connector's CONNECTION bindings carry a real key.** The platform resolves
-   an Integration Service connection through the flow's top-level `bindings[]`,
-   by the names the definition declares — never through `inputs.detail`. A pair
+   an Integration Service connection through the flow's native `bindings[]` or
+   `resources[]` declarations, by the names the definition declares. A pair
    that is missing, or that carries a symbolic name instead of the tenant's key,
    deploys and then faults with `[102010] Integration Services invalid value in
    input`. That is board row G-19, and it is invisible to every offline rung
@@ -32,17 +32,19 @@ each one a defect this campaign already paid for once.
    from something else on a rejection path — a writer that never ran cannot have
    drafted anything.
 
-Usage: check_billing_dispute_resolution.py <FlowName>.flow
+Usage: advisory_billing_dispute_resolution.py [<FlowName>.flow]
 """
 import json
 import re
-import sys
 
-# Any UUID whose first four groups are all zeros is a stub — the toolchain's
-# synthesized placeholder series (…-000000000001, …-000000000002). Same test
-# `_lib/seed_bindings.py` uses, deliberately: one definition of "not a real key".
-STUB = re.compile(r"^0{8}-0{4}-0{4}-0{4}-")
-UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+from advisory_flow_utils import (
+    connection_binding_values,
+    fail,
+    is_real_uuid,
+    load_flow,
+    node_dependencies,
+    source_depends_on,
+)
 
 REQUIRED_OUTPUTS = {
     "determination": "string",
@@ -55,21 +57,12 @@ REQUIRED_OUTPUTS = {
 AGENT_TYPE = "uipath.agent.autonomous"
 
 
-def fail(msg):
-    sys.exit(f"FAIL: {msg}")
-
-
-def is_real_key(value):
-    s = str(value or "").strip()
-    return bool(s) and not STUB.match(s) and bool(UUID.match(s))
-
-
 def expr_of(value):
     """The expression text behind an input/source value, whichever spelling it is.
 
     A value is either a plain string (`"=js:…"` / a literal) or the current
     format's envelope `{type, expression, fieldType}`. Returns
-    ``(kind, text)`` where kind is 'jsExpression', 'literal', or 'string'.
+    ``(kind, text)`` where kind is 'jsExpression', 'literal', or 'other'.
     """
     if isinstance(value, dict):
         return str(value.get("type") or ""), str(value.get("expression") or "")
@@ -79,29 +72,24 @@ def expr_of(value):
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else "BillingDisputeResolution.flow"
-    with open(path, encoding="utf-8") as f:
-        flow = json.load(f)
-
-    nodes = flow.get("nodes") or []
-    by_id = {n.get("id"): n for n in nodes}
+    _, flow, nodes = load_flow("BillingDisputeResolution.flow")
     agents = {n["id"] for n in nodes if str(n.get("type") or "") == AGENT_TYPE}
 
     # ── 1. the connection bindings the platform resolves the connector through ──
-    conn = [b for b in (flow.get("bindings") or []) if str(b.get("resource") or "").lower() == "connection"]
+    conn = connection_binding_values(flow)
     if not conn:
         fail(
             "the flow declares NO `connection` binding. The two Data Service lookups are Integration "
-            "Service calls, and the platform resolves their connection through the flow's top-level "
-            "`bindings[]` — without the pair it deploys and faults with [102010] Integration Services "
+            "Service calls, and the platform resolves their connection through the flow's native "
+            "bindings declaration — without the pair it deploys and faults with [102010] Integration Services "
             "invalid value in input. (Give the connector its connection + folder: either a `bindings.json` "
             "mapping your symbolic names to the tenant's keys, or the keys inline.)"
         )
-    bad = [b for b in conn if not (is_real_key(b.get("resourceKey")) or is_real_key(b.get("default")))]
+    bad = [(identifier, values) for identifier, values in conn if not values or any(not is_real_uuid(v) for v in values)]
     if bad:
         fail(
             "connection binding(s) "
-            + ", ".join(f"{b.get('id')!r}={json.dumps(b.get('resourceKey') or b.get('default'))}" for b in bad)
+            + ", ".join(f"{identifier!r}={json.dumps(values)}" for identifier, values in bad)
             + " do not carry a real tenant key (a uuid, and not a zero-prefixed stub). The platform "
             "substitutes these by name into the connector node, so a symbolic name or a placeholder "
             "reaches Integration Services verbatim -> [102010]. Look the connection up with "
@@ -145,6 +133,8 @@ def main():
     print(f"OK: all five outputs declared with the contract's types: {sorted(REQUIRED_OUTPUTS)}")
 
     # Which end nodes map `resolutionEmailBody`, and from what.
+    dependencies = node_dependencies(nodes)
+    writers = {agent for agent in agents if "writer" in agent.lower()} or agents
     from_agent, not_from_agent = [], []
     for n in nodes:
         if str(n.get("type") or "") != "core.control.end":
@@ -154,11 +144,8 @@ def main():
             continue
         source = mapped.get("source") if isinstance(mapped, dict) and "source" in mapped else mapped
         kind, text = expr_of(source)
-        producer = None
-        if kind == "jsExpression":
-            m = re.match(r"\$vars\.([A-Za-z_$][\w$]*)\.", text)
-            producer = m.group(1) if m else None
-        (from_agent if producer in agents else not_from_agent).append((n.get("id"), kind, text[:80]))
+        drafted = any(source_depends_on(source, writer, dependencies) for writer in writers)
+        (from_agent if drafted else not_from_agent).append((n.get("id"), kind, text[:80]))
 
     if not from_agent:
         fail(
