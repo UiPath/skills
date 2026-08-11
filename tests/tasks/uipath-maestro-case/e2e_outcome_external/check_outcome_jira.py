@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from outcome_probe import (  # noqa: E402
     JIRA_PROJECT,
     ensure_debug_ran,
+    require_attributable,
     fail,
     poll,
     probe_issue,
@@ -28,7 +29,8 @@ from outcome_probe import (  # noqa: E402
 
 def main() -> int:
     token = run_token()
-    ensure_debug_ran()
+    # Nothing measured here means anything unless the HARNESS ran the case.
+    require_attributable(ensure_debug_ran())
 
     print(f"Probing Jira project {JIRA_PROJECT} for reference {token} ...")
     hits = poll("jira", probe_issue, token)

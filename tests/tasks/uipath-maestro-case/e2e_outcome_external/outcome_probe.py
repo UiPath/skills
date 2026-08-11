@@ -56,6 +56,9 @@ PEER_WAIT_SECONDS = 900
 # worst honest debug duration: 600s CLI poll + INSTANCE_WAIT_SECONDS.
 STALE_LOCK_SECONDS = 1500
 
+# Clock-skew tolerance when comparing a third-party timestamp to our debug start.
+SKEW_SECONDS = 30
+
 
 def precondition_failed(msg: str) -> None:
     """Fail loudly and label the cause as environmental.
@@ -371,6 +374,27 @@ def debug_started_at() -> float | None:
         return None
 
 
+def require_attributable(result: dict) -> None:
+    """Refuse to measure outcomes unless the HARNESS actually ran the case.
+
+    If no debug run happened, any email/issue bearing this run's token is
+    unattributable — it could be a leftover, or the agent's own execution — so
+    searching for one is not just pointless but actively misleading. Fail fast
+    with the reason instead of polling for ten minutes and reporting "not found",
+    which reads like the case did nothing when in truth nothing was measured.
+
+    Deliberately requires only that a debug run was ATTEMPTED and a floor stamped,
+    NOT that it reached a terminal status: a case whose effects land after the CLI
+    stops polling (measured ~7 min late) has genuinely met the objective, and that
+    recovery must stay possible. Whether it completed is graded separately by
+    check_case_ran.py.
+    """
+    if debug_started_at() is None:
+        envelope = (result or {}).get("envelope")
+        fail("cannot attribute outcomes: the harness never established a debug start "
+             f"for this run, so nothing measured here belongs to the case. envelope={envelope}")
+
+
 def _only_after(hits: list, stamp_key: str, label: str) -> list:
     """Drop records that predate the harness-owned case run.
 
@@ -381,18 +405,23 @@ def _only_after(hits: list, stamp_key: str, label: str) -> list:
     necessarily predates the harness's debug run, which starts only after the
     agent has finished, so a timestamp floor removes that whole class of bypass.
 
-    Fails open when the floor is unknown (no debug result yet, unparseable stamp):
-    the criteria that call this always run the case first, so an absent floor means
-    something else already went wrong and will be reported by its own criterion.
+    Fails CLOSED when the floor is unknown. Without a floor there is nothing to
+    attribute against — the run token names the run, not which execution produced
+    the record — so any hit could be a leftover or the agent's own doing. Callers
+    must therefore establish the floor (see ``require_attributable``) before
+    probing; reaching here without one is a bug, not a soft condition.
     """
     floor = debug_started_at()
     if floor is None:
-        return hits
+        fail("no attribution floor: the harness never stamped a debug start, so no "
+             "record can be attributed to the case (see require_attributable)")
     kept, dropped = [], []
     for hit in hits:
         when = _to_epoch(hit.get(stamp_key))
-        # Allow a small negative skew: the two systems' clocks are not ours.
-        if when is None or when >= floor - 120:
+        # Small negative skew only: measured Graph/Atlassian stamps agreed with
+        # ours to the second, and a wide window would let an execution that ran
+        # just BEFORE the floor (e.g. an agent that ran debug itself) slip in.
+        if when is None or when >= floor - SKEW_SECONDS:
             kept.append(hit)
         else:
             dropped.append(hit)

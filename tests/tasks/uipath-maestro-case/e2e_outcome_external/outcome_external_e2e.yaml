@@ -160,13 +160,20 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # The harness owns execution: it runs debug once, after the build, and measures what
-  # landed. An agent running debug itself duplicates the external records.
+  # LOAD-BEARING for attribution, not just tidiness. The run token names the RUN,
+  # not which execution produced a record, so the harness's debug start is the only
+  # thing separating "the case did this" from "the agent did this". An agent that
+  # runs debug itself creates token-bearing records just before that floor, which a
+  # clock-skew allowance can admit. Hence weight 2.0, equal to the other guard.
+  #
+  # Pattern notes: `debug(?![-\w])` so the read-only `maestro case debug-instance`
+  # verbs are NOT caught; `(?!\s+--help)` so a syntax lookup is not punished; the
+  # leading anchor requires a real shell statement, not a mention inside an echo.
   - type: command_not_executed
-    description: "Agent did not run case debug itself (the harness executes the case)"
+    description: "Agent did not run case debug itself (the harness executes the case; agent-run debug makes outcomes unattributable)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+debug\b'
-    weight: 1.0
+    command_pattern: '(?:^|[;&|]\s*|\bthen\s+|\bdo\s+)(uip|\$UIP)\s+maestro\s+case\s+debug(?![-\w])(?!\s+--help)'
+    weight: 2.0
     pass_threshold: 1.0
 
 post_run:
