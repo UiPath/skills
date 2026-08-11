@@ -14,7 +14,7 @@ does NOT catch — it surfaces only in the cloud eval worker, after upload:
   4. Test-case `inputs` that do not conform to `entry-points.json`.
 
 It also enforces that the agent authored its OWN evaluator and eval set rather
-than reusing the two that `uip agent init` scaffolds.
+than reusing the scaffolded defaults the fixture ships.
 """
 
 from __future__ import annotations
