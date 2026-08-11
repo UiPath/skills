@@ -39,35 +39,35 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow contains the original script node"
-    path: "ContractReview/ContractReview/ContractReview.flow"
-    includes:
-      - '"extractMeta"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"extractMeta\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow contains the inserted HITL node"
-    path: "ContractReview/ContractReview/ContractReview.flow"
-    includes:
-      - '"uipath.human-in-the-loop.quick-form"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"uipath.human-in-the-loop.quick-form\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "HITL completed handle is wired"
-    path: "ContractReview/ContractReview/ContractReview.flow"
-    includes:
-      - 'completed'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview 'completed'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "HITL has a boolean output field for the approval decision"
-    path: "ContractReview/ContractReview/ContractReview.flow"
-    includes:
-      - '"boolean"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"boolean\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

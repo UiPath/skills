@@ -40,7 +40,7 @@ What can cause it:
 Fix the scope container, not the inner selector. Choose ONE:
 
 - **Force the container to navigate to the intended page on every run** — set the scope's `OpenMode=Always` (Studio: "Open in browser: Always") and set `TargetApp.Url` to the inner selector's intended page URL. The container always lands on the right page; the inner selector resolves.
-- **Tighten the scope's window/tab match** — replace `TargetApp.Selector` with a selector specific to the intended page (e.g., `title='Doodles - Google'` instead of `title='Google'`), keeping `OpenMode=IfNotOpen`. The container only reuses the correct tab.
+- **Tighten the scope's window/tab match** — replace `TargetApp.Selector` with a selector specific to the intended page (e.g., `title='Checkout - MyApp'` instead of `title='MyApp'`), keeping `OpenMode=IfNotOpen`. The container only reuses the correct tab.
 - **Insert a `Navigate Browser` / `Go To URL` activity before the inner selector** — keep the current scope, but explicitly drive the attached browser to the intended page before the click/extract. Use when the same scope must service multiple pages in sequence.
 - **Re-record the inner selector against the page the scope actually attaches to** — only when the design intent is to operate on the page the container lands on and the original selector was authored against the wrong page.
 

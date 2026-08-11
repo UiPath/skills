@@ -1,0 +1,130 @@
+task_id: skill-insights-all-commands-envelope-e2e
+description: >
+  E2E test: agent uses the uipath-insights skill to run all seven jobs
+  subcommands against the live tenant and save each full response
+  envelope to a file. Verifies the shipped contract — every envelope
+  returns Result "Success" with the exact per-subcommand Code — which
+  the smoke tier never grades: smoke_all_commands only asserts the
+  command strings were attempted, regardless of outcome. Distinct from
+  it in grading: each subcommand must be invoked with a real time window
+  AND its envelope must come back structurally correct against the live
+  tenant. A read-only surface leaves no tenant state to re-query, so the
+  invocations are gated on the harness's turn records (which the agent
+  cannot write to) and the checker issues one live read of its own, so an
+  unentitled tenant fails with the CLI's own message rather than looking
+  like bad artifacts. Data-agnostic: empty Data passes structurally.
+tags: [uipath-insights, e2e, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 24
+  turn_timeout: 600
+
+initial_prompt: |
+  Give me the complete picture of the last 24 hours of job executions,
+  using every jobs query this CLI surface offers.
+
+  For each query, save the full response envelope (not just its Data)
+  to a JSON file in the current directory named after the subcommand:
+  `summary.json`, `completed-timeline.json`, `uncompleted-timeline.json`,
+  `top-failures.json`, `failures-by-reason.json`, `process-details.json`,
+  `failure-details.json`. Redirect the command output straight to the
+  file rather than pasting it.
+
+  Then reply with a short recap: which queries returned data and which
+  came back empty. Empty is a valid answer, not an error.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-insights skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran summary with the 24-hour window (or an absolute epoch-ms range)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+summary\s(?:[^&;|\n]|\\\n)*--(time-range[=\s]+1440|started-after[=\s]+\d{13})'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran completed-timeline with a time-range flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+completed-timeline\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uncompleted-timeline with a time-range flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+uncompleted-timeline\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran top-failures with a time-range flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+top-failures\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran failures-by-reason with a time-range flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+failures-by-reason\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran process-details with a time-range flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+process-details\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran failure-details with a time-range flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+failure-details\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Summary envelope saved"
+    path: "summary.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Process-details envelope saved"
+    path: "process-details.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "All 7 envelope files exist, parse, and carry Result=Success with the exact per-subcommand Code; a live CLI read confirms the tenant answers Insights queries; empty Data passes structurally"
+    command: "python3 $TASK_DIR/check_all_commands_envelope.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on the queries"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s(?:[^&;|\n]|\\\n)*--output[=\s]+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 0
