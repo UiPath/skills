@@ -19,12 +19,24 @@ Extraction order:
 Source files (`.py`) are skipped: the workflow itself contains the
 f-string that builds the suffix.
 
-Each reply is then **corroborated**: its message part must occur at
-least twice across the project's files — once as the message that was
+A transcript line carries a label (`Reply:   hello there echo`), which
+the line scan cannot tell from the reply itself, so each labelled match
+also yields an unlabelled variant. Corroboration then decides which of
+the two is real.
+
+Each reply is **corroborated**: its message part must occur at least
+twice across the project's files — once as the message that was
 submitted (an input file, a transcript's user turn, the runtime's
-`__uipath` state) and once inside the reply itself. A reply hand-written
-without a corresponding submitted message occurs only once and fails.
-Corroboration scans bytes, so binary runtime state counts too.
+`__uipath` state) and once inside the reply itself. Corroboration scans
+bytes, so binary runtime state counts too.
+
+Corroboration is a **filter**, not a veto: uncorroborated candidates are
+dropped and the corroborated ones counted, so extraction noise (a label
+the scan kept, a reply quoted in prose) cannot fail a run that really
+chatted twice. A hand-written reply with no submitted message behind it
+is dropped and therefore does not count toward `min_turns`. Replies that
+differ only by a leading label collapse to the shortest form, so one turn
+saved in several places counts once.
 """
 
 from __future__ import annotations
@@ -44,6 +56,9 @@ TEXT_SUFFIXES = {".txt", ".log", ".md", ".out", ".jsonl"}
 # `{...}` / `$...` markers mean the line is a template or command, not a reply.
 TEMPLATE_MARKERS = ("{", "}", "$")
 ECHO_LINE = re.compile(r"([^\"'\n\r]{1,200}?)" + re.escape(SUFFIX) + r"(?=[\"'.,\s]|$)")
+# A transcript label the line scan would otherwise keep as part of the
+# reply: `Reply:   hello there echo`, `assistant: ... echo`, `- Out: ...`.
+LABEL_PREFIX = re.compile(r"^[-*\s]*[A-Za-z][\w .\-]{0,30}:\s*")
 
 
 def _candidate_files(root: Path) -> list[Path]:
@@ -89,8 +104,11 @@ def _replies_from_text(path: Path) -> list[str]:
         reply = (match.group(1) + SUFFIX).strip()
         if any(marker in reply for marker in TEMPLATE_MARKERS):
             continue
-        if reply != SUFFIX.strip():
-            replies.append(reply)
+        # Keep both forms — corroboration picks whichever is the real
+        # reply, so a labelled transcript and a bare reply both work.
+        for candidate in (reply, LABEL_PREFIX.sub("", reply).strip()):
+            if candidate != SUFFIX.strip():
+                replies.append(candidate)
     return replies
 
 
@@ -134,30 +152,39 @@ def corroborated_replies(root: Path, replies: dict[str, list[str]]) -> dict[str,
     return counts
 
 
+def _collapse_labelled(replies: set[str]) -> set[str]:
+    """Drop replies that are another reply plus a leading label."""
+    return {
+        reply
+        for reply in replies
+        if not any(other != reply and reply.endswith(other) for other in replies)
+    }
+
+
 def assert_two_local_turns(root: Path, min_turns: int = 2) -> None:
     found = collect_echo_replies(root)
     counts = corroborated_replies(root, found)
-    uncorroborated = sorted(r for r, n in counts.items() if n < 2)
-    if uncorroborated and len(found) >= min_turns:
-        sys.exit(
-            "FAIL: reply(ies) "
-            + ", ".join(repr(r) for r in uncorroborated)
-            + " have no submitted message on disk — the message part occurs only "
-            "inside the reply itself. A real `uip codedagent run` turn leaves the "
-            "message in its input file, transcript, or runtime state."
-        )
-    if len(found) < min_turns:
+    turns = _collapse_labelled({reply for reply, n in counts.items() if n >= 2})
+    if len(turns) < min_turns:
+        dropped = sorted(reply for reply, n in counts.items() if n < 2)
         detail = (
             "; ".join(f"{reply!r} in {sorted(set(files))}" for reply, files in found.items())
             or "none"
         )
         sys.exit(
             f"FAIL: expected at least {min_turns} distinct echoed replies "
-            f"(`<message>{SUFFIX}`) saved under {root}, found {len(found)}: {detail}. "
-            "The agent must chat locally twice with two different messages and "
+            f"(`<message>{SUFFIX}`) saved under {root} with their submitted message "
+            f"also on disk, found {len(turns)}. Extracted: {detail}."
+            + (
+                f" Dropped as uncorroborated (message part occurs only inside the "
+                f"reply itself): {', '.join(repr(r) for r in dropped)}."
+                if dropped
+                else ""
+            )
+            + " The agent must chat locally twice with two different messages and "
             "save each reply."
         )
     print(
-        f"OK: {len(found)} distinct echoed replies from local chat turns, each with a "
-        f"submitted message on disk: {sorted(found)}"
+        f"OK: {len(turns)} distinct echoed replies from local chat turns, each with a "
+        f"submitted message on disk: {sorted(turns)}"
     )
