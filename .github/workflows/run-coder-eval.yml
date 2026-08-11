@@ -242,7 +242,12 @@ jobs:
         run: |
           rm -rf /tmp/skills
           mkdir -p /tmp/skills
-          tar --exclude='./tests' --exclude='./.git' -C "${GITHUB_WORKSPACE}" -cf - . | tar -C /tmp/skills -xf -
+          # plugins/ and AGENTS.md are also excluded: both are committed
+          # symlinks (plugins/uipath -> .., AGENTS.md -> CLAUDE.md) that tar
+          # fails to recreate on the Windows runner (dangling-target-order /
+          # ELOOP on the self-referential marketplace link); neither is needed
+          # by the `type: local` plugin loader, which reads the repo root directly.
+          tar --exclude='./tests' --exclude='./.git' --exclude='./plugins' --exclude='./AGENTS.md' -C "${GITHUB_WORKSPACE}" -cf - . | tar -C /tmp/skills -xf -
 
       # TASK_GLOBS here is the partition-resolved list of *file paths* (not
       # globs). Word-splitting is intentional — do not quote.
@@ -526,7 +531,12 @@ jobs:
         run: |
           rm -rf /tmp/skills
           mkdir -p /tmp/skills
-          tar --exclude='./tests' --exclude='./.git' -C "${GITHUB_WORKSPACE}" -cf - . | tar -C /tmp/skills -xf -
+          # plugins/ and AGENTS.md are also excluded: both are committed
+          # symlinks (plugins/uipath -> .., AGENTS.md -> CLAUDE.md) that tar
+          # fails to recreate on the Windows runner (dangling-target-order /
+          # ELOOP on the self-referential marketplace link); neither is needed
+          # by the `type: local` plugin loader, which reads the repo root directly.
+          tar --exclude='./tests' --exclude='./.git' --exclude='./plugins' --exclude='./AGENTS.md' -C "${GITHUB_WORKSPACE}" -cf - . | tar -C /tmp/skills -xf -
 
       # Run tasks one at a time on Windows: Helm state leaks between tasks
       # (stale Studio session, locked NuGet cache), so the loop kills Helm
