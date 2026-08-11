@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 # Custom image for UiPath skills smoke tests
 # Extends coder-eval-agent with UiPath CLI tools pre-installed
 ARG CODER_EVAL_IMAGE=coder-eval-agent:latest
@@ -53,13 +54,20 @@ ENV UIPATH_CLI_DISABLE_VERSION_SYNC=1
 # the whitelist (toolLoader.ts), so a plain global install is found with no
 # registry work at eval time.
 #
-# The token-bearing npmrc is written and removed inside this single RUN, so it
-# never persists in an image layer. Keep the build-arg interface used by the
-# nightly runner and both GitHub workflows; changing it requires a coordinated
-# rollout across all three callers.
-RUN set -euo pipefail && \
-    if [ -z "$NPM_AUTH_TOKEN" ]; then \
-      echo "Error: NPM_AUTH_TOKEN must be passed as build arg"; exit 1; \
+# The token-bearing npmrc is written and removed inside this single RUN. CI and
+# campaign builds provide it through the BuildKit secret so it is absent from
+# build output and history. The ARG fallback keeps the external nightly caller
+# compatible until that caller can migrate; do not use it for new callers.
+RUN --mount=type=secret,id=npm_auth_token \
+    set -euo pipefail && \
+    npm_auth_token="" && \
+    if [ -s /run/secrets/npm_auth_token ]; then \
+      npm_auth_token="$(cat /run/secrets/npm_auth_token)"; \
+    elif [ -n "$NPM_AUTH_TOKEN" ]; then \
+      npm_auth_token="$NPM_AUTH_TOKEN"; \
+      echo "WARN: NPM_AUTH_TOKEN build-arg fallback is deprecated"; \
+    else \
+      echo "Error: npm_auth_token secret or NPM_AUTH_TOKEN build arg is required"; exit 1; \
     fi && \
     # Derive the tool dist-tag from CLI_VERSION: an exact prerelease pin
     # (1.199.0-dev.7923) → its train tag (dev); a bare stable semver → latest;
@@ -82,7 +90,7 @@ RUN set -euo pipefail && \
     mkdir -p "$(dirname "$npmrc")" && \
     printf '%s\n' \
       '@uipath:registry=https://npm.pkg.github.com/' \
-      "//npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}" \
+      "//npm.pkg.github.com/:_authToken=${npm_auth_token}" \
       > "$npmrc" && \
     if [ "$public_cli" = false ]; then \
       npm install -g "@uipath/cli@${CLI_VERSION}"; \
