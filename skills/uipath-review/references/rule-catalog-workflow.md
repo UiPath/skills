@@ -83,7 +83,7 @@ Two consecutive runs over the same project produce identical findings *for the r
 
 ## Anti-patterns
 
-1. **Do not invent rule IDs.** If you observe a real issue covered by neither the review CLI nor the judgment catalog, surface it under the Critical / Warning / Info sections as a normal finding — do not promote it to a `rule_id`.
+1. **Do not invent rule IDs.** If you observe a real issue covered by neither the review CLI nor the judgment catalog, surface it under the Critical / Warning / Info sections as a normal finding — do not promote it to a `rule_id`. For low-code agents, only a Critical qualifies (SKILL.md Critical Rule 12).
 2. **Do not re-rank severities.** The CLI's `Severity` and the catalog's `severity` are authoritative for `error` / `warning` / `info`. For `judgment` rows, log the reasoning when picking the report band.
 3. **Do not silently skip rules.** Every skip belongs in the report's "Rules Skipped" subsection with a reason.
 4. **Do not run the catalog before the CLI.** Run `uip agent review` / `uip codedagent review` first (2.5a); for low-code agents, `uip agent refresh` and `uip agent validate` are assumed already completed in that order (Step 2) — so the judgment catalog focuses only on reasoning the CLI cannot do.
