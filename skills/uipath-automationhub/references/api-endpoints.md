@@ -54,12 +54,34 @@ Body:
 ```json
 { "idea_flow_id": <id>, "user_inputs": { "<AssessmentType>": { "<section-ahid>": { "<question-key>": { "value": "<v>" } } } } }
 ```
-`user_inputs` **must** contain a question whose key contains `OVERVIEW_NAME` with a non-empty value (the process name; enforced by validation middleware).
+**Do not POST `data.user_inputs` verbatim** — its example values are placeholders that the API rejects. Replace each with a real value; in particular resolve a **valid** `OVERVIEW_CATEGORY` id (the template's `1` → `Invalid Category Id`) and real `answer_option` codes (a placeholder code → backend `co_question_answer_option_value` crash).
+
+**Required fields (Business Process, `idea_flow_id`=7), verified live** — note the backend enforces owner + submitter even though the schema's `required` flags omit them:
+
+| Key | Section | Shape |
+|---|---|---|
+| `OVR-OVERVIEW_NAME` | `ah-section-ovr-0-0` | `{"value":"…"}` |
+| `OVR-OVERVIEW_DESCRIPTION` | `ah-section-ovr-0-0` | `{"value":"…"}` |
+| `OVR-OVERVIEW_CATEGORY` | `ah-section-ovr-0-0` | `{"value":<valid id>}` |
+| `OVR-PROCESS_DOCUMENTS` | `ah-section-ovr-0-0` | `{"value":["<answer_option code>"]}` |
+| `OVR-PROCESS_OWNER` | `ah-section-ovr-0-0` | `"<email>"` (direct string) |
+| `OVR-OVERVIEW_PROCESS_SUBMITTER` | `ah-section-ovr-0-1` | `"<email>"` (direct string) |
+
+When a required field is missing the API may return `errorDetails: {}` (no field named) with `"Please fill in all the required information"` — that is almost always the un-flagged owner/submitter.
 
 **Response 201** — the created process object **at the top level** (not nested): `process_id`, `process_uuid`, `process_name`, … Record `process_id`. *(Used by the publish flow.)*
 
 ### POST `/automations/{process_id}/documents`
-Attach a document to a process. **Link-based** (a link/embed URL + metadata), not a raw file upload — byte upload is a separate `media` endpoint that is not usable yet. Body fields are governed by `open-api-service` `ProcessDocumentValidator` (`src/models/schema/processDocumentRequest.schema.ts`); the known fields are the document **name**, an **embed/link URL** (`embed_link`), and a **document type id** (`document_type_id`). Confirm the exact required fields against that schema before finalizing. Returns the created `document_id`. *(Used by the publish flow.)*
+Attach a document to a process. **Link-based** (a link/embed URL + metadata), not a raw file upload — byte upload is a separate `media` endpoint that is not usable yet. Governed by `open-api-service` `ProcessDocumentValidator` (`src/models/schema/processDocumentRequest.schema.ts`). **Required fields, verified live:**
+
+```json
+{ "document_title": "…", "document_description": "…", "document_type_id": 1, "embed_link": "https://…" }
+```
+
+- `document_title` (**not** `document_name`), `document_description`, `document_type_id` are all required by the schema.
+- Plus **exactly one** of `embed_link` or `file` — enforced in the handler (not the schema), so omitting both 400s with `"One and only one of embed_link or file need to be specified."` Use `embed_link`.
+
+Returns the created `document_id`. *(Used by the publish flow.)*
 
 ### GET `/automations?search=<text>&limit=<n>&offset=<n>`
 Search/list processes. Returns a paged list (results under a resource key, e.g. `processes`, or a bare array). Use to resolve a name → `process_id`. *(Used by the get flow.)*

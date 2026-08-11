@@ -38,16 +38,29 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
 
 Parse `data.properties.schema.properties` for the field catalog (Assessment Type > Section > Question; note types, required flags, enum `answer_option` codes/labels) and keep `data.user_inputs` as the payload template. The process-name question (key contains `OVERVIEW_NAME`) is **required**.
 
+> ⚠️ **Do NOT POST `data.user_inputs` verbatim.** The template ships **example/placeholder values that the API rejects** — e.g. `OVERVIEW_CATEGORY: 1` (→ `Invalid Category Id`), a placeholder `PROCESS_DOCUMENTS` answer-option that triggers a backend `co_question_answer_option_value` crash, and `First.last@example.com` owner/submitter emails. Treat the template as **shape only** and replace every value with a real one (below).
+
 ## Step 4: Assemble the process payload
 
-Gather the process fields — from the caller's supplied data (e.g. a Process Scribe hand-off object) or by asking the user. Then build `user_inputs` from the template:
+Gather the process fields — from the caller's supplied data (e.g. a Process Scribe hand-off object) or by asking the user. Then build `user_inputs` using the template's **structure** but **real values**:
 - Place each value in its `AssessmentType > section > question` slot.
-- Follow the template's wrapping per field: most are `{ "value": <v> }`; owner/submitter questions take a direct string.
-- Convert enum labels to their `answer_option` codes; send integers as numbers.
-- Include only sections that have at least one populated field.
-- The `OVERVIEW_NAME` question **must** be present and non-empty.
+- Follow the template's wrapping per field: most are `{ "value": <v> }`; owner/submitter questions take a **direct string** (no `value` wrapper).
+- Convert enum labels to their `answer_option` codes taken from that field's own `enum` in the schema — **never** reuse the template's placeholder code. Send integers as numbers.
+- **Category** (`OVERVIEW_CATEGORY`) must be a **valid category id on this tenant**, not the template's `1`. Resolve one by reading `categories[].category_id` (and `subcategories`) from an existing process (`GET /automations/{anyId}`), or ask the user.
+- **Owner/submitter emails must be real, provisioned AH users** on this tenant (a bad address 400s).
 
-Show the user a concise preview (name + key fields, and "show raw JSON" on request) and get a confirm before writing.
+**Required fields for `idea_flow_id` = Business Process** (verified live — the backend enforces owner + submitter even though the schema's `required` flags do **not** list them):
+
+| Question (key) | Section | Shape | Value |
+|---|---|---|---|
+| `OVR-OVERVIEW_NAME` | `ah-section-ovr-0-0` | `{"value": "<name>"}` | process name, non-empty |
+| `OVR-OVERVIEW_DESCRIPTION` | `ah-section-ovr-0-0` | `{"value": "<desc>"}` | description |
+| `OVR-OVERVIEW_CATEGORY` | `ah-section-ovr-0-0` | `{"value": <int>}` | **valid** category id |
+| `OVR-PROCESS_DOCUMENTS` | `ah-section-ovr-0-0` | `{"value": ["<answer_option code>"]}` | code from the field's `enum` |
+| `OVR-PROCESS_OWNER` | `ah-section-ovr-0-0` | `"<email>"` (direct string) | real AH user |
+| `OVR-OVERVIEW_PROCESS_SUBMITTER` | `ah-section-ovr-0-1` | `"<email>"` (direct string) | real AH user |
+
+Include only sections that have at least one populated field. Show the user a concise preview (name + key fields, and "show raw JSON" on request) and get a confirm before writing.
 
 ## Step 5: Create the process
 
@@ -61,7 +74,11 @@ curl -s -w "\n%{http_code}" -X POST \
 where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 
 - **201** → read `process_id` from the **top level** of the response (not nested in `data`). Keep it for Step 6.
-- **400** → show the offending field/value; fix and retry (commonly a missing `OVERVIEW_NAME` or a bad enum code).
+- **400** → fix and retry. The message shapes seen live:
+  - `errorDetails: { "<question>": ["An answer selection is required…"] }` → that required field is missing/empty; add it.
+  - `errorDetails: {}` with `"Please fill in all the required information"` → a required field the API **won't name** is missing — almost always **owner** (`OVR-PROCESS_OWNER`) or **submitter** (`OVR-OVERVIEW_PROCESS_SUBMITTER`). Send the full required set from Step 4.
+  - `"Invalid Category Id."` → `OVERVIEW_CATEGORY` isn't a real category on this tenant (see Step 4).
+  - `Cannot set properties of undefined (setting 'co_question_answer_option_value')` → an enum field carries an invalid `answer_option` code (you left a template placeholder in). Use a code from that field's `enum`.
 - **401** → re-authenticate. **409** → duplicate name; ask the user for a new name or stop.
 
 ## Step 6: Attach documents (PDD/SDD)
@@ -76,7 +93,16 @@ curl -s -w "\n%{http_code}" -X POST \
   "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/automations/$PROCESS_ID/documents"
 ```
 
-Build `$DOC_PAYLOAD` per `ProcessDocumentValidator` (document name + `embed_link` + `document_type_id`; confirm required fields against `processDocumentRequest.schema.ts`). Record each returned `document_id`. On 400, surface the validation message and continue with the remaining documents.
+Build `$DOC_PAYLOAD` per `ProcessDocumentValidator` — verified-live required fields:
+
+```json
+{ "document_title": "PDD - <name>", "document_description": "<desc>", "document_type_id": <int>, "embed_link": "https://…" }
+```
+
+- `document_title`, `document_description`, `document_type_id` are all required (note the field is `document_title`, **not** `document_name`).
+- You **must** also supply **exactly one** of `embed_link` or `file` — this is enforced in the handler, not the JSON schema, so it 400s with `"One and only one of embed_link or file need to be specified."` if omitted. This skill uses `embed_link` (link-based); byte upload via `file` is not usable yet.
+
+Record each returned `document_id`. On 400, surface the validation message and continue with the remaining documents.
 
 > Raw file-byte upload is not supported here (the `media` endpoint is not usable yet). Attach documents by link/URL. If the caller only has bytes, host them first and pass the link.
 
