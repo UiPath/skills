@@ -56,7 +56,7 @@ Full tables in the package README. Inside a coded app you usually only touch:
 | `theme` / `locale` / `readOnly` / `overrideLabels` | No | Passthrough to the inner chat. |
 | `onAgentSelected` | No | `(agent) => void` — telemetry/routing hook when the user picks an agent. |
 
-Picker behavior: lists agents via `ConversationalAgent(sdk).getAll()`, one row per agent; clicking opens the chat with that agent's `id`/`folderId`; "Back" returns to the list without refetching. To switch tenants, rebuild the `UiPath` instance and pass the new one as `sdk`.
+Picker behavior: lists agents via `new ConversationalAgent(sdk).getAll()`, one row per agent; clicking opens the chat with that agent's `id`/`folderId`; "Back" returns to the list without refetching. To switch tenants, rebuild the `UiPath` instance and pass the new one as `sdk`.
 
 ## Integration: Web App
 
@@ -78,7 +78,7 @@ function AgentChatPage({ agentId, folderId }: { agentId: number; folderId: numbe
 export default AgentChatPage;
 ```
 
-Agent id unknown at build time? Either render `ConversationalAgentPickerChat` (user picks), or resolve programmatically with the SDK (`ConversationalAgent(sdk).getAll()` → match on name → pass `id` + `folderId`).
+Agent id unknown at build time? Either render `ConversationalAgentPickerChat` (user picks), or resolve programmatically with the SDK (`new ConversationalAgent(sdk).getAll()` → match on name → pass `id` + `folderId`; import from `@uipath/uipath-typescript/conversational-agent`).
 
 ## Anti-patterns
 

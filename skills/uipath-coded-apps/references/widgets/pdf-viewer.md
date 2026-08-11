@@ -4,7 +4,7 @@ React PDF viewer for coded apps. Renders PDFs from **Orchestrator Storage Bucket
 
 Package: [`@uipath/ui-widgets-pdf-viewer`](https://www.npmjs.com/package/@uipath/ui-widgets-pdf-viewer). Full prop/API surface lives in the package README — this file covers only the integration steps that are easy to get wrong inside a Coded App.
 
-> **Publish status:** this package is newer than the other widgets. Before recommending it, verify it resolves: `npm view @uipath/ui-widgets-pdf-viewer version`. On a 404 the package is not yet on the public registry — tell the user and fall back to rendering via a bucket read-URI in an `<iframe>`/`<embed>` rather than inventing an install path.
+> **Publish status:** this package is newer than the other widgets. Before recommending it, verify it resolves: `npm view @uipath/ui-widgets-pdf-viewer version`. On a 404 the package is not yet on the public registry — tell the user and fall back to the hand-rolled react-pdf pattern in [create-action-app.md § PDF viewer](../create-action-app.md#pdf-viewer-when-displaying-pdf-documents) rather than inventing an install path. Do **not** fall back to `<iframe>`/`<embed>`/`<object>` PDF tags — Action Center loads coded apps in a sandboxed iframe whose CSP blocks browser-native PDF rendering, and the react-pdf pattern works in web apps too.
 
 ## When to Use
 
