@@ -7,7 +7,7 @@ description: >
   identifiers, and treat an empty result as normal rather than an
   error. The CLI is authenticated; the tenant may or may not have
   recent activity, and both are valid outcomes.
-tags: [uipath-insights, smoke, mode:build, lifecycle:discover]
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
   expected_turns: 10
@@ -61,13 +61,27 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # command_executed only greps the command string, so the four criteria above
+  # pass even when the verbs don't exist in the installed CLI. This gate
+  # re-runs one discovery command at grading time and requires exit 0, so the
+  # task can only pass against a CLI that actually ships filter-*.
+  - type: run_command
+    description: "CLI path is real: filter-folders list exits 0 against the live tenant"
+    command: "uip insights filter-folders list --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
   - type: command_not_executed
     description: "Agent did not pass time flags to filter commands"
     tool_name: "Bash"
-    # [^&;|\n]* instead of .* : the grader compiles patterns with re.DOTALL,
-    # so .* would bleed across command separators and false-fail a batched
-    # call like `filter-folders list ... && jobs summary --time-range ...`
-    command_pattern: 'uip\s+insights\s+filter-\S+\s+list[^&;|\n]*--(time-range|started-after|started-before)'
+    # (?:[^&;|\n]|\\\n)* instead of .* : the grader compiles patterns with
+    # re.DOTALL, so .* would bleed across command separators and false-fail a
+    # batched call like `filter-folders list ... && jobs summary --time-range ...`.
+    # The \\\n alternative still matches backslash-newline continuations, the
+    # style the SKILL.md examples use, so a continued invocation can't slip past.
+    command_pattern: 'uip\s+insights\s+filter-\S+\s+list(?:[^&;|\n]|\\\n)*--(time-range|started-after|started-before)'
     max_count: 0
     weight: 1.5
     pass_threshold: 1.0

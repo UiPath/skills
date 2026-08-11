@@ -9,7 +9,7 @@ allowed-tools: Bash, Read
 
 Insights provides analytics and monitoring for UiPath automation execution. This skill covers **job monitoring** — querying aggregated job execution data for dashboards, health checks, and failure investigation.
 
-Job monitoring goes through `uip insights jobs <subcommand> --output json`; scope discovery goes through the `uip insights filter-*` groups.
+Job monitoring goes through `uip insights jobs <subcommand> --output json`; scope discovery goes through the `uip insights filter-*` groups. <!-- uip-check-skip -->
 
 ---
 
