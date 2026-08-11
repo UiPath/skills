@@ -59,15 +59,12 @@ def _build_task_yaml(skill: str, dataset: Path) -> str:
     # YAML avoids two enforcement points with potentially different
     # comparison semantics at the boundary.
     #
-    # stop_when: auto is REQUIRED, not an optimization: the experiment's
-    # defaults arm run_limits.stop_early, and an armed run with no stop
-    # criterion is a hard EarlyStopConfigError at resolution (coder_eval >=
-    # 0.9.1). Gate rows are all positives, so auto arms pass-stop: the run
-    # ends the moment {skill} engages, with the verdict a full run would
-    # have produced (any-engagement latch is monotonic), and a recall miss
-    # never fires a live event so it still runs to the cap. With a single
-    # positive criterion and no distractors, early stop cannot change
-    # recall.yes — only cost.
+    # Per-criterion stop_early is REQUIRED, not an optimization. Gate rows are
+    # all positives, so pass-stop ends the run the moment {skill} engages, with
+    # the verdict a full run would have produced (any-engagement latch is
+    # monotonic). A recall miss never fires a live event, so it still runs to
+    # the cap. With a single positive criterion and no distractors, early stop
+    # cannot change recall.yes — only cost.
     return f"""\
 task_id: skill-activation-gate-{skill}
 description: Single-skill activation gate (positives only) for {skill}
@@ -83,7 +80,6 @@ dataset:
 
 # Baselines were measured at max_turns: 1 — pin it here (task layer wins the
 # per-key merge over the experiment's 3) so the gate measures the same thing.
-# stop_early stays armed from the experiment defaults, hence stop_when below.
 run_limits:
   max_turns: 1
 
@@ -94,7 +90,8 @@ success_criteria:
     description: "{skill} activation"
     skill_name: {skill}
     expected_skill: "${{row.expected_skill}}"
-    stop_when: auto
+    stop_early:
+      on_pass: stop
 """
 
 

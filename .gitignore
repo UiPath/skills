@@ -92,3 +92,6 @@ tests/tasks/uipath-maestro-flow/canary/Canary/Canary.uipx
 # Node (package.json lives at the repo root for the @uipath/skills package)
 node_modules/
 package-lock.json
+
+# coder-eval run outputs
+runs/

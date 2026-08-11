@@ -15,6 +15,7 @@ Pack a solution into a deployable package, publish to the feed, and deploy to Or
 - Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Solution developed and ready to pack (see [develop-solution.md](develop-solution.md))
 - Solution state verified — `.uipx` and `resources/solution_folder/` agree on the project set (see [develop-solution.md - Always verify state after every mutation](develop-solution.md#always-verify-state-after-every-mutation))
+- Every build-time Library dependency is pinned to an exact version present in the target tenant's library feed (see [develop-solution.md - Pinned Library versions must exist in the target feed](develop-solution.md#pinned-library-versions-must-exist-in-the-target-feed))
 
 ## Flow
 
@@ -30,6 +31,24 @@ graph LR
     E --> G[deploy list]
     E -->|--skip-activate| H[deploy activate]
 ```
+
+---
+
+## Consuming a Published Solution
+
+A packed Solution is itself a reusable, versioned unit — publishing it is how other environments and teams consume it. Two consumption paths, both after `publish`:
+
+```bash
+uip solution packages list --output json                                   # discover name + version
+uip solution packages download <PACKAGE_NAME> [<PACKAGE_VERSION>] -d ./in  # fetch a published .zip
+uip solution deploy run ...                                                # provision that name+version
+uip solution packages delete <PACKAGE_NAME> <VERSION> --output json         # retire a version
+```
+
+- **Deploy it** — `deploy run` takes the name and version from `packages list`. After deployment its members exist as Orchestrator processes / agents / flows, so **other** automations reference them at run time (jobs, triggers, agent tools, Flow resource nodes) without ever seeing the `.uipx`.
+- **Download it** — `packages download` retrieves the published `.zip` for promotion, inspection, or archival. `uip solution download <SOLUTION_ID>` exports a Studio Web solution instead (the ID comes from `solution upload` / `flow debug`).
+
+That is the run-time reuse axis. Build-time reuse — sharing workflow code rather than a deployable — goes through a pinned Library package instead; see [develop-solution.md - Project Structure](develop-solution.md#project-structure--what-belongs-in-the-uipx).
 
 ---
 
@@ -268,6 +287,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: npm install -g @uipath/cli
       - run: uip login --client-id "${{ secrets.UIPATH_CLIENT_ID }}" --client-secret "${{ secrets.UIPATH_CLIENT_SECRET }}" --tenant "${{ secrets.UIPATH_TENANT }}" --output json
+      # Before this point, upload any pinned Library version missing from this tenant's feed.
       - run: uip solution restore ./MySolution --output json   # optional: fail fast on a missing feed before pack
       - run: uip solution pack ./MySolution ./output --version "1.0.${{ github.run_number }}" --output json
       - run: uip solution publish ./output/MySolution_*.zip --output json
@@ -279,6 +299,8 @@ jobs:
 ## Environment Promotion
 
 Pack once, then publish and deploy to each environment in sequence:
+
+Before each environment's publish/deploy, switch to that tenant and verify every pinned Library version is present there. Upload only what is missing.
 
 ```bash
 uip solution pack ./MySolution ./output --version "1.2.0" --output json

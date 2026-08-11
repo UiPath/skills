@@ -400,14 +400,14 @@ For each RPA project in the composition, run Level 1.5 to pick its sub-type (Pro
 
 Produce a **project list** that feeds Level 2 and Level 2.5:
 
-| # | Project Name (proposed) | Product | RPA Sub-type | Source Signal |
-|---|---|---|---|---|
-| 1 | `<NAME>_Flow` | Maestro Flow | — | "orchestrates extraction + reporting" |
-| 2 | `<NAME>_Extractor` | RPA | Process | "email ingestion + DU extraction" |
-| 3 | `<NAME>_SharedUtils` | RPA | Library | "reusable helpers across projects" |
-| 4 | `<NAME>_Regression` | RPA | Test Automation | "weekly regression pack" |
-| 5 | `<NAME>_LookupApi` | API Workflows | — | "called as a tool from the Flow" |
-| 6 | `<NAME>_ScoreFunction` | Function | — | "deterministic scoring called by the Flow" |
+| # | Project Name (proposed) | Product | RPA Sub-type | Packaging | Solution member | Source Signal |
+|---|---|---|---|---|---|---|
+| 1 | `<NAME>_Flow` | Maestro Flow | — | Solution `.uipx` | yes | "orchestrates extraction + reporting" |
+| 2 | `<NAME>_Extractor` | RPA | Process | Solution `.uipx` | yes | "email ingestion + DU extraction" |
+| 3 | `<NAME>_SharedUtils` | RPA | Library | External NuGet package | no | "reusable helpers across projects" |
+| 4 | `<NAME>_Regression` | RPA | Test Automation | Solution `.uipx` | yes | "weekly regression pack" |
+| 5 | `<NAME>_LookupApi` | API Workflows | — | Solution `.uipx` | yes | "called as a tool from the Flow" |
+| 6 | `<NAME>_ScoreFunction` | Function | — | Solution `.uipx` | yes | "deterministic scoring called by the Flow" |
 
 **Derived component projects — never Pass A options.** Coded Functions, IXP models, and custom connectors enter the project list from the step→executor map and Level 3 flags — one row per component, ordered before its consumers. Do not offer them in Pass A; confirm them in the recommendation summary instead. They get build tasks but no per-project SDD file (see [Template Mapping](#template-mapping)).
 
@@ -438,7 +438,7 @@ After Part A has been applied to every RPA Process project, merge with the rest 
 Produce:
 
 1. **Pattern** per project group: Single Project, Master Project (queue-connected), or N/A (non-RPA).
-2. **Unified project list** — one row per concrete project the SDD will describe, covering all products in the scope.
+2. **Unified project list** — one row per concrete project the SDD will describe, covering all products in the scope, with the `Packaging` and `Solution member` columns filled per project.
 3. **Queue schema** for any Master Projects. The canonical shape is **§12 of the RPA template** — two tables per Master Project group:
    - `Queue Definitions` with columns `Queue Name | Producer Project | Consumer Project | Trigger Type | Max Retries`
    - `Queue Item Schema` (one sub-section per queue) with columns `Field Name | Type | Source | Description`
@@ -447,14 +447,14 @@ Produce:
 
 Example unified project list for a Solution (Flow + RPA Library×2 + RPA Test Automation + RPA Process expanded into a Master Project):
 
-| # | Project Name | Product | Sub-type | Role | Framework | Input Queue | Output Queue |
-|---|---|---|---|---|---|---|---|
-| 1 | `<NAME>_Flow` | Maestro Flow | — | Orchestrates extraction and reporting | — | — | — |
-| 2 | `<NAME>_Dispatcher` | RPA | Process | Collects emails, dispatches to processing queue | Sequence | — | `<QUEUE_1>` |
-| 3 | `<NAME>_Performer` | RPA | Process | Processes each transaction item | REFramework | `<QUEUE_1>` | `<REPORTING_QUEUE>` |
-| 4 | `<NAME>_SharedUtils` | RPA | Library | Reusable date/string/mapping helpers used by Performer | — | — | — |
-| 5 | `<NAME>_IntegrationLib` | RPA | Library | Salesforce + ServiceNow wrappers used by Performer | — | — | — |
-| 6 | `<NAME>_Regression` | RPA | Test Automation | Regression pack validating Performer behavior | — | — | — |
+| # | Project Name | Product | Sub-type | Role | Framework | Packaging | Solution member | Input Queue | Output Queue |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | `<NAME>_Flow` | Maestro Flow | — | Orchestrates extraction and reporting | — | Solution `.uipx` | yes | — | — |
+| 2 | `<NAME>_Dispatcher` | RPA | Process | Collects emails, dispatches to processing queue | Sequence | Solution `.uipx` | yes | — | `<QUEUE_1>` |
+| 3 | `<NAME>_Performer` | RPA | Process | Processes each transaction item | REFramework | Solution `.uipx` | yes | `<QUEUE_1>` | `<REPORTING_QUEUE>` |
+| 4 | `<NAME>_SharedUtils` | RPA | Library | Reusable date/string/mapping helpers used by Performer | — | External NuGet package | no | — | — |
+| 5 | `<NAME>_IntegrationLib` | RPA | Library | Salesforce + ServiceNow wrappers used by Performer | — | External NuGet package | no | — | — |
+| 6 | `<NAME>_Regression` | RPA | Test Automation | Regression pack validating Performer behavior | — | Solution `.uipx` | yes | — | — |
 
 ## Per-task component placement (the to-be, per step)
 
@@ -532,10 +532,10 @@ A host that can call the API itself keeps the call in-host (`Access Method = Dir
 
 Design for reuse — a modular solution built from small automations is cheaper to build and maintain. For each candidate shared asset, **reuse before build**, and when building new, treat it as its own buildable project built **before** its consumers:
 
-- **RPA Library** — shared/common workflows (date/string/mapping helpers, app wrappers) extracted into a Library (Level 1.5 sub-type). **Reuse:** discover deployed tenant libraries via the [Tenant Library Search](tenant-library-search-guide.md) (Phase 1 Step 2.5) and reference them in §Packages. **Build new:** a new Library is its own RPA project routed to `uipath-rpa`, consumed by others.
+- **RPA Library** — shared/common workflows (date/string/mapping helpers, app wrappers) extracted into a Library (Level 1.5 sub-type). **Reuse:** discover deployed tenant libraries via the [Tenant Library Search](tenant-library-search-guide.md) (Phase 1 Step 2.5) and reference an exact version in §Packages. **Build new:** a new Library is its own RPA project routed to `uipath-rpa`, consumed by others at build time via an exact version pin.
 - **Custom connector** — when the catalog has no Integration Service connector (see [Integration Service](#integration-service) above), build a reusable custom connector via `uipath-connector-builder`; one connector serves many projects.
 - **Reusable components** — shared components from the Marketplace / org repo (reuse) or new-to-build. List both in the SDD's **Reusable Components** section (reused existing + new reusable).
-- **Shared scope / modularity** — an asset used by 2+ projects (Library, custom connector, IS connection, asset, queue) lives at the **parent-folder / solution level**, built once and referenced by all — never duplicated per project.
+- **Shared scope / modularity** — an asset used by 2+ projects (Library, custom connector, IS connection, asset, queue) is built once and referenced by all — never duplicated per project. Shared cloud resources live at the parent-folder / solution level; a build-time shared Library is owned at the repository level and consumed by version pin.
 
 Flag every reused and new-to-build shared asset in the SDD; the planner emits a build task for each new one (Library → `uipath-rpa`; custom connector → `uipath-connector-builder`), ordered before its consumers.
 
@@ -559,7 +559,7 @@ Based on the Level 1 primary, select one template:
 
 ### Solution scope (Level 1 = Solution or user picked Solution (customize))
 
-A Solution produces **one SDD file per project in the Level 2.5 unified project list** plus a **solution overview SDD** that ties them together. Use the kebab-case project name from the unified list as the filename.
+A Solution produces **one SDD file per project in the Level 2.5 unified project list** plus a **solution overview SDD** that ties them together — every buildable project gets an SDD, whether or not it ends up inside `.uipx`. Use the kebab-case project name from the unified list as the filename.
 
 | Output file | Template | How many |
 |---|---|---|
@@ -576,8 +576,8 @@ The solution overview SDD includes:
 
 1. Solution Overview (objective, business context)
 2. Planner Handoff — solution-level handoff header with `Project SDD role: root`, `Solution ID: <SOLUTION_NAME_KEBAB>`, `Solution root SDD: <its own filename>`, and the canonical `Tasks file: <SOLUTION_NAME_KEBAB>-tasks.md` (the ONE tasks file every child also names), plus cross-project ordering notes (integrated components built before their consumers) for Lane A to consume. Position 2 keeps the header inside the first ~50 lines the Entry Guard reads — do not move it lower. Do not include a task list here — Lane A owns task generation.
-3. Project Inventory — the unified project list from Level 2.5 Part B
-4. Cross-Project Data Flow — how projects call each other (Flow → RPA, Agent tool → API Workflow, RPA Performer → Library)
+3. Project Inventory — the unified project list from Level 2.5 Part B, including `Packaging` and `Solution member`
+4. Cross-Project Data Flow — how projects call each other (Flow → RPA, Agent tool → API Workflow, RPA Performer → pinned Library package)
 5. Shared Assets & Queues — assets, credentials, and queues referenced by more than one project
 6. Per-Project SDD Index — filename + one-line scope per project
 
