@@ -1,0 +1,112 @@
+task_id: skill-agents-lowcode-eval-run
+description: >
+  Low-code evaluation lifecycle: author an evaluator and an eval set, add test
+  cases, upload the solution, run the evals in the cloud, read the scored
+  results. The entire `uip agent eval` surface (6 components, ~950 lines across
+  five reference files) had zero coverage while the coded twin is 8/8 — the only
+  prior mention of `agent eval` anywhere in the suite is a `file_exists` on the
+  files `agent init` scaffolds. Grades the authoring *shape* as well as the CLI
+  sequence, because a mis-shaped evaluator (`type`/`category` mismatch,
+  `evaluatorRefs` not resolving, `--inputs` not matching `entry-points.json`)
+  passes `uip agent validate` and only fails at run time in the cloud worker.
+  Deliberately scoped to a SINGLE eval run. `uip agent eval run compare` needs a
+  second run, and observed cloud-run duration varies ~4x (393s-1476s), which made
+  an 8-criterion version land 7/8 unreliably with `compare` the step that got
+  dropped. Compare and `uip or eval run-offline-evals` belong in their own task.
+tags: [uipath-agents, e2e, mode:operate, lifecycle:setup, low-code, feature:eval]
+
+run_limits:
+  # Observed 131 turns on the 2026-08-11 run that reached 7/8 — the suite's
+  # longest task by some margin (scaffold + upload + two cloud runs + compare).
+  expected_turns: 110
+  max_turns: 160
+  task_timeout: 5400
+  # `eval run start --wait` blocks in a single Bash call while the cloud worker
+  # executes every test case, so one turn can legitimately run for many minutes.
+  turn_timeout: 1800
+
+initial_prompt: |
+  Build a low-code agent `TriageAgent` in a solution named `EvalSol`. It takes a
+  required `ticket` (string) — a short customer support message — and returns a
+  `category` (string) classifying it as one of `billing`, `technical`, or
+  `other`.
+
+  Then set up an evaluation suite for it. It must be your own, not the defaults
+  that scaffolding creates: add your own evaluator that scores how close the
+  agent's answer is to the expected one, and your own evaluation set holding at
+  least two test cases covering different categories.
+
+  Run the evaluation in the cloud and report the score for each test case.
+
+  This is an evaluation tenant — publishing the solution is authorised.
+
+  This sandbox blocks `sleep`-based polling loops and background monitors, so
+  do not poll for a run's status in a loop. Have the run command itself block
+  until the run finishes, in a single invocation.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in a single
+  pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created an evaluator with the eval CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+evaluator\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created its own evaluation set"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+set\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # min_count is 1, not 2: `command_executed` counts Bash *invocations*, and
+  # agents routinely chain several `eval add` calls into one shell command, so a
+  # count of 2 fails a correct run. The real requirement — at least two
+  # well-formed cases in the set — is graded on the artifact by the check script.
+  - type: command_executed
+    description: "Agent added test cases with the eval CLI rather than hand-authoring the set JSON"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Cloud execution prerequisite — the Agent Runtime evaluates the *uploaded*
+  # agent, so a run before upload silently scores a stale definition.
+  - type: command_executed
+    description: "Agent uploaded the solution before running evals"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+upload\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started an evaluation run in the cloud"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+start\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the scored results back"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+results\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Eval suite authoring shape: evaluator type/category valid, eval set resolves its evaluatorRefs, test cases carry a consistent evalSetId and inputs matching entry-points.json"
+    command: "python3 $TASK_DIR/check_eval_run.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
