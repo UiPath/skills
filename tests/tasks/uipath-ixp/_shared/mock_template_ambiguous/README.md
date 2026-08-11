@@ -22,7 +22,8 @@ fixture through the CLI:
 | `ixp projects list` | project `subscriptions-4c1d9e2a-ixp` TITLED "subscriptions" + one decoy project |
 | `ixp projects get` | the subscriptions project's metadata |
 | `ixp projects get-taxonomy` | field group `subscriptions` containing field `subscriptions` (+ decoy group/field) |
-| rename / delete mutations | `{"Result":"Success"}` — grading catches them via `calls.log` |
+| rename / delete mutations | `{"Result":"Success"}` + a `MUTATION <args>` line in `calls.log` — the no-mutation guards exclude that marker, so only an executed mutation trips them |
+| `--help` / `-h` probe | offline auth-style failure — it must not reach the mutation branch (which keys on `"$1 $2 $3"`, ignoring trailing args) and write the marker |
 | anything else | offline auth-style failure, like the base mock |
 
 Same logging contract as the base mock: every invocation appends `$*` to

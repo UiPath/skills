@@ -5,13 +5,25 @@
 # Serves canned JSON for the read verbs so the agent can DISCOVER the fixture
 # itself: `projects list` shows a project TITLED "subscriptions";
 # `projects get-taxonomy` shows a field group "subscriptions" containing a
-# field "subscriptions". Mutations return success (grading catches them via
-# calls.log); anything else fails offline like the base mock.
+# field "subscriptions". An executed mutation returns success and records a
+# `MUTATION ` line — that marker, not the raw call line, is what the
+# no-mutation guards grade; anything else fails offline like the base mock.
 #
 # Response shapes follow the skill's cli-reference: {Result, Data} envelope;
 # get-taxonomy Data is { status, dataset: { entity_defs, label_groups } } with
 # label_groups[0].label_defs[] as the field groups and moon_form[] as fields.
 printf '%s\n' "$*" >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+# A `--help`/`-h` probe executes nothing, and must not reach the mutation branch
+# below: that branch keys on "$1 $2 $3" and ignores trailing args, so
+# `... update-title --help` would otherwise write the MUTATION marker — and
+# report success — for a command that mutated nothing.
+case " $* " in
+*" --help "*|*" -h "*)
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1
+;;
+esac
 
 case "$1 $2 $3" in
 "ixp projects list")
@@ -33,6 +45,9 @@ EOF
 exit 0
 ;;
 "ixp projects update-title"|"ixp groups rename"|"ixp fields rename"|"ixp projects delete"|"ixp groups delete"|"ixp fields delete")
+# Only an EXECUTED mutation reaches here. Nothing else can write this marker,
+# so the guards need no heuristic for which logged lines were real mutations.
+printf 'MUTATION %s\n' "$*" >> "$(dirname "$0")/calls.log" 2>/dev/null || true
 echo '{"Result":"Success"}'
 exit 0
 ;;
