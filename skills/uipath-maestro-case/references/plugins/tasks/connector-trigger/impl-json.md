@@ -1,134 +1,75 @@
 # connector-trigger task — Implementation (Direct JSON Write)
 
-> **Node `type` value: `wait-for-connector` (schema-kebab).** NEVER write `connector-trigger` (plugin folder name) into the JSON `type` field. The CLI `--type connector-trigger` flag is a separate concept — used only when calling the legacy `uip maestro case tasks describe` command. The current path uses `uip maestro case spec --type trigger`. See SKILL.md Rule 16 + Plugin Index.
+> **Node `type` value: `wait-for-connector` (schema-kebab).** NEVER write `connector-trigger` (plugin folder name) into the JSON `type` field. The Phase 3 CLI target is `case spec --type trigger`. See SKILL.md Rule 16 + Plugin Index.
 
-> **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --type trigger --input-details` once, reads the populated `caseShape`, substitutes placeholders, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
-
-Fetch the populated trigger task scaffold via `uip maestro case spec --type trigger --input-details`, then drop it into `caseplan.json` as a `wait-for-connector` task. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md` and threads them through the spec call.
-
-For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-impl.md](../../../connector-trigger-impl.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **task-specific** parts.
+This file owns the in-stage task envelope, task/input/output IDs, output binding, placement, and fallback. The connector metadata algorithm and raw-cache contract are owned by [connector-trigger-impl.md](../../../connector-trigger-impl.md).
 
 ## Prerequisites from Planning
 
-The `tasks.md` entry provides:
+The T-entry supplies `type-id`, `connection-id`, `connector-key`, optional `object-name`, `event-operation`, `event-mode`, optional `input-values.eventParameters`, optional `filter`, output mappings, and the task placement fields.
 
-| Field | Example |
-|---|---|
-| `type-id` | `"7dc57f24-894c-5ae2-a902-66056fa40609"` |
-| `connection-id` | `"fc82e610-c454-4bc7-a1a5-b5aa529d1ba6"` |
-| `connector-key` | `"uipath-microsoft-outlook365"` |
-| `object-name` | `"Message"` |
-| `event-operation` | `"EMAIL_RECEIVED"` |
-| `event-mode` | `"polling"` or `"webhooks"` |
-| `input-values` | `{"eventParameters":{"parentFolderId":"AAMkADNm..."}}` (already resolved IDs) |
-| `filter` (optional) | `{"groupOperator":"And","filters":[...]}` (FilterTree object — present only when planning Step 7 authored a filter) |
-| `isRequired` | `true` |
-| `runOnlyOnce` | `false` |
+## Phase 2 — Write the task envelope
 
-## Configuration Workflow
+Mint task ID `t` + 8 characters and `elementId = <stageId>-<taskId>`. For a resolved T-entry, write the task with `data.typeId` and `data.connectionId`; do not call `case spec` or add `serviceType` / `context` / `inputs` / `outputs` yet. Append that envelope exactly once, applying its `activation-mode` + `entry-rule` through the central task-placement contract. A planning-time unresolved T-entry uses the Rule 8 task placeholder with `data: {}`.
 
-### Step 1 — Build `--input-details` JSON from tasks.md
+## Phase 3 — Configure the task
 
-Construct the input-details object literally from `tasks.md`:
+### Step 1 — Run the common target-local pipeline
 
-```jsonc
-{
-    // eventParameters from tasks.md input-values.eventParameters (or omit when absent)
-    "eventParameters": "<input-values.eventParameters or omit>",
-    // filter — FilterTree object from tasks.md (or omit when not authored)
-    "filter": "<filter from tasks.md or omit>"
-}
-```
+Run [shared implementation § Phase 3 Implementation — Single CLI Call](../../../connector-trigger-impl.md#phase-3-implementation--single-cli-call) for this task, using the existing task `elementId` as the cache identity. Continue only after the shared required-field gate and cache-read/splice steps succeed.
 
-Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
+For this target, `{{TRIGGER_REGISTRATION_KEY}}` uses `<connection-id>_<case-start-node.id>`, not the stage ID.
 
-### Step 2 — Run `case spec` with input-details
+### Step 2 — Mint task input/output IDs
 
-Single CLI call replaces the legacy `get-connection` + `case tasks describe --type connector-trigger` two-call pattern. See [common § Phase 3 Implementation Step 2](../../../connector-trigger-impl.md#step-2--run-case-spec-with-input-details) for the command and response handling.
+For every normalized input and output, mint `var = id = v<8 characters>` and set `elementId` to the task element ID. Dedupe outputs through [shared implementation § Step 5](../../../connector-trigger-impl.md#step-5--mint-var--id--elementid-on-inputs-and-outputs), then apply the [I/O output binding owner](../../variables/io-binding/impl-json.md#output-binding-shapes) to the T-entry's output mappings.
 
-### Step 3 — Required-event-param validation (HARD GATE)
+### Step 3 — Enrich the existing task
 
-This is a hard gate — do NOT proceed to write the task until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="eventParameters"].body`.
-
-1. From the lean planning-phase spec (run with `--skip-case-shape` per [common § Planning Pipeline 5](../../../connector-trigger-planning.md#5-validate-required-event-parameters-hard-gate)), collect `inputs.eventParameters[?required]`.
-2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="eventParameters"].body` and verify every required event parameter has a value.
-3. If any required event parameter is missing, **AskUserQuestion** — list the missing parameters with their `name` and what kind of value is expected.
-4. Re-run Step 2 after collecting the missing values, OR fall back to placeholder task per Rule 8 if user declines to provide a value.
-
-> **Do NOT guess or skip missing required event parameters.** Trigger registration fails at runtime when a required event parameter is missing.
-
-### Step 4 — Mint binding IDs and trigger registration key
-
-Per [common § Step 3](../../../connector-trigger-impl.md#step-3--mint-binding-ids-and-when-applicable-trigger-registration-key). Note for in-stage triggers: `<eventTriggerKey>` uses `<connection-id>_<startNode.id>` — `startNode.id` is the case-level start node, NOT the stage id (matches FE convention).
-
-### Step 5 — Substitute placeholders in `caseShape.context`
-
-Per [common § Step 4](../../../connector-trigger-impl.md#step-4--substitute-placeholders-in-caseshapecontext). Three placeholders: `{{CONN_BINDING_ID}}`, `{{FOLDER_BINDING_ID}}` (when present), `{{TRIGGER_REGISTRATION_KEY}}` (when the trigger has event parameters).
-
-### Step 6 — Mint `var` / `id` / `elementId` on inputs and outputs
-
-Generate task ID (`t` + 8 alphanumeric chars) and elementId (`<stageId>-<taskId>`).
-
-For each entry in `caseShape.inputs[]`:
-- `var` = `v` + 8 alphanumeric chars
-- `id` = same as `var`
-- `elementId` = the task's elementId
-
-For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** per [common § Step 5](../../../connector-trigger-impl.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers).
-
-**Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
-
-### Step 7 — Build task and write to caseplan.json
+Preserve the Phase 2 identity, envelope, entry conditions, and placement. Targeted Edit only its `data` property to the following cache-derived result:
 
 ```json
 {
-  "id": "<taskId>",
-  "type": "wait-for-connector",
-  "displayName": "<display-name from tasks.md>",
-  "elementId": "<stageId>-<taskId>",
-  "isRequired": "<from tasks.md, default true>",
-  "shouldRunOnlyOnce": "<from tasks.md runOnlyOnce, default false>",
-  "data": {
-    "serviceType": "Intsvc.WaitForEvent",
-    "context": "<caseShape.context — placeholders substituted in Step 5>",
-    "inputs":  "<caseShape.inputs  — var/id/elementId minted in Step 6>",
-    "outputs": "<caseShape.outputs — var/id/elementId minted, dedup applied in Step 6>",
-    "bindings": []
-  }
+  "typeId": "<type-id>",
+  "connectionId": "<connection-id>",
+  "serviceType": "Intsvc.WaitForEvent",
+  "context": "<complete normalized Context; placeholders substituted>",
+  "inputs": "<complete normalized Inputs; IDs minted>",
+  "outputs": "<complete normalized Outputs; IDs minted/projected/deduped>",
+  "bindings": []
 }
 ```
 
-Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle or ordered task-set rule is selected; if `lane` conflicts with mode, mode wins.
+### Step 4 — Append bindings and defer batch sync
 
-### Step 8 — Append root-level bindings
-
-Per [common § Root-level bindings](../../../connector-trigger-impl.md#root-level-bindings). Two entries (ConnectionId, FolderKey), `resourceKey` = `connection-id`. Deduplicate against existing root bindings.
-
-### Step 9 — Sync IS connection cache
-
-After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](../../../bindings-v2-sync.md). Skip if `case spec` failed.
+Append the canonical ConnectionId and optional FolderKey root bindings per [shared implementation § Root-level bindings](../../../connector-trigger-impl.md#root-level-bindings). Keep `data.bindings` empty. Populate the IS cache after the task batch and regenerate `bindings_v2.json` once at the end of implementation Step 9.7.
 
 ## Graceful degradation
 
-**Always create the task** — even on errors. Start with `data: { "serviceType": "Intsvc.WaitForEvent" }` and progressively populate.
-
-| Step failed | What gets populated | Log |
+| Failure | Result | Log |
 |---|---|---|
-| `case spec` fails | Phase 2 shape preserved — `data.typeId` + `data.connectionId` only, no Phase 3 inputs/outputs/context enrichment. Distinct from a Rule 8 placeholder (`data: {}`) — typeId/connectionId are resolved, only the spec-driven enrichment is skipped. Log per Rule 8 reporting | `[SKIPPED] case spec failed — typeId/connectionId preserved, no enrichment` |
-| Required-event-param gate fails (user declines) | Placeholder per Rule 8 OR re-prompt | `[SKIPPED] required event parameter <name> missing — placeholder task per Rule 8` |
-| All succeed | Full population per Steps 4-9 including bindings_v2 sync | — |
+| Planning-time unresolved type/connection | Rule 8 placeholder, `data: {}` | `[SKIPPED] unresolved connector wait written as placeholder` |
+| Phase 3 spec call fails | Preserve resolved Phase 2 `typeId` and `connectionId`; omit spec enrichment | `[SKIPPED] case spec failed — typeId/connectionId preserved, no enrichment` |
+| Required field declined | Rule 8 placeholder; retain any successfully written raw cache | `[SKIPPED] required event parameter <name> missing — placeholder task per Rule 8` |
 
-All issues appended to the shared issue list per [logging/impl-json.md](../../logging/impl-json.md).
+Append issues through the logging owner. Do not create a raw cache or root bindings when no successful spec response exists.
 
 ## Post-Write Verification
 
-1. `type` is `"wait-for-connector"` and `data.serviceType` is `"Intsvc.WaitForEvent"`
-2. `data.context[]` populated from `caseShape.context` with placeholders substituted (`=bindings.<connBindingId>`, etc.)
-3. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify)
-4. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`)
-5. Root bindings exist for ConnectionId + folderKey with the minted ids; `data.bindings[]` is empty `[]`
-6. Each entry in `data.inputs[]` / `data.outputs[]` has `var` / `id` / `elementId` minted; uniqueness rule applied for outputs
-7. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
-8. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 2–7 across every connector node — a task left in the Graceful-degradation shape while `case spec` succeeded is a Check 12 failure, not an acceptable outcome
+Checks 3–6 apply only to a fully configured task.
+
+1. A fully configured task has `type: "wait-for-connector"` plus real `data.typeId`, `data.connectionId`, and `data.serviceType: "Intsvc.WaitForEvent"`; a failed spec retains only the two Phase 2 IDs, while a Rule 8 fallback has `data: {}`.
+2. After any successful spec call, the task's own retained full-response cache has PascalCase `Data.CaseShape.Context`, `Inputs`, and `Outputs` paths.
+3. On a fully configured task, `data.context`, `inputs`, and `outputs` are complete normalized subtrees from that cache, with only common-owner mutations.
+4. `context` placeholders use this task's binding IDs and case-start-node registration key.
+5. Every input/output has this task's `elementId`; outputs are globally deduped and projected.
+6. On a fully configured task, root ConnectionId/optional FolderKey bindings exist; `data.bindings` is `[]`; the deferred `bindings_v2` sync includes them.
+
+## What NOT to Do
+
+- Do not call a legacy connector `tasks describe` command or reuse another target's response.
+- Do not reconstruct or selectively copy a `CaseShape` subtree.
+- Do not let implementation Step 9.8 replace this task's CLI-authored inputs.
+- Do not auto-inject task entry conditions outside the preserved placement contract.
 
 <!-- END: impl-json.md -->

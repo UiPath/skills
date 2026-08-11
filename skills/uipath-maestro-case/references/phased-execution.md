@@ -88,7 +88,7 @@ If the parser response names `--skeleton-v2` as unknown or unsupported (typicall
 
 - **Straight-through** → continue directly into Phase 3 with no prompt; the summary doubles as the milestone narration line.
 - **Pause-at-preview** → present the §Prompt below; only a user response transitions out of Phase 2.
-- **No recorded preference** (resumed or legacy run): interactive → ask the §Prompt now; non-interactive → straight-through (no publish — Phase 5 remains the only, still-gated, publish point) and say so in one line.
+- **No recorded preference** (including a resumed/legacy or fresh non-interactive run) → straight-through with no prompt; say so in one line. Do not publish here — Phase 5 remains the only, still-gated, publish point.
 
 The Phase 4 retry-cap, Phase 5 publish, Phase 6 debug-consent, and Phase 7 publish-consent stops below are independent of this preference and are never bypassed.
 
@@ -234,15 +234,14 @@ After Phase 5 (whether published or skipped), prompt via **AskUserQuestion**:
 
 Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams results.
 
-After debug completes, return to Phase 6 prompt so user can re-run or move on. Leave the phase only on `Continue to publish`.
+After a successful debug run, return to the Phase 6 prompt so the user can re-run or move on. If debug fails, load [troubleshooting-guide.md](troubleshooting-guide.md) directly. Leave the phase only on `Continue to publish`.
 
-Before this prompt, include `Suggested next steps: run a debug session if you are ready to exercise the case, or continue to the Orchestrator publish gate if validation (and publish) is enough for now.` After debug results, print `Suggested next steps: inspect the debug output, fix and re-run, re-publish with the Phase 5 commands if a fix changed the build, or continue to the Orchestrator publish gate.`
+Before this prompt, include `Suggested next steps: run a debug session if you are ready to exercise the case, or continue to the Orchestrator publish gate if validation (and publish) is enough for now.` After a successful result, print `Suggested next steps: inspect the debug output, run again, re-publish with the Phase 5 commands if a fix changed the build, or continue to the Orchestrator publish gate.` A failed result follows the troubleshooting route above.
 
 ### Debug notes
 
 - `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
-- Debug verifies the build actually runs end-to-end. If debug surfaces a fixable issue, see [Step 15a — Troubleshoot failed case](implementation.md#step-15a--troubleshoot-failed-case) and re-run; if the case was already published, re-publish afterwards so the published build carries the fix.
-- **Inline-built api-workflow siblings are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found") by design; agent siblings do resolve in debug. Verifying that task's runtime needs a full solution deploy (`uip solution pack` → `uip solution publish` → `uip solution deploy run`) — an Orchestrator install that goes beyond [§ Phase 7](#phase-7--publish-to-orchestrator) (which stops at publish), so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline).
+- A failed debug or deployed Case run routes directly to [troubleshooting-guide.md](troubleshooting-guide.md), the sole owner of diagnosis, repair/retry, conditional re-publish, incident `170007`, timeout, and escalation. Do not load it on a successful run.
 
 ## Phase 7 — Publish to Orchestrator
 

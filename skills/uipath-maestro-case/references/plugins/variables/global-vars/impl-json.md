@@ -69,11 +69,7 @@ Every independently minted `var` / `id` must be globally unique across the case,
 "error" + "error2" exist → "error3"
 ```
 
-The `source` and `name` fields keep the original value. Independently minted `var` / `id` values and their `target` get the suffix; on a reassign shape, `originalVar` mirrors the allocated `id` and receives the same suffix.
-
-**Reassigned-output collision.** A normal `field -> caseVar` output owns an independently minted source-side `id` even though its `var` points at the existing Case variable. Deduplicate that `id` against the global pool and update `target` plus `originalVar` to match it; do not suffix the pointer `var`. For example, if `aPIOutput1` already exists, `APIOutput1 -> renamedResult` emits `id: "aPIOutput12"`, `target: "=aPIOutput12"`, `var: "renamedResult"`, and `originalVar: "aPIOutput12"`. See [io-binding § Output Binding Shapes](../io-binding/impl-json.md#output-binding-shapes).
-
-**Controlled alias — equal-name `->` extraction.** A reassigned task/rule output is a wire to an existing Case-variable slot, not an independent declaration. When `baseId == target case-variable id`, exclude exactly that matching `variables.inputOutputs[]` companion (`id == target`, `elementId == "root"`) from the source-side allocation scan. Do not exclude any task, trigger, rule, argument, or unrelated root entry. Thus the first `greeting -> greeting` may emit `id == var == originalVar == "greeting"` alongside the root companion, but if another output already owns `greeting`, the wire emits `id: "greeting2"`, `originalVar: "greeting2"`, and `target: "=greeting2"` while `var` and `value` remain `"greeting"`. Never suffix the root companion or the `var` pointer. `originalVar` marks both forms as reassigned, so `mutateRootVariables` retains the existing root companion instead of auto-mirroring a duplicate.
+The `source` and `name` fields keep the original value. Independently minted `var` / `id` values and their `target` get the suffix. The only controlled alias is an explicit equal-name task/rule `->` wire; when that conditional path is present, load [Output Projection](output-projection-guide.md#extract-reassignment) for source-slot allocation without suffixing its Case-variable pointer or companion. Trigger Pattern C, trigger auto-emit, and argument bridges keep their shapes below and never use the task/rule reassign shape.
 
 ### Pool composition (what to scan)
 
@@ -269,7 +265,7 @@ SDD row: `Category=Out`. **Companion is ALWAYS emitted at write time** (per FE c
 | empty | yes | Producer task fires → writes to `vars.<name>` → caller gets that value at case end. If producer fails to fire, caller gets `""` (the companion's empty default). |
 | present | yes | Producer fires → overwrites companion default. If producer skipped, companion default returned. |
 | present | no | Companion default always returned at case end. |
-| empty | no | **Pure orphan** — Out-arg producer-presence validator AskUserQuestion at end of Phase 3 (see [`io-binding/impl-json.md` § Check 2](../io-binding/impl-json.md)). Author picks: (a) add producer, (b) add Default, (c) recategorize, (d) continue with best-effort emit. |
+| empty | no | **Pure orphan** — Out-arg producer-presence validator AskUserQuestion at end of Phase 3 (see [I/O Binding Exit Validation § Check 2](../io-binding/validation-guide.md#check-2--out-arg-producer-presence)). Author picks: (a) add producer, (b) add Default, (c) recategorize, (d) continue with best-effort emit. |
 
 #### Shape
 
@@ -346,16 +342,7 @@ All logged per [`../../logging/impl-json.md`](../../logging/impl-json.md).
 
 ## Custom Outputs (`custom: true` on task.data.outputs[])
 
-Writes a fixed constant to a global variable when a task completes — not from the task's response. Task plugins own this (the task plugin writes `custom: true` on a `task.data.outputs[]` entry). The variables plugin's role is only to ensure the targeted variable is declared in `root.inputOutputs[]` if the custom output's `var` references one that doesn't already exist.
-
-| Field | Standard Output | Custom Output |
-|-------|-----------------|---------------|
-| `source` | `"=<runtime-path>"` (SDD's left-side string, verbatim) | omitted |
-| `value` | mirrors var | `"=<literal>"` or `"=js:<expr>"` |
-| `custom` | omitted / `false` | `true` |
-| `target` | `"=<varId>"` | omitted |
-
-Custom outputs are an existing task-plugin concept, unchanged by B's redesign. They are the emission shape for SDD `=` rows (set / compute / copy operations per [`../io-binding/planning.md`](../io-binding/planning.md)): when a task's Outputs table contains `caseVar = expression`, the task plugin emits a `custom: true` entry with `var: <caseVar's id>, value: <expression>, source: <same as value>, elementId: "root"`, and NO root mirror is created (per FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64`). The `->` operator handles schema-field extraction and renaming; `=` handles literal / computed / variable-reference writes.
+When a task or connector-rule output uses `=`, load [Output Projection — Custom assignment](output-projection-guide.md#custom-assignment) before emitting it or deciding whether another root companion is needed.
 
 ## jsonSchema type
 
@@ -410,39 +397,10 @@ See [`../../../bindings-and-expressions.md`](../../../bindings-and-expressions.m
 
 ## Task Output → variable resolution
 
-When a task's `data.outputs[]` entry has `id` set (which is always the case under the `->` operator — see task plugin impl-json files for the reassign shape with `originalVar`), the entry self-declares. The variable namespace includes `vars.<id>` directly through the task output entry.
-
-```json
-// Task output written by task plugin under `Decision -> finalDecision`:
-{ "name": "Decision",                      // schema field display name
-  "id": "decision",                         // original camelCase auto-mint (preserved)
-  "var": "finalDecision",                   // reassigned to case var's id
-  "originalVar": "decision",                // FE reassignment marker — load-bearing
-  "source": "=Decision", "target": "=decision",
-  "value": "finalDecision",                  // mirrors var
-  "type": "string", "elementId": "<stageId>-<taskId>" }
-```
-
-This is the **reassign shape** (FE Scenario B/D). The `originalVar` field tells the FE's `mutateRootVariables` to filter this entry out of root-mirroring (`VariableMutationUtils.ts:135`), so the case Variables companion stays intact across FE edits. Without `originalVar`, FE edits would create duplicate root entries and orphan the case variable.
-
-When source and destination have the same name (`Decision -> decision` after camel-casing, or `greeting -> greeting`), the shape does not become bare. With no unrelated owner, `id`, `var`, and `originalVar` may intentionally be identical and may match the root companion ID. With an unrelated collision, only `id`, `originalVar`, and `target` take the allocated suffix; `var` and `value` keep pointing to the existing Case variable. `originalVar` is required in both forms and is what makes the alias safe.
-
-For `=` operator rows (Scenario E), the task plugin emits a separate `custom: true` entry — see Custom Outputs section above.
-
-Per Out-arg companion rule above, the variables plugin ALWAYS writes a `root.inputOutputs[]` companion for Out-args (no longer conditional on Default). For case Variables sourced via `->` from tasks, the companion is also written so the variable is picker-visible at Case Variables panel.
+When a task output uses `->`, `=`, reassignment, or needs a root companion, load [Output Projection — Task ownership](output-projection-guide.md#task-and-rule-ownership) before the task owner writes `data.outputs[]`.
 
 ## Connector-Rule Output → variable resolution
 
-Connector condition rules (`rule.uipath.outputs[]`) participate in the case-variable namespace through the same shapes as task outputs — the FE renders the SAME `FPSFormServiceTypeFields` form for both, and `updateRootVariables` is dispatched for rule outputs too (`FPSFormServiceTypeFields.tsx:80`). The variable resolution path is:
-
-- **Extract (`->`)** — rule emits a reassign-shape entry on `rule.uipath.outputs[]` with `originalVar` (load-bearing for `mutateRootVariables` to skip root-mirroring), and Loop B emits the matching `root.inputOutputs[]` companion (`elementId: "root"`, `custom: true`) from the SDD's `Category=Variable` row. The rule's `elementId` on the output entry is `<ownerNodeId>-<ruleId>` (= `<stageId>-<ruleId>` stage-scoped, `root-<ruleId>` case-exit).
-- **Assign (`=`)** — rule emits a `custom: true` Scenario E entry on `rule.uipath.outputs[]` with `value: "<expression>"`. No root mirror per `isUpdateExistingOutput` filter. Loop B emits the `Category=Variable` companion unconditionally (per Loop B line 166); only the `default` field is populated, and only when the SDD declares a Default.
-- **Bare** (no operator) — rule output is gate-local (named like the spec field, e.g. `response` / `Error`); not a case variable. No companion written.
-
-The dispatcher logic lives in [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) (the 3rd dispatch path, parallel to task dispatch). The condition plugins (`plugins/conditions/*/impl-json.md`) invoke it as the last step of their `wait-for-connector` recipe.
-
-Loop B (this file) handles the COMPANION emission — it scans `tasks.md` Case Variables rows agnostically of producer type. A `Category=Variable` row whose producer is a connector rule's `->` extract gets the same companion shape as one whose producer is a task's `->` extract. The producer (task plugin OR condition plugin) is responsible for writing the upstream `outputs[]` entry referencing the companion via `var: <caseVar.id>`.
-
-> **Skip guard.** Rules with no `uipath.outputs[]` (stub placeholder — connector configuration unresolved) contribute no outputs to the global pool and no companions to Loop B — see [`connector-trigger-impl.md § Placeholder fallback`](../../../connector-trigger-impl.md#placeholder-fallback).
+When a connector condition rule output uses `->`, `=`, reassignment, or needs a root companion, load [Output Projection — Task and rule ownership](output-projection-guide.md#task-and-rule-ownership) before the condition owner's final output-dispatch step.
 
 <!-- END: impl-json.md -->

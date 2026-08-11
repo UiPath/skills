@@ -2,15 +2,13 @@
 
 A connector activity task inside a stage. Calls an external service (Jira, Slack, Salesforce, Gmail, etc.) via UiPath Integration Service.
 
-This plugin is **schema-data-driven** — one plugin covers every connector. Connector-specific input shapes are discovered from the `case spec` CLI's normalized output, not baked into this plugin.
+This file is the planning owner for activity TypeCache discovery, connection selection, required/reference input mapping, and the activity T-entry. One schema-driven procedure covers every connector activity.
 
 ## When to Use
 
 Pick this plugin when the sdd.md describes a task as `CONNECTOR_ACTIVITY` or names a specific external service action (e.g., "send a Slack message", "create a Jira issue", "update Salesforce opportunity").
 
-For **connector-based triggers** inside a stage (wait for an external event), use [connector-trigger](../connector-trigger/planning.md).
-
-For **case-level event triggers** (outside any stage), use [`plugins/triggers/event/`](../../triggers/event/planning.md).
+Connector event targets use the shared trigger owner instead; do not load their target files while planning an activity.
 
 ## Resolution Pipeline
 
@@ -18,11 +16,11 @@ Run these steps during planning. Each step feeds into the `tasks.md` entry.
 
 ### 1. Find the connector in TypeCache
 
-If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 17 gate does not apply). If still missing after pull, the tenant has no connector activities — emit placeholder per § Unresolved Fallback below.
+Consume Rule 3 and Rule 17 without redefining them. Before a successful current-session pull, a missing `~/.uip/case-resources/typecache-activities-index.json` is a failed precondition; complete the normal login + pull gate once. After success, a still-missing index or empty exact-name match is a genuine zero-match item in the one Rule 17 batch. Label it `placeholder only`; run `registry pull --force` only from the user's Force-pull branch.
 
 Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on `displayName` or `connectorKey` + operation description from sdd.md. Record `uiPathActivityTypeId`.
 
-**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 17 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Use placeholders for all`) for the lookup batch before any fallback. Only after the user picks `Use placeholders for all`: mark `type-id` `<UNRESOLVED: no typecache activity for <query>>`, skip § 2 (no `activity-type-id` to pass to `get-connection`), and fall through to § Unresolved Fallback (placeholder task, `data: {}`). Continue planning — do not halt ([planning.md § 3.4](../../../planning.md)).
+**No match (Scenario A — connector not found).** Add it to the canonical Rule 17 lookup batch. Only when that batch assigns the non-creatable connector to fallback (`Use placeholders for all`, or the mixed Create branch) mark `type-id` `<UNRESOLVED: no typecache activity for <query>>`, skip §2, and use § Unresolved Fallback. Continue planning.
 
 ### 2. Resolve the connection
 
@@ -36,12 +34,23 @@ Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, 
 
 - **`Connections` non-empty** → list connections by `name` **plus a "Create a new connection" option**.
 - **`Connections` empty** → offer **Create a new connection** / **Skip (defer)**.
-- **Create chosen** → create it (background `is connections create`, capture `ConnectionId`), then continue with the new id. Procedure: [connector-integration.md § Creating a Connection](../../../connector-integration.md#creating-a-connection).
+- **Create chosen** → run `uip is connections create "<Config.connectorKey>" --output json` in the background and use `Data.ConnectionId` directly. Non-zero exit, `Result: Failure`, or missing ID is failure: surface `Message`/`Instructions`, offer Retry / Skip, and fall back only after Skip or repeated failure.
 - **Skip / create fails** → mark `<UNRESOLVED: no IS connection for <connectorKey>>` and omit `input-values:` ([§ Unresolved Fallback](#unresolved-fallback)).
 
-Record `connection-id`, `connector-key`, `object-name` from the response (or from the create output).
+Record `connection-id`, `connector-key`, and `object-name` from the response (or from the create output).
 
-Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../../../../uipath-platform/references/integration-service/connections.md).
+When `Config.activityType === "Generic"`, the TypeCache entry is shared across objects and its object name is not sufficient. Discover candidates and verify the selected object against this connection:
+
+```bash
+uip is resources list "<Config.connectorKey>" \
+  --connection-id "<connection-id>" --output json
+uip is resources describe "<Config.connectorKey>" "<selected-object>" \
+  --connection-id "<connection-id>" --output json
+```
+
+Use an exact SDD object match; otherwise ask from the returned candidates. Persist the selection as `object-name`. If no object can be selected, mark both `type-id` and `object-name` `<UNRESOLVED: no selectable Generic object>` so Phase 2 takes this activity's placeholder. A Generic activity must pass the selected `object-name` to both `case spec` calls.
+
+An empty `Connections` list is not a Rule 17 zero: the connector type exists, so offer creation first and use this activity's placeholder only after decline/failure.
 
 ### 3. Discover the operation contract via `case spec`
 
@@ -51,6 +60,7 @@ One CLI call replaces the legacy `case tasks describe` + `is resources describe`
 uip maestro case spec --type activity \
   --activity-type-id "<uiPathActivityTypeId>" \
   --connection-id "<connection-id>" \
+  --object-name "<object-name when present; required for Generic>" \
   --skip-case-shape \
   --output json
 ```
@@ -72,6 +82,8 @@ The response carries everything the planning phase needs:
 | `references[]` | Cross-references (lookups). Each entry includes a pre-built `discoverCommand` runnable string |
 | `diagnostics.fetched` / `fallbacks` | What endpoints succeeded / fell back; surface `fallbacks` to the user when meaningful |
 
+If `inputs.multipart` is non-null, load only [complex inputs § Multipart planning](complex-inputs-guide.md#multipart-planning) for that branch. Otherwise do not load the guide for multipart handling.
+
 ### 4. Resolve reference fields
 
 Check `inputs.{bodyFields, pathParameters, queryParameters}` for entries with a `reference` object. Each carries a pre-built `discoverCommand`:
@@ -81,13 +93,13 @@ Check `inputs.{bodyFields, pathParameters, queryParameters}` for entries with a 
     "objectName": "MailFolder",
     "lookupValue": "id",
     "lookupNames": ["displayName"],
-    "discoverCommand": "uip is resources run list uipath-microsoft-outlook365 MailFolder --connection-id <id>"
+    "discoverCommand": "uip is resources run list uipath-microsoft-outlook365 MailFolder --connection-id <id> --output json"
 }
 ```
 
 Run the `discoverCommand` exactly as given. Match the sdd.md value to `lookupNames[0]` in the results. Use the resolved `lookupValue` (the id) in `input-values`.
 
-> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing tasks.md. Never reuse an ID resolved against a different connection — silent runtime fault. Full mechanism: [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
+> **Reference IDs are connection-scoped.** Resolve every reference field freshly against the current `--connection-id`, immediately before writing tasks.md. Never reuse an ID resolved against a different connection.
 
 > **Paginate when looking up by name.** `run list` returns one page (up to 1000 items); check `Data.Pagination.HasMore` + `Data.Pagination.NextPageToken`. Re-run with `--query "nextPage=<NextPageToken>"` until found or `HasMore` is `"false"`. Short-circuit on first match.
 
@@ -125,11 +137,7 @@ Values can be:
 
 ### 7. Optional — author a server-side filter
 
-If `spec.filter` is present (i.e. the operation declares a `FilterBuilder` parameter and supports CEQL), the user can author a filter tree. If `spec.filter` is `undefined`, server-side filtering is not supported on this operation — filter downstream (post-execution) instead.
-
-Filter tree shape, operator table, anti-patterns, worked examples: [/uipath:uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers (compiler differs — JMESPath instead of CEQL).
-
-The filter tree goes into `tasks.md` under `filter:` as a literal JSON object — Phase 3 passes it to `case spec --input-details`. Do NOT pass a raw CEQL string under `queryParameters.where` (or whichever connector-specific name) when authoring a filter — case-tool rejects this at configure time, and the round-trip from Studio Web breaks.
+When the SDD requests a server-side filter and `spec.filter` is present, load [complex inputs § Server-side FilterTree](complex-inputs-guide.md#server-side-filtertree). If either condition is false, do not load the guide; omit `filter:` and filter downstream when needed.
 
 ### 8. Build input-values
 
@@ -147,36 +155,7 @@ Dotted keys (`message.body.content`) get nested into structured objects via `nes
 
 #### Array-of-object body fields — SDD authors business shape; planner translates to wire shape
 
-When `inputs.bodyFields[].name` contains `[*]` (e.g. `toRecipients[*].emailAddress.address`, `attachments[*]`, `blocks[*].text`), the `[*]` is **schema notation** meaning "array of" — borrowed from JSONPath. The SDD describes the input at a **business level**; the planner translates to wire shape using the spec's flat field-name metadata.
-
-**Translation algorithm.** Group spec body fields by parent (the prefix before `[*]`). For each parent:
-
-| Spec — fields with `[*]` for this parent | SDD value form | Planner output (wire shape into `tasks.md input-values.bodyParameters[<parent>]`) |
-|---|---|---|
-| Exactly one sub-field `<parent>[*].<leaf>` of `dataType: <T>` | List of scalars matching `<T>` (e.g. `["a@x", "b@y"]`) | `[nestUnder(<leaf>, v) for v in sdd_value]` — each scalar becomes `{<leaf nested>: v}` |
-| One or more sub-fields | List of objects already matching the element shape (e.g. `[{"emailAddress":{"address":"a@x"}}]`) | Pass through unchanged |
-| Two or more sub-fields under the same parent | List of scalars | **Halt + AskUserQuestion** — scalars are ambiguous (which sub-field?). Ask user for object list. |
-| Any | Single scalar (not a list) | **Halt + AskUserQuestion** — confirm whether user meant single-element list |
-
-**Worked example — Outlook `Message`:**
-
-Spec exposes `toRecipients[*].emailAddress.address` (one sub-field, dataType `string`) and `bccRecipients[*].emailAddress.address` (same shape). SDD:
-
-```
-| toRecipients  | Array of string | ["a@x"]           |
-| bccRecipients | Array of string | ["b@x", "c@x"]    |
-```
-
-Planner emits to `tasks.md input-values.bodyParameters`:
-
-```json
-{
-    "toRecipients":  [{"emailAddress":{"address":"a@x"}}],
-    "bccRecipients": [{"emailAddress":{"address":"b@x"}}, {"emailAddress":{"address":"c@x"}}]
-}
-```
-
-**Never** emit a key with literal `[*]` in `bodyParameters`. The CLI accepts it (well-formed JSON) and validate passes; runtime APIs (Microsoft Graph, Slack, etc.) reject with HTTP 400 `UnableToDeserializePostBody`. Pre-input scan in [`impl-json.md` § Step 1.b](impl-json.md#step-1b--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
+If any resolved `inputs.bodyFields[].name` contains `[*]`, load [complex inputs § Array-of-object body fields](complex-inputs-guide.md#array-of-object-body-fields) before emitting `bodyParameters`. Otherwise do not load the guide for array translation.
 
 ## tasks.md Entry Format
 
@@ -189,13 +168,15 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
 - connector-key: <connectorKey>
 - object-name: <objectName>
 - input-values: {"bodyParameters":{...},"queryParameters":{...},"pathParameters":{...}}
+- file-inputs: {"<multipart parameter name>":"=vars.<file Case-variable id>"}   # multipart only; omit otherwise; authored by the conditional guide
 - filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Active\"","value":"Active"},"uiId":null}]}
 - outputs:                            # optional; omit only when the SDD declares none
   - <SDD output row, copied verbatim>
 - isRequired: true
 - runOnlyOnce: false
-- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
-- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
+- activation-mode: <sequential|parallel|parallel-after-predecessor|event-triggered|adhoc|fan-in|conditional-gate>   # required
+- entry-rule: <copy the matching supplied/approved SDD task-entry rule>   # required; legality: ../../conditions/task-entry-conditions/planning.md#phase-1-plan-presentation-contract
+- rationale: "<copy the supplied/approved SDD rationale>"   # required
 - order: after T<m>
 - lane: <n>
 - verify: tasks.md `input-values` covers every `inputs.*[?required]` from the lean spec across `bodyFields`, `queryParameters`, `pathParameters` — see Step 5 above.
@@ -205,12 +186,10 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
 
 ## Unresolved Fallback
 
-Two entry paths: **Scenario A** — connector not found in TypeCache ([§ 1 No-match](#1-find-the-connector-in-typecache), after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the Step 2 create offer is **declined** or fails (or the run is non-interactive). When `Connections` is empty, offer to create one first (Step 2) — do not jump straight here.
+Two entry paths: **Scenario A** — a TypeCache zero assigned to placeholder by the canonical Rule 17 batch; **Scenario B** — the connector exists but its connection creation offer is declined or fails. An empty `Connections` list takes Scenario B only after that offer; it is never a TypeCache zero.
 
-> **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector activity exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
-
-If the connector or connection cannot be resolved:
-- Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`
+If the connector, connection, or required Generic object cannot be resolved:
+- Mark the blocking `type-id`, `connection-id`, or `object-name` with `<UNRESOLVED: reason>`; an unresolved required object also marks `type-id` so placeholder dispatch is unambiguous
 - Omit `input-values:` entirely — no schema to wire against
 - Execution creates a placeholder task (display-name + type only) per [placeholder-tasks.md](../../../placeholder-tasks.md)
 
