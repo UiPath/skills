@@ -1,16 +1,27 @@
 #!/usr/bin/env python3
-"""Slack weather pipeline: Slack connector + HTTP + decision all ran, output has verdict."""
+"""Slack weather pipeline: Slack connector + HTTP + decision all ran, and the
+mapped `weatherVerdict` output holds one of the two allowed verdicts.
+
+The behavior grade scopes to the named `weatherVerdict` output global rather
+than sweeping every runtime global and element output. A whole-payload sweep is
+a false pass here: the Slack channel description and the raw HTTP response body
+both land in element outputs, so a flow that never mapped a verdict into a flow
+output can still make the verdict text "present" somewhere in the debug dump.
+"""
 
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.flow_check import (  # noqa: E402
+    _fail_with_capture,
     assert_flow_has_api_node_targeting,
     assert_flow_uses_connector_target,
-    assert_outputs_contain,
+    assert_output_nonempty,
     run_debug,
 )
+
+ALLOWED_VERDICTS = ("warm office today", "cold office today")
 
 
 def main():
@@ -27,11 +38,20 @@ def main():
 
     payload = run_debug(timeout=240)
 
-    # Verdict proves the full chain executed: Slack → Script → HTTP → Decision → End
-    assert_outputs_contain(
-        payload, ["warm office today", "cold office today"], require_all=False
+    value = assert_output_nonempty(payload, "weatherVerdict")
+    text = str(value).lower()
+    hits = [v for v in ALLOWED_VERDICTS if v in text]
+    if len(hits) != 1:
+        found = "both verdicts" if len(hits) > 1 else "neither verdict"
+        _fail_with_capture(
+            f"weatherVerdict must contain exactly one of {list(ALLOWED_VERDICTS)}; "
+            f"found {found}. weatherVerdict={value!r}"
+        )
+
+    print(
+        "OK: Slack connector target + weather-API node + decision all executed, "
+        f"weatherVerdict carries {hits[0]!r}"
     )
-    print("OK: Slack connector target + weather-API node + decision all executed, verdict present")
 
 
 if __name__ == "__main__":
