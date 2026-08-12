@@ -12,7 +12,7 @@ if [ -z "$UIP" ] && command -v npm >/dev/null 2>&1; then
   UIP="$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip"
 fi
 if [ -z "$UIP" ] || [ ! -x "$UIP" ]; then
-  echo "uip not found. Ask the user to run the official installer, then rerun this step with PATH updated:" >&2
+  echo "UiPath CLI not found. Ask the user to run the official installer, then rerun this step with PATH updated:" >&2
   echo "  curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash" >&2
   exit 2
 fi
