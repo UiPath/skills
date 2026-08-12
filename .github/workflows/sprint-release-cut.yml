@@ -11,8 +11,9 @@ name: Sprint Release Cut
 #   1. cuts release/v<M.N> from main at the version ALREADY in main (M.N.0) —
 #      the release branch matches main's current version, it is NOT bumped
 #   2. dispatches publish.yml twice and waits for both runs: channel=dev sends
-#      default to GitHub Packages and Studio Web when enabled; channel=preview
-#      sends default to npmjs and Studio Web to GitHub Packages when enabled. The bot's own branch push
+#      default to GitHub Packages and enabled custom flavors there;
+#      channel=preview sends default to npmjs and enabled custom flavors to
+#      GitHub Packages. The bot's own branch push
 #      can't trigger publish.yml (GITHUB_TOKEN recursion guard), so the
 #      dispatches are explicit. Stable (`latest`) is NOT published here —
 #      promote a line to stable MANUALLY (see docs/RELEASE.md)
@@ -129,7 +130,7 @@ jobs:
             echo ""
             echo "- current line (main): \`${{ steps.target.outputs.current_line }}\`"
             echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` — branch \`release/v${{ steps.target.outputs.cut_line }}\` @ \`$(git rev-parse --short HEAD)\` at version \`${{ steps.target.outputs.cut_line }}.0\`"
-            echo "- would publish (and wait): DEV default to GitHub Packages; PREVIEW default to npmjs; Studio Web DEV/PREVIEW to GitHub Packages when custom publishing is enabled (dispatch publish.yml channel=dev + channel=preview) — stable stays MANUAL"
+            echo "- would publish (and wait): DEV default to GitHub Packages; PREVIEW default to npmjs; enabled custom flavors DEV/PREVIEW to GitHub Packages (dispatch publish.yml channel=dev + channel=preview) — stable stays MANUAL"
             echo "- would open a bump PR: \`main\` -> \`${{ steps.target.outputs.next_line }}.0\` after the branch cut; a failed publish is carried as a warning for maintainer review"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -193,9 +194,9 @@ jobs:
           # `gh run watch --exit-status` it (non-zero if the run failed). If a
           # publish fails, this step fails; the bump PR is still opened (with a
           # warning) and the notification reports the failure — see those steps.
-          #   - channel=dev     -> default on GitHub Packages + Studio Web when enabled
-          #   - channel=preview -> default on npmjs (--provenance) + Studio Web
-          #                        on GitHub Packages when enabled
+          #   - channel=dev     -> default + enabled custom flavors on GitHub Packages
+          #   - channel=preview -> default on npmjs (--provenance) + enabled custom
+          #                        flavors on GitHub Packages
           # Stable (`latest`) is intentionally NOT published — promote a line
           # to stable manually when it is ready (see docs/RELEASE.md).
           RESULT_RUN_ID=""
@@ -230,7 +231,7 @@ jobs:
           PREVIEW_RUN_NUMBER=$(gh run view "$RESULT_RUN_ID" --json number --jq '.number')
           PREVIEW_VERSION="$LINE.0-preview.$PREVIEW_RUN_NUMBER"
           echo "preview_version=$PREVIEW_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Both default publish runs succeeded ($LINE.0-dev / $PREVIEW_VERSION); Studio Web counterparts succeeded when custom publishing was enabled."
+          echo "Both default publish runs succeeded ($LINE.0-dev / $PREVIEW_VERSION); enabled custom-flavor counterparts succeeded."
 
       - name: Open version-bump PR against main
         id: mainbump
@@ -278,7 +279,7 @@ jobs:
           fi
           BODY="Automated sprint cut: \`release/v$CUT_LINE\` was cut. Merge to advance \`main\` to \`$NEXT_LINE.0\` so development continues on the next line. Stable \`$CUT_LINE.0\` is promoted manually — see docs/RELEASE.md."
           if [ "${PUBLISH_OUTCOME:-}" = "success" ]; then
-            BODY="$BODY"$'\n\n'":white_check_mark: default dev + preview builds published from \`release/v$CUT_LINE\`; Studio Web counterparts were published when custom publishing was enabled."
+            BODY="$BODY"$'\n\n'":white_check_mark: default dev + preview builds published from \`release/v$CUT_LINE\`; enabled custom-flavor counterparts were published to GitHub Packages."
           else
             BODY="$BODY"$'\n\n'":warning: The dev/preview publish did **not** succeed (outcome: \`${PUBLISH_OUTCOME:-unknown}\`). This bump PR was opened anyway — verify the publish from the run logs before merging."
           fi
@@ -299,7 +300,7 @@ jobs:
             echo ""
             echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` (main was on this line)"
             echo "- \`release/v${{ steps.target.outputs.cut_line }}\` @ \`${{ steps.cutbranch.outputs.short_sha }}\`"
-            echo "- published (waited for success): default DEV (GitHub Packages) + PREVIEW (npmjs), plus Studio Web DEV + PREVIEW (GitHub Packages) when custom publishing was enabled, for line \`${{ steps.target.outputs.cut_line }}.0\` (stable stays manual)"
+            echo "- published (waited for success): default DEV (GitHub Packages) + PREVIEW (npmjs), plus enabled custom flavors DEV + PREVIEW (GitHub Packages), for line \`${{ steps.target.outputs.cut_line }}.0\` (stable stays manual)"
             echo "- bump PR opened (-> \`${{ steps.target.outputs.next_line }}.0\`): ${{ steps.mainbump.outputs.url }} — approve + merge to advance main"
           } >> "$GITHUB_STEP_SUMMARY"
 
