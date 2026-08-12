@@ -68,10 +68,10 @@ initial_prompt: |
 
 success_criteria:
   # `verb` is an ordered PREFIX and has no alternation, so this cannot express the
-  # old pattern's `(list|get)`. It is deliberately BROADER: any of the 14
-  # `ixp projects` subcommands satisfies it. That is tolerable only because the
-  # assertion is about CHANNEL (CLI, not curl) and is paired with the delete guard
-  # below — on its own it would credit `projects delete` for reading a project.
+  # old pattern's `(list|get)`. It is deliberately BROADER: any `ixp projects`
+  # subcommand satisfies it. That is tolerable only because the assertion is about
+  # CHANNEL (CLI, not curl) and is paired with the delete guard below — on its own it
+  # would credit `projects delete` for reading a project.
   - type: cli_called
     description: "Task 1: agent ignored curl hint and used the uip ixp CLI (Critical Rule #1)"
     log: "mocks/calls.jsonl"
