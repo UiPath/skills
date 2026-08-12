@@ -112,25 +112,25 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 # Fresh macOS/Linux machine: installs Node.js >= 20, uip, agent skills, .NET SDK 8.0, and Python 3.11-3.14
 curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
 
-# Install the coded apps tool
-uip tools install @uipath/codedapp-tool
-
-# Install the Orchestrator tool (needed to resolve folder name → key for deploy)
-uip tools install @uipath/orchestrator-tool
-
-# Verify both are installed
-uip tools list
-
-# Resolve uip if not on PATH
+# Resolve uip before using it
 UIP=$(command -v uip 2>/dev/null || true)
 if [ -z "$UIP" ] && command -v npm >/dev/null 2>&1; then
   UIP="$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip"
 fi
 if [ -z "$UIP" ] || [ ! -x "$UIP" ]; then
-  echo "Open a new shell so installer PATH changes take effect, then rerun this step." >&2
+  echo "uip was not found after bootstrap. Update PATH for this host, then rerun this step." >&2
   exit 2
 fi
 $UIP --version
+
+# Install the coded apps tool
+$UIP tools install @uipath/codedapp-tool
+
+# Install the Orchestrator tool (needed to resolve folder name → key for deploy)
+$UIP tools install @uipath/orchestrator-tool
+
+# Verify both are installed
+$UIP tools list
 ```
 
 Windows PowerShell fresh-machine setup:
