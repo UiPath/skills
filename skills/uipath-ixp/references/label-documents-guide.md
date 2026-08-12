@@ -197,7 +197,7 @@ uip ixp documents delete <project-name> <document-id> -y --output json
 | You have | How to get the DocumentId |
 |----------|---------------------------|
 | Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --output json --output-filter "Documents[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` (rows are under `Documents` — the list is a paged envelope) |
-| A distinctive predicted field value (e.g., Invoice Number `MSI0601020`) | `uip ixp documents list <project-name> --output json` for the ids, then `uip ixp labellings get-predictions <project-name> <document-id> --output json` per id until a `Labels[].Fields[].FormattedValue` matches. One call per document — prefer the Filename row above when you have a filename. |
+| A distinctive predicted field value (e.g., Invoice Number `MSI0601020`) | `uip ixp documents list <project-name> --output json` for the ids, then `uip ixp labellings get-predictions <project-name> <document-id> --output json` per id until a `Labels[].Fields[].FormattedValue` matches. One call per document — stop at the first match rather than fetching them all. |
 | Nothing — need to find by content | `uip ixp documents list <project-name> --output json`, then `documents download` candidates and read with the Read tool |
 
 `documents list` returns `Filename` alongside `DocumentId` (the original upload filename, or `null` if none was sent at upload time). When filenames aren't unique within the project, the JMESPath filter returns multiple IDs — review them with `documents download` before deleting.
