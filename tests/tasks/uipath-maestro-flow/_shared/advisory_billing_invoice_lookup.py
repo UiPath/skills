@@ -88,8 +88,10 @@ def main():
     expr = str(queryp["queryExpression"])
     if not query_references_input(detail, "invoiceNumber"):
         fail(
-            f"queryExpression is {expr!r} and its filterVariables do not reference the flow's "
-            f"`invoiceNumber` input. A constant filter makes the three offline rungs meaningless"
+            f"queryExpression is {expr!r}, likely a hand-authored =js: concat. filterVariables "
+            f"has no placeholder for invoiceNumber. Author the filter via --detail.filter so "
+            f"the CLI compiles it: dynamic operands become {{var_...}} placeholders in "
+            f"filterVariables"
         )
     # A CEQL string literal must be single-quoted; an unquoted RHS parses as
     # subtraction server-side and 400s (the `sql-where` grammar fil-run enforces).
