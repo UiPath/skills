@@ -24,7 +24,7 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 ## Step 0 — Resolve the `uip` binary
 
-Resolve the `uip` binary (it may not be on PATH in nvm environments), capture its version, and upgrade only when the installed version is **older** than the latest published `@uipath/cli` — dev builds may be newer than the npm release, leave those alone. If `uip` is absent on a fresh machine, bootstrap with the official installer first; it installs Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
+Resolve the `uip` binary (it may not be on PATH in nvm environments), capture its version, and upgrade only when the installed version is **older** than the latest published `@uipath/cli` — dev builds may be newer than the npm release, leave those alone. If `uip` is absent on a fresh machine, stop and ask the user to run the official installer first; do not auto-run an installer from this resolver.
 
 ```bash
 UIP=$(command -v uip 2>/dev/null || true)
@@ -32,11 +32,8 @@ if [ -z "$UIP" ] && command -v npm >/dev/null 2>&1; then
   UIP="$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip"
 fi
 if [ -z "$UIP" ] || [ ! -x "$UIP" ]; then
-  curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
-  UIP=$(command -v uip 2>/dev/null || true)
-fi
-if [ -z "$UIP" ] || [ ! -x "$UIP" ]; then
-  echo "Open a new shell so installer PATH changes take effect, then rerun this step." >&2
+  echo "uip not found. Ask the user to run the official installer, then rerun this step with PATH updated:" >&2
+  echo "  curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash" >&2
   exit 2
 fi
 CURRENT=$($UIP --version 2>/dev/null | awk '{print $NF}')
@@ -51,7 +48,7 @@ $UIP --version
 
 Use `$UIP` in place of `uip` for all subsequent commands if the plain `uip` command isn't found.
 
-On Windows PowerShell, use `irm https://download.uipath.com/uipath-cli/install.ps1 | iex` for the fresh-machine bootstrap. If `npm install -g` fails with a permission error during an upgrade, prompt the user to re-run it with the appropriate privileges (e.g., `sudo npm install -g @uipath/cli@latest`) — do not retry automatically.
+On Windows PowerShell, ask the user to run `irm https://download.uipath.com/uipath-cli/install.ps1 | iex` for the fresh-machine bootstrap. If `npm install -g` fails with a permission error during an upgrade, prompt the user to re-run it with the appropriate privileges (e.g., `sudo npm install -g @uipath/cli@latest`) — do not retry automatically.
 
 ## Step 1 — HARD GATE: check login and pull registry
 

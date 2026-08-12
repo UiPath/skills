@@ -4,7 +4,7 @@ Shared conventions for the `uip` CLI that apply across **all three capabilities*
 
 ## 1. Resolve the `uip` binary and detect command prefix
 
-Resolve the `uip` binary (it may not be on PATH in nvm environments) and detect the command namespace.
+Resolve the `uip` binary (it may not be on PATH in nvm environments) and detect the command namespace. If `uip` is absent, stop and ask the user to run the official installer first; do not auto-run an installer from this resolver.
 
 ```bash
 UIP=$(command -v uip 2>/dev/null || true)
@@ -12,17 +12,14 @@ if [ -z "$UIP" ] && command -v npm >/dev/null 2>&1; then
   UIP="$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip"
 fi
 if [ -z "$UIP" ] || [ ! -x "$UIP" ]; then
-  curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
-  UIP=$(command -v uip 2>/dev/null || true)
-fi
-if [ -z "$UIP" ] || [ ! -x "$UIP" ]; then
-  echo "Open a new shell so installer PATH changes take effect, then rerun this step." >&2
+  echo "uip not found. Ask the user to run the official installer, then rerun this step with PATH updated:" >&2
+  echo "  curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash" >&2
   exit 2
 fi
 CURRENT=$($UIP --version 2>/dev/null | awk '{print $NF}')
 ```
 
-If `uip` is not found at all, the snippet above uses the official onboarding installer. It installs Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
+If `uip` is not found at all, ask the user to run the official onboarding installer. It installs Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
 
 ```bash
 curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
