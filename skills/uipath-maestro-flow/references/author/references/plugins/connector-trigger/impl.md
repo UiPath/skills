@@ -271,7 +271,7 @@ uip maestro flow node add <PROJECT>.flow uipath.connector.event.<key>.<event> \
   --label "<LABEL>" --position 400,144 --output json
 ```
 
-Wire an incoming edge into `input` and an outgoing edge from `output` per [editing-operations-json.md — Insert a node between two existing nodes](../../editing-operations-json.md#insert-a-node-between-two-existing-nodes). Downstream reads `$vars.{eventNodeId}.output` (payload) and `$vars.{eventNodeId}.error`; wire `error` to survive an event-wait failure.
+Wire an incoming edge into `input` and an outgoing edge from `output` per [editing-operations-json.md — Insert a node between two existing nodes](../../editing-operations-json.md#insert-a-node-between-two-existing-nodes). Downstream reads `$vars.{eventNodeId}.output` (payload) and `$vars.{eventNodeId}.error`. Wire `error` only when the requirements say what an event-wait failure should do — otherwise leave it unwired and let the failure fault the flow ([file-format.md — Default: off](../../../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles)).
 
 > **The flow still needs a separate start trigger.** A mid-flow event node does **not** start the flow. Do not remove `core.trigger.manual`/`scheduled` or the connector trigger that begins the flow.
 
