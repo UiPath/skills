@@ -49,6 +49,8 @@ uip agent guardrails list --output json
 
 Build a lookup of `{ validatorId: status }` from the `Data` array. You will use this in Steps 2 and 5 to filter recommendations.
 
+> **`Validator` is not unique — key the lookup on `(Validator, IsByo)`, not `Validator` alone.** A tenant with a bring-your-own (BYOG) configuration for a validator sees two entries sharing the same `Validator` name — one built-in (`IsByo` absent/false), one BYO (`IsByo: true`, carrying `ByoValidatorName`/`ByoConfigurationId`/etc.). Collapsing them into a single `{ validatorId: status }` key silently picks whichever entry happens to win the collision and can validate against the wrong `Parameters`/`AllowedScopes`. See [guardrails.md § BYO (bring-your-own) guardrails](guardrails.md#byo-bring-your-own-guardrails).
+
 > **Catalog vs. list — the key distinction:** The catalog lists all guardrails that exist on the platform (with rich metadata for reasoning). The guardrails list returns only those accessible to this tenant. Only recommend validators where `Status == "Available"` in the list.
 
 ---
@@ -120,6 +122,8 @@ For **each entry** in the catalog (`guardrails[]` array from the cached JSON):
 5. If the validator is a candidate: use the catalog entry's `examples[].config` to determine the appropriate scope, stage, action, and parameters. The example config is the authoritative template for parameter shape.
 
 Do **not** apply predetermined knowledge about which guardrail maps to which schema field. Let the catalog entry's authored fields drive every recommendation decision.
+
+> **Built-in vs. BYO — default to built-in.** When a matched validator has both a built-in entry and one or more `Available` BYO (`IsByo: true`) entries in the guardrails list, recommend the built-in implementation (omit `byoValidatorName`) by default, and mention that a BYO alternative exists. Only recommend a specific BYO configuration when the user names it or asks for BYO explicitly.
 
 ### Step 3 — De-duplicate Overlapping Validators
 
@@ -221,7 +225,7 @@ For each existing guardrail in `agent.json`'s `guardrails[]`:
 
 ### Correctness Check
 
-Run `uip agent guardrails list --output json` (from Step 0) and find the matching validator by `Validator` name. The `Parameters` array is the authoritative source for all validation rules:
+Run `uip agent guardrails list --output json` (from Step 0) and find the matching validator by `Validator` name. **If more than one entry shares that `Validator` name** (a built-in plus one or more BYOG entries), disambiguate before reading `Parameters`: the guardrail JSON carries `byoValidatorName` when it targets a specific BYO configuration — match on that against the list entries' `ByoValidatorName`; if the guardrail JSON has no `byoValidatorName`, it targets the built-in entry (`IsByo` absent/false). Validating against the wrong entry's `Parameters` produces false correctness findings. The `Parameters` array (of the correctly matched entry) is the authoritative source for all validation rules:
 
 | CLI field | What to check |
 |-----------|---------------|
@@ -275,3 +279,4 @@ If the user asks to fix identified issues: apply corrections to `agent.json`, ru
 12. **All map-enum keys must exactly match the corresponding enum-list values** — no extra or missing keys. This is the most common correctness error.
 13. **Read [guardrails.md](guardrails.md) before writing any JSON** — discriminator fields, PascalCase constraints, and parameter shapes are specified there and cannot be safely inferred.
 14. **Do NOT use TaskCreate, TaskUpdate, or other task-tracking tools for guardrail edits.** Edit `agent.json` directly — task management tools add bookkeeping turns without benefit and push runs over their turn budget.
+15. **`Validator` is not unique — disambiguate built-in vs. BYO by `IsByo` before matching on name.** A tenant can have both a built-in and one or more BYOG entries sharing the same `Validator` name. Key any lookup on `(Validator, IsByo)`, and when an existing guardrail carries `byoValidatorName`, match it against `ByoValidatorName` — not `Validator` alone — before reading `Parameters`/`AllowedScopes` for correctness or recommendation. Default recommendations to the built-in entry unless the user asks for BYO. See [guardrails.md § BYO (bring-your-own) guardrails](guardrails.md#byo-bring-your-own-guardrails).

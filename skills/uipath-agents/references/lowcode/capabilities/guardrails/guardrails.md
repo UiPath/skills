@@ -625,8 +625,20 @@ Run `uip agent guardrails list --output json` to get the authoritative list. Onl
 | `GuardrailStages[scope]` | Valid execution stages for that scope |
 | `Parameters[].Id` | `validatorParameters[].id` |
 | `Parameters[].Type` | `validatorParameters[].$parameterType` |
+| `IsByo` | Disambiguates a bring-your-own (BYOG) entry from a built-in one — see [BYO (bring-your-own) guardrails](#byo-bring-your-own-guardrails) below. Not itself a JSON field. |
+| `ByoValidatorName` | `byoValidatorName` value — include this field to pin the guardrail to this exact BYO configuration. Required whenever more than one entry shares this `Validator` name (a built-in plus one or more BYOG configurations). |
 
 > **Important:** PII entity names use PascalCase (`"Email"`, not `"email_address"`). Harmful content categories use PascalCase (`"Hate"`, not `"hate"`). Scope values use PascalCase (`"Agent"`, `"Llm"`, `"Tool"`).
+
+## BYO (bring-your-own) guardrails
+
+A validator can be fulfilled by a tenant-registered **external** provider (a "BYOG" configuration — e.g. Azure AI Content Safety, Databricks AI Guardrails) instead of, or alongside, UiPath's own built-in implementation. A tenant admin registers these at Admin → AI Trust Layer → Guardrails Configurations or via `uip guardrails byo-configurations create`; see [uipath-platform § BYO Guardrail Configurations](/uipath:uipath-platform) for the admin-side lifecycle commands (`uip guardrails byo-configurations list|create|update|delete`).
+
+- **`Validator` is not unique.** A tenant with a BYOG `harmful_content` configuration sees **two** entries named `harmful_content` in `uip agent guardrails list` output — one built-in, one BYO. Use `IsByo` to tell them apart; never assume a single match.
+- **Filter to BYO-only entries** with `uip agent guardrails list --byo --output json` when the user specifically wants to see or target a BYO-backed validator.
+- **BYO entries carry extra fields**: `ByoValidatorName`, `ByoConnectionId`, `ByoConfigurationId`, `ByoConnectorName`, `ByoConnectorKey`, `FolderKey` — alongside the same `Parameters`/`AllowedScopes`/`GuardrailStages`/`Status` shape a built-in entry has.
+- **To author a guardrail against a specific BYO configuration**, build the `builtInValidator` guardrail exactly as for a built-in validator (same `validatorType`, same `validatorParameters` from that entry's `Parameters`), and add `byoValidatorName` set to that entry's `ByoValidatorName`. Omit it to use the built-in implementation. (`ByoConfigurationId` is the configuration's own admin-side id — useful for cross-referencing `uip guardrails byo-configurations list`, but it is not what the guardrail JSON carries; `ByoValidatorName` is unique per tenant and is the value that pins it.)
+- **`Status: "Disabled"` on a BYO entry** means the tenant switched that specific configuration off — the entry still shows (it doesn't vanish), so a disabled BYOG configuration is distinguishable from one that was never set up. Do not author a guardrail against a `Disabled` BYO entry; treat it the same as `Unauthorised` (skip, tell the user).
 
 ## Full Examples
 
@@ -1030,6 +1042,7 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 18. **Do not attempt OR logic within a single guardrail** — all rules and all fields within a guardrail are combined with AND. OR is not supported. To achieve OR behavior, create separate guardrails — one per condition branch.
 19. **Do not generate guardrails targeting unsupported tool types** — `matchNames` can only reference tools of supported types: agent, process, activity, builtInTool, ixpTool, or Integration Service connector. Do not generate guardrails with `matchNames` targeting other tool types.
 20. **Do not omit `matchNames` to target "all tools"** — always explicitly list every tool resource name in `matchNames`. Read the agent's `resources/` directory first. If the agent has no tool resources, do not add the guardrail.
+21. **Do not assume `Validator` is unique** — a tenant can have both a built-in and one or more bring-your-own (BYOG) entries sharing the same `Validator` name. Always check `IsByo` before treating two same-named entries as a duplicate or conflict, and set `byoValidatorName` when targeting a specific BYO entry. See [BYO (bring-your-own) guardrails](#byo-bring-your-own-guardrails).
 
 ## Walkthrough
 
