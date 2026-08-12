@@ -63,10 +63,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "Fetched predictions to resolve occurrences and field ids before mutating"
+    description: "Fetched predictions per document to resolve occurrences and field ids before mutating"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions\s+\S+\s+(?!-)\S+)[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
