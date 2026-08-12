@@ -2,6 +2,8 @@
 
 Signatures/params/examples for services, event-helper classes, options, enums: `dist/conversational-agent/index.d.ts`. Per-method scopes: shipped `docs/oauth-scopes.md`. This file covers only what neither can express.
 
+> **Building a chat UI with a conversational agent?** The `@uipath/ui-widgets-conversational-agent-chat` widget ships the complete chat experience (streaming, attachments, history, feedback) — embed it instead of hand-wiring: [../widgets/conversational-agent-chat.md](../widgets/conversational-agent-chat.md). Use this file when the widget's UI cannot express the requirement.
+
 > **Scope fork warning:** scopes differ per METHOD GROUP inside this one service (agent reads vs conversation create/update vs sessions vs feedback vs user settings each need a different scope set). Never assume service-uniform scopes — check the shipped per-method table; task-level bundles: [../oauth-scopes.md](../oauth-scopes.md).
 
 ## Session Lifecycle (WebSocket)

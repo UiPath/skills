@@ -14,7 +14,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 - User wants to **build, debug, or deploy** a UiPath Coded Web App or Coded Action App
 - User asks about `uip codedapp` commands, `.uipath/` directory, `app.config.json`, or `action-schema.json`
 - User wants to **scaffold** a new React/Vue frontend for UiPath Cloud or an Action Center form
-- User wants to embed the **Document Understanding Validation Station** widget for human review of DU extraction results
+- User asks for app UI that a **prebuilt UiPath widget** covers: review/correct Document Understanding extraction results (Validation Station), chat with a conversational agent, browse/edit a Data Fabric entity in a grid, upload files to a storage bucket, display a PDF, or sign in with an external IdP (Google/SAML)
 - User wants to **push/pull source** between local and Studio Web
 - User wants to use the `@uipath/uipath-typescript` SDK from a coded app
 - User wants to run the **full pipeline** (build → pack → publish → deploy)
@@ -85,6 +85,11 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **Package and deploy** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
 | **Full CLI command reference** | [references/commands-reference.md](references/commands-reference.md) |
 | **Embed the DU Validation Station widget** | [references/widgets/validation-station.md](references/widgets/validation-station.md) |
+| **Embed the Conversational Agent chat widget** | [references/widgets/conversational-agent-chat.md](references/widgets/conversational-agent-chat.md) |
+| **Embed the Data Fabric DataTable widget** | [references/widgets/datatable.md](references/widgets/datatable.md) |
+| **Embed the multi-file bucket upload widget** | [references/widgets/multi-file-upload.md](references/widgets/multi-file-upload.md) |
+| **Embed the PDF viewer widget** | [references/widgets/pdf-viewer.md](references/widgets/pdf-viewer.md) |
+| **Add external IdP sign-in buttons (Google/SAML)** | [references/widgets/external-auth.md](references/widgets/external-auth.md) |
 | **OAuth scopes for SDK services** | [references/oauth-scopes.md](references/oauth-scopes.md) |
 | **SDK: Import paths & subpath exports** | [references/sdk/imports.md](references/sdk/imports.md) |
 | **SDK: Assets, Queues, Buckets, Processes, Jobs, Attachments** | [references/sdk/orchestrator.md](references/sdk/orchestrator.md) |

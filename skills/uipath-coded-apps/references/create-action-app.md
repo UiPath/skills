@@ -13,6 +13,8 @@ The data contract is defined in `action-schema.json`.
 
 > **Document Understanding validation app?** If the user wants a human-review form for DU extraction results (correct fields, edit tables, approve a document), embed the **Validation Station widget** instead of generating a custom form. Follow [widgets/validation-station.md](widgets/validation-station.md) — it replaces the `src/components/Form.tsx` produced by Q4 below.
 
+> **Reviewer needs to see a PDF beside the form** (display-only — not DU validation)? Embed the **PDF Viewer widget** in the document pane instead of hand-rolling pdf.js — see [widgets/pdf-viewer.md](widgets/pdf-viewer.md).
+
 ---
 
 ## Pre-flight: Collect Required Information
@@ -401,6 +403,8 @@ Edit `Form.css` only for **structural** Q5 changes the tokens can't express — 
 **When to use this step:** Any time the app needs to display a PDF — whether from a Storage Bucket, a blob, a direct URL, or a file reference. This applies both when building from scratch and when reviewing existing code.
 
 The document source was already settled in **Q3-doc** (direct file input → Attachments, file path (string) input → Buckets, Data Fabric attachment → Entities + Attachments). If it was not — e.g. the user only said "load a PDF from a storage bucket" — go back and ask Q3-doc first; that phrasing does not pick a path. Fetching the bytes for any of those is straightforward — get the file from the service, build a blob URL (`URL.createObjectURL(blob)`), and pass it to the viewer below as `fileUrl`. The part agents get wrong is the **rendering** inside Action Center's sandboxed iframe — that is what the example below exists to get right.
+
+> **Prefer the PDF Viewer widget when installable.** `@uipath/ui-widgets-pdf-viewer` replaces this hand-rolled DocumentTab — packaged pdf.js worker (no CDN fetch to be blocked by CSP), bucket/Data Fabric/URL/blob sources without manual byte-fetching, toolbar, password prompts. Follow [widgets/pdf-viewer.md](widgets/pdf-viewer.md), which starts with the required publish-status check. Use the DocumentTab pattern below only when the widget is not yet published/installable.
 
 #### Anti-pattern warning — ALWAYS enforce
 

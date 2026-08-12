@@ -66,6 +66,8 @@ export const fetchDetailByKey: MetricDetailByKeyFn = async (sdk, agentName) => {
 
 `getFiles` (folder-aware `BucketFile` items, regex filtering) vs `getFileMetaData` (flat `BlobItem` list by `prefix`): prefer **`getFiles`** for directory-style browsing. Neither method's JSDoc mentions the other. Note `JobGetResponse.process` is populated only via `expand` (its JSDoc, unlike `machine`/`robot`, does not say so).
 
+Bucket UI shortcuts: uploading files → Multi-File Upload widget ([../widgets/multi-file-upload.md](../widgets/multi-file-upload.md)); displaying a bucket PDF → PDF Viewer widget ([../widgets/pdf-viewer.md](../widgets/pdf-viewer.md)).
+
 ## Attachments Service
 
 Cross-artifact role the types don't show: Coded Action Apps resolve a `type: "file"` input — the file reference handed in by the automation (Maestro / Agent / RPA) — into bytes via `Attachments.getById()` → `blobFileAccess` (signed URL + headers). `Jobs.getOutput()` uses the same service internally for file-type outputs (see scope pairing warning above). When `blobFileAccess.requiresAuth` is `true`, pass `blobFileAccess.headers` on the download request.
