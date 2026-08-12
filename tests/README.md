@@ -62,11 +62,12 @@ make test-uipath-maestro-flow
 
 # Run a single task file
 SKILLS_REPO_PATH=$(cd .. && pwd) \
+SKILLS_PLUGIN_PATH=$(cd .. && pwd) \
   .venv/bin/coder-eval run tasks/uipath-maestro-flow/smoke/init_validate.yaml \
   -e experiments/default.yaml
 ```
 
-The `SKILLS_REPO_PATH` environment variable defaults to the parent directory (repo root) when using `make`.
+The `SKILLS_REPO_PATH` environment variable defaults to the parent directory (repo root) when using `make`. `SKILLS_PLUGIN_PATH` (the agent's mounted plugin view) defaults to the same value locally; CI points it at a `tests/`-excluded copy so the agent under test can't read its own answer key — see `.github/workflows/*.yml`.
 
 ### Parallelism
 
@@ -530,6 +531,7 @@ runs/
 4. **Re-run a single task with verbose output:**
    ```bash
    SKILLS_REPO_PATH=$(cd .. && pwd) \
+   SKILLS_PLUGIN_PATH=$(cd .. && pwd) \
      .venv/bin/coder-eval run tasks/uipath-maestro-flow/smoke/init_validate.yaml \
      -e experiments/default.yaml -v
    ```

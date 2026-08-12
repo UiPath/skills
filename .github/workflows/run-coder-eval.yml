@@ -235,11 +235,29 @@ jobs:
           CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
         run: bash .github/scripts/refresh-auth.sh
 
+      # Agent's plugin view must exclude tests/ — nightly.yaml's
+      # `plugins[].path` is `$SKILLS_PLUGIN_PATH`, mounted read-only into the
+      # agent's container at the same path (docker_runner.py auto-mount). If
+      # this pointed at the full checkout (like SKILLS_REPO_PATH, still used
+      # below for grading's run_command criteria), the agent under test
+      # could read tests/tasks/**/*.yaml — its own success_criteria/answers.
+      - name: Build tests-excluded skills copy for agent plugin mount
+        run: |
+          rm -rf /tmp/skills
+          mkdir -p /tmp/skills
+          # plugins/ and AGENTS.md are also excluded: both are committed
+          # symlinks (plugins/uipath -> .., AGENTS.md -> CLAUDE.md) that tar
+          # fails to recreate on the Windows runner (dangling-target-order /
+          # ELOOP on the self-referential marketplace link); neither is needed
+          # by the `type: local` plugin loader, which reads the repo root directly.
+          tar --exclude='./tests' --exclude='./.git' --exclude='./plugins' --exclude='./AGENTS.md' -C "${GITHUB_WORKSPACE}" -cf - . | tar -C /tmp/skills -xf -
+
       # TASK_GLOBS here is the partition-resolved list of *file paths* (not
       # globs). Word-splitting is intentional — do not quote.
       - name: Run coder-eval
         env:
           SKILLS_REPO_PATH:         ${{ github.workspace }}
+          SKILLS_PLUGIN_PATH:       /tmp/skills
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ secrets.AWS_REGION }}
@@ -506,6 +524,23 @@ jobs:
           uip rpa list-instances --output json 2>&1 || true
           taskkill //F //IM UiPath.Studio.Helm.exe 2>/dev/null || true
 
+      # Agent's plugin view must exclude tests/ — smoke-windows.yaml's
+      # `plugins[].path` is `$SKILLS_PLUGIN_PATH`. See the Linux job's
+      # equivalent step above for why (leaks the answer key otherwise).
+      # tempdir driver has no container jail, so this is defense-in-depth
+      # here rather than a hard boundary, but kept consistent.
+      - name: Build tests-excluded skills copy for agent plugin mount
+        shell: bash
+        run: |
+          rm -rf /tmp/skills
+          mkdir -p /tmp/skills
+          # plugins/ and AGENTS.md are also excluded: both are committed
+          # symlinks (plugins/uipath -> .., AGENTS.md -> CLAUDE.md) that tar
+          # fails to recreate on the Windows runner (dangling-target-order /
+          # ELOOP on the self-referential marketplace link); neither is needed
+          # by the `type: local` plugin loader, which reads the repo root directly.
+          tar --exclude='./tests' --exclude='./.git' --exclude='./plugins' --exclude='./AGENTS.md' -C "${GITHUB_WORKSPACE}" -cf - . | tar -C /tmp/skills -xf -
+
       # Run tasks one at a time on Windows: Helm state leaks between tasks
       # (stale Studio session, locked NuGet cache), so the loop kills Helm
       # between tasks. j=1 by construction.
@@ -517,6 +552,7 @@ jobs:
       - name: Run coder-eval (Windows)
         env:
           SKILLS_REPO_PATH:         ${{ github.workspace }}
+          SKILLS_PLUGIN_PATH:       /tmp/skills
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ secrets.AWS_REGION }}

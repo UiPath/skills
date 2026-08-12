@@ -399,9 +399,27 @@ jobs:
               uip agent guardrails list --output json
             '
 
+      # Agent's plugin view must exclude tests/ — smoke.yaml's
+      # `plugins[].path` is `$SKILLS_PLUGIN_PATH`, mounted read-only into the
+      # agent's container at the same path (docker_runner.py auto-mount). If
+      # this pointed at the full checkout (like SKILLS_REPO_PATH, still used
+      # below for grading's run_command criteria), the agent under test
+      # could read tests/tasks/**/*.yaml — its own success_criteria/answers.
+      - name: Build tests-excluded skills copy for agent plugin mount
+        run: |
+          rm -rf /tmp/skills
+          mkdir -p /tmp/skills
+          # plugins/ and AGENTS.md are also excluded: both are committed
+          # symlinks (plugins/uipath -> .., AGENTS.md -> CLAUDE.md) that tar
+          # fails to recreate on the Windows runner (dangling-target-order /
+          # ELOOP on the self-referential marketplace link); neither is needed
+          # by the `type: local` plugin loader, which reads the repo root directly.
+          tar --exclude='./tests' --exclude='./.git' --exclude='./plugins' --exclude='./AGENTS.md' -C "${GITHUB_WORKSPACE}" -cf - . | tar -C /tmp/skills -xf -
+
       - name: Run smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
+          SKILLS_PLUGIN_PATH: /tmp/skills
           # Route the agent through AWS Bedrock. The Anthropic workspace
           # hit its API usage limit (resets 2026-05-01), so DirectRoute
           # is blocked. Bedrock has a separate quota.

@@ -48,8 +48,13 @@ defaults:
     # decision toward "don't invoke".
     allowed_tools: [Skill, Bash, Read, Write, Edit, Glob, Grep]
     plugins:
+      # Agent's mounted view of the repo, deliberately narrower than
+      # SKILLS_REPO_PATH — SKILLS_PLUGIN_PATH excludes tests/ so the agent
+      # under test can't read its own answer key. Not a hard isolation
+      # boundary under driver:tempdir (no container jail), but kept
+      # consistent with the docker-driver experiments.
       - type: local
-        path: $SKILLS_REPO_PATH
+        path: $SKILLS_PLUGIN_PATH
     ignore_patterns: []
 
   # Drop <sandbox>/{node_modules,.npm-prefix,.venv} so preserved artifacts stay slim
