@@ -77,7 +77,9 @@ Case-level event triggers (`type: "uipath.case.trigger"` with `data.inputs.servi
 
 ### Connector condition rules
 
-When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit the rule with a **stub `uipath`** (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`) — a deliberate mock that validates clean but fails at Studio Web / debug / run until replaced. Full recipe + skip behavior + upgrade path: [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
+When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit the rule with a **stub `uipath`** (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`). Full recipe + skip behavior + upgrade path: [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
+
+> **This is the one placeholder the skill may NOT ship.** Unlike a placeholder task, a surviving connector-rule stub is **case-fatal**: subscriptions register at case start, so one stub anywhere makes the entire case non-startable (start event fails, 1 element executed) while `validate` still reports `Valid`. It is legal as Phase 2 build state only. If it survives Phase 3, [Step 12 Check 14](implementation.md#step-12--end-of-phase-3-validator-pass) halts the build — it is never downgraded to an Open Item. Evidence table: [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
 
 ## `tasks.md` Planning-Entry Shape
 
