@@ -1,6 +1,6 @@
 ---
 name: uipath-tasks
-description: "UiPath Action Center human-in-the-loop tasks via `uip tasks` — list, assign, complete approval/validation tasks. For authoring HITL nodes in flows/agents→uipath-human-in-the-loop. For Orchestrator→uipath-platform, codedapp→uipath-coded-apps. Skip Document Understanding."
+description: "UiPath Action Center human-in-the-loop tasks via `uip tasks`: list, assign, complete, plus task catalogs, comments, labels, metadata, and task data (get/save). For authoring HITL nodes in flows/agents→uipath-human-in-the-loop. For Orchestrator→uipath-platform, codedapp→uipath-coded-apps. Skip Document Understanding."
 when_to_use: "User says 'approve task', 'pending approval', 'pending action item', 'review action', 'list my tasks', 'reassign task' in an Orchestrator/Action Center context. NOT for TaskCreate/TaskUpdate (general session-task tracking) or Document Understanding validation."
 user-invocable: true
 ---
@@ -54,6 +54,11 @@ uip login tenant set MyTenant
 - Assigning, reassigning, or unassigning tasks to users
 - Completing tasks with action outcomes and data payloads
 - Querying which users have task permissions in a folder
+- Managing task catalogs (list, get, create, update) and their retention policy
+- Reading and adding task comments
+- Setting task labels
+- Editing task metadata (title, priority, catalog association)
+- Getting and saving task data
 
 > **Not in scope:** Orchestrator queues or queue items (use `uip or`), Document Understanding model training, or Action Center app development (use `uip codedapp`).
 
@@ -131,6 +136,14 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 
 8. **Do not complete already-completed tasks.** Check the task `status` field — if it is `Completed`, inform the user.
 
+9. **Folder ID for catalogs/comments/labels/metadata/data.** These commands are folder-scoped. Pass `--folder-id`, or omit it on an interactive terminal to pick from a list. It is required in non-interactive runs (agents, CI) — always pass it explicitly there.
+
+10. **Retention actions are `Delete` or `Archive`.** `Archive` also needs `--retention-bucket-id`. `--encrypted` is create-only and cannot be changed on update.
+
+11. **Labels replace the full set.** `tasks labels --labels` overwrites all labels on the task — include every label to keep, and pass `[]` to clear them all.
+
+12. **`data save` takes no type flag.** The command resolves the task type itself; pass the task ID, `--folder-id`, and `--data` (a JSON object).
+
 ---
 
 ## Task Navigation
@@ -149,6 +162,16 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 | Complete a task | `tasks complete <task-id> --type <type> --folder-id <id>` |
 | Complete with action | `tasks complete <task-id> --type FormTask --folder-id <id> --action "Approve" --data '{...}'` |
 | List assignable users | `tasks users <folder-id>` |
+| List task catalogs | `tasks catalogs list --folder-id <id>` |
+| Get a catalog | `tasks catalogs get <catalog-id> --folder-id <id>` |
+| Create a catalog | `tasks catalogs create --name <name> --folder-id <id>` |
+| Update a catalog | `tasks catalogs update <catalog-id> --folder-id <id>` |
+| List task comments | `tasks comments list <task-id> --folder-id <id>` |
+| Add a comment | `tasks comments add <task-id> --text <text> --folder-id <id>` |
+| Set task labels | `tasks labels <task-id> --labels '[{"name":"urgent"}]' --folder-id <id>` |
+| Edit task metadata | `tasks metadata <task-id> --folder-id <id> [--title --priority --catalog-id]` |
+| Get task data | `tasks data get <task-id> --folder-id <id>` |
+| Save task data | `tasks data save <task-id> --data '{...}' --folder-id <id>` |
 
 ---
 
@@ -203,4 +226,7 @@ For deeper guidance, read these files only when needed:
 - `references/task-lifecycle.md` — Listing and getting tasks, type-hint endpoint routing, and the full discover→assign→complete workflow
 - `references/task-completion.md` — Completion endpoint routing, required fields per task type
 - `references/task-assignment.md` — Assign, reassign, unassign patterns and user discovery
+- `references/task-catalogs.md` — Task catalog list/get/create/update and retention policy
+- `references/task-metadata.md` — Editing task metadata, plus task comments and labels
+- `references/task-data.md` — Getting and saving task data, and save type routing
 - `references/action-center-urls.md` — Canonical Action Center URL patterns; **read this before constructing or sharing any task deep-link** (the portal-UI misclassifies tenant-less URLs as "Orchestrator not enabled")
