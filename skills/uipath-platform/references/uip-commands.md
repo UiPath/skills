@@ -18,7 +18,7 @@
   default and do not expose this flag.
 
 **Confirmation & non-interactive behavior:**
-The CLI is non-interactive by default and never prompts. Destructive commands (deletes, removals, uninstalls) require `--yes` to proceed — and overwrite operations require `--force` — otherwise they fail fast with a structured error instead of asking for confirmation. To enable interactive prompts for human use, pass the global `--interactive` flag or set `core.interactive` once with `uip config set interactive auto`.
+The CLI is non-interactive by default and never prompts. Destructive commands (deletes, removals, uninstalls) require `--yes` to proceed — and overwrite operations require `--force` — otherwise they fail fast with a structured error instead of asking for confirmation. To enable interactive prompts for human use, pass the global `--interactive` flag or set `core.interactive` once with `uip config set core.interactive auto`.
 
 ---
 

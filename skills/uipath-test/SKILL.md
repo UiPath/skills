@@ -60,7 +60,7 @@ Common `uip tm` commands organized by resource type.
 | `uip tm requirements get --project-key <PROJECT_KEY> (--requirement-id <uuid> \| --requirement-key <key>)` | Get a requirement by UUID or key (mutually exclusive). |
 | `uip tm requirements create --project-key <PROJECT_KEY> --name <name>` | Create a new requirement. |
 | `uip tm requirements update --project-key <PROJECT_KEY> --requirement-id <uuid>` | Update a requirement name or description (at least one of `--name` or `--description` required). |
-| `uip tm requirements delete --project-key <PROJECT_KEY> --requirement-ids <uuid...>` | Delete one or more requirements (variadic). |
+| `uip tm requirements delete --project-key <PROJECT_KEY> --requirement-ids <uuid...> --yes` | Delete one or more requirements (variadic). |
 | `uip tm requirements export --project-key <PROJECT_KEY> --output-file <path>` | Export requirements to an .xlsx file. |
 | `uip tm requirements list-testcase-ids --project-key <PROJECT_KEY> --requirement-id <uuid>` | List the test case UUIDs assigned to a requirement. |
 | `uip tm requirements testcases --project-key <PROJECT_KEY> --requirement-id <uuid> (--add-testcase-ids <uuid...> \| --remove-testcase-ids <uuid...>)` | Attach or detach test cases on a requirement (mutually exclusive). |
