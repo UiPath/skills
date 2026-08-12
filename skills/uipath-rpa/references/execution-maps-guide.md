@@ -70,7 +70,7 @@ Budget shape: **~3 fixed turns + ~3 turns per capture-screen + 2-turn debug cycl
 
 | Turn | Emit in ONE assistant message |
 |---|---|
-| **T0 — Reads + pre-flight** | Parallel `Read`: [uia-starter-guide.md](uia-starter-guide.md) + the UIA package guide (Rule 7, both in full) + the target-capture orchestration reference it mandates ∥ prerequisites check (SKILL.md § UIA Prerequisites, Rule 7a) ∥ ONE `Bash`: window baseline via the UIA snapshot CLI ∥ build the element inventory/checklist from the user's manual steps |
+| **T0 — Reads + pre-flight** | Parallel `Read`: [uia-starter-guide.md](uia-starter-guide.md) + the UIA package's core guide (Rule 7, both in full) + the target-capture orchestration reference it mandates ∥ prerequisites check ([uia-starter-guide.md § UIA Prerequisites](uia-starter-guide.md), Rule 7a) ∥ ONE `Bash`: window baseline via the UIA snapshot CLI ∥ build the element inventory/checklist from the user's manual steps |
 | **Per capture-screen** | (a) capture bundle — run the `uia-configure-target` flow for ALL of this screen's checklist elements in one pass, through OR registration; (b) ONE state advance via the interact CLI — only to reach the next screen, never to test behavior |
 | **T-author — after ALL screens captured** | Scaffold/authoring prerequisites (Capture-First Fast Path order) ∥ batch-author every screen's activities in one pass (Rule 18), embed path for OR target attachment |
 | **T-gate** | ONE `Bash`: per-file `validate` (relative `--file-path`) `&&` `build` |

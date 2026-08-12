@@ -85,7 +85,7 @@ When a package is installed, its activity docs land under `{PROJECT_DIR}/.local/
 | **Read coded API doc** | `Read` `…/{PackageId}/coded/coded-api.md` — service API signatures for coded workflows |
 | **Read package overview** | `Read` `…/{PackageId}/overview.md` |
 | **List documented packages / activities** | `Bash`: `ls …/.local/docs/packages/` then `ls …/{PackageId}/activities/` |
-| **Search activity docs** | `Glob` `**/*.md` under `…/.local/docs/packages/`, then `Read` matches. **Not `Grep`** — `.local/` is gitignored and `Grep` skips it. |
+| **Search activity docs** | `ls` the exact package directory via Bash (`…/.local/docs/packages/<PackageId>/activities/`), then `Read` the matching file by path. **NOT `Glob` or `Grep`** — both skip gitignored `.local/`; a miss from either proves nothing. |
 
 ---
 

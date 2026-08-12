@@ -372,13 +372,51 @@ Project/
 
 UI workflows interact with applications and carry zero business rules; business-logic workflows decide and never touch the UI. Make read and write distinct invocable components — `GetCustomerInfo.xaml` and `ChangeCustomerInfo.xaml`, not one `HandleCustomer.xaml`. When the target application's UI changes, only the UI workflows need fixing; when a business rule changes, the UI workflows are untouched. Process-agnostic UI components are also the ones worth promoting to a shared library later.
 
+## Project Conversion (expressionLanguage / targetFramework)
+
+Rule 23 (SKILL.md) forbids changing either field on an existing project — both are fixed at creation and apply to every XAML file: flipping `expressionLanguage` (VisualBasic ↔ CSharp) invalidates every expression; flipping `targetFramework` (Windows ↔ Portable, or Legacy) invalidates package references and activity compatibility.
+
+**Do not attempt in-place conversion.** When the user wants to convert an existing project:
+
+1. Confirm the conversion with the user.
+2. Copy the project to a temporary folder.
+3. Create a new project via `uip rpa init --expression-language <VisualBasic|CSharp> --target-framework <Windows|Portable>`. For a target of Windows - Legacy, create it in Legacy mode instead — modern `init` is not the legacy creation path.
+4. Recreate every workflow defined in the old project as an equivalent in the new project.
+5. Delete the temporary copy only after the new project is generated successfully and the user agrees with the changes.
+
+## Project Context Discovery
+
+Before doing any work in a project, check if `.claude/rules/project-context.md` exists in the project directory.
+
+**If the file exists** → check for staleness:
+
+1. Read the first line to extract the metadata comment: `<!-- discovery-metadata: cs=N xaml=N deps=N -->`
+2. Count current files: Glob `**/*.cs` (excluding `.local/` and `.codedworkflows/`) and `**/*.xaml` in the project directory
+3. Count current dependencies: read `project.json` and count keys in the `.dependencies` object
+4. For each count (cs, xaml, deps), compute the percentage difference: `abs(current - stored) / max(stored, 1) * 100`
+5. If **any individual count differs by 60–70% or more** → run the discovery flow below
+6. If all counts are within the threshold → context is fresh, proceed with the skill workflow
+
+**If the file does NOT exist** → if a `project.json` exists, run the discovery flow below. **Greenfield (no `project.json`): skip the discovery agent** — nothing to discover. After the build completes, write both context files yourself (step 3 below) from what you just created: structure, dependencies, entry points.
+
+**Discovery flow** (used for both missing and stale context):
+
+1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at `agents/uipath-project-discovery-agent.md`. Use whichever spawn mechanism your host supports:
+   - **Host registers plugin agents by name** (e.g., Claude Code) → trigger the registered `uipath-project-discovery-agent` agent.
+   - **Host only spawns its own predefined subagents** (e.g., UiPath Autopilot) → spawn a read-only subagent and pass it that file (relative to this skill) as its instructions / custom skill.
+2. The agent returns the generated context document as its response
+3. Write the returned content to **both**:
+   - `.claude/rules/project-context.md` (create `.claude/rules/` directory if needed) — auto-loaded by Claude Code in future sessions
+   - `AGENTS.md` at project root — the shared cross-agent context convention (read by UiPath Autopilot in Studio Desktop and other AGENTS.md-aware hosts). If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
+4. Then proceed with the skill workflow
+
 #### Composition and argument naming
 
 Compose via `Invoke Workflow File` (coded: `workflows.StepName()`). Process workflow arguments use directional prefixes — `in_InvoiceId`, `out_Result`, `io_Browser` — so data flow is visible at every invocation site. Exception: library public workflows drop the prefixes ([library-authoring-guide.md § The Public-Workflow Contract](library-authoring-guide.md)).
 
 #### Layout and scale-out
 
-- Sequence vs Flowchart vs State Machine per workflow: Workflow Types table in SKILL.md § XAML Workflows Quick Reference
+- Sequence vs Flowchart vs State Machine per workflow: [xaml/xaml-basics-and-rules.md § Workflow Types](xaml/xaml-basics-and-rules.md)
 - High-volume transactional work: dispatcher/performer split via queues — [reframework-guide.md § Execution Mode: Queue-Driven](reframework-guide.md)
 
 #### Promotion ladder
