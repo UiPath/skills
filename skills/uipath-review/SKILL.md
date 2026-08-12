@@ -160,7 +160,7 @@ For **Solution / Multi-project scope**, record all projects in a table:
 find "<PROJECT_DIR>" \( -type d \( -name ".agent-builder" -o -path "*/.local/build" -o -name "node_modules" -o -name ".venv" -o -name "obj" -o -name "bin" \) \) -prune -o -type f -print 2>/dev/null | sort
 ```
 
-The result is the authored-file set for Steps 2.5 and 3. Any path absent from it is out of scope: do not read it, cite it, or name it in the report.
+The result is the authored-file set for Steps 2.5 and 3. Any path absent from it is out of scope: do not read it, cite it, or name it anywhere in your output.
 
 ### Step 2 — Run Automated Validation and Workflow Analyzer
 
@@ -609,7 +609,7 @@ Route each fix to the appropriate skill:
 **Final grade: <A–F>**
 ```
 
-> **`Final grade:` is the report's last line — nothing follows it.** It restates the Summary's `Agent Grade` letter so the grade stays visible at the tail of a long report; the two must always match. Letter only. Only print for agent projects.
+> **`Final grade:` is the report's last line — nothing follows it.** No notes, caveats, or commentary, inside the report or after it. It restates the Summary's `Agent Grade` letter so the grade stays visible at the tail of a long report; the two must always match. Letter only. Only print for agent projects.
 
 **Finding severity labels (never "Mismatch"/"Aligned"):**
 - Overall Quality: `Good` / `Needs Improvement` / `Critical Issues` (all project types)
