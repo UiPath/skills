@@ -314,7 +314,7 @@ The port is **not** listed in the registry's `handleConfiguration`. Studio Web o
 1. The requirements state what should happen when this node fails ("if the call fails, …", "return X for invalid input", "handle timeouts") — **and**
 2. You wire the node's `error` port to a handler that produces an outcome distinguishable from success.
 
-Never set the flag on a node that has no outgoing `error` edge. It is CLI-owned: `uip maestro flow edge add --source-port error` and `uip maestro flow format` derive it from the error edges actually present. A flag set without a matching edge is always agent-authored and always a bug — it silently converts a real failure into a run that reports success.
+Never set the flag on a node that has no outgoing `error` edge — it suppresses the fault with nothing to catch it, converting a real failure into a run that reports success. Let the CLI own the flag: `uip maestro flow edge add --source-port error` and `uip maestro flow format` set it from the error edges actually present. If you find the flag on a node with no error edge, remove it.
 
 ### Do not swallow the failure
 
@@ -323,10 +323,10 @@ An `error` edge must not rejoin the happy path. When it does, every failure walk
 | | Error-path target | Result |
 | --- | --- | --- |
 | ✗ | The next node on the happy path | Failure is invisible; downstream nodes run on missing data |
-| ✗ | The same End node the success path reaches | Run reports success with success-shaped outputs |
+| ✗ | The same End node the success path reaches | Success path's output mappings run against the failed node's empty output |
 | ✓ | A **distinct** End node mapping an error/status `out` variable | Caller can tell failure from success |
 | ✓ | `core.logic.terminate` | Aborts the flow when recovery is impossible — see [terminate/impl.md](../author/references/plugins/terminate/impl.md) |
-| ✓ | A branch that genuinely recovers (retry, fallback source, compensation) | Failure is handled, not hidden |
+| ✓ | A recovery branch that rejoins **only after obtaining valid data** — a retry that succeeded, or a fallback source that returned data | Downstream runs on real data, not on the failed node's empty output |
 
 ```text
 Trigger -> HTTP Request

@@ -319,7 +319,7 @@ Trigger -> HTTP Request
   |-- error   -> Log Error -> End (failure — status: "failed", descriptive output)
 ```
 
-**The error path must end somewhere the caller can tell apart from success.** Routing `error` into the next happy-path node, or into the same End node the success path reaches, makes every failure look like a completed run — the flow "always looks successful" while the API call it depended on never succeeded. Terminal options: a distinct End node mapping an error/status `out` variable, a `core.logic.terminate` when recovery is impossible, or a branch that genuinely recovers (retry, fallback source, compensation).
+**The error path must end somewhere the caller can tell apart from success.** Routing `error` into the next happy-path node, or into the same End node the success path reaches, makes every failure look like a completed run — the flow "always looks successful" while the API call it depended on never succeeded. Terminal options: a distinct End node mapping an error/status `out` variable, a `core.logic.terminate` when recovery is impossible, or a recovery branch that rejoins the happy path only after obtaining valid data (a retry that succeeded, a fallback source that returned data).
 
 Use a downstream Decision/Switch only for **content-based routing on a successful response** (e.g., `items.length > 0`), not as a failure detector. HTTP also supports `inputs.branches` for that. See [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes) — the `Error port vs other branching` table spells out when to use each.
 

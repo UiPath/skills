@@ -158,27 +158,52 @@ Add an edge from the HITL node's `completed` port to the next node in the flow. 
 The failing node has `inputs.errorHandlingEnabled: true`, which suppresses its fault instead of faulting the run. Two shapes:
 
 1. **Flag with no handler** — the flag is set on a node with no outgoing `sourcePort: "error"` edge. The node swallows the exception and execution continues down `default` with missing output.
-2. **Error path rejoins the happy path** — an `error` edge targets the next happy-path node, or the same End node the success path reaches. Every failure walks the success route and maps success-shaped outputs.
+2. **Error path rejoins the happy path** — an `error` edge targets the next happy-path node, or reaches the same End node the success path reaches. The failure then runs the success path's output mappings against the failed node's empty output.
 
-Both pass `uip maestro flow validate` — it checks structure, never whether an error path is meaningful. Shape 1 is always a defect; the CLI never produces it (`edge add --source-port error` and `flow format` set the flag only for nodes that actually have an error edge), so it is always hand-authored.
+Both pass `uip maestro flow validate` — it checks structure, never whether an error path is meaningful.
 
 ### Fix
 
-Inspect every node carrying the flag:
+Report every node carrying the flag, and where its error path ends:
 
 ```bash
-python3 -c "
-import json,sys
-d=json.load(open(sys.argv[1]))
-err={e['sourceNodeId'] for e in d.get('edges',[]) if e.get('sourcePort')=='error'}
-for n in d.get('nodes',[]):
-    if (n.get('inputs') or {}).get('errorHandlingEnabled') is True and n['id'] not in err:
-        print('no handler:', n['id'], n.get('type'))
-" <ProjectName>.flow
+python3 - "<ProjectName>.flow" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+E = d.get("edges", []); N = {n["id"]: n for n in d.get("nodes", [])}
+
+def targets(nid, port=None, exclude=None):
+    return [e["targetNodeId"] for e in E if e["sourceNodeId"] == nid
+            and (port is None or e.get("sourcePort") == port)
+            and (exclude is None or e.get("sourcePort") != exclude)]
+
+def terminals(start, seen=None):
+    seen = seen or set()
+    if start in seen: return set()
+    seen.add(start)
+    if (N.get(start) or {}).get("type") in ("core.control.end", "core.logic.terminate"):
+        return {start}
+    return set().union(*[terminals(t, seen) for t in targets(start)] or [set()])
+
+for nid, n in N.items():
+    if (n.get("inputs") or {}).get("errorHandlingEnabled") is not True: continue
+    err, ok = targets(nid, "error"), targets(nid, exclude="error")
+    if not err:
+        print(f"{nid}: flag set, NO error edge"); continue
+    ok_term = set().union(*[terminals(t) for t in ok]) if ok else set()
+    for t in err:
+        if t in ok: print(f"{nid}: error -> {t} REJOINS the happy path")
+        elif terminals(t) and terminals(t) <= ok_term:
+            print(f"{nid}: error -> {t} shares success terminal(s) {sorted(terminals(t))}")
+        else: print(f"{nid}: error -> {t} distinct terminal(s) {sorted(terminals(t))} - ok")
+PY
 ```
 
-- **Flag with no handler** — remove `inputs.errorHandlingEnabled` from the node. The failure then faults the run, which is the visible, correct outcome.
-- **Error path rejoins the happy path** — repoint the `error` edge at a terminal the caller can distinguish from success: a distinct End node mapping an error/status `out` variable, or `core.logic.terminate` when recovery is impossible.
+No output means no node has the flag set — the flow is clean. Otherwise act per line:
+
+- **`flag set, NO error edge`** (shape 1) — remove `inputs.errorHandlingEnabled` from that node. The failure then faults the run, which is the visible, correct outcome.
+- **`REJOINS the happy path`** / **`shares success terminal(s)`** (shape 2) — repoint the `error` edge at a terminal the caller can distinguish from success: a distinct End node mapping an error/status `out` variable, or `core.logic.terminate` when recovery is impossible.
+- **`distinct terminal(s) … - ok`** — this node's error handling is wired correctly; look elsewhere.
 
 Re-run `uip maestro flow validate` and `uip maestro flow format` after either fix.
 
