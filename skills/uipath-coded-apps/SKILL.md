@@ -38,10 +38,10 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 ## Critical Rules
 
 1. **Identify the app type before doing anything else.** Ask as a structured choice (Rule 18): **Coded Web App** — custom frontend deployed to UiPath Cloud · **Coded Action App** — form for Action Center human task reviews. The two paths diverge on scaffolding, redirect URI, and publish flag — do not guess.
-2. **Always check login status first.** Run `uip login status --output json` before any cloud command. If not logged in, run `uip login`.
-3. **Never skip the build step.** Run `npm run build` after scaffolding (to verify the scaffold compiles) and again before `pack` or `push` (to produce the deployable `dist/`). Verify `dist/` exists each time.
-4. **Pack → Publish → Deploy order is required.** Each step depends on the previous one producing its output.
-5. **Bump the version for re-publish.** If the same version already exists in Orchestrator, publish will fail.
+2. **Always check login status first.** Run `uip login status --output json` before any cloud command. Deployment must bind and verify an exact named profile, control plane, org, and tenant. If not logged in, run `uip login` for the intended environment.
+3. **Build before packaging source.** Run `npm run build` after scaffolding and again before packaging a source-built candidate. An explicit synthetic Alpha/Staging test may deploy an already-built or already-published candidate as-is, but only after hashing and auditing that exact candidate and recording that the build was skipped. Never use that exception as production evidence.
+4. **Use Build → Pack → Publish → Deploy for a new candidate.** A reconciled upgrade may deploy an exact already-published candidate without rebuilding, repacking, or republishing. Do not repeat an earlier stage merely because a later external write returned an ambiguous result.
+5. **Choose versions before external writes.** If a version already exists, select and verify a different version before packing. Never silently auto-bump, repack, or republish in response to a conflict.
 6. **Action apps require `-t Action` on publish.** Run `uip codedapp publish -t Action` (not the default `Web` type).
 7. **Never handle access tokens manually.** Do not pass, print, parse, source, or set cached access tokens. Use `uip login` and supported `uip codedapp` commands; the CLI manages authentication.
 8. **Base URL must use the API subdomain.** `https://api.uipath.com` not `https://cloud.uipath.com`. See the table below.
@@ -56,6 +56,10 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 17. **Never call `sdk.initialize()` in an action app.** That is web-app-only — it starts a PKCE OAuth redirect. Action apps run in Action Center's iframe with a host-injected session: construct `new UiPath()` (no args) and use it directly. See [create-action-app.md](references/create-action-app.md) `src/uipath.ts`.
 18. **Never make the user type magic phrases.** Whenever you ask the user to pick between known options (app type, build/edit/deploy intent, OAuth setup, deploy pinning), present a **structured choice** via the host coding agent's native question tool (selectable options) when one exists. Mechanics: one option per choice with a short bold label + one-line description of what picking it does; put the recommended option **first** and suffix its label "(Recommended)"; keep to **at most 4 options** (reserve one slot for an escape option like *Make changes* / *Cancel* when applicable). If there are 5+ candidates, or the host agent has no question tool, render a plain numbered list instead and accept the number or the option label as the answer. A free-text reply must always remain valid (e.g. a plan-change request) and takes precedence over the options. **Exception — never put a question in the same response as a long output:** plan-approval gates are free-text by design (the plan ends with "confirm or tell me what to change"); structured questions fire only on later, short turns. See `references/dashboards/plugins/build/impl.md`.
 19. **Never guess SDK method signatures — read the installed types.** The authoritative reference for method names, parameters, return types, and usage examples is `node_modules/@uipath/uipath-typescript/dist/<subpath>/index.d.ts` (full JSDoc; matches the installed SDK version exactly). Before calling a service you have not used in this session, Read its `.d.ts`. If `node_modules` is absent, run the install step first — the app cannot build without it. The `references/sdk/*.md` files deliberately do NOT list signatures; they cover only scopes, calling conventions, and traps the types cannot express. See [references/sdk/imports.md](references/sdk/imports.md) for the missing-capability protocol. **Boundary: read the `.d.ts`, never the compiled bundle.** `dist/*.mjs` / `*.js` is minified implementation, not API — reading it dead-ends. A grep with no output **confirms absence**; treat a genuine gap as unsupported (use the documented alternative) rather than escalating the search into the bundle.
+20. **Classify the deployment lane before publishing.** The direct quick path is only for an explicitly requested, internal, synthetic-data test in Alpha or Staging. Production, customer data, or any release-trust requirement uses a governed release with reviewed source/artifact/config bindings, an approval record, an immutable receipt, and post-deploy verification. Ambiguity defaults to governed.
+21. **Choose `create` or `upgrade` explicitly from remote evidence.** `.uipath/app.config.json`, `.dashboard/state.json`, and prior console output are repairable local hints, not proof of remote state. A create requires an unused route and no matching deployment; an upgrade requires the exact existing deployment, route, current version, and candidate version. Stop when remote inventory cannot prove one case.
+22. **Treat external writes as indeterminate until reconciled.** After `publish` or `deploy` starts, a timeout, interruption, 5xx, HTML response, or nonzero exit may have changed remote state. Do not blindly retry, auto-bump, change or omit the route, delete/recreate the app, or fall back from upgrade to create. Re-read remote state and form a fresh operation.
+23. **A route is immutable after create.** Pass the reviewed `--path-name` only for a proven create. Never invent a random suffix after a collision. For a proven upgrade, preserve the exact route and omit `--path-name`; if the CLI reports `routing name must be unique`, stop and reconcile the target rather than retrying with different flags.
 
 ## Disambiguation — Apps vs Dashboards
 
@@ -128,19 +132,12 @@ uip login status --output json         # check if logged in
 uip login                              # interactive OAuth (opens browser)
 uip login --authority https://alpha.uipath.com   # non-production environments
 
-# Client-credentials (headless/CI) — MUST include Apps.Read Apps.Write or publish's
-# "Registering coded app" step fails with 401 even though package upload succeeds.
-# OR.Default alone is NOT sufficient — it covers Orchestrator but not the Apps service.
-uip login \
-  --client-id <id> \
-  --client-secret <secret> \
-  --organization <org> \
-  --tenant <tenant> \
-  --scope "OR.Folders OR.Execution OR.Administration Apps.Read Apps.Write" \
-  --authority https://alpha.uipath.com   # omit --authority for production
+# Headless/CI — provision the credential through the runner's secure profile setup,
+# never in command arguments or logs. Then verify the exact named profile.
+uip login status --profile <profile-name> --output json
 ```
 
-> **The `uip login` session scope is separate from the app's runtime OAuth scopes.** The scopes in `uipath.json` are what the *deployed app* requests at runtime (see [oauth-scopes.md](references/oauth-scopes.md)). The `--scope` on `uip login` above is what the *CLI session* needs to call the Apps registration API during `uip codedapp publish`. `uip codedapp publish` does two things: uploads the package (needs Orchestrator scopes) **and** registers the coded app (needs `Apps.Read Apps.Write`). Omitting the Apps scopes lets the upload succeed but silently 401s the registration.
+> **The CLI session scope is separate from the app's runtime OAuth scopes.** The scopes in `uipath.json` are what the *deployed app* requests at runtime (see [oauth-scopes.md](references/oauth-scopes.md)). A headless profile used for `uip codedapp publish` must include Orchestrator package scopes plus `Apps.Read Apps.Write`: publish uploads the package and then registers the coded app with a different service. Omitting Apps scopes can let upload succeed before registration fails. Configure credentials through the secure runner/profile mechanism, never through command arguments or committed files.
 
 ## SDK Config (web app)
 
@@ -162,15 +159,34 @@ To change any of these values, edit `uipath.json`.
 | Staging | `https://staging.api.uipath.com` |
 | Alpha | `https://alpha.api.uipath.com` |
 
-## Quick Deploy (Full Pipeline)
+## Deployment Lanes
 
-**Do NOT pause between steps to ask "should I continue?" — execute the full pipeline. Only stop if you need auth credentials or an app name.**
+### Testing-only quick path
 
-1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`. If using **client credentials** (headless/CI), always include `Apps.Read Apps.Write` in `--scope` — required by the Apps service registration inside `uip codedapp publish`. `OR.Default` alone covers Orchestrator (package upload) but not Apps registration; omitting them causes a silent 401 on the second half of publish.
-2. **Build** — `npm run build`. Verify `ls dist/`.
-3. **Pack** — `uip codedapp pack dist -n <name> --version <version>`. Produces `.uipath/<name>.<version>.nupkg`. Bump version if previously published.
-4. **Publish** — `uip codedapp publish` (add `-t Action` for action apps). Verify `cat .uipath/app.config.json`.
-5. **Deploy** — `uip codedapp deploy -n <name> --folder-key <GUID>`. Resolve the GUID from the chosen folder: a personal workspace (`Type == "Personal"`), a named existing folder, or a freshly `uip or folders create`d one — via `uip or folders list --output json`. Dashboards additionally choose a **deploy mode** (standalone / governance-pinned / governance) that sets `--tags`; see [dashboards deploy impl](references/dashboards/plugins/deploy/impl.md). Never let the command go interactive. Share the app URL with the user.
+Use the direct CLI pipeline without a second approval only when the user explicitly requests a test deployment and all of these are true. That explicit request is the operation authorization; do not ask for a separate plan hash. Ask again only if authoritative preflight materially changes the target, intent, route, or candidate.
+
+- Target is the exact UiPath Alpha or Staging control plane.
+- App is internal/authenticated and contains synthetic data only.
+- The exact org, tenant, folder, OAuth client, route, CLI/profile, candidate version, and built bytes are recorded.
+- The operation is explicitly `create` or `upgrade`, supported by fresh remote evidence.
+- An automatic testing receipt records the artifact/config hashes, waived gates, every external-write result, and post-deploy checks. It must say `production_eligible: false` and `release_evidence: false`.
+
+Dirty or uncommitted source is allowed in this lane because the exact built bytes are authoritative. Record Git HEAD and worktree status for context; do not present them as provenance. If the exact candidate is already published, deploy it without rebuilding or republishing.
+
+The stock `uip codedapp` 1.198.0 commands do not include deployment `list` or `get`. Use an approved inventory-capable deployment helper or Apps API runtime for the required remote preflight and post-verification; never extract a bearer token manually. If that capability is unavailable, stop before the write.
+
+For a new source-built test candidate, execute the full pipeline after preflight; do not pause between steps for another approval:
+
+1. **Auth** — verify a named profile with `uip login status --profile <name> --output json` and confirm the control plane, org, and tenant.
+2. **Build and bind** — run `npm run build`, audit `dist/`, and hash the exact directory and runtime configuration.
+3. **Pack** — run `uip codedapp pack dist -n <name> --version <version> -o .uipath`, then verify and hash the candidate package from the filesystem. (`pack` uses `--output` for its directory, so do not use `--output json` here.)
+4. **Publish** — run `uip codedapp publish -n <name> --version <version> --profile <name> --output json` (add `-t Action` for action apps). A failed or interrupted publish is indeterminate until remote reconciliation.
+5. **Deploy** — use the exact version, client, folder, tags, and profile. Add `--path-name` only for a remotely proven create; omit it for a remotely proven upgrade. Never let the command go interactive.
+6. **Verify** — re-read the exact remote deployment and verify its route, assets, authentication, and an app-specific smoke test before calling it deployed.
+
+### Governed release
+
+Use a governed release for Production, customer data, or any request that expects durable release evidence. Bind clean reviewed source, exact dist/package/runtime hashes, CLI/profile/target identity, create-or-upgrade remote evidence, a reviewed approval, an immutable receipt, and rollback authority. Do not substitute the testing-only quick path or its receipt. See [pack-publish-deploy.md](references/pack-publish-deploy.md) for both lanes and their failure boundaries.
 
 ## SDK Module Imports
 
@@ -180,7 +196,7 @@ See [references/sdk/imports.md](references/sdk/imports.md) for the lookup protoc
 
 ### App Config (`.uipath/app.config.json`)
 
-Created by `publish`, consumed by `deploy`. Contains `appName`, `systemName`, `appType`, `deploymentId`, `appUrl`. Do not delete `.uipath/` between publish and deploy.
+Created by `publish`, consumed by `deploy`. Contains `appName`, `systemName`, `appType`, `deploymentId`, `appUrl`. Preserve it between publish and deploy, but treat it as a repairable cache: compare it with remote inventory before choosing create or upgrade.
 
 ### Action Schema (`action-schema.json`)
 
@@ -199,6 +215,8 @@ See [references/debug.md](references/debug.md) for detailed diagnosis steps.
 | `No packages found` | No `.nupkg` in `.uipath/` | Run `pack` first |
 | Login fails / redirect error | OAuth misconfiguration | See [debug.md](references/debug.md) |
 | API calls fail with 401/CORS | Wrong base URL | Use `https://api.uipath.com` not `cloud.uipath.com` |
+| `routing name must be unique` | Create/upgrade target or route was inferred incorrectly | Stop. Reconcile remote deployment and route state; never randomize or omit the route and retry. |
+| Publish/deploy timed out or returned 5xx/HTML | External write is indeterminate | Re-read remote package/deployment state before forming a fresh operation; never blind-retry. |
 
 > **Folder identifier names differ across CLI and SDK.** The CLI uses `UIPATH_FOLDER_KEY` / `--folder-key` (string) and applies only to `uip codedapp deploy`. SDK methods use different parameters: Maestro services (`MaestroProcesses`, `ProcessInstances`, `Cases`) take `folderKey` (string GUID), Orchestrator services (`Assets`, `Queues`, `Buckets`, `Processes`) take `folderId` (number). Do not pass the CLI env var into SDK calls. To bridge from a Maestro `folderKey` to an Orchestrator `folderId`, see [sdk/maestro.md](references/sdk/maestro.md) — and **never** `parseInt(folderKey)`, the GUID is not numeric.
 
@@ -207,12 +225,12 @@ See [references/debug.md](references/debug.md) for detailed diagnosis steps.
 When you finish a task, report only what's applicable to the work actually done:
 
 1. **What was done** — files created, edited, or deleted (list paths); CLI commands run
-2. **Stage reached** — one of: scaffolded / built / packed / published / deployed
+2. **Stage reached** — one of: scaffolded / built / packed / published / deployed-for-testing / governed-deployed
 3. **Artifacts produced** (report only the ones that actually exist):
    - `dist/` — if `npm run build` was run
    - `.uipath/<name>.<version>.nupkg` — if `pack` was run
    - `.uipath/app.config.json` with `deploymentId` — if `publish` was run
-   - Live deployment URL (`appUrl` from `app.config.json`) — if `deploy` was run
+   - Deployment URL (`appUrl` from `app.config.json`) — if `deploy` ran and remote verification passed; label testing-only URLs as nonproduction
    - External Application client ID — if one was created this session
 4. **Next steps**, depending on where the task stopped:
    - **Scaffolded only:** `cd <app-name> && npm run dev` to run locally
@@ -230,4 +248,4 @@ These pitfalls are not already covered by the Critical Rules. For rules stated a
 
 - **Don't import service classes from the package root** — use the subpath (e.g., `@uipath/uipath-typescript/assets`).
 - **Don't use the deprecated dot-chain `sdk.entities.getAll()`** — use constructor DI: `new Entities(sdk)`.
-- **Don't delete `.uipath/` between `publish` and `deploy`** — `deploy` reads `app.config.json` written by `publish`.
+- **Don't treat `.uipath/app.config.json` as remote authority** — preserve it for `deploy`, then verify every identity and version against remote state.
