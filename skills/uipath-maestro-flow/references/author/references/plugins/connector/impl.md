@@ -258,7 +258,7 @@ Canonical template for a dynamic value:
 =js:"accountNumber = '" + String($vars.<node>.output.<field>).replace(/'/g, "''") + "'"
 ```
 
-Single quotes delimit a value. Double quotes mark a column reference to the CEQL parser. The `.replace` doubles any quote inside the value — `''` is the CEQL escape; an unescaped quote ends the value early and faults `[102003]`.
+Single quotes delimit a value. Double quotes mark a column reference to the CEQL parser. The `.replace` doubles any single quote (`'`) inside the value — `''` is the CEQL escape; an unescaped `'` ends the value early and faults `[102003]`.
 
 **Anti-patterns.** Match the IS error text, then apply the corrected form.
 
