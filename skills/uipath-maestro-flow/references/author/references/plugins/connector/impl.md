@@ -238,7 +238,7 @@ For every match:
 - **Pass a structured filter tree under `--detail.filter`** — the CLI compiles it into both halves of the contract: the runtime CEQL string at `inputs.detail.queryParameters.<name>` *and* the design-time tree at `inputs.detail.configuration.essentialConfiguration.savedFilterTrees.<name>`. Studio Web reads the latter to render the FilterBuilder UI; only `--detail.filter` populates that side.
 - **Do not pass a raw CEQL string under `--detail.queryParameters.<name>`.** It populates only the runtime half — debug runs succeed but the FilterBuilder UI shows `undefined` when the activity is reopened in SW. The CLI rejects this at configure time.
 - **A dynamic operand in the tree works**: `"value": {"value": "=js:$vars...", "isLiteral": false}` — the CLI compiles it to a `{var_…}` placeholder plus `inputs.detail.filterVariables` the runtime resolves.
-- **When a CEQL string is authored anyway** (e.g. a `queryExpression` written directly into the `.flow`): field names bare, values single-quoted — `` `accountNumber = '${$vars...}'` ``, never `'accountNumber' = '...'`. The whole value MUST start with `` =js:` `` and end with `` ` `` when it interpolates: `` "=js:`invoiceNumber = '${$vars...}'`" ``. A plain string containing `${…}` is never resolved — the query silently matches nothing.
+- **When a CEQL string is authored anyway** (e.g. a `queryExpression` written directly into the `.flow`): field names bare, values single-quoted — `` `accountNumber = '${$vars...}'` ``, never `'accountNumber' = '...'`. The whole value MUST start with `` =js:` `` and end with `` ` `` when it interpolates: `` "=js:`invoiceNumber = '${$vars...}'`" ``. A plain string containing `${…}` is never resolved — the query silently matches nothing. Copy-paste template, operator aliases, and the error→fix table → [Hand-authored CEQL strings](#hand-authored-ceql-strings) below.
 - Tree shape, operator table, examples → [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
 If the operation has no FilterBuilder parameter, server-side filtering is not supported — pass no `filter` and filter downstream (e.g. with a Script node).
@@ -251,10 +251,46 @@ Workaround (Dataservice V3 / dynamic-entity FilterBuilder only):
 
 1. `node configure` with `bodyParameters` / `queryParameters` and `customFieldsRequestDetails` — omit `filter`. This populates the rest of `inputs.detail` and the bindings the CLI normally writes.
 2. `Edit` the `.flow` file to inject the two filter halves the CLI refused:
-   - Runtime: `inputs.detail.queryParameters.<filterParamName>` = compiled CEQL string (e.g. `"test = 'Active'"`)
+   - Runtime: `inputs.detail.queryParameters.<filterParamName>` = compiled CEQL string (e.g. `"test = 'Active'"`). Follow [Hand-authored CEQL strings](#hand-authored-ceql-strings) — nothing validates this string before IS rejects it.
    - Design-time: `essentialConfiguration.savedFilterTrees.<filterParamName>` = structured tree (inside the `=jsonString:` blob)
 3. Validate. Both halves must be present or Studio Web round-trip shows an empty FilterBuilder.
 4. Note in your completion report that this node was finished via the documented CLI-limitation Edit; this is a re-configure hazard (re-running `node configure` later will drop both halves per the full-rebuild rule below).
+
+##### Hand-authored CEQL strings
+
+Preference order. Do not skip step 1.
+
+1. **`node configure --detail.filter`** — pass a structured tree. The CLI compiles the CEQL and validates it against IS metadata. Use this for every literal filter.
+2. **Hand-authored `=js:` string** — use only when a runtime value forces it, and only from the template below. Nothing validates the string: `flow validate` passes it through and IS faults at `flow debug` with `[102003]`.
+
+Canonical template for a dynamic value:
+
+```text
+=js:"accountNumber = '" + String($vars.<node>.output.<field>) + "'"
+```
+
+Single quotes delimit a value. Double quotes mark a column reference to the CEQL parser.
+
+**Anti-patterns.** Match the IS error text, then apply the corrected form.
+
+| Wrong form | IS error text | Corrected form |
+|---|---|---|
+| `'accountNumber' = 'ACC123'` — field name quoted | `Expected a field name expression but got 'StringValue'` | `accountNumber = 'ACC123'` |
+| `` =js:"accountNumber = \"" + String(v) + "\"" `` — value double-quoted | `Unsupported value expression 'Column' on field 'accountNumber'` | `` =js:"accountNumber = '" + String(v) + "'" `` |
+| `accountNumber eq 'ACC123'` — OData alias | `[102003] Integration Services bad request` | `accountNumber = 'ACC123'` |
+
+CEQL rejects OData aliases. Map them:
+
+| OData alias | CEQL operator |
+|---|---|
+| `eq` | `=` |
+| `ne` | `!=` |
+| `gt` | `>` |
+| `ge` | `>=` |
+| `lt` | `<` |
+| `le` | `<=` |
+
+Full operator table → [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
 
 #### Step 6b — Run configure
 
@@ -694,6 +730,8 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | FilterBuilder UI shows `undefined` when activity is reopened in Studio Web; flow runs at debug | A raw `queryParameters.<filterParamName>` string was passed instead of a structured filter tree, so `essentialConfiguration.savedFilterTrees.<filterParamName>` is empty. The runtime side works but Studio Web has no tree to render. | Re-run `uip maestro flow node configure` with `--detail '{"filter": {...tree...}}'` — the CLI populates both halves. See Step 6a above and [uipath-platform — Filter Trees (CEQL)](../../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). |
 | `node configure` fails with `'<name>' is a FilterBuilder parameter — pass a structured filter tree under --detail.filter` | Same root cause — raw string under `queryParameters` for a FilterBuilder param | Move the value into `--detail.filter` as a structured tree. The CLI catches this at configure time so it never reaches Studio Web. |
 | Node faults `[102003] Integration Services bad request`, IS 400 `"Expected a field name expression but got 'StringValue'"` — `flow validate` passed | Hand-authored CEQL string (e.g. Data Service `queryExpression`) quotes the **field name**: `'accountNumber' = '...'`. CEQL reads a quoted token as a string literal. Only `node configure --detail.filter` validates the expression; a string hand-written into the `.flow` JSON reaches IS unchecked. | Field names bare, only values quoted: `` `accountNumber = '${$vars...}'` ``. Or author via `--detail.filter` so the CLI compiles the CEQL. |
+| Node faults `[102003] Integration Services bad request`, IS 400 `"Unsupported value expression 'Column' on field '<field>'"` — `flow validate` passed | Hand-authored CEQL double-quotes the **value**, typically from a concatenation with escaped quotes: `` =js:"accountNumber = \"" + String(v) + "\"" ``. CEQL reads a double-quoted token as a column reference, not a string literal. | Single-quote the value inside the concatenation: `` =js:"accountNumber = '" + String($vars.<node>.output.<field>) + "'" ``. Or author via `--detail.filter`. See [Hand-authored CEQL strings](#hand-authored-ceql-strings). |
+| Node faults `[102003] Integration Services bad request` and the filter uses `eq`, `ne`, `gt`, `ge`, `lt`, or `le` | OData aliases in a hand-authored CEQL string. CEQL accepts only symbol operators. | Replace with `=`, `!=`, `>`, `>=`, `<`, `<=`. See the alias table in [Hand-authored CEQL strings](#hand-authored-ceql-strings). |
 | `node configure` fails with `customFieldsRequestDetails.parameterValues must be an array of [key, value] tuples, not an object map` | Wrote `parameterValues: {key: value}` (object map). Studio Web emits its `Map<string,string\|null>` as `Array.from(entries())` — tuples, not object | Convert to tuples: `[["key", "value"], ...]`. See Step 6c. |
 | Custom fields fault at runtime with token unresolved | A `{token}` in `objectActions[].apiConfiguration.url` or `body` has no entry in `parameterValues` | Re-read the ObjectAction's `apiConfiguration` placeholders, add the missing tuple to `parameterValues`. CLI does not validate token coverage. |
 | `node configure` fails with `customFieldsRequestDetails has unknown keys: ObjectActionName, ParameterValues` | PascalCase inner keys instead of camelCase | Use `objectActionName` / `parameterValues`. Studio Web emits camelCase; PascalCase is rejected. |
