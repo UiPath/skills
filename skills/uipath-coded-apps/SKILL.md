@@ -133,19 +133,22 @@ uip login status --output json         # check if logged in
 uip login                              # interactive OAuth (opens browser)
 uip login --authority https://alpha.uipath.com   # non-production environments
 
-# Client-credentials (headless/CI) — MUST include Apps.Read Apps.Write or publish's
-# "Registering coded app" step fails with 401 even though package upload succeeds.
-# OR.Default alone is NOT sufficient — it covers Orchestrator but not the Apps service.
+# Client-credentials (headless/CI) — scope MUST name one Orchestrator scope AND
+# the two Apps-service scopes. Neither set covers the other:
+#   OR.Default            → Orchestrator
+#   Apps.Read Apps.Write  → Apps-service registration in `uip codedapp publish`
+# Do NOT substitute granular Orchestrator scopes (OR.Folders/OR.Execution/
+# OR.Administration) for OR.Default.
 uip login \
   --client-id <id> \
   --client-secret <secret> \
   --organization <org> \
   --tenant <tenant> \
-  --scope "OR.Folders OR.Execution OR.Administration Apps.Read Apps.Write" \
+  --scope "OR.Default Apps.Read Apps.Write" \
   --authority https://alpha.uipath.com   # omit --authority for production
 ```
 
-> **The `uip login` session scope is separate from the app's runtime OAuth scopes.** The scopes in `uipath.json` are what the *deployed app* requests at runtime (see [oauth-scopes.md](references/oauth-scopes.md)). The `--scope` on `uip login` above is what the *CLI session* needs to call the Apps registration API during `uip codedapp publish`. `uip codedapp publish` does two things: uploads the package (needs Orchestrator scopes) **and** registers the coded app (needs `Apps.Read Apps.Write`). Omitting the Apps scopes lets the upload succeed but silently 401s the registration.
+> **The `uip login` session scope is separate from the app's runtime OAuth scopes.** The scopes in `uipath.json` are what the *deployed app* requests at runtime (see [oauth-scopes.md](references/oauth-scopes.md)). The `--scope` on `uip login` above is what the *CLI session* needs to call the Apps registration API during `uip codedapp publish`. `uip codedapp publish` does two things: uploads the package (needs `OR.Default`) **and** registers the coded app (needs `Apps.Read Apps.Write`). For what each failure looks like, see [debug.md](references/debug.md#publish--deploy-fails-under-a-client-credentials-login).
 
 ## SDK Config (web app)
 
@@ -171,7 +174,7 @@ To change any of these values, edit `uipath.json`.
 
 **Do NOT pause between steps to ask "should I continue?" — execute the full pipeline. Only stop if you need auth credentials or an app name.**
 
-1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`. If using **client credentials** (headless/CI), always include `Apps.Read Apps.Write` in `--scope` — required by the Apps service registration inside `uip codedapp publish`. `OR.Default` alone covers Orchestrator (package upload) but not Apps registration; omitting them causes a silent 401 on the second half of publish.
+1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`. With **client credentials** (headless/CI), use `--scope "OR.Default Apps.Read Apps.Write"` — all three names are required: `OR.Default` for Orchestrator, `Apps.Read` and `Apps.Write` for the Apps-service registration in `uip codedapp publish`. The External Application itself needs only `Apps.Read` and `Apps.Write`; `OR.Default` is auto-granted and not portal-selectable, so name it in `--scope`. If publish or deploy then fails, see [debug.md](references/debug.md#publish--deploy-fails-under-a-client-credentials-login).
 2. **Build** — `npm run build`. Verify `ls dist/`.
 3. **Pack** — `uip codedapp pack dist -n <name> --version <version>`. Produces `.uipath/<name>.<version>.nupkg`. Bump version if previously published.
 4. **Publish** — `uip codedapp publish` (add `-t Action` for action apps). Verify `cat .uipath/app.config.json`.
