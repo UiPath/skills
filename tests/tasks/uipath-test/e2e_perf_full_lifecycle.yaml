@@ -3,8 +3,8 @@ description: >
   E2E test: agent uses the uipath-test skill to drive the **complete**
   performance-testing lifecycle from a vague natural-language prompt:
   Explore -> discover (project + test case + folder) -> create scenario
-  -> add load group (omit --package-version) -> dry run with --wait ->
-  confirm load profile with user (skill rule) -> update-loadgroup ->
+  -> `load-groups add` (omit --package-version) -> dry run with --wait ->
+  confirm load profile with user (skill rule) -> `load-groups update` ->
   full performanceTesting run -> fetch results -> per-API breakdown ->
   write Performance Engineer report. The prompt is intentionally vague
   so the skill — not the prompt — drives every step.
@@ -51,7 +51,7 @@ success_criteria:
   - type: command_executed
     description: "Agent discovered test cases (Critical Rule #7)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcase\s+list\s+.*--project-key'
+    command_pattern: 'uip\s+tm\s+testcases?\s+list\s+.*--project-key'
     min_count: 1
     weight: 0.5
     pass_threshold: 1.0
@@ -67,7 +67,7 @@ success_criteria:
   - type: command_executed
     description: "Agent attached the load group without pinning --package-version (auto-resolve)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+perf-scenario\s+add-testcase\s+.*--scenario-key\s+\S+.*--test-case-key\s+\S+.*--package-name\s+\S+'
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+load-groups\s+add\s+.*--scenario-key\s+\S+.*--test-case-key\s+\S+.*--package-name\s+\S+'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -75,24 +75,32 @@ success_criteria:
   - type: command_executed
     description: "Agent did NOT pin --package-version"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+perf-scenario\s+add-testcase\s+.*--package-version'
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+load-groups\s+add\s+.*--package-version'
     min_count: 0
     max_count: 0
     weight: 0.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran a dry run with --wait first (precondition for full)"
+    description: "Agent ran a dry run with --wait first (precondition for full; dryRun is the CLI default so the flag may be omitted)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+perf-scenario\s+execute\s+.*--execution-type\s+dryRun.*--wait'
+    command_pattern: '(?=.*--wait)(?!.*performanceTesting)uip\s+tm\s+perf-scenario\s+execute\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent surfaced the current load profile via `scenario get`"
+    description: "Agent surfaced the current load profile via `perf-scenario get`"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+perf-scenario\s+get\s+.*--scenario-key\s+\S+'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied the confirmed load profile via `load-groups update` before the full run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+load-groups\s+update\s+.*--load-group-id\s+\S+'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

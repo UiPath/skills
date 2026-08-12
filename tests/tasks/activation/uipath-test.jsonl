@@ -58,3 +58,6 @@
 {"id": "uipath-test-058", "prompt": "Has a dry-run been completed on scenario SP1:1351", "expected_skill": "uipath-test"}
 {"id": "uipath-test-059", "prompt": "Attach SP1:602 as a load group with ramp-up 2 min and peak 5 min", "expected_skill": "uipath-test"}
 {"id": "uipath-test-060", "prompt": "Generate a release-manager go/no-go from yesterday's perf scenario results", "expected_skill": "uipath-test"}
+{"id": "uipath-test-061", "prompt": "Detach the load group I added by mistake from perf scenario SP1:1351", "expected_skill": "uipath-test"}
+{"id": "uipath-test-062", "prompt": "Compare the last three load runs of my checkout perf scenario and show me what regressed", "expected_skill": "uipath-test"}
+{"id": "uipath-test-063", "prompt": "Which endpoints returned 5xx during load group 8f2c1a90-0000-0000-0000-000000000012 of my perf run", "expected_skill": "uipath-test"}

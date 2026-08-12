@@ -9,12 +9,16 @@ cheap.
 ## Pipeline
 
 ```
-uip tm perf-scenario create          → ScenarioKey
-uip tm perf-scenario add-testcase    → load group attached
-uip tm perf-scenario execute --wait  → polls until terminal, returns results
-(optional) perf-scenario results get           → full data bundle (incl. time series)
+uip tm perf-scenario create            → ScenarioKey
+uip tm perf-scenario load-groups add   → load group attached
+uip tm perf-scenario execute --wait    → polls until terminal, returns results
+(optional) perf-scenario results get   → full data bundle (incl. time series)
 write report → ./test-report-<persona>-<YYYY-MM-DD>.md
 ```
+
+All load-group verbs hang off one parent: `load-groups add` / `list` / `update` /
+`remove`. There is no `perf-scenario add-testcase` and no
+`perf-scenario update-loadgroup` — both exit with `unknown command`.
 
 ## Reuse vs. create — pick the right starting step
 
@@ -24,19 +28,19 @@ point based on what the user actually said:
 
 | What the user asked for | Where to start |
 |---|---|
-| *"Create a perf scenario for SP1:602 and run it"* | Step 2 (create) → Step 3 (add-testcase) → Step 4 (execute) |
-| *"Run a perf test on SP1:1276"* (gave a `<SCENARIO_KEY>`) | Step 4 only — first `scenario get --scenario-key SP1:1276` to confirm it exists and has at least one load group; skip create + add-testcase |
+| *"Create a perf scenario for SP1:602 and run it"* | Step 2 (create) → Step 3 (`load-groups add`) → Step 4 (execute) |
+| *"Run a perf test on SP1:1276"* (gave a `<SCENARIO_KEY>`) | Step 4 only — first `perf-scenario get --scenario-key SP1:1276` to confirm it exists and has at least one load group; skip create + `load-groups add` |
 | *"Run the same scenario again with a full execution"* | Step 4 only — reuse the scenario from earlier in the conversation; **do not create a new one** |
 | *"Run a perf test on our login test case"* (no scenario-key) | Ask the user: "Do you want me to reuse an existing scenario for this test case, or create a new one?" Then act on the answer. |
 
-> **Never create + add-testcase on a scenario that already has load
-> groups.** Call `scenario get --scenario-key <KEY>` first — if the
-> response has `LoadGroupCount >= 1`, the scenario is ready to execute as-is.
+> **Never create + `load-groups add` on a scenario that already has load
+> groups.** Call `perf-scenario get --scenario-key <KEY>` first — if
+> `Data.LoadGroups` is non-empty, the scenario is ready to execute as-is.
 
 > **Never create a new scenario when the user has already given you a
 > `SP1:NNNN` key.** That key IS the scenario; jump straight to step 4.
 
-If the user supplies a scenario key but `scenario get` returns "not
+If the user supplies a scenario key but `perf-scenario get` returns "not
 found" → that's the only case where you go back and create.
 
 ### Picking dry-run vs full when a scenario already exists
@@ -51,10 +55,10 @@ If the scenario already exists AND the user asks for a full
 2. **Then** run `--execution-type performanceTesting --wait`.
 
 If the Perf Service rejects the full run with *"No dry run reports found"*
-or similar, fall back to running a dry run, then retry. The endpoint
-`GET /Execution/RetrieveDryRunReports` is the programmatic source of
-truth for whether a passing dry-run report exists (not currently in the
-CLI; track via session state).
+or similar, fall back to running a dry run, then retry.
+`uip tm perf-scenario list-dry-run-reports --scenario-key <KEY>` is the
+programmatic source of truth — `Data.HasPassingDryRun: true` means a full
+run can go ahead without burning a fresh dry run.
 
 ## Prerequisites
 
@@ -68,7 +72,7 @@ CLI; track via session state).
   Orchestrator package — see [publish-and-link-guide.md](publish-and-link-guide.md)
   for the link flow if not.
 - A Performance Testing runtime allocated to the folder where the package
-  lives. Without it `scenario execute` fails with HTTP 400 *Insufficient
+  lives. Without it `perf-scenario execute` fails with HTTP 400 *Insufficient
   Performance Testing runtimes available*.
 
 ## Step 1 — Discover inputs
@@ -80,9 +84,9 @@ duplicate that material here. The values you need from those steps are:
 | Variable | Where to get it |
 |---|---|
 | `<PROJECT_KEY>` | `uip tm project list --output json` |
-| `<TEST_CASE_KEY>` (`PROJECT_KEY:NUMBER`) | `uip tm testcase list --project-key <PROJECT_KEY> --output json` → `ObjKey` |
+| `<TEST_CASE_KEY>` (`PROJECT_KEY:NUMBER`) | `uip tm testcases list --project-key <PROJECT_KEY> --output json` → `ObjKey` |
 | `<FOLDER_KEY>` (UUID) | `uip or folders list --output json` → `Key` |
-| `<PACKAGE_NAME>` | `uip tm testcase list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY> --output json` → `PackageName` |
+| `<PACKAGE_NAME>` | `uip tm testcases list --project-key <PROJECT_KEY> --output json` → `PackageName` (legacy entry-point links expose it here even when `IsAutomated` is `false`), or `uip tm testcases list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY> --output json` → `PackageName` |
 
 ## Step 2 — Create the scenario
 
@@ -100,16 +104,21 @@ handle you'll use for every subsequent scenario command.
 
 Optional metadata flags (all have sensible defaults):
 
-| Flag | Default | Notes |
+| Flag | Default | Allowed values |
 |---|---|---|
-| `--app-type` | `web` | `web` / `desktop` / `api` |
-| `--perf-test-type` | `loadTesting` | `loadTesting` / `stressTesting` / `enduranceTesting` |
-| `--responsiveness` | `fast` | `fast` / `medium` / `slow` |
+| `--app-type` | `web` | `web` / `apiService` / `ecommerce` / `gaming` / `financial` / `healthcare` / `saaS` / `streaming` / `messaging` / `enterprise` |
+| `--perf-test-type` | `loadTesting` | `loadTesting` / `stressTesting` / `enduranceTesting` / `spikeTesting` |
+| `--responsiveness` | `fast` | `instant` / `fast` / `moderate` / `slow` / `verySlow` |
+
+These three are scenario **metadata** (they label the workload and set the
+service's responsiveness expectation). They do **not** decide which metrics
+a run produces — that comes from each load group's system-under-test type
+(see Step 5b).
 
 ## Step 3 — Add the test case as a load group
 
 ```bash
-uip tm perf-scenario add-testcase \
+uip tm perf-scenario load-groups add \
   --scenario-key <SCENARIO_KEY> \
   --test-case-key <TEST_CASE_KEY> \
   --folder-key <FOLDER_KEY> \
@@ -138,9 +147,29 @@ a smoke run and only override when the user wants real load):
 | `--max-error-rate <rate>` | `0.0001` | server requires `>= 0.0001` |
 | `--robot-type <type>` | `standard` | `standard` / `template` / `elasticRobotPool` / `cloudRobotVm` / `serverless` |
 
-You can call `add-testcase` multiple times per scenario to attach multiple
-load groups (e.g. login + checkout + payment). Each call returns a
-`LoadGroupId`.
+The project is derived from the `--scenario-key` prefix, so `load-groups add`
+takes no `--project-key`.
+
+You can call `load-groups add` multiple times per scenario to attach multiple
+load groups (e.g. login + checkout + payment). Each call returns
+`Data.LoadGroupId` (`Code: LoadGroupAdd`) — the **scenario** load-group UUID
+that `load-groups update` and `load-groups remove` take.
+
+### Removing a load group
+
+```bash
+uip tm perf-scenario load-groups remove \
+  --load-group-id <LOAD_GROUP_ID> \
+  --project-key <PROJECT_KEY> \
+  --output json
+```
+
+Detaches the load group from the scenario; the test case and every past
+execution's data stay intact. `--project-key` is REQUIRED here (a bare UUID
+carries no project prefix). **Confirm the load group with the user first** —
+re-adding it means re-supplying folder, package, and the whole load profile.
+A bad id fails on the read before anything is deleted, so a `Success`
+envelope means the load group really was removed.
 
 ## Step 4 — Run + wait
 
@@ -183,21 +212,23 @@ uip tm perf-scenario execute \
 >    exists**. Confirm load profile, then attempt full directly. If the
 >    server returns HTTP 400 *"No dry run reports found"* (or similar)
 >    → fall back to dry run + full retry, only then.
-> 3. **If unsure**: call `scenario list-dry-run-reports` to verify a
+> 3. **If unsure**: call `perf-scenario list-dry-run-reports` to verify a
 >    passing dry-run report exists before deciding.
 > 4. **Never run a dry run pre-emptively when the user explicitly asked
 >    for a full run on an existing scenario** unless step 2's fallback
 >    kicks in. The user's intent is the full run; respect it.
 >
-> The `scenario list-dry-run-reports` subcommand (calls
-> `POST /performancetest/Execution/RetrieveDryRunReports`) gives the
+> `uip tm perf-scenario list-dry-run-reports --scenario-key <KEY>` gives the
 > agent a programmatic way to verify a passing dry-run report exists
-> without burning a fresh dry run.
+> without burning a fresh dry run. Read `Data.HasPassingDryRun` (and
+> `Data.Reports[].RecommendedMultiplexingFactor` for the on-prem scaling
+> hint). It fails outright when the scenario has no load groups — attach
+> one via `load-groups add` first.
 >
 > ⚠️ **`list-dry-run-reports` only works for test cases that have an
 > `automationId` set.** Test cases linked via the older
 > `packageEntryPointUniqueId` mechanism (the legacy
-> `tm testcase link-automation --package-name X --test-name Y` flow)
+> `tm testcases link-automation --package-name X --test-name Y` flow)
 > return `automationId: null` and the perf service rejects the request
 > with *"Automation Runtime Pairs is missing"*. In that case, the
 > agent's correct fallback is the **try-then-fallback** pattern:
@@ -227,10 +258,10 @@ names one, trust it — do not re-link.
 - **Never set `--multiplexing-factor` on serverless load groups.** The dry run's
   `Recommended multiplexing factor: N` applies to on-prem/machine robots ONLY;
   serverless scales by virtual users directly. The server rejects any value > 0
-  ("on prem only") AND rejects 0 ("must be greater than 0"), and `update-loadgroup`
-  re-sends the stored value — so once set, the load group cannot be un-poisoned;
-  you must rebuild it. Only mention the recommended factor to the user if they run
-  on-prem robots.
+  ("on prem only") AND rejects 0 ("must be greater than 0"), and
+  `load-groups update` re-sends the stored value — so once set, the load group
+  cannot be un-poisoned; remove it (`load-groups remove`) and add it back.
+  Only mention the recommended factor to the user if they run on-prem robots.
 
 ### Two-phase rule: dry run ignores the load profile, full run honours it
 
@@ -243,9 +274,9 @@ The practical consequences for the agent:
 
 - **Don't ask the user about the load profile *before* the dry run.** Those
   values don't take effect there. Just run the dry run with whatever's
-  currently configured (or with one fresh `add-testcase` if no load
+  currently configured (or with one fresh `load-groups add` if no load
   group exists yet) — the actual values don't matter.
-- **Don't call `update-loadgroup` *before* the dry run.** Same reason.
+- **Don't call `load-groups update` *before* the dry run.** Same reason.
 - **DO ask the user about the load profile AFTER the dry run, BEFORE the
   full run.** That's the moment the values matter.
 
@@ -265,12 +296,13 @@ full run is:
    ```bash
    uip tm perf-scenario get --scenario-key <SCENARIO_KEY> --output json
    ```
-   Read each `LoadGroups[i]` row.
+   Read each `Data.LoadGroups[i]` row — `LoadGroupId` there is the id
+   `load-groups update` takes.
 
 2. **Ask the user** to confirm or override each of these for **every**
    load group:
 
-   | Parameter | Flag on `update-loadgroup` | Typical range |
+   | Parameter | Flag on `load-groups update` | Typical range |
    |---|---|---|
    | Virtual users | `--virtual-users <n>` | 1 (dry-run) → many (full) |
    | Ramp-up minutes | `--ramp-up-minutes <n>` | 0 → 5+ |
@@ -288,7 +320,7 @@ full run is:
 
 3. **Apply** any user-requested changes:
    ```bash
-   uip tm perf-scenario update-loadgroup \
+   uip tm perf-scenario load-groups update \
      --load-group-id <LG_UUID> \
      --project-key <PROJECT_KEY> \
      --virtual-users <n> \
@@ -300,8 +332,11 @@ full run is:
      --multiplexing-factor <n> \
      --output json
    ```
-   `update-loadgroup` is a true partial update — flags you omit are
-   preserved from the current server state.
+   `load-groups update` is a true partial update — flags you omit are
+   preserved from the current server state. `--project-key` is REQUIRED
+   (the load-group UUID has no prefix to derive it from). Pass the
+   scenario load-group UUID, **not** the per-execution id from
+   `load-groups list`.
 
 4. **Re-read** to confirm the update landed (optional sanity check):
    ```bash
@@ -311,7 +346,7 @@ full run is:
 5. **Then** submit the full run.
 
 If the user says *"just use defaults"* — still surface the current
-stored values from `scenario get` and ask if they're acceptable. **Do
+stored values from `perf-scenario get` and ask if they're acceptable. **Do
 not silently fire `performanceTesting` against possibly-wrong
 parameters.** A full perf run consumes scarce perf runtimes and produces
 data that may be useless if the load profile is wrong.
@@ -322,7 +357,7 @@ The required 3-call chain when the user asks for a full run on an
 **existing scenario with load groups already attached**:
 
 ```bash
-# 1. Confirm scenario exists + has load groups (skip create/add-testcase)
+# 1. Confirm scenario exists + has load groups (skip create / load-groups add)
 uip tm perf-scenario get --scenario-key <SCENARIO_KEY> --output json
 
 # 2. Dry run — required precondition for a full run
@@ -331,7 +366,7 @@ uip tm perf-scenario execute \
   --execution-type dryRun \
   --wait \
   --output json
-# → confirm terminal status 'Finished' in the last application log
+# → confirm the 'ended with the status' application log reports 'Finished'
 
 # 3. Full performance run — honours load-profile flags on the load groups
 uip tm perf-scenario execute \
@@ -363,7 +398,7 @@ uip tm perf-scenario execute \
 
 You can then either:
 
-- **Poll yourself** at intervals: `uip tm perf-scenario executions list --project-key <KEY> --scenario-id <SCENARIO_UUID> --output json` and read the execution's `Status` field (terminal = `Finished` / `Cancelled` / `Faulted`). Do NOT poll `results get --completed false` for completion — the live payload is cleared when the run finishes, so a grep on live logs never sees the end. Once terminal, fetch the final bundle with `results get --completed true`.
+- **Poll yourself** at intervals: `uip tm perf-scenario executions list --project-key <KEY> --scenario-id <SCENARIO_UUID> --output json` and read the execution's `Status` field (values are lower-camel: `pendingAllocation`, `pending`, `running`, `cancelling`, and the terminal `finished` / `cancelled`). Do NOT poll `results get --completed false` for completion — the live payload is cleared when the run finishes, so a grep on live logs never sees the end. Once terminal, fetch the final bundle with `results get --completed true`.
 - **Or rejoin the wait later**: re-invoke `execute --wait` is **not** the right rejoin — it'd start a *new* execution. Use `results get` polling for rejoining.
 
 **When to use which mode:**
@@ -392,9 +427,11 @@ You can then either:
 >
 > # 2. Hand the ExecutionId back to the user, plus the two follow-up commands:
 > #
-> #    Check progress at any time:
+> #    Check progress at any time (perf-service command — no --project-key):
+> #      uip tm perf-scenario executions list \
+> #        --project-key <KEY> --scenario-id <SCENARIO_UUID> --output json
 > #      uip tm perf-scenario results get \
-> #        --execution-id <EXECUTION_ID> --project-key <KEY> --output json
+> #        --execution-id <EXECUTION_ID> --completed false --output json
 > #
 > #    Cancel the run (from THIS terminal or any other):
 > #      uip tm perf-scenario stop \
@@ -411,8 +448,10 @@ You can then either:
 > short. Use `--wait` for `dryRun` (short by definition).
 
 `--wait` polls the perf service every `--poll-interval-sec` (default `12`)
-and exits when the run reaches a terminal state (`Finished` / `Cancelled` /
-`Faulted`) or `--timeout-sec` (default `1800`, i.e. 30 min) elapses.
+and exits when an application log reports the run ended (terminal status
+`Finished` / `Cancelled`) or `--timeout-sec` (default `1800`, i.e. 30 min;
+`0` = wait forever) elapses. On timeout the command exits `2` and names the
+`results get` follow-up — the run itself keeps going server-side.
 
 **Prefer `--wait` over a hand-rolled poll loop.** The CLI:
 
@@ -443,8 +482,8 @@ terminal status fires (`Recommended multiplexing factor: N` and
 
 ## Step 5 — Read the response
 
-`scenario execute --wait` emits the
-**same shape**. Default (`~6 KB`):
+`perf-scenario execute --wait` emits `Code: ScenarioExecutionResults`.
+Default (`~6 KB`):
 
 ```json
 {
@@ -483,7 +522,8 @@ Field-by-field (read these directly — **do not recompute from `AggregatedData`
 | Field | What it means |
 |---|---|
 | `Data.ExecutionId` | UUID for the run; pass back to `results get` to re-fetch later. |
-| `LoadGroupCount` | Count of load groups attached to the scenario. |
+| `LoadGroupCount` | Count of load groups reported by this execution. |
+| `LoadGroups[].LoadGroupId` | The **per-execution** load-group id (the `ExecutionsData` key). Feed it to the errors/metrics commands — **not** to `load-groups update` / `remove`, which want the scenario load-group UUID from `perf-scenario get`. |
 | `LoadGroups[].StartedAt` | ISO-8601 start of this load group (UTC). |
 | `LoadGroups[].CumulativeResponseTimeMs` | Mean response time across every successful workflow in the group. |
 | `LoadGroups[].MaxResponseTimeMs` | Worst single-workflow response time. |
@@ -491,32 +531,57 @@ Field-by-field (read these directly — **do not recompute from `AggregatedData`
 | `LoadGroups[].HttpErrorRate` / `AutomationErrorRate` | Fractions in `[0,1]`, not percentages. |
 | `LoadGroups[].SloViolationReasons[]` | Human-readable strings explaining each SLO breach. **The agent's job is to surface these to the user, not to re-derive them.** |
 | `LogCount` | Total application log entries. |
-| `ApplicationLogs[]` | Status-change events ordered chronologically; the last one carries the terminal status. |
+| `ApplicationLogs[]` | Status-change events ordered chronologically. The terminal status is the `ended with the status` entry — **not** necessarily the last one. |
 
-Add `--full` (~50 KB) to also include per-load-group time series:
+Add `--full` (~50 KB) to `execute --wait` to also include per-load-group
+time series:
 
 ```bash
 uip tm perf-scenario execute --scenario-key <SCENARIO_KEY> --wait --full --output json
-# or, after the fact:
-uip tm perf-scenario results get --execution-id <EXECUTION_ID> --completed true --output json
 ```
 
 `--full` adds two arrays per load group:
 
 - `AggregatedData[]` — typically 60 entries with per-time-bucket
-  `cpu`, `ram`, `vUserCount`, `avgResponseTimeMs`,
-  `p50ResponseTimeMs`, `p90ResponseTimeMs`, `p95ResponseTimeMs`,
-  `p99ResponseTimeMs`, `stepTimeMs`, etc. Use this for percentile and
-  resource analysis.
-- `AggregatedDataWithTransaction[]` — same shape grouped by transaction;
-  empty in dry runs that have no per-transaction breakdown.
+  `Cpu`, `Ram`, `VUserCount`, `AvgResponseTimeMs`,
+  `P50ResponseTimeMs`, `P90ResponseTimeMs`, `P95ResponseTimeMs`,
+  `P99ResponseTimeMs`, `StepTimeMs`, `RequestsPerSecond`, `MilliSeconds`
+  (offset from run start), plus the dashed `ExecutionId` of the load group.
+  Use this for resource analysis and spike timing.
+- `AggregatedDataWithTransaction[]` — per-transaction aggregates; empty for
+  runs with no per-transaction breakdown.
 
 > Default ~6 KB vs. `--full` ~50 KB is a meaningful difference if you're
 > piping the JSON to an LLM. Only request `--full` for personas that need
 > percentile or time-series detail (Performance Engineer, Developer
 > drill-down). Skip it for Release Manager summaries.
 
-## Step 5b — Per-transaction (per-API) metrics (`scenario transaction-metrics`)
+### Re-fetching after the fact (`results get`)
+
+```bash
+uip tm perf-scenario results get \
+  --execution-id <EXECUTION_ID> \
+  --completed true \
+  --output json \
+  --query '<JQ_EXPR>'
+```
+
+`results get` has **no `--project-key`** and **no `--full`** — it always
+returns the raw perf-service bundle, and it is large (hundreds of KB). The
+shape differs from `execute --wait`: `Data.ExecutionsData` is a **map** keyed
+by per-execution load-group id, each entry carrying `AggregatedData[]`,
+`CumulatedValues`, `SloViolationReasons[]`, `AggregatedDataWithTransaction[]`,
+plus a top-level `Data.ApplicationLogs[]`. `--completed true` (default) reads
+the finished run from the database; `--completed false` reads a live run from
+the cache and is cleared once the run ends — never poll it for completion.
+
+**Never print the bundle whole.** Slim it with `--query` (jq expression
+applied to `Data`), or write it to a temp file once and extract with a few
+targeted `jq` passes. Take each load group's downstream id from the dashed
+`ExecutionId` field *inside* its `AggregatedData` entries — the
+`ExecutionsData` map key is rendered un-dashed and re-cased.
+
+## Step 5b — Per-transaction (per-API) metrics (`transaction-metrics list`)
 
 The cumulative `LoadGroups[].CumulativeResponseTimeMs` rolls every
 transaction together. For a Performance Engineer or Developer who needs to
@@ -531,38 +596,38 @@ uip tm perf-scenario transaction-metrics list \
 # a [0,0] window returns no data — use 0 .. run duration for the whole run
 ```
 
-`<LOAD_GROUP_ID>` is the `LoadGroupId` field from `scenario execute --wait`
-or `perf-scenario results get` — one per attached load group.
+`<LOAD_GROUP_ID>` is the **per-execution** load-group id — the dashed
+`ExecutionId` inside a load group's `AggregatedData` entries (or the `Id`
+column of `load-groups list`). It is NOT the scenario load-group UUID that
+`load-groups update` / `remove` take. There is no `--project-key` on this
+command.
 
-Response shape:
+`Data` is a **bare array**, one entry per distinct transaction:
 
 ```json
 {
   "Result": "Success",
-  "Code": "ScenarioTransactionMetrics",
-  "Data": {
-    "LoadGroupId": "...",
-    "StartTimeMs": null,
-    "EndTimeMs": null,
-    "TransactionCount": 7,
-    "Transactions": [
-      {
-        "TransactionName": "POST /api/login",
-        "RequestCount": 42,
-        "AvgResponseTimeMs": 187.5,
-        "MinResponseTimeMs": 110,
-        "MaxResponseTimeMs": 1067,
-        "P50ResponseTimeMs": 175,
-        "P90ResponseTimeMs": 320,
-        "P95ResponseTimeMs": 540,
-        "P99ResponseTimeMs": 1010,
-        "HttpErrorCount": 0,
-        "HttpErrorRate": 0
-      }
-    ]
-  }
+  "Code": "PerfTransactionMetricsList",
+  "Data": [
+    {
+      "TransactionName": "POST /api/login",
+      "RequestCount": 42,
+      "AvgResponseTimeMs": 187.5,
+      "MinResponseTimeMs": 110,
+      "MaxResponseTimeMs": 1067,
+      "P50ResponseTimeMs": 175,
+      "P90ResponseTimeMs": 320,
+      "P95ResponseTimeMs": 540,
+      "P99ResponseTimeMs": 1010,
+      "HttpErrorCount": 0,
+      "HttpErrorRate": 0
+    }
+  ]
 }
 ```
+
+No throughput field is returned — take requests/sec from
+`AggregatedData[].RequestsPerSecond` in the bundle instead.
 
 Use this when:
 
@@ -573,31 +638,41 @@ Use this when:
 - You're narrowing down a specific time window inside a long run (pass
   `--start-time-ms` / `--end-time-ms`).
 
-> The list returned has **one row per distinct `TransactionName` observed
-> during the load-group execution.** No transactions instrumented in the
-> automation → empty `Transactions: []`. If empty, surface that fact to
-> the user rather than fabricating per-call metrics from `AggregatedData[]`.
+> One row per distinct `TransactionName` observed during the load-group
+> execution. No transactions instrumented in the automation → empty
+> `Data: []`. If empty, surface that fact to the user rather than
+> fabricating per-call metrics from `AggregatedData[]`.
 
-> ⚠️ **`transaction-metrics` only returns rows when the scenario's
-> `AppType` is `api`.** Web and desktop scenarios drive the application
-> through the UI (browser automation / Windows UIA selectors), not by
-> issuing HTTP calls the perf service can intercept — so the Perf
-> Service has no per-API transactions to report. The endpoint
-> returns `200 OK` with `Transactions: []` in that case, **not** an
-> error.
+> ⚠️ **`transaction-metrics` only returns rows for load groups whose
+> system under test is an API.** Browser and desktop load groups drive the
+> application through the UI (browser automation / Windows UIA selectors),
+> not by issuing HTTP calls the perf service can intercept — so there are
+> no per-API transactions to report. The endpoint returns `200 OK` with
+> `Data: []` in that case, **not** an error.
 >
 > Decision tree before calling `transaction-metrics`:
 >
-> 1. Run `uip tm perf-scenario get --scenario-key <KEY> --output json`.
-> 2. Read `Data.AppType`.
->    - `api` → call `transaction-metrics`, expect populated rows.
->    - `web` / `desktop` → **skip `transaction-metrics`**. Use the
->      `AggregatedData[]` time series from `results get` (`ExecutionsData[*].AggregatedData`)
->      instead (it has `stepTimeMs`, `p95StepTimeMs`, etc. — per-step,
->      not per-API, but it's the right granularity for UI-driven runs).
-> 3. If you still want to try `transaction-metrics` on a non-`api`
->    scenario for any reason, tell the user upfront that the empty
->    `Transactions: []` is expected, not a missing-data bug.
+> 1. Run `uip tm perf-scenario load-groups list --project-key <KEY> --execution-id <EXECUTION_ID> --output json`.
+> 2. Read each row's `SystemUnderTestType`:
+>    - `api` → call `transaction-metrics` for that load group, expect
+>      populated rows.
+>    - `windowsApplication` (Desktop) or `chrome` / `edge` /
+>      `internetExplorer` / `safari` / `opera` / `firefox` / `netscape`
+>      (Browser) → **skip `transaction-metrics`** for that load group. Use
+>      the `AggregatedData[]` time series from `results get`
+>      (`ExecutionsData[*].AggregatedData`) instead (it has `StepTimeMs`,
+>      `P95StepTimeMs`, etc. — per-step, not per-API, but the right
+>      granularity for UI-driven runs).
+>    - `undefined` / `default` → treat as unknown; try the call and expect
+>      it may return `[]`.
+> 3. The scenario's own `AppType` (`apiService`, `web`, …) from
+>    `perf-scenario get` is **metadata, not the determinant** — a scenario
+>    labelled `apiService` can still hold browser load groups. Don't decide
+>    off `AppType` alone.
+> 4. If a Test Manager endpoint (`load-groups list`) is unavailable (e.g.
+>    403), call `transaction-metrics` anyway and tell the user upfront that
+>    an empty `Data: []` is expected for non-API load groups, not a
+>    missing-data bug.
 
 ## Step 6 — Generate a perf report
 
@@ -632,17 +707,24 @@ Same drill-down loop as
 Perf-specific drill-down candidates:
 
 - **Per-transaction (per-API) metrics** when the rollup hides which call
-  is slow: `uip tm perf-scenario transaction-metrics list --load-group-id <UUID> --start-time-ms 0 --end-time-ms <durMs>
-  --project-key <KEY>`. Returns p50/p90/p95/p99 + request count + HTTP
-  error count *per `TransactionName`*. Pass `--start-time-ms` /
-  `--end-time-ms` to zoom into a specific window.
-- Re-fetch the same execution with `--full`: `uip tm perf-scenario results get
-  --execution-id <UUID> --project-key <KEY> --full`.
-- Inspect scenario metadata + load-group settings:
+  is slow: `uip tm perf-scenario transaction-metrics list --load-group-id <UUID> --start-time-ms 0 --end-time-ms <durMs>`.
+  Returns p50/p90/p95/p99 + request count + HTTP error count *per
+  `TransactionName`*. Narrow `--start-time-ms` / `--end-time-ms` to zoom
+  into a specific window.
+- **Errors for one load group**: `uip tm perf-scenario http-errors list` (per
+  request: URL, method, status code, count, response body) and
+  `uip tm perf-scenario automation-errors list` — both take the scenario
+  `--execution-id`, the load group's `--load-group-id`, and the window flags.
+- Re-fetch the same execution's raw bundle: `uip tm perf-scenario results get
+  --execution-id <UUID> --completed true --query '<JQ_EXPR>'`.
+- Inspect scenario metadata + configured load groups:
   `uip tm perf-scenario get --scenario-key <KEY>` (project is derived from the
   scenario-key prefix — no `--project-key` flag).
-- Cross-reference the linked test case's executions:
-  `uip tm execution list --project-key <KEY> --test-set-id <ID>` — useful
+- List a scenario's past runs to compare: `uip tm perf-scenario executions
+  list --project-key <KEY> --scenario-id <SCENARIO_UUID> --execution-type
+  performanceTesting`.
+- Cross-reference the linked test case's functional executions:
+  `uip tm executions list --project-key <KEY> --test-set-id <ID>` — useful
   when comparing functional vs. perf runs of the same test case.
 
 Stop when: the user is satisfied, the response has no more data, or 3
@@ -659,15 +741,28 @@ retries have failed.
   details: […]` summary **after** the `ended with the status` log, so the
   last entry is almost never the one carrying the outcome. Scan for the
   `ended with the status` substring across the array.
-- **Running `scenario execute` without first attaching a load group.**
-  `scenario create` alone is just metadata; the perf service responds with
-  HTTP 404 *Performance Testing Scenario Test Case Configurations does not
-  exist* until you've called `scenario add-testcase` at least once.
+- **Running `perf-scenario execute` without first attaching a load group.**
+  `perf-scenario create` alone is just metadata; the perf service responds
+  with HTTP 404 *Performance Testing Scenario Test Case Configurations does
+  not exist* until you've called `load-groups add` at least once.
+- **Calling the retired dashed verbs.** `perf-scenario add-testcase` and
+  `perf-scenario update-loadgroup` never shipped — they are
+  `load-groups add` and `load-groups update`. A dashed call exits non-zero
+  with commander's `unknown command`.
+- **Passing `--project-key` to a perf-service command.** `results get`,
+  `http-errors list`, `automation-errors list`, and `transaction-metrics
+  list` don't accept it; `report generate` / `report compare` take it only
+  to build the in-app link.
+- **Mixing the two load-group id spaces.** `load-groups update` / `remove`
+  want the scenario load-group UUID (`perf-scenario get` →
+  `LoadGroups[].LoadGroupId`, or `load-groups add` → `Data.LoadGroupId`).
+  The errors/metrics commands want the per-execution id (`load-groups list`
+  → `Id`, or the dashed `ExecutionId` inside `AggregatedData`).
 - **Pinning `--package-version` when the user didn't ask.** The CLI's
   auto-resolve picks the highest published version in the folder — that is
   almost always what you want. Pinning is for the rare reproducer case.
-- **Using `--full` for a Release Manager report.** The 60-entry time series
-  is noise for a go/no-go audience. Default payload only.
+- **Using `execute --wait --full` for a Release Manager report.** The
+  60-entry time series is noise for a go/no-go audience. Default payload only.
 - **Recomputing cumulative metrics from `AggregatedData[]`.** The server
   already aggregates; reading the per-second buckets and re-summing is
   slower, less accurate, and risks contradicting the server's own values.
@@ -681,10 +776,14 @@ retries have failed.
   Manager getting raw p99 timelines is noise; a Performance Engineer
   getting only a go/no-go is missing the data they need.
 - **Do NOT hand-roll a `while sleep N; do …; done` loop instead of `--wait`.**
-  See [SKILL.md § Scenario Commands](../SKILL.md#scenario-commands-performance-testing).
+  See [SKILL.md § Performance Scenario Commands](../SKILL.md#performance-scenario-commands-perf-scenario).
 - **Do NOT fabricate metrics.** Every number in the report must trace to a
   field in the JSON payload. If `Data.LoadGroups[]` is empty, the report
   says "no data returned" — full stop.
 - **Do NOT delete the scenario after the run.** Scenarios are reusable;
   the user may want to re-run later or compare across runs. Only delete
   on explicit user request.
+- **Do NOT call `load-groups remove` to "clean up" after a run.** Removing a
+  load group throws away its folder, package, and load profile; past
+  execution data stays but the scenario can no longer be re-run as-is.
+  Remove only when the user asks.

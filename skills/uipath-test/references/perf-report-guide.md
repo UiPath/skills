@@ -37,14 +37,21 @@ to confirm exact flags.
 
 | Command | Fetches | Former tool |
 |---|---|---|
-| `uip tm perf-scenario executions list --project-key <key> [--scenario-id <uuid>] [--execution-type dryRun\|performanceTesting]` | scenario executions (filter dry vs full via `executionType`) | Get_Scenario_Executions |
-| `uip tm perf-scenario load-groups list --project-key <key> --execution-id <uuid>` | per-load-group config + status; each group's id is the bridge id | Get_Load_Group_Logs |
-| `uip tm perf-scenario http-errors list --execution-id <uuid> --load-group-id <uuid> --start-time-ms 0 --end-time-ms <durMs>` | HTTP errors grouped by request (URL, status, count) | Get_Http_Errors |
+| `uip tm perf-scenario executions list --project-key <key> [--scenario-id <uuid>] [--execution-type dryRun\|performanceTesting] [--limit <n>] [--offset <n>]` | scenario executions (filter dry vs full via `--execution-type`); rows carry `Id`, `Status`, `Duration` (ms) | Get_Scenario_Executions |
+| `uip tm perf-scenario load-groups list --project-key <key> --execution-id <uuid>` | per-load-group config + status + `SystemUnderTestType`; each row's `Id` is the bridge id | Get_Load_Group_Logs |
+| `uip tm perf-scenario http-errors list --execution-id <uuid> --load-group-id <uuid> --start-time-ms 0 --end-time-ms <durMs>` | HTTP errors grouped by request (URL, method, status, count, response body) | Get_Http_Errors |
 | `uip tm perf-scenario automation-errors list --execution-id <uuid> --load-group-id <uuid> --start-time-ms 0 --end-time-ms <durMs>` | automation-step failures (step, message, count) | Get_Automation_Errors |
-| `uip tm perf-scenario results get --execution-id <uuid> --completed` | full data bundle: time-series, CPU/RAM, application logs | Get_Scenario_Execution_Data |
-| `uip tm perf-scenario transaction-metrics list --load-group-id <uuid> --start-time-ms 0 --end-time-ms <durMs>` | per-transaction avg/P50/P90/P95/P99/max, throughput, error rate (**API SUTs only**) | Get_Transaction_Metrics |
+| `uip tm perf-scenario results get --execution-id <uuid> [--completed true\|false]` | full data bundle: time-series, CPU/RAM, application logs. `--completed true` (default) = finished run; `false` = live run | Get_Scenario_Execution_Data |
+| `uip tm perf-scenario transaction-metrics list --load-group-id <uuid> --start-time-ms 0 --end-time-ms <durMs>` | per-transaction avg / min / max / P50 / P90 / P95 / P99, request count, HTTP error count + rate (**API SUTs only**; no throughput field) | Get_Transaction_Metrics |
 | `uip tm perf-scenario report generate --execution-id <uuid> --format pdf\|html --report-file <path> --project-key <key>` | renders your authored markdown (pdf) / HTML (html); returns `{ViewUrl}` — the in-app report page when `--project-key` is passed | Generate_Report (unified) |
 | `uip tm perf-scenario report compare --scenario-id <uuid> --execution-ids <uuid...> --report-file <path> --project-key <key>` | renders an authored comparison HTML across runs of one scenario (execution ids **oldest → newest**); returns `{ViewUrl}` | Generate_Comparison_Report_HTML |
+
+Only `executions list` and `load-groups list` are Test Manager endpoints and take
+`--project-key`. The rest are perf-service endpoints — `results get`, `http-errors list`,
+`automation-errors list`, and `transaction-metrics list` do **not** accept `--project-key`;
+`report generate` / `report compare` take it only to build the in-app link. Every command
+above also accepts `--query <jq-expr>` (applied to `Data`) — use it instead of dumping large
+payloads.
 
 > Always confirm real flags with `uip tm perf-scenario <cmd> --help --output json` before
 > calling; if a listed name is missing, probe the group's `--help` for its current name.
@@ -67,7 +74,8 @@ to confirm exact flags.
 > (`--load-group-id` for metrics/errors commands) is the dashed `ExecutionId` inside
 > `results get`'s `ExecutionsData` entries (also the `Id` field on `load-groups list` rows).
 > The `LoadGroupId` field on those same rows is the **config** id — it works for
-> `update-loadgroup` but returns nothing from metrics/errors endpoints.
+> `load-groups update` / `load-groups remove` but returns nothing from metrics/errors
+> endpoints.
 >
 > `load-groups list` is only for per-group config (thresholds, SUT type) that `results get`
 > lacks — it's a Test Manager endpoint needing TM access on the active tenant.
