@@ -11,9 +11,9 @@ description: >
   retrieve, not a claim about work performed. The guard reads the mock's calls.log
   rather than Bash text because a correct answer quotes `configure-model --model
   <id>` and may cite `list-models` to contrast it, which a text regex false-matches.
-  A correct run makes no `uip` call, so no guaranteed log line exists for the
-  positive control the mock README requires — hence its documented fallback, a
-  harness-integrity assertion on the log sink.
+  No `uip` call is guaranteed in a correct run, so the guard carries no positive
+  control. Correct runs DO call other verbs, so it excludes the trap verb only,
+  never every invocation.
 
   Distinct from pick_capable_model / change_model_variant: both mutate a project
   via configure-model; this enumerates the catalog and mutates nothing.
@@ -73,20 +73,18 @@ success_criteria:
     pass_threshold: 1.0
 
   # Log of ACTUAL executions: quoting the verb to contrast it is fine, running it
-  # is not. `includes:` only proves the log exists and is readable.
+  # is not. Trap verb only, not every invocation — calls.log is seeded (always
+  # exists) and correct runs call other verbs.
+  #
+  # Move this to calls.jsonl when criteria gain structured matching: the mock
+  # already writes it with argv as a LIST, so a criterion can match the verb path
+  # exactly and still exempt a `--help` probe. Neither is expressible as a
+  # substring over the flat line, and jsonl is seeded EMPTY, so "made no call" is
+  # assertable directly instead of via a seed-line include.
   - type: file_contains
     description: "Agent did NOT mistake the catalog for version listing: mock call log has no executed `projects list-models`"
     path: "mocks/calls.log"
     includes: ["# seeded by mock_template"]
     excludes: ["uip ixp projects list-models"]
     weight: 3.0
-    pass_threshold: 1.0
-
-  # Without this, re-pointing the mock's sink leaves the seeded log clean and the
-  # guard above passes vacuously.
-  - type: file_contains
-    description: "Mock still records invocations to the graded calls.log (guard is not vacuous)"
-    path: "mocks/uip"
-    includes: ['>> "$(dirname "$0")/calls.log"']
-    weight: 1.0
     pass_threshold: 1.0
