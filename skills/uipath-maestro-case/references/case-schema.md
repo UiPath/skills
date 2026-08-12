@@ -195,7 +195,7 @@ No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node l
 | Field | Type | Description |
 |-------|------|-------------|
 | `stageType` | `"primary" \| "secondary"` ? | Stage kind discriminator. Omitted on a primary stage (do NOT emit `"primary"`); set to `"secondary"` for a secondary stage, where it is the FIRST field in `data` (before `label`). See §2c. |
-| `label` | string? | Display label; required, unique across stages, and must not contain `:` |
+| `label` | string? | Display label; required, unique across **all** node labels in the case, and must not contain `:` |
 | `description` | string? | Stage description |
 | `isRequired` | boolean? | Whether the stage must complete before case exit (used by case-exit rule `required-stages-completed`) |
 | `parentElement` | `{id,type}` | Always `{ id: "root", type: "case-management:root" }`. The literal `"root"` is canvas-side — there is no `"root"` node on disk. |
@@ -453,7 +453,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 |-------|------|-------------|
 | `id` | string | Unique task ID, `t` + 8 random chars (e.g. `t8GQTYo8O`) |
 | `elementId` | string | Composite `${stageId}-${taskId}` (e.g. `Stage_aB3kL9-t8GQTYo8O`) |
-| `displayName` | string? | Human-readable label shown in the UI |
+| `displayName` | string? | Human-readable label shown in the UI; unique across the **whole case** (not per stage) and must not contain `:`. Omitted resolves to the bound resource name, which shares the pool. |
 | `type` | string | Task type — see task plugins under `plugins/tasks/` |
 | `data` | object | Type-specific configuration — see corresponding plugin's `impl-json.md`. For connector tasks, `data.bindings` references the root-level bindings array. |
 | `skipCondition` | string? | `=js:` expression — skip the task when truthy. Use strict equality ([`bindings-and-expressions.md`](bindings-and-expressions.md#equality-operators)). |
