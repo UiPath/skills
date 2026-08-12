@@ -12,7 +12,7 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | [MST-9972](#mst-9972--variablesnodes-missing-vars-resolves-to-undefined) | `Cannot read property 'output' of undefined` on a downstream node | Direct-authored `.flow` skipped `variables.nodes[]`; `flow validate` accepts it but the BPMN has no process-level variable declaration for the upstream node. |
 | [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render at the wrong size for their shape | `flow format` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
-| [MST-13188](#mst-13188--run-reports-completed-but-the-work-never-happened) | Run finishes `Completed`, but the API call / node it depended on failed | `inputs.errorHandlingEnabled: true` on a node with no handler, or an `error` edge routed back into the happy path |
+| [Run reports `Completed`, work not done](#run-reports-completed-but-the-work-never-happened) | Run finishes `Completed`, but the API call / node it depended on failed | `inputs.errorHandlingEnabled: true` on a node with no handler, or an `error` edge routed back into the happy path |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
 | [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run with `--skip-solution-registration` (opts out of auto-scaffold + registration) |
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
@@ -147,7 +147,7 @@ Add an edge from the HITL node's `completed` port to the next node in the flow. 
 
 ---
 
-## MST-13188 — Run reports `Completed` but the work never happened
+## Run reports `Completed` but the work never happened
 
 ### Symptom
 

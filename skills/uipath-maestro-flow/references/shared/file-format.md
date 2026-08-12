@@ -314,7 +314,7 @@ The port is **not** listed in the registry's `handleConfiguration`. Studio Web o
 1. The requirements state what should happen when this node fails ("if the call fails, …", "return X for invalid input", "handle timeouts") — **and**
 2. You wire the node's `error` port to a handler that produces an outcome distinguishable from success.
 
-Never set the flag on a node that has no outgoing `error` edge. It is CLI-owned: `uip maestro flow edge add --source-port error` and `uip maestro flow format` derive it from the error edges actually present. A flag set without a matching edge is always agent-authored and always a bug — it silently converts a real failure into a run that reports success (MST-13188).
+Never set the flag on a node that has no outgoing `error` edge. It is CLI-owned: `uip maestro flow edge add --source-port error` and `uip maestro flow format` derive it from the error edges actually present. A flag set without a matching edge is always agent-authored and always a bug — it silently converts a real failure into a run that reports success.
 
 ### Do not swallow the failure
 
