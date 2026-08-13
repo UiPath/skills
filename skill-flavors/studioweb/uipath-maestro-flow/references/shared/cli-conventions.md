@@ -4,5 +4,5 @@
 <!--skill-flavor:flow-prefix-examples:end-->
 
 <!--skill-flavor:author-login-boundary:start-->
-| **Author** | Studio Web owns authentication for project creation through `CreateProjects`; local `validate`, `format`, OOTB registry queries, `Edit` / `Write` edits, and planning do not require `uip login` |
+| **Author** | Studio Web owns authentication for project creation through `CreateProjects`; local `validate`, `format`, OOTB registry queries, `Edit` / `Write` edits, and planning work without `uip login` |
 <!--skill-flavor:author-login-boundary:end-->
