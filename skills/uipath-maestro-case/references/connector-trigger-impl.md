@@ -28,6 +28,8 @@ Construct the input-details object literally from `tasks.md`:
 }
 ```
 
+**FilterTree preflight (mandatory when `filter` exists):** recursively add `filters: []` / `groups: []` wherever absent — root and every child in `groups[]` — preserving populated arrays. No authored filter → omit `filter`; never pass a placeholder tree.
+
 Full input-details contract: [`case-spec-input-details.md`](case-spec-input-details.md).
 
 ### Step 2 — Run `case spec` with input-details

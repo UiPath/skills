@@ -21,7 +21,7 @@ The `tasks.md` entry provides:
 | `event-operation` | `"EMAIL_RECEIVED"` |
 | `event-mode` | `"polling"` or `"webhooks"` |
 | `input-values` | `{"eventParameters":{"parentFolderId":"AAMkADNm..."}}` (already resolved IDs) |
-| `filter` (optional) | `{"groupOperator":"And","filters":[...]}` (FilterTree object — present only when planning Step 7 authored a filter) |
+| `filter` (optional) | `{"groupOperator":"And","filters":[...],"groups":[]}` (complete FilterTree object — present only when planning Step 7 authored a filter) |
 | `isRequired` | `true` |
 | `runOnlyOnce` | `false` |
 
@@ -41,6 +41,8 @@ Construct the input-details object literally from `tasks.md`:
 ```
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
+
+Before Step 2, apply the shared [FilterTree preflight](../../../connector-trigger-impl.md#step-1--build---input-details-json-from-tasksmd).
 
 ### Step 2 — Run `case spec` with input-details
 

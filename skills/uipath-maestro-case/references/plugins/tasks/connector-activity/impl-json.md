@@ -17,7 +17,7 @@ The `tasks.md` entry provides:
 | `connector-key` | `"uipath-microsoft-outlook365"` |
 | `object-name` | `"send-mail-v2"` |
 | `input-values` | `{"bodyParameters":{"message.toRecipients":"user@example.com"},"queryParameters":{...}}` (already resolved IDs, dotted body keys) |
-| `filter` (optional) | `{"groupOperator":"And","filters":[...]}` (FilterTree object — present only when planning Step 7 authored a filter) |
+| `filter` (optional) | `{"groupOperator":"And","filters":[...],"groups":[]}` (complete FilterTree object — present only when planning Step 7 authored a filter) |
 | `isRequired` | `true` |
 | `runOnlyOnce` | `false` |
 
@@ -46,6 +46,8 @@ Construct the input-details object from `tasks.md`, rewriting every value contai
 Synthetic HTTP request activities (`object-name === "httpRequest"` / `"http-request"`) reject `bodyParameters` — pass HTTP body via `queryParameters` instead, or omit. The CLI rejects bodyParameters at validation time.
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
+
+**FilterTree preflight (when `filter` exists):** ensure every root and nested node carries both `filters` and `groups` arrays, preserving populated criteria ([§ FilterTree shape](../../../case-spec-input-details.md#filtertree-shape)); if no filter was authored, omit `filter`.
 
 #### Step 1.a — Rewrite references to canonical sink form
 
@@ -122,7 +124,7 @@ When `tasks.md` carries a `filter:` object, the activity's operation must declar
 
 - `spec.filter` present (with `builder: "ceql"` and `fields[]`) → CEQL filter is supported. Pass the structured tree under `--input-details.filter`. The CLI compiles it into both halves of the contract: the runtime CEQL string at `caseShape.inputs[name="queryParameters"].body.<filterParamName>` AND the design-time tree under `essentialConfiguration.savedFilterTrees.<filterParamName>` (inside the `=jsonString:` blob in `caseShape.context[name="metadata"].body.activityPropertyConfiguration.configuration`).
 - **Do NOT pass raw CEQL under `queryParameters` for a FilterBuilder operation.** Plain filter fields are normal native-syntax inputs, not authored FilterTrees.
-- Tree shape, operator table, examples → [/uipath:uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
+- Tree shape, operator table, examples, and the complete-array invariant → [`case-spec-input-details.md` § FilterTree shape](../../../case-spec-input-details.md#filtertree-shape).
 
 If `spec.filter` is undefined, a top-level `filter:` is malformed. Repair it before Step 2:
 
@@ -277,6 +279,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 12. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
 13. **Lossless inputs (HARD GATE).** Every `tasks.md input-values` field must appear unchanged in the matching `data.inputs[].body`; a top-level `filter:` also requires `spec.filter` and successful compilation. Otherwise halt and repair—never warn and continue.
 14. **No PascalCase keys remain (HARD GATE).** Scan the written task's `data.context` / `data.inputs` / `data.outputs` for any capital-first `"Xxx…":` key — every one must have been re-cased in Step 8.a. `validate` does NOT catch content-level leftovers (a Pascal or missing `multipartParameters` passes validate and fails at runtime).
+15. **Complete filter trees (HARD GATE when a structured filter was authored).** The FilterTree passed to `case spec` and persisted under `essentialConfiguration.savedFilterTrees` has both `filters` and `groups` arrays on its root and every nested node; populated criteria remain unchanged.
 
 ## What NOT to Do
 

@@ -35,7 +35,7 @@ T-number is T02 for the first trigger row in sdd.md, T03+ for subsequent rows in
 - event-operation: <eventOperation>
 - event-mode: <polling|webhooks>
 - input-values: {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
-- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"subject","operator":"Contains","value":{"isLiteral":true,"rawString":"\"urgent\"","value":"urgent"},"uiId":null}]}
+- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"subject","operator":"Contains","value":{"isLiteral":true,"rawString":"\"urgent\"","value":"urgent"},"uiId":null}],"groups":[]}
 - order: after T01
 - verify: Confirm trigger configured with correct event parameters
 ```

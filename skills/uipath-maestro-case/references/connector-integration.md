@@ -161,7 +161,7 @@ The skill substitutes `{{CONN_BINDING_ID}}` and `{{FOLDER_BINDING_ID}}` placehol
 
 Filters for both activities (CEQL) and triggers (JMESPath) are authored as **structured FilterTree JSON**, not flat string expressions. The CLI compiles the tree to the appropriate target language and persists both the tree (for round-tripping in Studio Web) and the compiled expression (for runtime evaluation).
 
-Tree shape, operator table, anti-patterns, "How to build" guide, worked examples: [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs.
+Tree shape, complete-array invariant, operator table, gotchas, worked examples: [`case-spec-input-details.md` § FilterTree shape](case-spec-input-details.md#filtertree-shape). Same shape applies to triggers — only the compiler output differs.
 
 > **Do NOT pass a raw filter string** under `--input-details.queryParameters.where` (or the connector-specific filter param name). The CLI rejects this; even if it didn't, Studio Web would render the filter widget as `undefined` when the activity is reopened.
 
@@ -178,7 +178,7 @@ Record the resolved values in `tasks.md` under the task entry:
 - connector-key: uipath-atlassian-jira
 - object-name: issue
 - input-values: {"bodyParameters":{"fields.project.key":"PROJ","fields.issuetype.id":"10004"}}
-- filter: {"groupOperator":"And","filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Open\"","value":"Open"},"uiId":null}]}
+- filter: {"groupOperator":"And","filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Open\"","value":"Open"},"uiId":null}],"groups":[]}
 ```
 
 Also record in `registry-resolved.json`: search query, matched entry, selected connection, connector metadata, and (when surfaced) `spec.diagnostics.fallbacks[]`.

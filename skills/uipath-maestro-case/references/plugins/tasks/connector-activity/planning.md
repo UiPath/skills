@@ -127,7 +127,7 @@ Values can be:
 
 If `spec.filter` exists, author a FilterTree. Otherwise map an SDD filter only to a declared plain field, copying its exact native value into the matching `input-values.queryParameters` or `input-values.bodyParameters` sink (e.g. Outlook `ListEmails` → `queryParameters.filter`). If no field matches, halt and ask; non-interactive runs report a blocker. Never translate or drop the filter, or invent downstream filtering.
 
-Filter tree shape, operator table, anti-patterns, worked examples: [/uipath:uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers (compiler differs — JMESPath instead of CEQL).
+Filter tree shape, operator table, gotchas, and worked examples: [`case-spec-input-details.md` § FilterTree shape](../../../case-spec-input-details.md#filtertree-shape). Every node carries both `filters` and `groups` arrays (`[]` for the empty side); unfiltered activity → omit `filter` entirely.
 
 The filter tree goes into `tasks.md` under `filter:` as a literal JSON object — Phase 3 passes it to `case spec --input-details`. Do NOT pass a raw CEQL string under `queryParameters.where` (or whichever connector-specific name) when authoring a filter — case-tool rejects this at configure time, and the round-trip from Studio Web breaks.
 
@@ -189,7 +189,7 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
 - connector-key: <connectorKey>
 - object-name: <objectName>
 - input-values: {"bodyParameters":{...},"queryParameters":{...},"pathParameters":{...}}
-- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Active\"","value":"Active"},"uiId":null}]}
+- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"Status","operator":"Equals","value":{"isLiteral":true,"rawString":"\"Active\"","value":"Active"},"uiId":null}],"groups":[]}
 - outputs:                            # optional; omit only when the SDD declares none
   - <SDD output row, copied verbatim>
 - isRequired: true

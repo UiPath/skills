@@ -26,7 +26,7 @@ If you don't yet have values, omit the flag — the default empty `caseShape` is
     "bodyParameters":  {},   // optional — body request fields (dotted keys allowed)
     "queryParameters": {},   // optional — query string params
     "pathParameters":  {},   // optional — path-template substitutions
-    "filter":          {}    // optional — FilterTree (compiles to CEQL)
+    "filter":          {...} // optional — complete FilterTree (compiles to CEQL); omit when unfiltered — never pass {}
 }
 ```
 
@@ -35,7 +35,7 @@ If you don't yet have values, omit the flag — the default empty `caseShape` is
 ```jsonc
 {
     "eventParameters": {},   // optional — design-time params scoping the trigger
-    "filter":          {}    // optional — FilterTree (compiles to JMESPath)
+    "filter":          {...} // optional — complete FilterTree (compiles to JMESPath); omit when unfiltered — never pass {}
 }
 ```
 
@@ -169,7 +169,7 @@ The CLI compiles the tree:
     "groupOperator": "And" | "Or" | 0 | 1,   // REQUIRED — emit "And" even for a single-filter tree
     "index": 0,                              // 0 for the root tree
     "uuId": null,                            // FE assigns; null is fine when authoring
-    "filters": [                             // 1+ Filter objects
+    "filters": [                             // REQUIRED array; may be empty when criteria live in groups[]
         {
             "id":       "<field-name>",     // matches a name in caseShape.filter.fields[]
             "operator": "<FilterOperator>", // see operator list below
@@ -181,9 +181,11 @@ The CLI compiles the tree:
             "uiId": null
         }
     ],
-    "groups": []                             // optional nested groups (FilterTree[])
+    "groups": []                             // REQUIRED array; nested FilterTree nodes or []
 }
 ```
+
+**Complete-array invariant:** every node — root and each entry under `groups[]` — carries both `filters` and `groups` arrays. Emit `[]` for the empty side; never drop populated criteria. The published type marks `groups` optional, but the compiler dereferences both as arrays — omission fails compilation. Unfiltered connector → omit top-level `filter`; never pass a placeholder tree.
 
 **`groupOperator` accepts both string and numeric.** The IS SDK's `FilterGroupOperator` is a numeric enum (`And=0`, `Or=1`); the case-tool input layer normalizes string `"And"` / `"Or"` to numeric before threading the tree to the SDK compilers, so JSON authors can use either form. Numeric values pass through unchanged. Lowercase `"and"` / `"or"` is NOT normalized — the SDK will then fail to produce the expected joiner.
 
@@ -234,7 +236,8 @@ For string values, `rawString` includes outer quotes (`"\"Active\""`). For numbe
                 "value": { "isLiteral": true, "rawString": "\"Active\"", "value": "Active" },
                 "uiId": null
             }
-        ]
+        ],
+        "groups": []
     }
 }
 ```
@@ -259,7 +262,8 @@ For string values, `rawString` includes outer quotes (`"\"Active\""`). For numbe
                 "value": { "isLiteral": true, "rawString": "100000", "value": 100000 },
                 "uiId": null
             }
-        ]
+        ],
+        "groups": []
     }
 }
 ```
@@ -280,7 +284,8 @@ For string values, `rawString` includes outer quotes (`"\"Active\""`). For numbe
                 "filters": [
                     { "id": "Status", "operator": "Equals", "value": {...}, "uiId": null },
                     { "id": "Region", "operator": "Equals", "value": {...}, "uiId": null }
-                ]
+                ],
+                "groups": []
             },
             {
                 "groupOperator": "And",
@@ -288,7 +293,8 @@ For string values, `rawString` includes outer quotes (`"\"Active\""`). For numbe
                 "uuId": null,
                 "filters": [
                     { "id": "Priority", "operator": "Equals", "value": {...}, "uiId": null }
-                ]
+                ],
+                "groups": []
             }
         ]
     }
@@ -390,7 +396,8 @@ uip maestro case spec \
           "value": { "isLiteral": true, "rawString": "\"Active\"", "value": "Active" },
           "uiId": null
         }
-      ]
+      ],
+      "groups": []
     }
   }'
 ```
@@ -446,7 +453,8 @@ uip maestro case spec \
           "value": { "isLiteral": true, "rawString": "true", "value": true },
           "uiId": null
         }
-      ]
+      ],
+      "groups": []
     }
   }'
 ```

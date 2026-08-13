@@ -35,7 +35,7 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
 - event-operation: <eventOperation>
 - event-mode: <polling|webhooks>
 - input-values: {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
-- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"subject","operator":"Contains","value":{"isLiteral":true,"rawString":"\"urgent\"","value":"urgent"},"uiId":null}]}
+- filter: {"groupOperator":"And","index":0,"uuId":null,"filters":[{"id":"subject","operator":"Contains","value":{"isLiteral":true,"rawString":"\"urgent\"","value":"urgent"},"uiId":null}],"groups":[]}
 - outputs:                            # optional; omit only when the SDD declares none
   - <SDD output row, copied verbatim>
 - isRequired: true
