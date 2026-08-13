@@ -17,7 +17,6 @@ run_limits:
   max_turns: 50
 
 sandbox:
-  driver: tempdir
   python: {}
   node:
     env_packages:
