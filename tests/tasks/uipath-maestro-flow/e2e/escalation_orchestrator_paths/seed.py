@@ -96,9 +96,10 @@ def build_seed() -> dict:
 
 
 def main() -> None:
+    seed = build_seed()
     path = Path("seed.json")
-    path.write_text(json.dumps(build_seed(), indent=2) + "\n", encoding="utf-8")
-    print(f"seeded {path} with {len(build_seed()['cases'])} path cases")
+    path.write_text(json.dumps(seed, indent=2) + "\n", encoding="utf-8")
+    print(f"seeded {path} with {len(seed['cases'])} path cases")
 
 
 if __name__ == "__main__":

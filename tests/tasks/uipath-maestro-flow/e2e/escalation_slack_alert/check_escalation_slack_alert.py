@@ -15,7 +15,6 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any
 
 # Walk up to the directory that holds `_shared` so the import works regardless
 # of how deep this task lives under tests/tasks/uipath-maestro-flow/.
@@ -28,28 +27,12 @@ sys.path.insert(0, _directory)
 
 from _shared.flow_check import (  # noqa: E402
     assert_flow_uses_connector_target,
-    assert_output_nonempty,
+    assert_named_equals,
+    assert_slack_message_posted,
     run_debug,
 )
 
 SLACK_KEY = "uipath-salesforce-slack"
-
-
-def normalized(value: Any) -> Any:
-    if isinstance(value, str):
-        lowered = value.strip().casefold()
-        if lowered == "true":
-            return True
-        if lowered == "false":
-            return False
-        return lowered
-    return value
-
-
-def assert_named_equals(payload: dict, name: str, expected: Any) -> None:
-    actual = assert_output_nonempty(payload, name)
-    if normalized(actual) != normalized(expected):
-        raise SystemExit(f"FAIL: output {name!r}: expected {expected!r}, got {actual!r}")
 
 
 def main() -> None:
@@ -71,13 +54,15 @@ def main() -> None:
     for name, expected in case["expected"].items():
         assert_named_equals(payload, name, expected)
 
-    # The Slack side effect: a posted-message identifier proves the alert was
-    # actually delivered to the channel.
-    assert_output_nonempty(payload, "slackMessageId")
+    # The Slack side effect: the flow must surface a real Slack message ts,
+    # which the Slack API returns only for a message it actually accepted.
+    # Paired with the real-connector assertion above, a hard-coded placeholder
+    # can't satisfy this.
+    assert_slack_message_posted(payload, "slackMessageId")
 
     print(
         f"OK: {case['name']} completed — Sev1 + engineering classified, "
-        "correlationId preserved, and the Slack alert was posted (message id present)"
+        "correlationId preserved, and the Slack alert was posted (real message ts)"
     )
 
 

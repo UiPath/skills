@@ -14,7 +14,6 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any
 
 # Walk up to the directory that holds `_shared` so the import resolves.
 _directory = os.path.dirname(os.path.abspath(__file__))
@@ -26,28 +25,12 @@ sys.path.insert(0, _directory)
 
 from _shared.flow_check import (  # noqa: E402
     assert_flow_uses_connector_target,
-    assert_output_nonempty,
+    assert_named_equals,
+    assert_slack_message_posted,
     run_debug,
 )
 
 SLACK_KEY = "uipath-salesforce-slack"
-
-
-def normalized(value: Any) -> Any:
-    if isinstance(value, str):
-        lowered = value.strip().casefold()
-        if lowered == "true":
-            return True
-        if lowered == "false":
-            return False
-        return lowered
-    return value
-
-
-def assert_named_equals(payload: dict, name: str, expected: Any) -> None:
-    actual = assert_output_nonempty(payload, name)
-    if normalized(actual) != normalized(expected):
-        raise SystemExit(f"FAIL: output {name!r}: expected {expected!r}, got {actual!r}")
 
 
 def verify_case(case: dict) -> None:
@@ -55,9 +38,10 @@ def verify_case(case: dict) -> None:
     for name, expected in case["expected"].items():
         assert_named_equals(payload, name, expected)
     if case.get("expect_slack"):
-        assert_output_nonempty(payload, "slackMessageId")
+        # Real Slack ts (not a placeholder) — every path posts a message.
+        assert_slack_message_posted(payload, "slackMessageId")
     print(f"OK: {case['name']} produced the expected outcome"
-          + (" + Slack alert posted" if case.get("expect_slack") else ""))
+          + (" + Slack message posted" if case.get("expect_slack") else ""))
 
 
 def main() -> None:

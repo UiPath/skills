@@ -15,6 +15,7 @@ import subprocess
 
 CONNECTOR = "uipath-atlassian-jira"
 FOLDER_PATH = "Shared/uipath-maestro-flow"
+FOLDER_NAME = "uipath-maestro-flow"  # leaf of FOLDER_PATH, as reported by connections list
 CONNECTION_NAME = "is-sandboxes-test@uipath.com-uipath-sandbox-380"
 PROJECT_KEY = "CE"        # "Coder Eval" project on uipath-sandbox-380
 ISSUETYPE_ID = "11457"    # "Task" issue type, scoped to the CE project
@@ -31,10 +32,14 @@ def _run(*args: str) -> dict:
 
 
 def connection_id() -> str:
-    # Resolve by connection name across all folders — avoids depending on
-    # `uip or folders get`, which can return a Failure envelope in CI.
+    # Resolve by (name, folder) across all folders — avoids depending on
+    # `uip or folders get` (which can return a Failure envelope in CI) while
+    # still scoping to the target folder so a same-named connection in another
+    # folder can't be picked by accident.
     conns = _run("is", "connections", "list", CONNECTOR, "--all-folders", "--refresh")["Data"]
-    return next(c["Id"] for c in conns if c["Name"] == CONNECTION_NAME)
+    scoped = [c for c in conns if c["Name"] == CONNECTION_NAME and c.get("Folder") == FOLDER_NAME]
+    # Fall back to name-only if the folder field isn't populated in this env.
+    return next(iter(c["Id"] for c in (scoped or conns) if c["Name"] == CONNECTION_NAME))
 
 
 def create_issue(conn_id: str, summary: str) -> str:

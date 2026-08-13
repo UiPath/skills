@@ -475,6 +475,49 @@ def assert_output_value(payload: dict, expected: Any) -> None:
     )
 
 
+def normalized(value: Any) -> Any:
+    """Normalize a scalar output for equality comparison: trim strings, fold
+    case, and coerce the literal strings ``"true"``/``"false"`` to booleans.
+    Shared so per-task checkers don't each re-declare it."""
+    if isinstance(value, str):
+        lowered = value.strip().casefold()
+        if lowered == "true":
+            return True
+        if lowered == "false":
+            return False
+        return lowered
+    return value
+
+
+def assert_named_equals(payload: dict, name: str, expected: Any) -> None:
+    """Assert a named ``out`` variable is present, non-empty, and (after
+    :func:`normalized`) equals ``expected``. Shared across the escalation
+    checkers so the compare/normalize logic lives in one place."""
+    actual = assert_output_nonempty(payload, name)
+    if normalized(actual) != normalized(expected):
+        _fail(f"output {name!r}: expected {expected!r}, got {actual!r}")
+
+
+_SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
+
+
+def assert_slack_message_posted(payload: dict, name: str) -> str:
+    """Assert the named output holds a real Slack message timestamp (``ts``),
+    e.g. ``1786647595.771239`` — the value Slack's API returns only for a
+    message it actually accepted. Combined with a real
+    ``uipath-salesforce-slack`` connector node (assert_flow_uses_connector_target),
+    this rejects a flow that fakes delivery by mapping a hard-coded placeholder
+    (``"ok"``, ``"sent"``, ``"1"``) into the output. Returns the ts."""
+    value = assert_output_nonempty(payload, name)
+    text = str(value).strip()
+    if not _SLACK_TS_RE.match(text):
+        _fail(
+            f"output {name!r}={text!r} is not a Slack message ts (expected "
+            r"\d{9,11}\.\d{4,6}); the flow did not actually post to Slack"
+        )
+    return text
+
+
 def read_flow_input_vars(project_dir: str) -> list[str]:
     """Return the ordered list of input variable IDs declared on the first
     ``.flow`` file in ``project_dir``."""

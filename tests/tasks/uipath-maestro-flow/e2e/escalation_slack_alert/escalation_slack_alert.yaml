@@ -11,17 +11,13 @@ description: >
   correlationId, and — the point of the test — the Slack Send Message activity
   actually posted (it returned a non-empty message id surfaced as a flow
   output). Grades the delivered Slack side effect, not "did it run".
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, feature:escalation]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:escalation]
 
 run_limits:
   expected_turns: 55
   max_turns: 120
   task_timeout: 2400
   turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/escalation_slack_alert/seed.py"
@@ -88,7 +84,7 @@ success_criteria:
   - type: run_command
     description: "Seeded Sev1 debug run completes, classifies Sev1 + engineering, preserves correlationId, and the Slack alert was actually posted (non-empty message id)"
     command: "python3 $TASK_DIR/check_escalation_slack_alert.py"
-    timeout: 660
+    timeout: 1000
     expected_exit_code: 0
-    weight: 8.0
+    weight: 5.0
     pass_threshold: 1.0

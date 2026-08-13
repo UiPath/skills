@@ -25,7 +25,12 @@ from pathlib import Path
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)  # local jira_is
 sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))  # …/uipath-maestro-flow (for _shared)
-from _shared.flow_check import collect_outputs, get_last_debug_raw, run_debug  # noqa: E402
+from _shared.flow_check import (  # noqa: E402
+    assert_named_equals,
+    collect_outputs,
+    get_last_debug_raw,
+    run_debug,
+)
 import jira_is  # noqa: E402
 
 JIRA_KEY = "uipath-atlassian-jira"
@@ -57,17 +62,26 @@ def main() -> None:
     print(f"OK: candidate keys from debug: {cands}")
 
     conn = jira_is.connection_id()
-    for key in cands:
-        fields = jira_is.get_issue(conn, key)
-        if fields and correlation in str(fields.get("summary", "")):
-            Path(".created_keys").write_text(key + "\n")  # for teardown
-            print(f"OK: Jira ticket {key} exists and its summary carries {correlation!r}")
-            print("PASS: escalation flow created a real Jira ticket")
-            return
-    _fail(
-        f"none of {cands} is a Jira issue whose summary contains {correlation!r} — "
-        "the flow did not create the expected escalation ticket"
-    )
+
+    # Record every candidate that actually exists in Jira BEFORE the summary
+    # assertion, so post_run teardown deletes them even if verification fails.
+    existing = [(k, f) for k in cands for f in [jira_is.get_issue(conn, k)] if f is not None]
+    if existing:
+        Path(".created_keys").write_text("\n".join(k for k, _ in existing) + "\n")
+
+    match = next((k for k, f in existing if correlation in str(f.get("summary", ""))), None)
+    if not match:
+        _fail(
+            f"none of {cands} is a Jira issue whose summary contains {correlation!r} — "
+            "the flow did not create the expected escalation ticket"
+        )
+    print(f"OK: Jira ticket {match} exists and its summary carries {correlation!r}")
+
+    # Classification outputs the prompt also requires (e.g. severity=Sev1).
+    for name, expected in (seed.get("expected") or {}).items():
+        assert_named_equals(payload, name, expected)
+
+    print("PASS: escalation flow created a real Jira ticket with the expected classification")
 
 
 if __name__ == "__main__":

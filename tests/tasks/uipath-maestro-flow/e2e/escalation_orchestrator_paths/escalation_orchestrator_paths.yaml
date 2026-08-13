@@ -1,28 +1,25 @@
 task_id: skill-flow-e2e-escalation-orchestrator-paths
 description: >
-  End-to-end, outcome-based test of the full customer-escalation orchestration,
-  driven down a specific path by seeded inputs. The agent builds a manual-trigger
-  orchestrator (the Outlook email-received trigger is not reliably debug-testable
-  — see outlook_trigger_inbox / customer_escalation notes) whose branching is
-  input-driven so the grader can steer any path via `flow debug --inputs`. This
-  first case seeds a Sev1 production-down escalation and verifies the OUTCOME: the
-  run completes on the escalation path, classifies Sev1 + engineering, preserves
-  the correlationId, and the Slack escalation alert was actually posted (non-empty
-  message id). Salesforce enrichment is stubbed (match status is an input), so no
-  Salesforce connection is required; Jira/Drive/Slack are real with error-degrade
-  so an enrichment hiccup cannot fault the run. Additional path cases (informational,
-  duplicate, unknown-customer, …) are added as further seed cases over time.
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:switch, connector, uipath-salesforce-slack, feature:escalation]
+  End-to-end, outcome-based test of the customer-escalation orchestration, driven
+  down each branch by seeded inputs. The agent builds a manual-trigger orchestrator
+  (the Outlook email-received trigger is not reliably debug-testable — see
+  outlook_trigger_inbox / customer_escalation notes) whose branching is input-driven
+  so the grader can steer any path via `flow debug --inputs`. The grader runs six
+  seeded cases — Sev1/Sev2/Sev3 escalations and informational/duplicate/unknown-customer
+  triage — and for each verifies the OUTCOME: the run completes on the expected path
+  with the expected severity/engineering/responseMode, preserves the correlationId,
+  and a real Slack message was posted (escalation alert on the escalation path, triage
+  notice on the triage paths) — confirmed independently by deleting the posted message
+  by its timestamp. Salesforce is not called (match status is an input), so no
+  Salesforce connection is required; the Slack node is a real connector with an error
+  port so a Slack hiccup cannot fault the run.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:switch, connector, feature:escalation]
 
 run_limits:
   expected_turns: 80
   max_turns: 200
   task_timeout: 3600
   turn_timeout: 1800
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/escalation_orchestrator_paths/seed.py"
@@ -101,7 +98,7 @@ success_criteria:
   - type: run_command
     description: "Seeded path cases: each drives its branch and produces the expected outcome; the escalation case actually posts a Slack alert (non-empty message id)"
     command: "python3 $TASK_DIR/check_escalation_orchestrator_paths.py"
-    timeout: 900
+    timeout: 2400
     expected_exit_code: 0
-    weight: 8.0
+    weight: 5.0
     pass_threshold: 1.0
