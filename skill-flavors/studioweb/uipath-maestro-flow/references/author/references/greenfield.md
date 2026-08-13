@@ -33,9 +33,9 @@ If `CreateProjects` or the Flow project type is unavailable, report the capabili
 <!--skill-flavor:project-creation:end-->
 
 <!--skill-flavor:greenfield-registry-transition:start-->
-## Step 3 — Refresh the registry **[T1 — after Step 2]**
+## Step 3 — Refresh the registry **[T1 — chained tail of Step 2]**
 
-After the host creates the project and exposes its `.flow` entrypoint, refresh the registry:
+This is already the last segment of the [canonical T1 chain](#canonical-t1-chain--issue-this-as-one-bash-call) above. Standalone:
 <!--skill-flavor:greenfield-registry-transition:end-->
 
 <!--skill-flavor:greenfield-end-node-discovery:start-->
