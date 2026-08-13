@@ -126,7 +126,9 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
 ```
 
-**filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operator table, anti-patterns, worked examples (single / multi-AND / nested AND-OR): [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs (JMESPath instead of CEQL). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values.
+**filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operator table, anti-patterns, and worked examples (single / multi-AND / nested AND-OR): [`case-spec-input-details.md` § FilterTree shape](case-spec-input-details.md#filtertree-shape). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values.
+
+Every authored root or nested FilterTree node contains both `filters` and `groups` arrays. Use `[]` for the empty side and preserve non-empty arrays unchanged. This applies recursively to every child under `groups[]`. No filter means omit `filter` entirely; do not create a placeholder tree.
 
 `groupOperator` accepts both string (`"And"` / `"Or"`) and numeric (`0` / `1`) — the case-tool normalizes string→numeric before threading to the SDK. Use either form; the platform examples use string.
 
@@ -152,7 +154,8 @@ Worked example. Required param `parentFolderId` + a freeform `subject` filter:
         "filters": [
             { "id": "subject", "operator": "Contains",
               "value": { "isLiteral": true, "rawString": "\"urgent\"", "value": "urgent" } }
-        ]
+        ],
+        "groups": []
     }
 }
 ```
@@ -200,7 +203,8 @@ Planner emits to `tasks.md`:
         "value": { "isLiteral": false, "rawString": "=vars.urgentKeyword", "value": "=vars.urgentKeyword" } },
       { "id": "from", "operator": "Contains",
         "value": { "isLiteral": true, "rawString": "\"VIP\"", "value": "VIP" } }
-    ]
+    ],
+    "groups": []
   }
 }
 ```

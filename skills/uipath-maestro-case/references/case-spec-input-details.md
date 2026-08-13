@@ -169,7 +169,7 @@ The CLI compiles the tree:
     "groupOperator": "And" | "Or" | 0 | 1,   // REQUIRED — emit "And" even for a single-filter tree
     "index": 0,                              // 0 for the root tree
     "uuId": null,                            // FE assigns; null is fine when authoring
-    "filters": [                             // 1+ Filter objects
+    "filters": [                             // REQUIRED array; may be empty when criteria live in groups[]
         {
             "id":       "<field-name>",     // matches a name in caseShape.filter.fields[]
             "operator": "<FilterOperator>", // see operator list below
@@ -181,9 +181,13 @@ The CLI compiles the tree:
             "uiId": null
         }
     ],
-    "groups": []                             // optional nested groups (FilterTree[])
+    "groups": []                             // REQUIRED array; nested FilterTree nodes or []
 }
 ```
+
+**Case-skill compatibility invariant:** every FilterTree node — the root and every node nested under `groups[]` — MUST contain both array fields. Preserve populated arrays; when one side has no entries, emit the empty array explicitly. Although the published design-time type currently marks `groups` optional, the compiler dereferences `filterTree.groups` as an array. Omitting it can therefore fail compilation. `filters` is also consumed as an array and must always be present.
+
+An intentionally unfiltered connector omits the top-level `filter` input. Empty arrays are used only to complete an authored tree: for example, a leaf with direct conditions has `groups: []`, while a parent containing only nested groups has `filters: []`.
 
 **`groupOperator` accepts both string and numeric.** The IS SDK's `FilterGroupOperator` is a numeric enum (`And=0`, `Or=1`); the case-tool input layer normalizes string `"And"` / `"Or"` to numeric before threading the tree to the SDK compilers, so JSON authors can use either form. Numeric values pass through unchanged. Lowercase `"and"` / `"or"` is NOT normalized — the SDK will then fail to produce the expected joiner.
 
@@ -234,7 +238,8 @@ For string values, `rawString` includes outer quotes (`"\"Active\""`). For numbe
                 "value": { "isLiteral": true, "rawString": "\"Active\"", "value": "Active" },
                 "uiId": null
             }
-        ]
+        ],
+        "groups": []
     }
 }
 ```
@@ -259,7 +264,8 @@ For string values, `rawString` includes outer quotes (`"\"Active\""`). For numbe
                 "value": { "isLiteral": true, "rawString": "100000", "value": 100000 },
                 "uiId": null
             }
-        ]
+        ],
+        "groups": []
     }
 }
 ```
@@ -280,7 +286,8 @@ For string values, `rawString` includes outer quotes (`"\"Active\""`). For numbe
                 "filters": [
                     { "id": "Status", "operator": "Equals", "value": {...}, "uiId": null },
                     { "id": "Region", "operator": "Equals", "value": {...}, "uiId": null }
-                ]
+                ],
+                "groups": []
             },
             {
                 "groupOperator": "And",
@@ -288,7 +295,8 @@ For string values, `rawString` includes outer quotes (`"\"Active\""`). For numbe
                 "uuId": null,
                 "filters": [
                     { "id": "Priority", "operator": "Equals", "value": {...}, "uiId": null }
-                ]
+                ],
+                "groups": []
             }
         ]
     }
@@ -390,7 +398,8 @@ uip maestro case spec \
           "value": { "isLiteral": true, "rawString": "\"Active\"", "value": "Active" },
           "uiId": null
         }
-      ]
+      ],
+      "groups": []
     }
   }'
 ```
@@ -446,7 +455,8 @@ uip maestro case spec \
           "value": { "isLiteral": true, "rawString": "true", "value": true },
           "uiId": null
         }
-      ]
+      ],
+      "groups": []
     }
   }'
 ```

@@ -17,7 +17,7 @@ The `tasks.md` entry provides:
 | `connector-key` | `"uipath-microsoft-outlook365"` |
 | `object-name` | `"send-mail-v2"` |
 | `input-values` | `{"bodyParameters":{"message.toRecipients":"user@example.com"},"queryParameters":{...}}` (already resolved IDs, dotted body keys) |
-| `filter` (optional) | `{"groupOperator":"And","filters":[...]}` (FilterTree object — present only when planning Step 7 authored a filter) |
+| `filter` (optional) | `{"groupOperator":"And","filters":[...],"groups":[]}` (complete FilterTree object — present only when planning Step 7 authored a filter) |
 | `isRequired` | `true` |
 | `runOnlyOnce` | `false` |
 
@@ -46,6 +46,8 @@ Construct the input-details object from `tasks.md`, rewriting every value contai
 Synthetic HTTP request activities (`object-name === "httpRequest"` / `"http-request"`) reject `bodyParameters` — pass HTTP body via `queryParameters` instead, or omit. The CLI rejects bodyParameters at validation time.
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
+
+**FilterTree preflight (mandatory when `filter` exists):** recursively inspect the root and every child in `groups[]`. Preserve existing non-empty arrays and add `filters: []` or `groups: []` wherever that collection is absent. Both keys must be arrays on every node before Step 2. If no filter was authored, omit `filter`; do not pass an empty placeholder tree.
 
 #### Step 1.a — Rewrite references to canonical sink form
 
@@ -122,7 +124,7 @@ When `tasks.md` carries a `filter:` object, the activity's operation must declar
 
 - `spec.filter` present (with `builder: "ceql"` and `fields[]`) → CEQL filter is supported. Pass the structured tree under `--input-details.filter`. The CLI compiles it into both halves of the contract: the runtime CEQL string at `caseShape.inputs[name="queryParameters"].body.<filterParamName>` AND the design-time tree under `essentialConfiguration.savedFilterTrees.<filterParamName>` (inside the `=jsonString:` blob in `caseShape.context[name="metadata"].body.activityPropertyConfiguration.configuration`).
 - **Do NOT pass raw CEQL under `queryParameters` for a FilterBuilder operation.** Plain filter fields are normal native-syntax inputs, not authored FilterTrees.
-- Tree shape, operator table, examples → [/uipath:uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql).
+- Tree shape, operator table, examples, and the complete-array invariant → [`case-spec-input-details.md` § FilterTree shape](../../../case-spec-input-details.md#filtertree-shape).
 
 If `spec.filter` is undefined, a top-level `filter:` is malformed. Repair it before Step 2:
 
@@ -277,6 +279,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 12. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
 13. **Lossless inputs (HARD GATE).** Every `tasks.md input-values` field must appear unchanged in the matching `data.inputs[].body`; a top-level `filter:` also requires `spec.filter` and successful compilation. Otherwise halt and repair—never warn and continue.
 14. **No PascalCase keys remain (HARD GATE).** Scan the written task's `data.context` / `data.inputs` / `data.outputs` for any capital-first `"Xxx…":` key — every one must have been re-cased in Step 8.a. `validate` does NOT catch content-level leftovers (a Pascal or missing `multipartParameters` passes validate and fails at runtime).
+15. **Complete filter trees (HARD GATE when a structured filter was authored).** The FilterTree passed to `case spec` and persisted under `essentialConfiguration.savedFilterTrees` has both `filters` and `groups` arrays on its root and every nested node; populated criteria remain unchanged.
 
 ## What NOT to Do
 
@@ -287,6 +290,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and transcribe PascalCase-verbatim. See Step 6 / Step 8.
 - **Do NOT leave spec PascalCase keys in the finished task — and do NOT re-case by retyping.** The write is PascalCase-verbatim (Step 8); the re-case is per-key `Edit` with `replace_all` (`"Name":` → `"name":`, Step 8.a). Retyping the subtree to change casing is the memory-reconstruction failure above wearing a different hat. See [connector-trigger-impl.md § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase).
 - **Do NOT translate, drop, or reroute an SDD filter.** Use FilterTree only with `spec.filter`; otherwise preserve the exact SDD value in a declared plain sink or halt (Step 4).
+- **Do NOT omit `filters` or `groups` from any authored FilterTree node.** Normalize both arrays recursively before `case spec`; never replace a populated array with `[]`.
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
 - **Do NOT pass `bodyParameters` for synthetic HTTP request activities.** Use `queryParameters` instead, or omit.
 - **Do NOT pass literal `field[*]` keys in `bodyParameters`.** The `[*]` in `inputs.bodyFields[].name` is JSONPath-style schema notation meaning "array of"; it is NOT a valid input key. Express array-of-object body fields as real JSON arrays under the parent name (see [planning.md](planning.md)). Pre-input scan in [Step 1.b](#step-1b--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.

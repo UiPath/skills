@@ -28,6 +28,8 @@ Construct the input-details object literally from `tasks.md`:
 }
 ```
 
+**FilterTree preflight (mandatory when `filter` exists):** recursively inspect the root and every child in `groups[]`. Preserve existing non-empty arrays and add `filters: []` or `groups: []` wherever that collection is absent. Both keys must be arrays on every node before the CLI call. If no filter was authored, omit `filter`; do not pass an empty placeholder tree.
+
 Full input-details contract: [`case-spec-input-details.md`](case-spec-input-details.md).
 
 ### Step 2 — Run `case spec` with input-details
@@ -224,6 +226,7 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 - **Do NOT leave spec PascalCase keys in the finished node — and do NOT re-case by retyping.** The write is PascalCase-verbatim (pass 1); the re-case is per-key `Edit` with `replace_all` (`"Name":` → `"name":`, pass 2). Retyping the subtree to change casing is the memory-reconstruction failure above wearing a different hat. See [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase).
 - **Do NOT use `CuratedTrigger` or `Intsvc.Trigger` activityType.** The CLI overrides to `CuratedWaitFor` (in-stage task) or emits the trigger shape directly. Trust the CLI's `essentialConfiguration` value.
 - **Do NOT hand-write JMESPath filter expressions.** Build a structured filter tree and pass it under `--input-details.filter`; the CLI compiles all three sinks.
+- **Do NOT omit `filters` or `groups` from any authored FilterTree node.** Normalize both arrays recursively before `case spec`; never clear a populated array while doing so.
 - **Do NOT use `filterExpression` as a `--input-details` input.** The CLI rejects raw `filterExpression` strings (MST-8802). Pass the structured tree only.
 - **Do NOT pass `ceqlExpression` for triggers** — that's the activity-side rejection key. Triggers compile to JMESPath via the `filter` tree.
 - **Do NOT duplicate a required event-param value in the freeform `filter` tree.** The CLI AND-joins required event params into the filter expression automatically (see [planning § Mandatory-filter contract](connector-trigger-planning.md#mandatory-filter-contract-required-event-params)); duplicating the clause double-applies it and narrows event matching to a strict subset of intended events. Set required event-param values via `eventParameters` ONLY.
