@@ -73,12 +73,6 @@ def build_seed() -> dict:
         ),
         # ── Triage paths (Slack triage notice) ─────────────────────────────
         _case(
-            "informational-question", r, "INFO",
-            {"subject": "Quick question", "body": "I have a question about billing"},
-            {"escalationPath": "informational", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
-            True,
-        ),
-        _case(
             "duplicate-escalation", r, "DUP",
             {"subject": "Prod down", "body": "urgent", "customerTier": "Enterprise",
              "productionDown": True, "workaroundAvailable": False, "isDuplicate": True},

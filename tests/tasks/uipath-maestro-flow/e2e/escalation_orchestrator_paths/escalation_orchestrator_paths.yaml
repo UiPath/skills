@@ -4,9 +4,9 @@ description: >
   down each branch by seeded inputs. The agent builds a manual-trigger orchestrator
   (the Outlook email-received trigger is not reliably debug-testable — see
   outlook_trigger_inbox / customer_escalation notes) whose branching is input-driven
-  so the grader can steer any path via `flow debug --inputs`. The grader runs six
-  seeded cases — Sev1/Sev2/Sev3 escalations and informational/duplicate/unknown-customer
-  triage — and for each verifies the OUTCOME: the run completes on the expected path
+  so the grader can steer any path via `flow debug --inputs`. The grader runs five
+  seeded cases — Sev1/Sev2/Sev3 escalations and duplicate/unknown-customer triage,
+  all deterministic from the inputs — and for each verifies the OUTCOME: the run completes on the expected path
   with the expected severity/engineering/responseMode, preserves the correlationId,
   and a real Slack message was posted (escalation alert on the escalation path, triage
   notice on the triage paths) — confirmed independently by deleting the posted message
@@ -51,14 +51,12 @@ initial_prompt: |
          else customerMatchStatus == "none"      -> "unknown_customer"
          else customerMatchStatus == "multiple"  -> "multiple_matches"
          else isDuplicate is true                -> "duplicate"
-         else (no production impact AND the subject/body reads like a question)
-                                                 -> "informational"
          else                                    -> "escalation"
      - severity: only for "escalation" classify Sev1/Sev2/Sev3 —
-         Sev1 = Enterprise tier AND productionDown AND NOT workaroundAvailable
-                (also any productionDown with no workaround);
+         Sev1 = productionDown AND NOT workaroundAvailable;
          Sev2 = productionDown AND workaroundAvailable;
-         Sev3 = otherwise. For every non-"escalation" path, severity = "informational".
+         Sev3 = NOT productionDown.
+       For every non-"escalation" (triage) path, severity = "informational".
      - engineeringNeeded: true for Sev1/Sev2, otherwise false.
      - responseMode: "Draft" when escalationPath == "escalation", else "None".
   2. A Decision routes on whether escalationPath == "escalation".
