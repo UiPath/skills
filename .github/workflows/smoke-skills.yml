@@ -308,6 +308,13 @@ jobs:
     # ~/.uipath mount, downgrades the CLI for later tasks. Mirrors daily.sh.
     env:
       UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
+      # safe-chain's minimum-package-age check suppresses freshly published
+      # versions during metadata resolution, so a same-day `coder-eval` pin in
+      # tests/.coder-eval-version resolves to "no version found" and the install
+      # step fails. coder_eval is a first-party internal package from the Azure
+      # Artifacts feed, not public-registry supply-chain surface, so exclude it
+      # from the age check only. Every other safe-chain check still applies.
+      SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
@@ -661,6 +668,12 @@ jobs:
     # Skip forks: the private-feed creds for the pinned coder-eval wheel aren't
     # available to forked PRs (matches the e2e job's secret requirements).
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      # Same reason as the e2e job above: exempt the first-party `coder-eval`
+      # wheel from safe-chain's minimum-package-age suppression so a same-day
+      # pin in tests/.coder-eval-version still resolves. All other safe-chain
+      # checks stay on.
+      SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
