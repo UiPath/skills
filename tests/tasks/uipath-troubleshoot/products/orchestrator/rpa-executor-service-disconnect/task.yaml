@@ -36,7 +36,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My NightlyPost process in the Batch Ops folder faulted on last night's
+  My NightlyPost process in the Batch Ops folder faulted on its most recent
   scheduled run on BATCH-BOT-02 — it had been running for about a minute and
   then died. The previous nights ran fine on the same machine. Why did this
   run fail and what should I do?
