@@ -1,5 +1,5 @@
 <!--skill-flavor:greenfield-t1-execution:start-->
-| **T1 — Setup + discovery** | 0, 1, 2, 3 | One host project-creation call through the live `proxy-tools-Solution` / `CreateProjects` schema **+** parallel `Bash` (one `registry get` per independent OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s). After creation succeeds, locate the host-generated project and `.flow` entrypoint in the Studio Web workspace/VFS. |
+| **T1 — Setup + discovery** | 0, 1, 2, 3 | One host project-creation call through the live `proxy-tools-Solution` / `CreateProjects` schema **+** one chained `Bash` (`registry pull` + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per independent OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) — all in one assistant message. After creation succeeds, locate the host-generated project and `.flow` entrypoint in the Studio Web workspace/VFS. |
 <!--skill-flavor:greenfield-t1-execution:end-->
 
 <!--skill-flavor:greenfield-init-batching:start-->
