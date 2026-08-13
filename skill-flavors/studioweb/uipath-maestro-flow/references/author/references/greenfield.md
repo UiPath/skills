@@ -3,8 +3,7 @@
 <!--skill-flavor:greenfield-t1-execution:end-->
 
 <!--skill-flavor:greenfield-init-batching:start-->
-- **Host project setup.** Inspect and invoke the live `CreateProjects` schema once, then locate the generated project in the workspace/VFS.
-- **Sequential `registry get`s.** Emit every independent `registry get` as a parallel `Bash` in the same message as the host setup call.
+- **One CLI per turn.** Never issue `node configure`, then `validate`, then `format` as three separate Bash calls — chain them as `node configure && validate && format`.
 <!--skill-flavor:greenfield-init-batching:end-->
 
 <!--skill-flavor:greenfield-step-zero-concurrency:start-->
