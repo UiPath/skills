@@ -10,7 +10,6 @@ classifier-shaped by name AND the agent's logic maps to an enumerated set —
 recognizing the classifier shape is a semantic read.
 """
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -21,7 +20,10 @@ sys.path.insert(
         os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
     ),
 )
-from coded_scaffold import write_baseline_function_agent  # noqa: E402
+from coded_scaffold import (  # noqa: E402
+    sync_entry_point_schema,
+    write_baseline_function_agent,
+)
 
 MAIN_PY = '''from pydantic import BaseModel, Field
 from uipath.tracing import traced
@@ -53,32 +55,28 @@ def main() -> None:
     root = Path("CodedAgent")
     write_baseline_function_agent(root)
     (root / "main.py").write_text(MAIN_PY, encoding="utf-8")
-    entry_points_path = root / "entry-points.json"
-    entry_points = json.loads(entry_points_path.read_text(encoding="utf-8"))
-    entry_point = entry_points["entryPoints"][0]
-    entry_point["input"] = {
-        "type": "object",
-        "properties": {
-            "email_body": {
-                "type": "string",
-                "description": "The support email to triage",
-            }
+    sync_entry_point_schema(
+        root,
+        input_schema={
+            "type": "object",
+            "properties": {
+                "email_body": {
+                    "type": "string",
+                    "description": "The support email to triage",
+                }
+            },
+            "required": ["email_body"],
         },
-        "required": ["email_body"],
-    }
-    entry_point["output"] = {
-        "type": "object",
-        "properties": {
-            "classification": {
-                "type": "string",
-                "description": "One of: Billing, Technical, or Account",
-            }
+        output_schema={
+            "type": "object",
+            "properties": {
+                "classification": {
+                    "type": "string",
+                    "description": "One of: Billing, Technical, or Account",
+                }
+            },
+            "required": ["classification"],
         },
-        "required": ["classification"],
-    }
-    entry_points_path.write_text(
-        json.dumps(entry_points, indent=2),
-        encoding="utf-8",
     )
     print("Injected classifier with bare-str output field 'classification' (no Literal/Enum)")
 
