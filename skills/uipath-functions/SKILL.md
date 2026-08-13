@@ -156,11 +156,14 @@ The key is the entrypoint name — it can be any string and marks this as the ca
 
 ### Step 5: Declare dependencies in `pyproject.toml`
 
+Edit the `pyproject.toml` that `uip function new` scaffolded — do not overwrite it. Add dependencies, keep the generated `[project]` keys:
+
 ```toml
 [project]
 name = "my-function"
 version = "0.1.0"
 description = "..."
+authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.11"
 dependencies = [
     "uipath",
@@ -168,6 +171,8 @@ dependencies = [
     "pydantic-settings>=2", # if using Settings for env/asset config
 ]
 ```
+
+`authors` is **required** — without it `uip function pack` rejects the package with `Project authors cannot be empty`. The scaffold writes a placeholder author; replace the value, never delete the key.
 
 No `[build-system]` section. The project is identified as a Coded Function by the `functions` map in `uipath.json` (Step 4).
 
