@@ -1,3 +1,4 @@
+<!--skill-flavor:ship-content:start-->
 # Ship — Publish a Flow
 
 Publish journey for a Flow project. Two paths: **Studio Web upload** (default) and **Orchestrator deploy** (only when explicitly requested). Both require `uip login`.
@@ -26,9 +27,7 @@ After `solution resources refresh`, upload the solution to Studio Web:
 uip solution upload <SolutionDir> --output json
 ```
 
-<!--skill-flavor:flow-project-origin:start-->
 `uip solution upload` accepts the solution directory directly — no intermediate bundling step required. Use the exact solution root path (or `.` from inside the solution root). If your shell is inside the nested flow project folder, pass the absolute solution root path or `..`; do not pass the solution name again, because that resolves to a child path that does not exist. If the project was created with `uip maestro flow init`, it already lives inside a solution directory. The command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser.
-<!--skill-flavor:flow-project-origin:end-->
 
 **Share the Studio Web URL with the user** when the upload succeeds.
 
@@ -57,3 +56,4 @@ For `uip solution publish` and the rest of the deployment workflow, see [/uipath
 ## What's next
 
 After Studio Web upload, the user typically wants to **debug** the flow end-to-end against real systems. See [run.md](run.md). After Orchestrator deploy, the user typically wants to **trigger and monitor** the deployed process — also [run.md](run.md).
+<!--skill-flavor:ship-content:end-->
