@@ -209,6 +209,8 @@ This stub is a **deliberate mock**, and it is safe ONLY while temporary — as P
 > | resolved connector (spliced `caseShape`) | Completed | 25 | `Valid` |
 >
 > Placeholder **tasks** (`data: {}`, Rule 8) are NOT affected — a case with placeholder tasks starts and runs normally. The fatal shape is specific to connector-bound **condition rules**.
+>
+> **"Must not ship" is not "must not build."** When planning finds the connector unresolvable, still emit this stub and build the whole case — the halt belongs at Check 14, not at discovery. Aborting early yields no `caseplan.json`, no `tasks.md`, and no `build-issues.md`, so the author gets prose instead of a reviewable artifact, and Check 14's remediation (b) — *remove the rule, ship the working remainder* — never gets offered. Build it, then refuse to ship it.
 
 A remaining stub has no real outputs, Connection/Folder bindings, IS-cache entry, or rule-specific `bindings_v2` resource. Stamp unresolved `tasks.md` entries with Rule 8 markers and log them, but do NOT downgrade the finding to a completion-report note — Check 14 halts the build. Upgrade by re-running the [§ Procedure](#procedure-phase-3).
 
