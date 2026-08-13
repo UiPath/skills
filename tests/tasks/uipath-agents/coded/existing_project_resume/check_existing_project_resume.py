@@ -97,7 +97,65 @@ def main() -> None:
         fail("pyproject.toml gained a [build-system] section — Critical Rule C1 violation")
     print("OK: pyproject.toml still has no [build-system] section")
 
+    check_run_output()
+
     print("OK: existing-coded resume completed without clobbering")
+
+
+def _find_key(node, key):
+    """Yield every value stored under `key`, at any depth.
+
+    The run-output envelope nests the agent payload differently depending on
+    how the run was invoked, so search rather than assume a fixed path.
+    """
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if k == key:
+                yield v
+            yield from _find_key(v, key)
+    elif isinstance(node, list):
+        for v in node:
+            yield from _find_key(v, key)
+
+
+def check_run_output():
+    """Critical Rule CQ9 — verify the --output-file JSON, not the streamed display.
+
+    The task's `file_exists` criterion only proves a file appeared; it would pass
+    on an empty stub or a transcript dump. This reads the body and confirms the
+    new feature actually produced a value at runtime.
+    """
+    run_result = MAIN.parent / "run_result.json"
+    if not run_result.is_file():
+        fail(f"missing {run_result} — the local run output was not captured")
+
+    try:
+        payload = json.loads(run_result.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(
+            f"run_result.json is not valid JSON ({exc}) — capture the "
+            f"`--output-file` JSON, not the streamed display (Critical Rule CQ9)"
+        )
+
+    values = [v for v in _find_key(payload, "confidence")]
+    if not values:
+        fail(
+            "run_result.json contains no `confidence` value — the run output does "
+            "not reflect the new feature (Critical Rule CQ9: verify the JSON body)"
+        )
+
+    numeric = []
+    for v in values:
+        try:
+            numeric.append(float(v))
+        except (TypeError, ValueError):
+            continue
+    if not numeric:
+        fail(f"`confidence` in run_result.json is not numeric: {values!r}")
+    if not any(0.0 <= n <= 1.0 for n in numeric):
+        fail(f"`confidence` in run_result.json is outside the requested 0.0-1.0 range: {numeric!r}")
+
+    print(f"OK: run_result.json reports a confidence score in range ({numeric[0]})")
 
 
 if __name__ == "__main__":

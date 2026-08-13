@@ -31,6 +31,19 @@ initial_prompt: |
   do not use a low-code conversational agent.
 
 success_criteria:
+  # Critical Rule CQ5 — refresh the CLI's cached Python path after venv changes.
+  # The prompt already instructs chaining this before every codedagent command,
+  # but nothing graded it, so the `codedagent setup --force` capability was only
+  # ever exercised incidentally. This task has no `pre_run`, so the agent is the
+  # only thing that can satisfy it.
+  - type: command_executed
+    description: "Agent refreshed the CLI Python path with codedagent setup --force (Critical Rule CQ5)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+setup\s+.*--force'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent scaffolded the project with uip codedagent new"
     tool_name: "Bash"
