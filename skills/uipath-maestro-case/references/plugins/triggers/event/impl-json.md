@@ -23,6 +23,8 @@ Construct the input-details object literally from `tasks.md`:
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
 
+Before Step 2, apply the shared [FilterTree preflight](../../../connector-trigger-impl.md#step-1--build---input-details-json-from-tasksmd).
+
 ## Step 2 — Run `case spec` with input-details
 
 Single CLI call replaces the legacy `get-connection` + `case tasks describe --type connector-trigger` two-call pattern. See [common § Phase 3 Implementation Step 2](../../../connector-trigger-impl.md#step-2--run-case-spec-with-input-details) for the command and response handling.
