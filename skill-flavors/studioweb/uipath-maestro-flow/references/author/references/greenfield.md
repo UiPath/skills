@@ -12,7 +12,6 @@ Emit this read-only probe in parallel with the Step 2 host project-creation call
 <!--skill-flavor:greenfield-step-zero-concurrency:end-->
 
 <!--skill-flavor:greenfield-author-login-boundary:start-->
-Greenfield steps 2–6 work without login. Authentication is required only when tenant-specific connector/resource discovery or Operate actions need it; Studio Web owns authentication for Step 2 project creation.
 <!--skill-flavor:greenfield-author-login-boundary:end-->
 
 <!--skill-flavor:project-creation:start-->
