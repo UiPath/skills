@@ -39,13 +39,9 @@ Steps 0–6 are **logical phases**, not separate turns. A typical greenfield bui
 <!--skill-flavor:greenfield-execution-map-intro:end-->
 <!--skill-flavor:greenfield-t1-execution:start-->
 | **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s). **If existing `.uipx` solutions are present, the Step 2 gate fires first in its own turn** — resolve it before this chain. |
-<!--skill-flavor:greenfield-t1-execution:end-->
-<!--skill-flavor:greenfield-t2-execution:start-->
 | **T2 — Read + author** | 4 | One `Read` of the `.flow` **+** a batch of `Edit` calls (or one `Write` if ≥70% of nodes change). Claude Code serializes Edits on the same file, so they don't race |
-<!--skill-flavor:greenfield-t2-execution:end-->
-<!--skill-flavor:greenfield-t3-execution:start-->
 | **T3 — Finalize** | 5, 6 | One chained `Bash` (`node configure && validate && format`). On validate failure: one Edit turn, then re-chain `validate && format` |
-<!--skill-flavor:greenfield-t3-execution:end-->
+<!--skill-flavor:greenfield-t1-execution:end-->
 
 ### Batching anti-patterns
 

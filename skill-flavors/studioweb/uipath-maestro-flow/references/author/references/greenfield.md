@@ -10,15 +10,9 @@ Studio Web runs greenfield creation as **four workflows**. The `[T1]` / `[T2]` /
 <!--skill-flavor:greenfield-t1-execution:start-->
 | **W1 — Project creation** | 2 | One `CreateProjects` tool call. After it succeeds, locate the host-generated project and `.flow` entrypoint before starting W2. |
 | **W2 — Setup + discovery** | 0, 3 | One chained `Bash` (register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per independent OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) — all in one assistant message. |
-<!--skill-flavor:greenfield-t1-execution:end-->
-
-<!--skill-flavor:greenfield-t2-execution:start-->
 | **W3 — Read + author** | 4 | One `Read` of the `.flow` **+** a batch of `Edit` calls (or one `Write` if ≥70% of nodes change). Claude Code serializes Edits on the same file, so they don't race |
-<!--skill-flavor:greenfield-t2-execution:end-->
-
-<!--skill-flavor:greenfield-t3-execution:start-->
 | **W4 — Finalize** | 5, 6 | One chained `Bash` (`node configure && validate && format`). On validate failure: one Edit workflow, then re-chain `validate && format` |
-<!--skill-flavor:greenfield-t3-execution:end-->
+<!--skill-flavor:greenfield-t1-execution:end-->
 
 <!--skill-flavor:greenfield-init-batching:start-->
 - **One CLI per turn.** Never issue `node configure`, then `validate`, then `format` as three separate Bash calls — chain them as `node configure && validate && format`.
