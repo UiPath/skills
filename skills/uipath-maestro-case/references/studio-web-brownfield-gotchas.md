@@ -6,14 +6,14 @@ the Studio Web designer. These behaviors are invisible in greenfield builds and 
 not covered by the plugin docs. Symptoms are listed first so this file is greppable.
 
 Scope: designer/runtime behaviors of Case Management itself — durable semantics, not
-tool bugs. The one CLI-version-sensitive note (§1, validate/debug format ceiling) is
-explicitly version-scoped; re-verify it after a CLI upgrade and delete it once the
-local transform accepts the server format.
+tool bugs. The one CLI-sensitive note (§1,
+validate/debug format ceiling) should be re-verified after each CLI upgrade and
+deleted once the local transform accepts the server format.
 
 ## 1. Server file format is NOT the skill's authored format
 
-A case that has been saved by the Studio Web designer round-trips at schema version
-**29/30** with:
+A case that has been saved by the Studio Web designer round-trips at a **newer
+schema version than the skill's authored format**, with:
 
 - **plural** `selectedStageIds: ["Stage_x"]` / `selectedTasksIds` on rules (the
   authored format uses singular `selectedStageId`),
@@ -30,14 +30,15 @@ triggers) needs a `layout.nodes` entry. Adding a new stage/task without one cras
 the canvas with `Cannot read properties of undefined (reading 'x')`. Either add
 entries for every new node, or empty the whole block.
 
-**CLI incompatibility (version-scoped: verified on CLI 1.200.x, local migration
-ceiling 16 — re-check after upgrading and delete this note once fixed).**
-`uip maestro case validate` / `debug` reject the server's own v29/v30 format
-("JSON is not a valid Case Management JSON of any previous version"). To run them
-against a round-tripped case, transiently downgrade a COPY: set `version` to
-`27.0.0`, flip `selectedStageIds` → `selectedStageId` (single string), drop
-`edgeIds`, set `edges: []` — and never upload that copy's format back over the
-designer's.
+**CLI incompatibility (re-check after each CLI upgrade — delete this note once
+the local transform accepts the server format).** `uip maestro case validate` /
+`debug` can reject the server's own round-trip format ("JSON is not a valid Case
+Management JSON of any previous version") when the designer's schema version is
+newer than the CLI's local migration ceiling. To run them against a round-tripped
+case, transiently downgrade a COPY to the authored format: lower the top-level
+`version` until the transform accepts it, flip `selectedStageIds` →
+`selectedStageId` (single string), drop `edgeIds`, set `edges: []` — and never
+upload that copy's format back over the designer's.
 
 ## 2. Task display names reject `:` and `.`
 
