@@ -29,17 +29,23 @@ For complex flows, produce a plan before building. Reference [planning-arch.md](
 **Judgment call:** "Build me a flow that processes invoices."
 → Ambiguous requirements. Ask clarifying questions; plan if answers reveal complexity.
 
+<!--skill-flavor:greenfield-execution-map-intro:start-->
 ## Three-turn execution map
 
 Steps 0–6 are **logical phases**, not separate turns. A typical greenfield build collapses to **three assistant turns** (universal SKILL.md rule #10). Each step heading below carries a `[T1]` / `[T2]` / `[T3]` tag — emit every tool call inside the same Turn as one assistant message.
 
 | Turn | Steps | What you emit in ONE assistant message |
 |---|---|---|
+<!--skill-flavor:greenfield-execution-map-intro:end-->
 <!--skill-flavor:greenfield-t1-execution:start-->
-| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) **+** optional `uip login status`. **If existing `.uipx` solutions are present, the Step 2 gate fires first in its own turn** — resolve it before this chain. |
+| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s). **If existing `.uipx` solutions are present, the Step 2 gate fires first in its own turn** — resolve it before this chain. |
 <!--skill-flavor:greenfield-t1-execution:end-->
+<!--skill-flavor:greenfield-t2-execution:start-->
 | **T2 — Read + author** | 4 | One `Read` of the `.flow` **+** a batch of `Edit` calls (or one `Write` if ≥70% of nodes change). Claude Code serializes Edits on the same file, so they don't race |
+<!--skill-flavor:greenfield-t2-execution:end-->
+<!--skill-flavor:greenfield-t3-execution:start-->
 | **T3 — Finalize** | 5, 6 | One chained `Bash` (`node configure && validate && format`). On validate failure: one Edit turn, then re-chain `validate && format` |
+<!--skill-flavor:greenfield-t3-execution:end-->
 
 ### Batching anti-patterns
 
@@ -60,11 +66,10 @@ See [shared/cli-conventions.md](../../shared/cli-conventions.md) for binary reso
 This probe is read-only — emit as a parallel `Bash` alongside the Step 2 scaffold chain. It does not need its own turn.
 <!--skill-flavor:greenfield-step-zero-concurrency:end-->
 
+<!--skill-flavor:greenfield-author-login-boundary:start-->
 ## Step 1 — Check login status **[T1 — only if needed]**
 
-<!--skill-flavor:greenfield-author-login-boundary:start-->
 Greenfield steps 2–6 work without login (`flow init`, `validate`, `format`, registry OOTB nodes, `Edit` / `Write` edits). Login is required only when the registry needs tenant-specific connector/resource nodes, or before handing off to Operate.
-<!--skill-flavor:greenfield-author-login-boundary:end-->
 
 ```bash
 uip login status --output json
@@ -78,6 +83,7 @@ uip login --authority https://alpha.uipath.com     # non-production environments
 ```
 
 When you do need it, emit `uip login status --output json` as a parallel `Bash` inside T1.
+<!--skill-flavor:greenfield-author-login-boundary:end-->
 
 <!--skill-flavor:project-creation:start-->
 ## Step 2 — Create a solution, THEN a Flow project inside it **[T1]**
