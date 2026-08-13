@@ -13,7 +13,9 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render at the wrong size for their shape | `flow format` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
+<!--skill-flavor:project-creation-recovery-index:start-->
 | [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run with `--skip-solution-registration` (opts out of auto-scaffold + registration) |
+<!--skill-flavor:project-creation-recovery-index:end-->
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (MST-9107 + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
 

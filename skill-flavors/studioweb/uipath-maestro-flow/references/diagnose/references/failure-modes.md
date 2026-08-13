@@ -1,3 +1,7 @@
+<!--skill-flavor:project-creation-recovery-index:start-->
+| [Single-nested layout](#single-nested-layout) | A requested Flow project is absent from the host workspace/VFS | `CreateProjects` failed, its result has not propagated, or the Flow project capability is unavailable |
+<!--skill-flavor:project-creation-recovery-index:end-->
+
 <!--skill-flavor:project-creation-recovery:start-->
 ## Single-nested layout
 

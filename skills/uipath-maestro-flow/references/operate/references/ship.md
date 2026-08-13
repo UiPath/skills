@@ -26,7 +26,9 @@ After `solution resources refresh`, upload the solution to Studio Web:
 uip solution upload <SolutionDir> --output json
 ```
 
+<!--skill-flavor:flow-project-origin:start-->
 `uip solution upload` accepts the solution directory directly — no intermediate bundling step required. Use the exact solution root path (or `.` from inside the solution root). If your shell is inside the nested flow project folder, pass the absolute solution root path or `..`; do not pass the solution name again, because that resolves to a child path that does not exist. If the project was created with `uip maestro flow init`, it already lives inside a solution directory. The command pushes it to Studio Web where the user can visualize, inspect, edit, and publish from the browser.
+<!--skill-flavor:flow-project-origin:end-->
 
 **Share the Studio Web URL with the user** when the upload succeeds.
 

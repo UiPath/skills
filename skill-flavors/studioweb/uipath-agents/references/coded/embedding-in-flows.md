@@ -1,0 +1,3 @@
+<!--skill-flavor:flow-project-creation:start-->
+If the Flow project does not exist yet, inspect the live ProxyTool schema for `proxy-tools-Solution` and its `CreateProjects` operation, then invoke it with the Flow project type using only schema-declared fields and enum values. After creation succeeds, locate the generated Flow project in the Studio Web workspace/VFS before continuing. Do not run `uip solution init` or `uip maestro flow init`, and do not create or repair solution metadata manually. If the host capability or Flow project type is unavailable, report the gap instead of fabricating a local scaffold.
+<!--skill-flavor:flow-project-creation:end-->

@@ -8,7 +8,9 @@ The eval run requires the Flow solution to exist in Studio Web. The temptation, 
 
 This applies regardless of whether:
 
+<!--skill-flavor:flow-project-origin:start-->
 - The local project was created via `uip maestro flow init` and never uploaded.
+<!--skill-flavor:flow-project-origin:end-->
 - The local project was downloaded from Studio Web via `uip solution download` and edited locally.
 - The user is working in a VS Code-authored solution / personal workspace and the project may not match what is on Studio Web.
 - The CLI errors with `solution-id could not be resolved` or any variant.

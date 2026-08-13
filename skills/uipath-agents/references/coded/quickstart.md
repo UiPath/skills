@@ -233,6 +233,7 @@ Use when the coded agent is tightly coupled to one flow and lives as a sibling f
 
 Execute the following in order, end-to-end, in one pass — do not pause for confirmation between steps.
 
+<!--skill-flavor:flow-project-creation:start-->
 1. **Scaffold the solution.** From the working directory:
 
    ```bash
@@ -249,6 +250,7 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
    ```
 
    This auto-registers the flow as a project in the solution.
+<!--skill-flavor:flow-project-creation:end-->
 
 3. **Scaffold the coded agent as a sibling folder.** From the solution root (still inside `<SolutionName>/`):
 
