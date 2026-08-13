@@ -18,8 +18,6 @@ Emit this read-only probe in parallel with the Step 2 host project-creation call
 
 Studio Web supplies the target solution and owns its project scaffolding and metadata.
 
-<a id="canonical-t1-chain--issue-this-as-one-bash-call"></a>
-
 ### Canonical T1 chain — issue setup in ONE assistant message
 
 1. Inspect the live ProxyTool schema for `proxy-tools-Solution` and its `CreateProjects` operation.
