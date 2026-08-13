@@ -26,7 +26,7 @@ If you don't yet have values, omit the flag — the default empty `caseShape` is
     "bodyParameters":  {},   // optional — body request fields (dotted keys allowed)
     "queryParameters": {},   // optional — query string params
     "pathParameters":  {},   // optional — path-template substitutions
-    "filter":          {}    // optional — FilterTree (compiles to CEQL)
+    "filter":          {...} // optional — complete FilterTree (compiles to CEQL); omit when unfiltered — never pass {}
 }
 ```
 
@@ -35,7 +35,7 @@ If you don't yet have values, omit the flag — the default empty `caseShape` is
 ```jsonc
 {
     "eventParameters": {},   // optional — design-time params scoping the trigger
-    "filter":          {}    // optional — FilterTree (compiles to JMESPath)
+    "filter":          {...} // optional — complete FilterTree (compiles to JMESPath); omit when unfiltered — never pass {}
 }
 ```
 
