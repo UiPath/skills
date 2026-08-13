@@ -128,7 +128,7 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 
 **filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operator table, gotchas, and worked examples (single / multi-AND / nested AND-OR): [`case-spec-input-details.md` § FilterTree shape](case-spec-input-details.md#filtertree-shape). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values.
 
-Every node carries both `filters` and `groups` arrays (`[]` for the empty side, populated arrays unchanged); no filter → omit `filter` entirely.
+Every node carries both `filters` and `groups` arrays (`[]` for the empty side); no filter → omit `filter` entirely.
 
 `groupOperator` accepts both string (`"And"` / `"Or"`) and numeric (`0` / `1`) — the case-tool normalizes string→numeric before threading to the SDK. Use either form; the platform examples use string.
 

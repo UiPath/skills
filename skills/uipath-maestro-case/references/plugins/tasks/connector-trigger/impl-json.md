@@ -42,7 +42,7 @@ Construct the input-details object literally from `tasks.md`:
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
 
-Before Step 2, apply the shared [FilterTree preflight](../../../connector-trigger-impl.md#step-1--build---input-details-json-from-tasksmd): every root and nested tree must contain both array fields, preserving all populated criteria.
+Before Step 2, apply the shared [FilterTree preflight](../../../connector-trigger-impl.md#step-1--build---input-details-json-from-tasksmd).
 
 ### Step 2 — Run `case spec` with input-details
 

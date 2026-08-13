@@ -28,7 +28,7 @@ Construct the input-details object literally from `tasks.md`:
 }
 ```
 
-**FilterTree preflight (mandatory when `filter` exists):** recursively inspect the root and every child in `groups[]`. Preserve existing non-empty arrays and add `filters: []` or `groups: []` wherever that collection is absent. Both keys must be arrays on every node before the CLI call. If no filter was authored, omit `filter`; do not pass an empty placeholder tree.
+**FilterTree preflight (mandatory when `filter` exists):** recursively add `filters: []` / `groups: []` wherever absent — root and every child in `groups[]` — preserving populated arrays. No authored filter → omit `filter`; never pass a placeholder tree.
 
 Full input-details contract: [`case-spec-input-details.md`](case-spec-input-details.md).
 

@@ -127,7 +127,7 @@ Values can be:
 
 If `spec.filter` exists, author a FilterTree. Otherwise map an SDD filter only to a declared plain field, copying its exact native value into the matching `input-values.queryParameters` or `input-values.bodyParameters` sink (e.g. Outlook `ListEmails` → `queryParameters.filter`). If no field matches, halt and ask; non-interactive runs report a blocker. Never translate or drop the filter, or invent downstream filtering.
 
-Filter tree shape, operator table, gotchas, and worked examples: [`case-spec-input-details.md` § FilterTree shape](../../../case-spec-input-details.md#filtertree-shape). Every node carries both `filters` and `groups` arrays (`[]` for the empty side, populated arrays unchanged); unfiltered activity → omit `filter` entirely.
+Filter tree shape, operator table, gotchas, and worked examples: [`case-spec-input-details.md` § FilterTree shape](../../../case-spec-input-details.md#filtertree-shape). Every node carries both `filters` and `groups` arrays (`[]` for the empty side); unfiltered activity → omit `filter` entirely.
 
 The filter tree goes into `tasks.md` under `filter:` as a literal JSON object — Phase 3 passes it to `case spec --input-details`. Do NOT pass a raw CEQL string under `queryParameters.where` (or whichever connector-specific name) when authoring a filter — case-tool rejects this at configure time, and the round-trip from Studio Web breaks.
 
