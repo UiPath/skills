@@ -161,7 +161,7 @@ The skill substitutes `{{CONN_BINDING_ID}}` and `{{FOLDER_BINDING_ID}}` placehol
 
 Filters for both activities (CEQL) and triggers (JMESPath) are authored as **structured FilterTree JSON**, not flat string expressions. The CLI compiles the tree to the appropriate target language and persists both the tree (for round-tripping in Studio Web) and the compiled expression (for runtime evaluation).
 
-Tree shape, operator table, anti-patterns, and worked examples: [`case-spec-input-details.md` § FilterTree shape](case-spec-input-details.md#filtertree-shape). Every root and nested tree must contain both `filters` and `groups` arrays; use `[]` for an empty side without changing populated criteria. Same shape applies to triggers — only the compiler output differs.
+Tree shape, operator table, gotchas, and worked examples: [`case-spec-input-details.md` § FilterTree shape](case-spec-input-details.md#filtertree-shape) — including the complete-array invariant (both `filters` and `groups` arrays on every node). Same shape applies to triggers — only the compiler output differs.
 
 > **Do NOT pass a raw filter string** under `--input-details.queryParameters.where` (or the connector-specific filter param name). The CLI rejects this; even if it didn't, Studio Web would render the filter widget as `undefined` when the activity is reopened.
 

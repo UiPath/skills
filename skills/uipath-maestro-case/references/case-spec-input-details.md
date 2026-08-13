@@ -185,9 +185,7 @@ The CLI compiles the tree:
 }
 ```
 
-**Case-skill compatibility invariant:** every FilterTree node — the root and every node nested under `groups[]` — MUST contain both array fields. Preserve populated arrays; when one side has no entries, emit the empty array explicitly. Although the published design-time type currently marks `groups` optional, the compiler dereferences `filterTree.groups` as an array. Omitting it can therefore fail compilation. `filters` is also consumed as an array and must always be present.
-
-An intentionally unfiltered connector omits the top-level `filter` input. Empty arrays are used only to complete an authored tree: for example, a leaf with direct conditions has `groups: []`, while a parent containing only nested groups has `filters: []`.
+**Complete-array invariant:** every node — root and each entry under `groups[]` — carries both `filters` and `groups` arrays. Emit `[]` for the empty side; never drop populated criteria. The published type marks `groups` optional, but the compiler dereferences both as arrays — omission fails compilation. Unfiltered connector → omit top-level `filter`; never pass a placeholder tree.
 
 **`groupOperator` accepts both string and numeric.** The IS SDK's `FilterGroupOperator` is a numeric enum (`And=0`, `Or=1`); the case-tool input layer normalizes string `"And"` / `"Or"` to numeric before threading the tree to the SDK compilers, so JSON authors can use either form. Numeric values pass through unchanged. Lowercase `"and"` / `"or"` is NOT normalized — the SDK will then fail to produce the expected joiner.
 

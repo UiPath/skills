@@ -47,7 +47,7 @@ Synthetic HTTP request activities (`object-name === "httpRequest"` / `"http-requ
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
 
-**FilterTree preflight (mandatory when `filter` exists):** recursively inspect the root and every child in `groups[]`. Preserve existing non-empty arrays and add `filters: []` or `groups: []` wherever that collection is absent. Both keys must be arrays on every node before Step 2. If no filter was authored, omit `filter`; do not pass an empty placeholder tree.
+**FilterTree preflight (when `filter` exists):** ensure every root and nested node carries both `filters` and `groups` arrays, preserving populated criteria ([§ FilterTree shape](../../../case-spec-input-details.md#filtertree-shape)); if no filter was authored, omit `filter`.
 
 #### Step 1.a — Rewrite references to canonical sink form
 
@@ -290,7 +290,6 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and transcribe PascalCase-verbatim. See Step 6 / Step 8.
 - **Do NOT leave spec PascalCase keys in the finished task — and do NOT re-case by retyping.** The write is PascalCase-verbatim (Step 8); the re-case is per-key `Edit` with `replace_all` (`"Name":` → `"name":`, Step 8.a). Retyping the subtree to change casing is the memory-reconstruction failure above wearing a different hat. See [connector-trigger-impl.md § Normalize key casing](../../../connector-trigger-impl.md#normalize-key-casing-pascalcase--camelcase).
 - **Do NOT translate, drop, or reroute an SDD filter.** Use FilterTree only with `spec.filter`; otherwise preserve the exact SDD value in a declared plain sink or halt (Step 4).
-- **Do NOT omit `filters` or `groups` from any authored FilterTree node.** Normalize both arrays recursively before `case spec`; never replace a populated array with `[]`.
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
 - **Do NOT pass `bodyParameters` for synthetic HTTP request activities.** Use `queryParameters` instead, or omit.
 - **Do NOT pass literal `field[*]` keys in `bodyParameters`.** The `[*]` in `inputs.bodyFields[].name` is JSONPath-style schema notation meaning "array of"; it is NOT a valid input key. Express array-of-object body fields as real JSON arrays under the parent name (see [planning.md](planning.md)). Pre-input scan in [Step 1.b](#step-1b--array-of-object-body-fields-pre-input-scan-mandatory) halts on any literal `[*]` key.
