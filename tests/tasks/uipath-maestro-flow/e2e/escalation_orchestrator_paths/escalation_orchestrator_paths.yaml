@@ -1,0 +1,111 @@
+task_id: skill-flow-e2e-escalation-orchestrator-paths
+description: >
+  End-to-end, outcome-based test of the full customer-escalation orchestration,
+  driven down a specific path by seeded inputs. The agent builds a manual-trigger
+  orchestrator (the Outlook email-received trigger is not reliably debug-testable
+  — see outlook_trigger_inbox / customer_escalation notes) whose branching is
+  input-driven so the grader can steer any path via `flow debug --inputs`. This
+  first case seeds a Sev1 production-down escalation and verifies the OUTCOME: the
+  run completes on the escalation path, classifies Sev1 + engineering, preserves
+  the correlationId, and the Slack escalation alert was actually posted (non-empty
+  message id). Salesforce enrichment is stubbed (match status is an input), so no
+  Salesforce connection is required; Jira/Drive/Slack are real with error-degrade
+  so an enrichment hiccup cannot fault the run. Additional path cases (informational,
+  duplicate, unknown-customer, …) are added as further seed cases over time.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:switch, connector, uipath-salesforce-slack, feature:escalation]
+
+run_limits:
+  expected_turns: 70
+  max_turns: 140
+  task_timeout: 3000
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/escalation_orchestrator_paths/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120
+
+initial_prompt: |
+  Build a UiPath Maestro Flow named "CustomerEscalationOrchestrator" (inside a
+  solution of the same name) with a MANUAL trigger. It orchestrates a customer
+  escalation end-to-end and its routing is driven entirely by the flow inputs so
+  it can be exercised deterministically.
+
+  Flow inputs (declare as `in` variables on the manual trigger):
+  senderEmail, senderDomain, subject, body, customerTier, productionDown (boolean),
+  workaroundAvailable (boolean), hasAttachments (boolean),
+  customerMatchStatus ("single" | "none" | "multiple"), isDuplicate (boolean),
+  correlationId.
+
+  Routing:
+  - If senderDomain is empty → triage (missing domain).
+  - Else branch on customerMatchStatus: "none" → triage (unknown customer);
+    "multiple" → triage (multiple matches); "single" → continue.
+  - If isDuplicate is true → triage (duplicate).
+  - Otherwise classify severity from the inputs:
+      Sev1 = Enterprise tier AND productionDown AND NOT workaroundAvailable
+             (also treat any productionDown with no workaround as Sev1);
+      Sev2 = productionDown AND workaroundAvailable;
+      Sev3 = has production impact but not the above;
+      informational = no production impact and the message is just a question.
+    Decide engineeringNeeded (true for Sev1/Sev2) and responseMode = "Draft".
+  - informational → triage (light).
+  - Sev1/Sev2/Sev3 → escalation actions: create a Jira issue in project "CE",
+    upload a summary file to Google Drive, and (for Sev1/Sev2) do an engineering
+    handoff, then post a Slack escalation alert.
+
+  Connectors (Integration Service): Jira create-issue, Google Drive upload-file,
+  and Slack "Send Message to channel" are REAL connector nodes. For Slack use the
+  connection named "is-sandboxes", channel "coding-agent-testing", send as `user`.
+  Wire each connector's error port to a small handler so a connector failure
+  degrades gracefully instead of faulting the whole flow. Salesforce is NOT called
+  — the customer match is taken from the customerMatchStatus input.
+
+  Post a Slack escalation alert on the escalation path and a Slack triage notice on
+  the triage paths (both to the same channel).
+
+  Map these `out` variables (on every reachable End node):
+  - escalationPath   ("escalation" or the triage reason)
+  - severity         (Sev1 / Sev2 / Sev3 / informational)
+  - engineeringNeeded(boolean)
+  - responseMode     ("Draft")
+  - caseKey          = the incoming correlationId
+  - jiraIssueKey     = the created Jira issue key (empty if Jira degraded)
+  - slackMessageId   = the identifier of the posted Slack message
+
+  Validate the flow. Do NOT run or debug the flow — the grader executes it with
+  seeded inputs. Do NOT ask for approval and do NOT pause; build end-to-end in a
+  single pass. Before starting, load the uipath-maestro-flow skill and follow its
+  workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent validated the generated Flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Generated CustomerEscalationOrchestrator Flow validates without errors"
+    command: "uip maestro flow validate CustomerEscalationOrchestrator/CustomerEscalationOrchestrator/CustomerEscalationOrchestrator.flow --output json"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Seeded path cases: each drives its branch and produces the expected outcome; the escalation case actually posts a Slack alert (non-empty message id)"
+    command: "python3 $TASK_DIR/check_escalation_orchestrator_paths.py"
+    timeout: 900
+    expected_exit_code: 0
+    weight: 8.0
+    pass_threshold: 1.0
