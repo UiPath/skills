@@ -96,9 +96,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The build recorded its issues rather than exiting silently"
-    command: "find . -name build-issues.md -not -path '*/.venv/*' | grep -q ."
-    timeout: 10
+    description: >
+      Step 12.2 / Check 15 — the build recorded its unresolved work rather than exiting
+      silently. Stronger than a file_exists: a header-only log fails.
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/check_build_issues_log.py"
+    timeout: 30
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0

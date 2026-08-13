@@ -342,7 +342,33 @@ Run validate per [phased-execution.md § Phase 4](phased-execution.md#phase-4--v
 
 ## Step 12.1 — Dump issue log
 
-Write issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md). On Phase 4 success → proceed to Phase 5.
+Write issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md).
+
+## Step 12.2 — Issue-log completeness gate (Check 15) — PHASE 4 EXIT
+
+Runs immediately after the Step 12.1 dump; gates entry to Phase 5. Unlike Checks 1–14 this cannot live in the Step 12 validator pass — the file it inspects does not exist until 12.1 has run.
+
+**Predicate.** The build **carries unresolved work** when ANY of these hold:
+
+1. `tasks/tasks.md` contains one or more `<UNRESOLVED` markers, OR
+2. any task in `caseplan.json` is a placeholder (`data: {}`), OR
+3. any `wait-for-connector` rule still carries the placeholder stub (Check 14 abort path).
+
+When the build carries unresolved work, `tasks/build-issues.md` MUST exist and MUST contain at least one issue entry — a header-only or empty file fails this gate. When the build carries none, the file is optional.
+
+**Why this gate exists.** The issue list is held **in the agent's reasoning** for the entire build ([`plugins/logging/impl-json.md`](plugins/logging/impl-json.md) § Setup) and dumped exactly once, at the very end. On a long build that in-memory list is the first thing lost to context pressure, and nothing downstream notices: Checks 1–14 inspect `caseplan.json` and its sidecars, never the log, and the Step 12 **Reporting** clause *presumes* the file exists ("read the file after writing"). Observed: a 52-minute build with **39 placeholder tasks and 120 `<UNRESOLVED>` markers** emitted no `build-issues.md` at all and still passed every other gate. The operator was handed 39 unwired resources with no record of which ones.
+
+**Non-interactive repair.** Do not prompt. Reconstruct the log from the artifacts that survive on disk — `<UNRESOLVED>` markers in `tasks.md`, placeholder tasks in `caseplan.json`, unresolved entries in `tasks/registry-resolved.json` (`selected: null`), and any surviving connector stub — write `tasks/build-issues.md` per the logging plugin, then re-scan once.
+
+**A reconstructed log is explicitly second-best and must say so.** It records what the artifacts prove, not what the build actually observed: severities collapse to `SKIPPED`, and per-step provenance is gone. Stamp it with a literal line above the issue table:
+
+```
+NOTE: reconstructed at Step 12.2 from on-disk artifacts — the in-reasoning issue log was lost. Severity and step attribution are approximate.
+```
+
+Halt before Phase 5 if the file is still absent or entry-less after one repair pass. `uip maestro case validate` success does not satisfy this gate — a case with 39 unwired placeholders validates clean.
+
+On success → proceed to Phase 5.
 
 ---
 
