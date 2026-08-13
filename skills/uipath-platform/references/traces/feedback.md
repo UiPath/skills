@@ -10,7 +10,7 @@ Use for agent output quality review and building evaluation datasets.
 | `create` | Add feedback to a trace (or specific span) |
 | `get <id>` | Fetch one feedback record |
 | `list` | List feedback with filters |
-| `list detailed` | Cross-trace feedback with span context (max 200 items) |
+| `list detailed` | List feedback with span context, plus extra filters (max 200 items) |
 | `update <id>` | Change sentiment, comment, or categories |
 | `delete <id>` | Remove feedback |
 
