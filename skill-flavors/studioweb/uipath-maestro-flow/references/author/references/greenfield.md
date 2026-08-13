@@ -12,7 +12,7 @@ Emit this read-only probe in parallel with the Step 2 host project-creation call
 <!--skill-flavor:greenfield-step-zero-concurrency:end-->
 
 <!--skill-flavor:greenfield-author-login-boundary:start-->
-Studio Web owns authentication for Step 2 project creation. Local `validate`, `format`, OOTB registry queries, and `Edit` / `Write` authoring work without `uip login`; tenant-specific connector/resource discovery and Operate actions may still require authenticated host or CLI capabilities.
+Greenfield steps 2–6 work without login. Authentication is required only when tenant-specific connector/resource discovery or Operate actions need it; Studio Web owns authentication for Step 2 project creation.
 <!--skill-flavor:greenfield-author-login-boundary:end-->
 
 <!--skill-flavor:project-creation:start-->
