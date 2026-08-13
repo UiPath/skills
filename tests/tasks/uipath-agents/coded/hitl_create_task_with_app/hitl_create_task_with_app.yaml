@@ -14,14 +14,16 @@ max_iterations: 1
 initial_prompt: |
   Can you build me a uipath coded agent in LangGraph for handling refunds?
   Call it refund-gate, put it in a refund-gate folder. The idea: anything
-  over $500 needs a human to sign off first. Someone on the Compliance team
-  reviews it in their RefundReview app (that's in the
-  Shared/uipath-agents/RefundReview folder) - show them the customer, the
-  amount, and why the refund's being asked for.
-  Once they decide, carry on with their call and whatever note they left.
-  Anything $500 or under just goes through. And please make sure the
-  RefundReview app is actually hooked up, otherwise it can't send them the
-  request.
+  over $500 has to be reviewed by a person before it goes through. Open a
+  review task for the Compliance team (compliance@example.com) in their
+  RefundReviewApp app, deployed to the Orchestrator folder
+  Shared/uipath-agents/RefundReviewSol - it's a normal Action Center review
+  task, not an escalation - show them the customer, the amount, and why the
+  refund's being asked for.
+  Once they submit, carry on with the call they made and whatever note they
+  left. Anything $500 or under just goes through. And please make sure the
+  RefundReviewApp app is actually hooked up, otherwise it can't send them
+  the request.
 
   No need to run or deploy it, just build it. Run it all the way through
   and only stop if you hit something you genuinely can't get past.
@@ -51,7 +53,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "LangGraph config, interrupt(CreateTask) shape (not CreateEscalation), correct app targeting, RefundReview app binding in Shared/uipath-agents/RefundReview"
+    description: "LangGraph config, interrupt(CreateTask) shape (not CreateEscalation), correct app targeting, RefundReviewApp app binding in Shared/uipath-agents/RefundReviewSol"
     command: "python3 $TASK_DIR/check_hitl_create_task_with_app.py"
     timeout: 30
     expected_exit_code: 0
