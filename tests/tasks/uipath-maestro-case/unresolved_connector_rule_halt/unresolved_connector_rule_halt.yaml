@@ -15,7 +15,8 @@ description: >
   throughout. Regression guarded: the skill used to emit the stub, log it as an ordinary
   Open Item, and report the build complete — shipping a 100% dead case. Measured on
   uip 1.198 (2026-08-12): placeholder stub -> 1 element / Faulted; same rule with a
-  resolved connector -> 25 elements.
+  resolved connector -> 25 elements. The grader itself is unit-tested against minimal
+  synthetic stubs in test_connector_stub_halt.py (no tenant, no captured artifact).
 tags:
   - uipath-maestro-case
   - integration
@@ -85,6 +86,13 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+(upload|publish)'
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
