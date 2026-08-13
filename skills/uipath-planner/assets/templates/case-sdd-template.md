@@ -154,7 +154,15 @@ Every row must have Category.
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| <camelCase name> | <In \| Out \| Variable> | <string \| integer \| float \| double \| boolean \| datetime \| date \| jsonSchema \| file> | <T02, blank, or CSV only for Variable rows> | <payload path or keyed T-number paths> | <default or blank> | <what this variable represents> |
+| <camelCase name> | <In \| Out \| Variable> | <string \| integer \| float \| double \| boolean \| datetime \| date \| jsonSchema \| file> | <T02, blank, or CSV only for Variable rows> | <payload path or keyed T-number paths> | <default or blank — see below> | <what this variable represents> |
+
+> **`Default` is always a string, for every Type.** The downstream `caseplan.json` field is
+> string-typed, and a non-primitive value there is **silently deleted** when the case is serialized to
+> BPMN — the variable is then null at runtime and the first task that reads it fails. Write a
+> `jsonSchema` default as string-encoded JSON in the cell:
+> `{"employeeName":"Test Employee","amount":125.5}` becomes
+> `"{\"employeeName\":\"Test Employee\",\"amount\":125.5}"`. Same for numbers and booleans — `"5"`,
+> `"true"`, not `5` or `true`. Leave the cell blank for no default; `file` defaults must be blank.
 
 ---
 
