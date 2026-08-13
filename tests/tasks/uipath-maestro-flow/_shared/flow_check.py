@@ -530,11 +530,20 @@ def assert_slack_message_posted(
             r"\d{9,11}\.\d{4,6}); the flow did not actually post to Slack"
         )
 
-    slack_ids = {
-        n.get("id")
-        for n in _iter_flow_nodes(project_glob)
-        if connector_key in str(n.get("type", ""))
-    }
+    # Slack node ids — a native connector node OR a connector-mode HTTP proxy
+    # targeting the connector (same shapes assert_flow_uses_connector_target
+    # accepts), so a valid HTTP-proxy Slack node isn't a false negative.
+    slack_ids: set = set()
+    for n in _iter_flow_nodes(project_glob):
+        t = str(n.get("type", ""))
+        if connector_key in t:
+            slack_ids.add(n.get("id"))
+            continue
+        detail = (n.get("inputs") or {}).get("detail") or {}
+        body = detail.get("bodyParameters") or {} if isinstance(detail, dict) else {}
+        target = str((body.get("targetConnector") or body.get("connectorKey") or "")).lower()
+        if t.lower().startswith("core.action.http") and target == connector_key.lower():
+            slack_ids.add(n.get("id"))
     if not slack_ids:
         _fail(f"no {connector_key} connector node found in the flow")
 
