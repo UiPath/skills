@@ -178,7 +178,7 @@ dependencies = [
 ]
 ```
 
-`authors` is **required** — without it `uip function pack` rejects the package with `Project authors cannot be empty`. The scaffold writes a placeholder; keep the key whether you edit or rewrite the file.
+`authors` is **required** — without it `uip function pack` rejects the package with `Project authors cannot be empty`.
 
 No `[build-system]` section. The project is identified as a Coded Function by the `functions` map in `uipath.json` (Step 4).
 
