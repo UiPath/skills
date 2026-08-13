@@ -36,7 +36,11 @@ success_criteria:
     description: "Agent registered projects (set-up) via uip solution projects add (or import)"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+projects?\s+(add|import)\b(?!\s+(?:--help|-h)\b)'
-    min_count: 2
+    # min_count: 1 (not 2). command_executed counts matching Bash events, not command
+    # occurrences within an event — `projects add A && projects add B` in one call
+    # registers only 1 match. The outcome checks named below already prove both
+    # registrations happened.
+    min_count: 1
     weight: 1.0
     pass_threshold: 0.0  # advisory: `uip rpa init --location <solution-dir>` (and init inside a solution) auto-registers projects (CLI #2470), so explicit `projects add` is optional. Registration is outcome-checked by the json_check below plus the successful `projects remove` (which refuses to drop the last project — ending at 1 proves it started at 2). Mirrors uipath-agents/coded/coded_in_flow_e2e.yaml.
 

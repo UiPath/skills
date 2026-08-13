@@ -72,12 +72,27 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # min_count: 1 (not 2) x2, scoped per field name. command_executed counts matching
+  # Bash events, not command occurrences within an event — the two creates chain into
+  # one Bash call, which a single min_count: 2 criterion caps at 0.5. The lookaheads
+  # now anchor after the `create` verb and scan with the batch-safe
+  # (?:[^&;|\n]|\\\n)* class, so each criterion is pinned to one command: this
+  # verifies the name/data-type pairing, which the old (Text|Label) alternation
+  # never checked.
   - type: command_executed
-    description: "Complete create commands defining fields scoped TestCase: `uip tm customfield create --project-key HEALTH --name <name> --data-type <Text|Label> --object-type TestCase` (x2)"
+    description: "Complete create command defining the Text field: `uip tm customfield create --project-key HEALTH --name 'Eval Reviewer' --data-type Text --object-type TestCase`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--data-type\s+(Text|Label))uip\s+tm\s+customfield\s+create'
-    min_count: 2
-    weight: 2.0
+    command_pattern: 'uip\s+tm\s+customfield\s+create\s(?=(?:[^&;|\n]|\\\n)*--project-key\s+HEALTH)(?=(?:[^&;|\n]|\\\n)*--object-type\s+TestCase)(?=(?:[^&;|\n]|\\\n)*--data-type\s+Text)(?=(?:[^&;|\n]|\\\n)*Eval\s+Reviewer)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete create command defining the Label field: `uip tm customfield create --project-key HEALTH --name 'Eval Risk' --data-type Label --object-type TestCase`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+customfield\s+create\s(?=(?:[^&;|\n]|\\\n)*--project-key\s+HEALTH)(?=(?:[^&;|\n]|\\\n)*--object-type\s+TestCase)(?=(?:[^&;|\n]|\\\n)*--data-type\s+Label)(?=(?:[^&;|\n]|\\\n)*Eval\s+Risk)'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed

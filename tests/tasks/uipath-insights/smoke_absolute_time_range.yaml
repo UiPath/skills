@@ -41,10 +41,23 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
+  # min_count: 1 (not 2) x2, scoped per subcommand. command_executed counts matching
+  # Bash events, not command occurrences within an event — the prompt's two queries
+  # chain into one Bash call, which a single min_count: 2 criterion caps at 0.5.
+  # Splitting also tightens the check: the old (summary|completed-timeline)
+  # alternation was satisfied by running `summary` twice.
   - type: command_executed
-    description: "Agent ran at least two different subcommands"
+    description: "Agent ran the summary subcommand"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+(summary|completed-timeline)'
-    min_count: 2
-    weight: 1.5
+    command_pattern: 'uip\s+insights\s+jobs\s+summary'
+    min_count: 1
+    weight: 0.75
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the completed-timeline subcommand"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+completed-timeline'
+    min_count: 1
+    weight: 0.75
     pass_threshold: 1.0

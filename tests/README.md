@@ -394,10 +394,12 @@ Verify the agent ran a specific CLI command (matched by regex). From `init_valid
   description: "Agent created a solution with uip solution new"
   tool_name: "Bash"
   command_pattern: 'uip\s+solution\s+new'
-  min_count: 1          # minimum times the command must appear
+  min_count: 1          # minimum matching Bash tool calls required
   weight: 1.5           # scoring weight
   pass_threshold: 1.0   # fraction of min_count required to pass
 ```
+
+`min_count` counts **matching Bash tool calls**, not pattern occurrences within a call. If an agent legitimately bundles multiple qualifying commands into one shell invocation (e.g. `cmd-a && cmd-b`), that single tool call can only ever contribute 1 match — so `min_count: 2` or higher silently caps the score below 1.0 for a correct, efficient agent. Prefer `min_count: 1` scoped narrowly (e.g. one criterion per distinct argument or ID, splitting the weight between them) over a single `min_count: 2+`, and prove true multiplicity with a `run_command` / `file_contains` check on the resulting artifacts instead of counting tool calls. See `traces_feedback_comment_file_smoke.yaml` and `idempotent_reconfigure.yaml` for the pattern.
 
 ### `file_exists`
 

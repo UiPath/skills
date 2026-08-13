@@ -29,11 +29,18 @@ initial_prompt: |
   Both snapshots go at the sandbox root.
 
 success_criteria:
+  # min_count: 1 (not 2). command_executed counts matching Bash events, not command
+  # occurrences within an event — a correct batched run (configure && cp && configure
+  # && cp in one call) registers only 1 match and this criterion would false-fail.
+  # Multiplicity is instead proven by the snapshot-diff checks below (count_equal /
+  # same_connection_id / no_empty_stubs across after_first_configure.flow and
+  # after_second_configure.flow) — a result a single configure cannot produce.
+  # Mirrors the min_count:1 convention in reconfigure_different_connection.yaml.
   - type: command_executed
-    description: "Agent called `node configure` at least twice"
+    description: "Agent called `node configure` at least once"
     tool_name: "Bash"
     command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+node\\s+configure"
-    min_count: 2
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 

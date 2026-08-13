@@ -91,6 +91,7 @@ Penalize:
 - `llm_judge` as the only or dominant criterion (graded by an LLM with no ground truth)
 - Criteria that would pass for any non-empty / well-formed input regardless of correctness
 - For `command_executed`, `min_count: 1` with a very loose regex — proves nothing about correctness
+- For `command_executed`, `min_count: 2` or higher with no structural (file/output-based) proof of multiplicity elsewhere in the task — `min_count` counts matching Bash tool calls, not occurrences within a call, so this false-fails any agent that batches commands into one Bash call. Flag `command_pattern`/task shape combinations where batching is plausible
 
 Reward:
 - `json_check` with assertions on actual output values

@@ -66,9 +66,11 @@ uip traces feedback list \
 | `--offset` | Pagination offset, default 0 |
 | `--folder-key` | Optional |
 
+`--trace-id` is optional — omit it to filter and paginate across all traces (e.g. by `--agent-id`/`--agent-version`/`--negative`) without needing `list detailed`.
+
 ## list detailed
 
-Returns `spanAttributes` per record (`agentId`, `agentName`, `userPrompt`, `output`). No `--trace-id` needed — designed for cross-trace bulk review.
+Adds span context per record (`spanAttributes`: `agentId`, `agentName`, `userPrompt`, `output`) plus time-range/category/sort filters over `list`. Not required for cross-trace filtering — plain `list` already covers that by omitting `--trace-id`.
 
 ```bash
 # Last 24 hours

@@ -31,12 +31,26 @@ initial_prompt: |
   Do NOT ask for approval or confirmation.
 
 success_criteria:
+  # min_count: 1 (not 2) x2, scoped per input. command_executed counts matching Bash
+  # events, not command occurrences within an event — the two dependency-free runs
+  # chain into one Bash call, which a single min_count: 2 criterion caps at 0.5.
+  # Kept as two per-input criteria rather than dropping to one: the prompt states the
+  # score >= 60 rule, so the run_85/run_40 file checks alone could be satisfied by one
+  # real run plus one hand-written file. This split is the anti-fabrication guard.
   - type: command_executed
-    description: "Agent executed the workflow with the local runner, once per input (the operate action)"
+    description: "Agent executed the workflow with the local runner for the score-85 input (the operate action)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run'
-    min_count: 2
-    weight: 2.0
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run(?=[\s\S]*"score"\s*:\s*85)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent executed the workflow with the local runner for the score-40 input (the operate action)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+run(?=[\s\S]*"score"\s*:\s*40)'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
