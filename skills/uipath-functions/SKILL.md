@@ -72,6 +72,14 @@ uip function new <name> --language js       # JavaScript Function (JS/TS, no job
 
 `--empty` skips the hello-world function (JS/TS only).
 
+**The scaffold follows the installed packages.** With a framework package present in the environment (`uipath-langchain`, `llama-index`, `openai-agents`), `uip function new -l py` emits that framework's **agent** scaffold — `langgraph.json` plus an LLM `main.py` — not a function scaffold. Expected behaviour, not a broken flag. Recovery, in one pass:
+
+1. Delete the framework config (`langgraph.json` and equivalents).
+2. Replace `main.py` with the function template (Step 3).
+3. Keep `pyproject.toml`'s `[project]` metadata (Step 5) — swap `dependencies` for what the function needs.
+
+Do not re-run `new` with different flag spellings, and do not read CLI or SDK internals to explain the scaffold. Reshape the project and move on.
+
 ### Step 2: Define Function Schema
 
 Use typed I/O. The SDK accepts pydantic `BaseModel`, `pydantic.dataclasses.dataclass`, a stdlib `@dataclass`, or a thin class with typed annotations. The shipped samples favor **pydantic** (`BaseModel` in csv-processor, `pydantic.dataclasses.dataclass` in calculator/greeter):
@@ -156,8 +164,6 @@ The key is the entrypoint name — it can be any string and marks this as the ca
 
 ### Step 5: Declare dependencies in `pyproject.toml`
 
-Edit the `pyproject.toml` that `uip function new` scaffolded — do not overwrite it. Add dependencies, keep the generated `[project]` keys:
-
 ```toml
 [project]
 name = "my-function"
@@ -172,7 +178,7 @@ dependencies = [
 ]
 ```
 
-`authors` is **required** — without it `uip function pack` rejects the package with `Project authors cannot be empty`. The scaffold writes a placeholder author; replace the value, never delete the key.
+`authors` is **required** — without it `uip function pack` rejects the package with `Project authors cannot be empty`. The scaffold writes a placeholder; keep the key whether you edit or rewrite the file.
 
 No `[build-system]` section. The project is identified as a Coded Function by the `functions` map in `uipath.json` (Step 4).
 
