@@ -2,12 +2,14 @@
 """Seed path cases for the escalation-orchestrator outcome eval.
 
 Each case pins the flow inputs that steer one branch and the outputs the grader
-asserts. `expect_slack: true` means the case runs the escalation path and must
-have actually posted a Slack alert (non-empty slackMessageId).
+asserts. `expect_slack: true` means the run must have actually posted a Slack
+message (escalation alert on the escalation path, triage notice on the triage
+paths) — a non-empty slackMessageId proves it.
 
-Start with the escalation → Slack path. Add more cases (informational, duplicate,
-unknown-customer, multiple-match) here as coverage grows — the checker iterates
-this list generically, so no checker change is needed to add a path.
+Every expected value below was verified by running the reference orchestrator
+through `uip maestro flow debug --inputs` on codereval/alpha. The checker
+iterates this list generically, so new paths (e.g. multiple-match, missing-domain,
+Sev2-with-attachments) drop in here with no checker change.
 """
 
 from __future__ import annotations
@@ -16,44 +18,87 @@ import json
 from pathlib import Path
 from uuid import uuid4
 
+_COMMON = {
+    "senderEmail": "jane.doe@acmecorp.com",
+    "senderDomain": "acmecorp.com",
+    "hasAttachments": False,
+}
+
+
+def _case(name, run_id, suffix, overrides, expected, expect_slack):
+    corr = f"ORCH-{run_id}-{suffix}"
+    inputs = {
+        **_COMMON,
+        "subject": "",
+        "body": "",
+        "customerTier": "Standard",
+        "productionDown": False,
+        "workaroundAvailable": False,
+        "customerMatchStatus": "single",
+        "isDuplicate": False,
+        "correlationId": corr,
+        **overrides,
+    }
+    return {
+        "name": name,
+        "expect_slack": expect_slack,
+        "inputs": inputs,
+        "expected": {**expected, "caseKey": corr},
+    }
+
 
 def build_seed() -> dict:
-    run_id = uuid4().hex[:12]
-    return {
-        "run_id": run_id,
-        "cases": [
-            {
-                "name": "enterprise-production-down-sev1-escalation",
-                "expect_slack": True,
-                "inputs": {
-                    "senderEmail": "jane.doe@acmecorp.com",
-                    "senderDomain": "acmecorp.com",
-                    "subject": "Production down: checkout API returning 500s",
-                    "body": "Critical urgent outage since 09:15 UTC, all users blocked.",
-                    "customerTier": "Enterprise",
-                    "productionDown": True,
-                    "workaroundAvailable": False,
-                    "hasAttachments": False,
-                    "customerMatchStatus": "single",
-                    "isDuplicate": False,
-                    "correlationId": f"ORCH-{run_id}-SEV1",
-                },
-                "expected": {
-                    "escalationPath": "escalation",
-                    "severity": "Sev1",
-                    "engineeringNeeded": True,
-                    "responseMode": "Draft",
-                    "caseKey": f"ORCH-{run_id}-SEV1",
-                },
-            }
-        ],
-    }
+    r = uuid4().hex[:12]
+    cases = [
+        # ── Escalation paths (Slack escalation alert) ──────────────────────
+        _case(
+            "sev1-enterprise-production-down", r, "SEV1",
+            {"subject": "Production down: checkout 500s", "body": "Critical urgent outage, all users blocked",
+             "customerTier": "Enterprise", "productionDown": True, "workaroundAvailable": False},
+            {"escalationPath": "escalation", "severity": "Sev1", "engineeringNeeded": True, "responseMode": "Draft"},
+            True,
+        ),
+        _case(
+            "sev2-degraded-with-workaround", r, "SEV2",
+            {"subject": "Degraded checkout", "body": "Slow but a workaround exists",
+             "productionDown": True, "workaroundAvailable": True},
+            {"escalationPath": "escalation", "severity": "Sev2", "engineeringNeeded": True, "responseMode": "Draft"},
+            True,
+        ),
+        _case(
+            "sev3-no-production-impact", r, "SEV3",
+            {"subject": "Report formatting off", "body": "The export looks wrong"},
+            {"escalationPath": "escalation", "severity": "Sev3", "engineeringNeeded": False, "responseMode": "Draft"},
+            True,
+        ),
+        # ── Triage paths (Slack triage notice) ─────────────────────────────
+        _case(
+            "informational-question", r, "INFO",
+            {"subject": "Quick question", "body": "I have a question about billing"},
+            {"escalationPath": "informational", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
+            True,
+        ),
+        _case(
+            "duplicate-escalation", r, "DUP",
+            {"subject": "Prod down", "body": "urgent", "customerTier": "Enterprise",
+             "productionDown": True, "workaroundAvailable": False, "isDuplicate": True},
+            {"escalationPath": "duplicate", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
+            True,
+        ),
+        _case(
+            "unknown-customer", r, "UNK",
+            {"subject": "Help", "body": "an issue", "customerMatchStatus": "none"},
+            {"escalationPath": "unknown_customer", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
+            True,
+        ),
+    ]
+    return {"run_id": r, "cases": cases}
 
 
 def main() -> None:
     path = Path("seed.json")
     path.write_text(json.dumps(build_seed(), indent=2) + "\n", encoding="utf-8")
-    print(f"seeded {path}")
+    print(f"seeded {path} with {len(build_seed()['cases'])} path cases")
 
 
 if __name__ == "__main__":
