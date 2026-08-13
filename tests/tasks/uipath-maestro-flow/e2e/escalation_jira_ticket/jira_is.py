@@ -37,9 +37,22 @@ def connection_id() -> str:
     # still scoping to the target folder so a same-named connection in another
     # folder can't be picked by accident.
     conns = _run("is", "connections", "list", CONNECTOR, "--all-folders", "--refresh")["Data"]
-    scoped = [c for c in conns if c["Name"] == CONNECTION_NAME and c.get("Folder") == FOLDER_NAME]
-    # Fall back to name-only if the folder field isn't populated in this env.
-    return next(iter(c["Id"] for c in (scoped or conns) if c["Name"] == CONNECTION_NAME))
+    by_name = [c for c in conns if c["Name"] == CONNECTION_NAME]
+    scoped = [c for c in by_name if c.get("Folder") == FOLDER_NAME]
+    if scoped:
+        return scoped[0]["Id"]
+    # Only accept a name-only match when NO candidate reports folder metadata
+    # (older CLI / env). If folders ARE reported but none is the target folder,
+    # refuse to guess — a same-named connection elsewhere could be the wrong
+    # Jira account. Fail the prerequisite instead.
+    if any(c.get("Folder") for c in by_name):
+        raise SystemExit(
+            f"FAIL: no {CONNECTOR} connection named {CONNECTION_NAME!r} in folder "
+            f"{FOLDER_NAME!r}; candidates in folders {[c.get('Folder') for c in by_name]}"
+        )
+    if not by_name:
+        raise SystemExit(f"FAIL: no {CONNECTOR} connection named {CONNECTION_NAME!r}")
+    return by_name[0]["Id"]
 
 
 def create_issue(conn_id: str, summary: str) -> str:

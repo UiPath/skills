@@ -501,19 +501,55 @@ def assert_named_equals(payload: dict, name: str, expected: Any) -> None:
 _SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 
 
-def assert_slack_message_posted(payload: dict, name: str) -> str:
-    """Assert the named output holds a real Slack message timestamp (``ts``),
-    e.g. ``1786647595.771239`` — the value Slack's API returns only for a
-    message it actually accepted. Combined with a real
-    ``uipath-salesforce-slack`` connector node (assert_flow_uses_connector_target),
-    this rejects a flow that fakes delivery by mapping a hard-coded placeholder
-    (``"ok"``, ``"sent"``, ``"1"``) into the output. Returns the ts."""
+def assert_slack_message_posted(
+    payload: dict,
+    name: str,
+    *,
+    connector_key: str = "uipath-salesforce-slack",
+    project_glob: str = "**/project.uiproj",
+) -> str:
+    """Assert a Slack message was actually sent in this debug run.
+
+    Two independent gates, so a flow can't fake delivery:
+
+    1. **Shape** — the named output is a Slack message ``ts``
+       (``\\d{9,11}\\.\\d{4,6}``, e.g. ``1786647595.771239``), rejecting a
+       hard-coded placeholder like ``"ok"`` / ``"sent"`` / ``"1"``.
+    2. **Trace** — at least one ``connector_key`` node in the flow has a
+       ``Completed`` ``elementExecution`` in the debug payload. A disconnected
+       or unexecuted connector node produces no such record, so a constant ``ts``
+       mapped past an idle node fails here. This is the "confirm the timestamp
+       came from an executed connector send" check.
+
+    Returns the ts."""
     value = assert_output_nonempty(payload, name)
     text = str(value).strip()
     if not _SLACK_TS_RE.match(text):
         _fail(
             f"output {name!r}={text!r} is not a Slack message ts (expected "
             r"\d{9,11}\.\d{4,6}); the flow did not actually post to Slack"
+        )
+
+    slack_ids = {
+        n.get("id")
+        for n in _iter_flow_nodes(project_glob)
+        if connector_key in str(n.get("type", ""))
+    }
+    if not slack_ids:
+        _fail(f"no {connector_key} connector node found in the flow")
+
+    els = _get_ci(payload, "elementExecutions", "Elements", "elements") or []
+    completed = [
+        e
+        for e in els
+        if _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId") in slack_ids
+        and str(_get_ci(e, "status", "Status")).lower() == "completed"
+    ]
+    if not completed:
+        _fail_with_capture(
+            f"no {connector_key} node completed in the debug trace "
+            f"(slack nodes {sorted(i for i in slack_ids if i)}); ts {text} did "
+            "not come from an executed Slack send"
         )
     return text
 
