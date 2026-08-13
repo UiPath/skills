@@ -15,10 +15,10 @@ description: >
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:switch, connector, uipath-salesforce-slack, feature:escalation]
 
 run_limits:
-  expected_turns: 70
-  max_turns: 140
-  task_timeout: 3000
-  turn_timeout: 1200
+  expected_turns: 80
+  max_turns: 200
+  task_timeout: 3600
+  turn_timeout: 1800
 
 sandbox:
   driver: tempdir
@@ -34,9 +34,9 @@ post_run:
 
 initial_prompt: |
   Build a UiPath Maestro Flow named "CustomerEscalationOrchestrator" (inside a
-  solution of the same name) with a MANUAL trigger. It orchestrates a customer
-  escalation end-to-end and its routing is driven entirely by the flow inputs so
-  it can be exercised deterministically.
+  solution of the same name) with a MANUAL trigger. It triages a customer
+  escalation and its routing is driven entirely by the flow inputs so it can be
+  exercised deterministically.
 
   Flow inputs (declare as `in` variables on the manual trigger):
   senderEmail, senderDomain, subject, body, customerTier, productionDown (boolean),
@@ -44,7 +44,7 @@ initial_prompt: |
   customerMatchStatus ("single" | "none" | "multiple"), isDuplicate (boolean),
   correlationId.
 
-  Routing:
+  Routing (use Script + Decision/Switch nodes):
   - If senderDomain is empty → triage (missing domain).
   - Else branch on customerMatchStatus: "none" → triage (unknown customer);
     "multiple" → triage (multiple matches); "single" → continue.
@@ -57,33 +57,29 @@ initial_prompt: |
       informational = no production impact and the message is just a question.
     Decide engineeringNeeded (true for Sev1/Sev2) and responseMode = "Draft".
   - informational → triage (light).
-  - Sev1/Sev2/Sev3 → escalation actions: create a Jira issue in project "CE",
-    upload a summary file to Google Drive, and (for Sev1/Sev2) do an engineering
-    handoff, then post a Slack escalation alert.
+  - Sev1/Sev2/Sev3 → escalation path.
 
-  Connectors (Integration Service): Jira create-issue, Google Drive upload-file,
-  and Slack "Send Message to channel" are REAL connector nodes. For Slack use the
-  connection named "is-sandboxes", channel "coding-agent-testing", send as `user`.
-  Wire each connector's error port to a small handler so a connector failure
-  degrades gracefully instead of faulting the whole flow. Salesforce is NOT called
-  — the customer match is taken from the customerMatchStatus input.
-
-  Post a Slack escalation alert on the escalation path and a Slack triage notice on
-  the triage paths (both to the same channel).
+  Slack (REQUIRED, real connector): post a Slack "Send Message to channel" alert
+  on the escalation path, and a Slack triage notice on the triage paths (both to
+  the same channel). Use the Slack connection named "is-sandboxes", channel
+  "coding-agent-testing", send as `user`. Wire the Slack node's error port to a
+  small handler so a Slack failure degrades gracefully. (Creating a Jira ticket or
+  uploading to Drive on the escalation path is OPTIONAL — not required for this
+  task.)
 
   Map these `out` variables (on every reachable End node):
-  - escalationPath   ("escalation" or the triage reason)
-  - severity         (Sev1 / Sev2 / Sev3 / informational)
-  - engineeringNeeded(boolean)
-  - responseMode     ("Draft")
+  - escalationPath   ("escalation" or the triage reason: missing_domain /
+                      unknown_customer / multiple_matches / duplicate / informational)
+  - severity         (Sev1 / Sev2 / Sev3 / informational; on triage paths where
+                      severity was not classified, map "informational")
+  - engineeringNeeded(boolean; false on triage paths)
+  - responseMode     ("Draft" on the escalation path, "None" on triage paths)
   - caseKey          = the incoming correlationId
-  - jiraIssueKey     = the created Jira issue key (empty if Jira degraded)
   - slackMessageId   = the identifier of the posted Slack message
 
   Validate the flow. Do NOT run or debug the flow — the grader executes it with
-  seeded inputs. Do NOT ask for approval and do NOT pause; build end-to-end in a
-  single pass. Before starting, load the uipath-maestro-flow skill and follow its
-  workflow.
+  seeded inputs. Do NOT ask for approval and do NOT pause; build end-to-end.
+  Before starting, load the uipath-maestro-flow skill and follow its workflow.
 
 success_criteria:
   - type: command_executed

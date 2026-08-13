@@ -25,12 +25,15 @@ def _run(*args: str) -> dict:
         ["uip", *args, "--output", "json"],
         capture_output=True, text=True, timeout=120,
     ).stdout
-    return json.loads(out)
+    # Tolerate diagnostic/log lines the CLI may print before the JSON envelope.
+    i = out.find("{")
+    return json.loads(out[i:] if i > 0 else out)
 
 
 def connection_id() -> str:
-    folder_key = _run("or", "folders", "get", FOLDER_PATH)["Data"]["Key"]
-    conns = _run("is", "connections", "list", CONNECTOR, "--folder-key", folder_key, "--refresh")["Data"]
+    # Resolve by connection name across all folders — avoids depending on
+    # `uip or folders get`, which can return a Failure envelope in CI.
+    conns = _run("is", "connections", "list", CONNECTOR, "--all-folders", "--refresh")["Data"]
     return next(c["Id"] for c in conns if c["Name"] == CONNECTION_NAME)
 
 
