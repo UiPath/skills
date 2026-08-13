@@ -539,13 +539,25 @@ def assert_slack_message_posted(
         if connector_key in t:
             slack_ids.add(n.get("id"))
             continue
+        # Connector-mode HTTP proxy — accept ONLY when it carries real connector
+        # auth (same gate as assert_flow_uses_connector_target): a disconnected
+        # HTTP node with just targetConnector set must not qualify.
         detail = (n.get("inputs") or {}).get("detail") or {}
-        body = detail.get("bodyParameters") or {} if isinstance(detail, dict) else {}
+        if not isinstance(detail, dict):
+            continue
+        body = detail.get("bodyParameters") or {}
+        body = body if isinstance(body, dict) else {}
         target = str((body.get("targetConnector") or body.get("connectorKey") or "")).lower()
-        if t.lower().startswith("core.action.http") and target == connector_key.lower():
+        if (
+            t.lower().startswith("core.action.http")
+            and target == connector_key.lower()
+            and str(body.get("authentication") or "").lower() == "connector"
+            and _non_empty_binding_value(detail.get("connectionId"))
+            and _non_empty_binding_value(detail.get("connectionFolderKey"))
+        ):
             slack_ids.add(n.get("id"))
     if not slack_ids:
-        _fail(f"no {connector_key} connector node found in the flow")
+        _fail(f"no connected {connector_key} node found in the flow")
 
     els = _get_ci(payload, "elementExecutions", "Elements", "elements") or []
     completed = [

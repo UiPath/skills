@@ -85,6 +85,18 @@ def build_seed() -> dict:
             {"escalationPath": "unknown_customer", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
             True,
         ),
+        _case(
+            "missing-domain", r, "MD",
+            {"subject": "Help", "body": "an issue", "senderDomain": ""},
+            {"escalationPath": "missing_domain", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
+            True,
+        ),
+        _case(
+            "multiple-matches", r, "MULTI",
+            {"subject": "Help", "body": "an issue", "customerMatchStatus": "multiple"},
+            {"escalationPath": "multiple_matches", "severity": "informational", "engineeringNeeded": False, "responseMode": "None"},
+            True,
+        ),
     ]
     return {"run_id": r, "cases": cases}
 

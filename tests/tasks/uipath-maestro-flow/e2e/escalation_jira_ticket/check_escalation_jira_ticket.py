@@ -63,18 +63,25 @@ def main() -> None:
 
     conn = jira_is.connection_id()
 
-    # Record every candidate that actually exists in Jira BEFORE the summary
-    # assertion, so post_run teardown deletes them even if verification fails.
-    existing = [(k, f) for k in cands for f in [jira_is.get_issue(conn, k)] if f is not None]
-    if existing:
-        Path(".created_keys").write_text("\n".join(k for k, _ in existing) + "\n")
-
-    match = next((k for k, f in existing if correlation in str(f.get("summary", ""))), None)
-    if not match:
+    # Record ONLY keys proven to belong to this run — an issue whose summary
+    # carries this run's correlationId. This is written before the classification
+    # assertions so teardown still cleans up if a later assertion fails, while
+    # never deleting an unrelated pre-existing issue in the shared CE project
+    # (e.g. if a wrong flow echoed some other CE key into its output).
+    owned = [
+        k
+        for k in cands
+        for f in [jira_is.get_issue(conn, k)]
+        if f is not None and correlation in str(f.get("summary", ""))
+    ]
+    if owned:
+        Path(".created_keys").write_text("\n".join(owned) + "\n")  # this run's ticket(s) only
+    if not owned:
         _fail(
             f"none of {cands} is a Jira issue whose summary contains {correlation!r} — "
             "the flow did not create the expected escalation ticket"
         )
+    match = owned[0]
     print(f"OK: Jira ticket {match} exists and its summary carries {correlation!r}")
 
     # Classification outputs the prompt also requires (e.g. severity=Sev1).

@@ -4,9 +4,10 @@ description: >
   down each branch by seeded inputs. The agent builds a manual-trigger orchestrator
   (the Outlook email-received trigger is not reliably debug-testable — see
   outlook_trigger_inbox / customer_escalation notes) whose branching is input-driven
-  so the grader can steer any path via `flow debug --inputs`. The grader runs five
-  seeded cases — Sev1/Sev2/Sev3 escalations and duplicate/unknown-customer triage,
-  all deterministic from the inputs — and for each verifies the OUTCOME: the run completes on the expected path
+  so the grader can steer any path via `flow debug --inputs`. The grader runs seven
+  seeded cases — Sev1/Sev2/Sev3 escalations and all four triage reasons
+  (missing_domain / unknown_customer / multiple_matches / duplicate), all
+  deterministic from the inputs — and for each verifies the OUTCOME: the run completes on the expected path
   with the expected severity/engineering/responseMode, preserves the correlationId,
   and a real Slack message was posted (escalation alert on the escalation path, triage
   notice on the triage paths) — confirmed independently by deleting the posted message
@@ -18,7 +19,7 @@ tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-nod
 run_limits:
   expected_turns: 80
   max_turns: 200
-  task_timeout: 3600
+  task_timeout: 5400
   turn_timeout: 1800
 
 pre_run:
@@ -100,7 +101,7 @@ success_criteria:
   - type: run_command
     description: "Seeded path cases: each drives its branch and produces the expected outcome; the escalation case actually posts a Slack alert (non-empty message id)"
     command: "python3 $TASK_DIR/check_escalation_orchestrator_paths.py"
-    timeout: 2400
+    timeout: 3000
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
