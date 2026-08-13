@@ -1,3 +1,7 @@
+<!--skill-flavor:flow-integration-ownership:start-->
+This reference covers only the coded-agent scaffold, registration, and Flow integration after the Flow project exists.
+<!--skill-flavor:flow-integration-ownership:end-->
+
 <!--skill-flavor:flow-project-creation:start-->
-If the Flow project does not exist yet, inspect the live ProxyTool schema for `proxy-tools-Solution` and its `CreateProjects` operation, then invoke it with the Flow project type using only schema-declared fields and enum values. After creation succeeds, locate the generated Flow project in the Studio Web workspace/VFS before continuing. Do not run `uip solution init` or `uip maestro flow init`, and do not create or repair solution metadata manually. If the host capability or Flow project type is unavailable, report the gap instead of fabricating a local scaffold.
+If the Flow project does not exist yet, create it by following the [`uipath-maestro-flow`](../../../uipath-maestro-flow/SKILL.md) skill, then resume here.
 <!--skill-flavor:flow-project-creation:end-->

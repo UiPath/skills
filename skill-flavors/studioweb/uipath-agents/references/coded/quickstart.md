@@ -1,5 +1,9 @@
-<!--skill-flavor:flow-project-creation:start-->
-1. **Use the current Studio Web solution and create the Flow project through the host.** Inspect the live ProxyTool schema for `proxy-tools-Solution` and its `CreateProjects` operation, then invoke it with the Flow project type using only schema-declared fields and enum values.
+<!--skill-flavor:scenario-two-ownership:start-->
+Use when the coded agent is tightly coupled to a Flow project in the current Studio Web solution. The [`uipath-maestro-flow`](../../../uipath-maestro-flow/SKILL.md) skill owns Flow project creation; this scenario owns the coded-agent scaffold, registration, and subsequent Flow wiring.
+<!--skill-flavor:scenario-two-ownership:end-->
 
-2. **Locate the generated Flow project.** Inspect the Studio Web workspace/VFS and use the host-exposed project directory and `.flow` entrypoint for all later wiring steps. Do not run `uip solution init` or `uip maestro flow init`; do not create `.uipx`, `project.uiproj`, or generated support files manually. If `CreateProjects` or the Flow project type is unavailable, report the capability gap and stop rather than fabricating a local scaffold.
+<!--skill-flavor:flow-project-creation:start-->
+1. **Create the Flow project if needed.** Follow the [`uipath-maestro-flow`](../../../uipath-maestro-flow/SKILL.md) skill, then continue with its generated Flow project.
+
+2. **Use the generated project context.** Continue the coded-agent steps from the Flow project's current Studio Web solution.
 <!--skill-flavor:flow-project-creation:end-->

@@ -229,7 +229,9 @@ Read the relevant reference file at each step — do not guess.
 
 ## Quick Start: Scenario 2 — In-Solution Coded Agent in a Flow
 
+<!--skill-flavor:scenario-two-ownership:start-->
 Use when the coded agent is tightly coupled to one flow and lives as a sibling folder inside the same solution. The agent is wired to the flow via `--local` registry discovery — no separate Orchestrator deployment for the agent, no separate skill hand-off. **`uipath-agents` owns this scenario end-to-end** — solution scaffolding, flow scaffolding, agent build, registration, and flow wiring all happen here. Do not invoke `uipath-maestro-flow` as a separate skill; run the maestro-flow CLI commands directly from this workflow.
+<!--skill-flavor:scenario-two-ownership:end-->
 
 Execute the following in order, end-to-end, in one pass — do not pause for confirmation between steps.
 
