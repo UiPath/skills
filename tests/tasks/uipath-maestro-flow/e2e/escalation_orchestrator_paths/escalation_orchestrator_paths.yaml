@@ -41,41 +41,45 @@ initial_prompt: |
   customerMatchStatus ("single" | "none" | "multiple"), isDuplicate (boolean),
   correlationId.
 
-  Routing (use Script + Decision/Switch nodes):
-  - If senderDomain is empty → triage (missing domain).
-  - Else branch on customerMatchStatus: "none" → triage (unknown customer);
-    "multiple" → triage (multiple matches); "single" → continue.
-  - If isDuplicate is true → triage (duplicate).
-  - Otherwise classify severity from the inputs:
-      Sev1 = Enterprise tier AND productionDown AND NOT workaroundAvailable
-             (also treat any productionDown with no workaround as Sev1);
-      Sev2 = productionDown AND workaroundAvailable;
-      Sev3 = has production impact but not the above;
-      informational = no production impact and the message is just a question.
-    Decide engineeringNeeded (true for Sev1/Sev2) and responseMode = "Draft".
-  - informational → triage (light).
-  - Sev1/Sev2/Sev3 → escalation path.
+  Keep the flow small. Put ALL routing logic in ONE Script node, then use a single
+  Decision plus two Slack nodes — do not build a large graph of switches and
+  per-reason handler nodes.
 
-  Slack (REQUIRED, real connector): post a Slack "Send Message to channel" alert
-  on the escalation path, and a Slack triage notice on the triage paths (both to
-  the same channel). Use the Slack connection named "is-sandboxes", channel
-  "coding-agent-testing", send as `user`. Wire the Slack node's error port to a
-  small handler so a Slack failure degrades gracefully. (Creating a Jira ticket or
-  uploading to Drive on the escalation path is OPTIONAL — not required for this
-  task.)
+  1. A single Script node "classify" reads the inputs and returns:
+     - escalationPath:
+         senderDomain empty                      -> "missing_domain"
+         else customerMatchStatus == "none"      -> "unknown_customer"
+         else customerMatchStatus == "multiple"  -> "multiple_matches"
+         else isDuplicate is true                -> "duplicate"
+         else (no production impact AND the subject/body reads like a question)
+                                                 -> "informational"
+         else                                    -> "escalation"
+     - severity: only for "escalation" classify Sev1/Sev2/Sev3 —
+         Sev1 = Enterprise tier AND productionDown AND NOT workaroundAvailable
+                (also any productionDown with no workaround);
+         Sev2 = productionDown AND workaroundAvailable;
+         Sev3 = otherwise. For every non-"escalation" path, severity = "informational".
+     - engineeringNeeded: true for Sev1/Sev2, otherwise false.
+     - responseMode: "Draft" when escalationPath == "escalation", else "None".
+  2. A Decision routes on whether escalationPath == "escalation".
+  3. escalation branch -> post a Slack "Send Message to channel" alert.
+     other (triage) branch -> post a Slack "Send Message to channel" triage notice.
+     For both, use the Slack connection named "is-sandboxes", channel
+     "coding-agent-testing", send as `user`, and include escalationPath +
+     correlationId in the message. Wire each Slack node's error port to a small
+     handler so a Slack failure degrades gracefully.
+  4. End node(s) map these `out` variables (on every reachable End):
+     - escalationPath   (from the classify script)
+     - severity
+     - engineeringNeeded (boolean)
+     - responseMode
+     - caseKey          = the incoming correlationId
+     - slackMessageId   = the id/ts of the posted Slack message
 
-  Map these `out` variables (on every reachable End node):
-  - escalationPath   ("escalation" or the triage reason: missing_domain /
-                      unknown_customer / multiple_matches / duplicate / informational)
-  - severity         (Sev1 / Sev2 / Sev3 / informational; on triage paths where
-                      severity was not classified, map "informational")
-  - engineeringNeeded(boolean; false on triage paths)
-  - responseMode     ("Draft" on the escalation path, "None" on triage paths)
-  - caseKey          = the incoming correlationId
-  - slackMessageId   = the identifier of the posted Slack message
+  Salesforce/Jira/Drive are NOT part of this task — the match status is an input.
 
   Validate the flow. Do NOT run or debug the flow — the grader executes it with
-  seeded inputs. Do NOT ask for approval and do NOT pause; build end-to-end.
+  seeded inputs. Do NOT ask for approval and do NOT pause; build the flow directly.
   Before starting, load the uipath-maestro-flow skill and follow its workflow.
 
 success_criteria:
