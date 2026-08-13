@@ -23,10 +23,8 @@ If `npm install -g` fails with a permission error, prompt the user to re-run wit
 
 | Installed version | Command prefix | Example |
 | --- | --- | --- |
-<!--skill-flavor:flow-init-prefix-examples:start-->
 | **≥ 0.3.4** | `uip maestro flow` | `uip maestro flow init MyProject` |
 | **< 0.3.4** | `uip flow` | `uip flow init MyProject` <!-- uip-check-skip --> |
-<!--skill-flavor:flow-init-prefix-examples:end-->
 
 ```bash
 MIN_VERSION="0.3.4"
