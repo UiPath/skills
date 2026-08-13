@@ -32,12 +32,6 @@ Studio Web supplies the target solution and owns its project scaffolding and met
 If `CreateProjects` or the Flow project type is unavailable, report the capability gap and await user direction.
 <!--skill-flavor:project-creation:end-->
 
-<!--skill-flavor:greenfield-registry-transition:start-->
-## Step 3 — Refresh the registry **[T1 — chained tail of Step 2]**
-
-This is already the last segment of the [canonical T1 chain](#canonical-t1-chain--issue-this-as-one-bash-call) above. Standalone:
-<!--skill-flavor:greenfield-registry-transition:end-->
-
 <!--skill-flavor:greenfield-end-node-discovery:start-->
 **Parallel `registry get`** — in the same T1 assistant message, emit one separate `Bash` per OOTB node type whose definition you'll inline in T2. Inspect the host-generated `.flow`; if it does not contain `core.control.end`, fetch that definition before Step 4.
 <!--skill-flavor:greenfield-end-node-discovery:end-->
