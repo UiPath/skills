@@ -64,6 +64,16 @@ on:
 
 # No concurrency group: this is a manual, on-demand workflow — allow any number
 # of runs (e.g. the same task across claude / codex / antigravity) at once.
+
+# Exempt the first-party `coder-eval` wheel from safe-chain's
+# minimum-package-age suppression so a same-day pin in
+# tests/.coder-eval-version (or a fresh dev wheel passed via
+# `coder_eval_version`) still resolves — see smoke-skills.yml for the full
+# rationale. Workflow-level so both the Linux and Windows install steps, and
+# any job added later, inherit it.
+env:
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
+
 jobs:
   partition:
     runs-on: uipath-ubuntu-latest

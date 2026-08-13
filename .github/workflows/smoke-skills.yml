@@ -14,6 +14,19 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Workflow-level, not per-job: every job that installs the pinned coder-eval
+# wheel needs this, and a job added later inherits it automatically instead of
+# silently regressing to "no version found".
+#
+# safe-chain's minimum-package-age check suppresses freshly published versions
+# during metadata resolution, so a same-day `coder-eval` pin in
+# tests/.coder-eval-version resolves to "no version found" and the install step
+# fails. coder_eval is a first-party internal package from the Azure Artifacts
+# feed, not public-registry supply-chain surface, so exclude it from the age
+# check only. Every other safe-chain check still applies.
+env:
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
+
 jobs:
   detect:
     runs-on: uipath-ubuntu-latest
