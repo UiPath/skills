@@ -5,6 +5,11 @@ case (`solution download` → JSON edits → `solution upload`) that lives prima
 the Studio Web designer. These behaviors are invisible in greenfield builds and are
 not covered by the plugin docs. Symptoms are listed first so this file is greppable.
 
+Scope: designer/runtime behaviors of Case Management itself — durable semantics, not
+tool bugs. The one CLI-version-sensitive note (§1, validate/debug format ceiling) is
+explicitly version-scoped; re-verify it after a CLI upgrade and delete it once the
+local transform accepts the server format.
+
 ## 1. Server file format is NOT the skill's authored format
 
 A case that has been saved by the Studio Web designer round-trips at schema version
@@ -25,12 +30,14 @@ triggers) needs a `layout.nodes` entry. Adding a new stage/task without one cras
 the canvas with `Cannot read properties of undefined (reading 'x')`. Either add
 entries for every new node, or empty the whole block.
 
-**CLI incompatibility.** `uip maestro case validate` / `debug` (local transform,
-migration ceiling 16) **reject** the server's own v29/v30 format ("JSON is not a
-valid Case Management JSON of any previous version"). To run them against a
-round-tripped case, transiently downgrade a COPY: set `version` to `27.0.0`, flip
-`selectedStageIds` → `selectedStageId` (single string), drop `edgeIds`, set
-`edges: []` — and never upload that copy's format back over the designer's.
+**CLI incompatibility (version-scoped: verified on CLI 1.200.x, local migration
+ceiling 16 — re-check after upgrading and delete this note once fixed).**
+`uip maestro case validate` / `debug` reject the server's own v29/v30 format
+("JSON is not a valid Case Management JSON of any previous version"). To run them
+against a round-tripped case, transiently downgrade a COPY: set `version` to
+`27.0.0`, flip `selectedStageIds` → `selectedStageId` (single string), drop
+`edgeIds`, set `edges: []` — and never upload that copy's format back over the
+designer's.
 
 ## 2. Task display names reject `:` and `.`
 
@@ -116,33 +123,3 @@ Consequences:
   quietly rewrites the task's I/O to the donor app's schema. Always keep
   `action-schema.json` in sync with the app's real interface, and check the
   resource file after publishing a new app version.
-
-## 7. `solution resources refresh` updates but never creates
-
-Refresh will not create CodedAction/package resource files for a newly published
-app (and it fails the whole run if an app resource exists without its package pin:
-`Resource dependencies not found in payload or solution`). To add a new app to a
-solution: copy an existing CodedAction resource + package pin as templates — swap
-name/appSystemName/actionSchema/version, mint a fresh resource key GUID, and point
-the package pin's `files[].url` at the **target tenant's** DownloadPackage URL.
-After any cross-tenant copy, `grep -rl "<source-tenant-host>" resources/` must
-return empty before upload — inherited feed URLs render as "Resource is missing in
-this environment".
-
-## 8. CLI runtime limitations (as of 1.200.x)
-
-- `uip maestro case process run` requires `--release-key` in addition to the
-  process key; `case process list` returns HTTP 400 on personal-workspace folders.
-- Designer and CLI debug sessions are **ephemeral** — they do not create/refresh a
-  reusable Orchestrator release. Debug packages found in a Debug_* folder feed may
-  be days stale; decode the build time from the version suffix
-  (seconds since 0001-01-01) before trusting one.
-- **Concurrent CLI debug sessions fail** (`fetch failed` at session start) and a
-  debug CLI process dying cancels its run. Run scenario batches sequentially.
-- `solution pack` + `publish` of a designer-authored case solution can fail
-  server-side package processing with `State: Failed` and no diagnostics — making
-  `solution deploy` unavailable; the debug pipeline is then the only way to run
-  the current definition programmatically.
-- Scheduled processes run the *package*, not the solution — after changing an API
-  workflow, `or packages upload` a new version and `or processes update-version`,
-  or the schedule keeps running the old build.

@@ -170,7 +170,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Publish to Studio 
 | Plan tasks from sdd.md | [references/planning.md](references/planning.md) |
 | Execute tasks.md into a case | [references/implementation.md](references/implementation.md) |
 | Edit an existing caseplan.json (targeted edits) | [references/brownfield.md](references/brownfield.md) |
-| Edit a Studio Web round-tripped case (server format, compiled bpmn, output propagation, designer save behaviors, CLI limits) | [references/studio-web-brownfield-gotchas.md](references/studio-web-brownfield-gotchas.md) |
+| Edit a Studio Web round-tripped case (server format, compiled bpmn, output propagation, designer save behaviors) | [references/studio-web-brownfield-gotchas.md](references/studio-web-brownfield-gotchas.md) |
 | Phase 2 → 3 → 4 → 5 → 6 → 7 split + hard stop contracts | [references/phased-execution.md](references/phased-execution.md) |
 | Cross-cutting edit mechanics (IDs, anchoring, batch contract) | [references/case-editing-operations.md](references/case-editing-operations.md) |
 | Case JSON schema | [references/case-schema.md](references/case-schema.md) |
