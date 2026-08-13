@@ -32,7 +32,7 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 |---|---|---|---|
 | **2 — Prototyping** | Solution/project, structure, triggers, task shapes, conditions in all 4 scopes, SLA + escalation; connector-bound rules use canonical stubs | `caseplan.json` emitted; `--skeleton-v2` preview validate attempted, with unsupported-flag fallback to `--skeleton` | Pause-at-preview runs: `Publish for review` / `Skip publish and continue` / `Abort`. Straight-through runs: none — counts line, continue (Rule 11) |
 | **3 — Implementation** | Connector task schemas, task I/O value binding, resolved connector-rule stub upgrades | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
-| **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
+| **4 — Validate** | Run authoritative `uip maestro case validate`, summarize `build-issues.md` (journal already on disk) | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Skip to Debug` |
 | **6 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Continue to publish` |
 | **7 — Publish to Orchestrator** | Optional `solution pack` + `solution publish` to the tenant solution feed | `.zip` packed; publish result printed | `Publish to Orchestrator` / `Done` |
@@ -197,9 +197,11 @@ Up to **3 validation retries** per session — each retry MUST be preceded by a 
 - `Pause for manual edit` — exit skill mid-flight; user edits `caseplan.json` directly and re-runs skill.
 - `Abort` — exit; dump `build-issues.md`; leave artifacts in place.
 
-### Dump issue log
+### Summarize the issue log
 
-After successful validate, write issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md), grouped by plugin with summary index. Source of truth for completion report. Write even if zero issues logged (confirms clean build).
+`tasks/build-issues.md` already exists — it is flushed at every section boundary from Phase 2 onward per [`plugins/logging/impl-json.md` § Flush](plugins/logging/impl-json.md). After successful validate, flush the final section's buffer, then read the journal back and fill the grouped summary block. Source of truth for the completion report; the counts come from the file, not from reasoning.
+
+If the file is absent here the incremental flush was skipped — reconstruct from on-disk artifacts and stamp the `NOTE:` line per [§ Recovery](plugins/logging/impl-json.md).
 
 On Phase 4 success → proceed to Phase 5.
 

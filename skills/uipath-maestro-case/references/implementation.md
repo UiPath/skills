@@ -23,6 +23,7 @@ Every plugin uses direct JSON writes via its `impl-json.md`. Cross-cutting mecha
    - **<10 T-entries** — N Edits in sequence, one per T-entry. Skip the re-Read between sibling Edits.
    - **≥10 T-entries** — single whole-section Edit or Write replacing the section's container (e.g., `schema.nodes`, a stage's `data.tasks`). Compose the complete post-section state in reasoning from the section-entry Read, then emit one write. Untouched siblings (other sections, root fields, unrelated nodes) MUST be copied verbatim — drop nothing.
 3. **One validate** at section boundary.
+4. **One issue-log flush** at the same boundary — append the section's buffered issues to `tasks/build-issues.md` per [`plugins/logging/impl-json.md` § Flush](plugins/logging/impl-json.md), then clear the buffer. The first flush creates the file; later flushes append to its Journal table. **Flush even when the section produced zero issues** — after the first section the file must exist, and its existence is what proves the log survived the build.
 
 TaskUpdate items keyed by T-number are the audit trail — mark each `in_progress` before composing the entry's mutation, `completed` after the write returns success. The audit trail stays T-by-T even when the file diff collapses to one whole-section write.
 
@@ -49,12 +50,14 @@ Full contract — recovery, tool primitive selection (Edit default, whole-sectio
 
 ## Issue Log — Initialize Before Step 6
 
-Before any build step, initialize an empty issue list **in the agent's reasoning** (not as a file, not via subprocess). All plugins append to this shared list during execution. Dump to `tasks/build-issues.md` via the Write tool after Step 12. See [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md) for the entry format, severity levels, and file schema.
+Before any build step, initialize an empty issue buffer **in the agent's reasoning** (not as a file, not via subprocess). All plugins append to it during the current section, and **the buffer is flushed to `tasks/build-issues.md` at every section boundary, then cleared** — it is NOT a whole-build accumulator. See [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md) for the entry format, severity levels, flush mechanics, and file schema.
 
 ```text
-# pseudocode — kept in the agent's reasoning, not on disk
-issues = []  # shared across all steps
+# pseudocode — per-section buffer, flushed at each section boundary
+issues = []
 ```
+
+> **Why incremental.** A list held in reasoning for the whole build is lost to context pressure before it is ever written, and no Step 12 check reads the log. Measured on two independent runs of the same task: `claude-sonnet-5` (52.4 min, 39 placeholder tasks, 120 `<UNRESOLVED>` markers) and `gpt-5.6-terra` (7.2 min, 23 placeholder tasks, 0 markers) — **neither wrote `build-issues.md` at all**, and both looked like builds a reviewer would accept. Flushing per section bounds worst-case loss to one section and rides the validate seam that already exists there.
 
 ---
 
@@ -324,9 +327,13 @@ Authoritative validation. Full contract — command, retry policy, AskUserQuesti
 
 Run validate per [phased-execution.md § Phase 4](phased-execution.md#phase-4--validate). On success: proceed to Step 12.1. On 3rd failure: hard-stop prompt per the same section.
 
-## Step 12.1 — Dump issue log
+## Step 12.1 — Summarize the issue log
 
-Write issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md). On Phase 4 success → proceed to Phase 5.
+The journal has been on disk since the first section boundary; this step does **not** create it. Flush any buffered issues from the final section, then read the journal back and write the grouped counts into the summary block per [`plugins/logging/impl-json.md` § Summary](plugins/logging/impl-json.md). Counts come from the file, not from reasoning — that is the point of flushing incrementally.
+
+If `tasks/build-issues.md` is absent here, the incremental flush was skipped: reconstruct from on-disk artifacts and stamp the `NOTE:` line per [§ Recovery](plugins/logging/impl-json.md). A build carrying `<UNRESOLVED>` markers or placeholder tasks must not reach Phase 5 with no log.
+
+On Phase 4 success → proceed to Phase 5.
 
 ---
 
