@@ -1,8 +1,5 @@
-<!--skill-flavor:flow-prefix-examples:start-->
-| **≥ 0.3.4** | `uip maestro flow` | `uip maestro flow validate MyProject.flow` |
-| **< 0.3.4** | `uip flow` | `uip flow validate MyProject.flow` <!-- uip-check-skip --> |
-<!--skill-flavor:flow-prefix-examples:end-->
+<!--skill-flavor:cli-reference-content:start-->
+# Flow tooling in Studio Web
 
-<!--skill-flavor:author-login-boundary:start-->
-| **Author** | Studio Web owns authentication for project creation through `CreateProjects`; local `validate`, `format`, OOTB registry queries, `Edit` / `Write` edits, and planning work without `uip login` |
-<!--skill-flavor:author-login-boundary:end-->
+Use the Flow capabilities exposed by the Studio Web host. Inspect each live tool schema before invocation and treat the host workspace/VFS as the source of truth for project state.
+<!--skill-flavor:cli-reference-content:end-->

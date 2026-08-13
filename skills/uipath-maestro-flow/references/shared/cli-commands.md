@@ -1,10 +1,10 @@
+<!--skill-flavor:cli-reference-content:start-->
 # uip maestro flow — CLI Command Reference
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
 > For node and edge commands (`node add/remove/list/configure`, `edge add/remove/list`), see the [Author CLI editing strategy](../author/references/editing-operations-cli.md). This file covers project setup, validation, registry, debug, and publishing commands.
 
-<!--skill-flavor:project-creation:start-->
 ## uip maestro flow init
 
 Scaffold a new Flow project directory. Outside a solution, `flow init` auto-scaffolds `<ProjectName>Solution/` and nests the project in it. **Prefer creating the solution first** so its name matches the project name (see the [Author greenfield journey — Step 2](../author/references/greenfield.md)).
@@ -32,7 +32,6 @@ uip solution projects add \
 ```
 
 Creates `<ProjectName>/` with `project.uiproj`, `<ProjectName>.flow`, `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` inside the solution directory.
-<!--skill-flavor:project-creation:end-->
 
 ## uip maestro flow validate
 
@@ -372,3 +371,4 @@ See the relevant node guide in `nodes/` for connector CLI commands and the confi
 ## Global options (all commands)
 
 All `uip` commands support `--output json|yaml|table` and `--help`. Run any command with `--help` to discover all available options.
+<!--skill-flavor:cli-reference-content:end-->
