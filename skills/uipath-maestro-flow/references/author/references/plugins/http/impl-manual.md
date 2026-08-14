@@ -13,6 +13,8 @@ uip maestro flow node add <ProjectName>.flow core.action.http.v2 \
   --label "<HTTP node label>" --output json
 ```
 
+> **Inside a loop body?** Add `--parent <LOOP_NODE_ID>` to set `parentId`. Without it, the node runs outside the loop context and outputs are null. See [loop/impl.md](../loop/impl.md).
+
 The CLI copies the manifest into `definitions[]`, adds the node instance, registers `variables.nodes`, and inserts a `layout.nodes` placeholder — byte-for-byte from the registry. Save the returned `<nodeId>` — Step 2 reuses it. Leave `inputs` empty; Step 2 populates `inputs.detail`. Do not hand-author the definition — see [impl.md — Add the node](impl.md#add-the-node).
 
 ## Step 2 — Configure the node
