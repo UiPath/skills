@@ -27,12 +27,15 @@ from _shared.flow_check import (  # noqa: E402
     assert_connector_error_handlers,
     assert_connector_send_identity,
     assert_decision_branches_reach,
+    assert_distinct_branch_ends,
     assert_flow_uses_connector_target,
     assert_named_equals,
     assert_node_type_executed,
     assert_slack_message_posted,
     completed_connector_node_ids,
     completed_node_ids_of_type,
+    find_node_output_value,
+    normalized,
     run_debug,
 )
 
@@ -62,6 +65,25 @@ def verify_case(case: dict) -> tuple:
             expected_channel=SLACK_CHANNEL,
             must_contain=case["inputs"]["correlationId"],
             must_contain_loose=[case["expected"]["escalationPath"]],
+        )
+    # The prompt requires ALL routing logic in ONE Script node. Bind the core
+    # classification (escalationPath + severity) to a single EXECUTED Script node:
+    # a flow that computes routing in Decision/End expressions with no Script, or
+    # splits escalationPath and severity across two nodes, has no single Script
+    # carrying both and fails here. (engineeringNeeded/responseMode are trivial
+    # derivations already verified as named outs above.)
+    script_nodes = completed_node_ids_of_type(payload, "script")
+    ep, sv = case["expected"]["escalationPath"], case["expected"]["severity"]
+    classifier = next(
+        (nid for nid in sorted(n for n in script_nodes if n)
+         if normalized(find_node_output_value(payload, "escalationPath", node_ids={nid})) == normalized(ep)
+         and normalized(find_node_output_value(payload, "severity", node_ids={nid})) == normalized(sv)),
+        None,
+    )
+    if classifier is None:
+        raise SystemExit(
+            f"FAIL: {case['name']}: no single executed Script computed both escalationPath "
+            f"({ep!r}) and severity ({sv!r}) — the prompt requires one classifier Script"
         )
     # The task is tagged node:decision: routing must go through a Decision that
     # actually executed — a disconnected Decision or a Script->Slack shortcut fails.
@@ -123,6 +145,10 @@ def main() -> None:
     assert_decision_branches_reach(
         escalation_nodes, triage_nodes, executed_decision_ids=routing_decisions
     )
+
+    # The prompt requires TWO End nodes — one per branch. Each Slack branch must
+    # reach its OWN End; a flow that merges both sends into a single shared End fails.
+    assert_distinct_branch_ends(escalation_nodes, triage_nodes)
     print(
         f"OK: a Decision routes escalation vs triage through separate branches "
         f"(escalation={sorted(escalation_nodes)}, triage={sorted(triage_nodes)})"

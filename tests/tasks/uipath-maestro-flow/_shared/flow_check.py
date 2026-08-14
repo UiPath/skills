@@ -830,29 +830,37 @@ def assert_connector_error_handlers(
         # into either just invokes another fallible connector, not a real handler.
         return _is_connector_node(nodes.get(nid, {}) or {})
 
+    # EVERY branch of the handler must degrade gracefully: connector-free, acyclic,
+    # and terminating. A DFS with GRAY/BLACK coloring rejects (a) any connector on
+    # the path (can fault again), and (b) any cycle — a back-edge to a GRAY node is
+    # a loop that never completes. Returns True only when all reachable paths end at
+    # a terminating node, so a fork to End + a non-connector cycle no longer passes.
+    _GRAY, _BLACK = 1, 2
+
     def reaches_terminating(start: str) -> bool:
-        # The handler's ENTIRE reachable subgraph must be connector-free and reach a
-        # terminating node. If ANY reachable branch enters a connector it can fault
-        # again instead of degrading gracefully, so the whole handler is rejected —
-        # a mixed handler (one branch to End, another into a connector) does not pass.
-        seen: set = set()
-        q = deque([start])
-        saw_terminating = False
-        while q:
-            n = q.popleft()
-            if n in seen:
-                continue
-            seen.add(n)
+        color: dict = {}
+
+        def dfs(n: str) -> bool:
             if is_connector(n):
-                return False  # any connector branch can fault → not graceful
+                return False  # connector branch can fault → not graceful
+            color[n] = _GRAY
+            outs = [tgt for _, tgt in adj.get(n, []) if tgt]
             t = str(nodes.get(n, {}).get("type", "")).lower()
-            outs = adj.get(n, [])
-            if "end" in t or not outs:  # End node, or a non-connector dead-end handler
-                saw_terminating = True
-            for _, tgt in outs:
-                if tgt:
-                    q.append(tgt)
-        return saw_terminating
+            if "end" in t or not outs:  # End node, or non-connector dead-end handler
+                color[n] = _BLACK
+                return True
+            for tgt in outs:
+                c = color.get(tgt, 0)
+                if c == _GRAY:
+                    return False  # back-edge → cycle: this branch never terminates
+                if c == _BLACK:
+                    continue  # already validated as gracefully terminating
+                if not dfs(tgt):
+                    return False
+            color[n] = _BLACK
+            return True
+
+        return dfs(start)
 
     bad = []
     for sid in sorted(nid for nid in node_ids if nid):
@@ -992,6 +1000,55 @@ def assert_decision_branches_reach(
         f"no {decision_type!r} routes {sorted(a)} and {sorted(b)} through separate "
         "branches; the distinct Slack nodes are not the Decision's two outgoing paths"
     )
+
+
+def assert_distinct_branch_ends(
+    branch_a_nodes: set,
+    branch_b_nodes: set,
+    *,
+    end_type: str = "core.control.end",
+    project_glob: str = "**/project.uiproj",
+) -> None:
+    """Assert each branch reaches its OWN End node — the prompt's two-End-nodes
+    requirement. From the ``branch_a``/``branch_b`` nodes (e.g. the escalation vs
+    triage Slack sends) BFS downstream to reachable ``end_type`` nodes; require an
+    End reachable from A but not B AND one reachable from B but not A. A flow that
+    merges both branches into a single shared End (then conditionally maps the
+    timestamp) fails here."""
+    from collections import defaultdict, deque
+
+    flow = _load_flow(project_glob)
+    edges = flow.get("edges") or []
+    nodes = flow.get("nodes") or []
+    end_ids = {n.get("id") for n in nodes if end_type in str(n.get("type", ""))}
+    adj = defaultdict(list)
+    for e in edges:
+        adj[e.get("sourceNodeId")].append(e.get("targetNodeId"))
+
+    def reachable_ends(starts: set) -> set:
+        seen: set = set()
+        q = deque(s for s in starts if s)
+        found: set = set()
+        while q:
+            n = q.popleft()
+            if n in seen:
+                continue
+            seen.add(n)
+            if n in end_ids:
+                found.add(n)
+            for t in adj.get(n, []):
+                if t:
+                    q.append(t)
+        return found
+
+    ends_a = reachable_ends(set(branch_a_nodes))
+    ends_b = reachable_ends(set(branch_b_nodes))
+    if not (ends_a - ends_b) or not (ends_b - ends_a):
+        _fail_with_capture(
+            "escalation and triage branches do not each reach their OWN End node "
+            f"(escalation-reachable ends={sorted(ends_a)}, triage-reachable ends={sorted(ends_b)}); "
+            "the prompt requires two branch-specific End nodes, not a single merged End"
+        )
 
 
 def completed_connector_node_ids(
