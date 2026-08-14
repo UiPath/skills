@@ -24,9 +24,9 @@ while _directory != os.path.dirname(_directory) and not os.path.isdir(
 sys.path.insert(0, _directory)
 
 from _shared.flow_check import (  # noqa: E402
-    assert_flow_has_node_type,
     assert_flow_uses_connector_target,
     assert_named_equals,
+    assert_node_type_executed,
     assert_slack_message_posted,
     run_debug,
 )
@@ -39,8 +39,11 @@ def verify_case(case: dict) -> None:
     for name, expected in case["expected"].items():
         assert_named_equals(payload, name, expected)
     if case.get("expect_slack"):
-        # Real Slack ts (not a placeholder) — every path posts a message.
+        # Real Slack ts, tied to an executed Slack node's own response.
         assert_slack_message_posted(payload, "slackMessageId")
+    # The task is tagged node:decision: routing must go through a Decision that
+    # actually executed — a disconnected Decision or a Script->Slack shortcut fails.
+    assert_node_type_executed(payload, "core.logic.decision")
     print(f"OK: {case['name']} produced the expected outcome"
           + (" + Slack message posted" if case.get("expect_slack") else ""))
 
@@ -48,9 +51,6 @@ def verify_case(case: dict) -> None:
 def main() -> None:
     # The escalation alert must go through the real Slack connector.
     assert_flow_uses_connector_target(SLACK_KEY)
-    # The task is tagged node:decision and requires routing through a Decision —
-    # a flow that wires the classify Script straight to Slack must not pass.
-    assert_flow_has_node_type(["core.logic.decision"])
 
     seed_path = Path("seed.json")
     if not seed_path.is_file():

@@ -35,7 +35,7 @@ seed = {
         "isDuplicate": False,
         "correlationId": correlation,
     },
-    "expected": {"severity": "Sev1"},
+    "expected": {"severity": "Sev1", "caseKey": correlation},
 }
 Path("seed.json").write_text(json.dumps(seed, indent=2) + "\n", encoding="utf-8")
 print(f"OK: wrote seed (correlationId={correlation}, project={jira_is.PROJECT_KEY}, issuetype={jira_is.ISSUETYPE_ID})")

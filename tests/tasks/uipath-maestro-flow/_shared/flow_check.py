@@ -572,7 +572,53 @@ def assert_slack_message_posted(
             f"(slack nodes {sorted(i for i in slack_ids if i)}); ts {text} did "
             "not come from an executed Slack send"
         )
+
+    # Tie the mapped ts to an executed Slack node's OWN response. The runtime
+    # surfaces each node's output at globals["<nodeId>.output"]; a real send's
+    # response carries its ``ts``. If any executed Slack node exposes a ts, the
+    # mapped slackMessageId must be one of them — so executing a Slack node while
+    # mapping a different hard-coded ts is rejected.
+    gvars = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
+    node_ts: set = set()
+    for e in completed:
+        nid = _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId")
+        out = gvars.get(f"{nid}.output") if isinstance(gvars, dict) else None
+        for leaf in _leaves(out):
+            if isinstance(leaf, str) and _SLACK_TS_RE.match(leaf.strip()):
+                node_ts.add(leaf.strip())
+    if node_ts and text not in node_ts:
+        _fail_with_capture(
+            f"slackMessageId {text} does not match any executed Slack node's "
+            f"response ts {sorted(node_ts)}; the mapped ts was not produced by the "
+            "executed send"
+        )
     return text
+
+
+def assert_node_type_executed(
+    payload: dict, type_hint: str, *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Assert at least one flow node whose ``type`` contains ``type_hint`` has a
+    ``Completed`` ``elementExecution`` in this debug run — i.e. the node type is
+    actually on the executed path, not merely present-but-disconnected in the
+    source. Complements :func:`assert_flow_has_node_type` (source-only)."""
+    ids = {
+        n.get("id")
+        for n in _iter_flow_nodes(project_glob)
+        if type_hint in str(n.get("type", ""))
+    }
+    if not ids:
+        _fail(f"no node of type {type_hint!r} in the flow")
+    els = _get_ci(payload, "elementExecutions", "Elements", "elements") or []
+    if not any(
+        _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId") in ids
+        and str(_get_ci(e, "status", "Status")).lower() == "completed"
+        for e in els
+    ):
+        _fail_with_capture(
+            f"no {type_hint!r} node executed in the debug trace (nodes {sorted(i for i in ids if i)}); "
+            "it is present in the source but not on the executed path"
+        )
 
 
 def read_flow_input_vars(project_dir: str) -> list[str]:

@@ -88,7 +88,12 @@ def main() -> None:
     match = owned[0]
     print(f"OK: Jira ticket {match} exists and its summary carries {correlation!r}")
 
-    # Classification outputs the prompt also requires (e.g. severity=Sev1).
+    # Require the flow to actually EXPOSE the created key as jiraIssueKey (End
+    # mapping present), not just create the ticket — harvesting the key from raw
+    # debug text must not substitute for the required output.
+    assert_named_equals(payload, "jiraIssueKey", match)
+
+    # Named classification/correlation outputs the prompt requires (severity, caseKey).
     for name, expected in (seed.get("expected") or {}).items():
         assert_named_equals(payload, name, expected)
 
