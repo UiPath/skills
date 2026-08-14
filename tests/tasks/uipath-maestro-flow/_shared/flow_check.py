@@ -653,6 +653,70 @@ def assert_node_type_executed(
         )
 
 
+def _load_flow(project_glob: str) -> dict:
+    """Load the single .flow next to the matched project.uiproj."""
+    proj = _find_project(project_glob)
+    flows = glob.glob(os.path.join(proj, "*.flow"))
+    if not flows:
+        _fail(f"no .flow file under {proj}")
+    return json.loads(open(flows[0], encoding="utf-8").read())
+
+
+def assert_decision_branches_reach(
+    branch_a_targets: set,
+    branch_b_targets: set,
+    *,
+    decision_type: str = "core.logic.decision",
+    project_glob: str = "**/project.uiproj",
+) -> None:
+    """Assert some ``decision_type`` node has TWO distinct outgoing ports whose
+    downstream reach separates ``branch_a_targets`` from ``branch_b_targets`` —
+    i.e. the Decision itself routes to the two target groups (all A reachable from
+    one port, all B from another, with no cross-contamination). Proves the two
+    groups are the Decision's branches, not just nodes that happened to fire on
+    different cases behind a cosmetic always-true Decision."""
+    from collections import defaultdict, deque
+
+    flow = _load_flow(project_glob)
+    edges = flow.get("edges") or []
+    nodes = flow.get("nodes") or []
+    decisions = [n.get("id") for n in nodes if decision_type in str(n.get("type", ""))]
+    if not decisions:
+        _fail(f"no {decision_type!r} node in the flow")
+
+    adj = defaultdict(list)
+    for e in edges:
+        adj[e.get("sourceNodeId")].append((e.get("sourcePort"), e.get("targetNodeId")))
+
+    def reach(start: str) -> set:
+        seen: set = set()
+        q = deque([start])
+        while q:
+            n = q.popleft()
+            if n in seen:
+                continue
+            seen.add(n)
+            for _, t in adj.get(n, []):
+                q.append(t)
+        return seen
+
+    a, b = set(branch_a_targets), set(branch_b_targets)
+    for d in decisions:
+        port_reach = defaultdict(set)
+        for port, tgt in adj.get(d, []):
+            port_reach[port].update(reach(tgt))
+        for pa, ra in port_reach.items():
+            if not a <= ra:
+                continue
+            for pb, rb in port_reach.items():
+                if pb != pa and b <= rb and not (a & rb) and not (b & ra):
+                    return  # clean two-branch separation via this Decision
+    _fail_with_capture(
+        f"no {decision_type!r} routes {sorted(a)} and {sorted(b)} through separate "
+        "branches; the distinct Slack nodes are not the Decision's two outgoing paths"
+    )
+
+
 def completed_connector_node_ids(
     payload: dict, connector_key: str, *, project_glob: str = "**/project.uiproj"
 ) -> set:

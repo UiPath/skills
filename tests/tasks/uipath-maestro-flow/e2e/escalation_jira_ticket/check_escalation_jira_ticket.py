@@ -19,6 +19,7 @@ import glob
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -28,6 +29,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))  # …/uipath-maestro
 from _shared.flow_check import (  # noqa: E402
     assert_named_equals,
     collect_outputs,
+    completed_connector_node_ids,
     get_last_debug_raw,
     run_debug,
 )
@@ -55,8 +57,34 @@ def main() -> None:
     # whole flow on a transient poll error would create a duplicate ticket that
     # this checker (deriving keys from the final attempt) wouldn't see or clean
     # up. One attempt only; a genuine transient failure fails the run cleanly.
-    payload = run_debug(inputs=seed["inputs"], timeout=480, retries=1)
+    try:
+        payload = run_debug(inputs=seed["inputs"], timeout=480, retries=1)
+    except subprocess.TimeoutExpired as exc:
+        # The Create Issue node may have completed before the debug poll timed
+        # out. This connection is curated single-record (no JQL search to
+        # discover the key), so best-effort: scan the partial CLI output for a
+        # project-scoped key and record it so teardown deletes it anyway.
+        partial = "".join(
+            s.decode() if isinstance(s, bytes) else (s or "")
+            for s in (exc.stdout, exc.stderr)
+        )
+        keys = list(dict.fromkeys(re.findall(rf"\b{re.escape(project)}-\d+\b", partial)))
+        if keys:
+            Path(".created_keys").write_text("\n".join(keys) + "\n")
+        _fail(
+            f"flow debug timed out after {exc.timeout}s"
+            + (f"; recorded {keys} for teardown" if keys else "")
+        )
     print("OK: flow debug completed")
+
+    # Execution evidence: the Jira Create node must have actually executed in the
+    # debugged flow. A disconnected Jira node with a hard-coded key (issue created
+    # at authoring time) has no Completed elementExecution and fails here.
+    if not completed_connector_node_ids(payload, JIRA_KEY):
+        _fail(
+            f"no {JIRA_KEY} node completed in the debug trace — the debugged flow "
+            "did not execute the Create Issue activity"
+        )
 
     cands = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
     cands += re.findall(rf"\b{re.escape(project)}-\d+\b", get_last_debug_raw() or "")

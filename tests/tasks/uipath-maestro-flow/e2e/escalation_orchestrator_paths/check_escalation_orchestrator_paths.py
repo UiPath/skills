@@ -24,6 +24,7 @@ while _directory != os.path.dirname(_directory) and not os.path.isdir(
 sys.path.insert(0, _directory)
 
 from _shared.flow_check import (  # noqa: E402
+    assert_decision_branches_reach,
     assert_flow_uses_connector_target,
     assert_named_equals,
     assert_node_type_executed,
@@ -92,8 +93,11 @@ def main() -> None:
             f"FAIL: escalation and triage cases fired the SAME Slack node(s) {overlap} — "
             "the Decision does not route to two distinct branches"
         )
+    # And prove those two nodes are the Decision's OWN outgoing branches (not just
+    # nodes that fired on different cases behind a cosmetic always-true Decision).
+    assert_decision_branches_reach(escalation_nodes, triage_nodes)
     print(
-        f"OK: Decision routes to two distinct Slack branches "
+        f"OK: a Decision routes escalation vs triage through separate branches "
         f"(escalation={sorted(escalation_nodes)}, triage={sorted(triage_nodes)})"
     )
 
