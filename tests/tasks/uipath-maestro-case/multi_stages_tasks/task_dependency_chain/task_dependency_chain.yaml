@@ -154,10 +154,6 @@ initial_prompt: |
   | WHEN | IF | Exit Type | Marks Stage Complete |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
-  #### Stage Exit Conditions
-  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
-  |---|---|---|---|---|
-  | selected-tasks-completed ("Final task done") | selected-tasks: Final Task | exit-only | Done | No |
   #### Tasks
   | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
   |---|---------|-----------|------|----------|---------------|---------|-----|
