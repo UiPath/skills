@@ -507,6 +507,8 @@ def assert_slack_message_posted(
     *,
     connector_key: str = "uipath-salesforce-slack",
     project_glob: str = "**/project.uiproj",
+    expected_channel: str | None = None,
+    must_contain: str | None = None,
 ) -> str:
     """Assert a Slack message was actually sent in this debug run.
 
@@ -579,19 +581,44 @@ def assert_slack_message_posted(
     # mapped slackMessageId must be one of them — so executing a Slack node while
     # mapping a different hard-coded ts is rejected.
     gvars = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
-    node_ts: set = set()
+    matched_out = None
+    any_ts = False
     for e in completed:
         nid = _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId")
         out = gvars.get(f"{nid}.output") if isinstance(gvars, dict) else None
-        for leaf in _leaves(out):
-            if isinstance(leaf, str) and _SLACK_TS_RE.match(leaf.strip()):
-                node_ts.add(leaf.strip())
-    if node_ts and text not in node_ts:
+        if not isinstance(out, (dict, list)):
+            continue
+        ts_leaves = {
+            str(x).strip()
+            for x in _leaves(out)
+            if isinstance(x, str) and _SLACK_TS_RE.match(str(x).strip())
+        }
+        if ts_leaves:
+            any_ts = True
+        if text in ts_leaves:
+            matched_out = out
+            break
+    if any_ts and matched_out is None:
         _fail_with_capture(
-            f"slackMessageId {text} does not match any executed Slack node's "
-            f"response ts {sorted(node_ts)}; the mapped ts was not produced by the "
-            "executed send"
+            f"slackMessageId {text} does not match any executed Slack node's response "
+            "ts; the mapped ts was not produced by the executed send"
         )
+
+    # Channel + content of the actual send (from the connector's own echoed
+    # response), so posting a generic message or to the wrong channel is rejected.
+    if matched_out is not None:
+        if expected_channel:
+            posted = str(_get_ci(matched_out, "channel", "Channel") or "")
+            if posted != expected_channel:
+                _fail_with_capture(
+                    f"Slack message posted to channel {posted!r}, expected {expected_channel!r}"
+                )
+        if must_contain:
+            content = " ".join(str(x) for x in _leaves(matched_out) if isinstance(x, str))
+            if must_contain not in content:
+                _fail_with_capture(
+                    f"posted Slack message does not contain {must_contain!r} — wrong content"
+                )
     return text
 
 

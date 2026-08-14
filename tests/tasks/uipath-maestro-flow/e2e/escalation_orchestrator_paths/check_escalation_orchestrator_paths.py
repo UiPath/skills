@@ -32,15 +32,24 @@ from _shared.flow_check import (  # noqa: E402
 )
 
 SLACK_KEY = "uipath-salesforce-slack"
+SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 
 
 def verify_case(case: dict) -> None:
-    payload = run_debug(inputs=case["inputs"], timeout=300)
+    # retries=1: seven cases run serially, so a bounded per-case budget keeps the
+    # total within the criterion timeout; a genuine transient failure fails cleanly.
+    payload = run_debug(inputs=case["inputs"], timeout=300, retries=1)
     for name, expected in case["expected"].items():
         assert_named_equals(payload, name, expected)
     if case.get("expect_slack"):
-        # Real Slack ts, tied to an executed Slack node's own response.
-        assert_slack_message_posted(payload, "slackMessageId")
+        # Real ts tied to the executed Slack node's response, posted to the right
+        # channel, with this case's correlationId in the message content.
+        assert_slack_message_posted(
+            payload,
+            "slackMessageId",
+            expected_channel=SLACK_CHANNEL,
+            must_contain=case["inputs"]["correlationId"],
+        )
     # The task is tagged node:decision: routing must go through a Decision that
     # actually executed — a disconnected Decision or a Script->Slack shortcut fails.
     assert_node_type_executed(payload, "core.logic.decision")

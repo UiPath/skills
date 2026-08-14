@@ -33,6 +33,7 @@ from _shared.flow_check import (  # noqa: E402
 )
 
 SLACK_KEY = "uipath-salesforce-slack"
+SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 
 
 def main() -> None:
@@ -54,11 +55,15 @@ def main() -> None:
     for name, expected in case["expected"].items():
         assert_named_equals(payload, name, expected)
 
-    # The Slack side effect: the flow must surface a real Slack message ts,
-    # which the Slack API returns only for a message it actually accepted.
-    # Paired with the real-connector assertion above, a hard-coded placeholder
-    # can't satisfy this.
-    assert_slack_message_posted(payload, "slackMessageId")
+    # The Slack side effect, verified against the executed send's own response:
+    # a real ts from an executed Slack node, posted to the coding-agent-testing
+    # channel, whose message carries this run's correlationId.
+    assert_slack_message_posted(
+        payload,
+        "slackMessageId",
+        expected_channel=SLACK_CHANNEL,
+        must_contain=case["inputs"]["correlationId"],
+    )
 
     print(
         f"OK: {case['name']} completed — Sev1 + engineering classified, "
