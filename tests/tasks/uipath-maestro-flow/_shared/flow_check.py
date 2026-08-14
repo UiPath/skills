@@ -653,6 +653,20 @@ def assert_node_type_executed(
         )
 
 
+def node_output_leaves(payload: dict, node_ids) -> set:
+    """String leaves of the given nodes' outputs (``globals["<id>.output"]``) —
+    used to tie a flow output back to the connector node that actually produced
+    it (e.g. a Jira key must appear in the executed Create Issue node's response)."""
+    gvars = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
+    out: set = set()
+    for nid in node_ids:
+        v = gvars.get(f"{nid}.output") if isinstance(gvars, dict) else None
+        for x in _leaves(v):
+            if isinstance(x, str):
+                out.add(x.strip())
+    return out
+
+
 def _load_flow(project_glob: str) -> dict:
     """Load the single .flow next to the matched project.uiproj."""
     proj = _find_project(project_glob)

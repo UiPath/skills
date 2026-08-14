@@ -31,11 +31,13 @@ from _shared.flow_check import (  # noqa: E402
     collect_outputs,
     completed_connector_node_ids,
     get_last_debug_raw,
+    node_output_leaves,
     run_debug,
 )
 import jira_is  # noqa: E402
 
 JIRA_KEY = "uipath-atlassian-jira"
+JIRA_CREATE_KEY = "uipath-atlassian-jira.create-issue"
 ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-\d+$")
 
 
@@ -61,29 +63,42 @@ def main() -> None:
         payload = run_debug(inputs=seed["inputs"], timeout=480, retries=1)
     except subprocess.TimeoutExpired as exc:
         # The Create Issue node may have completed before the debug poll timed
-        # out. This connection is curated single-record (no JQL search to
-        # discover the key), so best-effort: scan the partial CLI output for a
-        # project-scoped key and record it so teardown deletes it anyway.
+        # out. This connection is curated single-record (no JQL search), so
+        # best-effort: scan the partial CLI output for project-scoped keys and
+        # record ONLY those whose summary carries this run's correlationId — never
+        # an unrelated pre-existing issue.
         partial = "".join(
             s.decode() if isinstance(s, bytes) else (s or "")
             for s in (exc.stdout, exc.stderr)
         )
-        keys = list(dict.fromkeys(re.findall(rf"\b{re.escape(project)}-\d+\b", partial)))
-        if keys:
-            Path(".created_keys").write_text("\n".join(keys) + "\n")
+        cands = list(dict.fromkeys(re.findall(rf"\b{re.escape(project)}-\d+\b", partial)))
+        owned = []
+        if cands:
+            try:
+                conn = jira_is.connection_id()
+                owned = [
+                    k for k in cands
+                    for f in [jira_is.get_issue(conn, k)]
+                    if f is not None and correlation in str(f.get("summary", ""))
+                ]
+            except Exception:  # noqa: BLE001 — best-effort cleanup, never mask the timeout
+                owned = []
+        if owned:
+            Path(".created_keys").write_text("\n".join(owned) + "\n")
         _fail(
             f"flow debug timed out after {exc.timeout}s"
-            + (f"; recorded {keys} for teardown" if keys else "")
+            + (f"; recorded this-run key(s) {owned} for teardown" if owned else "")
         )
     print("OK: flow debug completed")
 
-    # Execution evidence: the Jira Create node must have actually executed in the
-    # debugged flow. A disconnected Jira node with a hard-coded key (issue created
-    # at authoring time) has no Completed elementExecution and fails here.
-    if not completed_connector_node_ids(payload, JIRA_KEY):
+    # Execution evidence: the Jira CREATE-ISSUE node specifically must have
+    # executed in the debugged flow (not merely any Jira node — a read op could
+    # surface an authoring-time key). A disconnected/absent Create node fails here.
+    create_nodes = completed_connector_node_ids(payload, JIRA_CREATE_KEY)
+    if not create_nodes:
         _fail(
-            f"no {JIRA_KEY} node completed in the debug trace — the debugged flow "
-            "did not execute the Create Issue activity"
+            "no Jira Create-Issue node completed in the debug trace — the debugged "
+            "flow did not execute the Create Issue activity"
         )
 
     cands = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
@@ -115,6 +130,15 @@ def main() -> None:
         )
     match = owned[0]
     print(f"OK: Jira ticket {match} exists and its summary carries {correlation!r}")
+
+    # Tie the verified key to the executed Create-Issue node's OWN response — the
+    # created key must appear in that node's output, so a read op surfacing an
+    # authoring-time key (whose node is not the Create) cannot satisfy this.
+    if match not in node_output_leaves(payload, create_nodes):
+        _fail(
+            f"created key {match} is not in the executed Create-Issue node's output; "
+            "the debugged Create Issue did not produce this key"
+        )
 
     # Require the flow to actually EXPOSE the created key as jiraIssueKey (End
     # mapping present), not just create the ticket — harvesting the key from raw
