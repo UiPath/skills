@@ -8,7 +8,7 @@ Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per 
 >
 > **Input:** `tasks/tasks.md` — the complete handoff artifact.
 
-> **Six phases follow planning.** Execution splits into **Phase 2 — Prototyping** (reviewable preview: structure, conditions, SLA/escalation, and connector-rule stubs), **Phase 3 — Implementation** (connector schemas, task values, and connector-rule upgrades), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run), **Phase 7 — Publish to Orchestrator** (optional `solution pack` + `solution publish`). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, Phase 6 entry, and Phase 7 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbers are stable labels; follow the order stated by each phase.
+> **Six phases follow planning.** Execution splits into **Phase 2 — Prototyping** (reviewable preview: structure, conditions, SLA/escalation, and connector-rule stubs), **Phase 3 — Implementation** (connector schemas, task values, and connector-rule upgrades), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run), **Phase 7 — Publish to Orchestrator** (optional `case pack` + `solution pack` + `solution publish`). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, Phase 6 entry, and Phase 7 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbers are stable labels; follow the order stated by each phase.
 
 ## Per-plugin execution
 
@@ -374,11 +374,11 @@ After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user 
 
 # Phase 7 — Publish to Orchestrator (Step 16)
 
-Optional `solution pack` + `solution publish` to the tenant solution feed. Full contract — prompt options, publish commands, version bumping, failure handling — in [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). This section is a bridge — do NOT duplicate contract here.
+Optional `case pack` (BPMN recompile) + `solution pack` + `solution publish` to the tenant solution feed. Full contract — prompt options, publish commands, version bumping, failure handling — in [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). This section is a bridge — do NOT duplicate contract here.
 
 ## Step 16 — Publish to Orchestrator
 
-Run AskUserQuestion per [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). On `Publish to Orchestrator` → run `uip solution resources refresh`, then `uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json`, then `uip solution publish "<packagePath>" --wait --output json`. Pack the solution directory, not the case project — never `uip maestro case pack`. Read `<packagePath>` from the pack response `Data.Packages` — never guess the filename. On `Done` → exit skill. Never auto-run (Rule 12).
+Run AskUserQuestion per [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). On `Publish to Orchestrator` → run `uip solution resources refresh`, then `uip maestro case pack "<SolutionDir>/<ProjectName>" "<SolutionDir>/dist" --output json`, then `uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json`, then `uip solution publish "<packagePath>" --wait --output json`. **Never skip `case pack`** — it compiles `caseplan.json` → `caseplan.json.bpmn`, and it runs on every pass regardless of which earlier phases were skipped. Publish the `solution pack` `.zip`, never the `case pack` `.nupkg`. Read `<packagePath>` from the `solution pack` response `Data.Packages` — never guess the filename. On `Done` → exit skill. Never auto-run (Rule 12).
 
 Stops at publish — `uip solution deploy run` is out of scope.
 <!-- END: implementation.md -->

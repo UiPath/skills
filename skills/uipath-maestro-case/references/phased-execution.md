@@ -35,7 +35,7 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 | **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Skip to Debug` |
 | **6 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Continue to publish` |
-| **7 — Publish to Orchestrator** | Optional `solution pack` + `solution publish` to the tenant solution feed | `.zip` packed; publish result printed | `Publish to Orchestrator` / `Done` |
+| **7 — Publish to Orchestrator** | Optional `case pack` + `solution pack` + `solution publish` to the tenant solution feed | `.zip` packed; publish result printed | `Publish to Orchestrator` / `Done` |
 
 ## Phase 2 — Prototyping
 
@@ -248,13 +248,13 @@ Before this prompt, include `Suggested next steps: run a debug session if you ar
 
 - `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
 - Debug verifies the build actually runs end-to-end. If debug surfaces a fixable issue, see [Step 15a — Troubleshoot failed case](implementation.md#step-15a--troubleshoot-failed-case) and re-run; if the case was already published, re-publish afterwards so the published build carries the fix.
-- **Inline-built api-workflow siblings are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found") by design; agent siblings do resolve in debug. Verifying that task's runtime needs a full solution deploy (`uip solution pack` → `uip solution publish` → `uip solution deploy run`) — an Orchestrator install that goes beyond [§ Phase 7](#phase-7--publish-to-orchestrator) (which stops at publish), so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline).
+- **Inline-built api-workflow siblings are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found") by design; agent siblings do resolve in debug. Verifying that task's runtime needs a full solution deploy (`uip maestro case pack` → `uip solution pack` → `uip solution publish` → `uip solution deploy run` — `case pack` first, always, per [§ Phase 7](#why-case-pack-is-mandatory)) — an Orchestrator install that goes beyond [§ Phase 7](#phase-7--publish-to-orchestrator) (which stops at publish), so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline).
 
 ## Phase 7 — Publish to Orchestrator
 
 After Phase 6 (whether debug ran or was skipped), prompt via **AskUserQuestion**:
 
-- `Publish to Orchestrator` — run the three commands below in order.
+- `Publish to Orchestrator` — run the four commands below in order.
 - `Done` — exit skill without publishing.
 
 > **Publish to Orchestrator ships the case to the tenant solution feed — a real, outward-facing publish. Only run when user explicitly selects it. Never auto-run** (Rule 12).
@@ -265,23 +265,33 @@ Requires `uip login`.
 
 ```bash
 uip solution resources refresh --solution-folder "<SolutionDir>" --output json
+uip maestro case pack "<SolutionDir>/<ProjectName>" "<SolutionDir>/dist" --output json
 uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json
 uip solution publish "<packagePath>" --wait --output json
 ```
 
 1. **`resources refresh`** — same Rule 14 requirement as publish and debug: syncs artefact files and debug overwrites from `bindings_v2.json` before they are bundled into the package.
-2. **`solution pack`** — packs the **solution directory** (the folder containing the `.uipx`), not the case project. It packs each contained project into a `.nupkg` and bundles them into a single `.zip` under `<SolutionDir>/dist`. Add `--version <version>` when the user names one; default is `1.0.0`. Republishing an existing `name+version` pair is rejected by the feed — bump `--version` on a re-deploy.
-3. **`solution publish`** — uploads the packed `.zip` to the tenant solution feed. `--wait` blocks until the package reaches `Ready`/`Active`. Add `--personal-workspace` only when the user asks for their Personal Workspace feed instead of the tenant feed. Flags: [case-commands.md § uip solution publish](case-commands.md#uip-solution-publish).
+2. **`case pack`** — recompiles `caseplan.json` into `caseplan.json.bpmn` inside the **case project directory**. **Mandatory, in every run, no exceptions** — see § Why `case pack` is mandatory below. Its `.nupkg` output is a throwaway; only the regenerated `.bpmn` matters. Point the output at `<SolutionDir>/dist` (a sibling of the project dir — stray folders under the solution root are not bundled). Never point it inside the case project directory.
+3. **`solution pack`** — packs the **solution directory** (the folder containing the `.uipx`), not the case project. It packs each contained project into a `.nupkg` and bundles them into a single `.zip` under `<SolutionDir>/dist`. Add `--version <version>` when the user names one; default is `1.0.0`. Republishing an existing `name+version` pair is rejected by the feed — bump `--version` on a re-deploy.
+4. **`solution publish`** — uploads the packed `.zip` to the tenant solution feed. `--wait` blocks until the package reaches `Ready`/`Active`. Add `--personal-workspace` only when the user asks for their Personal Workspace feed instead of the tenant feed. Flags: [case-commands.md § uip solution publish](case-commands.md#uip-solution-publish).
 
-**Read `<packagePath>` from the `solution pack` response `Data.Packages`, or list `<SolutionDir>/dist` — never guess the filename.** The name is `<name>_<version>.zip` — underscore, not dot.
+**Read `<packagePath>` from the `solution pack` response `Data.Packages`, or list `<SolutionDir>/dist` — never guess the filename.** The name is `<name>_<version>.zip` — underscore, not dot. `solution pack` writes `<SolutionName>_<version>.zip`; `case pack` writes `<Name>.case.Case.<version>.nupkg` — never confuse the two, and never hand the `.nupkg` to `publish`.
 
-> Do **NOT** use `uip maestro case pack` here. It emits a single project `.nupkg`, which is not what `solution publish` accepts — `solution pack` already produces the project `.nupkg` internally and wraps it in the `.zip`.
+### Why `case pack` is mandatory
+
+`uip solution pack` **bundles the `.bpmn` it finds on disk — it never compiles one.** `uip maestro case validate` does not generate it either. Only `uip maestro case pack` compiles `caseplan.json` → `caseplan.json.bpmn`. So:
+
+- Run it **on every Phase 7 pass**, whether or not Phase 5 / Phase 6 ran, and whether or not a `.bpmn` already exists. Prior phases are optional and skippable; a run that goes Phase 4 → Phase 7 has never compiled a `.bpmn` at all.
+- Skipping it publishes a package whose `content/` holds `caseplan.json` with **no** `caseplan.json.bpmn`, or — worse — a **stale** `.bpmn` compiled before the latest edits. Both pack and publish succeed; the defect only surfaces at deploy/run time.
+- `case pack` requires `package-descriptor.json` in the case project directory (written at scaffold, [plugins/case/impl-json.md](plugins/case/impl-json.md)). If it fails with `Missing package-descriptor.json`, restore that file — do not skip the step.
+
+> `uip maestro case pack` is **not** the publish artifact. It emits a single project `.nupkg`, which `solution publish` does not accept — `solution pack` produces its own project `.nupkg` internally and wraps it in the `.zip`. Run `case pack` for the BPMN recompile only; always publish the `solution pack` `.zip`.
 
 Phase 7 stops at publish. `uip solution deploy run` (the step that installs the solution into an Orchestrator folder) is out of scope — report the published package and tell the user to deploy it from Orchestrator.
 
 ### On failure
 
-If `pack` or `publish` fails, print the CLI error verbatim, note it in `build-issues.md`, and re-show the Phase 7 prompt. Do not retry with a different pack command. A `processKey` collision on publish means the `name+version` pair already exists on the feed — re-run with a bumped `--version`.
+If `case pack`, `solution pack`, or `publish` fails, print the CLI error verbatim, note it in `build-issues.md`, and re-show the Phase 7 prompt. Do not retry with a different pack command, and never work around a `case pack` failure by going straight to `solution pack` — that ships a package with a missing or stale `.bpmn`. A `processKey` collision on publish means the `name+version` pair already exists on the feed — re-run with a bumped `--version`.
 
 ### Suggested next steps
 
@@ -292,6 +302,8 @@ Before the prompt: `Suggested next steps: publish to Orchestrator when you want 
 - Phase 7 is the last phase. Nothing re-enters the build pipeline after it.
 - A Phase 7 publish does **not** replace Phase 5 — Studio Web (`uip solution upload`) and the solution feed are separate destinations. A case can go to both, neither, or one.
 - If a Phase 6 fix changed the build after a Phase 7 publish, re-run Phase 7 with a bumped `--version`; the feed rejects duplicate `name+version` pairs.
+
+Deployment and activation are platform lifecycle concerns. Use the platform workflow for `uip solution deploy ...` commands and keep this case skill focused on the case project/package boundary.
 
 For further authoring changes (add task, tweak condition, etc.), user updates `sdd.md` and re-runs skill from Phase 1 — skill does not offer in-place incremental edits.
 
