@@ -67,13 +67,17 @@ initial_prompt: |
      "coding-agent-testing", send as `user`, and include escalationPath +
      correlationId in the message. Wire each Slack node's error port to a small
      handler so a Slack failure degrades gracefully.
-  4. End node(s) map these `out` variables (on every reachable End):
+  4. Use TWO End nodes — one the escalation branch reaches, one the triage branch
+     reaches. On EACH End, map `slackMessageId` from THAT branch's own Slack node's
+     output (escalation End ← escalation Slack node; triage End ← triage Slack node),
+     so slackMessageId is never empty regardless of which branch runs. Map the rest
+     on both Ends:
      - escalationPath   (from the classify script)
      - severity
      - engineeringNeeded (boolean)
      - responseMode
      - caseKey          = the incoming correlationId
-     - slackMessageId   = the id/ts of the posted Slack message
+     - slackMessageId   = the id/ts of the Slack message posted on this branch
 
   Salesforce/Jira/Drive are NOT part of this task — the match status is an input.
 

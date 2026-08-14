@@ -51,7 +51,11 @@ def main() -> None:
         _fail(f"no .flow references the {JIRA_KEY} connector (found {flows})")
     print(f"OK: flow references {JIRA_KEY}")
 
-    payload = run_debug(inputs=seed["inputs"], timeout=480)
+    # No whole-flow retries: this flow CREATES a Jira issue, so re-running the
+    # whole flow on a transient poll error would create a duplicate ticket that
+    # this checker (deriving keys from the final attempt) wouldn't see or clean
+    # up. One attempt only; a genuine transient failure fails the run cleanly.
+    payload = run_debug(inputs=seed["inputs"], timeout=480, retries=1)
     print("OK: flow debug completed")
 
     cands = [s for leaf in collect_outputs(payload) for s in [str(leaf).strip()] if ISSUE_KEY_RE.match(s)]
