@@ -30,6 +30,7 @@ from _shared.flow_check import (  # noqa: E402
     assert_named_equals,
     collect_outputs,
     completed_connector_node_ids,
+    completed_node_ids_of_type,
     find_node_output_value,
     get_last_debug_raw,
     node_output_leaves,
@@ -39,7 +40,7 @@ from _shared.flow_check import (  # noqa: E402
 import jira_is  # noqa: E402
 
 JIRA_KEY = "uipath-atlassian-jira"
-JIRA_CREATE_KEY = "uipath-atlassian-jira.create-issue"
+JIRA_CREATE_OP = "create-issue"  # matched by op so a connector-proxy Create (op in endpoint) also counts
 ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-\d+$")
 CASE_SENSITIVE = {"caseKey", "jiraIssueKey"}  # opaque ids — exact-case match
 
@@ -102,7 +103,7 @@ def main() -> None:
     # Execution evidence: the Jira CREATE-ISSUE node specifically must have
     # executed in the debugged flow (not merely any Jira node — a read op could
     # surface an authoring-time key). A disconnected/absent Create node fails here.
-    create_nodes = completed_connector_node_ids(payload, JIRA_CREATE_KEY)
+    create_nodes = completed_connector_node_ids(payload, JIRA_KEY, native_op_hint=JIRA_CREATE_OP)
     if not create_nodes:
         _fail(
             "no Jira Create-Issue node completed in the debug trace — the debugged "
@@ -169,10 +170,13 @@ def main() -> None:
         assert_named_equals(payload, name, expected, case_sensitive=(name in CASE_SENSITIVE))
 
     # Classification the prompt requires the Script to compute but does not map to a
-    # named End out (engineeringNeeded) — verify it against the Script's own output
-    # so a flow that skips the required classification cannot pass on the ticket alone.
+    # named End out (engineeringNeeded) — verify it against the EXECUTED Script
+    # node's own output (scoped to completed Script nodes so a cosmetic/unrelated
+    # node can't supply it), so a flow that skips the required classification
+    # cannot pass on the ticket alone.
+    script_nodes = completed_node_ids_of_type(payload, "script")
     for name, expected in (seed.get("expected_script") or {}).items():
-        actual = find_node_output_value(payload, name)
+        actual = find_node_output_value(payload, name, node_ids=script_nodes)
         if actual is None:
             _fail(f"the flow's Script node did not compute {name!r} (required by the prompt)")
         if normalized(actual) != normalized(expected):

@@ -19,8 +19,8 @@ try:
             ok = jira_is.delete_issue(conn, key)
             if not ok:
                 ok = jira_is.delete_issue(conn, key)
-            if not ok and jira_is.get_issue(conn, key) is None:
-                ok = True  # tenant read confirms it's gone
+            if not ok and jira_is.issue_absent(conn, key):
+                ok = True  # tenant read CONFIRMS a 404 (not just an ambiguous failure)
             print(f"OK: deleted {key}" if ok
                   else f"WARN: could NOT confirm deletion of {key} — may be leaked in CE project")
     else:

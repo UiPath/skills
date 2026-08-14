@@ -86,13 +86,12 @@ def main() -> None:
 
     escalation_nodes: set = set()
     triage_nodes: set = set()
-    escalation_decisions: set = set()
-    triage_decisions: set = set()
+    per_case_decisions: list = []
     for case in cases:
         fired, decisions = verify_case(case)
         is_escalation = case["expected"]["escalationPath"] == "escalation"
         (escalation_nodes if is_escalation else triage_nodes).update(fired)
-        (escalation_decisions if is_escalation else triage_decisions).update(decisions)
+        per_case_decisions.append(decisions)
 
     # Prompt requires each Slack node's error port wired to a handler for graceful
     # degradation, and every send to go out as `user` — assert both structurally so
@@ -115,11 +114,12 @@ def main() -> None:
             "the Decision does not route to two distinct branches"
         )
     # And prove those two nodes are the Decision's OWN outgoing branches — routed by
-    # ONE Decision that executed on BOTH sides. Requiring the routing Decision to be
-    # in the intersection (executed on an escalation case AND a triage case) blocks
-    # the split where a real Decision runs only for escalation while a separate
-    # cosmetic Decision runs on triage cases.
-    routing_decisions = escalation_decisions & triage_decisions
+    # ONE Decision that executed in EVERY case. The escalation-vs-triage split runs
+    # on every email, so the routing Decision is in the intersection of the
+    # completed-Decision sets across ALL cases. Intersecting across every case (not
+    # a per-group union) blocks the flow that routes two cases through the real
+    # Decision and the remaining five through other constructs.
+    routing_decisions = set.intersection(*per_case_decisions) if per_case_decisions else set()
     assert_decision_branches_reach(
         escalation_nodes, triage_nodes, executed_decision_ids=routing_decisions
     )

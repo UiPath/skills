@@ -517,6 +517,29 @@ def _op_matches(hint: str, text: str) -> bool:
     return norm(hint) in norm(text)
 
 
+def _is_connector_node(n: dict) -> bool:
+    """True if ``n`` is ANY connector invocation — a native connector node, or a
+    connector-authenticated ``core.action.http`` proxy (authentication=connector +
+    a targetConnector/connectorKey + a bound connectionId). Connector-agnostic
+    (no key/op filter): used to reject error handlers that merely route into
+    another fallible connector, whichever form that connector takes."""
+    t = str(n.get("type", ""))
+    if "uipath.connector." in t:
+        return True
+    detail = (n.get("inputs") or {}).get("detail") or {}
+    if not isinstance(detail, dict):
+        return False
+    body = detail.get("bodyParameters") or {}
+    body = body if isinstance(body, dict) else {}
+    target = body.get("targetConnector") or body.get("connectorKey")
+    return bool(
+        t.lower().startswith("core.action.http")
+        and target
+        and str(body.get("authentication") or "").lower() == "connector"
+        and _non_empty_binding_value(detail.get("connectionId"))
+    )
+
+
 def _connector_node_ids(
     connector_key: str, project_glob: str, *, native_op_hint: str | None = None
 ) -> set:
@@ -559,19 +582,25 @@ def _connector_node_ids(
     return ids
 
 
-def find_node_output_field(payload: dict, field: str) -> "str | None":
-    """Return the first non-empty string value of ``field`` found in any node's
+def find_node_output_field(payload: dict, field: str, *, node_ids=None) -> "str | None":
+    """Return the first non-empty string value of ``field`` found in a node's
     ``.output`` object (``globals["<id>.output"]``). Used to require an
     intermediate Script output (e.g. ``nextSteps``) that the flow computes but
     does not map to a named End ``out``. The field name is matched
-    separator/case-insensitively (``next_steps`` matches ``nextSteps``)."""
+    separator/case-insensitively (``next_steps`` matches ``nextSteps``).
+
+    Pass ``node_ids`` to restrict the search to specific nodes (e.g. the executed
+    classification Script) so an unrelated/cosmetic node can't supply the value."""
     gvars = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
     if not isinstance(gvars, dict):
         return None
+    allow = set(node_ids) if node_ids is not None else None
     norm = lambda s: re.sub(r"[^a-z0-9]", "", str(s).lower())
     want = norm(field)
     for k, v in gvars.items():
         if not (isinstance(k, str) and k.endswith(".output") and isinstance(v, dict)):
+            continue
+        if allow is not None and k[: -len(".output")] not in allow:
             continue
         for kk, vv in v.items():
             if isinstance(kk, str) and norm(kk) == want and isinstance(vv, str) and vv.strip():
@@ -582,19 +611,25 @@ def find_node_output_field(payload: dict, field: str) -> "str | None":
 _UNSET = object()
 
 
-def find_node_output_value(payload: dict, field: str) -> Any:
+def find_node_output_value(payload: dict, field: str, *, node_ids=None) -> Any:
     """Like :func:`find_node_output_field` but returns the raw value of any type
-    (bool, number, string) — the first non-None ``field`` found in any node's
+    (bool, number, string) — the first non-None ``field`` found in a node's
     ``.output``. Returns ``None`` when absent. Use for intermediate classification
     outputs like ``engineeringNeeded`` (a boolean) that aren't mapped to a named
-    End ``out``. Field name matched separator/case-insensitively."""
+    End ``out``. Field name matched separator/case-insensitively.
+
+    Pass ``node_ids`` to restrict the search to specific nodes (e.g. the executed
+    classification Script) so an unrelated/cosmetic node can't supply the value."""
     gvars = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
     if not isinstance(gvars, dict):
         return None
+    allow = set(node_ids) if node_ids is not None else None
     norm = lambda s: re.sub(r"[^a-z0-9]", "", str(s).lower())
     want = norm(field)
     for k, v in gvars.items():
         if not (isinstance(k, str) and k.endswith(".output") and isinstance(v, dict)):
+            continue
+        if allow is not None and k[: -len(".output")] not in allow:
             continue
         for kk, vv in v.items():
             if isinstance(kk, str) and norm(kk) == want and vv is not None:
@@ -791,7 +826,9 @@ def assert_connector_error_handlers(
         adj[e.get("sourceNodeId")].append((str(e.get("sourcePort") or "").lower(), e.get("targetNodeId")))
 
     def is_connector(nid: str) -> bool:
-        return "uipath.connector." in str(nodes.get(nid, {}).get("type", ""))
+        # Native connector OR a connector-authenticated HTTP proxy — an error edge
+        # into either just invokes another fallible connector, not a real handler.
+        return _is_connector_node(nodes.get(nid, {}) or {})
 
     def reaches_terminating(start: str) -> bool:
         seen: set = set()
@@ -951,13 +988,21 @@ def assert_decision_branches_reach(
 
 
 def completed_connector_node_ids(
-    payload: dict, connector_key: str, *, project_glob: str = "**/project.uiproj"
+    payload: dict,
+    connector_key: str,
+    *,
+    project_glob: str = "**/project.uiproj",
+    native_op_hint: "str | None" = None,
 ) -> set:
     """Return the ids of ``connector_key`` nodes with a ``Completed``
     elementExecution in this run — i.e. which connector node actually fired.
     Used to prove branch routing across cases (escalation vs triage must fire
-    different nodes, not one dynamic node behind a cosmetic Decision)."""
-    ids = _connector_node_ids(connector_key, project_glob)
+    different nodes, not one dynamic node behind a cosmetic Decision).
+
+    ``native_op_hint`` pins the operation so a connector-mode HTTP proxy (whose
+    ``targetConnector`` is the bare key, with the op in the endpoint) is matched by
+    op — pass ``connector_key`` as the bare key and the op separately."""
+    ids = _connector_node_ids(connector_key, project_glob, native_op_hint=native_op_hint)
     els = _get_ci(payload, "elementExecutions", "Elements", "elements") or []
     return {
         _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId")

@@ -30,6 +30,7 @@ from _shared.flow_check import (  # noqa: E402
     assert_flow_uses_connector_target,
     assert_named_equals,
     assert_slack_message_posted,
+    completed_node_ids_of_type,
     find_node_output_field,
     run_debug,
 )
@@ -67,10 +68,11 @@ def main() -> None:
 
     # The prompt requires the alert to include severity, correlationId, AND the
     # next steps. nextSteps is computed by the Script node (not a named End out),
-    # so read the flow's OWN nextSteps value from the debug payload and require that
-    # exact string in the posted message — a flow that omits it fails. Exact match
-    # is safe (it's the flow's own computed value tied to its own posted message).
-    next_steps = find_node_output_field(payload, "nextSteps")
+    # so read the flow's OWN nextSteps value from the EXECUTED Script node's output
+    # (scoped to completed Script nodes so a cosmetic/unrelated node can't supply
+    # it) and require that exact string in the posted message.
+    script_nodes = completed_node_ids_of_type(payload, "script")
+    next_steps = find_node_output_field(payload, "nextSteps", node_ids=script_nodes)
     if not next_steps:
         raise SystemExit(
             "FAIL: the flow's Script node did not produce a nextSteps value — the "

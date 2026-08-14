@@ -75,6 +75,22 @@ def get_issue(conn_id: str, key: str) -> dict | None:
     return env["Data"].get("fields", {})
 
 
+def issue_absent(conn_id: str, key: str) -> bool:
+    """True ONLY when a tenant read CONFIRMS the issue does not exist (not-found /
+    404). False when it exists OR when the read itself failed (transient 5xx /
+    auth) — so teardown never treats an ambiguous read as proof of deletion.
+    Distinct from :func:`get_issue`, which collapses every failure to ``None``."""
+    env = _run(
+        "is", "resources", "run", "get", CONNECTOR, "curated_get_issue",
+        "--connection-id", conn_id,
+        "--query", f"project={PROJECT_KEY}&issuetype={ISSUETYPE_ID}&issueId={key}",
+    )
+    if str(env.get("Result", "")).lower() != "failure":
+        return False  # a successful read means the issue still exists
+    blob = json.dumps(env).lower()
+    return any(s in blob for s in ("404", "not found", "notfound", "does not exist", "no longer exists"))
+
+
 def delete_issue(conn_id: str, key: str) -> bool:
     """Delete an issue by key. Returns True only when deletion is CONFIRMED —
     either a success envelope, or a not-found/404 (already gone). Returns False
