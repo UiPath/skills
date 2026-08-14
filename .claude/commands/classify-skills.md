@@ -46,8 +46,8 @@ For example, if a skill teaches the agent the following things: open a browser, 
 
 Compare the procedures you found with things the skill teaches:
 
-- Strong: If the procedures take up most of the skill
-- Partial: If the procedures take up part of the skill
+- Strong: If the procedures take up half of the things a skill teaches
+- Partial: If the procedures take up less than half of the things a skill teaches
 - None: the skill doesn't have any codifiable procedures
 
 ## Step 3: Write your classification
@@ -95,7 +95,7 @@ Use **exactly** this structure for every skill (one skill = one file):
 
 **Source:** `<path/to/reference.md>` §<Section name>
 
-**What it does:** <2–4 sentences: inputs → outputs, what is parsed/computed/validated>
+**What it does:** <2–4 sentences: inputs → outputs, what is parsed/computed/validated. Close with a direct quote of the skill's own wording — not a paraphrase, and not an inference drawn from the skill's scripts — showing exactly where that description comes from, e.g. `Line 26: "Run local validation for XML, diagrams, entry point IDs, variables, mappings, binding references, and package metadata drift."`>
 
 **Why it's mechanical:** <1–2 sentences: why no judgment is required>
 
@@ -125,4 +125,5 @@ Formatting rules:
 - `Codifiable?` values: `No`, `**Yes — <TYPE>**`, or `Marginal` (use Marginal when a procedure is theoretically scriptable but too small or low-value to warrant a standalone script).
 - List only procedures that are **not yet scripted** under "Codifiable Procedures". If a procedure is already scripted, note it as "Already scripted" in the table Notes column and omit it from the procedures section.
 - `TYPE` must be one of the taxonomy labels from Step 1 (PARSE, COMPUTE/FORMULA, TRANSFORM-PIPELINE, LOOKUP/REFERENCE-TABLE, VALIDATE/CHECK, FORMAT-CONVERT, BUILD-MODEL/MATRIX, EXTRACT, AGGREGATE/STATS, DETECT).
+- Every **What it does** must be traceable to a verbatim quote from the skill's own SKILL.md or reference file (`Line <N>: "<exact text>"`), not a paraphrase and not something inferred from reading the skill's scripts. A skill's scripts can implement less than what the skill's own docs describe — porting or summarizing from the script alone will silently inherit that gap. Read the actual reference file the procedure is scoped to (not just the script that happens to exist for it) before writing "What it does."
 - "Justification for Classification" must always have all three subsections (Why not Strong, Why not None, Evidence locations), even for Strong or None classifications — adapt the language accordingly (e.g., for None: "Why not Strong: no codifiable procedures exist"; "Why not None: N/A — this skill is classified None").
