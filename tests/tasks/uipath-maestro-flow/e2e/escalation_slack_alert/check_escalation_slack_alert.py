@@ -30,6 +30,7 @@ from _shared.flow_check import (  # noqa: E402
     assert_flow_uses_connector_target,
     assert_named_equals,
     assert_slack_message_posted,
+    find_node_output_field,
     run_debug,
 )
 
@@ -64,15 +65,27 @@ def main() -> None:
     for name, expected in case["expected"].items():
         assert_named_equals(payload, name, expected, case_sensitive=(name in CASE_SENSITIVE))
 
+    # The prompt requires the alert to include severity, correlationId, AND the
+    # next steps. nextSteps is computed by the Script node (not a named End out),
+    # so read the flow's OWN nextSteps value from the debug payload and require that
+    # exact string in the posted message — a flow that omits it fails. Exact match
+    # is safe (it's the flow's own computed value tied to its own posted message).
+    next_steps = find_node_output_field(payload, "nextSteps")
+    if not next_steps:
+        raise SystemExit(
+            "FAIL: the flow's Script node did not produce a nextSteps value — the "
+            "prompt requires classifying a short next-steps string"
+        )
+
     # The Slack side effect, verified against the executed send's own response:
     # a real ts from an executed Slack SEND node, posted to the coding-agent-testing
-    # channel, whose message carries BOTH this run's correlationId and the severity
-    # (the alert must surface every required field, not just the id).
+    # channel, whose message carries every required field (correlationId, severity,
+    # next steps), not just the id.
     assert_slack_message_posted(
         payload,
         "slackMessageId",
         expected_channel=SLACK_CHANNEL,
-        must_contain=[case["inputs"]["correlationId"], case["expected"]["severity"]],
+        must_contain=[case["inputs"]["correlationId"], case["expected"]["severity"], next_steps],
     )
 
     print(

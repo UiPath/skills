@@ -75,9 +75,17 @@ def get_issue(conn_id: str, key: str) -> dict | None:
     return env["Data"].get("fields", {})
 
 
-def delete_issue(conn_id: str, key: str) -> None:
-    """Delete an issue by key. A 404 (already gone) is a no-op."""
-    _run(
+def delete_issue(conn_id: str, key: str) -> bool:
+    """Delete an issue by key. Returns True only when deletion is CONFIRMED —
+    either a success envelope, or a not-found/404 (already gone). Returns False
+    for any other Failure envelope (transient 5xx / auth) so the caller can retry
+    or report instead of silently leaking the issue in the shared CE project."""
+    env = _run(
         "is", "resources", "run", "delete", CONNECTOR, "issue",
         "--connection-id", conn_id, "--query", f"issueId={key}",
     )
+    if str(env.get("Result", "")).lower() != "failure":
+        return True
+    # A Failure envelope: only a not-found means the issue is genuinely gone.
+    blob = json.dumps(env).lower()
+    return any(s in blob for s in ("404", "not found", "notfound", "does not exist", "no longer exists"))

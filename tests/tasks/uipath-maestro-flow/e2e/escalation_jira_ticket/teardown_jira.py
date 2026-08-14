@@ -13,8 +13,16 @@ try:
     if keys:
         conn = jira_is.connection_id()
         for key in keys:
-            jira_is.delete_issue(conn, key)
-            print(f"OK: deleted {key}")
+            # Verify the delete actually happened; retry once on an unconfirmed
+            # (transient) failure, then confirm via a tenant reread before giving
+            # up. Only claim success on a confirmed deletion / not-found.
+            ok = jira_is.delete_issue(conn, key)
+            if not ok:
+                ok = jira_is.delete_issue(conn, key)
+            if not ok and jira_is.get_issue(conn, key) is None:
+                ok = True  # tenant read confirms it's gone
+            print(f"OK: deleted {key}" if ok
+                  else f"WARN: could NOT confirm deletion of {key} — may be leaked in CE project")
     else:
         print("OK: nothing to delete")
 except Exception as e:  # noqa: BLE001 — teardown must not fail the task

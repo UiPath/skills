@@ -559,6 +559,26 @@ def _connector_node_ids(
     return ids
 
 
+def find_node_output_field(payload: dict, field: str) -> "str | None":
+    """Return the first non-empty string value of ``field`` found in any node's
+    ``.output`` object (``globals["<id>.output"]``). Used to require an
+    intermediate Script output (e.g. ``nextSteps``) that the flow computes but
+    does not map to a named End ``out``. The field name is matched
+    separator/case-insensitively (``next_steps`` matches ``nextSteps``)."""
+    gvars = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
+    if not isinstance(gvars, dict):
+        return None
+    norm = lambda s: re.sub(r"[^a-z0-9]", "", str(s).lower())
+    want = norm(field)
+    for k, v in gvars.items():
+        if not (isinstance(k, str) and k.endswith(".output") and isinstance(v, dict)):
+            continue
+        for kk, vv in v.items():
+            if isinstance(kk, str) and norm(kk) == want and isinstance(vv, str) and vv.strip():
+                return vv.strip()
+    return None
+
+
 def assert_slack_message_posted(
     payload: dict,
     name: str,
