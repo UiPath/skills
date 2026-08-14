@@ -1,0 +1,89 @@
+task_id: skill-case-connector-metadata-splice
+description: >
+  Regression guard for MST-13544 ("Select activity" renders empty in Studio Web).
+  The fixture supplies a finished ConnectorSpliceCase whose single
+  execute-connector-activity task is still at its Phase 2 shape (`data.typeId` +
+  `data.connectionId`), the Phase 1 plan, and the already-captured `case spec`
+  response at `tasks/spec-cache.Stage_Sp1Ce8-tSp1Ce001.json`. The agent performs
+  only the Phase 3 splice: transcribe the caseShape subtrees, substitute the
+  binding placeholders, mint ids, re-case the schema keys, append the root
+  bindings. Offline and tenant-free by construction — the spec response is on
+  disk and `case spec` is banned — so this runs in a fraction of the
+  connector_activity e2e while covering the three ways the splice silently loses
+  the metadata Studio Web renders: dropped metadata entry, hand-composed context,
+  and a PascalCase `ActivityMetadata` left by a skipped re-casing pass.
+  `uip maestro case validate` reports Valid for every one of them, so the check
+  script is the only signal.
+  The fixture spec response is real CLI output, pruned to the discovery fields
+  the splice does not read (schema catalogues) and one small output entry, to
+  keep the agent's read budget small.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:single-node, connector, feature:activities]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 900
+  max_turns: 45
+  turn_timeout: 900
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The ConnectorSpliceCase solution already exists on disk. Its case definition
+  (ConnectorSpliceCase/ConnectorSpliceCase/caseplan.json) has one stage, "Notify",
+  holding one connector task, "Post Slack message". Phase 1 and Phase 2 are done:
+  the plan is at tasks/tasks.md and the task currently carries only its Phase 2
+  shape (data.typeId + data.connectionId).
+
+  Complete the Phase 3 connector splice for that task, and nothing else.
+
+  This environment has NO tenant access. The `uip maestro case spec` response for
+  this task was already captured and is on disk at
+  tasks/spec-cache.Stage_Sp1Ce8-tSp1Ce001.json — use it as the spec output.
+  Do NOT run `uip maestro case spec`, `registry pull`, or any other command that
+  reaches the tenant; they will fail.
+
+  The task is NOT complete until `uip maestro case validate` passes on
+  ConnectorSpliceCase/ConnectorSpliceCase/caseplan.json. Note that validate
+  reports Valid for an incorrectly spliced task too — follow the skill's
+  connector-activity procedure and its post-write verification, do not treat a
+  green validate as proof.
+
+  Do NOT add or remove stages, tasks, triggers, or conditions. Do NOT run
+  `uip maestro case debug`. Do NOT ask for approval, confirmation, or feedback —
+  work end-to-end in a single pass.
+
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent used the captured spec response instead of calling the tenant"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)"?\s+maestro\s+case\s+spec'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the spliced caseplan.json"
+    command: "uip maestro case validate ConnectorSpliceCase/ConnectorSpliceCase/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Spliced task keeps the metadata Studio Web reads: spec-matched context, non-empty activityMetadata.activity.displayName, camelCase keys, resolved root bindings"
+    command: "python3 $TASK_DIR/check_metadata_splice.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

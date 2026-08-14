@@ -151,6 +151,85 @@ def task_is_skeleton(task: dict) -> bool:
     return not (data.get("name") and data.get("folderPath"))
 
 
+def connector_context_entry(block: dict, name: str) -> dict | None:
+    """Named `context` entry of a connector block (`data` for a task, `uipath` for a rule)."""
+    entries = (block or {}).get("context") or []
+    return next(
+        (e for e in entries if isinstance(e, dict) and e.get("name") == name), None
+    )
+
+
+def studio_web_activity_name(block: dict) -> str | None:
+    """Value Studio Web renders in the connector node's "Select activity" field.
+
+    The properties panel reads exactly one path on load — the `metadata` context
+    entry's `body.activityMetadata.activity.displayName`
+    (`PO.Frontend/src/utils/IntsvcCommonUtils.ts:267-273`, consumed by
+    `IntsvcActivityProperties.tsx`; the Studio-Web-authored shape is asserted in
+    `useTriggerTypeToolbox.test.tsx:256`). The `designTimeMetadata` fallback in
+    that same function is the Integration Service schema and is NOT valid for
+    case management — the plugin forbids emitting it — so this reads the SW path
+    only. Returns None when the picker would render blank.
+    """
+    body = (connector_context_entry(block, "metadata") or {}).get("body") or {}
+    activity = (body.get("activityMetadata") or {}).get("activity") or {}
+    display_name = activity.get("displayName")
+    return display_name if isinstance(display_name, str) and display_name.strip() else None
+
+
+def assert_studio_web_activity_ready(block: dict, what: str) -> str:
+    """Fail when `what`'s connector block carries no Studio Web picker value.
+
+    Guards the MST-13544 shape: a connector node whose `context` resolved far
+    enough to satisfy `uip maestro case validate` (and `task_is_skeleton`) while
+    the activity metadata never made it in, so "Select activity" is empty and the
+    node cannot be edited in Studio Web. Mirrors Check 12 sub-check 6 in
+    `implementation.md`.
+    """
+    display_name = studio_web_activity_name(block)
+    if display_name:
+        return display_name
+    metadata = connector_context_entry(block, "metadata")
+    body = (metadata or {}).get("body")
+    if not (block or {}).get("context"):
+        reason = (
+            "the block carries no `context` at all — Phase 2 / `case spec`-failed shape "
+            "(Check 12 sub-check 1), so nothing was spliced"
+        )
+    elif metadata is None:
+        reason = (
+            "no `metadata` entry in `context` — the spliced `caseShape.context` carries "
+            "one; a context assembled by hand does not"
+        )
+    elif isinstance(body, dict) and "ActivityMetadata" in body:
+        reason = (
+            "`metadata.body` has PascalCase `ActivityMetadata` — the Step 8.a re-casing "
+            "pass was skipped, so the frontend cannot find `activityMetadata`"
+        )
+    else:
+        reason = (
+            "`metadata.body.activityMetadata.activity.displayName` is missing or empty; "
+            f"metadata.body keys: {sorted(body) if isinstance(body, dict) else body!r}"
+        )
+    _fail(
+        f"{what}: Studio Web would render an empty \"Select activity\" — {reason}. "
+        "Re-splice `context` verbatim from the node's `tasks/spec-cache.<elementId>.json` "
+        "(implementation.md Check 12). `uip maestro case validate` reports Valid either way."
+    )
+
+
+def _collect_keys(node, acc: set) -> set:
+    """Every object key anywhere under `node`."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            acc.add(k)
+            _collect_keys(v, acc)
+    elif isinstance(node, list):
+        for v in node:
+            _collect_keys(v, acc)
+    return acc
+
+
 # ── Schema-aware structural helpers ─────────────────────────────────────────
 #
 # Case-level metadata lives at the top level alongside a `metadata` block — the
