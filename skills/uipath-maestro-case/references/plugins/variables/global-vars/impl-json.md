@@ -185,20 +185,37 @@ SDD row: `Category=Variable`, no `sourceTriggers`, optional `Default`.
   "custom": true, "elementId": "root", "default": "Open" }
 ```
 
-**`default` stays a quoted string when the `type` is not `string`** — see [§ `default` encoding](#default-encoding--every-type-mandatory). The three shapes that get this wrong most often:
+No trigger.outputs[] write, no root.inputs[] / outputs[] writes.
 
-```json
-{ "id": "skipReview", "name": "skipReview", "type": "boolean",
-  "custom": true, "elementId": "root", "default": "false" }     // NOT false
+### `default` encoding — EVERY type, MANDATORY
 
-{ "id": "retryCount", "name": "retryCount", "type": "integer",
-  "custom": true, "elementId": "root", "default": "3" }         // NOT 3
+`default` is **a JSON string on every variable, whatever its `type`**. Never emit an object, array,
+number, or boolean there.
 
-{ "id": "claimRecord", "name": "claimRecord", "type": "jsonSchema",
-  "custom": true, "elementId": "root", "default": "{}" }        // NOT {}
+```jsonc
+"default": "{\"amount\":125.5}"   // jsonSchema — string-encoded JSON
+"default": "5"                     // integer
+"default": "true"                  // boolean
+"default": "2029-10-12"            // date
+"default": ""                      // file (must be empty) / no default
 ```
 
-No trigger.outputs[] write, no root.inputs[] / outputs[] writes.
+**A non-primitive `default` is deleted, silently.** The caseplan → BPMN converter keeps only primitive
+attributes ([`bpmn-moddle.ts` `onlyPrimitiveVariableFields`](https://github.com/UiPath/PO.Frontend/blob/develop/src/services/serialization/bpmn-moddle.ts#L323-L331)):
+
+```ts
+if (value === null || typeof value !== "object") { result[key] = value; }
+```
+
+An object default is dropped, the emitted BPMN carries no `default` attribute for that variable, and
+the variable is **null at runtime** while every string-defaulted variable beside it keeps `default=""`.
+The first task reading it fails — observed as `AGENT_STARTUP.INPUT_VALIDATION_ERROR / <input> Field
+required` on a task bound to `=vars.<thatVariable>`. Observed on a shipped build: 13 affected
+variables, one carrying the payload an agent task required.
+
+Nothing upstream catches it. `uip maestro case validate` returns `Valid`; the FE's own Zod schema
+types this field `z.any()` and parses it clean; only the serializer notices, and it does not report.
+**This recipe is the enforcement point** — Step 12 Check 14 is the backstop.
 
 ### Trigger-sourced Variable (Pattern C)
 
@@ -369,36 +386,6 @@ Writes a fixed constant to a global variable when a task completes — not from 
 | `target` | `"=<varId>"` | omitted |
 
 Custom outputs are an existing task-plugin concept, unchanged by B's redesign. They are the emission shape for SDD `=` rows (set / compute / copy operations per [`../io-binding/planning.md`](../io-binding/planning.md)): when a task's Outputs table contains `caseVar = expression`, the task plugin emits a `custom: true` entry with `var: <caseVar's id>, value: <expression>, source: <same as value>, elementId: "root"`, and NO root mirror is created (per FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64`). The `->` operator handles schema-field extraction and renaming; `=` handles literal / computed / variable-reference writes.
-
-## `default` encoding — EVERY type, MANDATORY
-
-`default` is **a JSON string on every variable, whatever its `type`**. Never emit an object, array,
-number, or boolean there.
-
-```jsonc
-"default": "{\"amount\":125.5}"   // jsonSchema — string-encoded JSON
-"default": "5"                     // integer
-"default": "true"                  // boolean
-"default": "2029-10-12"            // date
-"default": ""                      // file (must be empty) / no default
-```
-
-**A non-primitive `default` is deleted, silently.** The caseplan → BPMN converter keeps only primitive
-attributes ([`bpmn-moddle.ts` `onlyPrimitiveVariableFields`](https://github.com/UiPath/PO.Frontend/blob/develop/src/services/serialization/bpmn-moddle.ts#L323-L331)):
-
-```ts
-if (value === null || typeof value !== "object") { result[key] = value; }
-```
-
-An object default is dropped, the emitted BPMN carries no `default` attribute for that variable, and
-the variable is **null at runtime** while every string-defaulted variable beside it keeps `default=""`.
-The first task reading it fails — observed as `AGENT_STARTUP.INPUT_VALIDATION_ERROR / <input> Field
-required` on a task bound to `=vars.<thatVariable>`. Observed on a shipped build: 13 affected
-variables, one carrying the payload an agent task required.
-
-Nothing upstream catches it. `uip maestro case validate` returns `Valid`; the FE's own Zod schema
-types this field `z.any()` and parses it clean; only the serializer notices, and it does not report.
-**This recipe is the enforcement point** — Step 12 Check 14 is the backstop.
 
 ## jsonSchema type
 
