@@ -57,7 +57,7 @@ Before any build step, initialize an empty issue buffer **in the agent's reasoni
 issues = []
 ```
 
-> **Why incremental.** A list held in reasoning for the whole build is lost to context pressure before it is ever written, and no Step 12 check reads the log. Measured on two independent runs of the same task: `claude-sonnet-5` (52.4 min, 39 placeholder tasks, 120 `<UNRESOLVED>` markers) and `gpt-5.6-terra` (7.2 min, 23 placeholder tasks, 0 markers) — **neither wrote `build-issues.md` at all**, and both looked like builds a reviewer would accept. Flushing per section bounds worst-case loss to one section and rides the validate seam that already exists there.
+> **Why incremental.** A whole-build buffer held in reasoning is lost to context pressure before it is ever written, and no Step 12 check reads the log. Flushing per section bounds worst-case loss to one section and rides the validate seam already at that boundary.
 
 ---
 
