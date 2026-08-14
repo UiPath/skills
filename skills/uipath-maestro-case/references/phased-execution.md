@@ -135,7 +135,7 @@ Proceed directly to Phase 3.
 
 #### On `Abort`
 
-1. Dump in-memory issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md).
+1. **Append** the current section's buffered issues to the existing `tasks/build-issues.md` journal, then fill the summary block, per [`plugins/logging/impl-json.md` § Flush](plugins/logging/impl-json.md). **Never whole-file dump here** — the journal already holds rows from every completed section and the per-section buffer has been cleared, so replacing the file would destroy that history. If the file does not exist (abort before the first section boundary), create it per § Flush.
 2. Print paths of `caseplan.json`, `tasks.md`, `registry-resolved.json`, and solution directory.
 3. Print `Suggested next steps: inspect tasks/build-issues.md and the generated artifacts, then rerun after editing the design or plan.`
 4. Exit skill.
@@ -181,7 +181,7 @@ End of detail mutations. Run full-mode validate (omit `--skeleton`; defaults to 
 uip maestro case validate "<caseplan.json path>" --output json
 ```
 
-On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "Valid" } }` — proceed to Phase 4 dump step.
+On success: `{ Result: "Success", Code: "CaseValidate", Data: { File, Status: "Valid" } }` — proceed to the Phase 4 issue-log summary step.
 
 On failure: output lists `[error]` and `[warning]` entries with path and message. Fix reported issues (usually via targeted re-run of earlier step) and re-run `validate`.
 
@@ -195,7 +195,7 @@ Up to **3 validation retries** per session — each retry MUST be preceded by a 
 
 - `Retry with fix` — agent attempts fix, re-runs validate (counter does not reset).
 - `Pause for manual edit` — exit skill mid-flight; user edits `caseplan.json` directly and re-runs skill.
-- `Abort` — exit; dump `build-issues.md`; leave artifacts in place.
+- `Abort` — exit; append the current buffer to the `build-issues.md` journal and summarize (never replace it); leave artifacts in place.
 
 ### Summarize the issue log
 
@@ -319,7 +319,7 @@ Abort can occur at any hard stop:
 
 All follow same cleanup:
 
-1. Dump `build-issues.md`.
+1. Append the current buffer to the `build-issues.md` journal and fill the summary — append-only, never a whole-file replace.
 2. Print paths.
 3. Exit.
 

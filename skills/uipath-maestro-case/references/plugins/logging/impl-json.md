@@ -6,20 +6,7 @@ Unified issue log for the implementation phase. Initialized by `implementation.m
 
 > **Pseudocode only.** The snippets below are data-shape specifications, not runnable code. The agent accumulates issues in its own reasoning *within a section* and emits `tasks/build-issues.md` with the Write/Edit tools at each flush. Do NOT create a `.py` script or shell out to Python — per [`case-editing-operations.md § Tool usage`](../../case-editing-operations.md#tool-usage--mandatory), Read/Write/Edit are the only I/O primitives.
 
-## Why the log is incremental
-
-An issue list held in reasoning for the whole build is lost to context pressure before it is ever written, and nothing downstream notices — Step 12's checks read `caseplan.json` and its sidecars, never the log.
-
-Measured, two independent runs of the same task on different models:
-
-| Run | `<UNRESOLVED>` in `tasks.md` | Placeholder tasks | `build-issues.md` |
-|---|---|---|---|
-| `claude-sonnet-5`, 52.4 min | 120 | 39 | **never written** |
-| `gpt-5.6-terra` (codex), 7.2 min | 0 | 23 | **never written** |
-
-Both scored as builds a reviewer would accept. In the second, 23 placeholder tasks were recorded *nowhere* — not even as markers in `tasks.md`. The operator receives unwired resources with no record of which ones.
-
-**Flush grain is the section boundary, not the issue.** Per-issue writes would cost one Edit per finding and fight the [per-section batch write contract](../../case-editing-operations.md#per-section-batch-write-contract--canonical); per-build writes are the defect above. A section boundary already carries a validate, so the flush rides an existing seam and bounds worst-case loss to one section.
+**Flush grain: the section boundary.** Not per issue (one Edit per finding, fights the [per-section batch write contract](../../case-editing-operations.md#per-section-batch-write-contract--canonical)); not per build (a whole-build buffer is lost to context pressure before it is written, and no Step 12 check reads the log). A section boundary already carries a validate, so the flush rides an existing seam and bounds loss to one section.
 
 ## Setup — Step 6 entry
 
