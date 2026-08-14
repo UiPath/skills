@@ -831,26 +831,28 @@ def assert_connector_error_handlers(
         return _is_connector_node(nodes.get(nid, {}) or {})
 
     def reaches_terminating(start: str) -> bool:
-        # A graceful path must reach a terminating node WITHOUT passing through any
-        # connector — a connector anywhere downstream can fault again. Connectors
-        # are neither counted as terminating nor traversed through.
+        # The handler's ENTIRE reachable subgraph must be connector-free and reach a
+        # terminating node. If ANY reachable branch enters a connector it can fault
+        # again instead of degrading gracefully, so the whole handler is rejected —
+        # a mixed handler (one branch to End, another into a connector) does not pass.
         seen: set = set()
         q = deque([start])
+        saw_terminating = False
         while q:
             n = q.popleft()
             if n in seen:
                 continue
             seen.add(n)
             if is_connector(n):
-                continue  # can fault again — not a graceful terminus, don't traverse it
+                return False  # any connector branch can fault → not graceful
             t = str(nodes.get(n, {}).get("type", "")).lower()
             outs = adj.get(n, [])
             if "end" in t or not outs:  # End node, or a non-connector dead-end handler
-                return True
+                saw_terminating = True
             for _, tgt in outs:
                 if tgt:
                     q.append(tgt)
-        return False
+        return saw_terminating
 
     bad = []
     for sid in sorted(nid for nid in node_ids if nid):

@@ -23,17 +23,26 @@ ISSUETYPE_ID = "11457"    # "Task" issue type, scoped to the CE project
 
 
 def _issue_not_found(env: dict) -> bool:
-    """True only for a STRUCTURED HTTP 404 from the Jira provider — proof the
-    requested issue key is absent. A bare ``"404"`` substring or a generic
-    ``"not found"`` (which could mean the connection/activity is missing, not the
-    issue) is NOT accepted, so a prerequisite failure can't masquerade as a
-    confirmed deletion."""
+    """True only for an ISSUE-SPECIFIC not-found from the Jira operation — proof the
+    requested issue key is absent. Requires BOTH a structured HTTP 404 AND an
+    issue-scoped signal (the provider phrases a missing issue as e.g. "Issue does
+    not exist ..."). A bare ``"404"``/``"not found"`` substring, or a 404 that
+    refers to a missing connection/activity/other prerequisite (no issue mention),
+    is NOT accepted — so a prerequisite failure can't masquerade as a confirmed
+    issue deletion. Being strict is the safe direction here: a false negative only
+    makes teardown print WARN, while a false positive would leak the CE issue."""
     blob = json.dumps(env)
-    return bool(
+    structured_404 = bool(
         re.search(r"status code ['\"]?404\b", blob, re.I)
         or re.search(r'"providerErrorCode"\s*:\s*404\b', blob)
         or re.search(r'"statusCode"\s*:\s*"?404\b', blob)
     )
+    issue_specific = bool(
+        re.search(r"issue\s+(does\s+not\s+exist|not\s+found|no\s+longer\s+exists)", blob, re.I)
+        or re.search(r"(does\s+not\s+exist|not\s+found).{0,40}\bissue\b", blob, re.I)
+        or re.search(r"\bissueId\b", blob)
+    )
+    return structured_404 and issue_specific
 
 
 def _run(*args: str) -> dict:

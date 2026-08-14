@@ -75,20 +75,25 @@ def main() -> None:
     # that exact string in the posted message.
     script_nodes = completed_node_ids_of_type(payload, "script")
     sev = case["expected"]["severity"]
-    classify_ids = {
-        nid for nid in script_nodes
+    sev_scripts = [
+        nid for nid in sorted(n for n in script_nodes if n)
         if normalized(find_node_output_value(payload, "severity", node_ids={nid})) == normalized(sev)
-    }
-    if not classify_ids:
+    ]
+    if not sev_scripts:
         raise SystemExit(
             f"FAIL: no executed Script node produced the expected severity {sev!r} — "
             "cannot bind the nextSteps check to the classification Script"
         )
-    next_steps = find_node_output_field(payload, "nextSteps", node_ids=classify_ids)
+    # Bind to ONE node: the same Script that produced severity must ALSO produce
+    # nextSteps, so the classification can't be split across cosmetic Scripts.
+    next_steps = next(
+        (ns for nid in sev_scripts for ns in [find_node_output_field(payload, "nextSteps", node_ids={nid})] if ns),
+        None,
+    )
     if not next_steps:
         raise SystemExit(
-            "FAIL: the classification Script did not produce a nextSteps value — the "
-            "prompt requires classifying a short next-steps string"
+            "FAIL: the Script that produced the expected severity did not also produce "
+            "a nextSteps value — the prompt requires classifying a short next-steps string"
         )
 
     # The Slack side effect, verified against the executed send's own response:

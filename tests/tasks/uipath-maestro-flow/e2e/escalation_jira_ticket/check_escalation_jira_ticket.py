@@ -176,18 +176,32 @@ def main() -> None:
     # unrelated Script from supplying engineeringNeeded while the real classifier omits it.
     script_nodes = completed_node_ids_of_type(payload, "script")
     sev = (seed.get("expected") or {}).get("severity")
-    classify_ids = {
-        nid for nid in script_nodes
+    sev_scripts = [
+        nid for nid in sorted(n for n in script_nodes if n)
         if normalized(find_node_output_value(payload, "severity", node_ids={nid})) == normalized(sev)
-    }
-    if not classify_ids:
+    ]
+    if not sev_scripts:
         _fail(f"no executed Script node produced the expected severity {sev!r} — cannot bind the classification checks")
-    for name, expected in (seed.get("expected_script") or {}).items():
-        actual = find_node_output_value(payload, name, node_ids=classify_ids)
-        if actual is None:
-            _fail(f"the classification Script did not compute {name!r} (required by the prompt)")
-        if normalized(actual) != normalized(expected):
-            _fail(f"Script output {name!r}: expected {expected!r}, got {actual!r}")
+    # Bind ALL classifications to ONE node: the same Script that produced the
+    # severity must ALSO carry the expected engineeringNeeded. A split across two
+    # cosmetic Scripts (one emits severity, another engineeringNeeded) fails.
+    expected_script = seed.get("expected_script") or {}
+
+    def carries_all(nid: str):
+        for name, expected in expected_script.items():
+            actual = find_node_output_value(payload, name, node_ids={nid})
+            if actual is None:
+                return f"{name!r} missing"
+            if normalized(actual) != normalized(expected):
+                return f"{name!r}={actual!r} (expected {expected!r})"
+        return None
+
+    if not any(carries_all(nid) is None for nid in sev_scripts):
+        detail = "; ".join(f"{nid}: {carries_all(nid)}" for nid in sev_scripts)
+        _fail(
+            "no single executed Script carries the expected severity AND the "
+            f"classification fields together — classification is split or missing ({detail})"
+        )
 
     print("PASS: escalation flow created a real Jira ticket with the expected classification")
 
