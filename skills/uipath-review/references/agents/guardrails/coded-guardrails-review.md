@@ -153,9 +153,13 @@ Build a `{ validatorId: status }` lookup from the `Data` array (use only `Status
 ### SDK Docs (only when a finding must name Python classes)
 
 Fetch SDK docs **only when** a finding's message must map `validator_id` ↔ Python class and the class is not
-already visible in the agent source. Wired guardrails carry their own class names in the source; Relevance verdicts
-and generically-phrased recommendations need no mapping — skip this subsection for them. When the mapping IS
-needed, fetch via `WebFetch`:
+already visible in the agent source. The catalog and validator list speak `validator_id` only and carry no Python
+class names — the SDK docs are the sole translation table between the two vocabularies, not a second verdict
+authority. A source-visible class name may be cited as the **observed wiring** (its structural validity — real
+class, correct module, valid contract — is the deterministic CLI's job: `CODED_GUARDRAIL_WRONG_IMPORT` / <!-- uip-check-skip -->
+`CODED_GUARDRAIL_INVALID_CONTRACT`); any class the report **prescribes** comes from the SDK docs, never memory.
+Relevance verdicts and generically-phrased recommendations need no mapping — skip this subsection for them. When
+the mapping IS needed, fetch via `WebFetch`:
 
 - `https://uipath.github.io/uipath-python/core/guardrails/` — validators, entity enums, `GuardrailScope` /
   `GuardrailExecutionStage`, action classes.
