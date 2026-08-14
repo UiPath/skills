@@ -582,7 +582,6 @@ def assert_slack_message_posted(
     # mapping a different hard-coded ts is rejected.
     gvars = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
     matched_out = None
-    any_ts = False
     for e in completed:
         nid = _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId")
         out = gvars.get(f"{nid}.output") if isinstance(gvars, dict) else None
@@ -593,12 +592,13 @@ def assert_slack_message_posted(
             for x in _leaves(out)
             if isinstance(x, str) and _SLACK_TS_RE.match(str(x).strip())
         }
-        if ts_leaves:
-            any_ts = True
         if text in ts_leaves:
             matched_out = out
             break
-    if any_ts and matched_out is None:
+    # A real send's response always carries its ts; require the mapped
+    # slackMessageId to be that response's ts. If no executed Slack node's output
+    # exposes this exact ts, the value was not produced by the executed send.
+    if matched_out is None:
         _fail_with_capture(
             f"slackMessageId {text} does not match any executed Slack node's response "
             "ts; the mapped ts was not produced by the executed send"
@@ -646,6 +646,27 @@ def assert_node_type_executed(
             f"no {type_hint!r} node executed in the debug trace (nodes {sorted(i for i in ids if i)}); "
             "it is present in the source but not on the executed path"
         )
+
+
+def completed_connector_node_ids(
+    payload: dict, connector_key: str, *, project_glob: str = "**/project.uiproj"
+) -> set:
+    """Return the ids of ``connector_key`` nodes with a ``Completed``
+    elementExecution in this run — i.e. which connector node actually fired.
+    Used to prove branch routing across cases (escalation vs triage must fire
+    different nodes, not one dynamic node behind a cosmetic Decision)."""
+    ids = {
+        n.get("id")
+        for n in _iter_flow_nodes(project_glob)
+        if connector_key in str(n.get("type", ""))
+    }
+    els = _get_ci(payload, "elementExecutions", "Elements", "elements") or []
+    return {
+        _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId")
+        for e in els
+        if _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId") in ids
+        and str(_get_ci(e, "status", "Status")).lower() == "completed"
+    }
 
 
 def read_flow_input_vars(project_dir: str) -> list[str]:

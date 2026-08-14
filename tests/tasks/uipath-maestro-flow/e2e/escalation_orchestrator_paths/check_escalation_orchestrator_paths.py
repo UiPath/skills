@@ -28,6 +28,7 @@ from _shared.flow_check import (  # noqa: E402
     assert_named_equals,
     assert_node_type_executed,
     assert_slack_message_posted,
+    completed_connector_node_ids,
     run_debug,
 )
 
@@ -35,7 +36,7 @@ SLACK_KEY = "uipath-salesforce-slack"
 SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 
 
-def verify_case(case: dict) -> None:
+def verify_case(case: dict) -> set:
     # retries=1: seven cases run serially, so a bounded per-case budget keeps the
     # total within the criterion timeout; a genuine transient failure fails cleanly.
     payload = run_debug(inputs=case["inputs"], timeout=300, retries=1)
@@ -53,8 +54,10 @@ def verify_case(case: dict) -> None:
     # The task is tagged node:decision: routing must go through a Decision that
     # actually executed — a disconnected Decision or a Script->Slack shortcut fails.
     assert_node_type_executed(payload, "core.logic.decision")
+    fired = completed_connector_node_ids(payload, SLACK_KEY)
     print(f"OK: {case['name']} produced the expected outcome"
           + (" + Slack message posted" if case.get("expect_slack") else ""))
+    return fired
 
 
 def main() -> None:
@@ -67,8 +70,32 @@ def main() -> None:
     cases = json.loads(seed_path.read_text(encoding="utf-8")).get("cases")
     if not isinstance(cases, list) or not cases:
         raise SystemExit("FAIL: seed.json must contain at least one case")
+
+    escalation_nodes: set = set()
+    triage_nodes: set = set()
     for case in cases:
-        verify_case(case)
+        fired = verify_case(case)
+        target = escalation_nodes if case["expected"]["escalationPath"] == "escalation" else triage_nodes
+        target.update(fired)
+
+    # The Decision must genuinely branch: escalation and triage paths post via
+    # DIFFERENT Slack nodes. A single dynamic Slack node behind a cosmetic
+    # always-true Decision would make these sets overlap.
+    if not escalation_nodes or not triage_nodes:
+        raise SystemExit(
+            "FAIL: expected both escalation and triage cases to fire a Slack node "
+            f"(escalation={escalation_nodes}, triage={triage_nodes})"
+        )
+    overlap = escalation_nodes & triage_nodes
+    if overlap:
+        raise SystemExit(
+            f"FAIL: escalation and triage cases fired the SAME Slack node(s) {overlap} — "
+            "the Decision does not route to two distinct branches"
+        )
+    print(
+        f"OK: Decision routes to two distinct Slack branches "
+        f"(escalation={sorted(escalation_nodes)}, triage={sorted(triage_nodes)})"
+    )
 
 
 if __name__ == "__main__":
