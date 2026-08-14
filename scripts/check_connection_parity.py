@@ -39,6 +39,8 @@ import pathlib
 import re
 import sys
 
+PLACEHOLDER_KEY = "placeholder"
+
 # caseplan stores a connector key two ways: as a plain field, and as an entry in
 # a task's `context` array. Both occur in real builds; miss the second and a
 # fully-broken caseplan reports zero connector references.
@@ -97,6 +99,11 @@ def check(solution_dir, quiet=False):
         emitted = sorted(solution_dir.glob("resources/*/connection/*/*.json"))
         emitted_keys = {p.parent.name for p in emitted}
         called_keys = set(_KEY_PLAIN.findall(raw)) | set(_KEY_CONTEXT.findall(raw))
+        # An unresolved connector rule carries the literal `connectorKey: "placeholder"`
+        # by contract (connector-trigger-impl.md § stub). That is a declared-unresolved
+        # marker, not a connector the case can call, so it needs no emitted resource —
+        # counting it would fail a correctly-placeholdered build.
+        called_keys.discard(PLACEHOLDER_KEY)
         missing_keys = called_keys - emitted_keys
 
         if not quiet:
