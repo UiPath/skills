@@ -185,6 +185,19 @@ SDD row: `Category=Variable`, no `sourceTriggers`, optional `Default`.
   "custom": true, "elementId": "root", "default": "Open" }
 ```
 
+**`default` stays a quoted string when the `type` is not `string`** — see [§ `default` encoding](#default-encoding--every-type-mandatory). The three shapes that get this wrong most often:
+
+```json
+{ "id": "skipReview", "name": "skipReview", "type": "boolean",
+  "custom": true, "elementId": "root", "default": "false" }     // NOT false
+
+{ "id": "retryCount", "name": "retryCount", "type": "integer",
+  "custom": true, "elementId": "root", "default": "3" }         // NOT 3
+
+{ "id": "claimRecord", "name": "claimRecord", "type": "jsonSchema",
+  "custom": true, "elementId": "root", "default": "{}" }        // NOT {}
+```
+
 No trigger.outputs[] write, no root.inputs[] / outputs[] writes.
 
 ### Trigger-sourced Variable (Pattern C)
