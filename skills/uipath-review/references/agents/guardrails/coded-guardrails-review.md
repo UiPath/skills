@@ -68,7 +68,7 @@ invalid set (→ `CODED_GUARDRAIL_ACTION_INEFFECTIVE`) or the agent's own contex
 `when_not_to_use` / `NOT_recommended_for` condition (→ `CODED_GUARDRAIL_MISAPPLIED`, Relevance) — use this bounded
 sequence **before** general manual review:
 
-1. run `uip codedagent review`; retain its deterministic findings and `Data.Grade`; <!-- uip-check-skip -->
+1. run `uip codedagent review`; retain its deterministic findings and `Data.Grade`;
 2. read the entry `.py` per [Read the agent first](#read-the-agent-first) — the wired guardrail's class, scope,
    stage, action, and target are all visible in that source; no SDK-doc mapping is needed;
 3. fetch the catalog and tenant validator list once, as specified in Step 0;
@@ -94,7 +94,7 @@ the intended product. If the clause does not directly match, continue normal Aud
 When the entry source clearly matches a catalog use case and no matching guardrail is wired (no middleware, no
 `@guardrail`), use this bounded sequence:
 
-1. run `uip codedagent review`; retain its deterministic findings and `Data.Grade`; <!-- uip-check-skip -->
+1. run `uip codedagent review`; retain its deterministic findings and `Data.Grade`;
 2. read the entry `.py` per [Read the agent first](#read-the-agent-first);
 3. fetch the catalog and tenant validator list once, as specified in Step 0;
 4. establish `CODED_GUARDRAIL_RECOMMENDED` per Recommend Mode steps 2–5, phrasing scope and action in catalog
@@ -156,7 +156,7 @@ Fetch SDK docs **only when** a finding's message must map `validator_id` ↔ Pyt
 already visible in the agent source. The catalog and validator list speak `validator_id` only and carry no Python
 class names — the SDK docs are the sole translation table between the two vocabularies, not a second verdict
 authority. A source-visible class name may be cited as the **observed wiring** (its structural validity — real
-class, correct module, valid contract — is the deterministic CLI's job: `CODED_GUARDRAIL_WRONG_IMPORT` / <!-- uip-check-skip -->
+class, correct module, valid contract — is the deterministic CLI's job: `CODED_GUARDRAIL_WRONG_IMPORT` /
 `CODED_GUARDRAIL_INVALID_CONTRACT`); any class the report **prescribes** comes from the SDK docs, never memory.
 Relevance verdicts and generically-phrased recommendations need no mapping — skip this subsection for them. When
 the mapping IS needed, fetch via `WebFetch`:
