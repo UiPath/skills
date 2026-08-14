@@ -159,7 +159,7 @@ Packs each contained project into a `.nupkg` and bundles them into one `<name>_<
 
 ## uip solution publish
 
-Publish a packed solution `.zip` to the tenant solution feed. **Requires `uip login`.** Phase 7 step 3 — consent-gated.
+Publish a packed solution `.zip` to the tenant solution feed. **Requires `uip login`.** Phase 7 step 4 — consent-gated.
 
 ```bash
 uip solution publish <packagePath> --wait --output json

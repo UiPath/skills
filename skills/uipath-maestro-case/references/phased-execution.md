@@ -254,7 +254,7 @@ Before this prompt, include `Suggested next steps: run a debug session if you ar
 
 After Phase 6 (whether debug ran or was skipped), prompt via **AskUserQuestion**:
 
-- `Publish to Orchestrator` — run the three commands below in order.
+- `Publish to Orchestrator` — run the four commands below in order.
 - `Done` — exit skill without publishing.
 
 > **Publish to Orchestrator ships the case to the tenant solution feed — a real, outward-facing publish. Only run when user explicitly selects it. Never auto-run** (Rule 12).
