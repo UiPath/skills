@@ -149,7 +149,7 @@ No hard stop on Phase 3 exit — proceed directly to Phase 4.
 
 1. Run Step 12 once at the Phase 3 → Phase 4 boundary. It performs Checks 1–12, including bindings sidecar parity (Check 7), global output-ID uniqueness (Check 8), resolved-resource emission/preservation (Check 9), formal-arg slot ID format (Check 10), resourceKey self-consistency (Check 11), and connector node resolution completeness (Check 12).
 2. After all Step 12 checks pass, run full `uip maestro case validate`. Retry up to 3×; on 3rd failure **HARD STOP** AskUserQuestion: `Retry with fix` / `Pause for manual edit` / `Abort`
-3. Dump `build-issues.md` (Step 12.1)
+3. Summarize `build-issues.md` (Step 12.1) — the journal has been on disk since the first Phase 2 section boundary; this step fills the grouped summary from it
 
 ### Phase 5 — Publish
 
