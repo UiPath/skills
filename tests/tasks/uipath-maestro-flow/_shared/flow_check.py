@@ -507,6 +507,16 @@ def assert_named_equals(
 _SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 
 
+def _op_matches(hint: str, text: str) -> bool:
+    """Separator- and case-insensitive operation match. A connector op is spelled
+    hyphenated in a native node type (``…send-message-to-channel``) but with
+    underscores (and a version suffix) in an HTTP-proxy endpoint path
+    (``/send_message_to_channel_v2``). Fold both to letters-only so either shape
+    of the same op matches."""
+    norm = lambda s: re.sub(r"[^a-z0-9]", "", str(s).lower())
+    return norm(hint) in norm(text)
+
+
 def _connector_node_ids(
     connector_key: str, project_glob: str, *, native_op_hint: str | None = None
 ) -> set:
@@ -523,7 +533,7 @@ def _connector_node_ids(
     ids: set = set()
     for n in _iter_flow_nodes(project_glob):
         t = str(n.get("type", ""))
-        if connector_key in t and (native_op_hint is None or native_op_hint in t):
+        if connector_key in t and (native_op_hint is None or _op_matches(native_op_hint, t)):
             ids.add(n.get("id"))
             continue
         detail = (n.get("inputs") or {}).get("detail") or {}
@@ -533,9 +543,10 @@ def _connector_node_ids(
         body = body if isinstance(body, dict) else {}
         target = str((body.get("targetConnector") or body.get("connectorKey") or "")).lower()
         # For connector-mode HTTP proxies the operation lives in the endpoint, not
-        # the node type; pin via a serialized contains-check on the detail when a
-        # hint is given so a proxy to a read endpoint is likewise excluded.
-        op_ok = native_op_hint is None or native_op_hint.lower() in json.dumps(detail).lower()
+        # the node type; pin via a separator-insensitive match on the serialized
+        # detail so a proxy to the documented /send_message_to_channel_v2 endpoint
+        # is accepted while a proxy to a read endpoint is excluded.
+        op_ok = native_op_hint is None or _op_matches(native_op_hint, json.dumps(detail))
         if (
             t.lower().startswith("core.action.http")
             and target == connector_key.lower()
@@ -678,6 +689,58 @@ def assert_node_type_executed(
         )
 
 
+def completed_node_ids_of_type(
+    payload: dict, type_hint: str, *, project_glob: str = "**/project.uiproj"
+) -> set:
+    """Return ids of flow nodes whose ``type`` contains ``type_hint`` that have a
+    ``Completed`` elementExecution in this run — the executed subset of that node
+    type. Used to tie structural checks (e.g. Decision branch routing) to the node
+    that actually ran, not merely one present in the source."""
+    ids = {
+        n.get("id")
+        for n in _iter_flow_nodes(project_glob)
+        if type_hint in str(n.get("type", ""))
+    }
+    els = _get_ci(payload, "elementExecutions", "Elements", "elements") or []
+    return {
+        _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId")
+        for e in els
+        if _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId") in ids
+        and str(_get_ci(e, "status", "Status")).lower() == "completed"
+    }
+
+
+def assert_connector_error_handlers(
+    connector_key: str,
+    *,
+    project_glob: str = "**/project.uiproj",
+    native_op_hint: "str | None" = None,
+) -> None:
+    """Assert every matching connector node has its ``error`` port wired to a
+    downstream handler — the graceful-degradation requirement. A connector node
+    whose ``error`` port is dangling (no outgoing edge) fails, so a flow that
+    omits the promised failure path cannot receive full credit."""
+    from collections import defaultdict
+
+    flow = _load_flow(project_glob)
+    edges = flow.get("edges") or []
+    node_ids = {i for i in _connector_node_ids(connector_key, project_glob, native_op_hint=native_op_hint) if i}
+    if not node_ids:
+        _fail(f"no {connector_key} node found to check error handlers on")
+    err_targets = defaultdict(set)
+    for e in edges:
+        if str(e.get("sourcePort") or "").lower() == "error":
+            tgt = e.get("targetNodeId")
+            if tgt:
+                err_targets[e.get("sourceNodeId")].add(tgt)
+    missing = sorted(nid for nid in node_ids if not err_targets.get(nid))
+    if missing:
+        _fail_with_capture(
+            f"{connector_key} node(s) {missing} have no error-port handler edge; "
+            "the flow does not degrade gracefully on a connector failure"
+        )
+
+
 def node_output_leaves(payload: dict, node_ids) -> set:
     """String leaves of the given nodes' outputs (``globals["<id>.output"]``) —
     used to tie a flow output back to the connector node that actually produced
@@ -707,19 +770,33 @@ def assert_decision_branches_reach(
     *,
     decision_type: str = "core.logic.decision",
     project_glob: str = "**/project.uiproj",
+    executed_decision_ids: "set | None" = None,
 ) -> None:
     """Assert some ``decision_type`` node has TWO distinct outgoing ports whose
     downstream reach separates ``branch_a_targets`` from ``branch_b_targets`` —
     i.e. the Decision itself routes to the two target groups (all A reachable from
     one port, all B from another, with no cross-contamination). Proves the two
     groups are the Decision's branches, not just nodes that happened to fire on
-    different cases behind a cosmetic always-true Decision."""
+    different cases behind a cosmetic always-true Decision.
+
+    When ``executed_decision_ids`` is given, only Decisions that actually executed
+    in the run are considered candidates — so a second, unexecuted Decision that
+    merely has the two source edges cannot satisfy the check while routing really
+    happens through a cosmetic Decision elsewhere."""
     from collections import defaultdict, deque
 
     flow = _load_flow(project_glob)
     edges = flow.get("edges") or []
     nodes = flow.get("nodes") or []
     decisions = [n.get("id") for n in nodes if decision_type in str(n.get("type", ""))]
+    if executed_decision_ids is not None:
+        decisions = [d for d in decisions if d in executed_decision_ids]
+        if not decisions:
+            _fail_with_capture(
+                f"no EXECUTED {decision_type!r} node in the run "
+                f"(executed={sorted(i for i in executed_decision_ids if i)}); routing did "
+                "not go through a Decision that actually ran"
+            )
     if not decisions:
         _fail(f"no {decision_type!r} node in the flow")
 

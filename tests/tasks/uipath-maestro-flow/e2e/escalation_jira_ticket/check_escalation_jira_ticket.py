@@ -114,12 +114,19 @@ def main() -> None:
         _fail(f"no Jira issue key (e.g. {project}-123) in flow debug outputs — the flow did not create a ticket")
     print(f"OK: candidate keys from debug: {cands}")
 
+    # Persist proven-created keys BEFORE the fallible tenant reread: any candidate
+    # that appears in the executed Create-Issue node's OWN output was created by
+    # THIS run, so teardown can delete it even if the tenant reread below fails
+    # transiently (jira_is.get_issue collapses a 5xx/auth envelope to None, which
+    # would otherwise leave owned empty and leak the issue in the shared CE project).
+    node_keys = [k for k in cands if k in node_output_leaves(payload, create_nodes)]
+    if node_keys:
+        Path(".created_keys").write_text("\n".join(node_keys) + "\n")
+
     conn = jira_is.connection_id()
 
-    # Record ONLY keys proven to belong to this run — an issue whose summary
-    # carries this run's correlationId. This is written before the classification
-    # assertions so teardown still cleans up if a later assertion fails, while
-    # never deleting an unrelated pre-existing issue in the shared CE project
+    # Tenant-confirm: the key belongs to this run — an issue whose summary carries
+    # this run's correlationId. Never deletes an unrelated pre-existing issue
     # (e.g. if a wrong flow echoed some other CE key into its output).
     owned = [
         k
@@ -127,8 +134,9 @@ def main() -> None:
         for f in [jira_is.get_issue(conn, k)]
         if f is not None and correlation in str(f.get("summary", ""))
     ]
-    if owned:
-        Path(".created_keys").write_text("\n".join(owned) + "\n")  # this run's ticket(s) only
+    created = list(dict.fromkeys(node_keys + owned))
+    if created:
+        Path(".created_keys").write_text("\n".join(created) + "\n")  # this run's ticket(s) only
     if not owned:
         _fail(
             f"none of {cands} is a Jira issue whose summary contains {correlation!r} — "
