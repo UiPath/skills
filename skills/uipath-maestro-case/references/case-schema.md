@@ -361,7 +361,7 @@ A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** —
   "id": "<ruleId>",
   "uipath": {
     "serviceType": "Intsvc.WaitForEvent",
-    "context": [ { "name": "connectorKey", "value": "<key>", "type": "string" }, { "name": "connection", "value": "=bindings.<id>", "type": "string" }, { "name": "resourceKey", "value": "<connection-id>", "type": "string" }, { "name": "folderKey", "value": "=bindings.<id>", "type": "string" }, { "name": "method", "value": "<httpMethod>", "type": "string" }, { "name": "path", "value": "<path>", "type": "string" }, { "name": "objectName", "value": "<object>", "type": "string" }, { "name": "operation", "value": "<eventOperation>", "type": "string" }, { "name": "metadata", "type": "json", "body": { } } ],
+    "context": [ { "name": "connectorKey", "value": "<key>", "type": "string" }, { "name": "connection", "value": "=bindings.<id>", "type": "string" }, { "name": "resourceKey", "value": "<connection-id>", "type": "string" }, { "name": "folderKey", "value": "=bindings.<id>", "type": "string" }, { "name": "method", "value": "<httpMethod>", "type": "string" }, { "name": "path", "value": "<path>", "type": "string" }, { "name": "objectName", "value": "<object>", "type": "string" }, { "name": "operation", "value": "<eventOperation>", "type": "string" }, { "name": "metadata", "type": "json", "body": { "activityMetadata": { "activity": { "displayName": "<CLI-spliced — never hand-authored>", "…": "…" } }, "activityPropertyConfiguration": { "…": "…" }, "…": "…" } } ],
     "inputs": [ ],
     "outputs": [ ],
     "bindings": []
@@ -371,6 +371,8 @@ A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** —
 ```
 
 > Full `validate` requires `rule.uipath` + `context` (absent → `connector activity missing`); the check is satisfied by `context` entries named `connectorKey` + `operation`, and does not inspect internals (a wrong `serviceType` passes). Confirm the connector resolves via Studio Web. The exact `context` field set is CLI-emitted and varies by connector — splice it verbatim from `case spec`; the 9 fields above are illustrative of an HTTP-event connector, not a fixed schema.
+>
+> **The `metadata` entry's `body` is spliced whole from `case spec`, never hand-authored.** Its `activityMetadata.activity.displayName` is the only path Studio Web reads for the node's **Select activity** field (`PO.Frontend` `src/utils/IntsvcCommonUtils.ts:267-273`). An empty `body: {}` — or a `context` composed by hand from the field names above — passes `validate` and renders a blank picker that cannot be edited in Studio Web (MST-13544). Verified at Phase 3 exit by [implementation.md § Step 12 Check 12](implementation.md#step-12--end-of-phase-3-validator-pass) sub-check 6.
 
 ---
 
