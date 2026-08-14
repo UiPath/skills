@@ -61,16 +61,19 @@ def main() -> None:
     # up. One attempt only; a genuine transient failure fails the run cleanly.
     try:
         payload = run_debug(inputs=seed["inputs"], timeout=480, retries=1)
-    except subprocess.TimeoutExpired as exc:
-        # The Create Issue node may have completed before the debug poll timed
-        # out. This connection is curated single-record (no JQL search), so
-        # best-effort: scan the partial CLI output for project-scoped keys and
-        # record ONLY those whose summary carries this run's correlationId — never
-        # an unrelated pre-existing issue.
-        partial = "".join(
-            s.decode() if isinstance(s, bytes) else (s or "")
-            for s in (exc.stdout, exc.stderr)
-        )
+    except (subprocess.TimeoutExpired, SystemExit) as exc:
+        # ANY debug failure (timeout, a later-node fault, or a transient poll
+        # error surfaced by run_debug via SystemExit) may leave a Create Issue
+        # that already succeeded. This connection is curated single-record (no JQL
+        # search), so best-effort: from whatever debug output we have, record ONLY
+        # keys whose summary carries this run's correlationId (verified via
+        # get_issue) — never an unrelated pre-existing issue.
+        partial = get_last_debug_raw() or ""
+        if isinstance(exc, subprocess.TimeoutExpired):
+            partial += "".join(
+                s.decode() if isinstance(s, bytes) else (s or "")
+                for s in (exc.stdout, exc.stderr)
+            )
         cands = list(dict.fromkeys(re.findall(rf"\b{re.escape(project)}-\d+\b", partial)))
         owned = []
         if cands:
@@ -81,10 +84,12 @@ def main() -> None:
                     for f in [jira_is.get_issue(conn, k)]
                     if f is not None and correlation in str(f.get("summary", ""))
                 ]
-            except Exception:  # noqa: BLE001 — best-effort cleanup, never mask the timeout
+            except Exception:  # noqa: BLE001 — best-effort cleanup, never mask the failure
                 owned = []
         if owned:
             Path(".created_keys").write_text("\n".join(owned) + "\n")
+        if isinstance(exc, SystemExit):
+            raise  # preserve run_debug's original failure message
         _fail(
             f"flow debug timed out after {exc.timeout}s"
             + (f"; recorded this-run key(s) {owned} for teardown" if owned else "")
