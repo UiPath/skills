@@ -333,7 +333,7 @@ Rules = Rule[][]
 | `required-stages-completed` | `id?`, `conditionExpression?` | All required stages have completed |
 | `current-stage-entered` | `id?`, `conditionExpression?` | The current stage was just entered |
 | `user-selected-stage` | `id?`, `conditionExpression?` | Fires when a user manually selects/routes to this stage |
-| `sla-status-change` | `id?`, `slaId?`, `escalationId?`, `conditionExpression?` | Fires when the referenced case/stage SLA breaches (`slaId` alone — an absent `escalationId` is the persisted Breached shape), or reaches the referenced at-risk escalation (`slaId` + that SLA's at-risk `escalationId`); stage-entry scope (`enter-stage`) and task-entry scope (`start-task`) |
+| `sla-status-change` | `id?`, `slaId?`, `escalationId?`, `conditionExpression?` | Fires when the referenced case/stage SLA breaches (`slaId` alone — an absent `escalationId` is the persisted Breached shape), or reaches the referenced at-risk escalation (`slaId` + that SLA's at-risk `escalationId`); stage-entry scope (`enter-stage`), task-entry scope (`start-task`), and case-exit scope (`exit-case`) |
 | `adhoc` | `id?`, `conditionExpression?` | Ad-hoc expression-based condition |
 | `runs-sequentially` | `id?`, `conditionExpression?` | Sequential tasks run in the order they appear in the stage from top to bottom | 
 

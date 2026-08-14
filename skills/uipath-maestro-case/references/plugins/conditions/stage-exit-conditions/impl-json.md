@@ -128,6 +128,18 @@ The exception lane's entry is `selected-stage-exited("<origin>") + IF =js:(vars.
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. Use bare `=js:<expr>` (no outer parens); for combined boolean expressions wrap each sub-clause in parens: `=js:(vars.X === 'foo') && (vars.Y > 5)`. **Use strict `===` / `!==`, never loose `==` / `!=` — normalize SDD shorthand like `approved == true` to `=js:vars.approved === true` (do not transcribe `==` verbatim).** Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
+## Exiting is not completing
+
+A stage that leaves through an exit with `marksStageComplete: false` is recorded in `stagesExited`, **never** in `stagesCompleted`. The two runtime sets are disjoint and are not unioned anywhere on the case-completion path.
+
+Consequences you must check every time you write a `marksStageComplete: false` exit that carries `exitToStageId` (i.e. the case keeps going):
+
+- A case-completion rule of type `required-stages-completed` compiles to a literal "all of these stages completed" list over every stage with `data.isRequired: true`. If this stage is one of them, that rule **can never fire on this path** — the case hangs with no error.
+- A `selected-stage-completed` rule naming this stage is likewise unsatisfiable on this path. Key it on `selected-stage-exited` instead, or on a downstream terminal stage that does complete.
+- `uip maestro case validate` does **not** detect either. The case publishes clean and hangs at runtime.
+
+Either clear `isRequired` on this stage, or make the case close on a rule this path can actually satisfy — see [case-exit-conditions/planning.md § Choosing the closure shape](../case-exit-conditions/planning.md#choosing-the-closure-shape).
+
 ## Post-Write Verification
 
 Confirm target stage's `data.exitConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksStageComplete`), `type`, `exitToStageId` (if set), `marksStageComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
