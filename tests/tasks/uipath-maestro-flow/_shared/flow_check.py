@@ -501,6 +501,35 @@ def assert_named_equals(payload: dict, name: str, expected: Any) -> None:
 _SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 
 
+def _connector_node_ids(connector_key: str, project_glob: str) -> set:
+    """Node ids that reach ``connector_key`` — a native connector node OR a
+    connector-mode ``core.action.http`` proxy carrying real connector auth
+    (authentication=connector + non-empty connectionId + connectionFolderKey),
+    the same shapes :func:`assert_flow_uses_connector_target` accepts. Shared so
+    the message check and the branch-routing check agree on what counts."""
+    ids: set = set()
+    for n in _iter_flow_nodes(project_glob):
+        t = str(n.get("type", ""))
+        if connector_key in t:
+            ids.add(n.get("id"))
+            continue
+        detail = (n.get("inputs") or {}).get("detail") or {}
+        if not isinstance(detail, dict):
+            continue
+        body = detail.get("bodyParameters") or {}
+        body = body if isinstance(body, dict) else {}
+        target = str((body.get("targetConnector") or body.get("connectorKey") or "")).lower()
+        if (
+            t.lower().startswith("core.action.http")
+            and target == connector_key.lower()
+            and str(body.get("authentication") or "").lower() == "connector"
+            and _non_empty_binding_value(detail.get("connectionId"))
+            and _non_empty_binding_value(detail.get("connectionFolderKey"))
+        ):
+            ids.add(n.get("id"))
+    return ids
+
+
 def assert_slack_message_posted(
     payload: dict,
     name: str,
@@ -532,32 +561,8 @@ def assert_slack_message_posted(
             r"\d{9,11}\.\d{4,6}); the flow did not actually post to Slack"
         )
 
-    # Slack node ids — a native connector node OR a connector-mode HTTP proxy
-    # targeting the connector (same shapes assert_flow_uses_connector_target
-    # accepts), so a valid HTTP-proxy Slack node isn't a false negative.
-    slack_ids: set = set()
-    for n in _iter_flow_nodes(project_glob):
-        t = str(n.get("type", ""))
-        if connector_key in t:
-            slack_ids.add(n.get("id"))
-            continue
-        # Connector-mode HTTP proxy — accept ONLY when it carries real connector
-        # auth (same gate as assert_flow_uses_connector_target): a disconnected
-        # HTTP node with just targetConnector set must not qualify.
-        detail = (n.get("inputs") or {}).get("detail") or {}
-        if not isinstance(detail, dict):
-            continue
-        body = detail.get("bodyParameters") or {}
-        body = body if isinstance(body, dict) else {}
-        target = str((body.get("targetConnector") or body.get("connectorKey") or "")).lower()
-        if (
-            t.lower().startswith("core.action.http")
-            and target == connector_key.lower()
-            and str(body.get("authentication") or "").lower() == "connector"
-            and _non_empty_binding_value(detail.get("connectionId"))
-            and _non_empty_binding_value(detail.get("connectionFolderKey"))
-        ):
-            slack_ids.add(n.get("id"))
+    # Native connector node OR a connector-mode HTTP proxy carrying real auth.
+    slack_ids = _connector_node_ids(connector_key, project_glob)
     if not slack_ids:
         _fail(f"no connected {connector_key} node found in the flow")
 
@@ -655,11 +660,7 @@ def completed_connector_node_ids(
     elementExecution in this run — i.e. which connector node actually fired.
     Used to prove branch routing across cases (escalation vs triage must fire
     different nodes, not one dynamic node behind a cosmetic Decision)."""
-    ids = {
-        n.get("id")
-        for n in _iter_flow_nodes(project_glob)
-        if connector_key in str(n.get("type", ""))
-    }
+    ids = _connector_node_ids(connector_key, project_glob)
     els = _get_ci(payload, "elementExecutions", "Elements", "elements") or []
     return {
         _get_ci(e, "elementId", "ElementId", "nodeId", "NodeId")
