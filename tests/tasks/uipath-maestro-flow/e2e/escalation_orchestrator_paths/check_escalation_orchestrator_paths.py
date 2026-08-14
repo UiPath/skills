@@ -35,6 +35,7 @@ from _shared.flow_check import (  # noqa: E402
 
 SLACK_KEY = "uipath-salesforce-slack"
 SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
+CASE_SENSITIVE = {"caseKey", "jiraIssueKey"}  # opaque ids — exact-case match
 
 
 def verify_case(case: dict) -> set:
@@ -42,15 +43,21 @@ def verify_case(case: dict) -> set:
     # total within the criterion timeout; a genuine transient failure fails cleanly.
     payload = run_debug(inputs=case["inputs"], timeout=300, retries=1)
     for name, expected in case["expected"].items():
-        assert_named_equals(payload, name, expected)
+        assert_named_equals(payload, name, expected, case_sensitive=(name in CASE_SENSITIVE))
     if case.get("expect_slack"):
-        # Real ts tied to the executed Slack node's response, posted to the right
-        # channel, with this case's correlationId in the message content.
+        # Real ts tied to the executed Slack SEND node's response, posted to the
+        # right channel, whose message carries this case's correlationId AND its
+        # classified severity (the alert must surface the classification, not just
+        # the id). Routing (escalation vs triage) is verified separately below via
+        # the decision-branch check, so it isn't re-asserted as message text here.
+        required = [case["inputs"]["correlationId"]]
+        if case["expected"].get("severity"):
+            required.append(case["expected"]["severity"])
         assert_slack_message_posted(
             payload,
             "slackMessageId",
             expected_channel=SLACK_CHANNEL,
-            must_contain=case["inputs"]["correlationId"],
+            must_contain=required,
         )
     # The task is tagged node:decision: routing must go through a Decision that
     # actually executed — a disconnected Decision or a Script->Slack shortcut fails.

@@ -34,6 +34,7 @@ from _shared.flow_check import (  # noqa: E402
 
 SLACK_KEY = "uipath-salesforce-slack"
 SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
+CASE_SENSITIVE = {"caseKey", "jiraIssueKey"}  # opaque ids — exact-case match
 
 
 def main() -> None:
@@ -49,20 +50,25 @@ def main() -> None:
         raise SystemExit("FAIL: seed.json must contain exactly one case")
     case = cases[0]
 
-    payload = run_debug(inputs=case["inputs"], timeout=300)
+    # retries=1: this flow POSTS to the shared Slack channel, so a whole-flow
+    # retry on a transient poll/5xx failure would post a duplicate alert. One
+    # attempt only; a genuine transient failure fails the run cleanly.
+    payload = run_debug(inputs=case["inputs"], timeout=300, retries=1)
 
-    # Classification outcomes.
+    # Classification outcomes. Opaque identifiers (caseKey) compare
+    # case-sensitively; enum-like values (severity, engineeringNeeded) do not.
     for name, expected in case["expected"].items():
-        assert_named_equals(payload, name, expected)
+        assert_named_equals(payload, name, expected, case_sensitive=(name in CASE_SENSITIVE))
 
     # The Slack side effect, verified against the executed send's own response:
-    # a real ts from an executed Slack node, posted to the coding-agent-testing
-    # channel, whose message carries this run's correlationId.
+    # a real ts from an executed Slack SEND node, posted to the coding-agent-testing
+    # channel, whose message carries BOTH this run's correlationId and the severity
+    # (the alert must surface every required field, not just the id).
     assert_slack_message_posted(
         payload,
         "slackMessageId",
         expected_channel=SLACK_CHANNEL,
-        must_contain=case["inputs"]["correlationId"],
+        must_contain=[case["inputs"]["correlationId"], case["expected"]["severity"]],
     )
 
     print(

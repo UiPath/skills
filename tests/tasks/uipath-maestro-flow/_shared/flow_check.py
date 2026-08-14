@@ -475,42 +475,55 @@ def assert_output_value(payload: dict, expected: Any) -> None:
     )
 
 
-def normalized(value: Any) -> Any:
-    """Normalize a scalar output for equality comparison: trim strings, fold
-    case, and coerce the literal strings ``"true"``/``"false"`` to booleans.
-    Shared so per-task checkers don't each re-declare it."""
+def normalized(value: Any, *, case_fold: bool = True) -> Any:
+    """Normalize a scalar output for equality comparison: trim strings, coerce
+    ``"true"``/``"false"`` to booleans, and (by default) fold case for enum-like
+    values. Pass ``case_fold=False`` for OPAQUE identifiers (correlation ids,
+    Jira keys) that must match exactly."""
     if isinstance(value, str):
-        lowered = value.strip().casefold()
+        text = value.strip()
+        lowered = text.casefold()
         if lowered == "true":
             return True
         if lowered == "false":
             return False
-        return lowered
+        return lowered if case_fold else text
     return value
 
 
-def assert_named_equals(payload: dict, name: str, expected: Any) -> None:
-    """Assert a named ``out`` variable is present, non-empty, and (after
-    :func:`normalized`) equals ``expected``. Shared across the escalation
-    checkers so the compare/normalize logic lives in one place."""
+def assert_named_equals(
+    payload: dict, name: str, expected: Any, *, case_sensitive: bool = False
+) -> None:
+    """Assert a named ``out`` variable is present, non-empty, and equals
+    ``expected``. Enum-like values compare case-insensitively; pass
+    ``case_sensitive=True`` for opaque identifiers (caseKey, jiraIssueKey)."""
     actual = assert_output_nonempty(payload, name)
-    if normalized(actual) != normalized(expected):
+    if normalized(actual, case_fold=not case_sensitive) != normalized(
+        expected, case_fold=not case_sensitive
+    ):
         _fail(f"output {name!r}: expected {expected!r}, got {actual!r}")
 
 
 _SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
 
 
-def _connector_node_ids(connector_key: str, project_glob: str) -> set:
+def _connector_node_ids(
+    connector_key: str, project_glob: str, *, native_op_hint: str | None = None
+) -> set:
     """Node ids that reach ``connector_key`` — a native connector node OR a
     connector-mode ``core.action.http`` proxy carrying real connector auth
     (authentication=connector + non-empty connectionId + connectionFolderKey),
     the same shapes :func:`assert_flow_uses_connector_target` accepts. Shared so
-    the message check and the branch-routing check agree on what counts."""
+    the message check and the branch-routing check agree on what counts.
+
+    ``native_op_hint`` pins the operation: when set, a node counts only if the
+    hint (e.g. ``send-message-to-channel``) appears in its node type — so a Slack
+    *read/search* activity that merely contains ``connector_key`` is not accepted
+    as send/delivery evidence."""
     ids: set = set()
     for n in _iter_flow_nodes(project_glob):
         t = str(n.get("type", ""))
-        if connector_key in t:
+        if connector_key in t and (native_op_hint is None or native_op_hint in t):
             ids.add(n.get("id"))
             continue
         detail = (n.get("inputs") or {}).get("detail") or {}
@@ -519,12 +532,17 @@ def _connector_node_ids(connector_key: str, project_glob: str) -> set:
         body = detail.get("bodyParameters") or {}
         body = body if isinstance(body, dict) else {}
         target = str((body.get("targetConnector") or body.get("connectorKey") or "")).lower()
+        # For connector-mode HTTP proxies the operation lives in the endpoint, not
+        # the node type; pin via a serialized contains-check on the detail when a
+        # hint is given so a proxy to a read endpoint is likewise excluded.
+        op_ok = native_op_hint is None or native_op_hint.lower() in json.dumps(detail).lower()
         if (
             t.lower().startswith("core.action.http")
             and target == connector_key.lower()
             and str(body.get("authentication") or "").lower() == "connector"
             and _non_empty_binding_value(detail.get("connectionId"))
             and _non_empty_binding_value(detail.get("connectionFolderKey"))
+            and op_ok
         ):
             ids.add(n.get("id"))
     return ids
@@ -537,7 +555,8 @@ def assert_slack_message_posted(
     connector_key: str = "uipath-salesforce-slack",
     project_glob: str = "**/project.uiproj",
     expected_channel: str | None = None,
-    must_contain: str | None = None,
+    must_contain: "str | list[str] | None" = None,
+    send_op: str = "send-message-to-channel",
 ) -> str:
     """Assert a Slack message was actually sent in this debug run.
 
@@ -561,10 +580,12 @@ def assert_slack_message_posted(
             r"\d{9,11}\.\d{4,6}); the flow did not actually post to Slack"
         )
 
-    # Native connector node OR a connector-mode HTTP proxy carrying real auth.
-    slack_ids = _connector_node_ids(connector_key, project_glob)
+    # A Slack SEND node (native send-message-to-channel, or a connector-mode HTTP
+    # proxy to that op) — a read/search activity that returns a message object is
+    # not delivery evidence, so it is excluded via send_op.
+    slack_ids = _connector_node_ids(connector_key, project_glob, native_op_hint=send_op)
     if not slack_ids:
-        _fail(f"no connected {connector_key} node found in the flow")
+        _fail(f"no connected {connector_key} {send_op} node found in the flow")
 
     els = _get_ci(payload, "elementExecutions", "Elements", "elements") or []
     completed = [
@@ -619,10 +640,14 @@ def assert_slack_message_posted(
                     f"Slack message posted to channel {posted!r}, expected {expected_channel!r}"
                 )
         if must_contain:
+            required = [must_contain] if isinstance(must_contain, str) else list(must_contain)
             content = " ".join(str(x) for x in _leaves(matched_out) if isinstance(x, str))
-            if must_contain not in content:
+            missing = [s for s in required if s not in content]
+            if missing:
                 _fail_with_capture(
-                    f"posted Slack message does not contain {must_contain!r} — wrong content"
+                    f"posted Slack message is missing required text {missing} — the "
+                    "message must carry every required field (severity, correlationId, "
+                    "next steps), not just some"
                 )
     return text
 

@@ -39,6 +39,7 @@ import jira_is  # noqa: E402
 JIRA_KEY = "uipath-atlassian-jira"
 JIRA_CREATE_KEY = "uipath-atlassian-jira.create-issue"
 ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-\d+$")
+CASE_SENSITIVE = {"caseKey", "jiraIssueKey"}  # opaque ids — exact-case match
 
 
 def _fail(msg: str) -> None:
@@ -147,12 +148,15 @@ def main() -> None:
 
     # Require the flow to actually EXPOSE the created key as jiraIssueKey (End
     # mapping present), not just create the ticket — harvesting the key from raw
-    # debug text must not substitute for the required output.
-    assert_named_equals(payload, "jiraIssueKey", match)
+    # debug text must not substitute for the required output. jiraIssueKey is an
+    # opaque tenant-issued identifier: compare case-sensitively (a lowercased
+    # variant must not pass).
+    assert_named_equals(payload, "jiraIssueKey", match, case_sensitive=True)
 
     # Named classification/correlation outputs the prompt requires (severity, caseKey).
+    # Opaque ids (caseKey) compare case-sensitively; enum-like values (severity) do not.
     for name, expected in (seed.get("expected") or {}).items():
-        assert_named_equals(payload, name, expected)
+        assert_named_equals(payload, name, expected, case_sensitive=(name in CASE_SENSITIVE))
 
     print("PASS: escalation flow created a real Jira ticket with the expected classification")
 
