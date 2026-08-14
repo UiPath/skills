@@ -567,6 +567,7 @@ def assert_slack_message_posted(
     project_glob: str = "**/project.uiproj",
     expected_channel: str | None = None,
     must_contain: "str | list[str] | None" = None,
+    must_contain_loose: "str | list[str] | None" = None,
     send_op: str = "send-message-to-channel",
 ) -> str:
     """Assert a Slack message was actually sent in this debug run.
@@ -650,15 +651,26 @@ def assert_slack_message_posted(
                 _fail_with_capture(
                     f"Slack message posted to channel {posted!r}, expected {expected_channel!r}"
                 )
+        if must_contain or must_contain_loose:
+            content = " ".join(str(x) for x in _leaves(matched_out) if isinstance(x, str))
         if must_contain:
             required = [must_contain] if isinstance(must_contain, str) else list(must_contain)
-            content = " ".join(str(x) for x in _leaves(matched_out) if isinstance(x, str))
             missing = [s for s in required if s not in content]
             if missing:
                 _fail_with_capture(
                     f"posted Slack message is missing required text {missing} — the "
                     "message must carry every required field (severity, correlationId, "
                     "next steps), not just some"
+                )
+        if must_contain_loose:
+            loose = [must_contain_loose] if isinstance(must_contain_loose, str) else list(must_contain_loose)
+            # Separator/case-insensitive: the escalationPath enum "unknown_customer"
+            # matches a rendered "unknown customer" / "Unknown Customer" too.
+            missing_loose = [s for s in loose if not _op_matches(s, content)]
+            if missing_loose:
+                _fail_with_capture(
+                    f"posted Slack message is missing required field(s) {missing_loose} "
+                    "(separator/case-insensitive) — e.g. the escalationPath"
                 )
     return text
 
@@ -738,6 +750,37 @@ def assert_connector_error_handlers(
         _fail_with_capture(
             f"{connector_key} node(s) {missing} have no error-port handler edge; "
             "the flow does not degrade gracefully on a connector failure"
+        )
+
+
+def assert_connector_send_identity(
+    connector_key: str,
+    *,
+    expected: str = "user",
+    param: str = "send_as",
+    project_glob: str = "**/project.uiproj",
+    native_op_hint: "str | None" = None,
+) -> None:
+    """Assert every matching connector send node carries the requested identity
+    binding (``queryParameters.<param> == expected``, e.g. ``send_as == "user"``).
+    A node that sends as the default bot instead of the prompt-required ``user``
+    fails here even though its runtime response (ts/channel/content) looks the same."""
+    send_ids = {i for i in _connector_node_ids(connector_key, project_glob, native_op_hint=native_op_hint) if i}
+    if not send_ids:
+        _fail(f"no {connector_key} send node found to check {param!r} on")
+    bad = []
+    for n in _iter_flow_nodes(project_glob):
+        if n.get("id") not in send_ids:
+            continue
+        detail = (n.get("inputs") or {}).get("detail") or {}
+        qp = detail.get("queryParameters") if isinstance(detail, dict) else None
+        val = str((qp or {}).get(param, "")).strip().lower()
+        if val != expected.strip().lower():
+            bad.append((n.get("id"), val or None))
+    if bad:
+        _fail_with_capture(
+            f"{connector_key} send node(s) do not set {param}={expected!r}: {bad}; "
+            "the prompt requires sending as the requested identity"
         )
 
 

@@ -25,6 +25,7 @@ sys.path.insert(0, _directory)
 
 from _shared.flow_check import (  # noqa: E402
     assert_connector_error_handlers,
+    assert_connector_send_identity,
     assert_decision_branches_reach,
     assert_flow_uses_connector_target,
     assert_named_equals,
@@ -48,17 +49,19 @@ def verify_case(case: dict) -> tuple:
         assert_named_equals(payload, name, expected, case_sensitive=(name in CASE_SENSITIVE))
     if case.get("expect_slack"):
         # Real ts tied to the executed Slack SEND node's response, posted to the
-        # right channel, whose message carries this case's correlationId. The
-        # orchestrator's severity taxonomy (e.g. "informational") is an internal
-        # classification label its prompt does not require verbatim in the alert
-        # text, so it is asserted as a named `out` (above), not as message content.
-        # Routing (escalation vs triage) is verified separately via the
-        # decision-branch check below.
+        # right channel, whose message carries this case's correlationId (exact)
+        # AND its escalationPath (prompt line 65 requires escalationPath +
+        # correlationId in every message). escalationPath is matched
+        # separator/case-insensitively so the enum "unknown_customer" also matches
+        # a rendered "unknown customer". The severity taxonomy (e.g.
+        # "informational") is an internal label the prompt does NOT require in the
+        # text, so it stays a named-out assertion, not message content.
         assert_slack_message_posted(
             payload,
             "slackMessageId",
             expected_channel=SLACK_CHANNEL,
             must_contain=case["inputs"]["correlationId"],
+            must_contain_loose=[case["expected"]["escalationPath"]],
         )
     # The task is tagged node:decision: routing must go through a Decision that
     # actually executed — a disconnected Decision or a Script->Slack shortcut fails.
@@ -83,16 +86,19 @@ def main() -> None:
 
     escalation_nodes: set = set()
     triage_nodes: set = set()
-    executed_decisions: set = set()
+    escalation_decisions: set = set()
+    triage_decisions: set = set()
     for case in cases:
         fired, decisions = verify_case(case)
-        target = escalation_nodes if case["expected"]["escalationPath"] == "escalation" else triage_nodes
-        target.update(fired)
-        executed_decisions.update(decisions)
+        is_escalation = case["expected"]["escalationPath"] == "escalation"
+        (escalation_nodes if is_escalation else triage_nodes).update(fired)
+        (escalation_decisions if is_escalation else triage_decisions).update(decisions)
 
     # Prompt requires each Slack node's error port wired to a handler for graceful
-    # degradation — assert that structurally so a flow omitting it can't get full credit.
+    # degradation, and every send to go out as `user` — assert both structurally so
+    # a flow omitting them can't get full credit.
     assert_connector_error_handlers(SLACK_KEY, native_op_hint="send-message-to-channel")
+    assert_connector_send_identity(SLACK_KEY, expected="user", native_op_hint="send-message-to-channel")
 
     # The Decision must genuinely branch: escalation and triage paths post via
     # DIFFERENT Slack nodes. A single dynamic Slack node behind a cosmetic
@@ -108,11 +114,14 @@ def main() -> None:
             f"FAIL: escalation and triage cases fired the SAME Slack node(s) {overlap} — "
             "the Decision does not route to two distinct branches"
         )
-    # And prove those two nodes are the Decision's OWN outgoing branches — and that
-    # the routing Decision is one that ACTUALLY EXECUTED (not a second, unexecuted
-    # Decision that merely has the two source edges behind a cosmetic always-true one).
+    # And prove those two nodes are the Decision's OWN outgoing branches — routed by
+    # ONE Decision that executed on BOTH sides. Requiring the routing Decision to be
+    # in the intersection (executed on an escalation case AND a triage case) blocks
+    # the split where a real Decision runs only for escalation while a separate
+    # cosmetic Decision runs on triage cases.
+    routing_decisions = escalation_decisions & triage_decisions
     assert_decision_branches_reach(
-        escalation_nodes, triage_nodes, executed_decision_ids=executed_decisions
+        escalation_nodes, triage_nodes, executed_decision_ids=routing_decisions
     )
     print(
         f"OK: a Decision routes escalation vs triage through separate branches "

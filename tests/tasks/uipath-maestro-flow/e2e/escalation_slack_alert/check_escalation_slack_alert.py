@@ -26,6 +26,7 @@ while _directory != os.path.dirname(_directory) and not os.path.isdir(
 sys.path.insert(0, _directory)
 
 from _shared.flow_check import (  # noqa: E402
+    assert_connector_send_identity,
     assert_flow_uses_connector_target,
     assert_named_equals,
     assert_slack_message_posted,
@@ -41,6 +42,9 @@ def main() -> None:
     # The flow must reach Slack through the real connector (or a connector-auth
     # HTTP proxy), not a hand-rolled unauthenticated HTTP call.
     assert_flow_uses_connector_target(SLACK_KEY)
+
+    # Prompt requires sending as `user` (not the default bot).
+    assert_connector_send_identity(SLACK_KEY, expected="user", native_op_hint="send-message-to-channel")
 
     seed_path = Path("seed.json")
     if not seed_path.is_file():
