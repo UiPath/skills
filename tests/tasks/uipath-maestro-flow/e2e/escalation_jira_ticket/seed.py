@@ -36,6 +36,10 @@ seed = {
         "correlationId": correlation,
     },
     "expected": {"severity": "Sev1", "caseKey": correlation},
+    # Classification the Script must compute but the prompt does not map to a named
+    # End out — verified against the Script node's intermediate output. Sev1 (prod
+    # down, no workaround) ⇒ engineeringNeeded true.
+    "expected_script": {"engineeringNeeded": True},
 }
 Path("seed.json").write_text(json.dumps(seed, indent=2) + "\n", encoding="utf-8")
 print(f"OK: wrote seed (correlationId={correlation}, project={jira_is.PROJECT_KEY}, issuetype={jira_is.ISSUETYPE_ID})")

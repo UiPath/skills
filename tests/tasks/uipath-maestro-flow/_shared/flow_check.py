@@ -579,6 +579,29 @@ def find_node_output_field(payload: dict, field: str) -> "str | None":
     return None
 
 
+_UNSET = object()
+
+
+def find_node_output_value(payload: dict, field: str) -> Any:
+    """Like :func:`find_node_output_field` but returns the raw value of any type
+    (bool, number, string) — the first non-None ``field`` found in any node's
+    ``.output``. Returns ``None`` when absent. Use for intermediate classification
+    outputs like ``engineeringNeeded`` (a boolean) that aren't mapped to a named
+    End ``out``. Field name matched separator/case-insensitively."""
+    gvars = _get_ci(_get_ci(payload, "variables", "Variables") or {}, "globals", "Globals") or {}
+    if not isinstance(gvars, dict):
+        return None
+    norm = lambda s: re.sub(r"[^a-z0-9]", "", str(s).lower())
+    want = norm(field)
+    for k, v in gvars.items():
+        if not (isinstance(k, str) and k.endswith(".output") and isinstance(v, dict)):
+            continue
+        for kk, vv in v.items():
+            if isinstance(kk, str) and norm(kk) == want and vv is not None:
+                return vv
+    return None
+
+
 def assert_slack_message_posted(
     payload: dict,
     name: str,
@@ -748,28 +771,59 @@ def assert_connector_error_handlers(
     project_glob: str = "**/project.uiproj",
     native_op_hint: "str | None" = None,
 ) -> None:
-    """Assert every matching connector node has its ``error`` port wired to a
-    downstream handler — the graceful-degradation requirement. A connector node
-    whose ``error`` port is dangling (no outgoing edge) fails, so a flow that
-    omits the promised failure path cannot receive full credit."""
-    from collections import defaultdict
+    """Assert every matching connector node degrades gracefully on failure: its
+    ``error`` port must route to a NON-connector handler (not a self-loop back to
+    the failing node, and not another connector that can fault again) from which a
+    terminating node (End, or a node with no outgoing edge) is reachable. A
+    dangling error port, a self-loop, or an error edge into another connector all
+    fail, so a flow that only appears to handle failures cannot get full credit."""
+    from collections import defaultdict, deque
 
     flow = _load_flow(project_glob)
     edges = flow.get("edges") or []
+    nodes = {n.get("id"): n for n in (flow.get("nodes") or [])}
     node_ids = {i for i in _connector_node_ids(connector_key, project_glob, native_op_hint=native_op_hint) if i}
     if not node_ids:
         _fail(f"no {connector_key} node found to check error handlers on")
-    err_targets = defaultdict(set)
+
+    adj = defaultdict(list)
     for e in edges:
-        if str(e.get("sourcePort") or "").lower() == "error":
-            tgt = e.get("targetNodeId")
-            if tgt:
-                err_targets[e.get("sourceNodeId")].add(tgt)
-    missing = sorted(nid for nid in node_ids if not err_targets.get(nid))
-    if missing:
+        adj[e.get("sourceNodeId")].append((str(e.get("sourcePort") or "").lower(), e.get("targetNodeId")))
+
+    def is_connector(nid: str) -> bool:
+        return "uipath.connector." in str(nodes.get(nid, {}).get("type", ""))
+
+    def reaches_terminating(start: str) -> bool:
+        seen: set = set()
+        q = deque([start])
+        while q:
+            n = q.popleft()
+            if n in seen:
+                continue
+            seen.add(n)
+            t = str(nodes.get(n, {}).get("type", "")).lower()
+            outs = adj.get(n, [])
+            if "end" in t or not outs:  # End node, or a dead-end handler
+                return True
+            for _, tgt in outs:
+                if tgt:
+                    q.append(tgt)
+        return False
+
+    bad = []
+    for sid in sorted(nid for nid in node_ids if nid):
+        # Non-connector error targets, excluding a self-loop back to the send node.
+        handlers = [
+            t for p, t in adj.get(sid, [])
+            if p == "error" and t and t != sid and not is_connector(t)
+        ]
+        if not handlers:
+            bad.append((sid, "no non-connector error handler (dangling, self-loop, or into another connector)"))
+        elif not any(reaches_terminating(h) for h in handlers):
+            bad.append((sid, "error handler does not reach a terminating path"))
+    if bad:
         _fail_with_capture(
-            f"{connector_key} node(s) {missing} have no error-port handler edge; "
-            "the flow does not degrade gracefully on a connector failure"
+            f"{connector_key} node(s) do not degrade gracefully on failure: {bad}"
         )
 
 

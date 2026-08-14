@@ -30,8 +30,10 @@ from _shared.flow_check import (  # noqa: E402
     assert_named_equals,
     collect_outputs,
     completed_connector_node_ids,
+    find_node_output_value,
     get_last_debug_raw,
     node_output_leaves,
+    normalized,
     run_debug,
 )
 import jira_is  # noqa: E402
@@ -165,6 +167,16 @@ def main() -> None:
     # Opaque ids (caseKey) compare case-sensitively; enum-like values (severity) do not.
     for name, expected in (seed.get("expected") or {}).items():
         assert_named_equals(payload, name, expected, case_sensitive=(name in CASE_SENSITIVE))
+
+    # Classification the prompt requires the Script to compute but does not map to a
+    # named End out (engineeringNeeded) — verify it against the Script's own output
+    # so a flow that skips the required classification cannot pass on the ticket alone.
+    for name, expected in (seed.get("expected_script") or {}).items():
+        actual = find_node_output_value(payload, name)
+        if actual is None:
+            _fail(f"the flow's Script node did not compute {name!r} (required by the prompt)")
+        if normalized(actual) != normalized(expected):
+            _fail(f"Script output {name!r}: expected {expected!r}, got {actual!r}")
 
     print("PASS: escalation flow created a real Jira ticket with the expected classification")
 
