@@ -52,9 +52,13 @@ def build_seed() -> dict:
     cases = [
         # ── Escalation paths (Slack escalation alert) ──────────────────────
         _case(
-            "sev1-enterprise-production-down", r, "SEV1",
+            # Deliberately STANDARD tier: the orchestrator's Sev1 is tier-independent
+            # (productionDown AND NOT workaroundAvailable). A classifier that wrongly
+            # gates Sev1 on Enterprise (e.g. copied from the slack_alert task) would
+            # misclassify this Standard outage and fail.
+            "sev1-standard-production-down", r, "SEV1",
             {"subject": "Production down: checkout 500s", "body": "Critical urgent outage, all users blocked",
-             "customerTier": "Enterprise", "productionDown": True, "workaroundAvailable": False},
+             "customerTier": "Standard", "productionDown": True, "workaroundAvailable": False},
             {"escalationPath": "escalation", "severity": "Sev1", "engineeringNeeded": True, "responseMode": "Draft"},
             True,
         ),

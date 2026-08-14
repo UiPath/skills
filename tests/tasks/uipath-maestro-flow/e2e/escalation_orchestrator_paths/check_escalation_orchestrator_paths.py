@@ -74,13 +74,12 @@ def verify_case(case: dict) -> tuple:
     # derivations already verified as named outs above.)
     script_nodes = completed_node_ids_of_type(payload, "script")
     ep, sv = case["expected"]["escalationPath"], case["expected"]["severity"]
-    classifier = next(
-        (nid for nid in sorted(n for n in script_nodes if n)
-         if normalized(find_node_output_value(payload, "escalationPath", node_ids={nid})) == normalized(ep)
-         and normalized(find_node_output_value(payload, "severity", node_ids={nid})) == normalized(sv)),
-        None,
-    )
-    if classifier is None:
+    classifier_candidates = {
+        nid for nid in script_nodes if nid
+        and normalized(find_node_output_value(payload, "escalationPath", node_ids={nid})) == normalized(ep)
+        and normalized(find_node_output_value(payload, "severity", node_ids={nid})) == normalized(sv)
+    }
+    if not classifier_candidates:
         raise SystemExit(
             f"FAIL: {case['name']}: no single executed Script computed both escalationPath "
             f"({ep!r}) and severity ({sv!r}) — the prompt requires one classifier Script"
@@ -92,7 +91,7 @@ def verify_case(case: dict) -> tuple:
     executed_decisions = completed_node_ids_of_type(payload, "core.logic.decision")
     print(f"OK: {case['name']} produced the expected outcome"
           + (" + Slack message posted" if case.get("expect_slack") else ""))
-    return fired, executed_decisions
+    return fired, executed_decisions, classifier_candidates
 
 
 def main() -> None:
@@ -109,11 +108,25 @@ def main() -> None:
     escalation_nodes: set = set()
     triage_nodes: set = set()
     per_case_decisions: list = []
+    per_case_classifiers: list = []
     for case in cases:
-        fired, decisions = verify_case(case)
+        fired, decisions, classifiers = verify_case(case)
         is_escalation = case["expected"]["escalationPath"] == "escalation"
         (escalation_nodes if is_escalation else triage_nodes).update(fired)
         per_case_decisions.append(decisions)
+        per_case_classifiers.append(classifiers)
+
+    # ONE classifier Script must classify EVERY case (prompt: ALL routing logic in
+    # one Script). Intersect the per-case candidates: a flow with path-specific
+    # Script nodes (a different classifier per case) has an empty intersection and fails.
+    common_classifier = set.intersection(*per_case_classifiers) if per_case_classifiers else set()
+    if not common_classifier:
+        raise SystemExit(
+            "FAIL: no single Script node classified every case — the prompt requires ALL "
+            "routing logic in ONE Script, but the cases were classified by different "
+            f"(path-specific) Scripts (per-case candidates: {[sorted(c) for c in per_case_classifiers]})"
+        )
+    print(f"OK: one classifier Script handled all cases: {sorted(common_classifier)}")
 
     # Prompt requires each Slack node's error port wired to a handler for graceful
     # degradation, and every send to go out as `user` — assert both structurally so
