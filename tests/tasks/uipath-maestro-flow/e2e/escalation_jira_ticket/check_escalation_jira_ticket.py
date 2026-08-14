@@ -170,15 +170,22 @@ def main() -> None:
         assert_named_equals(payload, name, expected, case_sensitive=(name in CASE_SENSITIVE))
 
     # Classification the prompt requires the Script to compute but does not map to a
-    # named End out (engineeringNeeded) — verify it against the EXECUTED Script
-    # node's own output (scoped to completed Script nodes so a cosmetic/unrelated
-    # node can't supply it), so a flow that skips the required classification
-    # cannot pass on the ticket alone.
+    # named End out (engineeringNeeded) — verify it against the ONE classification
+    # Script: the executed Script whose own output carries the expected severity.
+    # Binding to that single node (not the set of all completed Scripts) stops an
+    # unrelated Script from supplying engineeringNeeded while the real classifier omits it.
     script_nodes = completed_node_ids_of_type(payload, "script")
+    sev = (seed.get("expected") or {}).get("severity")
+    classify_ids = {
+        nid for nid in script_nodes
+        if normalized(find_node_output_value(payload, "severity", node_ids={nid})) == normalized(sev)
+    }
+    if not classify_ids:
+        _fail(f"no executed Script node produced the expected severity {sev!r} — cannot bind the classification checks")
     for name, expected in (seed.get("expected_script") or {}).items():
-        actual = find_node_output_value(payload, name, node_ids=script_nodes)
+        actual = find_node_output_value(payload, name, node_ids=classify_ids)
         if actual is None:
-            _fail(f"the flow's Script node did not compute {name!r} (required by the prompt)")
+            _fail(f"the classification Script did not compute {name!r} (required by the prompt)")
         if normalized(actual) != normalized(expected):
             _fail(f"Script output {name!r}: expected {expected!r}, got {actual!r}")
 

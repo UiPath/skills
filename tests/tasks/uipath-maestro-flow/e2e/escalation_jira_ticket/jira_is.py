@@ -11,6 +11,7 @@ body / get by id / delete by id — never a JQL search.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 
 CONNECTOR = "uipath-atlassian-jira"
@@ -19,6 +20,20 @@ FOLDER_NAME = "uipath-maestro-flow"  # leaf of FOLDER_PATH, as reported by conne
 CONNECTION_NAME = "is-sandboxes-test@uipath.com-uipath-sandbox-380"
 PROJECT_KEY = "CE"        # "Coder Eval" project on uipath-sandbox-380
 ISSUETYPE_ID = "11457"    # "Task" issue type, scoped to the CE project
+
+
+def _issue_not_found(env: dict) -> bool:
+    """True only for a STRUCTURED HTTP 404 from the Jira provider — proof the
+    requested issue key is absent. A bare ``"404"`` substring or a generic
+    ``"not found"`` (which could mean the connection/activity is missing, not the
+    issue) is NOT accepted, so a prerequisite failure can't masquerade as a
+    confirmed deletion."""
+    blob = json.dumps(env)
+    return bool(
+        re.search(r"status code ['\"]?404\b", blob, re.I)
+        or re.search(r'"providerErrorCode"\s*:\s*404\b', blob)
+        or re.search(r'"statusCode"\s*:\s*"?404\b', blob)
+    )
 
 
 def _run(*args: str) -> dict:
@@ -87,8 +102,7 @@ def issue_absent(conn_id: str, key: str) -> bool:
     )
     if str(env.get("Result", "")).lower() != "failure":
         return False  # a successful read means the issue still exists
-    blob = json.dumps(env).lower()
-    return any(s in blob for s in ("404", "not found", "notfound", "does not exist", "no longer exists"))
+    return _issue_not_found(env)
 
 
 def delete_issue(conn_id: str, key: str) -> bool:
@@ -102,6 +116,5 @@ def delete_issue(conn_id: str, key: str) -> bool:
     )
     if str(env.get("Result", "")).lower() != "failure":
         return True
-    # A Failure envelope: only a not-found means the issue is genuinely gone.
-    blob = json.dumps(env).lower()
-    return any(s in blob for s in ("404", "not found", "notfound", "does not exist", "no longer exists"))
+    # A Failure envelope: only a structured 404 (issue absent) is a confirmed gone.
+    return _issue_not_found(env)

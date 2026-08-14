@@ -32,6 +32,8 @@ from _shared.flow_check import (  # noqa: E402
     assert_slack_message_posted,
     completed_node_ids_of_type,
     find_node_output_field,
+    find_node_output_value,
+    normalized,
     run_debug,
 )
 
@@ -67,15 +69,25 @@ def main() -> None:
         assert_named_equals(payload, name, expected, case_sensitive=(name in CASE_SENSITIVE))
 
     # The prompt requires the alert to include severity, correlationId, AND the
-    # next steps. nextSteps is computed by the Script node (not a named End out),
-    # so read the flow's OWN nextSteps value from the EXECUTED Script node's output
-    # (scoped to completed Script nodes so a cosmetic/unrelated node can't supply
-    # it) and require that exact string in the posted message.
+    # next steps. nextSteps is computed by the Script (not a named End out), so read
+    # it from the ONE classification Script — the executed Script whose own output
+    # carries the expected severity — so an unrelated Script can't supply it. Require
+    # that exact string in the posted message.
     script_nodes = completed_node_ids_of_type(payload, "script")
-    next_steps = find_node_output_field(payload, "nextSteps", node_ids=script_nodes)
+    sev = case["expected"]["severity"]
+    classify_ids = {
+        nid for nid in script_nodes
+        if normalized(find_node_output_value(payload, "severity", node_ids={nid})) == normalized(sev)
+    }
+    if not classify_ids:
+        raise SystemExit(
+            f"FAIL: no executed Script node produced the expected severity {sev!r} — "
+            "cannot bind the nextSteps check to the classification Script"
+        )
+    next_steps = find_node_output_field(payload, "nextSteps", node_ids=classify_ids)
     if not next_steps:
         raise SystemExit(
-            "FAIL: the flow's Script node did not produce a nextSteps value — the "
+            "FAIL: the classification Script did not produce a nextSteps value — the "
             "prompt requires classifying a short next-steps string"
         )
 

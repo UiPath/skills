@@ -831,6 +831,9 @@ def assert_connector_error_handlers(
         return _is_connector_node(nodes.get(nid, {}) or {})
 
     def reaches_terminating(start: str) -> bool:
+        # A graceful path must reach a terminating node WITHOUT passing through any
+        # connector — a connector anywhere downstream can fault again. Connectors
+        # are neither counted as terminating nor traversed through.
         seen: set = set()
         q = deque([start])
         while q:
@@ -838,9 +841,11 @@ def assert_connector_error_handlers(
             if n in seen:
                 continue
             seen.add(n)
+            if is_connector(n):
+                continue  # can fault again — not a graceful terminus, don't traverse it
             t = str(nodes.get(n, {}).get("type", "")).lower()
             outs = adj.get(n, [])
-            if "end" in t or not outs:  # End node, or a dead-end handler
+            if "end" in t or not outs:  # End node, or a non-connector dead-end handler
                 return True
             for _, tgt in outs:
                 if tgt:
