@@ -1,0 +1,143 @@
+task_id: skill-datafabric-e2e-federated-user-directory
+description: >
+  E2E: create a FEDERATED (live, read-only) Data Fabric entity `UserDirectory`
+  over the ServiceNow `sys_user` connector object, LEFT-joined to two pre-existing
+  native entities — `UserDept` (department) and `UserLocation` (mailing address,
+  country) — matched on the ServiceNow user name. Verifies the agent builds a
+  federated entity with 1 external + 2 native sources and 2 join criteria, and
+  does NOT copy/import the ServiceNow data into a native entity.
+
+# Tenant prerequisites (provision once, together — the agent creates/cleans only UserDirectory):
+#   - A live ServiceNow connection (uipath-servicenow-servicenow) whose `sys_user` object returns records.
+#   - Native entities `UserDept` (UserNameDept, Department, CostCenter) and `UserLocation`
+#     (UserNameLoc, Address, Country), seeded so their user-name values match the connection's
+#     ServiceNow `sys_user.user_name` (so the joins match). Join columns are named distinctly
+#     (UserNameDept / UserNameLoc) so the federated mapping needs no rename.
+
+tags:
+  [
+    uipath-platform,
+    data-fabric,
+    e2e,
+    federated,
+    mode:build,
+    lifecycle:setup,
+  ]
+
+run_limits:
+  expected_turns: 36
+  max_turns: 50
+  turn_timeout: 1200
+
+initial_prompt: |
+  Our IT team wants an always-current user directory in UiPath Data Fabric.
+
+  The people should come live from our ServiceNow connection — read straight from
+  the `sys_user` object as a read-only view, not copied or imported into Data
+  Fabric. For each user show their full name, their ServiceNow user name, and
+  their email.
+
+  Then fill in two things we already keep in Data Fabric tables:
+    - their department, from `UserDept`
+    - their mailing address — street and country — from `UserLocation`
+
+  Every user should stay in the directory even if one of those tables has no
+  row for them. Match the tables to each user on the ServiceNow user name. Call
+  the entity `UserDirectory`. Once it's set up, pull back the first handful of
+  users with their department and country so I can eyeball that the enrichment
+  worked.
+
+  Create it in the `Shared` folder — that's where the ServiceNow connection and
+  both tables live. I explicitly approve creating `UserDirectory` in `Shared`
+  and reading the ServiceNow and table data in this run; proceed without another
+  confirmation and don't touch any other Data Fabric resource.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created a Federated entity (entityClass Federated with externalFields)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create[\s\S]*?(Federated|externalFields|--file\s+\S+)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resolved the ServiceNow connection before building the source"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected the ServiceNow object schema/operations (is resources describe or list)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+(describe|list)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the directory back (records query or list) to show sample users"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+(query|list)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: UserDirectory is a Federated entity with 3 sources (ServiceNow sys_user + 2 native), >=2 join criteria, AND is queryable (reading it returns live rows)"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_federated_entity.py
+      --entity-name UserDirectory --expected-sources 3 --min-joins 2 --external-object sys_user
+      --assert-queryable --min-records 1
+    timeout: 180
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT copy the ServiceNow data in — a federated source is a live view, so no records insert/import into UserDirectory"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+(insert|import)'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity (the two native sources must survive)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent set up a live federated user directory joining ServiceNow to the two native tables, and reported it as a read-only view (not a copy)"
+    include_agent_output: true
+    prompt: |
+      The user asked for a user directory that reads users LIVE from a ServiceNow
+      connection (the `sys_user` object) and enriches each user with a department
+      (from the native `UserDept` table) and a mailing address (from the native
+      `UserLocation` table), keeping every user even when a table has no match
+      (a LEFT join), then show a few sample users with their department and
+      country. Score 1.0 if the agent's final response says it created
+      `UserDirectory` as a federated / live read-only view over ServiceNow joined
+      to both native tables (not a copy/import of the ServiceNow rows) AND shows a
+      few sample users with department/country from the query. Score 0.5 if it
+      created the entity but is vague about the live/federated nature, only joined
+      one table, or didn't show sample rows. Score 0.0 if it imported the
+      ServiceNow data into a native entity or failed to create the entity.
+    weight: 2.0
+    pass_threshold: 0.5
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix UserDirectory --federated-only --include-folders"
+    timeout: 150
+    fail_on_error: false
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix UserDirectory --federated-only --include-folders"
+    timeout: 150
