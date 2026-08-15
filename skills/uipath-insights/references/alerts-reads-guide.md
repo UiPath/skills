@@ -23,17 +23,17 @@ Most other absent fields carry meaning rather than redaction. See Rule 4 for the
 ## Shared Options
 
 ```text
---limit <number>           Rows to return, 1 to 10000 (default 50). alerts list and alert-history list only
---offset <number>          Rows to skip before returning (default 0). Same two commands
---agentic                  Use the agentic route. alerts list only, requires --process-key
---process-key <key>        Process key for the agentic route. alerts list only, requires --agentic
---time-range <minutes>     Relative window ending now, 1 to 527040 (366 days). alert-history commands only
---since <epoch-seconds>    Absolute lower bound. alert-history commands only
---until <epoch-seconds>    Absolute upper bound. alert-history commands only
---alert-name <name>            Exact alert name match, single-valued. alert-history commands only
---folder-name <names...>       Folder names, never folder keys (repeatable). alert-history commands only
---severity <severities...>     INFO, WARN, ERROR, or NORMAL (repeatable). alert-history commands only
---time-grouping <size>     FifteenMinutes, Hour, or Day. Mandatory on get-metrics only
+--limit <number>              Rows to return, 1 to 10000 (default 50). alerts list and alert-history list only
+--offset <number>             Rows to skip before returning (default 0). Same two commands
+--agentic                     Use the agentic route. alerts list only, requires --process-key
+--process-key <key>           Process key for the agentic route. alerts list only, requires --agentic
+--time-range <minutes>        Relative window ending now, 1 to 527040 (366 days). alert-history commands only
+--since <epoch-seconds>       Absolute lower bound. alert-history commands only
+--until <epoch-seconds>       Absolute upper bound. alert-history commands only
+--alert-name <name>           Exact alert name match, single-valued. alert-history commands only
+--folder-name <names...>      Folder names, never folder keys (repeatable). alert-history commands only
+--severity <severities...>    INFO, WARN, ERROR, or NORMAL (repeatable). alert-history commands only
+--time-grouping <size>        FifteenMinutes, Hour, or Day. Mandatory on get-metrics only
 ```
 
 `--output <format>` is a global CLI option on every command. Always use `json`.
