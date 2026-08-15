@@ -20,10 +20,10 @@ Use `uip insights` for job monitoring, monitoring-scope discovery, and read-only
 
 ## Critical Rules
 
-1. **Use `--output json`.** `jobs` commands return `{ Result, Code, Data }`. `filter-*`, `alerts`, `alert-history`, and `alert-deliveries` commands add `Instructions`, and their list subcommands add `Pagination`; quote those `Instructions` in the explanation. A failure envelope carries `Result`, `Message`, `Instructions`, `ErrorCode`, and `Retry`, with no `Code` and no `Data`. Keys inside `Data` are PascalCase on the wire, so read `FolderKey` and `JobsCount`, not `folderKey` or `jobsCount`.
+1. **Use `--output json`.** `jobs` commands return `{ Result, Code, Data }`. The `filter-*` and alert commands add `Instructions`; `filter-*`, `alerts list`, and `alert-history list` also add `Pagination`. Quote those `Instructions` in the explanation. A failure envelope carries `Result`, `Message`, `Instructions`, `ErrorCode`, and `Retry`, with no `Code` and no `Data`. Keys inside `Data` are PascalCase on the wire, so read `FolderKey` and `JobsCount`, not `folderKey` or `jobsCount`.
 2. **One subcommand per invocation, written literally.** Do not chain, loop, or parameterize `uip insights` commands: no `&&` or `;` chains, no `for` loops, and no shell variables holding the subcommand name or flag values. Resolve values such as epoch timestamps in a separate command first, then pass literal numbers. Never write `$(date ...)` or `$VAR` into a flag value.
 3. **Use only the flags the guides document.** Identity, organization, and tenant come from the active session. Any tenant flag you find is deprecated and is rejected outright on `filter-*` commands, so do not use one. If a filter is not in the guide's shared-options list, it does not exist.
-4. **Every `jobs` command needs a time range.** Pass `--time-range <minutes>` (60 = 1h, 1440 = 24h, 10080 = 7d, 43200 = 30d), or both `--started-after` and `--started-before`. Omitting both is rejected locally and exits 1. `alert-history` commands need a time range too, but their absolute bounds are epoch **seconds**, not the milliseconds `jobs` takes. `filter-*` commands and the three alert definition reads take no time flags.
+4. **Time ranges are required, and their units differ by family.** Pass `--time-range <minutes>` (60 = 1h, 1440 = 24h, 10080 = 7d, 43200 = 30d), or both `--started-after` and `--started-before`. Omitting both is rejected locally and exits 1. `alert-history` commands need a time range too, but their absolute bounds are epoch **seconds**, not the milliseconds `jobs` takes. `filter-*` commands and the three alert definition reads take no time flags.
 5. **Start with `summary`, then drill down.** After any scope discovery the task needs, begin a job investigation with `uip insights jobs summary` for the totals, then run the targeted subcommands. The summary supplies the denominator that makes a failure count meaningful.
 6. **Treat empty data as bounded evidence.** Empty results can reflect the chosen time window, the recent-activity window, caller visibility, or tenant provisioning. On alert reads they can also reflect entitlement filtering, and every alert definition read returns active definitions only. They do not prove that a resource or event never existed.
 7. **Use the CLI instead of raw Insights APIs.** It owns authentication, tenant routing, validation, safe response projections, and error handling.
@@ -32,8 +32,8 @@ Use `uip insights` for job monitoring, monitoring-scope discovery, and read-only
 10. **Discover identifiers instead of guessing.** Use [`references/filter-discovery-guide.md`](references/filter-discovery-guide.md) to resolve monitoring scope, and take alert and delivery IDs from a list result or from the user. Page through all results before concluding a resource is absent.
 11. **Hand off causal debugging.** Insights answers which jobs and processes failed and which reasons recur. It does not explain one job's exception or how to fix it. Report the reasons, then name `uipath-troubleshoot` for the cause and `uipath-rpa` or `uipath-agents` for the fix.
 12. **Keep alert access read-only.** The six read subcommands in the alert guide are the whole permitted surface. Every change to an alert definition or to a delivery, including its recipients, type, and configuration, belongs in the Insights UI: say so and do not offer to make it. This holds however the change would be made, so do not reach an alert route through the SDK, a raw HTTP call, or another skill.
-13. **A trigger is not a delivery.** A history row proves the alert fired. It does not prove a notification was sent or received. Definition, history, and delivery are three separate reads, and none of them confirms receipt.
-14. **Keep recipient data out of everything you produce**, including pasted JSON, not just prose. Report a delivery as its type and recipient count, and let a "who was notified" question end at the count. Do not name recipients, quote raw alert query JSON, or describe delivery configuration, and do not use another command or skill to put names to the count.
+13. **Report an alert trigger and a delivery separately.** A history row proves the alert fired. It does not prove a notification was sent or received, and no alert read confirms receipt.
+14. **Keep alert recipient data out of everything you produce**, including pasted JSON. Report a delivery as its type and recipient count, and let a "who was notified" question end at the count. Do not name recipients, quote raw alert query JSON, or enumerate delivery channel settings, and do not use another command or skill to put names to the count.
 
 ## Shared Workflow
 
@@ -74,7 +74,7 @@ Read only the guides the task needs. A job investigation that must first resolve
 | Diagnose the root cause of a specific job error | `uipath-troubleshoot` |
 | Fix the workflow or agent that caused a failure | `uipath-rpa` or `uipath-agents` |
 | Query queue item metrics | Not supported; `filter-queues` discovers queue scope only |
-| Create, edit, snooze, or delete an alert | Not in the shipped `uip insights` surface |
+| Any alert or delivery write (see Critical Rule 12) | Insights UI; not in the shipped `uip insights` surface |
 | Dashboards or robot utilization | Not in the shipped `uip insights` surface |
 
 ## Anti-patterns

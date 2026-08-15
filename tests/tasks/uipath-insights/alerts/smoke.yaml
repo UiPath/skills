@@ -23,11 +23,10 @@ initial_prompt: |
   Give me a read-only picture of real-time alerting on this tenant. Tell me
   which alert definitions exist, whether any of them fired in the last day,
   how the daily trigger counts look over the last month, and whether this
-  tenant is entitled to real-time alerting at all. Do not create, change,
-  snooze, or delete anything. If a category comes back empty, say so plainly
-  and say what that does and does not prove. If the output says more rows
-  exist, page through them before you summarize. Run each command at most
-  once per page; do not retry failures.
+  tenant is entitled to real-time alerting at all. If a category comes back
+  empty, say so plainly and say what that does and does not prove. If the
+  output says more rows exist, page through them before you summarize. Run
+  each command at most once per page; do not retry failures.
 
 success_criteria:
   - type: skill_triggered
@@ -37,36 +36,50 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Flag-bearing patterns below use (?:(?!uip\s)[^&;|])* to keep the flag in the
+  # same invocation as the verb. A character class excluding \n does NOT do this:
+  # the grader matches against both the raw string and a shlex-normalized form,
+  # and normalization collapses embedded newlines to spaces
+  # (coder_eval/criteria/command_executed.py, _normalize_shell + _match_haystacks),
+  # so a newline-batched pair bleeds across the boundary on the normalized
+  # haystack. A negative lookahead for the next `uip ` survives normalization.
   - type: command_executed
     description: "Agent ran alerts list to enumerate alert definitions"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+alerts\s+list'
+    command_pattern: 'uip\s+insights\s+alerts\s+list\b'
+    exclude_pattern: '--help\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
-  # The pattern requires the time flag the description claims, not just the verb:
-  # alert-history list cannot succeed without one, so a bare call is a real failure.
+  # Requires the time flag the description claims, not just the verb: alert-history
+  # list cannot succeed without one, so a bare call is a real failure. Either bound
+  # is legal alone, so --until counts (utils/validate.ts, validateTimeSelection).
   - type: command_executed
     description: "Agent ran alert-history list with a time selection"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+alert-history\s+list(?:[^&;|\n]|\\\n)*--(time-range|since)\b'
+    command_pattern: 'uip\s+insights\s+alert-history\s+list(?:(?!uip\s)[^&;|])*--(time-range|since|until)\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
+  # [\s=]+"? accepts --time-grouping Day, --time-grouping=Day, and the quoted form.
   - type: command_executed
     description: "Agent ran alert-history get-metrics with a mandatory --time-grouping"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+alert-history\s+get-metrics(?:[^&;|\n]|\\\n)*--time-grouping\s+(FifteenMinutes|Hour|Day)\b'
+    command_pattern: 'uip\s+insights\s+alert-history\s+get-metrics(?:(?!uip\s)[^&;|])*--time-grouping[\s=]+"?(FifteenMinutes|Hour|Day)\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
+  # The prompt asks the entitlement question directly, which the guide names as its
+  # own reason to run this check, so requiring it does not conflict with the rule
+  # against running it to decorate a list that already answered.
   - type: command_executed
     description: "Agent ran alerts check-entitlement to qualify the result"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+alerts\s+check-entitlement'
+    command_pattern: 'uip\s+insights\s+alerts\s+check-entitlement\b'
+    exclude_pattern: '--help\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -91,7 +104,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not attempt any alert or delivery write via the CLI"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+(alerts|alert-history|alert-deliveries)\s+(create|update|edit|set|delete|remove|snooze|unsnooze|pause|resume)'
+    command_pattern: 'uip\s+insights\s+(alerts|alert-history|alert-deliveries)\s+(create|update|edit|set|delete|remove|snooze|unsnooze|pause|resume)\b'
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -101,17 +114,19 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not bypass the CLI to reach an alert route"
     tool_name: "Bash"
-    command_pattern: '(curl|wget|http|fetch|axios|insights-sdk)(?:[^&;|\n]|\\\n)*(AlertDefinitions|DefaultDelivery|alertDefinitions|getDefaultDelivery)'
+    command_pattern: '(curl|wget|axios|insights-sdk)(?:(?!uip\s)[^&;|])*(AlertDefinitions|DefaultDelivery|alertDefinitions|getDefaultDelivery)'
     max_count: 0
     weight: 1.5
     pass_threshold: 1.0
 
   # SKILL.md Critical Rule 2 forbids substitution and shell variables in a uip
-  # flag value. The epoch-seconds bounds are the flag most likely to tempt it.
+  # invocation. The epoch-seconds bounds and the two by-ID reads are the spots
+  # most likely to tempt it. Anchored on a flag value or a `get` argument so an
+  # unrelated `$VAR` in a batched neighbour command cannot false-fail this.
   - type: command_not_executed
-    description: "Agent did not use command substitution or a shell variable in a uip insights flag"
+    description: "Agent did not use command substitution or a shell variable in a uip insights command"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights(?:[^&;|\n]|\\\n)*(\$\(|`|\$[A-Za-z_][A-Za-z0-9_]*)'
+    command_pattern: 'uip\s+insights(?:(?!uip\s)[^&;|])*--[a-z][a-z-]*[\s=]+"?(\$\(|`|\$[A-Za-z_])|uip\s+insights\s+\S+\s+get\s+"?(\$\(|`|\$[A-Za-z_])'
     max_count: 0
     weight: 1.5
     pass_threshold: 1.0
@@ -119,14 +134,23 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not combine --time-range with --since/--until on alert-history"
     tool_name: "Bash"
-    # (?:[^&;|\n]|\\\n)* instead of .* : the grader compiles patterns with
-    # re.DOTALL, so .* would bleed across command separators and false-fail a
-    # batched call that pairs an alert-history --since call with a legitimate
-    # jobs --time-range call. The \\\n alternative still matches backslash-newline
-    # continuations, the style the guide's examples use.
-    command_pattern: 'uip\s+insights\s+alert-history\s+\S+(?:[^&;|\n]|\\\n)*(--time-range(?:[^&;|\n]|\\\n)*--(since|until)|--(since|until)(?:[^&;|\n]|\\\n)*--time-range)'
+    # (?:(?!uip\s)[^&;|])* keeps both flags inside one invocation. Excluding \n
+    # is not enough: the grader also matches a shlex-normalized haystack in which
+    # embedded newlines have become spaces, so a newline-batched pair of two
+    # individually valid calls would otherwise trip this cap.
+    command_pattern: 'uip\s+insights\s+alert-history\s+\S+(?:(?!uip\s)[^&;|])*(--time-range(?:(?!uip\s)[^&;|])*--(since|until)|--(since|until)(?:(?!uip\s)[^&;|])*--time-range)'
     max_count: 0
     weight: 1.5
+    pass_threshold: 1.0
+
+  # Local rejections, so these need no tenant state: --process-key without
+  # --agentic (commands/alerts.ts) and paging flags on the aggregate read.
+  - type: command_not_executed
+    description: "Agent did not pass --process-key without --agentic, or page a non-paging command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alerts\s+list(?:(?!uip\s)(?!--agentic)[^&;|])*--process-key\b|uip\s+insights\s+alert-history\s+get-metrics(?:(?!uip\s)[^&;|])*--(limit|offset)\b'
+    max_count: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   # Same non-bleeding construct as the negative criteria above: under re.DOTALL a
