@@ -76,12 +76,16 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not pass time flags to filter commands"
     tool_name: "Bash"
-    # (?:[^&;|\n]|\\\n)* instead of .* : the grader compiles patterns with
-    # re.DOTALL, so .* would bleed across command separators and false-fail a
-    # batched call like `filter-folders list ... && jobs summary --time-range ...`.
-    # The \\\n alternative still matches backslash-newline continuations, the
-    # style the SKILL.md examples use, so a continued invocation can't slip past.
-    command_pattern: 'uip\s+insights\s+filter-\S+\s+list(?:[^&;|\n]|\\\n)*--(time-range|started-after|started-before)'
+    # Not .* : the grader compiles patterns with re.DOTALL, so .* would bleed
+    # across command separators and false-fail a batched call like
+    # `filter-folders list ... && jobs summary --time-range ...`. Excluding
+    # & ; | is not enough on its own, because the grader also matches a
+    # shlex-normalized haystack where newlines collapse to spaces
+    # (coder_eval/criteria/command_executed.py, _normalize_shell), so a
+    # newline-separated batch survives a [^&;|\n] class. The `uip` lookahead
+    # stops the scan at the next invocation, which is what holds on the
+    # normalized haystack. Same construct as the alerts and rbac smoke tasks.
+    command_pattern: 'uip\s+insights\s+filter-\S+\s+list(?:(?!uip\s)[^&;|])*--(time-range|started-after|started-before)'
     max_count: 0
     weight: 1.5
     pass_threshold: 1.0
@@ -89,7 +93,10 @@ success_criteria:
   - type: command_executed
     description: "Advisory: agent used --output json on discovery commands"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+filter-\S+\s+list\s+.*--output\s+json'
+    # Same non-bleeding construct as the negative criterion above: a bare .*
+    # under re.DOTALL would credit an --output json belonging to a different
+    # chained command. [\s=] accepts the --output=json spelling.
+    command_pattern: 'uip\s+insights\s+filter-\S+\s+list(?:(?!uip\s)[^&;|])*--output[\s=]+json'
     min_count: 2
     weight: 1.0
     pass_threshold: 0
