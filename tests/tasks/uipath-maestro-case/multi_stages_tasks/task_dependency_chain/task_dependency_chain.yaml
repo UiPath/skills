@@ -34,7 +34,7 @@ initial_prompt: |
 
   **Case Definition Blueprint** · Generic — Task-Driven Stage Completion Coverage
 
-  Three-stage linear flow that exercises task-driven stage completion, the under-covered task-entry rule-types, and a non-timer task type embedded in a multi-stage flow. Process exits via required-tasks-completed; Finalize's Region Check fires on current-stage-entered and the stage exits via selected-tasks-completed to Done.
+  Three-stage linear flow that exercises task-driven stage completion, the under-covered task-entry rule-types, and a non-timer task type embedded in a multi-stage flow. Process exits via required-tasks-completed; Finalize's Region Check fires on current-stage-entered and the stage exits via required-tasks-completed.
 
   > **Unresolved-fallback rule.** The Optional Audit process is NOT registered in the tenant. The agent MUST leave `taskTypeId` as `<UNRESOLVED: ...>`, omit inputs/outputs, and emit a skeleton process task. DO NOT fabricate a taskTypeId. The skeleton's TaskId is still captured and the task still carries its task-entry condition.
 
@@ -143,7 +143,7 @@ initial_prompt: |
 
   ### Stage 2: Finalize (`finalize`)
   **Type:** Stage
-  **Description:** Gated review steps, conditional on Process. Exits via selected-tasks-completed routing to Done.
+  **Description:** Gated review steps, conditional on Process. Exits via required-tasks-completed.
   **Required for Case Completion:** Yes
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
