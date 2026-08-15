@@ -45,7 +45,7 @@ The model may adjust BPMN structure around the connector but must not invent con
 ## Stale generated package files
 
 Generated JSON no longer reflects the BPMN source.
-Regenerate package metadata and verify package descriptor content before upload or deploy.
+Run `uip maestro bpmn update-metadata <file.bpmn> --dry-run` to identify drift, then `uip maestro bpmn update-metadata <file.bpmn>` to regenerate before upload or deploy.
 
 Signs:
 

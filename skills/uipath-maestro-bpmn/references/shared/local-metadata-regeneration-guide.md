@@ -45,11 +45,17 @@ Do not derive metadata from stale package files first. Use existing generated fi
    metadata set: `project.uiproj`, `operate.json`, `entry-points.json`,
    `bindings_v2.json`, and `package-descriptor.json`. The pack command
    consumes these files; it does not synthesize a missing package descriptor.
-4. If generated package JSON is stale, regenerate it with the supported local
-   CLI path. If no generator is available for a local-only synthetic project,
-   write the minimal placeholder-safe shape below before packing. For
-   package-shape verification, use the local pack command and request JSON
-   output when parsing command results:
+4. If generated package JSON is stale, regenerate it:
+
+   ```bash
+   uip maestro bpmn update-metadata <file.bpmn> --dry-run   # check drift
+   uip maestro bpmn update-metadata <file.bpmn>             # regenerate
+   ```
+
+   Only fall back to the minimal placeholder-safe shape below when the CLI is
+   unavailable for a local-only synthetic project. For package-shape
+   verification, use the local pack command and request JSON output when
+   parsing command results:
 
    ```bash
    uip maestro bpmn pack <project-path> <OutputDir> --output json

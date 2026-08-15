@@ -32,7 +32,7 @@ These actions may contact UiPath services or external systems.
    migrate, and cursor movement require a clear user decision for that action.
 3. **Validate before operate** - do not upload, publish, debug, or run until Author validation is complete or the user
    explicitly accepts known draft warnings.
-4. **Refresh or regenerate package metadata before cloud actions** - stale `bindings_v2.json`, `entry-points.json`,
+4. **Refresh or regenerate package metadata before cloud actions** - run `uip maestro bpmn update-metadata <file.bpmn> --dry-run` to check drift, then `uip maestro bpmn update-metadata <file.bpmn>` to regenerate. Stale `bindings_v2.json`, `entry-points.json`,
    `operate.json`, or `package-descriptor.json` can break import or runtime even when the BPMN source is correct.
 5. **Keep source and package ownership clear** - fix process structure, variables, mappings, events, and documented non-IS
    extensions in `.bpmn`; rerun CLI generation/enrichment for generated package JSON and Integration Service metadata.

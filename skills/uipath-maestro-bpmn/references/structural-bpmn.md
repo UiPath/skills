@@ -453,7 +453,7 @@ unsupported for generation until current tooling confirms them.
 The registry emits no diagram. Import is **diagram-driven**: the canvas builds
 nodes from `BPMNShape`s and edges from `BPMNEdge`s, not by walking
 `flowElements`. **A node with no shape is invisible; a flow with no edge is
-dropped.** You must generate the full `BPMNDiagram` yourself.
+dropped.** Generate the full `BPMNDiagram` with `uip maestro bpmn format <file.bpmn>`.
 
 - One `<bpmndi:BPMNShape id="S_<nodeId>" bpmnElement="<nodeId>">` per node, with
   `<dc:Bounds x= y= width= height= />`. SubProcess shapes carry `isExpanded`.
