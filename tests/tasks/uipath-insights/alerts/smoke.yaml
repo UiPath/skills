@@ -46,8 +46,10 @@ success_criteria:
   - type: command_executed
     description: "Agent ran alerts list to enumerate alert definitions"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+alerts\s+list\b'
-    exclude_pattern: '--help\b'
+    # (?!\s+--help) inline rather than exclude_pattern: an exclusion is evaluated
+    # against the whole Bash invocation, so a batched `alerts --help` followed by
+    # a real read would drop the real read's credit too.
+    command_pattern: 'uip\s+insights\s+alerts\s+list\b(?!\s+--help)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -78,8 +80,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran alerts check-entitlement to qualify the result"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+alerts\s+check-entitlement\b'
-    exclude_pattern: '--help\b'
+    command_pattern: 'uip\s+insights\s+alerts\s+check-entitlement\b(?!\s+--help)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -148,17 +149,19 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not pass --process-key without --agentic, or page a non-paging command"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+alerts\s+list(?:(?!uip\s)(?!--agentic)[^&;|])*--process-key\b|uip\s+insights\s+alert-history\s+get-metrics(?:(?!uip\s)[^&;|])*--(limit|offset)\b'
+    # The --agentic lookahead spans the whole invocation, not just the span before
+    # --process-key, so the legal `--process-key ... --agentic` order is not caught.
+    command_pattern: 'uip\s+insights\s+alerts\s+list(?!(?:(?!uip\s)[^&;|])*--agentic)(?:(?!uip\s)[^&;|])*--process-key\b|uip\s+insights\s+alert-history\s+get-metrics(?:(?!uip\s)[^&;|])*--(limit|offset)\b'
     max_count: 0
     weight: 1.0
     pass_threshold: 1.0
 
-  # Same non-bleeding construct as the negative criteria above: under re.DOTALL a
-  # bare .* would credit an --output json belonging to a different chained command.
+  # Same (?!uip\s) barrier as the criteria above, for the same reason: without it a
+  # batched neighbour's --output json would be credited to a call that lacked one.
   - type: command_executed
     description: "Advisory: agent used --output json on alert reads"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+(alerts|alert-history)\s+\S+(?:[^&;|\n]|\\\n)*--output\s+json'
+    command_pattern: 'uip\s+insights\s+(alerts|alert-history)\s+\S+(?:(?!uip\s)[^&;|])*--output\s+json'
     min_count: 2
     weight: 1.0
     pass_threshold: 0
