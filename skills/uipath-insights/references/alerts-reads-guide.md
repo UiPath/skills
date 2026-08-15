@@ -233,7 +233,7 @@ Jobs commands take milliseconds and these take seconds, so never reuse a value b
 
 ## Investigation Workflow: Explain Why an Alert Did or Did Not Notify
 
-1. Resolve the alert. With an ID, go to step 2. With a name, run `alert-history list --alert-name "<ALERT_NAME>" --time-range <MINUTES> --output json` and take `AlertId` and `DeliveryId` from a row; this route skips the preflight. With neither, run `alerts list` once and match on `Name`, asking the user to choose if several match.
+1. Resolve the alert. With an ID, go to step 2. With a name, run `alert-history list --alert-name "<ALERT_NAME>" --time-range <MINUTES> --output json` and take `AlertId` and `DeliveryId` from a row; this route skips the preflight. An alert that never fired returns no rows here, which is itself part of the answer, so fall back to `alerts list`. With neither an ID nor a name, run `alerts list` once and match on `Name`, asking the user to choose if several match.
 2. Run `alerts get <ALERT_ID> --output json` for the threshold, window, scope, and snooze state. Skip it if step 1 already returned the row and you do not need folder keys.
 3. Run `alert-history list` for the period in question. Report whether triggers appeared in the window queried and quote the command's `Instructions`. An empty result is not proof the alert never fired.
 4. With a delivery ID, run `alert-deliveries get <DELIVERY_ID> --output json` and report delivery type and recipient count only.
