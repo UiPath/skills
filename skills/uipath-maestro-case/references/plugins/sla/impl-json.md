@@ -1,7 +1,3 @@
----
-direct-json: supported
----
-
 # sla — JSON Implementation
 
 > **Phase split.** Phase 2 Step 11 writes SLA and escalation objects before conditions. Phase 3 does not revisit them except for whole-file `$xref` resolution. See [`../../phased-execution.md`](../../phased-execution.md).
