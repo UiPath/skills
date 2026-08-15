@@ -10,12 +10,13 @@ User asks about overall automation health, success rates, or general status.
 # Step 1: Get the summary KPIs
 uip insights jobs summary --time-range 1440 --output json
 
-# Step 2: Interpret the results
-# - jobsCount: total jobs in the time window
-# - successfulJobsCount: jobs that completed successfully
-# - averageProcessingTime: mean execution time in seconds
+# Step 2: Interpret the results (Data keys are PascalCase)
+# - JobsCount: total jobs in the time window
+# - SuccessfulJobsCount: jobs that completed successfully
+# - AverageProcessingTime: mean execution time. The CLI passes this through
+#   unchanged and does not label a unit, so do not state one to the user.
 #
-# Failure rate = (jobsCount - successfulJobsCount) / jobsCount * 100
+# Failure rate = (JobsCount - SuccessfulJobsCount) / JobsCount * 100
 #
 # Thresholds (rules of thumb):
 #   < 5% failure rate  → healthy
@@ -97,7 +98,7 @@ uip insights jobs summary \
   --started-before <this-monday-epoch-ms> \
   --output json
 
-# Compare jobsCount, successfulJobsCount, and averageProcessingTime
+# Compare JobsCount, SuccessfulJobsCount, and AverageProcessingTime
 # between the two results
 ```
 
@@ -105,20 +106,21 @@ uip insights jobs summary \
 
 User asks about a specific Orchestrator folder.
 
+Follow [`filter-discovery-guide.md`](filter-discovery-guide.md) for pagination, exact-match handling, and the limits of the 30-day activity window.
+
 ```bash
-# Step 1: Find the folder key. Two sources return the same GUID:
-# Insights-active folders (last 30 days): GUID is the FolderKey field
+# Step 1: Find the folder key
 uip insights filter-folders list --output json
-# Fallback, full folder inventory (requires uipath-platform): GUID is the Key field
-uip or folders list --output json
 
 # Step 2: Query insights with folder filter
 uip insights jobs summary --time-range 1440 \
-  --folder-key "abc-123-def" --output json
+  --folder-key "<FOLDER_KEY_FROM_STEP_1>" --output json
 
 uip insights jobs top-failures --time-range 1440 \
-  --folder-key "abc-123-def" --output json
+  --folder-key "<FOLDER_KEY_FROM_STEP_1>" --output json
 ```
+
+A folder with no recent Insights activity will not appear. Hand off to `uipath-platform` for the full visible inventory.
 
 ## Interpreting Array Data
 
@@ -126,8 +128,8 @@ Several endpoints return parallel arrays. The same index across arrays correspon
 
 ```json
 {
-  "processName": ["ProcessA", "ProcessB", "ProcessC"],
-  "jobCountByTime": [[10, 5, 2]]
+  "ProcessName": ["ProcessA", "ProcessB", "ProcessC"],
+  "JobCountByTime": [[10, 5, 2]]
 }
 ```
 
@@ -143,5 +145,5 @@ This means:
 | User wants to start/stop/restart a specific job | `uipath-platform` (`uip or jobs start`) |
 | User wants to read the logs of a failed job | `uipath-platform` (`uip or jobs logs`) |
 | User wants to debug why a specific job error happened | `uipath-troubleshoot` |
-| User wants to find a folder key to filter by | `uip insights filter-folders list` (Insights-active folders), or `uipath-platform` (`uip or folders list`) for the full folder inventory |
+| User wants to find a folder key to filter by | `uip insights filter-folders list` (see [`filter-discovery-guide.md`](filter-discovery-guide.md)) |
 | User wants to fix the code that's causing failures | `uipath-rpa` or `uipath-agents` |
