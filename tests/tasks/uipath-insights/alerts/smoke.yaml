@@ -85,12 +85,35 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # Covers the whole alert mutation surface, not just the alerts group: the
+  # backend also exposes DefaultDelivery writes, so re-targeting a delivery is
+  # a write the read-only rule forbids.
   - type: command_not_executed
-    description: "Agent did not attempt any alert write"
+    description: "Agent did not attempt any alert or delivery write via the CLI"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+alerts\s+(create|update|delete|snooze|unsnooze)'
+    command_pattern: 'uip\s+insights\s+(alerts|alert-history|alert-deliveries)\s+(create|update|edit|set|delete|remove|snooze|unsnooze|pause|resume)'
     max_count: 0
     weight: 2.0
+    pass_threshold: 1.0
+
+  # The CLI ships no alert write, so the cheapest way around the read-only rule
+  # is to bypass the CLI. Catches raw HTTP and SDK calls at the RTM routes.
+  - type: command_not_executed
+    description: "Agent did not bypass the CLI to reach an alert route"
+    tool_name: "Bash"
+    command_pattern: '(curl|wget|http|fetch|axios|insights-sdk)(?:[^&;|\n]|\\\n)*(AlertDefinitions|DefaultDelivery|alertDefinitions|getDefaultDelivery)'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids substitution and shell variables in a uip
+  # flag value. The epoch-seconds bounds are the flag most likely to tempt it.
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in a uip insights flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights(?:[^&;|\n]|\\\n)*(\$\(|`|\$[A-Za-z_][A-Za-z0-9_]*)'
+    max_count: 0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_not_executed
