@@ -3,7 +3,7 @@
 Orchestrator has several process types:
 
 - Agent - see [Agent](agent.md)
-- Api - see [API Workflow](agent.md)
+- Api - see [API Workflow](api-workflow.md)
 - CaseManagement
 - Flow
 - Function

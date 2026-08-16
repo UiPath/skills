@@ -17,7 +17,13 @@ Signatures:
 
 ## Discovering operations and fields
 
-Search the bundled library for static contracts:
+`$FLOW_SDK_LIBRARY_MD` (markdown, for reading) and `$FLOW_SDK_LIBRARY_JSON`
+(machine-readable, for compiling) point at a **separately staged** connector
+library. It is not part of the npm package and there is no default: if the
+variables are unset, the library is not on this machine, so search the paths
+your environment provides and pass `--library <dir>` explicitly.
+
+Search that library for static contracts:
 
 ```bash
 jq '.entries[] | select(.label | test("send email"; "i")) | {label,nodeType,path}' \
@@ -26,7 +32,10 @@ sed -n '1,220p' "$FLOW_SDK_LIBRARY_MD/<path-from-index>"
 ```
 
 When a connection-specific field is absent, materialize the live schema rather
-than guessing or hand-editing the emitted Flow:
+than guessing or hand-editing the emitted Flow. `prepare-connector` is an
+authoring tool **provided by the environment**, not by the npm package — it
+needs a live Integration Service connection. If it is not on `PATH`, this route
+is unavailable; fall back to the curated operation in the markdown library.
 
 ```bash
 prepare-connector <connector-key> <action> \
