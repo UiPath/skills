@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ 406162b. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ a065b21. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -471,13 +471,15 @@ Signature: `subflow(childFlow, { childInput: expression, ... })`.
 
 ```ts
 const child = flow('normalize').input({ raw: types.string })
-  .output({ clean: types.string }).step('trim', script({ code: 'return $vars.raw.trim();' }))
-  .return({ clean: out('trim') }).build();
+  .output({ clean: types.string })
+  .step('trim', script({ code: js`return ${input('raw')}.trim();`.js, returns: { clean: 'string' } }))
+  .return({ clean: out('trim', 'clean') }).build();
 export default flow('parent').input({ text: types.string }).output({ clean: types.string })
   .step('normalized', subflow(child, { raw: input('text') })).return({ clean: out('normalized', 'clean') }).build();
 ```
 
 Use a child for a meaningful contract or reuse boundary, not arbitrary splitting or speed.
+Read a child's inputs with `input(...)`: its start node is named `<callerStepId>Start`, so a bare `$vars.raw` is wrong.
 
 **Reference: [`references/subflow.md`](references/subflow.md)**
 
