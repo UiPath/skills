@@ -90,8 +90,15 @@ records while only the declared reference collection is the action's contract.
 
 ```bash
 uip is resources run list <connector-key> <object-name> \
-  --connection-id <connection-id> --output json
+  --connection-id <connection-id> \
+  --output-filter '{items:items[].{Id:Id,Name:Name},page:Pagination.{HasMore:HasMore,NextPageToken:NextPageToken}}' \
+  --output json
 ```
+
+`--output-filter` selects from `Data`; list responses place both `items` and
+`Pagination` there. Replace `Id` and `Name` with the exact id/display fields in
+the prepared reference contract. Keep the page fields in the same projection
+so a match read does not need a second `cat`/`jq` pass.
 
 When `Data.Pagination.HasMore` is `"true"`, keep the operation and connection
 unchanged and pass `Data.Pagination.NextPageToken` as `nextPage` on the next
@@ -100,7 +107,9 @@ call:
 ```bash
 uip is resources run list <connector-key> <object-name> \
   --connection-id <connection-id> \
-  --query "nextPage=<value-from-NextPageToken>" --output json
+  --query "nextPage=<value-from-NextPageToken>" \
+  --output-filter '{items:items[].{Id:Id,Name:Name},page:Pagination.{HasMore:HasMore,NextPageToken:NextPageToken}}' \
+  --output json
 ```
 
 Stop early when the target record appears. Otherwise continue until

@@ -27,7 +27,9 @@ export declare function bpmn(id: string): BpmnBuilder;
 
 ````ts
 export declare class BpmnBuilder extends ScopeBuilder {
+    /** Set the process's display name. */
     name(n: string): this;
+    /** Finish the process and return the graph the serializer turns into XML. */
     build(): BuiltBpmn;
 }
 ````
@@ -45,50 +47,49 @@ declare abstract class ScopeBuilder {
     protected readonly _nodes: BpmnNode[];
     protected readonly _flows: BpmnFlow[];
     protected readonly _vars: BpmnVarDecl[];
-    /** A start event (authorable definitions: none / message / timer). */
+    /** A start event (authorable definitions: none / message / timer */
     startEvent(id: string, opts?: StartOpts): this;
-    /** An end event (authorable definitions: none / message / error / terminate). */
+    /** An end event (authorable definitions: none / message / error / terminate */
     endEvent(id: string, opts?: EndOpts): this;
-    /** An intermediate catch event (authorable: message / timer). */
+    /** An intermediate catch event (authorable: message / timer */
     intermediateCatchEvent(id: string, opts?: CatchOpts): this;
-    /** An intermediate throw event (authorable: none / message). */
+    /** An intermediate throw event (authorable: none / message */
     intermediateThrowEvent(id: string, opts?: ThrowOpts): this;
-    /** A boundary event on an activity (authorable: message / timer / error). */
+    /** A boundary event on an activity (authorable: message / timer / error */
     boundaryEvent(id: string, opts: BoundaryOpts): this;
+    /** An exclusive gateway — exactly one outgoing flow is taken (`bpmn:exclusiveGateway`). */
     exclusiveGateway(id: string, opts?: GatewayOpts): this;
+    /** A parallel gateway — every outgoing flow is taken, and a join waits for every incoming one (`bpmn:parallelGateway`). */
     parallelGateway(id: string, opts?: {
             name?: string;
         }): this;
+    /** An inclusive gateway — every outgoing flow whose condition holds is taken (`bpmn:inclusiveGateway`). */
     inclusiveGateway(id: string, opts?: GatewayOpts): this;
+    /** An event-based gateway — the first of the events it leads to wins, and the rest are cancelled (`bpmn:eventBasedGateway`). */
     eventBasedGateway(id: string, opts?: {
             name?: string;
         }): this;
-    /** A script task (Jint JavaScript body + input/output mappings). */
+    /** A script task (Jint JavaScript body + input/output mappings */
     scriptTask(id: string, opts: ScriptTaskOpts): this;
-    /** A plain task that assigns variables (`BPMN.Variables`). */
+    /** A plain task that assigns variables (`BPMN.Variables` */
     task(id: string, opts?: TaskOpts): this;
-    /**
-     * An Integration Service **connector** service task (`bpmn:sendTask` +
-     * `uipath:activity` / `Intsvc.ActivityExecution`). Identify the op by a typed
-     * descriptor or by `key`/`action` (like Flow/Case); `inputs` are the op's
-     * fields; `connection`/`folder` are symbolic bindings-names. Resolved against
-     * the connector library at serialize (pass `{ library }` to `serialize`/
-     * compile). `id` is the BPMN element id, `name` the display name.
-     */
+    /** Typed form: a generated descriptor supplies the operation and its input types. */
     connector<I extends Record<string, unknown>, O>(id: string, descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: ConnectorOpts & {
             name?: string;
         }): this;
+    /** Stringly form, for a connector with no prepared module. */
     connector(id: string, key: string, action: string, inputs?: Record<string, unknown>, opts?: ConnectorOpts & {
             name?: string;
         }): this;
+    /** A sub-process — a scope of its own, with its own elements and flows (`bpmn:subProcess`). */
     subProcess(id: string, fn: (sp: SubProcessBuilder) => void, opts?: SubProcessOpts): this;
-    /** A sequence flow from `source` to `target` (1-1 with `bpmn:sequenceFlow`). */
+    /** A sequence flow from `source` to `target` (1-1 with `bpmn:sequenceFlow` */
     sequenceFlow(source: string, target: string, opts?: FlowOpts): this;
-    /** A mutable flow variable (`uipath:inputOutput`). Root unless `elementId` scopes it. */
+    /** A mutable flow variable (`uipath:inputOutput`). Root unless `elementId` scopes i */
     var(id: string, type: TypeDesc, opts?: VarOpts): this;
-    /** A read-only entry input (`uipath:input`). */
+    /** A read-only entry input (`uipath:input` */
     input(id: string, type: TypeDesc, opts?: VarOpts): this;
-    /** A return value (`uipath:output`). */
+    /** A return value (`uipath:output` */
     output(id: string, type: TypeDesc, opts?: VarOpts): this;
 }
 ````
