@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ 406162b. Canonical source lives there;
+`typescript/sdk/skill/SKILL-case.md` @ a065b21. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This is a snapshot of a generated file. In flow-builder-sdk,
@@ -87,7 +87,9 @@ uip maestro case validate caseplan.json --output json
 <!-- GEN:case-builder -->
 
 ```ts
-/** Start building a case plan with the given id. (`casePlan`, not `case` — reserved word.) *
+/**
+ * Start building a case plan with the given id. (`casePlan`, not `case` — reserved word.)
+ *
  * @param id - The plan's stable identifier.
  * @returns A {@link CaseBuilder} to declare stages and tasks on.
  */
@@ -101,7 +103,9 @@ export declare function casePlan(id: string): CaseBuilder;
      */
     name(n: string): this;
 
-/** Set the runtime case identifier (constant prefix, or an `=`-expression when type is `external`   *
+/**
+     * Set the runtime case identifier (constant prefix, or an `=`-expression when type is `external`).
+     *
      * @param id - The prefix, or an `=`-expression when `type` is `'external'`.
      * @param type - `'constant'` for a fixed prefix, `'external'` to compute it.
      * @returns This builder, so calls chain.
@@ -127,11 +131,18 @@ export declare function casePlan(id: string): CaseBuilder;
 /**
      * Declare a read/write case variable.
      *
-     * **Not referenceable from a `=js:vars.<name>` expression.** A `.var(...)` emits
-     * a companion entry but no formal slot, so `uip maestro case validate` rejects
-     * `vars.<name>` with `Variable 'vars.<name>' does not exist` (`check` catches it
-     * as VAR_NOT_REFERENCEABLE). If an expression must read the value, declare it as a
-     * trigger-bound In-arg instead: `.input({ name: type }, { from: trigger })`.
+     * Readable from a `=js:vars.<name>` expression, like a trigger-bound In-arg.
+     *
+     * This comment used to say the opposite — that only `.input(shape, { from })`
+     * could be read, and that a bare `.var()` failed `uip maestro case validate`
+     * with "Variable 'vars.<name>' does not exist". That was true when written and
+     * stopped being true at #257, which made the serializer emit the `inputOutputs`
+     * companion (`id: <name>`, `elementId: "root"`) the platform resolves
+     * `vars.<name>` against. `check` carried a matching `VAR_NOT_REFERENCEABLE`
+     * error and dropped it for the same reason.
+     *
+     * Binding is about WHEN a value arrives, not whether it can be read. An
+     * UNDECLARED `vars.<x>` is still a hard error, thrown by `.build()`.
      *
      * @param name - The variable's name; read it as `=vars.<name>`.
      * @param type - A `types.*` descriptor, or {@link jsonSchema} for a structured one.
@@ -179,21 +190,27 @@ export declare function casePlan(id: string): CaseBuilder;
         body?: unknown;
     }>): this;
 
-/** Add a primary stage. `fn` receives a stage sub-builde   *
+/**
+     * Add a primary stage. `fn` receives a stage sub-builder.
+     *
      * @param label - The stage's display name.
      * @param fn - Receives a sub-builder for the stage's tasks and conditions.
      * @returns This builder, so calls chain.
      */
     stage(label: string, fn: (s: StageBuilder) => void): this;
 
-/** Add a secondary/exception stage (`case-management:ExceptionStage`   *
+/**
+     * Add a secondary/exception stage (`case-management:ExceptionStage`).
+     *
      * @param label - The stage's display name.
      * @param fn - Receives a sub-builder for the stage's tasks and conditions.
      * @returns This builder, so calls chain.
      */
     exceptionStage(label: string, fn: (s: StageBuilder) => void): this;
 
-/** Add a case-completion rule (`metadata.caseExitRules`, `marksCaseComplete: true` by default   *
+/**
+     * Add a case-completion rule (`metadata.caseExitRules`, `marksCaseComplete: true` by default).
+     *
      * @param rules - One rule, or an array for an AND-group.
      * @param opts - `displayName`, and whether meeting it completes the case.
      * @returns This builder, so calls chain.
@@ -297,21 +314,27 @@ export interface JsonSchemaType {
      */
     required(value?: boolean): this;
 
-/** Add a stage-entry condition (OR-group). Pass an array of rules for an AND-grou   *
+/**
+     * Add a stage-entry condition (OR-group). Pass an array of rules for an AND-group.
+     *
      * @param rules - One rule, or an array for an AND-group.
      * @param opts - `displayName`, and the entry behaviour flags.
      * @returns This builder, so calls chain.
      */
     entryWhen(rules: CaseRule | CaseRule[], opts?: EntryOpts): this;
 
-/** Add a stage-exit condition (OR-group). Pass an array of rules for an AND-grou   *
+/**
+     * Add a stage-exit condition (OR-group). Pass an array of rules for an AND-group.
+     *
      * @param rules - One rule, or an array for an AND-group.
      * @param opts - `displayName`, and whether meeting it completes the stage.
      * @returns This builder, so calls chain.
      */
     exitWhen(rules: CaseRule | CaseRule[], opts?: ExitOpts): this;
 
-/** Add a task. `fn` receives a task sub-builder. `lane` selects a parallel lane (default 0   *
+/**
+     * Add a task. `fn` receives a task sub-builder. `lane` selects a parallel lane (default 0).
+     *
      * @param displayName - The task's display name.
      * @param fn - Receives a sub-builder for what the task does.
      * @param opts - `lane` places the task in a parallel lane (default 0).
@@ -383,7 +406,9 @@ export type StageExitType = 'exit-only' | 'wait-for-user' | 'return-to-origin';
 ```ts
 export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-management' | 'action' | 'connector' | 'wait-for-timer' | 'wait-for-connector';
 
-/** Reference a published Maestro proces   *
+/**
+     * Reference a published Maestro process.
+     *
      * @param name - The published process's name.
      * @param opts - `folder` — the Orchestrator folder it lives in.
      * @returns This builder, so calls chain.
@@ -392,7 +417,9 @@ export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-mana
         folder?: string;
     }): this;
 
-/** Reference a published agen   *
+/**
+     * Reference a published agent.
+     *
      * @param name - The published agent's name.
      * @param opts - `folder` — the Orchestrator folder it lives in.
      * @returns This builder, so calls chain.
@@ -401,7 +428,9 @@ export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-mana
         folder?: string;
     }): this;
 
-/** Reference a published RPA proces   *
+/**
+     * Reference a published RPA process.
+     *
      * @param name - The published RPA process's name.
      * @param opts - `folder` — the Orchestrator folder it lives in.
      * @returns This builder, so calls chain.
@@ -410,7 +439,9 @@ export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-mana
         folder?: string;
     }): this;
 
-/** Reference a published API workflo   *
+/**
+     * Reference a published API workflow.
+     *
      * @param name - The published API workflow's name.
      * @param opts - `folder` — the Orchestrator folder it lives in.
      * @returns This builder, so calls chain.
@@ -466,7 +497,9 @@ export type TaskKind = 'process' | 'agent' | 'rpa' | 'api-workflow' | 'case-mana
      */
     connector(key: string, action: string, inputs?: Record<string, unknown>, opts?: ConnectorOpts): this;
 
-/** A wait-for-timer task (ISO-8601 `duration`, ISO `date`, or repeating `cycle`   *
+/**
+     * A wait-for-timer task (ISO-8601 `duration`, ISO `date`, or repeating `cycle`).
+     *
      * @param spec - How long to wait: an ISO-8601 `duration`, a `date`, or a repeating `cycle`.
      * @returns This builder, so calls chain.
      */
@@ -521,7 +554,9 @@ export interface WaitConnectorSpec {
      */
     description(text: string): this;
 
-/** Skip this task when the `=js:` expression is truth   *
+/**
+     * Skip this task when the `=js:` expression is truthy.
+     *
      * @param expression - An `=js:` expression; the task is skipped when it is truthy.
      * @returns This builder, so calls chain.
      */
@@ -556,7 +591,9 @@ export interface WaitConnectorSpec {
         type?: TypeDesc;
     }>): this;
 
-/** Add a task-entry condition (OR-group). Pass an array of rules for an AND-grou   *
+/**
+     * Add a task-entry condition (OR-group). Pass an array of rules for an AND-group.
+     *
      * @param rules - One rule, or an array for an AND-group.
      * @param opts - `displayName` for the condition.
      * @returns This builder, so calls chain.
@@ -918,7 +955,9 @@ export default casePlan('order-review')
 <!-- GEN:triggers -->
 
 ```ts
-/** A manual (user-initiated) case trigger. *
+/**
+ * A manual (user-initiated) case trigger.
+ *
  * @param opts - Display name and other trigger metadata.
  * @returns A trigger to pass to `.trigger(...)`.
  */
@@ -929,7 +968,9 @@ export interface ManualTriggerOpts {
     description?: string;
 }
 
-/** A timer (scheduled) case trigger. `every` is an ISO-8601 repeating interval. *
+/**
+ * A timer (scheduled) case trigger. `every` is an ISO-8601 repeating interval.
+ *
  * @param opts - The schedule — `every`, as an ISO-8601 repeating interval.
  * @returns A trigger to pass to `.trigger(...)`.
  */
@@ -1035,7 +1076,7 @@ export default casePlan('nightly-sweep')
 
 ### Variable types
 
-A variable's `type` is one of: `string`, `integer`, `float`, `double`,
+A variable's `type` is one of: `string`, `number`, `integer`, `float`, `double`,
 `boolean`, `date`, `datetime`, `file`. Declare with a default via the
 `{ type, default }` form on `.input` / `.output` (defaults are written
 **verbatim as strings**, e.g. `'1.5'`):
@@ -1121,7 +1162,9 @@ export interface SlaOpts {
 /** SLA deadline unit. `min` = minutes, `h` = hours, `d` = days, `w` = weeks, `m` = months. */
 export type SlaUnit = 'min' | 'h' | 'd' | 'w' | 'm';
 
-/** Declare an escalation. `notify` recipients come from {@link toUser}/{@link toGroup}. *
+/**
+ * Declare an escalation. `notify` recipients come from {@link toUser}/{@link toGroup}.
+ *
  * @param opts - When it fires (`after`) and who it notifies (`notify`).
  * @returns An escalation to attach to an SLA.
  */
@@ -1152,14 +1195,18 @@ export interface EscalationRecipient {
     value?: string;
 }
 
-/** An escalation recipient that is a single user. *
+/**
+ * An escalation recipient that is a single user.
+ *
  * @param target - How the user is addressed, e.g. `'email'`.
  * @param value - The address itself, when `target` names a lookup rather than a value.
  * @returns A recipient for an escalation's `notify` list.
  */
 export declare function toUser(target: string, value?: string): EscalationRecipient;
 
-/** An escalation recipient that is a user group. *
+/**
+ * An escalation recipient that is a user group.
+ *
  * @param target - How the group is addressed, e.g. `'name'`.
  * @param value - The value itself, when `target` names a lookup rather than a value.
  * @returns A recipient for an escalation's `notify` list.
@@ -1266,6 +1313,12 @@ as a case task. Same surface as the Flow SDK's connector action:
 - **Discovering connectors + field names** — identical to Flow: find the op and
   read its fields from the markdown library at `$FLOW_SDK_LIBRARY_MD`.
 
+  `$FLOW_SDK_LIBRARY_MD` (markdown, for reading) and `$FLOW_SDK_LIBRARY_JSON`
+  (machine-readable, for compiling) point at a **separately staged** connector
+  library. It is not part of the npm package and there is no default: if the
+  variables are unset, the library is not on this machine, so search the paths
+  your environment provides and pass `--library <dir>` explicitly.
+
   ```bash
   jq '.entries[] | select(.label | test("send message"; "i")) | {label, nodeType, path}' \
      "$FLOW_SDK_LIBRARY_MD/index.json"
@@ -1306,12 +1359,15 @@ connector task.
 
 Author `<Name>.case.ts` with a default export ending in `.build()`, then:
 
-- **`check`** (`case/check-cli.js <Name>`) — fast static validation of the built
+Both ship in the package: as the bins `case-check` / `case-compile`, or run
+directly with `node node_modules/@uipath/flow-sdk/dist/case/<name>-cli.js`.
+
+- **`check`** (`case-check <Name>.case.ts`) — fast static validation of the built
   case; surfaces the common validator failures (task without an entry rule,
   case/stage without a completion rule, unsatisfiable `required-tasks-completed`,
   unresolved stage/task references) without writing a file. Exits non-zero on any
   error.
-- **`compile`** (`case/compile-cli.js <Name> [-o caseplan.json]`) — runs the
+- **`compile`** (`case-compile <Name>.case.ts [-o caseplan.json]`) — runs the
   static check, then serializes to `caseplan.json` (default output name). Pair it
   with `uip maestro case validate` for the authoritative gate.
 - **`decompile`** (`uip maestro case decompile <caseplan.json> [-o Name.case.ts]`)

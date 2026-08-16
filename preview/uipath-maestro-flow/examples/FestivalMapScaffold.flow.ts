@@ -7,7 +7,7 @@
  * Generic scenario: reserve a map-rendering step while a festival layout is
  * still being designed.
  */
-import { flow, mock, script, input, out, types } from '@uipath/flow-sdk';
+import { flow, mock, script, out, types } from '@uipath/flow-sdk';
 
 export default flow('festival-map-scaffold')
   .name('FestivalMapScaffold')
