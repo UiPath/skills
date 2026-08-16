@@ -18,7 +18,7 @@ edit. It lets merge distinguish authored changes from reconstructed content;
 without it, merge falls back to taking the compiled graph wholesale, including
 layout.
 
-Decompile reconstructs branch, switch, loop, parallel, error/rejoin, and
+Decompile reconstructs branch, switch, loop, parallel, error/ref, and
 subflow structure. It preserves original node ids so merge can reattach them.
 If it emits `mock() /* TODO: unsupported node type … */`, leave that node
 untouched unless the task specifically asks you to replace it; merge restores

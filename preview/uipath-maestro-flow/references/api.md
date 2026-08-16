@@ -44,6 +44,7 @@ export declare const SCHEDULE_PRESETS: readonly ["R/PT5M", "R/PT15M", "R/PT30M",
  */
 export declare function onEvent<W extends Record<string, string>>(descriptor: TriggerDescriptor<W, unknown>, opts?: TriggerOptions<W>): TriggerSpec;
 
+/** Stringly form, for an event with no prepared module. */
 export declare function onEvent(subscription: EventSubscription): TriggerSpec;
 ````
 
@@ -179,7 +180,6 @@ Behavior and worked examples: [delay.md](delay.md).
 ## mock (function)
 
 ````ts
-/** Declare a PLACEHOLDER step — "a real node goes here later". */
 export declare function mock(): ActionSpec;
 ````
 
@@ -261,13 +261,15 @@ Behavior and worked examples: [queue.md](queue.md).
 
 ````ts
 /**
- * Declare an Integration Service connector action.
- * `key`/`action` identify the library entry (e.g. 'uipath-salesforce-slack',
- * 'send-message-to-channel'); `inputs` are the connector's activity inputs;
- * `connection`/`folder` are symbolic names resolved via bindings.json.
+ * Typed form: a generated descriptor supplies the nodeType and statically-checked
+ * input types — `connector(CreateIssue, { fields: { summary: '…' } }, { connection })`.
  */
 export declare function connector<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: ConnectorOpts): ActionSpec;
 
+/**
+ * Stringly form, for a connector with no prepared module —
+ * `connector('uipath-salesforce-slack', 'send-message-to-channel', { … })`.
+ */
 export declare function connector(key: string, action: string, inputs?: Record<string, unknown>, opts?: ConnectorOpts): ActionSpec;
 ````
 
@@ -276,9 +278,13 @@ Behavior and worked examples: [connector-params.md](connector-params.md).
 ## waitForEvent (function)
 
 ````ts
-/** Wait mid-flow until a connector event fires, then continue with its payload. */
+/**
+ * Typed form: a generated trigger descriptor identifies the event —
+ * `waitForEvent(EmailReceived, { where: { … } })`.
+ */
 export declare function waitForEvent<W extends Record<string, string>>(descriptor: TriggerDescriptor<W, unknown>, opts?: TriggerOptions<W>): ActionSpec;
 
+/** Stringly form, for an event with no prepared module. */
 export declare function waitForEvent(subscription: EventSubscription): ActionSpec;
 ````
 
@@ -465,6 +471,11 @@ declare class StepList {
      *   standalone node a 4xx arrives on the SUCCESS path and no handler runs.
      */
     onError(bodyFn: (b: StepList) => void): this;
+    /**
+     * Run a step list from a named PORT of the step this follows — the general form
+     * of an error handler, and the reason `.onError()` needs no machinery of its own.
+     */
+    stepToList(port: string, bodyFn: (b: StepList) => void): this;
     /** Branch on a condition. `thenFn`/`elseFn` receive a sub-builder for each arm. */
     branch(name: string, cond: Expr, thenFn: (b: ArmBuilder) => void, elseFn?: (b: ArmBuilder) => void): this;
     /**
@@ -486,14 +497,10 @@ declare class StepList {
     loop(name: string, collection: Expr, bodyFn: (b: StepList) => void): this;
     /** Stop the **whole run**, here and now — not just this path. */
     terminate(name: string, label?: string): this;
-    /**
-     * End an error handler by REJOINING the main flow at `target` — the step the
-     * success path also reaches.
-     *
-     * @enforcedBy REJOIN_BACKWARD A rejoin target must be forward of the guarded step;
-     *   pointing backwards would be a retry loop.
-     */
-    rejoin(target: string): this;
+    /** Go to another step, by name — an edge, not a node. */
+    stepToRef(target: string): this;
+    /** Go to another step from a NAMED PORT — a side exit. */
+    stepToRef(port: string, target: string): this;
     /** Terminate this path, binding flow outputs to expressions. */
     return(values?: Record<string, Expr | unknown>): this;
 }
@@ -774,8 +781,7 @@ export interface DelayInputs {
 ````ts
 export interface RpaWorkflowInputs {
     /**
-     * The published process's release key (a GUID) — e.g.
-     * `'486edc26-0658-4ac1-92c9-1ef953927151'`. It becomes part of the node's
+     * The published process's release key (a GUID). It becomes part of the node's
      * type, `uipath.core.rpa-workflow.<key>`. Find it with
      * `uip or processes list --all-folders --process-type Process` (the row's `Key`)
      * or `uip maestro flow registry search "uipath.core.rpa-workflow"`.
@@ -807,8 +813,7 @@ export interface RpaWorkflowInputs {
 ````ts
 export interface ApiWorkflowInputs {
     /**
-     * The published API workflow's key (a GUID) — e.g.
-     * `'ce857908-ee1d-4392-b552-38bcea0be29c'`. It becomes part of the node's
+     * The published API workflow's key (a GUID). It becomes part of the node's
      * type, `uipath.core.api-workflow.<key>`. Find it with
      * `uip or processes list --all-folders --process-type Api` (an API workflow's
      * `ProcessKey` reads `<name>.api.<name>`; the GUID you want is the row's `Key`)
@@ -842,9 +847,8 @@ export interface ApiWorkflowInputs {
 ````ts
 export interface AgenticProcessInputs {
     /**
-     * The published agentic process's key (a GUID) — e.g.
-     * `'4fc450ab-89be-4462-8fc8-21ac4c1d6fb9'`. It becomes part of the node's type,
-     * `uipath.core.agentic-process.<key>`. Find it with
+     * The published agentic process's key (a GUID). It becomes part of the node's
+     * type, `uipath.core.agentic-process.<key>`. Find it with
      * `uip or processes list --all-folders --process-type ProcessOrchestration` (an
      * agentic process's `ProcessKey` reads `<name>.agentic.<name>`; the GUID you want
      * is the row's `Key`) or `uip maestro flow registry search agentic`.
@@ -1504,12 +1508,6 @@ export type Step = {
     kind: 'action';
     name: string;
     spec: FlowActionSpec;
-    /**
-     * The steps to run when THIS step fails — the flow's error path, set by
-     * `.onError(...)`. Serialized as an edge out of the node's `error` port
-     * (plus `errorHandlingEnabled: true`, always in the same write).
-     */
-    onError?: Step[];
 } | {
     kind: 'branch';
     name: string;
@@ -1556,16 +1554,31 @@ export type Step = {
     label?: string;
 }
 /**
- * An error handler that ends by REJOINING the main flow at `target` — the
- * handler's last step wires into a step on the success path instead of into a
- * dead end. Creates no node of its own: it is one edge, added after the whole
- * flow is emitted (the target usually comes later in the file than the handler
- * that names it). See `StepList.rejoin`.
+ * An edge to another step, by name. Creates no node of its own: it is ONE
+ * EDGE, added after the whole flow is emitted, because the target is often
+ * declared later in the file than the step that names it.
+ *
+ * `port` is the port of the step this leaves — `'output'` (the default) hands
+ * the path off, so nothing may follow it in the same list; any other port is a
+ * side exit and the chain continues. See `StepList.stepToRef`.
  */
  | {
-    kind: 'rejoin';
-    name: string;
+    kind: 'stepToRef';
+    port: string;
     target: string;
+}
+/**
+ * A step list wired from a named PORT of the step this follows — the general
+ * form of an error handler. The body is its own path: it either ends in a
+ * terminal of its own or hands control back with a `stepToRef`.
+ *
+ * `.onError(...)` is this with `port: 'error'`, which is the case nearly every
+ * flow uses. See `StepList.stepToList`.
+ */
+ | {
+    kind: 'stepToList';
+    port: string;
+    body: Step[];
 } | {
     kind: 'return';
     name: string;

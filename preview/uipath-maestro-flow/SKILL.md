@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ f4973f6. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 406162b. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -368,12 +368,12 @@ Check tenant uniqueness/schema settings; wait only when a consumer exists and it
 
 Route the immediately preceding action's failure through a handler path.
 
-Signature: `.step(name, action).onError(handler => ... )`; handler may use `err(step, field)` and `rejoin(target)`.
+Signature: `.step(name, action).onError(handler => ... )`; handler may use `err(step, field)` and `stepToRef(target)`. `.stepToList(port, fn)` runs a path from any port; `.stepToRef(port, target)` is a side exit that leaves the success path running.
 
 ```ts
 .step('fetch', http({ url, managed: true }))
 .onError((h) => h.step('recover', script({ code: 'return "cached";' }))
-  .rejoin('useValue'))
+  .stepToRef('useValue'))
 .step('useValue', script({ code: 'return "done";' }))
 ```
 
@@ -425,7 +425,7 @@ Signature: `.branch(name, condition, thenFn, elseFn?)`.
   (no) => no.step('approve', script({ code: 'return "approved";' })))
 ```
 
-Use branch for a two-way decision; decide whether arms return or rejoin shared work.
+Use branch for a two-way decision; decide whether arms return or ref back into shared work.
 
 **Reference: [`references/branch.md`](references/branch.md)**
 
@@ -577,5 +577,9 @@ Static diagnostics own all mechanically checkable structure; fix their cause
 rather than copying rules back into this router.
 
 Match proof to the request's acceptance bar. If one wiring question remains,
-run one bounded experiment that distinguishes it, apply the answer, and stop;
-do not grow a family of scratch solutions or repeat equivalent variants.
+a validate-only bar is complete when product validation is green and its
+required structural self-check passes; do not add debug only for confidence.
+For each behavior claim the bar names, plan at most one bounded product debug
+that answers it. If one wiring question remains, run one bounded experiment
+that distinguishes it, apply the answer, and stop; do not grow a family of
+scratch solutions or repeat equivalent variants.
