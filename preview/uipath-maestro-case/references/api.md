@@ -94,11 +94,15 @@ export declare function casePlan(id: string): CaseBuilder;
 
 ````ts
 declare class CaseBuilder {
+    /** Set the case plan's display name. */
     name(n: string): this;
+    /** Set the case plan's version. */
     version(v: string): this;
+    /** Describe the case plan. */
     description(text: string): this;
-    /** Set the runtime case identifier (constant prefix, or an `=`-expression when type is `external`). */
+    /** Set the runtime case identifier (constant prefix, or an `=`-expression when type is `external` */
     identifier(id: string, type?: 'constant' | 'external'): this;
+    /** Turn the generated Case App on or off. */
     caseApp(enabled?: boolean): this;
     /**
      * Declare case In-args. Each value is a `TypeDesc`, or `{ type, default }`
@@ -132,11 +136,11 @@ declare class CaseBuilder {
      * single manual trigger. Build specs with `manualTrigger`/`timerTrigger`.
      */
     trigger(t: BuiltTrigger): this;
-    /** Add a primary stage. `fn` receives a stage sub-builder. */
+    /** Add a primary stage. `fn` receives a stage sub-builde */
     stage(label: string, fn: (s: StageBuilder) => void): this;
-    /** Add a secondary/exception stage (`case-management:ExceptionStage`). */
+    /** Add a secondary/exception stage (`case-management:ExceptionStage` */
     exceptionStage(label: string, fn: (s: StageBuilder) => void): this;
-    /** Add a case-completion rule (`metadata.caseExitRules`, `marksCaseComplete: true` by default). */
+    /** Add a case-completion rule (`metadata.caseExitRules`, `marksCaseComplete: true` by default */
     completeWhen(rules: CaseRule | CaseRule[], opts?: {
             displayName?: string;
             marksCaseComplete?: boolean;
@@ -147,6 +151,7 @@ declare class CaseBuilder {
      * (no `when`) must be last.
      */
     sla(opts: SlaOpts): this;
+    /** Finish the plan and return the description the serializer writes. */
     build(): BuiltCase;
 }
 ````
@@ -155,15 +160,17 @@ declare class CaseBuilder {
 
 ````ts
 declare class StageBuilder {
+    /** Describe this stage. */
     description(text: string): this;
+    /** Mark this stage required, so the case cannot complete without it. */
     required(value?: boolean): this;
-    /** Add a task. `fn` receives a task sub-builder. `lane` selects a parallel lane (default 0). */
+    /** Add a task. `fn` receives a task sub-builder. `lane` selects a parallel lane (default 0 */
     task(displayName: string, fn: (t: TaskBuilder) => void, opts?: {
             lane?: number;
         }): this;
-    /** Add a stage-entry condition (OR-group). Pass an array of rules for an AND-group. */
+    /** Add a stage-entry condition (OR-group). Pass an array of rules for an AND-grou */
     entryWhen(rules: CaseRule | CaseRule[], opts?: EntryOpts): this;
-    /** Add a stage-exit condition (OR-group). Pass an array of rules for an AND-group. */
+    /** Add a stage-exit condition (OR-group). Pass an array of rules for an AND-grou */
     exitWhen(rules: CaseRule | CaseRule[], opts?: ExitOpts): this;
     /**
      * Set an SLA (deadline + escalations) on this stage. Call more than once for
@@ -178,19 +185,19 @@ declare class StageBuilder {
 
 ````ts
 declare class TaskBuilder {
-    /** Reference a published Maestro process. */
+    /** Reference a published Maestro proces */
     process(name: string, opts?: {
             folder?: string;
         }): this;
-    /** Reference a published agent. */
+    /** Reference a published agen */
     agent(name: string, opts?: {
             folder?: string;
         }): this;
-    /** Reference a published RPA process. */
+    /** Reference a published RPA proces */
     rpa(name: string, opts?: {
             folder?: string;
         }): this;
-    /** Reference a published API workflow. */
+    /** Reference a published API workflo */
     apiWorkflow(name: string, opts?: {
             folder?: string;
         }): this;
@@ -220,13 +227,9 @@ declare class TaskBuilder {
             inputs?: ActionField[];
             outputs?: ActionField[];
         }): this;
-    /**
-     * An Integration Service connector task — runs a connector activity (e.g. Slack
-     * `send-message-to-channel`). Same surface as the Flow `connector()` action:
-     * pass a generated descriptor (typed inputs) or `key`/`action` strings, plus the
-     * connector inputs and `{ connection, folder }` bindings.
-     */
+    /** Typed form: a generated descriptor supplies the operation and its input types. */
     connector<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: ConnectorOpts): this;
+    /** Stringly form, for a connector with no prepared module. */
     connector(key: string, action: string, inputs?: Record<string, unknown>, opts?: ConnectorOpts): this;
     /**
      * A wait-for-connector task — suspend the stage until an Integration Service
@@ -237,12 +240,15 @@ declare class TaskBuilder {
      * connection/typeId — needs live connector resolution and is out of scope.)
      */
     waitForConnector(spec?: WaitConnectorSpec): this;
-    /** A wait-for-timer task (ISO-8601 `duration`, ISO `date`, or repeating `cycle`). */
+    /** A wait-for-timer task (ISO-8601 `duration`, ISO `date`, or repeating `cycle` */
     waitForTimer(spec?: TimerSpecData): this;
+    /** Mark this task required, so its stage cannot complete without it. */
     required(value?: boolean): this;
+    /** Run this task at most once, even if its entry condition is met again. */
     runOnce(value?: boolean): this;
+    /** Describe this task. */
     description(text: string): this;
-    /** Skip this task when the `=js:` expression is truthy. */
+    /** Skip this task when the `=js:` expression is truth */
     skipWhen(expression: string): this;
     /**
      * Bind resource **input** parameters (reference-mode tasks). Each key is a
@@ -265,7 +271,7 @@ declare class TaskBuilder {
             source: string;
             type?: TypeDesc;
         }>): this;
-    /** Add a task-entry condition (OR-group). Pass an array of rules for an AND-group. */
+    /** Add a task-entry condition (OR-group). Pass an array of rules for an AND-grou */
     entryWhen(rules: CaseRule | CaseRule[], opts?: {
             displayName?: string;
         }): this;
@@ -539,8 +545,7 @@ export interface DelayInputs {
 ````ts
 export interface RpaWorkflowInputs {
     /**
-     * The published process's release key (a GUID) — e.g.
-     * `'486edc26-0658-4ac1-92c9-1ef953927151'`. It becomes part of the node's
+     * The published process's release key (a GUID). It becomes part of the node's
      * type, `uipath.core.rpa-workflow.<key>`. Find it with
      * `uip or processes list --all-folders --process-type Process` (the row's `Key`)
      * or `uip maestro flow registry search "uipath.core.rpa-workflow"`.
@@ -572,8 +577,7 @@ export interface RpaWorkflowInputs {
 ````ts
 export interface ApiWorkflowInputs {
     /**
-     * The published API workflow's key (a GUID) — e.g.
-     * `'ce857908-ee1d-4392-b552-38bcea0be29c'`. It becomes part of the node's
+     * The published API workflow's key (a GUID). It becomes part of the node's
      * type, `uipath.core.api-workflow.<key>`. Find it with
      * `uip or processes list --all-folders --process-type Api` (an API workflow's
      * `ProcessKey` reads `<name>.api.<name>`; the GUID you want is the row's `Key`)
@@ -607,9 +611,8 @@ export interface ApiWorkflowInputs {
 ````ts
 export interface AgenticProcessInputs {
     /**
-     * The published agentic process's key (a GUID) — e.g.
-     * `'4fc450ab-89be-4462-8fc8-21ac4c1d6fb9'`. It becomes part of the node's type,
-     * `uipath.core.agentic-process.<key>`. Find it with
+     * The published agentic process's key (a GUID). It becomes part of the node's
+     * type, `uipath.core.agentic-process.<key>`. Find it with
      * `uip or processes list --all-folders --process-type ProcessOrchestration` (an
      * agentic process's `ProcessKey` reads `<name>.agentic.<name>`; the GUID you want
      * is the row's `Key`) or `uip maestro flow registry search agentic`.

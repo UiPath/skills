@@ -71,15 +71,19 @@ compiling from a scaffolded solution subdirectory behaves exactly as it does
 from the project root. A nested `package.json` that says nothing about `flowSdk`
 inherits; one that sets `emitOnly: false` opts out. In that mode
 `uip maestro flow compile` only serializes source, and `uip maestro flow check`
-refuses, because product validate/debug are the experiment's gates. A complete
-pass is emit, any required artifact bindings, validate, resource refresh, then
-debug:
+refuses, because product validation owns structural verification. The required
+base pass is emit, any required artifact bindings, then validate. Add resource
+refresh and debug only when the stated acceptance bar requires product-runtime
+behavior evidence:
 
 ```bash
 uip maestro flow compile <Name> -o <Name>Sol/<Name>/<Name>.flow
 uip maestro flow validate <Name>Sol/<Name>/<Name>.flow --output json
+# Only for a stated runtime-behavior claim:
 ( cd <Name>Sol && uip solution resources refresh --solution-folder . --output json )
-( cd <Name>Sol && UIPCLI_LOG_LEVEL=warn uip maestro flow debug <Name> --output json )
+( cd <Name>Sol && UIPCLI_LOG_LEVEL=warn uip maestro flow debug <Name> \
+  --output-filter '{instanceId:instanceId,finalStatus:finalStatus,studioWebUrl:studioWebUrl,incomplete:elementExecutions[?status!=`Completed`],globals:variables.globals,incidents:incidents}' \
+  --output json )
 ```
 
 This loop has exactly one emitted artifact:
@@ -95,6 +99,22 @@ The JSON envelope has top-level `Result`; a successful validation also reports
 `Data.Status: "Valid"` and may carry `Data.Warnings`. Treat warnings as failures
 except for the reviewed shared-connection advisory. Preserve any exception's
 exact code/text and rationale instead of broadening an allowlist.
+
+### Bounded completion
+
+Match the final evidence to the stated acceptance bar after the last edit:
+
+- For a validate-only bar, `Data.Status: "Valid"` plus the required structural
+  self-check is completion. Stop there; do not run debug only for confidence.
+- For each distinct behavior claim named by the bar, plan at most one bounded
+  debug with the inputs and attachments that exercise it. One run may cover
+  compatible claims; do not repeat equivalent inputs.
+- If one unknown still blocks the final wiring, run one bounded experiment that
+  distinguishes the choices, apply its answer, and return to the final
+  emit/validate pass. Do not create a scratch-solution family.
+
+If the requested evidence cannot be obtained inside that bound, report the
+evidence boundary instead of replacing it with repeated debug launches.
 
 ### Managed HTTP: emitted-artifact bindings in emit-only projects
 
@@ -124,18 +144,34 @@ so run both `binding add` commands again after the last compile.
 ## Refresh, debug, and preserve evidence
 
 `flow debug` takes the project directory, not the `.flow` file, and resource
-refresh must run first. From the solution directory, `<Name>` names that project:
+refresh must run first. From the solution directory, `<Name>` names that project.
+These are the common flags; use only the ones the behavior claim needs:
+
+| Need | Exact form |
+|---|---|
+| JSON inputs | `-i '{"name":"value"}'` or `--inputs @inputs.json` |
+| File input | `--attachment <input-name>=<path>`; repeat for multiple files |
+| Folder | one of `--folder-id`, `--folder-key`, or `--folder-path`; omit to auto-detect |
+| Poll bound | `--timeout <seconds> --poll-interval <milliseconds>`; keep the stated task bound |
+| Compact read-back | `--output-filter '<JMESPath>' --output json` |
+
+For example, a direct-input claim can keep the useful status, outputs, and
+diagnostics in one read-back instead of printing the full execution envelope:
 
 ```bash
 ( cd <Name>Sol && uip solution resources refresh --solution-folder . --output json )
-( cd <Name>Sol && UIPCLI_LOG_LEVEL=warn uip maestro flow debug <Name> --output json )
+( cd <Name>Sol && UIPCLI_LOG_LEVEL=warn uip maestro flow debug <Name> \
+  --inputs @inputs.json \
+  --output-filter '{instanceId:instanceId,finalStatus:finalStatus,studioWebUrl:studioWebUrl,incomplete:elementExecutions[?status!=`Completed`],globals:variables.globals,incidents:incidents}' \
+  --output json )
 ```
 
-Read and retain the debug envelope's `Result`, `Data.instanceId`,
-`Data.finalStatus`, `Data.studioWebUrl`, incomplete/faulted element executions,
-global outputs, and incidents. `Completed` with the expected outputs and no
-unexpected incidents is evidence for the product-runtime path; a bare process
-exit code is not.
+The top-level envelope still carries `Result`; the projection above selects
+from `Data`. Read and retain `Result`, the projected instance/status/URL,
+incomplete or faulted element executions, needed global outputs, and incidents.
+`Completed` with the expected outputs and no unexpected incidents is evidence
+for the product-runtime path; a bare process exit code is not. Omit the filter
+only when diagnosing a field that the compact projection did not retain.
 
 For a fault, query the backend incident payload with the returned instance id:
 
