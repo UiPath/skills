@@ -18,6 +18,8 @@ behavior. All rows verified on uip 1.198.0-preview.102 (2026-07-31 / 2026-08-17 
 | `The escalation referenced by rule … no longer exists` | At-risk rule borrowing another SLA's escalation, or the `any` sentinel | K-SLA-3 — same-SLA at-risk escalation, or drop `escalationId` for breach |
 | `The SLA referenced by rule … no longer exists` | Dangling `slaId` | Reference an SLA declared on the row's target |
 | `Case has no completion rules` | No `caseExitRules[]` entry with `marksCaseComplete: true` | K-PAIR-6 |
+| `Stage rule '<name>' has no possible stage options.` | `wait-for-user` exit with no `user-selected-stage` entry anywhere | K-PAIR-4 — add the paired entry |
+| `Stage entry rule '<name>' will never be met.` | `user-selected-stage` entry with no `wait-for-user` exit anywhere | K-PAIR-4 — add the paired exit |
 | `connector activity missing` | Bare `wait-for-connector` rule without `uipath` + `context` | Splice the `case spec` scaffold; stub placeholders keep an empty-outputs `uipath` block |
 
 **[K-ERR-2] Defects validate CANNOT see** — green run, broken case; all on the author:

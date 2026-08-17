@@ -1,9 +1,11 @@
 # Case Knowledge — shared single-source layer
 
 Every cross-skill Case Management fact and rule lives here exactly once. `uipath-planner` owns this
-directory on disk; `uipath-maestro-case` reaches the same files via `references/case-knowledge` (symlink —
-identical content, no copy). Downstream references CITE rules by ID (e.g. `(K-STG-2)`), never restate them.
-Restating a `K-*` rule outside this directory is a defect the knowledge lint rejects.
+directory on disk; `uipath-maestro-case` reaches the same files via a `references/case-knowledge` directory
+symlink (identical content, no copy — landed later in this PR series, together with the packaging
+dereference and the repo-rule amendment that sanctions it). Downstream references CITE rules by ID (e.g.
+`(K-STG-2)`), never restate them — enforced by `scripts/lint-case-knowledge.py` once the lint PR of this
+series lands.
 
 ## Files
 
@@ -31,6 +33,7 @@ Restating a `K-*` rule outside this directory is a defect the knowledge lint rej
 3. Authority order for corrections: `uip maestro case validate` behavior (`@uipath/case-schema`) >
    PO.Frontend source > CLI local types. The CLI's authoring subcommand allow-lists lag the v27 schema.
 4. Consumers: planner design files cite design-relevant IDs; maestro-case phase/plugin files cite
-   emit-relevant IDs. Both audit scripts (`audit_sdd.py`, `audit_plan.py`) read `facts/*.yaml` directly.
+   emit-relevant IDs. Both audit scripts (`audit_sdd.py`, `audit_plan.py`) read `facts/*.yaml` directly
+   (wired in this series' lint/CI PR).
 
 <!-- END: INDEX.md -->

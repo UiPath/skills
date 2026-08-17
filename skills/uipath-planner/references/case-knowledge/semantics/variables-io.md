@@ -6,8 +6,9 @@ variables plugins; SDD cell grammar stays in the planner render rules — both c
 ## The doctrine: reference producers directly; declare only what has no producer
 
 **[K-VAR-1] Task-output xref is the DEFAULT wiring.** A downstream input or condition that consumes one
-upstream task's output references it directly — SDD forms: whole-value `<- "Stage"."Task".out` or
-in-expression `vars.$xref('Stage','Task','out')`; emitted form `=vars.<outputId>`. The emitting task
+upstream task's output references it directly — SDD forms: whole-value `<- "Stage"."Task".out` (the bare
+`"<Stage>"."<Task>".<outputName>` cell spelling is equivalent) or in-expression
+`vars.$xref('Stage','Task','out')`; emitted form `=vars.<outputId>`. The emitting task
 self-declares the output (its `data.outputs[]` entry IS the declaration — no root companion, no case
 variable). Validate-verified: a full bare-mint output entry resolves from downstream inputs, conditions,
 and interrupting stage entries with zero root declarations (probes p11b/p07c, as of 1.198.0-preview.102).

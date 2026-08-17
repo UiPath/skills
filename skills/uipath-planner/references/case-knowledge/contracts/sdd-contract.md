@@ -25,10 +25,12 @@ backtick-wrapped (build checkers match the plain marker).
 args (`selected-stage-completed("<Stage>")`, `sla-status-change("<root|Stage>","<SLA Title>"[,"<At-Risk
 Escalation>"])` — target literal `root` for case scope); prose uses bare rule names, never partial call
 forms. Inputs `Binding` cells use the K-EXPR-1 forms plus the xref forms (K-VAR-1); Outputs rows use the
-K-VAR-5 operators. Bare field-name lists are forbidden. Every `process`/`agent`/`rpa`/`api-workflow` task
-carries a concrete `Resolved Resource` (never `<UNRESOLVED>`), `Folder Path`, `Resource Identity`, and
-`Binding Sub-Type`; actions carry a concrete Action App title; case-management tasks a concrete
-`Child Case`.
+K-VAR-5 operators. Bare field-name lists are forbidden. Portable names are ALWAYS concrete — `Resolved
+Resource` on every `process`/`agent`/`rpa`/`api-workflow` task, the Action App title on every action, the
+`Child Case` name on every case-management task — never `<UNRESOLVED>`. Identity and folder cells
+(`Resource Identity`, `Folder Path`, `Action App ID`, `Deployment Folder`, `Binding Sub-Type`) are concrete
+when resolved, or `<UNRESOLVED>` paired with a review item when deferred (K-LEDG-2's `resolve-at-build`
+flow depends on this).
 
 **[K-SDD-4] Companion artifacts.** The build derives `tasks/tasks.md` and
 `tasks/registry-resolved.json` in a `tasks/` directory at the working root, ADJACENT to `sdd.md` — never

@@ -15,20 +15,20 @@ K-TYP-1:
     - { sdd_type: case-management,             plugin: case-management,    cli_flag: case-management }
     - { sdd_type: execute-connector-activity,  plugin: connector-activity, cli_flag: connector-activity }
     - { sdd_type: wait-for-connector,          plugin: connector-trigger,  cli_flag: connector-trigger }
-    - { sdd_type: wait-for-timer,              plugin: wait-for-timer,     cli_flag: wait-for-timer }
+    - { sdd_type: wait-for-timer,              plugin: wait-for-timer,     cli_flag: null }  # no `tasks describe` — timer needs no schema discovery
 
 K-TYP-2:
   rule: "Never author these as task types. Schema-valid-but-unsupported: external-agent, external-workflow, document-extraction, flow-process (not supported yet). Not types at all: connector-activity, connector-trigger, wait-for-event (folder/flag names, not schema literals). Externally-hosted AI agents model as api-workflow or execute-connector-activity."
   never_author: [external-agent, external-workflow, document-extraction, flow-process, connector-activity, connector-trigger, wait-for-event]
 
 K-TYP-3:
-  rule: "Node `type` discriminators (v27): trigger = uipath.case.trigger; stage = case-management:Stage (stageType: primary|secondary in data — ExceptionStage node type removed at v22); sticky note = case-management:StickyNote."
+  rule: "Node `type` discriminators (v27): trigger = uipath.case.trigger; stage = case-management:Stage (secondary stages carry data.stageType: 'secondary'; primary = the key OMITTED — never emit 'primary'; ExceptionStage node type removed at v22); sticky note = case-management:StickyNote."
   node_types: ["uipath.case.trigger", "case-management:Stage", "case-management:StickyNote"]
-  stage_types: [primary, secondary]
+  stage_type_emitted: { primary: null, secondary: secondary }
 
 K-TYP-4:
-  rule: "Trigger serviceType on disk (data.inputs.serviceType): manual = key ABSENT (never 'Manual'); timer = 'timer' (SDD author token: Intsvc.TimerTrigger); connector event = 'Intsvc.EventTrigger'."
-  service_types: { manual: null, timer: timer, event: Intsvc.EventTrigger }
+  rule: "Trigger serviceType (data.inputs.serviceType): manual = EMIT 'None' (absent also validates — read-tolerance for older files; probes p00/p13, as of 1.198.0-preview.102 — never 'Manual'); timer = 'timer' (SDD author token: Intsvc.TimerTrigger); connector event = 'Intsvc.EventTrigger'."
+  service_types: { manual: None, timer: timer, event: Intsvc.EventTrigger }
 
 K-TYP-5:
   rule: "Variable Type enum: string, integer, float, double, boolean, date, datetime, jsonSchema, file. `json` is NOT a type. jsonSchema (with `body`) for structured payloads whose sub-fields are picked/referenced downstream; string for opaque JSON blobs nothing dereferences. file = JobAttachment record. jsonSchema validates (probe p06, as of 1.198.0-preview.102)."

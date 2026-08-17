@@ -5,7 +5,8 @@ Single source for task activation-mode grammar. Slot legality: [facts/pairing.ya
 **[K-SEQ-1] Task-entry mode is exclusive.** Map the product's task modes exactly: *sequential* → one
 `runs-sequentially` entry rule (only rule on the task); *event-triggered* → the explicit event rule
 (`wait-for-connector` with connector config, or `sla-status-change` for a start-task SLA response);
-*manually-triggered* → one `adhoc` rule + `isRequired: false`; *stage-started* → `current-stage-entered`.
+*manually-triggered* → one `adhoc` rule + `isRequired: false`; *stage-started* (SDD Activation Mode token:
+`parallel`) → `current-stage-entered`.
 Never add `current-stage-entered` alongside any of the others, and never infer a mode from `data.tasks`
 lane layout.
 

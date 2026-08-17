@@ -24,12 +24,14 @@ K-PAIR-2:
   no_when:   [selected-tasks-completed, selected-stage-completed, selected-stage-exited, wait-for-connector]
 
 K-PAIR-3:
-  rule: "Exit `type` legality per row kind: completion rows (Yes) = exit-only | return-to-origin | wait-for-user; exit rows (No) = exit-only | wait-for-user. wait-for-user + marksStageComplete:true is LEGAL and canonical for user-routed completion (probes p01/p02, as of 1.198.0-preview.102). return-to-origin is completion-only — never on a No row — and requires Interrupting: Yes on its lane (K-STG-4)."
-  completion_exit_types: [exit-only, return-to-origin, wait-for-user]
-  exit_exit_types: [exit-only, wait-for-user]
+  rule: "Exit `type` legality per row kind. STAGE rows: completion (Yes) = exit-only | return-to-origin | wait-for-user; exit (No) = exit-only | wait-for-user. wait-for-user + marksStageComplete:true is LEGAL and canonical for user-routed completion (probes p01/p02, as of 1.198.0-preview.102). return-to-origin is completion-only — never on a No row — and requires Interrupting: Yes on its lane (K-STG-4). CASE rows (metadata.caseExitRules): completion (Yes) = exit-only only; exit (No) = exit-only | wait-for-user."
+  stage_completion_exit_types: [exit-only, return-to-origin, wait-for-user]
+  stage_exit_exit_types: [exit-only, wait-for-user]
+  case_completion_exit_types: [exit-only]
+  case_exit_exit_types: [exit-only, wait-for-user]
 
 K-PAIR-4:
-  rule: "wait-for-user ↔ user-selected-stage pair across stages: a wait-for-user exit requires ≥1 other stage carrying a user-selected-stage entry, and vice versa — an unpaired half fails validate. user-selected-stage is picker exposure for user-chosen routing; deterministic rejection/approval/SLA routing uses decision facts + guarded entries instead."
+  rule: "wait-for-user ↔ user-selected-stage pair across stages — validate-enforced both ways (as of 1.198.0-preview.102): an unpaired wait-for-user exit fails with `Stage rule '<name>' has no possible stage options.` (probe p14); an unpaired user-selected-stage entry fails with `Stage entry rule '<name>' will never be met.` (probe p15). user-selected-stage is picker exposure for user-chosen routing; deterministic rejection/approval/SLA routing uses decision facts + guarded entries instead."
 
 K-PAIR-5:
   rule: "required-* rules are vacuous without explicit isRequired: required-stages-completed needs ≥1 primary stage isRequired:true; required-tasks-completed needs ≥1 task isRequired:true in that stage. Validate errors: 'Case rule <name> has no required stage(s) selected' / 'Stage exit rule <name> has no task(s) marked as required' (probes p08–p10, as of 1.198.0-preview.102). isRequired ABSENT ≡ false at the validator — required status is always explicit end-to-end: SDD declares it per stage/task (design default: primary stage Yes, task Yes, secondary stage No, adhoc task No); tasks.md carries it; emission writes it verbatim. No silent defaults at any layer."

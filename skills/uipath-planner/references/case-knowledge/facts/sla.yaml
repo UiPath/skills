@@ -4,10 +4,10 @@
 # (probe dates 2026-07-31 and 2026-08-17); emit JSON shapes live in the SLA/condition plugins.
 
 K-SLA-1:
-  rule: "SLA surfaces: case (metadata.slaRules), stage (data.slaRules — secondary stages included), and `action` tasks (the task's own timer/SLA fields). NEVER SLA cells on process/agent/rpa/api-workflow/timer/connector/case-management tasks. All SLA data on a target lives in one slaRules[] array: conditional overrides first (priority order), trailing default entry with expression '=js:true'; first truthy expression wins."
+  rule: "SLA surfaces: case (metadata.slaRules), stage (data.slaRules — secondary stages included), and `action` tasks. NEVER SLA cells on process/agent/rpa/api-workflow/timer/connector/case-management tasks. Case/stage SLA data lives in the target's one slaRules[] array: conditional overrides first (priority order), trailing default entry with expression '=js:true'; first truthy expression wins. An action-task SLA is NOT a slaRules[] entry — it is the action task's own timer/SLA fields; add sla-status-change case behavior only when the missed task must change the case graph."
 
 K-SLA-2:
-  rule: "SlaRuleEntry requires `id` AND non-empty target-unique `displayName` (no ':') on EVERY entry — both validate-enforced ('SLA name is missing' / zod expected-string; probes p03/p04, as of 1.198.0-preview.102). Units: min|h|d|w|m. count > 0; unit min ⟹ 15 ≤ count ≤ 1000. Non-default entries require a non-empty expression. Escalations: id + non-empty element-unique displayName + ≥1 recipient; atRiskPercentage required iff trigger type at-risk."
+  rule: "SlaRuleEntry requires `id` AND non-empty target-unique `displayName` (no ':') on EVERY entry — both validate-enforced ('SLA name is missing' / zod expected-string; probes p03/p04, as of 1.198.0-preview.102). Units: min|h|d|w|m. count/unit optional as a PAIR only on a bare escalation-only entry; when present, count > 0 and unit min ⟹ 15 ≤ count ≤ 1000. Non-default entries require a non-empty expression. Escalations: id + non-empty element-unique displayName + ≥1 recipient; atRiskPercentage required iff trigger type at-risk."
   units: [min, h, d, w, m]
   min_bounds: { lower: 15, upper: 1000 }
 

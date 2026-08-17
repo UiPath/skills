@@ -1,11 +1,16 @@
 # Expressions — namespaces and gates
 
-**[K-EXPR-1] Expression forms.** Case expressions are `=js:`-prefixed JavaScript over case state
-(`vars.<id>`, `metadata.<key>`). Assignment operators are forbidden in every case expression. Reference
-forms in bindings: `=vars.<id>` (variable / upstream output — K-VAR), `=vars.<id>.<sub>` (dot-path into a
-structured value), `=metadata.<key>`, `=metadata.ExternalId` (the platform-minted case identity — the
-canonical `caseId` binding; it is NOT a task output), `=bindings.<id>` (registered resources),
-`=trigger.<field>`, `=jsonString:<json>` (connector essentialConfiguration carry-through only).
+**[K-EXPR-1] Expression forms.** Case expressions are `=js:`-prefixed JavaScript; predefined namespaces
+available to `=js:` evaluation are `vars`, `response`, `bindings`, `iterator`, `metadata` (the narrower
+conditionExpression scope is K-EXPR-2). Assignment operators are forbidden in every case expression
+(FE `ValidateCaseManagementNoAssignmentsUtils.ts`, PO.Frontend @ e8c176e4d). Binding-cell reference forms:
+plain literals (`"50"`, `0`, `true`), `=vars.<id>` (variable / upstream output — K-VAR),
+`=vars.<id>.<sub>` (dot-path into a structured value), `=metadata.<key>`, `=metadata.ExternalId` (the
+platform-minted case identity — the canonical `caseId` binding; NOT a task output), `=bindings.<id>`
+(registered resources), `=trigger.<field>`, `=js:<expr>` (required when operators are involved),
+`=jsonString:<json>` (connector essentialConfiguration carry-through only), `=datafabric.<path>`,
+`=orchestrator.JobAttachments` (file slot), and the conventional response handles `=response` / `=result`
+/ `=Error`.
 
 **[K-EXPR-2] `conditionExpression` gates CASE STATE only.** No `event` namespace exists — a rule's
 expression cannot read the incoming event payload. In-rule extract-then-gate (extract `response.X ->

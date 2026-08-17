@@ -203,5 +203,24 @@ Probe generator + 16 case variants archived in the PR description. Key rows:
 | p09/p10 | `required-stages-completed`, `isRequired` false / absent | Identical error — absent ≡ false |
 | p11 / p11b | Task-output xref, partial vs full bare-mint entry | Partial fails (`Variable…does not exist`); full **valid** |
 | p12 / p12b | Trigger output self-declared vs + root companion | Self-declared fails; companion **valid** |
+| p13 | Manual trigger with explicit `serviceType: "None"` | Valid (absent also valid — p00). Emit `"None"` per the build plugin; tolerate absent on read |
+| p14 | `wait-for-user` exit, no `user-selected-stage` anywhere | `Stage rule '<name>' has no possible stage options.` |
+| p15 | `user-selected-stage` entry, no `wait-for-user` anywhere | `Stage entry rule '<name>' will never be met.` |
+
+### Adversarial-review addendum (2026-08-17)
+
+An independent review of the shared layer surfaced 15 findings; all fixed in place. Rulings it forced:
+**R1** — manual-trigger emit shape: sources conflicted (planner guide: absent; maestro manual plugin:
+always `"None"`); probes p00+p13 show both validate → emit `"None"`, read-tolerate absent (K-TYP-4).
+**R2** — the wait-for-user↔user-selected-stage pairing IS validate-enforced (p14/p15, messages above) —
+kept in K-PAIR-4 with quotes. Scoping fixes: case-completion rows are `exit-only` only (K-PAIR-3);
+`stageType: "primary"` is never emitted (K-TYP-3); `<UNRESOLVED>` stays legal on identity/folder cells with
+a paired review item (K-SDD-3); only `selected-stage-exited` lanes need an origin diverting exit (K-STG-5);
+action-task SLA is not a `slaRules[]` entry (K-SLA-1); escalation-only SLA entries may omit count/unit
+(K-SLA-2); `=js:` namespaces are `vars, response, bindings, iterator, metadata` — the vars/metadata
+restriction is conditionExpression-only (K-EXPR-1/2; assignment ban sourced to FE
+`ValidateCaseManagementNoAssignmentsUtils.ts`); binding-form list completed (literals, `=datafabric.*`,
+`=orchestrator.JobAttachments`, `=response`/`=result`/`=Error`); `wait-for-timer` has no `tasks describe`
+flag (K-TYP-1); both whole-value xref spellings sanctioned (K-VAR-1).
 
 <!-- END: case-knowledge-ledger.md -->

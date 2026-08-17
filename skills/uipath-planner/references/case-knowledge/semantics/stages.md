@@ -38,8 +38,9 @@ shape: `return-to-origin` + `Marks Stage Complete: Yes` + `required-tasks-comple
   completion exit carries the INVERSE `IF` so the two are mutually exclusive; the lane's entry is
   `selected-stage-exited(origin)` + the same `IF`. Without the diverting exit the decision path dual-fires
   or deadlocks. This is divert-and-return, not a true mid-stage interrupt — a variable-driven mid-stage
-  interrupt is not expressible without a connector. Only `selected-stage-*` lane entries need a matching
-  origin diverting exit; connector/SLA/user entries need nothing on origins.
+  interrupt is not expressible without a connector. Only a `selected-stage-exited` lane entry needs the
+  matching origin diverting exit; a `selected-stage-completed(origin)` + `IF` lane keys off the origin's
+  normal completion (guard only), and connector/SLA/user entries need nothing on origins.
 
 **[K-STG-6] Global-event normalization.** An event that can fire at any point and requires case work
 (withdrawal from a portal, an SLA status change) is modeled ONCE on the destination secondary stage's
