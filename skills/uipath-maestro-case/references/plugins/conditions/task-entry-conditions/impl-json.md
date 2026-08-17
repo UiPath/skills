@@ -120,7 +120,7 @@ Phase 3 Step 10.5 — replace only `uipath` with the `case spec --type trigger -
 "rules": [[ { "id": "rxxxxxxxx", "rule": "runs-sequentially" } ]]
 ```
 
-**Frontend toggle semantics:** The sequential/ordered-task-set rule is the task's only entry condition for strict sequences and for parallel siblings that start after an immediate predecessor. Preserve the task's order in the stage's `data.tasks` structure. A strict chain uses consecutive single-task inner arrays (`[[A], [B], [C]]`); explicitly parallel siblings after the same predecessor share one later inner array (`[[A], [B, C], [D]]`) and each sibling carries `runs-sequentially`. On the first task set, `runs-sequentially` means the current stage was entered; on subsequent task sets, it means the preceding task set completed. Do not use `selected-tasks-completed` or an additional `current-stage-entered` rule to express immediate-predecessor sequencing.
+**Emission mechanics** (semantics: K-SEQ-2): `runs-sequentially` is the task's only entry rule; ordering lives in the `data.tasks` inner arrays — strict chain `[[A], [B], [C]]`, parallel-after-predecessor siblings share one later array `[[A], [B, C], [D]]`, each sibling still carrying the rule. Never add `selected-tasks-completed` or `current-stage-entered` for immediate-predecessor sequencing.
 
 ### sla-status-change — the `start-task` SLA response
 
@@ -128,9 +128,9 @@ Phase 3 Step 10.5 — replace only `uipath` with the `case spec --type trigger -
 "rules": [[ { "id": "rxxxxxxxx", "rule": "sla-status-change", "slaId": "sla_aB3kL9Qx" } ]]
 ```
 
-The task fires when the referenced SLA changes status — the direct shape for a `start-task` response ([sla-response-shapes.md](../../../sla-response-shapes.md)): the follow-up task lives in the breached stage and activates on the SLA event itself, so no stage re-entry is involved and the stage's other tasks do not re-run. Resolve `slaId` (and an at-risk `escalationId`) against the objects already written in Phase 2 Step 11. Reference the stage's **own** SLA for a stage-scoped response, or `root`'s for a case-scoped one.
+The task fires when the referenced SLA changes status — the `start-task` response shape (K-SLA-5): the follow-up task lives in the breached stage and activates on the SLA event itself — no stage re-entry, no sibling re-runs. Resolve `slaId` (and an at-risk `escalationId`) against the objects already written in Phase 2 Step 11. Reference the stage's **own** SLA for a stage-scoped response, or `root`'s for a case-scoped one.
 
-`slaId` alone is a **breach** rule; add a concrete at-risk `escalationId` declared on that same SLA for an at-risk rule. Never the `"any"` sentinel. Verified valid on uip 1.198.0-preview.102 for both stage-owned and root SLAs.
+Breach/at-risk selector: K-SLA-3 (`slaId` alone = breach; + same-SLA `escalationId` = at-risk; never `"any"`). Verified valid on uip 1.198.0-preview.102 for both stage-owned and root SLAs.
 
 When a *stage* should take the case instead, the rule goes on the stage's `entryConditions` ([stage-entry-conditions/impl-json.md](../stage-entry-conditions/impl-json.md)) — that is `enter-stage`, not `start-task`.
 

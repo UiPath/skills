@@ -92,8 +92,8 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 
 **Field semantics on the T-entry:**
 
-- `category` — required, one of `In`, `Out`, `Variable`
-- `type` — required, one of `string`, `integer`, `float`, `double`, `boolean`, `datetime`, `date`, `jsonSchema`, `file`
+- `category` — required, K-TYP-6 enum (semantics: K-VAR-8)
+- `type` — required, K-TYP-5 enum ([../../../case-knowledge/facts/types.yaml](../../../case-knowledge/facts/types.yaml))
 - `sourceTrigger` — T-number when the value comes from a single trigger's payload (Variable category)
 - `sourceTriggers` — for a `Variable`: CSV of T-numbers when multiple triggers populate it. For an `In`-arg: a single `T<N>` selecting the trigger it binds to (blank → primary trigger T02; never a CSV). Replaces the legacy `triggerRef` field.
 - `sourceFields` — per-trigger payload paths (Variable only). Single-trigger form is `<path>`; multi-trigger form is a YAML-style sub-block with one `T<N>: <path>` per line. Empty on `In` rows.
@@ -109,7 +109,7 @@ One T-entry per Case Variables row. Place after the case file (T01) and all trig
 
 ## Types
 
-`"string"` | `"integer"` | `"float"` | `"double"` | `"boolean"` | `"datetime"` | `"date"` | `"jsonSchema"` | `"file"`
+K-TYP-5 ([../../../case-knowledge/facts/types.yaml](../../../case-knowledge/facts/types.yaml)).
 
 ## Naming
 

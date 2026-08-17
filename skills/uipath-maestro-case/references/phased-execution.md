@@ -45,7 +45,7 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 - Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.
 - Stages — all StageIds generated and captured.
-- Edges — none authored (Rule 20); `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 2).
+- Edges — none authored (Rule 20, K-EDGE-1); conditions written in Phase 2 carry all transitions.
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
 - Entry-points input/output — `entry-points.json` `input`/`output` schemas refreshed from the declared In/Out arguments (Step 6.3, per [entry-points-sync.md](entry-points-sync.md)). Makes the Phase-2 publish-for-review contract correct; idempotent.
 
@@ -187,7 +187,7 @@ On failure: output lists `[error]` and `[warning]` entries with path and message
 
 ### Validate-loop guard — no re-validate without an intervening edit
 
-**Never re-run `uip maestro case validate` unless `caseplan.json` (or a sidecar it validates) changed since the last run.** A validate that follows another validate with zero edits in between is a no-op that costs a full CLI round-trip and a turn — observed worst case: 20 validates in one session, 14 of 19 re-runs with no intervening edit, 36% of wall clock. The guard applies in every phase: Phase 2's informational validate runs once, Phase 4's authoritative validate runs once per fix. Fix → edit → validate is the only legal loop shape; validate → validate is a defect.
+**Never re-run `uip maestro case validate` unless `caseplan.json` (or a sidecar it validates) changed since the last run** (cadence fact: K-ERR-3). A validate that follows another validate with zero edits in between is a no-op that costs a full CLI round-trip and a turn — observed worst case: 20 validates in one session, 14 of 19 re-runs with no intervening edit, 36% of wall clock. The guard applies in every phase: Phase 2's informational validate runs once, Phase 4's authoritative validate runs once per fix. Fix → edit → validate is the only legal loop shape; validate → validate is a defect.
 
 ### Retry policy
 

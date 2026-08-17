@@ -193,13 +193,11 @@ SLA is the **last** category in `tasks.md` (§4.8), after conditions. For each t
 
 ## Frontend validation parity
 
-Before emitting SLA T-entries, reject or repair the same cases the Case App rejects:
-
-- every SLA rule has a non-empty, target-unique `display-name`;
-- every escalation has a non-empty, target-unique `display-name`;
-- every SLA `count` is positive, and minute-based values are between 15 and 1000 inclusive;
-- every non-default rule has a condition/expression;
-- every escalation has at least one recipient, and every `at-risk` escalation carries `at-risk-percentage`.
+Before emitting SLA T-entries, reject or repair everything K-SLA-2 rejects
+([case-knowledge/facts/sla.yaml](../../case-knowledge/facts/sla.yaml)): entry `id` + target-unique
+`display-name` on every rule and escalation, positive `count` with the `min` 15–1000 bounds, non-default
+rules carry an expression, every escalation has ≥ 1 recipient and at-risk ones carry `at-risk-percentage`.
+Numeric violations are surfaced, never silently clamped (K-NAME-5).
 
 ## Anti-Patterns
 

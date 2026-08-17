@@ -135,13 +135,13 @@ Apply at planning time (Phase 1). The first two rules cover Inputs; the rest cov
 |---|---|---|
 | `tasks.md` input item wraps its value in backticks or quotes the SDD `Binding` cell did not contain | ERROR | The SDD cell is a Markdown code span. Unwrap it and copy the contents verbatim. |
 | `tasks.md` input item separates name from value with `:` | ERROR | The separator is the operator itself — `<-` for a cross-task reference, `=` otherwise. |
-| `->` row's target case variable not in Case Variables table | ERROR | Outputs declare bindings, not new variables. Target must pre-exist. |
-| `=` row's target case variable not in Case Variables table | ERROR | Same — `=` writes to existing variable's slot. |
+| `->` row's target case variable not in Case Variables table | ERROR | Outputs declare bindings, not new variables. Target must pre-exist (K-VAR-5; declare-vs-xref: K-VAR-2). |
+| `=` row's target case variable not in Case Variables table | ERROR | Same — `=` writes to existing variable's slot (K-VAR-5). |
 | `->` row missing left-side Field | ERROR | `->` requires a schema field name on the left. |
 | `=` row has a non-empty Field column | ERROR | `=` rows have `—` (no field), since the source is the right-side expression, not a schema field. |
 | SDD row has a non-empty Field and blank / `—` Binding | ERROR | Bare output is not SDD syntax. AskUserQuestion; schema discovery may independently add the field to `tasks.md`. |
 | `tasks.md` output item starts with `—`, `->`, or `=` | ERROR | An SDD table placeholder or operator leaked into the left operand. Re-project the row using the mandatory table above. |
-| Per task: same target case variable appears in multiple Outputs rows | ERROR | No double-binding; one row per target var per task. Last-writer-wins is a runtime footgun. |
+| Per task: same target case variable appears in multiple Outputs rows | ERROR | One writer per target per task (K-VAR-6). Last-writer-wins is a runtime footgun. |
 | Any SDD Outputs row differs from its `tasks.md` item in operator or operand | ERROR | The handoff is lossy. Restore the exact SDD row before approval; this includes equal-name `field -> field`. |
 
 ## Scoping

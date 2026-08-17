@@ -44,7 +44,7 @@ If `npm install -g` fails with a permission error, prompt the user to re-run it 
 
 ## Step 1 — HARD GATE: check login and pull registry
 
-Registry discovery happens during build planning, so login is required first. This gate runs on every Phase 1 build run — including SDD-without-ledger handoffs and runs with a staged `tasks/registry-resolved.json` — **with two exceptions:** the same-session fast path, and the explicit plan-only / no-build path in SKILL.md Rule 3. For the same-session fast path, when the planner subagent's report (SKILL.md Rule 15) says its `registry pull` succeeded in THIS session — the `~/.uip/case-resources/` cache is machine-global, so the subagent's pull is this session's pull — reuse that cache and skip the re-pull, and run this step **verify-only**: persist the subagent's returned resolution ledger verbatim to `tasks/registry-resolved.json`, spot-verify entries against the session cache, execute recorded `gateDecision`s (Rule 17), and re-resolve only stale or missing entries. Any doubt in a build run (user-provided SDD, cross-session resume, context compaction, failed or never-run design-lane pull, missing cache files) runs the gate in full.
+Registry discovery happens during build planning, so login is required first. This gate runs on every Phase 1 build run — including SDD-without-ledger handoffs and runs with a staged `tasks/registry-resolved.json` — **with two exceptions:** the same-session fast path, and the explicit plan-only / no-build path in SKILL.md Rule 3. For the same-session fast path, when the planner lane's design conversation ran in THIS session (SKILL.md Rule 15; the lane runs in-conversation — K-HOF-1) and its `registry pull` succeeded — the `~/.uip/case-resources/` cache is machine-global, so the lane's pull is this session's pull — reuse that cache and skip the re-pull, and run this step **verify-only**: persist the lane's resolution ledger (in context from the design conversation) verbatim to `tasks/registry-resolved.json`, spot-verify entries against the session cache, execute recorded `gateDecision`s (Rule 17, K-LEDG-2), and re-resolve only stale or missing entries. Any doubt in a build run (user-provided SDD, cross-session resume, context compaction, failed or never-run design-lane pull, missing cache files) runs the gate in full.
 
 **Plan-only / no-build exception:** when the request explicitly asks to stop at `tasks.md` and not create `caseplan.json`, do not run login, registry, connection, schema, or user-discovery commands. Generate `tasks/tasks.md` from the SDD's concrete intended resource/system names, mark tenant identities `resolve at build`, omit registry-derived audit files, and state that the later build run must rerun this hard gate before caseplan execution.
 
@@ -98,8 +98,8 @@ If the plan-only / no-build exception is active, skip registry and schema discov
 - Stage entries: `stage-kind`, `entry-rule`, `exit-rule`, `interrupting`, `required`, `sla`, `rationale`.
 - Task entries: `stage`, `type`, `activation-mode`, `entry-rule`, `lane`, `required`, `run-only-once`, `resource-intent`, `identity: resolve at build`, `rationale`.
 - Trigger/condition/SLA entries: `rule-type`, `source/status`, `target stage/task`, `return-or-close behavior`, `rationale`. Every `selected-tasks-completed` entry carries `selected-tasks-ids`.
-- Preserve each task's confirmed SDD activation semantics exactly. A singleton task that starts with its stage remains `activation-mode: parallel` + `entry-rule: current-stage-entered`; a single-task stage or list position does not make it sequential. Use `sequential` + `runs-sequentially` only when the source explicitly requires an ordered run or dependency.
-- Global event/exception entries name exactly one interrupting secondary stage and the rule type (`wait-for-connector` or `sla-status-change`); do not duplicate those events across every primary stage. A `sla-status-change` entry names target + SLA title, plus an at-risk escalation title only for an at-risk row (a breach names the SLA alone) — all declared in the SDD and repeated verbatim in `tasks/tasks.md`. The case-level target is the literal `root` — never `Case`, the case name, or another synonym; stage-level targets use the exact stage display name.
+- Preserve each task's confirmed SDD activation semantics exactly (grammar: K-SEQ-1/2). A singleton task that starts with its stage remains `activation-mode: parallel` + `entry-rule: current-stage-entered`; list position never makes it sequential.
+- Global event/exception entries name exactly one interrupting secondary stage and the rule type (K-STG-6). A `sla-status-change` entry repeats the SDD's exact target + titles verbatim (K-SLA-3; arg forms + the literal `root` case-level target: K-SDD-3).
 
 **Rule-valued fields take canonical values, never prose.** `activation-mode`, `entry-rule`, `exit-rule`, and `rule-type` carry a value from their vocabulary exactly as spelled (`runs-sequentially`, `current-stage-entered`, `wait-for-connector`, `adhoc`, `selected-tasks-completed`, …) — review-oriented does not mean free text. When the supplied/approved SDD has an explicit rule row, copy that rule and its selectors exactly only after it passes the Critical Rules: every `selected-tasks-completed` selector must name a non-adhoc sibling in the same stage. An invalid selector is a stop-and-repair, never an authoritative carryover; task proximity and list order alone still never authorize planning to normalize a valid rule. Only derive `runs-sequentially` for ordered work whose source does not already declare an entry rule. Put the human phrasing in `rationale`.
 
@@ -116,23 +116,11 @@ When the plan-only / no-build exception is not active, continue with the normal 
 1. **Identify the plugin** by matching the sdd.md component description to an entry in the catalogs below (§3.1–§3.3).
 2. **Load the plugin's `planning.md` — once per plugin type, not per component.** It lists the exact fields to resolve from sdd.md, the cache file(s) to consult, and any discovery steps required. Group the SDD's components by plugin type, read that plugin's `planning.md` a single time, then resolve and emit EVERY component of that type from the one read. Re-reading a plugin reference per T-entry is a read-budget defect (observed: `planning.md` re-read 10–16×, `impl-json.md` up to 26× per build); after context compaction, re-read only the plugin for the section in progress.
 3. **Apply registry discovery** via [registry-discovery.md](registry-discovery.md) when a taskTypeId is needed. Use the type-specific portable-name field as the query: `Resolved Resource` for process/agent/rpa/api-workflow, Action App title for action, and `Child Case` for case-management. A missing or `<UNRESOLVED>` portable name violates the SDD contract and must be surfaced instead of silently falling back to `Task Name`.
-4. **Persist every resolution** to `registry-resolved.json` using Rule 9's exact keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`). Keep the full exact-name match objects for debugging and stale-cache validation.
+4. **Persist every resolution** to `registry-resolved.json` using the K-LEDG-1 entry shape ([case-knowledge/contracts/resolution-ledger.md](case-knowledge/contracts/resolution-ledger.md)). Keep the full exact-name match objects for debugging and stale-cache validation.
 
 ### 3.1 Task Type catalog
 
-> **Closed enum — 9 values.** sdd.md `Type:` and caseplan.json `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 16 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
-
-| sdd.md `Type:` / caseplan.json `type` | Plugin folder |
-|---|---|
-| `process` (covers `AGENTIC_PROCESS` legacy label) | `plugins/tasks/process/` |
-| `agent` | `plugins/tasks/agent/` |
-| `rpa` | `plugins/tasks/rpa/` |
-| `action` | `plugins/tasks/action/` |
-| `api-workflow` | `plugins/tasks/api-workflow/` |
-| `case-management` | `plugins/tasks/case-management/` |
-| `execute-connector-activity` | `plugins/tasks/connector-activity/` |
-| `wait-for-connector` | `plugins/tasks/connector-trigger/` |
-| `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
+> **Closed enum — 9 values (K-TYP-1), never-author list K-TYP-2.** The sdd_type → plugin-folder → CLI-flag mapping is the single table in [case-knowledge/facts/types.yaml](case-knowledge/facts/types.yaml): sdd.md `Type:` and caseplan.json `type` both use the schema-kebab `sdd_type`; open the `plugin` folder during planning + execution — it is NOT what gets written into JSON (SKILL.md Rule 16). Any value outside the enum is invalid — write a `<UNRESOLVED>` placeholder instead. Planning-specific note: `process` covers the `AGENTIC_PROCESS` legacy label.
 
 > **`agent` & `api-workflow` — create-on-missing.** Both kinds can be built inline at the Rule 17 gate — flow in [§ 3.4](#34-unresolved-resources); type specifics: [agent](plugins/tasks/agent/planning.md#creating-an-agent-inline) / [api-workflow](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline). All other kinds (regular RPA `process`, action, connectors, agentic process) use the §3.4 placeholder path.
 
@@ -178,7 +166,7 @@ Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using 
 
 Cross-reference: [case-schema.md](case-schema.md) for JSON shape, [bindings-and-expressions.md](bindings-and-expressions.md) for inputs/outputs wiring.
 
-Also write `registry-resolved.json` — full detail per task using Rule 9's exact keys: task type, searched cache filename, search query, all exact-name matches, selected entry, and rationale.
+Also write `registry-resolved.json` — one K-LEDG-1 entry per task ([case-knowledge/contracts/resolution-ledger.md](case-knowledge/contracts/resolution-ledger.md)), keeping the full exact-name match sets.
 
 ### 4.0 Completeness principle (no omissions)
 
@@ -303,7 +291,7 @@ Every stage T-entry includes `rationale:` copied from the SDD. It must explain t
 
 ### 4.5 Edges — not authored (RETIRED)
 
-The skill does not author edges (Rule 20). Emit no edge T-entries. Stage transitions derive entirely from stage entry/exit conditions (§4.7); `caseplan.json.edges` stays `[]`; case start is the first stage's `case-entered` entry condition. Reachability is condition-driven: every stage needs an entry condition naming a reachable producer (the first stage carries `case-entered`); orphan/unreachable stages are design defects owned by the planner's design lane and surfaced by skeleton/full `validate`.
+Emit no edge T-entries (Rule 20, K-EDGE-1/2). Orphan/unreachable stages are design defects owned by the planner's design lane and surfaced by skeleton/full `validate`.
 
 ### 4.6 Add tasks
 
@@ -328,18 +316,21 @@ Additional fields are plugin-specific; read the plugin's `planning.md` before fi
 
 > **Activation-mode audit before writing §4.7.** After §4.6 is drafted and before any condition T-entry is written, scan every stage's task list and make the task mode visible in the plan:
 >
-> **Authority order:** an explicit rule in the supplied/approved SDD wins. This audit verifies the handoff; it does not redesign or normalize authored rules. Use the derivation bullets below only when authoring from source behavior that has no explicit task-entry rule.
+> **Authority order:** an explicit rule in the supplied/approved SDD wins. This audit verifies the handoff; it does not redesign or normalize authored rules. Derivation from source behavior with no explicit rule follows K-SEQ-1..4; the tasks.md mode tokens map as:
 >
-> - Contiguous ordered work in one stage (`then`, `after`, `before`, `in order`, direct previous-step wording, or an upstream prerequisite) → every task in that ordered run gets `activation-mode: sequential` and `entry-rule: runs-sequentially`, including the first task, unless the SDD explicitly declares another legal rule.
-> - Independent work that starts with the stage → `activation-mode: parallel`, `entry-rule: current-stage-entered`, and rationale says why the tasks are independent.
-> - Connector/event callback wait → `activation-mode: event-triggered`, usually `entry-rule: wait-for-connector`.
-> - User-launched optional work → `activation-mode: adhoc`, `entry-rule: adhoc`, `isRequired: false`.
-> - Branch convergence, fan-in, decision-result routing, or a non-immediate dependency → `activation-mode: fan-in` or `conditional-gate`, `entry-rule: selected-tasks-completed`, with the selected tasks named.
+> | Source behavior (K-SEQ) | `activation-mode` | `entry-rule` |
+> |---|---|---|
+> | Ordered run — every task incl. the first (K-SEQ-2) | `sequential` | `runs-sequentially` |
+> | Independent stage-start work | `parallel` | `current-stage-entered` |
+> | Siblings after one predecessor, shared task set (K-SEQ-2) | `parallel-after-predecessor` | `runs-sequentially` |
+> | Connector/event callback wait | `event-triggered` | `wait-for-connector` |
+> | User-launched optional work (K-SEQ-4) | `adhoc` | `adhoc` (+ `isRequired: false`) |
+> | Fan-in / convergence / decision routing / non-immediate dependency (K-SEQ-3) | `fan-in` or `conditional-gate` | `selected-tasks-completed` (tasks named) |
 >
-> While authoring a new SDD, do not invent `selected-tasks-completed` merely because a task follows the immediately previous task; model a plain contiguous run as `runs-sequentially`. Once an SDD is supplied or approved, preserve each explicit `selected-tasks-completed` row and selector only after confirming every selected task is a non-adhoc sibling in the same stage. Stop and repair an invalid selector before writing `tasks.md` or `caseplan.json`; SDD approval never overrides this Critical Rule. Map a valid selected-task gate to `conditional-gate` or `fan-in` as its authored rationale supports, never to `sequential`.
-> Before leaving §4.6, audit each stage's planned lanes: sequential tasks that form a strict chain MUST NOT share a lane with each other or with adhoc/event-driven/parallel work. If `activation-mode`/`entry-rule` conflicts with `lane`, the mode wins and the lane must be corrected. Same-lane grouping is reserved for intentionally parallel siblings, and the rationale must say why they run in parallel.
+> Preserve each explicit `selected-tasks-completed` row and selector only after confirming every selected task is a non-adhoc sibling in the same stage — stop and repair an invalid selector before writing `tasks.md` or `caseplan.json`; SDD approval never overrides this Critical Rule. Map a valid selected-task gate to `conditional-gate` / `fan-in` as its rationale supports, never `sequential`.
+> Before leaving §4.6, audit each stage's planned lanes: a strict chain never shares a lane with anything; on an `activation-mode`/`lane` conflict the mode wins. Same-lane grouping is reserved for intentionally parallel siblings with a rationale.
 
-> **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through the common grammar in [`plugins/variables/io-binding/planning.md` § SDD Outputs table → `tasks.md` projection](plugins/variables/io-binding/planning.md#sdd-outputs-table-to-tasksmd-projection-mandatory), then preserve the resulting list item exactly. Schema discovery may add truly undeclared fields as bare items, but it must not rewrite an SDD row. An explicit equal-name extract such as `greeting -> greeting` stays exactly that; collapsing it to bare `greeting` changes the binding from "write the existing case variable" to "auto-mint a task output." Before the Step 5 approval gate, compare every SDD Outputs row to its task T-entry and fix any missing or changed operator/operand or leaked table placeholder.
+> **Outputs are a lossless handoff, not a discovered-name summary.** Project each SDD Outputs table row through [`io-binding § SDD Outputs projection`](plugins/variables/io-binding/planning.md#sdd-outputs-table-to-tasksmd-projection-mandatory) (operators: K-VAR-5/6) and preserve the resulting item exactly — operator and both operands unchanged. Schema discovery may add truly undeclared fields as bare items; it must not rewrite an SDD row (equal-name `greeting -> greeting` is a reassign, never collapsed to bare `greeting`). Before Step 5, compare every SDD Outputs row to its T-entry and fix any changed operator/operand or leaked table placeholder.
 
 > **Registry handoff:** For a resolved `action` or `case-management` T-entry, translate the selected audit object into the canonical `tasks.md` labels and values:
 >

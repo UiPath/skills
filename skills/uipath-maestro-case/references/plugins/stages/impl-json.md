@@ -14,7 +14,7 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 |---|---|---|
 | `displayName` (from T-entry title) | yes | Stage label |
 | `description` | yes | Always emit, sourced from the T-entry's description field in `sdd.md`. |
-| `isRequired` | yes | From `sdd.md`; fall back to `false` when the T-entry does not specify. Consumed by later case-exit rule `required-stages-completed`. |
+| `isRequired` | yes | Explicit from the T-entry. A T-entry missing it is a plan defect -> AskUserQuestion, never a silent fallback (K-PAIR-5: absent ≡ false at the validator, silently breaking `required-stages-completed`). Consumed by the later case-exit rule. |
 | Stage kind | yes | `primary` or `secondary` — determined by the T-entry plugin (`Create stage …` vs `Create secondary stage …`) |
 
 ## ID generation
@@ -40,7 +40,7 @@ Append (or prepend) this object to `nodes` — both orderings are valid for the 
   "data": {
     "label": "<displayName>",
     "description": "<description from sdd.md>",
-    "isRequired": <true|false from sdd.md; false if unspecified>,
+    "isRequired": <true|false — explicit from the T-entry>,
     "parentElement": { "id": "root", "type": "case-management:root" },
     "isInvalidDropTarget": false,
     "isPendingParent": false,
@@ -57,7 +57,7 @@ Append (or prepend) this object to `nodes` — both orderings are valid for the 
 
 ## Recipe — Secondary Stage
 
-> **A non-interrupting SLA lane is still a secondary stage.** When the lane's only entry is an `sla-status-change` response the requirement describes as parallel oversight (`is-interrupting: false`), keep `stageType: "secondary"` with `isRequired: false`. Do NOT emit it as a regular stage instead: a regular stage joins the main flow and, when required, gates case completion. `validate` accepts either shape, so this one is on you.
+> **A non-interrupting SLA lane is still a secondary stage** (K-STG-3; invisible to `validate` — K-ERR-2): keep `stageType: "secondary"` + `isRequired: false`; never emit it as a regular stage.
 
 Same as a primary Stage, with `data.stageType: "secondary"` and two additional `data` fields initialized empty:
 
@@ -69,7 +69,7 @@ Same as a primary Stage, with `data.stageType: "secondary"` and two additional `
     "stageType": "secondary",
     "label": "<displayName>",
     "description": "<description from sdd.md>",
-    "isRequired": <true|false from sdd.md; false if unspecified>,
+    "isRequired": <true|false — explicit from the T-entry>,
     "parentElement": { "id": "root", "type": "case-management:root" },
     "isInvalidDropTarget": false,
     "isPendingParent": false,

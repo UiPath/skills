@@ -82,7 +82,7 @@ In Phase 2, always write the canonical stub from [connector-trigger-impl.md § C
 "rules": [[ { "id": "Rule_xxxxxx", "rule": "required-tasks-completed" } ]]
 ```
 
-The case pauses after the rule fires; the user picks the next stage from candidates that carry a `user-selected-stage` entry rule.
+The case pauses after the rule fires; the user picks the next stage from candidates that carry a `user-selected-stage` entry rule. The pairing is validate-enforced both ways (K-PAIR-4; messages in K-ERR-1); `wait-for-user` + `marksStageComplete: true` is the canonical user-routed completion (K-PAIR-3).
 
 ### return-to-origin — rework loop
 
@@ -118,6 +118,8 @@ To route the **origin** stage into a decision/signal-routed exception lane (the 
 The exception lane's entry is `selected-stage-exited("<origin>") + IF =js:(vars.<signal> === <exception-value>)`, `Interrupting: Yes`, exiting via `return-to-origin`. The two origin exits MUST be mutually exclusive: an ungated completion → dual-fire (next stage + lane both enter); a gated completion with no divert → deadlock (escalate path has no exit). `<signal>` is read directly from the producing task's output (no §1.5 relay var). See the design-side divert-and-return contract (case SDD content contract § Logical integrity step 5, `uipath-planner`).
 
 ## Rule-Type × marksStageComplete Matrix
+
+Pairing legality is K-PAIR-2/3; this matrix is the emission contract per slot:
 
 | `marksStageComplete` | `rule` | Required extra field |
 |---|---|---|

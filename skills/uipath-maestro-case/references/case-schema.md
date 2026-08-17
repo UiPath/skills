@@ -126,9 +126,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 }
 ```
 
-Rule structure uses DNF — see §4.
-
-`marksCaseComplete` is the case-close bit, not a stage-completion bit. A valid case has at least one root `metadata.caseExitRules[]` entry with `marksCaseComplete: true` (normally `required-stages-completed`). Entries with `marksCaseComplete: false` describe non-completing exits and must not be the only case-exit rules.
+Rule structure uses DNF — see §4. `marksCaseComplete` semantics and the ≥1-completion-rule requirement: K-PAIR-6 ([case-knowledge/facts/pairing.yaml](case-knowledge/facts/pairing.yaml)).
 
 ---
 
@@ -195,14 +193,14 @@ No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node l
 | Field | Type | Description |
 |-------|------|-------------|
 | `stageType` | `"primary" \| "secondary"` ? | Stage kind discriminator. Omitted on a primary stage (do NOT emit `"primary"`); set to `"secondary"` for a secondary stage, where it is the FIRST field in `data` (before `label`). See §2c. |
-| `label` | string? | Display label; required, unique across **all** node labels in the case, and must not contain `:` |
+| `label` | string? | Display label; required. Charset + case-wide uniqueness: K-NAME-1/3 |
 | `description` | string? | Stage description |
 | `isRequired` | boolean? | Whether the stage must complete before case exit (used by case-exit rule `required-stages-completed`) |
 | `parentElement` | `{id,type}` | Always `{ id: "root", type: "case-management:root" }`. The literal `"root"` is canvas-side — there is no `"root"` node on disk. |
 | `isInvalidDropTarget` | boolean | Always `false` (UI drag-drop flag) |
 | `isPendingParent` | boolean | Always `false` (UI drag-drop flag) |
 | `tasks` | Task[][] | 2D structural array. Preserve the task order used by the frontend. A strict sequential chain is consecutive single-task inner arrays (`[[A], [B], [C]]`) plus `runs-sequentially` on each task. Intentionally parallel siblings share an inner array, either at stage start (`[[A, B], [C]]`) or after an immediate predecessor (`[[A], [B, C], [D]]` with `runs-sequentially` on B and C). Empty array `[]` when no tasks yet. |
-| `slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for this stage. Every rule has a non-empty target-unique `displayName` without `:`; default SLA is the trailing `"=js:true"` entry. Escalations nest inside each rule. See §6. |
+| `slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for this stage (entry requirements: K-SLA-2). Escalations nest inside each rule. See §6. |
 | `entryConditions` | EntryCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
 | `exitConditions` | ExitCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
 | `instanceIdPrefix` | string? | Prefix for instance IDs |
@@ -211,7 +209,7 @@ No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node l
 
 ### c) Secondary (Exception) Stage — `case-management:Stage` with `data.stageType: "secondary"`
 
-Not a distinct node type. A secondary stage is a Stage node (§2b) with `data.stageType: "secondary"`. Same top-level and render fields as a primary Stage. Adds `entryConditions`, `exitConditions` initialized at creation time. The literal node type `case-management:ExceptionStage` is removed at schema v22 and MUST NOT be emitted.
+Not a distinct node type. A secondary stage is a Stage node (§2b) with `data.stageType: "secondary"`. Same top-level and render fields as a primary Stage. Adds `entryConditions`, `exitConditions` initialized at creation time. The literal node type `case-management:ExceptionStage` is removed at schema v22 and MUST NOT be emitted. Lane semantics (interrupting, exits, required-set exclusion): K-STG-2/3/4 ([case-knowledge/semantics/stages.md](case-knowledge/semantics/stages.md)).
 
 ```json
 {
@@ -304,9 +302,9 @@ See `metadata.caseExitRules` in §1.
 
 ## 4. edges — retired, always `[]`
 
-**The skill never authors edges (Rule 20).** `schema.edges` stays `[]` — the empty array remains in the schema for frontend compatibility. Stage transitions derive entirely from `entryConditions` / `exitConditions` (§3); the case start derives from the first stage's `case-entered` entry condition, not a `TriggerEdge`. The FE auto-derives canvas connectors from the conditions.
-
-A canvas-round-tripped file may contain FE-materialized edge objects. Treat them as read-only — never copy, adapt, or author one; model flow with conditions (§3) instead. Stray-edge removal: [case-editing-operations.md § Delete an edge](case-editing-operations.md#delete-an-edge--defensive-only). Shapes for READING such files: [Appendix — Edge shapes](#appendix--edge-shapes-read-only--never-author).
+`schema.edges` stays `[]` (the key remains for frontend compatibility) — full rule + round-tripped-file
+handling: K-EDGE-1/2/3 ([case-knowledge/semantics/edges-retired.md](case-knowledge/semantics/edges-retired.md)).
+Stray-edge removal: [case-editing-operations.md § Delete an edge](case-editing-operations.md#delete-an-edge--defensive-only); shapes for READING round-tripped files: [Appendix](#appendix--edge-shapes-read-only--never-author).
 
 ---
 
@@ -333,13 +331,12 @@ Rules = Rule[][]
 | `required-stages-completed` | `id?`, `conditionExpression?` | All required stages have completed |
 | `current-stage-entered` | `id?`, `conditionExpression?` | The current stage was just entered |
 | `user-selected-stage` | `id?`, `conditionExpression?` | Fires when a user manually selects/routes to this stage |
-| `sla-status-change` | `id?`, `slaId?`, `escalationId?`, `conditionExpression?` | Fires when the referenced case/stage SLA breaches (`slaId` alone — an absent `escalationId` is the persisted Breached shape), or reaches the referenced at-risk escalation (`slaId` + that SLA's at-risk `escalationId`); stage-entry scope (`enter-stage`) and task-entry scope (`start-task`) |
+| `sla-status-change` | `id?`, `slaId?`, `escalationId?`, `conditionExpression?` | Fires on the referenced SLA's status change — breach/at-risk field selector and scopes: K-SLA-3/4 |
 | `adhoc` | `id?`, `conditionExpression?` | Ad-hoc expression-based condition |
 | `runs-sequentially` | `id?`, `conditionExpression?` | Sequential tasks run in the order they appear in the stage from top to bottom | 
 
-At task level, the frontend's manually-triggered/adhoc mode is represented by an `adhoc`-only entry condition and `isRequired: false`; it is not an event rule. External event mode uses an explicit event rule such as `wait-for-connector`; it is not implied by task order or lane placement.
-
-Not every rule type is valid at every level — see each condition plugin's `impl-json.md` for the allowed subset per location.
+Task activation-mode grammar (adhoc, sequential, event): K-SEQ-1/2/4. Rule×slot legality: K-PAIR-1
+([case-knowledge/facts/pairing.yaml](case-knowledge/facts/pairing.yaml)); per-slot emit detail in each condition plugin's `impl-json.md`.
 
 ```json
 { "rule": "case-entered", "id": "<id>" }
@@ -349,11 +346,11 @@ Not every rule type is valid at every level — see each condition plugin's `imp
 { "rule": "adhoc", "id": "<id>", "conditionExpression": "=js:vars.score > 700" }
 ```
 
-An interrupting secondary-stage `sla-status-change` entry is global to the referenced SLA scope: it can exit whichever covered stage is active. Do not pair it with duplicated per-stage exit rules.
+Global-event modeling (one entry on the destination lane, never per-stage duplication): K-STG-6.
 
 ### Connector-bound `wait-for-connector` rule
 
-A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** — the same block the in-stage `wait-for-connector` task carries under `data`. A bare rule (no `uipath`) is rejected by Studio Web (the FE validator requires the connector activity to resolve). It is authored from a `case spec --type trigger` scaffold; the CLI does not bind it (`buildRule` emits the bare form). `conditionExpression` is an optional `=js:` gate on **case state** (`vars.X` / `metadata`) — NOT the event payload (no `event` namespace). Inputs/outputs `elementId` = `<stageId>-<ruleId>` (stage-entry / stage-exit / task-entry — all stage-scoped) or `root-<ruleId>` (case-exit). Full recipe: [connector-trigger-impl.md § Target: connector-bound condition rule](connector-trigger-impl.md#target-connector-bound-condition-rule).
+A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** — the same block the in-stage `wait-for-connector` task carries under `data`. A bare rule (no `uipath`) is rejected by Studio Web (the FE validator requires the connector activity to resolve). It is authored from a `case spec --type trigger` scaffold; the CLI does not bind it (`buildRule` emits the bare form). `conditionExpression` is an optional `=js:` gate scoped per K-EXPR-2 (case state only — never the event payload). Inputs/outputs `elementId` = `<stageId>-<ruleId>` (stage-entry / stage-exit / task-entry — all stage-scoped) or `root-<ruleId>` (case-exit). Full recipe: [connector-trigger-impl.md § Target: connector-bound condition rule](connector-trigger-impl.md#target-connector-bound-condition-rule).
 
 ```json
 {
@@ -423,25 +420,22 @@ All SLA data on a target (root or stage) lives in a single `slaRules[]` array. T
 ]
 ```
 
-Time units: `"min"` (minutes), `"h"` (hours), `"d"` (days), `"w"` (weeks), `"m"` (months).
-Escalation `triggerInfo.type`: `"at-risk"` or `"sla-breached"`. `atRiskPercentage` is required when `type === "at-risk"` and omitted otherwise.
-Escalation `action.recipients[].scope`: `"User"` or `"UserGroup"`. `target` is the user / group UUID; `value` is the display string (email or group name).
-Escalation `id` and `displayName` are both **required** (as of schema v27). Default `displayName` format: `Escalation rule <N> - <sla displayName>`.
+Units, bounds, and required entry/escalation fields: K-SLA-2 + K-TYP-7 ([case-knowledge/facts/sla.yaml](case-knowledge/facts/sla.yaml)).
+Recipient `target` is the user/group UUID; `value` is the display string. Default escalation `displayName` format: `Escalation rule <N> - <sla displayName>`.
 
 ### SlaRuleEntry
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | string | Stable `sla_` identifier. Required when a `sla-status-change` rule references this SLA. |
-| `displayName` | string | Required, target-unique SLA title; must not contain `:`. |
+| `id` | string | Stable `sla_` identifier — required on EVERY entry (K-SLA-2). |
+| `displayName` | string | Required on every entry, target-unique, no `:` (K-SLA-2, K-NAME-3). |
 | `expression` | string | Rule predicate. `"=js:true"` marks the default / fallback rule. Non-default rules require a non-empty expression. |
-| `count` | number? | SLA duration count (optional — a bare escalation-only rule may omit this). |
-| `unit` | `"min" \| "h" \| "d" \| "w" \| "m"` ? | SLA duration unit (optional — paired with `count`). |
-| `escalationRule` | EscalationRule[]? | Notifications to fire at-risk or on breach. Each escalation requires a non-empty target-unique `displayName` without `:`, at least one recipient, and an at-risk percentage when its trigger type is `at-risk`. Runtime attaches escalations to whichever rule is active. |
+| `count` / `unit` | number? / enum? | Duration pair — K-SLA-2 (optional as a pair only on a bare escalation-only entry). |
+| `escalationRule` | EscalationRule[]? | Escalations (required fields: K-SLA-2). Runtime attaches escalations to whichever rule is active. |
 
 Evaluated in array order; the first truthy expression wins. The trailing `"=js:true"` entry acts as the default.
 
-> **SLA capabilities** — escalation rules can attach to any rule (not only the default `"=js:true"`). `slaRules[]` is supported on a secondary Stage (`data.stageType: "secondary"`). A single `EscalationRule` may carry multiple `recipients[]`. See [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
+> **SLA capabilities** — escalation rules can attach to any rule (not only the default `"=js:true"`). `slaRules[]` is supported on a secondary Stage. A single `EscalationRule` may carry multiple `recipients[]`. Facts: [case-knowledge/facts/sla.yaml](case-knowledge/facts/sla.yaml); emit recipes: [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
 
 ---
 
@@ -453,7 +447,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 |-------|------|-------------|
 | `id` | string | Unique task ID, `t` + 8 random chars (e.g. `t8GQTYo8O`) |
 | `elementId` | string | Composite `${stageId}-${taskId}` (e.g. `Stage_aB3kL9-t8GQTYo8O`) |
-| `displayName` | string? | Human-readable label shown in the UI; unique across the **whole case** (not per stage) and must not contain `:`. Omitted resolves to the bound resource name, which shares the pool. |
+| `displayName` | string? | Human-readable label shown in the UI — case-wide uniqueness + charset: K-NAME-1/3. Omitted resolves to the bound resource name, which shares the pool. |
 | `type` | string | Task type — see task plugins under `plugins/tasks/` |
 | `data` | object | Type-specific configuration — see corresponding plugin's `impl-json.md`. For connector tasks, `data.bindings` references the root-level bindings array. |
 | `skipCondition` | string? | `=js:` expression — skip the task when truthy. Use strict equality ([`bindings-and-expressions.md`](bindings-and-expressions.md#equality-operators)). |
@@ -473,7 +467,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 > { "displayName": "Hold", "skipCondition": "=js:vars.skip === true", "data": { "timerType": "timeDuration", "timeDuration": "PT1H" } }
 > ```
 
-**Positioning:** tasks have no `x`/`y`. They live in the stage's `data.tasks` 2D structural array. Do not infer execution order from lane-sharing alone. For a strict sequential chain, preserve declaration order as consecutive single-task sets and put `runs-sequentially` as the only entry rule on each task in the chain. For independent siblings after one predecessor, place those siblings in the same next task set and put `runs-sequentially` on each sibling.
+**Positioning:** tasks have no `x`/`y`. They live in the stage's `data.tasks` 2D structural array (shape in the §2b `tasks` row); sequencing grammar and task-set structure: K-SEQ-2 ([case-knowledge/semantics/sequencing.md](case-knowledge/semantics/sequencing.md)).
 
 **Task type catalog** (full shape in each plugin's `impl-json.md`):
 
@@ -489,7 +483,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 
-> **Not supported yet — do NOT author.** `external-agent`, `external-workflow`, `document-extraction`, `flow-process`. None of these are valid in `caseplan.json` (SKILL.md Rule 16).
+> **Not supported yet — do NOT author.** The K-TYP-2 never-author list ([case-knowledge/facts/types.yaml](case-knowledge/facts/types.yaml)); none are valid in `caseplan.json` (SKILL.md Rule 16).
 
 ---
 

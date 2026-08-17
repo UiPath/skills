@@ -1,6 +1,9 @@
 # Variables — Implementation
 
 No CLI command exists for variable declaration. Edit `caseplan.json` directly (Read → reason → Write/Edit).
+Doctrine (task-xref default, when a declaration is warranted, trigger-companion requirement): K-VAR-1/2/3
+([../../../case-knowledge/semantics/variables-io.md](../../../case-knowledge/semantics/variables-io.md)) — this
+file owns the EMISSION shapes.
 
 ## § Terminology + Resolution Semantics (read this first)
 
@@ -410,7 +413,7 @@ See [`../../../bindings-and-expressions.md`](../../../bindings-and-expressions.m
 
 ## Task Output → variable resolution
 
-When a task's `data.outputs[]` entry has `id` set (which is always the case under the `->` operator — see task plugin impl-json files for the reassign shape with `originalVar`), the entry self-declares. The variable namespace includes `vars.<id>` directly through the task output entry.
+When a task's `data.outputs[]` entry has `id` set (which is always the case under the `->` operator — see task plugin impl-json files for the reassign shape with `originalVar`), the entry self-declares (K-VAR-1: no root companion needed; K-VAR-4: the full entry shape is what makes it resolvable). The variable namespace includes `vars.<id>` directly through the task output entry.
 
 ```json
 // Task output written by task plugin under `Decision -> finalDecision`:

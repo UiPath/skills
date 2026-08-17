@@ -120,7 +120,7 @@ After Step 6.2, project the declared In/Out arguments onto every `entry-points.j
 
 For each stage in `tasks.md §4.4`, execute per [`plugins/stages/impl-json.md`](plugins/stages/impl-json.md). **Capture the generated `StageId` for every stage** into the name → ID map (and into `id-map.json`) — downstream tasks, conditions, and SLA all reference it.
 
-`isRequired` from `tasks.md` is planning-only metadata; it is not written into the stage node. It is consumed by case-exit-conditions with `rule-type: required-stages-completed` (Step 10).
+Write `data.isRequired` on every stage node from the T-entry's explicit value — required status is explicit end-to-end, absent ≡ not-required at the validator (K-PAIR-5; ledger ruling C1). The same value is consumed by case-exit-conditions with `rule-type: required-stages-completed` (Step 10).
 
 ## Step 8 — (RETIRED — no edges)
 
@@ -150,7 +150,7 @@ On context-compaction mid-gather: re-Read `caseplan.json`, scan for §4.6 tasks 
 - `activation-mode: adhoc`, `event-triggered`, `fan-in`, `conditional-gate`, or any standalone non-parallel task → append as its own single-task inner array.
 - Only `activation-mode: parallel` or `parallel-after-predecessor` with an explicit same-lane intent and rationale may share an inner array (`[[A, B], [C]]` or `[[A], [B, C], [D]]`). This is the only case where appending to an existing `data.tasks[laneIndex][]` is valid.
 
-**Parallel-after-predecessor guard.** If two or more independent tasks share the same immediate predecessor task or predecessor task set, write them into the same next inner array and keep `activation-mode: parallel-after-predecessor`; do not convert them into separate event-triggered tasks with duplicate `selected-tasks-completed("<previous>")` entry rules. Duplicate selected-task gates on the immediate predecessor are a planning defect to repair before write.
+**Parallel-after-predecessor guard** (K-SEQ-2): siblings after one predecessor share the same next inner array, each `runs-sequentially` — never separate tasks with duplicate `selected-tasks-completed("<previous>")` gates; that shape is a planning defect to repair before write.
 
 > **`validate` cannot catch a wrong grouping.** Strict-sequential and parallel-after-predecessor emit the same entry rule (`runs-sequentially`); only the `data.tasks` grouping differs. `uip maestro case validate` returns `Valid` for a strict chain, a shared set, a shared set at index 0, and even mixed entry rules inside one set (as of uip 1.198, 2026-08-02). Grouping is enforced only here — get it right at write time; a clean validate is not evidence it is correct.
 

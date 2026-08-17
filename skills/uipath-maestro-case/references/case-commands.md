@@ -37,7 +37,7 @@ Creates `<SolutionName>/` with `<SolutionName>.uipx` inside. The `case` plugin's
 
 ## uip maestro case init
 
-Scaffold a basic Case project with the 5 boilerplate files and a starter `caseplan.json`. Use this for a blank case scaffold without an `sdd.md` (the SDD-driven JSON path writes the same files in a single plugin invocation — see [plugins/case/impl-json.md](plugins/case/impl-json.md)).
+> **Never run this command in this skill — SKILL.md Rule 23** (run outside an existing solution it forks a second one). The behavior below is documented for reading auto-scaffold output and recovering from accidental runs only; the skill's path is `uip solution init` + the T01 direct-JSON scaffold ([plugins/case/impl-json.md](plugins/case/impl-json.md)).
 
 ```bash
 cd <SolutionDir> && uip maestro case init <ProjectName>

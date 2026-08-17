@@ -42,7 +42,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 "rules": [[ { "id": "Rule_xxxxxx", "rule": "required-stages-completed" } ]]
 ```
 
-Requires `marksCaseComplete: true`. Completes when every stage flagged `data.isRequired: true` has completed.
+Requires `marksCaseComplete: true`. Completes when every stage flagged `data.isRequired: true` has completed — vacuous without one (K-PAIR-5; `isRequired` absent ≡ false).
 
 ### selected-stage-completed / selected-stage-exited — non-completing exit
 
@@ -65,6 +65,8 @@ In Phase 2, always write the canonical stub from [connector-trigger-impl.md § C
 **Rule output binding.** Defer it with the stub. After the Phase 3 upgrade produces real outputs, dispatch them per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules), before root bindings. `elementId` stays `root-<ruleId>`.
 
 ## Rule-Type × marksCaseComplete Matrix
+
+Pairing legality is K-PAIR-2 (case-completion exits are `exit-only` only — K-PAIR-3); the case-close contract is K-PAIR-6. This matrix is the emission contract:
 
 | `marksCaseComplete` | `rule` | Required extra field |
 |---|---|---|

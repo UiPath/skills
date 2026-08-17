@@ -91,7 +91,7 @@ Emission rules:
 3. **Escalation-only default rule is legal, but it still needs an ID and title.** If a target has escalations but no default SLA T-entry, Step 11 directly emits `{id:"sla_...", displayName:"SLA Rule 1", expression:"=js:true", escalationRule:[…]}` with no `count` / `unit`, and records that synthetic ID.
 4. **Always emit `escalationRule` on every rule.** Use `"escalationRule": []` when a rule has no attached escalations. Never omit the key.
 5. **Omit `slaRules` key entirely** on targets with no SLA T-entries.
-6. **Emit a unique `id` on every SlaRuleEntry.** `sla_` + 8 chars — **required** (schema v26). `displayName` is optional (`"Default"` for the trailing `=js:true` entry).
+6. **Emit a unique `id` AND a non-empty target-unique `displayName` on every SlaRuleEntry** — both validate-enforced (K-SLA-2: `SLA name is missing` / zod expected-string, probes p03/p04). Use the T-entry's `display-name` (authored title or the recorded `SLA Rule {N}` fallback); never omit either field.
 
 ## Recipe — one escalation entry
 
@@ -132,13 +132,12 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 ## The clock is not the response
 
-This file writes the SLA **clock** and its escalation notifications. The **response** to an at-risk / breach event is a separate decision, read off the requirement and never off the SLA's scope:
-
-- **notify-only** — an escalation entry here, and nothing else. Absent a stated response, both at-risk and breached are notify-only. Do NOT mint a stage, task, or condition for a requirement that only asks to notify someone.
-- **start-task / enter-stage** — the escalation (if any) still lives here; the behavior change is an `sla-status-change` rule on the follow-up **task** (`start-task`) or on the destination **stage** (`enter-stage`). Shapes, interrupting semantics, and the four defects `validate` cannot see: [sla-response-shapes.md](../../sla-response-shapes.md).
-- **exit-stage / exit-case** — a stage-exit or `metadata.caseExitRules[]` row.
-
-A breach rule references the SLA alone (`slaId`, no `escalationId`), so a breach response does **not** require an escalation to exist here. An at-risk response does: it needs a concrete at-risk escalation on that same SLA.
+This file writes the SLA **clock** and its escalation notifications. The **response** to an at-risk /
+breach event is a separate decision — closed set, selection test, status-on-the-escalation-reference, and
+the defects `validate` cannot see: K-SLA-3/4/5 + K-ERR-2
+([case-knowledge/facts/sla.yaml](../../case-knowledge/facts/sla.yaml)). Emission consequence here: a breach
+response needs NO escalation entry on this file's objects (`slaId` alone is the persisted Breached shape);
+an at-risk response needs a concrete at-risk escalation on that same SLA.
 
 ## Post-write validation
 

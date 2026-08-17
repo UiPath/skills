@@ -25,13 +25,9 @@ When editing `caseplan.json` directly, the agent is responsible for these mechan
 
 ## layout-strip (Rule 18)
 
-The following Pre-flight Checklist items become **NOOPs** because layout state lives in top-level `layout`, not on each node:
-
-- **Item 3 (Stage render fields)** — do NOT emit `style`, `measured`, `width`, `zIndex` on Stage nodes. nodes carry `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` only.
-- **Item 4 (Position computation)** — do NOT compute or emit `position.x`, `position.y` on Stage nodes (or Trigger nodes). FE auto-layouts on canvas load.
-- **Edges** — none authored (Rule 20), so no edge `data.waypoints` to emit; skill emits empty `layout: {}` regardless.
-
-Skill emits empty `layout: {}` at top level — never populates `layout.nodes` or `layout.edges`. Layout authoring is a canvas-time concern, not a skill concern.
+Layout state lives in top-level `layout: {}` only — the stripped field list and rationale live in
+[case-schema.md § Layout-strip](case-schema.md#layout-strip-rule-18). Consequence here: Pre-flight items 3
+(stage render fields) and 4 (position computation) are NOOPs, and edges contribute nothing (Rule 20).
 
 ## Pre-flight Checklist
 
@@ -141,12 +137,10 @@ Used for: debugging, downstream cross-task reference resolution within the same 
 
 ## Expression Prefixes
 
-Every `=`-prefixed value written into `caseplan.json` (`data.inputs[].value`, condition/rule `conditionExpression`, connector body fields) must use the wrap form its **sink** dispatches to — wrong wrap is a silent runtime fault. The two-line rule:
-
-- **Value lookup** (`data.inputs[].value` referencing one identifier): `=vars.<id>` or `=bindings.<id>` — no dots, no operators.
-- **JS eval** (everything else — `conditionExpression`, connector body fields, dotted access, operators, `=metadata.*`): `=js:<expr>`. Conditions reference only `vars.X` and `metadata` (no `event` namespace).
-
-Full sink-to-form table, the lookup-vs-JS-eval dispatch, and connector-trigger filter forms: [bindings-and-expressions.md § Canonical form per sink](bindings-and-expressions.md#canonical-form-per-sink).
+Every `=`-prefixed value must use the wrap form its **sink** dispatches to — wrong wrap is a silent
+runtime fault. The sink-to-form table, lookup-vs-JS-eval dispatch, and filter forms are owned by
+[bindings-and-expressions.md § Canonical form per sink](bindings-and-expressions.md#canonical-form-per-sink);
+conditionExpression scope (case state only, no `event` namespace): K-EXPR-2.
 
 ---
 
@@ -324,7 +318,7 @@ Change a rule's behavior without removing it — keep the rule `id` so any refer
 
 ### Delete a case-exit completion rule
 
-Remove a plain completion / exit rule from `metadata.caseExitRules[]`. **Guard: a case must keep ≥1 rule with `marksCaseComplete: true`** — `validate` rejects an all-`marksCaseComplete:false` case ("Case has no completion rules").
+Remove a plain completion / exit rule from `metadata.caseExitRules[]`. **Guard: a case must keep ≥1 rule with `marksCaseComplete: true`** (K-PAIR-6; validate message row in [case-knowledge/errors/validate-codes.md](case-knowledge/errors/validate-codes.md)).
 
 1. Read `caseplan.json`; locate the rule in `metadata.caseExitRules[]`.
 2. **Before removing, check the invariant.** If the rule being removed is the only entry with `marksCaseComplete: true`, removing it leaves the case with no completion path. Do NOT silently remove — AskUserQuestion: `Replace it with a different completion rule` / `Keep it` / `Remove anyway (case will fail validation)`. Removing the last completer is almost always a mistake; surfacing it here avoids the After-edits retry thrash (validate would reject it on the next loop).

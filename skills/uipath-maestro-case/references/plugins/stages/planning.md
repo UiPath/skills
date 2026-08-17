@@ -9,9 +9,9 @@ A stage node inside the case. Stages contain tasks and connect via entry/exit co
 | Regular stage | `case-management:Stage` (default) |
 | Secondary stage | `case-management:Stage` with `data.stageType: "secondary"` |
 
-The only difference is `data.stageType`: omitted for a primary/regular stage (do NOT emit `"primary"`), `"secondary"` for a secondary stage; both use `type: case-management:Stage`. All other fields (label, description, entry/exit conditions, tasks, SLA) behave identically. Primary and secondary stages can both carry conditional + default `data.slaRules[]`.
+The only difference is `data.stageType`: omitted for a primary/regular stage (do NOT emit `"primary"` — K-TYP-3), `"secondary"` for a secondary stage; both use `type: case-management:Stage`. All other fields (label, description, entry/exit conditions, tasks, SLA) behave identically. Primary and secondary stages can both carry conditional + default `data.slaRules[]`.
 
-The UI's **Secondary stage** toggle means an interrupting exception lane, not a second kind of primary flow stage. It is used for exception, rework, terminal, or special handling that moves the case out of the active primary path. Secondary stages cannot be connected to other stages as ordinary flow links, must not be required for `required-stages-completed`, and every secondary-stage entry condition must carry `Interrupting: Yes`. Optional work that does not interrupt the active path is an `adhoc` task or regular parallel path, not a secondary stage.
+Secondary-stage semantics — interrupting exception lane, `isRequired: false`, excluded from `required-stages-completed`, every entry row interrupting with the SLA parallel-oversight carve-out, exits by intent — are K-STG-2/3/4 ([case-knowledge/semantics/stages.md](../../case-knowledge/semantics/stages.md)). Optional non-interrupting work is an `adhoc` task (K-SEQ-4), not a lane.
 
 ## When to Pick `secondary` vs `stage`
 
@@ -30,12 +30,12 @@ When ambiguous, use **AskUserQuestion** with both options + "Something else".
 
 ### Wiring constraints (reachability — edges retired)
 
-No stage of either variant has edges. Reachability is expressed entirely through stage entry/exit conditions:
-
-- **Regular stage** — reached via a **non-interrupting** entry condition: `case-entered` for the first stage, or `selected-stage-completed` / `selected-stage-exited` naming a predecessor. Every regular stage MUST have ≥1 entry condition, or it is orphaned and unreachable. See [stage-entry-conditions plugin](../conditions/stage-entry-conditions/planning.md).
-- **Secondary stage** — reached via an **interrupting** entry condition. Global external events use one `wait-for-connector` entry; global case/stage SLA events that require case work use one `sla-status-change` entry (warning-only escalation stays a notification). Neither needs duplicated exit rules on every possible origin stage. Returning lanes exit via `return-to-origin`; terminal lanes exit via `exit-only` plus a case-exit row. See [stage-entry-conditions](../conditions/stage-entry-conditions/planning.md) and [stage-exit-conditions](../conditions/stage-exit-conditions/planning.md).
-
-Do NOT create edges for any stage. If the sdd.md describes a stage "connected via an arrow / edge" to another, model it as the target stage's entry condition (plus a source-stage exit condition when the source diverges). Onward flow from a secondary stage uses `return-to-origin`, letting the origin stage's own entry/exit conditions carry the case forward.
+No stage of either variant has edges; reachability is condition-only (K-EDGE-1/2, K-STG-7). Entry shapes per
+lane trigger and global-event-once: K-STG-5/6. Build guidance: an SDD "A → B" arrow becomes B's entry
+condition (`selected-stage-completed` / `selected-stage-exited` naming A), plus an A exit condition only
+when A diverges; a regular stage with no entry condition is orphaned; onward flow from a returning lane is
+`return-to-origin`. Plugins: [stage-entry-conditions](../conditions/stage-entry-conditions/planning.md) ·
+[stage-exit-conditions](../conditions/stage-exit-conditions/planning.md).
 
 ## Required Fields from sdd.md
 
@@ -45,25 +45,27 @@ Do NOT create edges for any stage. If the sdd.md describes a stage "connected vi
 | `type` | sdd.md intent | `stage` (default) or `secondary` — see above |
 | `rationale` | sdd.md Design Rationale | Required reviewer context explaining the stage-kind and routing choice. A global-event secondary stage states why one interrupting entry replaces per-stage duplication. Not emitted into caseplan JSON. |
 | `description` | sdd.md stage description | Optional. |
-| `isRequired` | sdd.md (default `true` for regular, `false` for secondary) | **Planning-only metadata.** See note below. |
+| `isRequired` | sdd.md — explicit `Yes`/`No` per stage, carried verbatim | Written into the node. See note below. |
 
 ### Note on `isRequired`
 
-`isRequired` is written into the stage node's `data.isRequired` and is consumed downstream by case exit conditions with `rule-type: required-stages-completed` — the case completes when all stages flagged `isRequired: true` have completed.
+`isRequired` IS written into the stage node's `data.isRequired` at stage creation, and is also consumed by
+case exit conditions with `rule-type: required-stages-completed` — the case completes when all stages
+flagged `isRequired: true` have completed.
 
-Record `isRequired` in `tasks.md` for each stage. Use:
-- `true` — **Default for regular stages.** Stage is on the main flow path and must complete for case completion.
-- `false` — **Default for secondary stages.** Secondary / fallback / rework / terminal stages only reached via interrupting entry conditions.
-
-Implementation phase consumes this value when adding case-exit-conditions; the stage itself is created without it.
+**No silent defaults (K-PAIR-5).** Absent ≡ false at the validator, silently removing the stage from
+`required-stages-completed` and breaking case completion. The SDD declares Required per stage (design
+default: primary `Yes`, secondary always `No`); every stage T-entry in `tasks.md` carries the explicit
+value; a T-entry missing it is a plan defect → AskUserQuestion, never a fallback.
 
 ## Registry Resolution
 
 **None.** Stages have no registry representation — no `taskTypeId`, no enrichment.
 
-## Auto-Positioning
+## Positioning
 
-Stage position is auto-computed by the impl-json recipe: `x = 100 + (existingStageCount * 500), y = 200`. The planning entry does not carry coordinates unless the sdd.md specifies explicit ones.
+None. Stage nodes carry no coordinates (SKILL.md Rule 18 layout-strip — emit top-level `layout: {}`; the
+FE auto-layouts). The planning entry never carries coordinates.
 
 ## Ordering
 
@@ -76,7 +78,7 @@ Stages are created **after** the root case (T01) and **before** any tasks or con
 - type: stage
 - rationale: "<why this is a primary stage and how it is reached/exited>"
 - description: "<description from sdd.md>"
-- isRequired: <true|false from sdd.md; false if unspecified>
+- isRequired: <true|false — explicit from sdd.md; missing -> AskUserQuestion (K-PAIR-5)>
 - order: after T<m>
 - verify: Confirm Result: Success, capture StageId
 ```
@@ -88,7 +90,7 @@ Secondary variant:
 - type: secondary
 - rationale: "<why this is interrupting and which global/conditional event it handles>"
 - description: "<description from sdd.md>"
-- isRequired: <true|false from sdd.md; false if unspecified>
+- isRequired: <true|false — explicit from sdd.md; missing -> AskUserQuestion (K-PAIR-5)>
 - order: after T<m>
 - verify: Confirm Result: Success, capture StageId
 ```
