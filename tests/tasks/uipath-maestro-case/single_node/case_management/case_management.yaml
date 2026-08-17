@@ -87,7 +87,7 @@ initial_prompt: |
 
   | Field | Value |
   |---|---|
-  | Case Reference | Name "CaseTest", Folder "Shared" |
+  | Case Reference | Name "Maestro Case", Folder "Shared/uipath-maestro-case/CaseTest" |
   | Component Type | CASE_MANAGEMENT |
   ```
 

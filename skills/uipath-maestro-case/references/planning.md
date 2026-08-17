@@ -4,7 +4,7 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 > **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip this planning pipeline — see [brownfield.md](brownfield.md).
 
-> **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution). Explicit plan-only / no-build runs stop at `tasks/tasks.md` and skip registry-derived audit files because tenant lookup is deferred to the later build run.
+> **Output:** `tasks/tasks.md` + `tasks/registry-resolved.json` in the same directory as the sdd.md file. When SLA escalations are present, also `tasks/recipients-resolved.json` — see [`plugins/sla/planning.md` § Identity Resolution](plugins/sla/planning.md#identity-resolution). Explicit plan-only / no-build runs stop at `tasks/tasks.md` and skip registry-derived audit files because tenant lookup is deferred to the later build run — so a request that asks for those audit files is not a no-build run (Step 1).
 >
 > **Exit:** Auto-proceeds to Phase 2 — plan treated as approved, no prompt by default. Stops after `tasks.md` only when the request explicitly asked for a plan-only / review-first run. Re-read `tasks.md` before execution.
 
@@ -48,6 +48,8 @@ Registry discovery happens during build planning, so login is required first. Th
 
 **Plan-only / no-build exception:** when the request explicitly asks to stop at `tasks.md` and not create `caseplan.json`, do not run login, registry, connection, schema, or user-discovery commands. Generate `tasks/tasks.md` from the SDD's concrete intended resource/system names, mark tenant identities `resolve at build`, omit registry-derived audit files, and state that the later build run must rerun this hard gate before caseplan execution.
 
+**Negative trigger — tenant work overrides it.** The exception defers tenant lookup; it does not describe where a run stops. It does NOT fire when the same request asks to resolve resources or identities, pull or refresh the registry, replace a stale registry audit, or produce `tasks/registry-resolved.json` / `tasks/recipients-resolved.json` — even when that request also says to stop before `caseplan.json`, a solution, or Phase 2. Such a run is a normal build-planning run: run this gate in full, resolve every identity, emit the build-path `tasks.md` shape (§4.6 plus each plugin's `planning.md`), and stop at the Rule 7 plan gate.
+
 ```bash
 uip login status --output json
 uip maestro case registry pull
@@ -90,7 +92,7 @@ Before resource resolution, seed TodoWrite with the items below to track Phase 1
 
 For every task, trigger, and condition in the sdd.md:
 
-If the plan-only / no-build exception is active, skip registry and schema discovery in this step and do not fan out through every plugin `planning.md`. Use the compact no-build shape below for the review plan: preserve SDD portable names, emit tenant identities as `resolve at build`, carry every rationale, and stop after `tasks/tasks.md`. The compact no-build plan is exempt from the normal section-batched planning workflow because it is a review artifact, not a build handoff: create `tasks/` if needed and write the complete concise `tasks/tasks.md` with one direct Write, then stop. The later build run owns authoritative resource resolution and regenerates any registry-derived fields before Phase 2.
+If the plan-only / no-build exception is active — per Step 1, including its negative trigger, and not merely because the request stops before `caseplan.json` — skip registry and schema discovery in this step and do not fan out through every plugin `planning.md`. Use the compact no-build shape below for the review plan: preserve SDD portable names, emit tenant identities as `resolve at build`, carry every rationale, and stop after `tasks/tasks.md`. The compact no-build plan is exempt from the normal section-batched planning workflow because it is a review artifact, not a build handoff: create `tasks/` if needed and write the complete concise `tasks/tasks.md` with one direct Write, then stop. The later build run owns authoritative resource resolution and regenerates any registry-derived fields before Phase 2.
 
 **Compact no-build T-entry shape:** each declaration still gets a T-number, but the fields are intentionally review-oriented:
 
