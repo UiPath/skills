@@ -220,6 +220,85 @@ def lineage_findings(text: str) -> list[str]:
     return findings
 
 
+MODEL_MD = Path(__file__).resolve().parent.parent / "references" / "case" / "model.md"
+
+
+def load_model_facts() -> dict:
+    """Parse the canonical tables in references/case/model.md (stdlib only).
+
+    Reads the `### Task types` table (column 1 literals), the `### Lifecycle gates`
+    table (legal WHEN rules per Marks-complete value), and the `### Naming rules`
+    fenced regex. Returns {} when model.md is absent so the shape audit still runs.
+    """
+    try:
+        text = MODEL_MD.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+
+    def section(heading: str) -> str:
+        match = re.search(rf"^### {re.escape(heading)}\s*$(.*?)(?=^#|\Z)", text, re.M | re.S)
+        return match.group(1) if match else ""
+
+    facts: dict = {}
+    facts["task_types"] = set(re.findall(r"^\|\s*`([a-z][a-z-]+)`\s*\|", section("Task types"), re.M))
+    yes_when: set[str] = set()
+    no_when: set[str] = set()
+    for row in re.finditer(r"^\|([^|]+)\|\s*(Yes|No)\s*\|([^|]+)\|", section("Lifecycle gates"), re.M):
+        rules = set(re.findall(r"`([a-z][a-z-]+)`", row.group(3)))
+        (yes_when if row.group(2) == "Yes" else no_when).update(rules)
+    facts["yes_when"], facts["no_when"] = yes_when, no_when
+    pattern = re.search(r"```\s*(\^[^\n`]+\$)\s*```", section("Naming rules"))
+    facts["name_pattern"] = re.compile(pattern.group(1)) if pattern else None
+    if not facts["task_types"] or not yes_when:
+        return {}
+    return facts
+
+
+def model_findings(text: str) -> list[str]:
+    """Checks driven by the canonical model tables: task-type enum, WHEN/Marks-Complete
+    pairing legality, and display-name character rules."""
+    facts = load_model_facts()
+    if not facts:
+        return []
+    findings: list[str] = []
+
+    for match in re.finditer(r"^\*\*Type:\*\*\s*`?([a-z][a-z-]+)`?\s*$", text, re.M):
+        if match.group(1) not in facts["task_types"]:
+            findings.append(
+                f"task type {match.group(1)!r} outside the closed enum (model.md § Task types): "
+                + ", ".join(sorted(facts["task_types"]))
+            )
+
+    known_rules = facts["yes_when"] | facts["no_when"]
+    for line_no, line in enumerate(text.splitlines(), 1):
+        if not line.lstrip().startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 4:
+            continue
+        when = re.match(r"`?([a-z][a-z-]+)", cells[0])
+        marks = next((c for c in cells if c in ("Yes", "No")), None)
+        if not when or marks is None or when.group(1) not in known_rules:
+            continue
+        legal = facts["yes_when"] if marks == "Yes" else facts["no_when"]
+        if when.group(1) not in legal:
+            findings.append(
+                f"line {line_no}: WHEN {when.group(1)!r} with Marks Complete {marks!r} is an illegal "
+                "pair (model.md § Lifecycle gates)"
+            )
+
+    name_pattern = facts.get("name_pattern")
+    if name_pattern:
+        for kind, name, _ in stage_blocks(text):
+            if not name_pattern.fullmatch(name.strip()):
+                findings.append(f"{kind.lower()} name {name!r} breaks model.md § Naming rules")
+        for match in re.finditer(r"^#{5} Task [S\d.]+: ([^\n]+)$", text, re.M):
+            candidate = strip_id_suffix(match.group(1)).strip()
+            if not name_pattern.fullmatch(candidate):
+                findings.append(f"task name {candidate!r} breaks model.md § Naming rules")
+    return findings
+
+
 def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
     findings: list[str] = []
     text = sdd_path.read_text(encoding="utf-8")
@@ -302,6 +381,7 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
                 )
 
     findings.extend(lineage_findings(text))
+    findings.extend(model_findings(text))
 
     draft_findings: list[str] = []
     if draft_path is not None:
