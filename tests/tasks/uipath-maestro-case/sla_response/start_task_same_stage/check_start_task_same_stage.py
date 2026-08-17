@@ -9,7 +9,7 @@ not re-entered and its other tasks do not re-run.
 accepts it (verified on uip 1.198.0-preview.102). Re-entering the stage restarts every task
 in it whose `shouldRunOnlyOnce` is `false` — the default for every task type — so a breach
 meant to add one manager check silently re-runs the whole stage. See
-`skills/uipath-maestro-case/references/sla-response-shapes.md` section 5, defect 4.
+case-knowledge K-SLA-5 / K-ERR-2 (start-task authored as stage re-entry re-runs the stage).
 
 The rule must reference **Review's own** SLA and be a breach rule (`slaId`, no
 `escalationId`), and the follow-up task must be an `action` task in Review with a working
@@ -69,7 +69,7 @@ def main() -> None:
             f"({cond.get('displayName')!r}). A start-task response belongs on the follow-up "
             "TASK's own entryConditions. validate accepts stage re-entry, but re-entering "
             "Review restarts every task whose shouldRunOnlyOnce is false (the default), not "
-            "just the manager check — see references/sla-response-shapes.md section 5, defect 4."
+            "just the manager check — see case-knowledge K-SLA-5 / K-ERR-2."
         )
 
     node, task, _cond, rule = task_hits[0]

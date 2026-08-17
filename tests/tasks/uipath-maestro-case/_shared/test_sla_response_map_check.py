@@ -96,7 +96,7 @@ def test_start_task_via_stage_re_entry_is_rejected():
     """`No` implies the stage-re-entry shape, which re-runs the breached stage's tasks.
 
     A start-task response is the follow-up task's own task-entry rule, so `—` is the
-    only legal Interrupting value. See sla-response-shapes.md section 5, defect 4.
+    only legal Interrupting value. See case-knowledge K-SLA-5 / K-ERR-2 (start-task authored as stage re-entry).
     """
     text = sdd(
         "| stage: Assess | Assess SLA | Breached | start-task | Assess | No | manager check, assessor keeps working |\n",
