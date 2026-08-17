@@ -1,0 +1,40 @@
+# K-PAIR — Lifecycle gates: which WHEN rule is legal in which slot; Marks-Complete pairing; exit types.
+# Single source (replaces restatements in rules guide, template, condition plugins). Machine-read by audit scripts.
+# Authority: v27 @uipath/case-schema behavior via `uip maestro case validate` + shipped-case evidence.
+# The CLI's authoring-command allow-lists (schema-helpers VALID_*_RULE_TYPES) lag this matrix (no
+# sla-status-change) — they gate `uip maestro case *-conditions add` only, not the schema.
+
+K-PAIR-1:
+  rule: "Legal WHEN rules per slot. Anything outside the slot's set is a design defect even when schema-valid."
+  slots:
+    stage-entry:        [case-entered, selected-stage-completed, selected-stage-exited, wait-for-connector, user-selected-stage, sla-status-change]
+    stage-completion:   [required-tasks-completed, wait-for-connector]     # Marks Stage Complete: Yes
+    stage-exit:         [selected-tasks-completed, wait-for-connector]     # Marks Stage Complete: No
+    task-entry:         [current-stage-entered, selected-tasks-completed, wait-for-connector, sla-status-change, adhoc, runs-sequentially]
+    case-completion:    [required-stages-completed, wait-for-connector]    # Marks Case Complete: Yes
+    case-exit:          [selected-stage-completed, selected-stage-exited, wait-for-connector]  # Marks Case Complete: No
+  notes:
+    - "case-entered: first/root stage only."
+    - "Tasks have NO exit/completion conditions — a task completes when its work finishes (downstream keys off required-/selected-tasks-completed)."
+    - "sla-status-change scope: enter-stage (stage-entry) and start-task (task-entry) — see K-SLA-4/5."
+
+K-PAIR-2:
+  rule: "Marks-Complete pairing: Yes pairs only with required-* (or wait-for-connector); selected-* is for No (routing/early exit/alternate disposition). Yes + selected-* is a schema-pairing error — block at design."
+  yes_when:  [required-tasks-completed, required-stages-completed, wait-for-connector]
+  no_when:   [selected-tasks-completed, selected-stage-completed, selected-stage-exited, wait-for-connector]
+
+K-PAIR-3:
+  rule: "Exit `type` legality per row kind: completion rows (Yes) = exit-only | return-to-origin | wait-for-user; exit rows (No) = exit-only | wait-for-user. wait-for-user + marksStageComplete:true is LEGAL and canonical for user-routed completion (probes p01/p02, as of 1.198.0-preview.102). return-to-origin is completion-only — never on a No row — and requires Interrupting: Yes on its lane (K-STG-4)."
+  completion_exit_types: [exit-only, return-to-origin, wait-for-user]
+  exit_exit_types: [exit-only, wait-for-user]
+
+K-PAIR-4:
+  rule: "wait-for-user ↔ user-selected-stage pair across stages: a wait-for-user exit requires ≥1 other stage carrying a user-selected-stage entry, and vice versa — an unpaired half fails validate. user-selected-stage is picker exposure for user-chosen routing; deterministic rejection/approval/SLA routing uses decision facts + guarded entries instead."
+
+K-PAIR-5:
+  rule: "required-* rules are vacuous without explicit isRequired: required-stages-completed needs ≥1 primary stage isRequired:true; required-tasks-completed needs ≥1 task isRequired:true in that stage. Validate errors: 'Case rule <name> has no required stage(s) selected' / 'Stage exit rule <name> has no task(s) marked as required' (probes p08–p10, as of 1.198.0-preview.102). isRequired ABSENT ≡ false at the validator — required status is always explicit end-to-end: SDD declares it per stage/task (design default: primary stage Yes, task Yes, secondary stage No, adhoc task No); tasks.md carries it; emission writes it verbatim. No silent defaults at any layer."
+
+K-PAIR-6:
+  rule: "Case completion is a root rule, separate from stage completion: ≥1 metadata.caseExitRules[] entry with marksCaseComplete:true (normally required-stages-completed). A stage exit with marksStageComplete:true completes only that stage. Rejection/withdrawal/cancel outcomes are separate case-exit rows with marksCaseComplete:false."
+
+# END: pairing.yaml

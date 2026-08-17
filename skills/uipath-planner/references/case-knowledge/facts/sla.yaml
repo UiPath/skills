@@ -1,0 +1,36 @@
+# K-SLA — SLA clocks, escalations, and the response model. Single source (supersedes the retired
+# maestro-case references/sla-response-shapes.md and every restatement in the rules guide/plugins).
+# Machine-read by audit scripts. Verified against `uip maestro case validate` 1.198.0-preview.102
+# (probe dates 2026-07-31 and 2026-08-17); emit JSON shapes live in the SLA/condition plugins.
+
+K-SLA-1:
+  rule: "SLA surfaces: case (metadata.slaRules), stage (data.slaRules — secondary stages included), and `action` tasks (the task's own timer/SLA fields). NEVER SLA cells on process/agent/rpa/api-workflow/timer/connector/case-management tasks. All SLA data on a target lives in one slaRules[] array: conditional overrides first (priority order), trailing default entry with expression '=js:true'; first truthy expression wins."
+
+K-SLA-2:
+  rule: "SlaRuleEntry requires `id` AND non-empty target-unique `displayName` (no ':') on EVERY entry — both validate-enforced ('SLA name is missing' / zod expected-string; probes p03/p04, as of 1.198.0-preview.102). Units: min|h|d|w|m. count > 0; unit min ⟹ 15 ≤ count ≤ 1000. Non-default entries require a non-empty expression. Escalations: id + non-empty element-unique displayName + ≥1 recipient; atRiskPercentage required iff trigger type at-risk."
+  units: [min, h, d, w, m]
+  min_bounds: { lower: 15, upper: 1000 }
+
+K-SLA-3:
+  rule: "Status rides on the escalation reference (sla-status-change rule fields): Breached = slaId ALONE — an absent escalationId IS the persisted Breached shape; never 'complete' it by adding an escalation (that silently converts it to at-risk). At-risk = slaId + a concrete escalationId declared ON THAT SAME SLA with triggerInfo.type at-risk. Never the Case Designer 'any' sentinel (validate: 'The escalation referenced by rule … no longer exists'); dangling slaId likewise invalid."
+
+K-SLA-4:
+  rule: "Response model — pick from the source's words, never from the SLA's scope. Closed set:"
+  responses:
+    notify-only:  { author: "escalation on the target's slaRules[].escalationRule — no stage, no task, no condition", interrupting: "n/a" }
+    start-task:   { author: "one task in the BREACHED stage carrying sla-status-change as its OWN task-entry row against that stage's (or root's) SLA — no new stage, no stage-entry row", interrupting: "— (task entry interrupts nothing; never Yes/No)" }
+    enter-stage:  { author: "a separate stage carrying the sla-status-change entry row", interrupting: "Yes when the response pauses/takes over/reroutes active work; No for parallel oversight" }
+    exit-stage:   { author: "a stage-exit row", interrupting: "per exit semantics" }
+    exit-case:    { author: "a metadata.caseExitRules[] row", interrupting: "per exit semantics" }
+  default: "No stated response → both statuses notify-only (at-risk → owning persona/group; breached → next tier). Never invent a stage, task, or routing change for a notify-only requirement."
+
+K-SLA-5:
+  rule: "start-task vs enter-stage turns on WHERE the work lives, not on interruption: work inside the breached stage's own review ('as part of the assessment', a named TASK for a manager/peer) → start-task; a separate lane owns it ('hand it to', 'escalate into <Lane>', a named STAGE) → enter-stage. A named task never justifies minting a stage. NEVER author start-task as a stage-entry row on the breached stage: validate accepts it but stage re-entry re-runs every shouldRunOnlyOnce:false task — the canonical invisible defect."
+
+K-SLA-6:
+  rule: "Default at-risk thresholds when unstated: SLA ≤ 3d → 75%; 3–10d → 70%; > 10d → 80%. Default recipients: at-risk → owner persona's user group; breached → leadership tier (Compliance for regulation-driven cases). Record substitutions with provenance."
+
+K-SLA-7:
+  rule: "Validate-verified matrix (uip 1.198.0-preview.102): breach on separate stage (slaId only, either isInterrupting) valid; breach/at-risk on a task's entryConditions (stage or root SLA) valid; at-risk with same-SLA escalation valid; at-risk borrowing another SLA's escalation INVALID; escalationId 'any' INVALID; dangling slaId INVALID; task with empty/absent entryConditions valid (defect invisible — such a task never starts)."
+
+# END: sla.yaml

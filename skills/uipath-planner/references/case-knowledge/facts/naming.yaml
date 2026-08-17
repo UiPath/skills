@@ -1,0 +1,21 @@
+# K-NAME — Display-name and identifier rules. Single source. Machine-read by audit scripts.
+# Authority: FE validation (colon-delimited case-execution events make `:` structural, not cosmetic)
+# + `uip maestro case validate` (as of 1.198.0-preview.102).
+
+K-NAME-1:
+  rule: "Safe display characters for every generated/carried Case Designer display or title field (stage label, task displayName, condition display names, SLA titles, escalation titles): letters, numbers, spaces, hyphen, underscore ONLY. Never `:` (case-execution events are colon-delimited — breaks routing), periods, slashes, quotes, parens, ampersands, commas, semicolons, emoji."
+  allowed_pattern: "^[A-Za-z0-9 _-]+$"
+
+K-NAME-2:
+  rule: "Mechanical repair for unsafe generated/user-carried display names: replace runs of disallowed chars with one space, collapse spaces, trim; keep words and casing; on empty/collision add a safe qualifier or numeric suffix and disclose. NEVER normalize external lookup names (Action App titles, process/connector/queue names) — those are matching keys; keep a separate safe display name."
+
+K-NAME-3:
+  rule: "Uniqueness scopes: task displayName unique across the WHOLE case (all stages — one pool; critical). Stage label unique across all node labels in the case, and must not reuse the reserved Case Manager stage label. SLA rule displayName unique within its target (root or that stage). Escalation displayName unique across ALL SLAs on the element (scope is the element, not one SLA). Names settle at design time — the planner authors every name, so global task-name uniqueness binds in the SDD, not just at build."
+
+K-NAME-4:
+  rule: "Mechanical derivations allowed without asking (record provenance): PascalCase Case Name from spaced phrase; 2–4 char UPPER identifier prefix from the PascalCase name; camelCase variable names from spaced phrases. Everything customer-named renders verbatim — no synonym substitution."
+
+K-NAME-5:
+  rule: "Numeric violations are surfaced, never silently repaired: an out-of-range value (e.g. SLA minutes < 15) is not clamped/rounded to pass validation — name the original value and ask for a replacement. Silent clamping is a requirements change."
+
+# END: naming.yaml

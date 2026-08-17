@@ -1,0 +1,51 @@
+# K-TYP — Case type enums + name mappings. Single source; consumers cite, never restate.
+# Machine-read by scripts/audit_sdd.py and scripts/audit_plan.py.
+# Authority: v27 schema (@uipath/case-schema via `uip maestro case validate`); verified 2026-08-17,
+# uip 1.198.0-preview.102. Naming-asymmetry mapping: sdd_type IS the caseplan.json `type` literal
+# (schema-kebab); plugin = maestro-case plugin folder; cli_flag = `tasks describe --type` value.
+
+K-TYP-1:
+  rule: "Task `type` enum is closed — exactly these 9 authorable values. sdd.md `Type:` and caseplan.json `type` use sdd_type verbatim."
+  task_types:
+    - { sdd_type: process,                     plugin: process,            cli_flag: process }
+    - { sdd_type: action,                      plugin: action,             cli_flag: action }
+    - { sdd_type: agent,                       plugin: agent,              cli_flag: agent }
+    - { sdd_type: rpa,                         plugin: rpa,                cli_flag: rpa }
+    - { sdd_type: api-workflow,                plugin: api-workflow,       cli_flag: api-workflow }
+    - { sdd_type: case-management,             plugin: case-management,    cli_flag: case-management }
+    - { sdd_type: execute-connector-activity,  plugin: connector-activity, cli_flag: connector-activity }
+    - { sdd_type: wait-for-connector,          plugin: connector-trigger,  cli_flag: connector-trigger }
+    - { sdd_type: wait-for-timer,              plugin: wait-for-timer,     cli_flag: wait-for-timer }
+
+K-TYP-2:
+  rule: "Never author these as task types. Schema-valid-but-unsupported: external-agent, external-workflow, document-extraction, flow-process (not supported yet). Not types at all: connector-activity, connector-trigger, wait-for-event (folder/flag names, not schema literals). Externally-hosted AI agents model as api-workflow or execute-connector-activity."
+  never_author: [external-agent, external-workflow, document-extraction, flow-process, connector-activity, connector-trigger, wait-for-event]
+
+K-TYP-3:
+  rule: "Node `type` discriminators (v27): trigger = uipath.case.trigger; stage = case-management:Stage (stageType: primary|secondary in data — ExceptionStage node type removed at v22); sticky note = case-management:StickyNote."
+  node_types: ["uipath.case.trigger", "case-management:Stage", "case-management:StickyNote"]
+  stage_types: [primary, secondary]
+
+K-TYP-4:
+  rule: "Trigger serviceType on disk (data.inputs.serviceType): manual = key ABSENT (never 'Manual'); timer = 'timer' (SDD author token: Intsvc.TimerTrigger); connector event = 'Intsvc.EventTrigger'."
+  service_types: { manual: null, timer: timer, event: Intsvc.EventTrigger }
+
+K-TYP-5:
+  rule: "Variable Type enum: string, integer, float, double, boolean, date, datetime, jsonSchema, file. `json` is NOT a type. jsonSchema (with `body`) for structured payloads whose sub-fields are picked/referenced downstream; string for opaque JSON blobs nothing dereferences. file = JobAttachment record. jsonSchema validates (probe p06, as of 1.198.0-preview.102)."
+  variable_types: [string, integer, float, double, boolean, date, datetime, jsonSchema, file]
+
+K-TYP-6:
+  rule: "Variable Category enum (SDD §1.5): In (caller/trigger-bound argument), Out (returned to caller), Variable (internal state incl. trigger-payload extraction). Never blank."
+  variable_categories: [In, Out, Variable]
+
+K-TYP-7:
+  rule: "Escalation enums: triggerInfo.type = at-risk | sla-breached (atRiskPercentage required iff at-risk); action.type = notification; recipient scope = User | UserGroup. Action-task recipient prefixes in SDD: Email:, User:, UserGroup:, Role:, Expression: — never bare strings."
+  escalation_trigger: [at-risk, sla-breached]
+  recipient_scope: [User, UserGroup]
+  sdd_recipient_prefixes: ["Email:", "User:", "UserGroup:", "Role:", "Expression:"]
+
+K-TYP-8:
+  rule: "Exit condition `type` enum: exit-only | wait-for-user | return-to-origin. Slot legality in K-PAIR."
+  exit_types: [exit-only, wait-for-user, return-to-origin]
+
+# END: types.yaml
