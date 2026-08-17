@@ -23,6 +23,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   renameSync,
   rmSync,
   statSync,
@@ -294,26 +295,76 @@ function discoverCanonicalSkills(repoRoot, findings) {
   return skills;
 }
 
+// Authoring-time directory symlinks between skills, dereferenced at composition
+// time so every built/packed tree ships real, self-contained copies. Keyed by
+// the symlink's repo-relative POSIX path; value = the required target's
+// repo-relative POSIX path. Anything not listed here stays forbidden.
+const SANCTIONED_REFERENCE_SYMLINKS = new Map([
+  [
+    "skills/uipath-maestro-case/references/case-knowledge",
+    "skills/uipath-planner/references/case-knowledge",
+  ],
+]);
+
+function collectSanctionedSymlink(repoRoot, entry, relative, findings, register) {
+  const expectedTarget = SANCTIONED_REFERENCE_SYMLINKS.get(relative);
+  if (!expectedTarget) {
+    findings.push(`${entry.path}: canonical skill trees cannot contain symlinks`);
+    return;
+  }
+  let resolved;
+  try {
+    resolved = realpathSync(entry.path);
+  } catch {
+    findings.push(`${entry.path}: sanctioned symlink target does not resolve`);
+    return;
+  }
+  const expectedAbs = path.join(repoRoot, ...expectedTarget.split("/"));
+  if (resolved !== realpathSync(expectedAbs)) {
+    findings.push(`${entry.path}: sanctioned symlink must point at ${expectedTarget}`);
+    return;
+  }
+  for (const targetEntry of walkTree(resolved)) {
+    if (targetEntry.stats.isSymbolicLink()) {
+      findings.push(`${targetEntry.path}: sanctioned symlink target cannot contain symlinks`);
+      continue;
+    }
+    if (!targetEntry.stats.isFile()) continue;
+    register(`${relative}/${posixRelative(resolved, targetEntry.path)}`, targetEntry.path);
+  }
+}
+
 function collectCanonicalFiles(repoRoot, skills, findings) {
   const canonicalFiles = new Map();
   const canonicalText = new Map();
   const canonicalBlocks = new Map();
 
+  const register = (relative, sourcePath) => {
+    canonicalFiles.set(relative, sourcePath);
+    if (path.extname(sourcePath).toLowerCase() !== ".md") return;
+    const text = readUtf8(sourcePath, findings, "canonical Markdown");
+    if (text === null) return;
+    canonicalText.set(relative, text);
+    canonicalBlocks.set(relative, parseMarkerBlocks(sourcePath, text, findings));
+  };
+
   for (const skill of skills) {
     const skillRoot = path.join(repoRoot, "skills", skill);
     for (const entry of walkTree(skillRoot)) {
+      const relative = posixRelative(repoRoot, entry.path);
       if (entry.stats.isSymbolicLink()) {
-        findings.push(`${entry.path}: canonical skill trees cannot contain symlinks`);
+        collectSanctionedSymlink(repoRoot, entry, relative, findings, register);
+        continue;
+      }
+      if (SANCTIONED_REFERENCE_SYMLINKS.has(relative)) {
+        findings.push(
+          `${entry.path}: expected a symlink to ${SANCTIONED_REFERENCE_SYMLINKS.get(relative)} ` +
+            `(broken checkout? run: git config core.symlinks true, then re-checkout)`,
+        );
         continue;
       }
       if (!entry.stats.isFile()) continue;
-      const relative = posixRelative(repoRoot, entry.path);
-      canonicalFiles.set(relative, entry.path);
-      if (path.extname(entry.path).toLowerCase() !== ".md") continue;
-      const text = readUtf8(entry.path, findings, "canonical Markdown");
-      if (text === null) continue;
-      canonicalText.set(relative, text);
-      canonicalBlocks.set(relative, parseMarkerBlocks(entry.path, text, findings));
+      register(relative, entry.path);
     }
   }
   return { canonicalFiles, canonicalText, canonicalBlocks };
