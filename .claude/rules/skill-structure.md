@@ -79,7 +79,7 @@ python3 scripts/check-skill-status.py --write-readme
 
 ## Content Rules
 
-- Skills MUST be self-contained — no importing, inlining, or reading another skill's files, and each MUST function when sibling skills are absent. Runtime delegation to a same-plugin sibling skill (e.g., spawning a subagent that delegates the edit to the artifact's owning domain skill) IS allowed when the delegating skill degrades gracefully without it
+- Skills MUST be self-contained — no importing, inlining, or reading another skill's files, and each MUST function when sibling skills are absent. Runtime delegation to a same-plugin sibling skill (e.g., spawning a subagent that delegates the edit to the artifact's owning domain skill) IS allowed when the delegating skill degrades gracefully without it. One sanctioned authoring-time exception exists: the committed `case-knowledge` directory symlink (maestro-case → planner), dereferenced into real copies at build/pack by the flavor composer's allowlist — see CLAUDE.md § Architecture; any other symlink fails validation
 - CLI commands MUST include `--output json` when output is parsed programmatically
 - All file links MUST use relative paths from the SKILL.md location
 - All file links MUST point to files that actually exist in the repo

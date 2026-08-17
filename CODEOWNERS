@@ -75,6 +75,9 @@
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
 /skills/uipath-planner/ @RaduAna-Maria @abhiram-vad
+# Shared single-source case knowledge (planner-hosted; symlinked into uipath-maestro-case) — case owners co-own
+/skills/uipath-planner/references/case-knowledge/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/skills/uipath-planner/references/case-design/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
 /tests/tasks/uipath-planner/ @RaduAna-Maria @abhiram-vad
 # Case-design evals migrated from uipath-maestro-case (planner-sole-SDD-author) — case owners stay reviewers
 /tests/tasks/uipath-planner/_shared/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin

@@ -60,7 +60,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 
 ### Key Principles
 
-- **Skills are self-contained.** Each skill is an independent folder under `skills/`. Skills cannot reference or depend on other skills.
+- **Skills are self-contained.** Each skill is an independent folder under `skills/`. Skills cannot reference or depend on other skills. **One sanctioned exception:** `skills/uipath-maestro-case/references/case-knowledge` is a committed directory symlink into `skills/uipath-planner/references/case-knowledge` — the single-source case knowledge layer both skills share at authoring time. The flavor composer's `SANCTIONED_REFERENCE_SYMLINKS` allowlist (`scripts/compose-skill-flavor.mjs`) dereferences it at build/pack time, so every built tree and published package ships real copies and skills stay self-contained at distribution. Any other symlink is rejected by `npm run skills:validate`. Edit case knowledge only in the planner's directory; on Windows, enable symlinks first (`git config core.symlinks true`, Developer Mode) — a mangled checkout fails validation with a remediation message.
 - **SKILL.md is the complete default entry point.** Standard integrations read it directly, and reviewers can understand the default/local behavior without a build manifest.
 - **Custom flavors contain exceptions, not skill copies.** Mark only the canonical passages that actually differ, then provide sparse replacement blocks under `skill-flavors/<flavor>/`.
 - **References are supplementary.** Large reference material goes in `references/` subdirectories, linked from SKILL.md.
@@ -430,7 +430,7 @@ Before submitting your PR, verify:
 - [ ] Critical Rules section exists with numbered, actionable rules
 - [ ] CLI commands include exact flags and `--output json` where appropriate
 - [ ] Anti-patterns / "What NOT to Do" section is included for non-trivial skills
-- [ ] No references to other skills (skills must be self-contained)
+- [ ] No references to other skills (skills must be self-contained; sole exception: the sanctioned `case-knowledge` symlink — see Key Principles)
 - [ ] All links to reference files use relative paths and point to existing files
 - [ ] Lifecycle status registered in `assets/skill-status.json` and README table regenerated (run `python3 scripts/check-skill-status.py`)
 - [ ] Grouped in `skills.sh.json` (run `python3 scripts/check-skills-sh.py`)
