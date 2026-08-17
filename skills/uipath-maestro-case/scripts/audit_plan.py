@@ -63,9 +63,22 @@ def rule_token(value: str | None) -> str | None:
     return match.group(0) if match else None
 
 
+FACTS_DIR = Path(__file__).resolve().parent.parent / "references" / "case-knowledge" / "facts"
+
+
+def load_task_types() -> set[str]:
+    """K-TYP-1 enum from the shared facts (resolves through the case-knowledge symlink in the
+    repo, a real directory in shipped trees). Empty set = facts unavailable, check skipped."""
+    try:
+        return set(re.findall(r"sdd_type:\s*([a-z-]+)", (FACTS_DIR / "types.yaml").read_text(encoding="utf-8")))
+    except OSError:
+        return set()
+
+
 def audit(path: Path) -> list[str]:
     findings: list[str] = []
     sequential_lanes: dict[str, list[tuple[str, int]]] = {}
+    task_types = load_task_types()
     text = path.read_text(encoding="utf-8")
 
     headings = list(re.finditer(r"(?m)^## (T\d+)[^\n]*$", text))
@@ -105,6 +118,13 @@ def audit(path: Path) -> list[str]:
                 if re.search(rf"(?i)[;,]\s*{re.escape(field)}\s*:", section):
                     hint = " (present mid-line — each field goes on its own line)"
                 findings.append(f"{label}: missing `{field}:` line{hint}")
+
+        declared_type = rule_token(field_value(section, "type"))
+        if task_types and declared_type is not None and declared_type not in task_types:
+            findings.append(
+                f"{label}: `type: {declared_type}` outside the closed enum (K-TYP-1): "
+                + ", ".join(sorted(task_types))
+            )
 
         activation = (field_value(section, "activation-mode") or "").casefold()
         mode = rule_token(activation)

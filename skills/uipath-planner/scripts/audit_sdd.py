@@ -220,6 +220,77 @@ def lineage_findings(text: str) -> list[str]:
     return findings
 
 
+FACTS_DIR = Path(__file__).resolve().parent.parent / "references" / "case-knowledge" / "facts"
+
+
+def load_facts() -> dict:
+    """Targeted extraction from the case-knowledge facts YAMLs (stdlib only).
+
+    Returns {} when the facts directory is absent so the shape audit still runs standalone.
+    """
+    facts: dict = {}
+    try:
+        types_text = (FACTS_DIR / "types.yaml").read_text(encoding="utf-8")
+        facts["task_types"] = set(re.findall(r"sdd_type:\s*([a-z-]+)", types_text))
+        pairing_text = (FACTS_DIR / "pairing.yaml").read_text(encoding="utf-8")
+        facts["yes_when"] = set(re.findall(r"[\w-]+", pairing_text.split("yes_when:", 1)[1].split("]", 1)[0]))
+        facts["no_when"] = set(re.findall(r"[\w-]+", pairing_text.split("no_when:", 1)[1].split("]", 1)[0]))
+        naming_text = (FACTS_DIR / "naming.yaml").read_text(encoding="utf-8")
+        pattern = re.search(r'allowed_pattern:\s*"([^"]+)"', naming_text)
+        facts["name_pattern"] = re.compile(pattern.group(1)) if pattern else None
+    except (OSError, IndexError):
+        return {}
+    return facts
+
+
+def facts_findings(text: str) -> list[str]:
+    """K-fact-driven legality checks: task type enum (K-TYP-1), Marks-Complete pairing
+    (K-PAIR-2), display-name charset (K-NAME-1)."""
+    facts = load_facts()
+    if not facts:
+        return []
+    findings: list[str] = []
+
+    for match in re.finditer(r"^\*\*Type:\*\*\s*`?([a-z][a-z-]+)`?\s*$", text, re.M):
+        if facts["task_types"] and match.group(1) not in facts["task_types"]:
+            findings.append(
+                f"task type {match.group(1)!r} outside the closed enum (K-TYP-1): "
+                + ", ".join(sorted(facts["task_types"]))
+            )
+
+    # Exit-condition rows: | WHEN | IF | Exit Type | Marks ... Complete | Display Name |
+    for line_no, line in enumerate(text.splitlines(), 1):
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 4 or not line.lstrip().startswith("|"):
+            continue
+        when = re.match(r"`?([a-z][a-z-]+)", cells[0])
+        if not when:
+            continue
+        rule = when.group(1)
+        marks = next((c for c in cells if c in ("Yes", "No")), None)
+        if marks is None or rule not in (facts["yes_when"] | facts["no_when"]):
+            continue
+        if marks == "Yes" and rule not in facts["yes_when"]:
+            findings.append(
+                f"line {line_no}: WHEN {rule!r} with Marks Complete 'Yes' is an illegal pair (K-PAIR-2)"
+            )
+        if marks == "No" and rule not in facts["no_when"]:
+            findings.append(
+                f"line {line_no}: WHEN {rule!r} with Marks Complete 'No' is an illegal pair (K-PAIR-2)"
+            )
+
+    name_pattern = facts.get("name_pattern")
+    if name_pattern:
+        for kind, name, _ in stage_blocks(text):
+            if not name_pattern.fullmatch(name.strip()):
+                findings.append(f"{kind.lower()} name {name!r} has characters outside K-NAME-1's safe set")
+        for match in re.finditer(r"^#{5} Task [S\d.]+: ([^\n]+)$", text, re.M):
+            candidate = strip_id_suffix(match.group(1)).strip()
+            if not name_pattern.fullmatch(candidate):
+                findings.append(f"task name {candidate!r} has characters outside K-NAME-1's safe set")
+    return findings
+
+
 def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
     findings: list[str] = []
     text = sdd_path.read_text(encoding="utf-8")
@@ -302,6 +373,7 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
                 )
 
     findings.extend(lineage_findings(text))
+    findings.extend(facts_findings(text))
 
     draft_findings: list[str] = []
     if draft_path is not None:

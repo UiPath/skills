@@ -1,0 +1,23 @@
+name: Validate Case Knowledge
+
+on:
+  pull_request:
+    paths:
+      - 'skills/uipath-planner/references/case-knowledge/**'
+      - 'skills/uipath-planner/references/case-design/**'
+      - 'skills/uipath-planner/references/case-design-lane-guide.md'
+      - 'skills/uipath-planner/assets/templates/case-*.md'
+      - 'skills/uipath-planner/SKILL.md'
+      - 'skills/uipath-maestro-case/**'
+      - 'scripts/lint-case-knowledge.py'
+      - '.github/workflows/validate-case-knowledge.yml'
+
+jobs:
+  lint-case-knowledge:
+    runs-on: uipath-ubuntu-latest
+    name: Case knowledge single-definition lint
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - name: Lint case-knowledge layer (K-* single definition, citations, markers, budgets, symlink)
+        run: python3 scripts/lint-case-knowledge.py

@@ -41,7 +41,7 @@
   ],
   "scripts": {
     "skills:test": "node --test tests/scripts/compose-skill-flavor.test.mjs tests/scripts/manage-skill-flavors-skill.test.mjs",
-    "skills:validate": "node scripts/compose-skill-flavor.mjs validate",
+    "skills:validate": "node scripts/compose-skill-flavor.mjs validate && python3 scripts/lint-case-knowledge.py",
     "skills:build": "node scripts/compose-skill-flavor.mjs build",
     "skills:pack": "node scripts/compose-skill-flavor.mjs pack",
     "skills:recover": "node scripts/npm-package-lifecycle.mjs recover",
