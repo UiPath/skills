@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "1",
+  "bindings": [
+    {
+      "id": "slack",
+      "name": "slack",
+      "resource": "Connection",
+      "resourceKey": "<slack-connection-id from `uip is connections list --output json`>",
+      "default": "00000000-0000-0000-0000-000000000001",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "jira",
+      "name": "jira",
+      "resource": "Connection",
+      "resourceKey": "<jira-connection-id from `uip is connections list --output json`>",
+      "default": "00000000-0000-0000-0000-000000000005",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "shared",
+      "name": "shared",
+      "resource": "Connection",
+      "resourceKey": "<folder-key from `uip is connections list --output json`>",
+      "default": "00000000-0000-0000-0000-000000000002",
+      "propertyAttribute": "FolderKey"
+    },
+    {
+      "id": "bWebhook",
+      "name": "uipath-http-webhook connection",
+      "resource": "Connection",
+      "resourceKey": "<http-webhook-connection-id from `uip is connections list --output json`>",
+      "default": "00000000-0000-0000-0000-000000000003",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "bWebhookFolder",
+      "name": "FolderKey",
+      "resource": "Connection",
+      "resourceKey": "<folder-key of that connection, same command>",
+      "default": "00000000-0000-0000-0000-000000000004",
+      "propertyAttribute": "FolderKey"
+    },
+    {
+      "id": "dataService",
+      "name": "dataService",
+      "resource": "Connection",
+      "resourceKey": "<dataservice-connection-id from `uip is connections list --output json`>",
+      "default": "00000000-0000-0000-0000-000000000006",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "bOneDrive",
+      "name": "uipath-microsoft-onedrive connection",
+      "resource": "Connection",
+      "resourceKey": "<onedrive-connection-id from `uip is connections list --all-folders --output json`>",
+      "default": "00000000-0000-0000-0000-000000000007",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "bOneDriveFolder",
+      "name": "FolderKey",
+      "resource": "Connection",
+      "resourceKey": "<folder-key of that connection, same command>",
+      "default": "00000000-0000-0000-0000-000000000008",
+      "propertyAttribute": "FolderKey"
+    }
+  ]
+}
