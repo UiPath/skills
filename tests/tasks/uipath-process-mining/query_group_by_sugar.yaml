@@ -56,7 +56,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent must NOT hand-write a raw aggregate body with bare column names"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+query\s+run\b.*--body-json\b.*"groupBy"'
+    command_pattern: 'uip\s+pm\s+query\s+run\b.*--body-json\b.*"groupBy"\s*:\s*\[\s*"(?!F__)'
     weight: 2.5
 
   - type: command_not_executed
