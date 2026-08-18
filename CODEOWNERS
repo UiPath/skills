@@ -167,6 +167,7 @@
 # Insights skill (job monitoring and analytics)
 /skills/uipath-insights/ @suranabhavya @rliuup
 /tests/tasks/uipath-insights/ @suranabhavya @rliuup
+/tests/tasks/activation/uipath-insights.jsonl @suranabhavya @rliuup
 
 # Automation Discovery skill
 /skills/uipath-automation-discovery/ @uisherif
