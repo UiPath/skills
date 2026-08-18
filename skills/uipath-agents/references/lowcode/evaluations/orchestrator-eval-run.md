@@ -286,7 +286,7 @@ uip or eval evaluation create \
 | `--inputs` | Yes | Input values as JSON |
 | `--expected-output` | No | Expected output as JSON (for output evaluators) |
 | `--expected-behavior` | No | Expected agent behavior (for trajectory evaluators) |
-| `--evaluation-criterias` | No | Per-evaluator criteria overrides as JSON |
+| `--evaluation-criterias` | No | Per-evaluator criteria overrides as JSON (spelling matches the backend API field name) |
 
 Output code: `EvaluationCreated`.
 
@@ -460,5 +460,5 @@ uip or eval schedule create \
 - **Don't pass `evaluatorConfig: {}` (empty) in `--evaluators`.** LLM-based evaluators (types 5, 7) need `prompt`, `model`, and `targetOutputKey` in the config. An empty config will fail at runtime.
 - **Don't pass `"model": "same-as-agent"` in inline evaluator configs.** Runtime evals have no access to `agent.json` to resolve this. Use an explicit model ID.
 - **Don't forget `--folder-key` on create commands when not using the personal workspace.** The default personal workspace fallback only works for `execute-and-evaluate`. CRUD commands (`evaluator create`, `eval-set create`, `evaluation create`) require `--folder-key` explicitly.
-- **Don't create data points via CRUD and then re-specify them inline in `execute-and-evaluate`.** Pick one approach: either create via CRUD and reference the eval set with `--eval-set-id`, or pass everything inline. Mixing them duplicates data and risks drift.
+- **Keep CRUD data and inline `execute-and-evaluate` items in sync.** `execute-and-evaluate` requires `--items` and `--evaluators` inline even when `--eval-set-id` is provided — the inline data is what actually runs. Use CRUD to manage the canonical dataset and copy items from it into `--items` when triggering a run. Divergence between the two causes confusing results.
 - **Don't reuse evaluator IDs across different processes.** Evaluators are scoped to a process key. Using IDs from one process in another will fail.
