@@ -150,6 +150,7 @@ success_criteria:
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
+    include_dialog: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
 

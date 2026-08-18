@@ -1,0 +1,119 @@
+# Master contract for uipath-troubleshoot scenario task.yamls.
+#
+# Every scenario under tests/tasks/uipath-troubleshoot/ is generated from one
+# template (_shared/scripts/generate_scenario.py) and must keep the invariants
+# below. `scripts/check-troubleshoot-tasks.py` enforces this file against every
+# scenario AND against the generator template itself, so a rule added here
+# cannot silently apply to only one of them.
+#
+# Add a rule here ONLY when it holds for every scenario. The checker fails the
+# build on violation, so a rule that is merely preferred belongs in the suite
+# CLAUDE.md as guidance instead.
+
+# Tasks that are not faithful-replay scenarios and therefore carry none of the
+# scenario invariants. smoke-manifest-commands is a deterministic fixture check
+# with no agent investigation and no simulated dialog.
+exempt:
+  - smoke-manifest-commands/task.yaml
+
+simulation:
+  # The simulated user drives the dialog. These fingerprints must appear in
+  # simulation.constraints; wording around them is free.
+  required_constraints:
+    - id: decline-fix-application
+      contains: "Never approve a source-file edit"
+      why: >
+        Scenarios grade the diagnosis only (skill_triggered + llm_judge against
+        RESOLUTION.md). A simulated user who approves the agent's offer to
+        apply the fix sends the run into an edit + validate/build/pack loop
+        that costs 8-30 minutes per task and is never graded. The simulator
+        must take the fix steps and end the dialog.
+
+success_criteria:
+  # Each required type must appear EXACTLY once. A duplicate is how the shape
+  # rules get bypassed: a second llm_judge carrying include_dialog: false is
+  # still graded by the harness, so checking only the first criterion of a type
+  # lets the defect this contract exists to block ship green.
+  required_types:
+    - skill_triggered
+    - llm_judge
+  # Whitelist - anything outside this list is a violation, so a criterion type
+  # nobody has vetted (run_command, json_check, ...) cannot slip in.
+  # command_not_executed is allowed because one scenario asserts the agent
+  # performed no mutation under a read-only instruction: that grades a
+  # behavioural side effect, not investigation bookkeeping.
+  allowed_types:
+    - skill_triggered
+    - llm_judge
+    - command_not_executed
+  # Called out separately from the whitelist only to give these a sharper
+  # message: grading investigation bookkeeping (which files were written, which
+  # CLI route was taken) false-fails agents that reach the right conclusion by a
+  # different valid path.
+  forbidden_types:
+    - file_exists
+    - file_contains
+    - command_executed
+  skill_triggered:
+    # BOTH fields must name the skill: the harness detects engagement of
+    # `skill_name` and expects it iff skill_name == expected_skill. A drifted
+    # skill_name alone flips the criterion into a negative row ("passes when
+    # that other skill is NOT engaged") that scores 1.0 without the
+    # troubleshoot skill ever running.
+    skill_name: uipath-troubleshoot
+    expected_skill: uipath-troubleshoot
+  llm_judge:
+    weight: 3.0
+    pass_threshold: 0.7
+    # include_dialog is what keeps a correct investigation from scoring 0.00.
+    # The simulated user keeps talking after the diagnosis lands, so the agent's
+    # final turn is usually an acknowledgement ("Will do."). A judge given
+    # include_agent_output alone receives only that turn and never sees the root
+    # cause, which sits earlier in the dialog. Six troubleshoot tasks failed
+    # exactly this way in the 2026-07-28 nightly, each with a correct root cause
+    # in turn 1. include_dialog hands the judge the whole user<->agent exchange,
+    # so the diagnosis is graded wherever it landed.
+    require_true:
+      - include_reference
+      - include_agent_output
+      - include_dialog
+    # The judge grades the presented diagnosis, not internal artifacts.
+    forbidden_keys:
+      - files
+
+pre_run:
+  # Steps that must run before the agent starts. Each fingerprint below must
+  # appear as a pre_run step with the exact `command`; extra staging steps are
+  # allowed. This guards against DROPPING a required step, not against
+  # neutralizing it - an extra step that unpacked m/.store again would pass
+  # the gate. PR review is the defense for adversarial steps.
+  required_steps:
+    - id: seal-mock-store
+      command: "python m/seal"
+      # Presence is not enough: with fail_on_error false or missing, a failed
+      # seal leaves r/ readable and the run silently regrades the leak. The
+      # task must abort instead.
+      fail_on_error: true
+      why: >
+        data/m/r/ is staged into the sandbox so the m/uip shim can resolve the
+        recorded fixtures. Unsealed, the agent can read m/r/*.json directly
+        and reach the diagnosis without invoking uip or the skill - the
+        dominant skill_triggered failure mode before sealing. m/seal packs the
+        manifest plus every fixture into an opaque m/.store and removes the
+        readable r/ directory; the shim reads .store transparently.
+
+structure:
+  required_tags:
+    - uipath-troubleshoot
+  reference_file: RESOLUTION.md
+  # Prepends ./m to PATH so bare `uip` resolves to the mock dispatcher instead
+  # of the real CLI (which would try to authenticate).
+  mock_path_dirs:
+    - m
+  require_run_limits: true
+
+# Validated as a synthetic scenario after rendering its placeholders, so the
+# generator cannot drift from the scenarios it produces.
+generator_template:
+  path: tests/tasks/uipath-troubleshoot/_shared/scripts/generate_scenario.py
+  symbol: TASK_YAML_TEMPLATE
