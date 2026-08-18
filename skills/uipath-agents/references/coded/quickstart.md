@@ -229,10 +229,13 @@ Read the relevant reference file at each step — do not guess.
 
 ## Quick Start: Scenario 2 — In-Solution Coded Agent in a Flow
 
+<!--skill-flavor:scenario-two-ownership:start-->
 Use when the coded agent is tightly coupled to one flow and lives as a sibling folder inside the same solution. The agent is wired to the flow via `--local` registry discovery — no separate Orchestrator deployment for the agent, no separate skill hand-off. **`uipath-agents` owns this scenario end-to-end** — solution scaffolding, flow scaffolding, agent build, registration, and flow wiring all happen here. Do not invoke `uipath-maestro-flow` as a separate skill; run the maestro-flow CLI commands directly from this workflow.
+<!--skill-flavor:scenario-two-ownership:end-->
 
 Execute the following in order, end-to-end, in one pass — do not pause for confirmation between steps.
 
+<!--skill-flavor:flow-project-creation:start-->
 1. **Scaffold the solution.** From the working directory:
 
    ```bash
@@ -249,8 +252,11 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
    ```
 
    This auto-registers the flow as a project in the solution.
+<!--skill-flavor:flow-project-creation:end-->
 
+<!--skill-flavor:agent-scaffold-solution-root:start-->
 3. **Scaffold the coded agent as a sibling folder.** From the solution root (still inside `<SolutionName>/`):
+<!--skill-flavor:agent-scaffold-solution-root:end-->
 
    ```bash
    uv venv --python 3.13
@@ -262,7 +268,9 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
    uip codedagent new "<AgentName>"
    ```
 
+<!--skill-flavor:agent-scaffold-result-paths:start-->
    Result: `<SolutionName>/<AgentName>/` sibling to `<SolutionName>/<FlowName>/`.
+<!--skill-flavor:agent-scaffold-result-paths:end-->
 
 4. **Implement the agent's `main.py`** with lazy LLM initialization (LLM clients inside graph nodes only — never at module top level), then regenerate entry-points / bindings:
 
@@ -276,8 +284,10 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 5. **Register the agent in the solution.** This step mints the `resource.key` UUID the flow node will reference:
 
    ```bash
+<!--skill-flavor:agent-solution-registration:start-->
    cd ..
    uip solution projects add "<AgentName>" "<SolutionName>.uipx" --output json
+<!--skill-flavor:agent-solution-registration:end-->
    ```
 
    After this command, `resources/solution_folder/process/agent/<AgentName>.json` holds the `resource.key`. Read that file (or the `--output json` response) to capture the UUID — it is what the flow node's `type` (`uipath.core.agent.<resourceKey>`) and `model.bindings.resourceKey` will reference.

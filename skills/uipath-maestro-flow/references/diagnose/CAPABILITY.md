@@ -1,6 +1,8 @@
 # Diagnose — Investigate failed or misbehaving flow runs
 
+<!--skill-flavor:single-nested-intro:start-->
 Capability index for postmortem on a failed `flow debug` or deployed process run. Diagnose owns the diagnostic priority ladder (incidents → runtime variables → flow correlation → traces) and the catalog of known recurring failure modes (MST-9107, MST-9061, HITL-stuck, reused reference IDs, single-nested layout). Requires `uip login`.
+<!--skill-flavor:single-nested-intro:end-->
 
 > **Where you came from / where to go next.** Diagnose is downstream of Operate (run faulted → diagnose) and points back to Author for the underlying fix (diagnose → re-author → re-ship). Re-running and lifecycle live in [operate/CAPABILITY.md](../operate/CAPABILITY.md); building/editing the `.flow` file lives in [author/CAPABILITY.md](../author/CAPABILITY.md).
 >
@@ -42,7 +44,9 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 | **Identify misshapen Studio Web nodes** | [failure-modes.md — MST-9061](references/failure-modes.md#mst-9061--misshapen-rectangle-nodes-in-studio-web) |
 | **Diagnose a hung HITL node** | [failure-modes.md — HITL `completed` port unwired](references/failure-modes.md#hitl-completed-port-unwired) |
 | **Diagnose a connector silent fault** | [failure-modes.md — Reused reference ID](references/failure-modes.md#reused-reference-id--cross-connection-id-leakage) |
+<!--skill-flavor:single-nested-task-row:start-->
 | **Diagnose a publish/upload structural error** | [failure-modes.md — Single-nested layout](references/failure-modes.md#single-nested-layout) |
+<!--skill-flavor:single-nested-task-row:end-->
 | **Diagnose `Folder does not exist` on a resource node** | [failure-modes.md — Missing `bindings[]` on resource node](references/failure-modes.md#missing-bindings-on-resource-node) |
 | **Triage "validate passes, debug faults"** | [failure-modes.md — `flow validate` passes, `flow debug` faults](references/failure-modes.md#flow-validate-passes-flow-debug-faults) |
 | **Look up `instance` / `incident` CLI syntax** | [shared/cli-commands.md](../shared/cli-commands.md) + [troubleshooting-guide.md — CLI command reference](references/troubleshooting-guide.md#cli-command-reference) |
@@ -59,7 +63,9 @@ Capability index for postmortem on a failed `flow debug` or deployed process run
 ### Diagnose-scoped
 
 - [troubleshooting-guide.md](references/troubleshooting-guide.md) — diagnostic priority ladder (incidents → variables → flow correlation → traces) and full `instance` / `incident` CLI reference
+<!--skill-flavor:single-nested-reference-entry:start-->
 - [failure-modes.md](references/failure-modes.md) — pattern catalog for known recurring failures: MST-9107, MST-9061, HITL-stuck, reused reference IDs, single-nested layout, "validate passes / debug faults"
+<!--skill-flavor:single-nested-reference-entry:end-->
 
 ### Cross-capability (shared)
 
