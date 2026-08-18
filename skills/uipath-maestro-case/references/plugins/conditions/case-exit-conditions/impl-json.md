@@ -36,7 +36,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 ## Rule Types
 
-### required-stages-completed — preferred completion
+### required-stages-completed — close when all required stages complete
 
 ```json
 "rules": [[ { "id": "Rule_xxxxxx", "rule": "required-stages-completed" } ]]
@@ -44,7 +44,9 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 Requires `marksCaseComplete: true`. Completes when every stage flagged `data.isRequired: true` has completed.
 
-### selected-stage-completed / selected-stage-exited — non-completing exit
+> **Brittle — check before choosing it.** This compiles to a literal list of every `isRequired` primary stage, and an **exited** stage never satisfies it. One stage that routes onward through a `marksStageComplete: false` exit (an SLA bump, stall, escalation or rework route) blocks this rule permanently, with no validation error. Use it only when every required stage is unbypassable; otherwise key the closure on terminal stages — see [§ Multi-terminal closure](#multi-terminal-closure--selected-stages-plural).
+
+### selected-stage-completed / selected-stage-exited — close on a named stage
 
 ```json
 "rules": [[
@@ -56,7 +58,38 @@ Requires `marksCaseComplete: true`. Completes when every stage flagged `data.isR
 ]]
 ```
 
-Requires `marksCaseComplete: false`. Swap `rule` to `selected-stage-exited` for exit-without-completion semantics.
+Legal with `marksCaseComplete` **either** `true` or `false` — the flag does not gate the rule type. Swap `rule` to `selected-stage-exited` to key on a stage that left without completing.
+
+> `selected-stage-exited` compiles to `StagesExited`, which is a different condition type from `StagesCompleted` — a completed stage does not satisfy it, and an exited stage does not satisfy a `StagesCompleted` rule. The two runtime sets are disjoint.
+
+### Multi-terminal closure — `selected-stages` (plural)
+
+When `tasks.md` carries `selected-stages: [...]`, emit **one condition** containing **one rule-set per stage name**. The outer array is OR, so any listed terminal closes the case:
+
+```json
+{
+  "id": "Condition_xC1XyX",
+  "displayName": "Case Closed",
+  "marksCaseComplete": true,
+  "rules": [
+    [ { "id": "Rule_aaaaaa", "rule": "selected-stage-completed", "selectedStageId": "Stage_ExeWrp" } ],
+    [ { "id": "Rule_bbbbbb", "rule": "selected-stage-completed", "selectedStageId": "Stage_RejWrp" } ],
+    [ { "id": "Rule_cccccc", "rule": "selected-stage-completed", "selectedStageId": "Stage_WdrWrp" } ]
+  ]
+}
+```
+
+Each rule-set gets its own `Rule_` id. Do **not** split these across separate `caseExitRules[]` entries: OR across rule-sets within one condition is verified; OR across separate conditions is not.
+
+### sla-status-change — close on an SLA breach or at-risk escalation
+
+```json
+"rules": [[
+  { "id": "Rule_xxxxxx", "rule": "sla-status-change", "slaId": "sla_xxxxxx" }
+]]
+```
+
+`slaId` alone is the Breached shape; add that SLA's at-risk `escalationId` for an at-risk close. **Contingent** — it fires only if the clock runs out, so never let it be the only completion rule. Offered by the Studio Web "Complete case when" picker (verified 2026-08-14); not probed against this skill's v27 emission target.
 
 ### wait-for-connector — bind a connector event
 
@@ -66,13 +99,23 @@ In Phase 2, always write the canonical stub from [connector-trigger-impl.md § C
 
 ## Rule-Type × marksCaseComplete Matrix
 
-| `marksCaseComplete` | `rule` | Required extra field |
-|---|---|---|
-| `true` | `required-stages-completed` | — |
-| `true` | `wait-for-connector` | `uipath` connector configuration |
-| `false` | `selected-stage-completed` | `selectedStageId` |
-| `false` | `selected-stage-exited` | `selectedStageId` |
-| `false` | `wait-for-connector` | `uipath` connector configuration |
+`marksCaseComplete` does **not** gate the rule type. Every rule below is legal with `true`; every one except `required-stages-completed` is also legal with `false`.
+
+| `rule` | `marksCaseComplete: true` | `marksCaseComplete: false` | Required extra field | Deterministic? |
+|---|---|---|---|---|
+| `required-stages-completed` | ✅ | — | — | yes |
+| `selected-stage-completed` | ✅ | ✅ | `selectedStageId` | yes |
+| `selected-stage-exited` | ✅ | ✅ | `selectedStageId` | yes |
+| `sla-status-change` | ✅ | ✅ | `slaId`, optional `escalationId` | **no — contingent** |
+| `wait-for-connector` | ✅ | ✅ | `uipath` connector configuration | **no — contingent** |
+
+Emit at least one **deterministic** completion rule unless `metadata.caseManagerData.enabled` is `true`. A case whose only closure is contingent hangs whenever the external event never arrives.
+
+## `marksCaseComplete` is designer-only — never model runtime behaviour on it
+
+The converter emits **every** `metadata.caseExitRules[]` entry into `case.completionConditions`, unfiltered by `marksCaseComplete`. The flag is read only by FE validation (at least one `true` required, else "Case has no completion rules") and by the rules table's "Complete Case" / "Exit Case" column. It is not serialized into the executable plan.
+
+So a `marksCaseComplete: false` rule **still closes the case** at runtime. Use `false` to express intent for rejection / withdrawal / cancellation and to keep the designer readable — never to prevent closure. The completed-vs-exited outcome the runtime acts on is `caseResolution.type`, produced by the scheduler, not by this flag.
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. Use bare `=js:<expr>` (no outer parens); combined boolean expressions wrap each sub-clause in parens: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Use strict `===` / `!==`, never loose `==` / `!=` — normalize SDD shorthand like `approved == true` to `=js:vars.approved === true` (do not transcribe `==` verbatim). Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 

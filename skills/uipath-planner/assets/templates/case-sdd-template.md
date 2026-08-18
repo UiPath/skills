@@ -138,7 +138,7 @@ Tenant object starts are still event triggers: a case that starts when a tenant 
 
 ### Case Exit Conditions
 
-<!-- WHEN + Marks Case Complete pairing is schema-constrained: Marks Case Complete = Yes normally uses `required-stages-completed`; selected-stage rules are for non-completing exits. -->
+<!-- Marks Case Complete does NOT constrain WHEN. All five case-completion rules are legal with Yes: required-stages-completed, selected-stage-completed, selected-stage-exited, sla-status-change, wait-for-connector. Choose per case-authoring-rules-guide.md §1.4: key on terminal stages when the case has more than one ending or any bypass route; use required-stages-completed only when every required stage is unbypassable, since an exited stage never satisfies it. -->
 
 | WHEN | IF | THEN | Marks Case Complete | Display Name |
 |------|-----|------|---------------------|--------------|

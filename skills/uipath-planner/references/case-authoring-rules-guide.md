@@ -363,12 +363,21 @@ Nested `{op, clauses}` groups flatten in the rendered table. Avoid `Literal: No`
 
 | WHEN | IF | Marks Case Complete | Exit Type | Display Name |
 |---|---|---|---|---|
-| `required-stages-completed` / `wait-for-connector` | optional `conditionExpression` | `Yes` | `exit-only` | optional |
+| `required-stages-completed` / `selected-stage-completed("<Stage>")` / `selected-stage-exited("<Stage>")` / `sla-status-change(...)` / `wait-for-connector` | optional `conditionExpression` | `Yes` | `exit-only` | optional |
 
 > **Display Name** (optional, every condition table — entry, exit, task-entry, case-exit): human-readable label. Carry the author's value verbatim; leave blank / `—` to let the skill default it: entry / task-entry → `Entry Rule {N}`; stage-exit / case-exit → `Complete Rule {N}` (Marks Complete `Yes`) / `Exit Rule {N}` (`No`). `N` = 1-based index within the same label kind in the container. Never invent a label when the cell is blank.
 
-**Allowed WHEN:** `required-stages-completed`, `wait-for-connector`.
-**Forbidden WHEN:** `selected-stage-completed`, `selected-stage-exited` (the template's WHEN ↔ Marks-Complete pairing rule — `Yes` + `selected-stage-*` is a schema-pairing error → block Approve).
+**Allowed WHEN:** `required-stages-completed`, `selected-stage-completed`, `selected-stage-exited`, `sla-status-change`, `wait-for-connector` — the five the Case Designer's "Complete case when" picker offers. `Marks Case Complete` does **not** restrict the WHEN: there is no case-level WHEN ↔ Marks-Complete pairing rule. (The stage-level pairing rule under §Stage Completion Conditions — `Marks Stage Complete: Yes` never pairs with `selected-tasks-completed` — is real and still applies; do not generalise it to the case level.)
+
+**Choosing the WHEN — this is a design decision, not a default.**
+
+- **Multiple terminal outcomes, or any stage that can be bypassed** (SLA bump, stall, escalation, rework) → one row per terminal using `selected-stage-completed("<Terminal Stage>")`. All rows carry `Yes`; the build lowers them into a single condition whose rule-sets are OR'd, so any terminal closes the case.
+- **Single terminal outcome and every required stage is unbypassable** → `required-stages-completed`.
+- `sla-status-change` and `wait-for-connector` are **contingent** — they fire only if a clock expires or an external event arrives. Never make one the only `Yes` row unless the Case Manager agent owns closure.
+
+> **Why `required-stages-completed` is not the default.** It lowers to a literal "all of these stages completed" list over every stage marked `Required for case completion: Yes`. A stage that leaves through a `Marks Stage Complete: No` exit is recorded as *exited*, never *completed*, and can never satisfy it — so one bypass route silently makes the case unclosable. Nothing in `uip maestro case validate` detects this.
+
+**Reachability requirement (blocking).** For every terminal state the case can reach — walking each exception, timeout, stall and rework route — at least one `Yes` row must be satisfiable. A path with no satisfying row is a hang; block Approve and name the path.
 
 ### 1.4a Case Exit Conditions (alternate disposition)
 
@@ -806,15 +815,14 @@ Otherwise the variable is open-lineage and Phase 0 cannot Approve.
 
 **Output-naming consistency rule.** An Outputs `-> <caseVar>` row whose `Field` leaf name (the produced datum's natural name, e.g. `complianceStatus`) has NO matching §1.5 variable AND is mapped into a differently-named existing variable (e.g. `titleReviewStatus`) → emit a `medium` review item (`rev_aliased_output_<task>`): "task output `<field>` aliased into unrelated variable `<caseVar>`; declare a dedicated §1.5 variable for the datum or confirm the reuse is intentional." Aliasing a produced datum into an unrelated variable closes lineage mechanically while corrupting meaning — a variable named for one thing silently carries another, and a multi-stage variable ends up double-purposed.
 
-**Stage exit pattern — XOR terminal stages.** When the user describes mutually-exclusive happy-path terminals (e.g., "Funding on approve, Adverse Action Notice on decline"), the case has two valid endings but only one fires per run. The WHEN ↔ Marks-Complete pairing rule forbids `selected-stage-*` on case-exit `Yes` rows, so the XOR is modeled at the stage-entry level, not the case-exit level. Two sanctioned patterns:
+**Stage exit pattern — XOR terminal stages.** When the user describes mutually-exclusive happy-path terminals (e.g., "Funding on approve, Adverse Action Notice on decline"), the case has two valid endings but only one fires per run. Model the XOR **at the case-exit level** — one `Yes` row per terminal:
 
-**Pattern X1 — gated entry + required terminal closes** (default — works on every tenant, no connector emission needed):
+**Pattern X1 — terminal-keyed case exit** (default; verified, works on every tenant, no connector needed):
 
-- Both terminal stages declared with `Required for case completion: Yes`.
 - Each terminal stage's Entry Condition: `selected-stage-completed("<DecisionStage>")` + `IF` = the condition guarding its lane (e.g., `IF: =vars.decision == "Approve"` for Funding, `IF: =vars.decision == "Decline"` for AAN).
 - **Stage Completion Conditions on each terminal stage:** `required-tasks-completed` (`Marks Stage Complete: Yes`) — the terminal closes normally when its tasks finish.
-- **Stage-skip rule** (Phase 1 validator):  the runtime evaluates Entry Condition `IF` at stage activation time; a terminal whose `IF` is false at activation is auto-completed (`status = "Skipped"`) so `required-stages-completed` still resolves cleanly across the case. This is documented FE behavior — see PO.Frontend stage validation rules. The skipped stage counts as "completed" for required-stages closure.
-- Case Exit §1.4: ONE row, `Marks Case Complete: Yes`, WHEN = `required-stages-completed` (default form), `IF: —`.
+- Terminal stages: `Required for case completion: No`. Nothing depends on `isRequired` in this pattern.
+- **Case Exit §1.4: ONE row per terminal**, each `Marks Case Complete: Yes`, WHEN = `selected-stage-completed("<Terminal Stage>")`. The build lowers them into a single condition with one OR'd rule-set per terminal, so whichever terminal runs closes the case.
 
 **Pattern X2 — connector-event close** (use when both terminals end by emitting a common case-done event):
 
@@ -824,6 +832,8 @@ Otherwise the variable is open-lineage and Phase 0 cannot Approve.
 - Case Exit §1.4: ONE row, `Marks Case Complete: Yes`, WHEN = `wait-for-connector` keyed on `caseDone`.
 
 Pattern X1 is preferred unless an actual connector emits the close event. When the pattern is detected at Sketch time (multiple terminal candidates AND a branching decision earlier in the case), narrate the choice and surface BOTH patterns to the user via AskUserQuestion before drafting the rows.
+
+> **Do not close an XOR case with `required-stages-completed`.** An earlier version of this guide marked both terminals `Required for case completion: Yes` and relied on the runtime auto-completing the untaken terminal as `"Skipped"`. **No such stage status exists** — `ElementStatusValues` has no `Skipped` member and no skip-on-false-`IF` behaviour is present in the frontend. Marking mutually-exclusive terminals required makes the case unclosable on every branch.
 
 **Audit checklist** (run against the in-memory model before the confirmation is presented):
 
@@ -961,8 +971,9 @@ A non-`user-stated` and non-`verbatim` field without provenance is a validation 
 Phase 0 runs these checks **once, against the in-memory case model, before presenting the §Confirm checkpoint** ([case-design-lane-guide.md § Confirm](case-design-lane-guide.md#confirm--the-single-checkpoint)). Failures are the agent's defects: fix them in the model silently and re-check; a genuinely unfixable item becomes a ⚠ flagged line in the confirmation. After a user correction, re-run only the affected checks. **Steps 16 and 19 require resolved I/O contracts (`tasks describe` / `case spec`), which this lane's identity-level resolution does not pull — schema discovery stays a build-phase concern. They are enforced at build time (Phase 1 discovery + Phase 3 io-binding Check 5); run them here only when a contract happens to be in memory.** The rendered `sdd.md` must match the confirmed model exactly; passing checks make the model eligible for rendering, they do not create the file.
 
 1. **Schema check.** Every task `type` ∈ 9-value enum (closed 9-value enum). Every WHEN ↔ Marks-complete pair valid per the template's WHEN ↔ Marks-Complete pairing rule:
-   - Case-exit `Yes` + `selected-stage-*` → error
    - Stage-exit `Yes` + `selected-tasks-completed` → error
+   - *(Case-exit `Yes` + `selected-stage-*` is **legal** — the Case Designer offers it. Do not flag it.)*
+1a. **Case-closure reachability check.** For every terminal state the case can reach, at least one §1.4 `Yes` row must be satisfiable. Walk every exception, timeout, stall and rework route. A `required-stages-completed` row is unsatisfiable on any path where a `Required for case completion: Yes` stage leaves via a `Marks Stage Complete: No` exit. A path with no satisfying row → error, name the path.
 2. **Render-contract check.** Every required cell in §Case content rules, §Stage content rules, §Task content rules has a concrete value (no banned `—` / `<UNRESOLVED>`).
 2a. **Template-shape check.** The exact rendered `sdd.md` text must pass [case-design-lane-guide.md § Template conformance gate](case-design-lane-guide.md#template-conformance-gate--before-sddmd-is-written) — the single source for the required heading set, per-stage/per-task block shape, `**Task envelope**` marker, numeric `Task S{K}.{M}` secondary headings, plain `<UNRESOLVED>` markers, and the forbidden summary-only sections. Under the lane's write-early cadence it runs against the assembled on-disk file BEFORE the `Status: ready` flip; on failure, repair the file and re-check before flipping ready.
 
@@ -1014,7 +1025,8 @@ On fail: fix the model and re-run the failed checks (plus any whose inputs chang
 - **Do NOT repeat a global event on every primary stage.** External withdrawn/cancel events belong on one interrupting secondary-stage entry rule. An SLA response that enters a stage belongs on one scoped `sla-status-change` entry, with interrupting set by whether it diverts active work. Per-stage task/exit duplication is a modeling defect.
 - **Do NOT invent a stage, task, or routing change for an SLA the source only asks to notify about.** Absent a stated response, at-risk and breached are `notify-only` (§ SLA response model).
 - **Do NOT ship `sdd.md` with a banned `—` or `<UNRESOLVED>` on a render-required field.** Emit a placeholder + review item, or Ask.
-- **Do NOT pair `Marks Stage Complete: Yes` with `selected-tasks-completed` or `Marks Case Complete: Yes` with `selected-stage-*`.** Both are schema-pairing errors (WHEN ↔ Marks-Complete pairing).
+- **Do NOT pair `Marks Stage Complete: Yes` with `selected-tasks-completed`.** That is a schema-pairing error (WHEN ↔ Marks-Complete pairing). The pairing rule is **stage-level only** — `Marks Case Complete: Yes` with `selected-stage-*` is legal and often correct.
+- **Do NOT default the case-completion WHEN to `required-stages-completed`.** It is unsatisfiable on any path where a required stage exits without completing. Pick the closure shape per §1.4; key on terminal stages whenever the case has more than one ending or any bypass route.
 - **Do NOT emit an `action` task without typed recipient prefix.** Bare strings (`"the underwriter"`) force Phase 1 to guess.
 - **Do NOT let required flow depend on `adhoc` tasks.** `selected-tasks-completed` and required-task rules must select only non-adhoc tasks in the same stage.
 - **Do NOT emit a decision `action` task with fewer than 2 buttons.** `is_decision: Yes` requires ≥ 2 buttons; downgrade to `is_decision: No` if the task does not fork the case path.
