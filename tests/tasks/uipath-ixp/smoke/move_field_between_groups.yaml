@@ -15,7 +15,7 @@ description: >
   a failing `get-taxonomy` leaves nothing to carry into `fields add`, and a
   failing `fields add` makes withholding the `fields delete` the correct call
   (add-before-delete). Grades command shape, not wire effect.
-tags: [uipath-ixp, smoke, mode:build, lifecycle:execute]
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 6

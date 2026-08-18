@@ -7,7 +7,7 @@ description: >
   Verifies a real second version was produced (ModelVersion advanced) and that
   per-version metrics carry real per-field scores: outcomes a command-shape smoke
   cannot reach.
-tags: [uipath-ixp, integration, mode:operate]
+tags: [uipath-ixp, integration, mode:operate, lifecycle:setup]
 
 run_limits:
   max_turns: 72

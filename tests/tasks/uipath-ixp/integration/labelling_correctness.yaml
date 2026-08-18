@@ -6,7 +6,7 @@ description: >
   under `--group`, unconfirm rollback, and mark-missing — each checked by
   re-reading `get-predictions`. These are CLI payload-construction behaviors, not
   backend semantics.
-tags: [uipath-ixp, integration, mode:operate]
+tags: [uipath-ixp, integration, mode:operate, lifecycle:setup]
 
 run_limits:
   max_turns: 68
