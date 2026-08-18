@@ -1,0 +1,177 @@
+task_id: skill-agents-lowcode-eval-run
+description: >
+  Low-code evaluation lifecycle on a PRE-BUILT agent: author an evaluator and an
+  eval set, add test cases, upload the solution, run the evals in the cloud,
+  read the scored results. The fixture ships a validated EvalSol solution
+  (TriageAgent: ticket→category), so scaffolding and agent authoring are out of
+  scope — every graded step is an `uip agent eval` step, which is exactly what
+  the check script grades. The entire `uip agent eval` surface (6 components,
+  ~950 lines across five reference files) had zero coverage while the coded twin
+  is 8/8 — the only prior mention of `agent eval` anywhere in the suite is a
+  `file_exists` on the files `agent init` scaffolds. Grades the authoring *shape*
+  as well as the CLI sequence, because a mis-shaped evaluator (`type`/`category`
+  mismatch, `evaluatorRefs` not resolving, `--inputs` not matching
+  `entry-points.json`) passes `uip agent validate` and only fails at run time in
+  the cloud worker. Evaluator *creation path* is deliberately advisory: the skill
+  sanctions hand-written evaluator JSON alongside `evaluator add`, so only the
+  resulting artifact is gated. Eval sets and test cases stay gated on the CLI —
+  there, hand-writing UUIDs is a documented anti-pattern.
+  Deliberately scoped to a SINGLE eval run. `uip agent eval run
+  compare` needs a second run, and observed cloud-run duration varies ~4x
+  (393s-1476s). Compare and `uip or eval run-offline-evals` belong in their own
+  task.
+tags: [uipath-agents, e2e, mode:operate, lifecycle:setup, low-code, feature:eval]
+
+run_limits:
+  # 80 tracks the 2026-08-11 sonnet-5 run (80 visible turns) and sits with the
+  # other low-code e2e tasks of this shape — inline_context_index 90,
+  # inline_external_apiworkflow_tool 87, inline_solution_{agent,maestro}_tool 80.
+  # The earlier 40 was estimated off codex runs, which report a single turn
+  # regardless of work done and so carry no signal here.
+  expected_turns: 80
+  # ~50% headroom over the observed 80. Deliberately below the 200 that the 43
+  # low-code tasks without an explicit cap inherit from default.yaml: nothing has
+  # come near exhausting this, and at ~$4/run on sonnet the cap earns its keep as
+  # a cost stop.
+  max_turns: 120
+  task_timeout: 5400
+  # `eval run start --wait` blocks in a single Bash call while the cloud worker
+  # executes every test case, so one turn can legitimately run for many minutes.
+  # The prompt no longer names `--wait`, so an agent may first try a polling loop
+  # (which the sandbox blocks) and spend turns recovering — that is the skill's
+  # job to get right, and max_turns carries the headroom for the detour.
+  turn_timeout: 1800
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/eval_run/_fixtures/EvalSol ."
+    timeout: 10
+  # The fixture carries a literal SolutionId. Give each run its own so parallel
+  # replicates never share one cloud solution — an eval run here spans many
+  # minutes, long enough for a sibling replicate's upload or its post_run delete
+  # to land mid-run. Matches the pre-fixture behaviour, where `uip solution init`
+  # minted a fresh id per run.
+  - command: >-
+      python3 -c "import json,pathlib,uuid;p=pathlib.Path('EvalSol/EvalSol.uipx');d=json.loads(p.read_text());d['SolutionId']=str(uuid.uuid4());p.write_text(json.dumps(d,indent=2))"
+    timeout: 10
+
+# Written in the voice of the agent's owner, not a skill author: no mention of
+# scaffolded defaults, no standing publish authorisation, no sandbox mechanics.
+# The skill has to supply the upload step, the blocking run flag, and the whole
+# `uip agent eval` sequence — if the prompt supplies them, the task grades the
+# prompt instead of the skill.
+initial_prompt: |
+  The EvalSol folder here has my TriageAgent in it. It reads a customer support
+  ticket and tags it as billing, technical, or other.
+
+  Before I point it at real tickets I want to know how good it actually is. Set up
+  a proper scored check for it — I care how close its answer is to the correct tag,
+  and the generic scorer that came with the project doesn't tell me much. Give it a
+  handful of tickets to chew on, at least one billing and one technical, so I can
+  see whether it's actually reading them or just guessing the same tag every time.
+
+  Then run it for real and tell me what each ticket scored.
+
+  Leave the agent itself alone — I want to measure what it does today, not a
+  tweaked version.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in a single
+  pass.
+
+success_criteria:
+  # Brownfield: the solution ships in the fixture.
+  - type: command_not_executed
+    description: "Agent did NOT re-initialize the pre-existing solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    exclude_pattern: '--help'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Brownfield: TriageAgent ships in the fixture.
+  - type: command_not_executed
+    description: "Agent did NOT re-scaffold the existing TriageAgent project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    exclude_pattern: '--help'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Advisory, NOT gating. Unlike eval sets and test cases, hand-writing an
+  # evaluator is a first-class path in the skill: evaluators.md lists it as a
+  # creation option and explicitly recommends it "when you want to pin a specific
+  # model and the longer 0-100 prompt" — which is what a strict category scorer
+  # wants. A 2026-08-11 sonnet-5 run was docked here for doing exactly that.
+  # Whether the evaluator is well-formed is graded on the artifact by the check
+  # script; this records only which authoring path the agent took.
+  - type: command_executed
+    description: "Informational: evaluator created via the eval CLI rather than hand-written JSON (the skill sanctions both)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+evaluator\s+add\b'
+    min_count: 1
+    # weight 0.0, not 1.0: an advisory criterion left at weight 1.0 still lands in
+    # the weighted-score denominator, so a hand-writing agent would score 0.943
+    # instead of 1.000 — a residual dock for a path the skill sanctions. Matches
+    # coded/guardrails/validate and lowcode/solution_verb_probe.
+    weight: 0.0
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent created its own evaluation set"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+set\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # min_count is 1, not 2: `command_executed` counts Bash *invocations*, and
+  # agents routinely chain several `eval add` calls into one shell command, so a
+  # count of 2 fails a correct run. The real requirement — at least two
+  # well-formed cases in the set — is graded on the artifact by the check script.
+  - type: command_executed
+    description: "Agent added test cases with the eval CLI rather than hand-authoring the set JSON"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Cloud execution prerequisite — the Agent Runtime evaluates the *uploaded*
+  # agent, so a run before upload silently scores a stale definition.
+  - type: command_executed
+    description: "Agent uploaded the solution before running evals"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+upload\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started an evaluation run in the cloud"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+start\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the scored results back"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+run\s+results\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Eval suite authoring shape: evaluator type/category valid, eval set resolves its evaluatorRefs, test cases carry a consistent evalSetId and inputs matching entry-points.json"
+    command: "python3 $TASK_DIR/check_eval_run.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+# The task uploads EvalSol to the tenant; delete it afterward (best-effort, never
+# affects pass/fail). Set AGENT_E2E_CLEANUP=never to keep it for inspection.
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/cleanup_solutions.py"
+    timeout: 120

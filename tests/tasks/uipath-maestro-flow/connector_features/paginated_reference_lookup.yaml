@@ -1,3 +1,6 @@
+# Same-ground campaign contract (Tao, 2026-08-10): loop-neutral v1-base
+# prompt; v1-weighted intersection criteria plus report-only offline advisories;
+# paired limit envelope. Cross-arm parity is enforced by the sync gate.
 task_id: skill-flow-paginated-reference-lookup
 description: >
   Build a Flow with a Slack `Send Message to Channel` node targeting the
@@ -64,17 +67,18 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Flow file exists at the canonical solution path"
-    path: "SlackPaginationTest/SlackPaginationTest/SlackPaginationTest.flow"
+  - type: run_command
+    description: "Flow file exists (path-agnostic discovery)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SlackPaginationTest"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow wires the Slack send-message-to-channel node with the resolved Slack id for channel `simple` (C083AN4E61E)"
-    path: "SlackPaginationTest/SlackPaginationTest/SlackPaginationTest.flow"
-    includes:
-      - 'uipath.connector.uipath-salesforce-slack.send-message-to-channel'
-      - '"C083AN4E61E"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SlackPaginationTest 'uipath.connector.uipath-salesforce-slack.send-message-to-channel' '\"C083AN4E61E\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

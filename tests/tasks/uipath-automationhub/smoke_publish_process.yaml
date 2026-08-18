@@ -1,0 +1,108 @@
+task_id: skill-ah-publish-process-smoke
+description: >
+  Smoke test: agent uses the uipath-automationhub skill to publish a
+  business process (and a PDD/SDD document) to Automation Hub via the Open API.
+  The tenant is a smoke fixture and is NOT reachable (Automation Hub is not
+  provisioned in the eval env), so every call fails — that's expected. The test
+  grades the REQUEST SHAPE, not live output: the skill must (1) activate,
+  (2) authenticate with the user's CLOUD token (`Authorization: Bearer …`,
+  resolved from `UIPATH_CLI_AUTH_TOKEN` first), (3) walk the correct
+  cloud-token Open API endpoint sequence at the `automationhub_/api/v1/openapi`
+  base — `idea-flows` → `idea-from-schema` (POST) → `automations/{id}/documents`
+  (POST) — and (4) NEVER send the admin-token header `x-ah-openapi-auth`
+  (the single most important rule; sending it 401s a cloud token).
+tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  Publish the approved business process below to UiPath Automation Hub using
+  the `uipath-automationhub` skill, and attach its PDD document.
+
+    Process name: "Invoice Reconciliation (smoke)"
+    Description:  Reconcile supplier invoices against POs.
+    PDD:          name "PDD", link https://example.invalid/pdd
+
+  Authentication: a cloud access token is provided via env-auth exactly as the
+  UiPath Delegate runtime provides it — read it from the `UIPATH_CLI_AUTH_TOKEN`
+  environment variable first (with org/tenant from
+  `UIPATH_CLI_ORGANIZATION_NAME` / `UIPATH_CLI_TENANT_NAME`). If those are
+  empty, fall back to the literal placeholder token `SMOKE_TOKEN`, org `acme`,
+  tenant `smoke`, base URL `https://cloud.uipath.com`. Do NOT run `uip login`.
+
+  This is a request-shape smoke check against a fixture tenant that is NOT
+  reachable, so EVERY call will fail (non-200) — that is expected. Do not let a
+  failed connectivity check stop you: walk through the skill's full publish
+  sequence and issue each request exactly once, in order. Because you cannot
+  read a real `idea_flow_id` or the created `process_id` back from the failed
+  responses, use the placeholder id `12345` wherever the sequence needs one so
+  you can still issue every request once.
+
+  Important:
+  - Run each request once and move on. Do NOT retry and do NOT attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - NEVER send the `x-ah-openapi-auth` or `x-ah-openapi-app-key` header — this
+    skill authenticates with the user's cloud token, not an admin OpenAPI token.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-auth'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-app-key'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent authenticated with a cloud bearer token (Authorization: Bearer …)"
+    tool_name: "Bash"
+    command_pattern: '(?i)Authorization:\s*Bearer'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent hit the cloud-token Open API base path with the idea-flows connectivity/flows call"
+    tool_name: "Bash"
+    command_pattern: 'automationhub_/api/v1/openapi/idea-flows'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the process via POST /idea-from-schema (not POST /automations)"
+    tool_name: "Bash"
+    command_pattern: 'automationhub_/api/v1/openapi/idea-from-schema'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attached the document via POST /automations/{id}/documents"
+    tool_name: "Bash"
+    command_pattern: 'automationhub_/api/v1/openapi/automations/[^/\s]+/documents'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resolved the token from UIPATH_CLI_AUTH_TOKEN first (env-auth source order)"
+    tool_name: "Bash"
+    command_pattern: 'UIPATH_CLI_AUTH_TOKEN'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

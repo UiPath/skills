@@ -17,9 +17,9 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath low-code agent "ResearchAgent" that can look things up on the
-  web. Give it a tool so it can run web searches on demand. The solution should
-  be named "ResearchSol".
+  Create a UiPath low-code agent "ResearchAgent" that can look things up.
+  Give it a GenAI tool so it can research questions on demand. The solution
+  should be named "ResearchSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

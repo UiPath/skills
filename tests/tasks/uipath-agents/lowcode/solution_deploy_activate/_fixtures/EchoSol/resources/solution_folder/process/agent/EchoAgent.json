@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "EchoAgent",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "297f0dea-d826-40b6-bcda-3a71b5182b30",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "EchoAgent"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Agent",
+      "name": "EchoAgent",
+      "package": {
+        "key": "e4b02a65-fd06-4e24-ad87-71df3a75b6ba"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "092b0413-8c84-444a-8313-954c6ad1e545",
+    "files": []
+  }
+}

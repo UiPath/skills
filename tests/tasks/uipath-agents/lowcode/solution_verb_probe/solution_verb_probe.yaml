@@ -1,0 +1,110 @@
+task_id: skill-agents-solution-verb-probe
+description: >
+  SKILL.md Hard Rule 3 — probe the `solution` verb once per session before the
+  first scaffold. The CLI renamed `solution new` to `solution init` (and
+  `--folder-path` to `--parent-folder-path`), so the skill mandates a
+  `uip solution init --help --output json` probe and a documented fallback for
+  older CLIs. Nothing in the suite tests this today: all 16 `--help` occurrences
+  are `exclude_pattern` carve-outs that *tolerate* the probe on brownfield tasks
+  without ever requiring it. The prompt states only the goal — the probe is the
+  skill's job to teach. Scoped to solution + scaffolded agent so the run
+  actually reaches the first scaffold the rule guards, and so the task exercises
+  the agent surface rather than reading as a bare `uip solution` smoke.
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code]
+
+run_limits:
+  # 20, not 10: the agent project adds a scaffold step and its solution
+  # registration on top of the probe and `solution init`. Tracks the 2026-08-12
+  # sonnet-5 run (20 turns, 10 commands); codex/gpt-5.6-terra does the same work
+  # in 1 turn and 8 commands, so budget for the chattier harness.
+  expected_turns: 20
+  turn_timeout: 600
+
+initial_prompt: |
+  Set up a UiPath solution called `ProbeSol` in this directory, with a low-code
+  agent named `ProbeAgent` in it.
+
+  I only need the scaffolding — leave the agent's prompt and schemas at whatever
+  it is created with, and do not publish, upload, or deploy anything.
+
+  Do NOT ask for approval, confirmation, or feedback. Complete the task in a
+  single pass.
+
+success_criteria:
+  # PRIMARY — the capability under test. Hard Rule 3 requires this before the
+  # first scaffold; `--output json` is included because the rule specifies the
+  # parseable form the branch decision is made from.
+  # Accepts `uip solution init --help` (the literal form in Hard Rule 3) and
+  # `uip solution --help`, which resolves the same branch — grade the outcome,
+  # not the exact spelling.
+  - type: command_executed
+    description: "Agent probed the solution verb before scaffolding (SKILL.md Hard Rule 3)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(init\s+)?[^|;&]*--help'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory: the rule names `--output json` as the probe form, but the branch
+  # decision is observable from the exit code alone, so a probe without the flag
+  # still reaches the correct outcome. Recorded, never gating
+  # (.claude/rules/test-writing.md forbids gating on --output json).
+  - type: command_executed
+    description: "Advisory: probe used --output json as Hard Rule 3 specifies"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(init\s+)?[^|;&]*--help[^|;&]*--output\s+json'
+    min_count: 1
+    weight: 0.0
+    pass_threshold: 0.0
+
+  # The probe must precede real work, not replace it: the agent still scaffolds,
+  # via whichever verb the probe selected.
+  - type: command_executed
+    description: "Agent scaffolded the solution using the verb the probe selected"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(init|new)\b'
+    exclude_pattern: '--help'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ProbeSol solution manifest was created"
+    path: "ProbeSol/ProbeSol.uipx"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The probe guards the *first scaffold*, so the task has to contain one: the
+  # agent project is what makes this a uipath-agents test rather than a bare
+  # `solution init` smoke.
+  - type: command_executed
+    description: "Agent scaffolded the low-code agent project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\b'
+    exclude_pattern: '--help'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ProbeAgent project was scaffolded inside the solution"
+    path: "ProbeSol/ProbeAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # `uip agent init` registers the project in the parent solution; hand-rolling
+  # the folder, or scaffolding it outside the solution, leaves Projects empty.
+  # Graded on the manifest because that registration — not the folder on disk —
+  # is what makes the agent part of the solution.
+  - type: json_check
+    description: "Solution manifest registers the scaffolded agent project"
+    path: "ProbeSol/ProbeSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "equals"
+        expected: 1
+      - expression: "Projects[0].Type"
+        operator: "equals"
+        expected: "Agent"
+    weight: 2.0
+    pass_threshold: 1.0

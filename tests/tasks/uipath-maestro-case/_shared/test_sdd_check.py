@@ -1,4 +1,4 @@
-"""Deterministic guards for Phase-0/Phase-1 case authoring."""
+"""Deterministic guards for case-design SDD authoring and plan checks."""
 
 import os
 import subprocess

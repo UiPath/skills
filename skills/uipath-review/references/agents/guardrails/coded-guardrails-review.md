@@ -94,6 +94,8 @@ uip agent guardrails list --output json
 
 Build a `{ validatorId: status }` lookup from the `Data` array (use only `Status == "Available"`).
 
+> **`Validator` is not unique — key on `(Validator, IsByo)`, not `Validator` alone.** A tenant with a bring-your-own (BYOG) configuration for a validator has two entries sharing the same `Validator` name — one built-in, one BYO (`IsByo: true`). If the code wires a BYO validator construct, match it against the `IsByo: true` entry (by its `ByoValidatorName` — tenant-unique; the code passes no connection id), not the built-in one, before reading `Parameters`/scopes. See [uipath-agents coded guardrails.md § BYO (bring-your-own) validators](/uipath:uipath-agents).
+
 ### SDK Docs (required when Step 0 needs Python class names)
 
 Coded agents reference guardrails by **Python class name** (`UiPathPIIDetectionMiddleware`, `PIIValidator`), not by
@@ -154,6 +156,8 @@ Resolve the entry `.py` (the `langgraph.json` `graphs` value's file, else `main.
 ## Audit Mode — existing guardrails (findings are defects)
 
 For each wired guardrail the review CLI did **not** flag, run the checks below.
+
+> **A BYO-backed guardrail's tenant entry showing `Status: "Disabled"` is a configuration switch, not a wiring bug.** It means the tenant admin turned that specific BYOG configuration off (Admin → AI Trust Layer → Guardrails Configurations) — don't re-diagnose the code as a wiring/import defect. If the wired guardrail targets that disabled configuration, it can't protect; treat it like targeting an `Unauthorised` validator and note it in the report.
 
 ### Actionability Check → `CODED_GUARDRAIL_ACTION_INEFFECTIVE`
 

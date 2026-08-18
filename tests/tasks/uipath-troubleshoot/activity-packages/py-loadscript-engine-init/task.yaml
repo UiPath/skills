@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-python-loadscript-engine-init
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Load Python Script failure
   caused by the Python Scope being unable to initialize the Python engine on

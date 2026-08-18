@@ -54,7 +54,7 @@ Skip unless you need to route downstream paths based on response content (e.g., 
 
 ## Step 4 — Wire edges
 
-The HTTP node's target port is `input`. Source ports: `default` (success), `error` (network/non-2xx), `branch-{id}` (one per Step 3 entry). Wire `default` to the next node and `error` to a handler — without an `error` edge, a failed call faults the flow.
+The HTTP node's target port is `input`. Source ports: `default` (success), `error` (network/non-2xx), `branch-{id}` (one per Step 3 entry). Wire `default` to the next node. Wire `error` to a handler **only when the requirements say what a failed call should do** — with no `error` edge the call faults the flow, which is the correct default, and setting `inputs.errorHandlingEnabled: true` without the edge swallows the failure into a run that reports success. See [file-format.md — Default: off](../../../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles).
 
 Edge JSON shapes and all four examples (upstream→node, default→downstream, error→handler, branch→downstream): [impl.md — Wire edges](impl.md#wire-edges).
 

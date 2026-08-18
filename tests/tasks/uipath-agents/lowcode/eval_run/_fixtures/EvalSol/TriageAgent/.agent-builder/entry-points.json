@@ -1,0 +1,32 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/agent.json",
+      "uniqueId": "57fc711a-7206-46a1-ba6a-0bc6a53dc50f",
+      "type": "agent",
+      "input": {
+        "type": "object",
+        "properties": {
+          "ticket": {
+            "type": "string",
+            "description": "A short customer support message to classify"
+          }
+        },
+        "required": [
+          "ticket"
+        ]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "One of billing, technical, or other"
+          }
+        }
+      }
+    }
+  ]
+}

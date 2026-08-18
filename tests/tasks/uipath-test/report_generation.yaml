@@ -26,6 +26,10 @@ initial_prompt: |
   project — use the test set CLAIM:23. Save the report file in the current
   working directory using the default filename convention from the skill.
 
+  The report is only complete when it carries the full section structure the
+  skill defines for this persona — don't hand back a summary that skips
+  sections.
+
 success_criteria:
   - type: command_executed
     description: "Agent checked login status (Critical Rule #1 + #2)"
@@ -61,11 +65,18 @@ success_criteria:
           sys.exit(2)
       body = open(paths[-1], encoding='utf-8', errors='replace').read()
       lower = body.lower()
+      def heading(pat):
+          return re.search(r'(?im)^#{1,4}\s*.*' + pat, body) is not None
+      # Grade the section structure the skill mandates for this persona
+      # (references/test-result-report-guide.md step 6), not just keywords --
+      # otherwise a report can omit every required heading and still score.
       checks = {
-          'markdown header anchor': re.search(r'(?m)^#{1,3}\s+\S', body) is not None,
-          'regression section taught by skill': re.search(r'(?im)^#{1,4}.*regression', body) is not None,
-          'full pass/fail breakdown taught by skill': all(t in lower for t in ['passed', 'failed']),
-          'test set referenced in body': re.search(r'(?i)test\s*set', body) is not None,
+          'Summary heading': heading(r'summary'),
+          'Test Set heading': heading(r'test\s*set'),
+          'Results Breakdown heading': heading(r'results?\s*breakdown'),
+          'Frequently Failing Test Cases heading': heading(r'frequently\s*failing'),
+          'Regressions heading (QA persona)': heading(r'regression'),
+          'pass/fail counts in body': all(t in lower for t in ['passed', 'failed']),
       }
       missing = [k for k, ok in checks.items() if not ok]
       if missing:

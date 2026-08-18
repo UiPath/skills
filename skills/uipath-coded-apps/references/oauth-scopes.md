@@ -56,7 +56,42 @@ Scopes required by `@uipath/ui-widgets-*` React components. The widget's own run
 
 See [widgets/validation-station.md](widgets/validation-station.md) for the full integration guide.
 
-> **TODO:** Document scopes for the remaining widgets when their integration guides land in `references/widgets/`:
-> - `@uipath/ui-widgets-conversational-agent-chat`
-> - `@uipath/ui-widgets-datatable`
-> - `@uipath/ui-widgets-multi-file-upload`
+### Conversational Agent Chat (`@uipath/ui-widgets-conversational-agent-chat`)
+
+| Required Scope | Why |
+|----------------|-----|
+| `OR.Execution OR.Folders OR.Jobs ConversationalAgents` | Agent resolution, conversation create/list, WebSocket session, attachment upload — the Conversational Agent bundle above. |
+| `Traces.Api` | The widget's feedback flow (`createFeedback` on thumbs up/down). Omitting it breaks feedback silently. |
+
+See [widgets/conversational-agent-chat.md](widgets/conversational-agent-chat.md) for the full integration guide.
+
+### DataTable (`@uipath/ui-widgets-datatable`)
+
+| Required Scope | Why |
+|----------------|-----|
+| `DataFabric.Schema.Read` | Widget reads the entity schema to build columns. |
+| `DataFabric.Data.Read` | Record listing, choice-set/foreign-key resolution, file download. |
+| `DataFabric.Data.Write` | Commit/insert/delete flows and file upload/remove — the grid ships with editing enabled. Omit only if every column is set `editable: false`. |
+
+See [widgets/datatable.md](widgets/datatable.md) for the full integration guide.
+
+### Multi-File Upload (`@uipath/ui-widgets-multi-file-upload`)
+
+| Required Scope | Why |
+|----------------|-----|
+| `OR.Buckets` | Widget uploads files to a storage bucket — a write; read-only `OR.Buckets.Read` is insufficient. |
+
+See [widgets/multi-file-upload.md](widgets/multi-file-upload.md) for the full integration guide.
+
+### PDF Viewer (`@uipath/ui-widgets-pdf-viewer`)
+
+| Required Scope | Why |
+|----------------|-----|
+| `OR.Buckets.Read` (or `OR.Buckets`) | Bucket sources — the widget resolves a read URI and fetches the document. |
+| `DataFabric.Data.Read` | Entity sources — the widget downloads the record's file attachment. |
+
+Only the scope for the source shape(s) the app actually uses; `url`/`data` sources need no scopes. See [widgets/pdf-viewer.md](widgets/pdf-viewer.md) for the full integration guide.
+
+### External Auth (`@uipath/ui-widgets-external-auth`)
+
+No UiPath scopes — the widget makes no UiPath API calls (it starts logins at external IdPs). See [widgets/external-auth.md](widgets/external-auth.md).

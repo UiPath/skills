@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-replace-text-version-mismatch
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a DESIGN-TIME Studio crash:
   dropping / opening the Replace Text activity throws

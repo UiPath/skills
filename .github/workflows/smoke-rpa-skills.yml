@@ -14,6 +14,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Exempt the first-party `coder-eval` wheel from safe-chain's
+# minimum-package-age suppression so a same-day pin in
+# tests/.coder-eval-version still resolves — see smoke-skills.yml for the full
+# rationale. Workflow-level so any job added later inherits it.
+env:
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
+
 jobs:
   detect:
     runs-on: uipath-ubuntu-latest
@@ -272,6 +279,16 @@ jobs:
           uip rpa list-instances --output json 2>&1 || true
           taskkill //F //IM UiPath.Studio.Helm.exe 2>/dev/null || true
 
+      # Model guard, deliberately its OWN step (mirror of smoke-skills.yml): the smoke
+      # step below carries continue-on-error, so a guard inside it is swallowed and the
+      # failure surfaces only as a downstream "no task.json" error. Fail here instead,
+      # named, before the run starts.
+      - name: Require an agent model
+        shell: bash
+        env:
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
+        run: ': "${AGENT_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}"'
+
       - name: Run RPA smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
@@ -290,6 +307,11 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The gate's agent model, passed on the command line rather than pinned in
+          # experiments/smoke-windows.yaml (see smoke-skills.yml for why). No literal
+          # fallback: an unset variable fails the guard step above rather than gating a
+          # model nobody configured.
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
         working-directory: tests
         id: smoke
         shell: bash
@@ -329,7 +351,7 @@ jobs:
             for attempt in 1 2 3; do
               echo "--- $task attempt $attempt ---"
               if coder-eval run "$task" \
-                  -e experiments/smoke-windows.yaml --tags smoke -j 1 -v; then
+                  -e experiments/smoke-windows.yaml --model "$AGENT_MODEL" --tags smoke -j 1 -v; then
                 break
               fi
               # Only retry on Bedrock content-filter ERRORs (not on real

@@ -1,0 +1,52 @@
+task_id: skill-tasks-smoke-data
+description: >
+  Smoke test: agent uses the uipath-tasks skill to get and save task data
+  offline — read a task's data, then save a JSON data payload. Tests correct CLI
+  verbs and flags (data get <task-id>, data save --data), that no task-type flag
+  is passed to data save, and that --output json is applied. Runs against fake IDs
+  — auth errors are expected.
+tags: [uipath-tasks, smoke, mode:operate, lifecycle:setup, data]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 12
+
+initial_prompt: |
+  You are working with UiPath Action Center task data. Perform each step in
+  order. Use --output json on every uip tasks command, and pass --folder-id 123
+  on every command (this is a non-interactive run, so the folder cannot be
+  picked interactively). Task IDs are numeric.
+
+  1. Get the data for task 7654321.
+  2. Save data to task 7654321 with the JSON object {"amount":1200,"approved":true}.
+
+  Important:
+  - The uip CLI is NOT connected to a live tenant. Commands fail with auth
+    errors — that is expected. Run each command once and move on. Do NOT retry
+    or attempt to login. If a command is not recognized or returns an error, do
+    NOT investigate, retry, or run help — record the outcome and continue.
+  - Do NOT invent other IDs. Use task 7654321 and folder 123 as given.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent read task data"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+data\s+get\s+7654321\s+.*--folder-id\s+123'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent saved a JSON data payload"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+data\s+save\s+7654321\s+.*--data\s+'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not pass a --type flag to data save"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+data\s+save\s+.*--type\s+'
+    weight: 1.0
+    pass_threshold: 1.0

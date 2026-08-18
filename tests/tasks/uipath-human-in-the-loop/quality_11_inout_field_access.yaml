@@ -33,36 +33,33 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip flow validate passes"
-    command: "uip maestro flow validate RCAReview/RCAReview/RCAReview.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "RCA text field has inOut direction"
-    path: "RCAReview/RCAReview/RCAReview.flow"
-    includes:
-      - '"direction": "inOut"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name RCAReview '\"direction\": \"inOut\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "inOut field is pre-filled with upstream binding"
-    path: "RCAReview/RCAReview/RCAReview.flow"
-    includes:
-      - '"direction": "inOut"'
-      - "generateRCA"
-      - ".output.rcaDraft"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name RCAReview '\"direction\": \"inOut\"' 'generateRCA' '.output.rcaDraft'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Downstream script accesses RCA via output object (inOut fields appear in output)"
-    path: "RCAReview/RCAReview/RCAReview.flow"
-    includes:
-      - "$vars."
-      - ".output."
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name RCAReview '$vars.' '.output.'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
