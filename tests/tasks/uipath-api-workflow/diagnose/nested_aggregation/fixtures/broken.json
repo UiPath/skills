@@ -1,0 +1,157 @@
+{
+  "document": {
+    "dsl": "1.0.0",
+    "name": "Workflow",
+    "version": "0.0.1",
+    "namespace": "default",
+    "metadata": {
+      "variables": {
+        "schema": {
+          "format": "json",
+          "document": {
+            "type": "object",
+            "properties": {
+              "cells": {
+                "type": "number",
+                "default": 0
+              }
+            },
+            "title": "Variables"
+          }
+        }
+      }
+    }
+  },
+  "input": {
+    "schema": {
+      "format": "json",
+      "document": {
+        "type": "object",
+        "properties": {
+          "matrix": {
+            "type": "array"
+          }
+        }
+      }
+    }
+  },
+  "do": [
+    {
+      "Sequence_1": {
+        "do": [
+          {
+            "WorkflowStart": {
+              "set": "${Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}) }",
+              "output": {
+                "as": "${$input}"
+              },
+              "export": {
+                "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+              },
+              "metadata": {
+                "activityType": "Assign",
+                "displayName": "Workflow start",
+                "fullName": "Assign",
+                "isTransparent": true
+              }
+            }
+          },
+          {
+            "For_Each_1": {
+              "for": {
+                "each": "row",
+                "in": "${$workflow.input.matrix}"
+              },
+              "do": [
+                {
+                  "For_Each_1#Body": {
+                    "do": [
+                      {
+                        "For_Each_2": {
+                          "for": {
+                            "each": "cell",
+                            "in": "${$row}"
+                          },
+                          "do": [
+                            {
+                              "For_Each_2#Body": {
+                                "do": [
+                                  {
+                                    "Assign_1": {
+                                      "set": {
+                                        "cells": "${$context.variables.cells + 1}"
+                                      },
+                                      "export": {
+                                        "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                                      },
+                                      "metadata": {
+                                        "activityType": "Assign",
+                                        "displayName": "Count",
+                                        "fullName": "Assign",
+                                        "isTransparent": false
+                                      }
+                                    }
+                                  }
+                                ],
+                                "export": {
+                                  "as": "{ ...$context, outputs: { ...$context?.outputs, \"For_Each_1\": { ...$context?.outputs?.For_Each_1, results: [ ...($context?.outputs?.For_Each_1?.results ?? []), ...([$output] ?? []) ] } } }"
+                                }
+                              }
+                            }
+                          ],
+                          "output": {
+                            "as": "${$context.outputs.For_Each_2}"
+                          },
+                          "metadata": {
+                            "activityType": "ForEach",
+                            "displayName": "For Each",
+                            "fullName": "ForEach"
+                          }
+                        }
+                      }
+                    ],
+                    "export": {
+                      "as": "{ ...$context, outputs: { ...$context?.outputs, \"For_Each_1\": { ...$context?.outputs?.For_Each_1, results: [ ...($context?.outputs?.For_Each_1?.results ?? []), ...([$output] ?? []) ] } } }"
+                    }
+                  }
+                }
+              ],
+              "output": {
+                "as": "${$context.outputs.For_Each_1}"
+              },
+              "metadata": {
+                "activityType": "ForEach",
+                "displayName": "For Each",
+                "fullName": "ForEach"
+              }
+            }
+          },
+          {
+            "Response_1": {
+              "response": {
+                "cells": "${$context.variables.cells}",
+                "perRow": "${$context.outputs.For_Each_1?.results?.length}"
+              },
+              "markJobAsFailed": false,
+              "then": "end",
+              "metadata": {
+                "activityType": "Response",
+                "displayName": "Response",
+                "fullName": "Response"
+              }
+            }
+          }
+        ],
+        "metadata": {
+          "activityType": "Sequence",
+          "displayName": "Sequence",
+          "fullName": "Sequence"
+        }
+      }
+    }
+  ],
+  "evaluate": {
+    "mode": "strict",
+    "language": "javascript"
+  }
+}

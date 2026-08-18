@@ -1,0 +1,102 @@
+{
+  "document": {
+    "dsl": "1.0.0",
+    "name": "Workflow",
+    "version": "0.0.1",
+    "namespace": "default",
+    "metadata": {
+      "variables": {
+        "schema": {
+          "format": "json",
+          "document": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "number",
+                "default": 0
+              }
+            },
+            "title": "Variables"
+          }
+        }
+      }
+    }
+  },
+  "input": {
+    "schema": {
+      "format": "json",
+      "document": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  },
+  "do": [
+    {
+      "Sequence_1": {
+        "do": [
+          {
+            "WorkflowStart": {
+              "set": "${Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}) }",
+              "output": {
+                "as": "${$input}"
+              },
+              "export": {
+                "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+              },
+              "metadata": {
+                "activityType": "Assign",
+                "displayName": "Workflow start",
+                "fullName": "Assign",
+                "isTransparent": true
+              }
+            }
+          },
+          {
+            "Assign_1": {
+              "set": {
+                "total": "${$workflow.input.amount * 2}"
+              },
+              "export": {
+                "as": "{ ...$context, outputs: { ...$context?.outputs, \"Assign_1\": $output } }"
+              },
+              "metadata": {
+                "activityType": "Assign",
+                "displayName": "Double the amount",
+                "fullName": "Assign",
+                "isTransparent": false
+              }
+            }
+          },
+          {
+            "Response_1": {
+              "response": {
+                "total": "${$context.variables.total}"
+              },
+              "markJobAsFailed": false,
+              "then": "end",
+              "metadata": {
+                "activityType": "Response",
+                "displayName": "Response",
+                "fullName": "Response"
+              }
+            }
+          }
+        ],
+        "metadata": {
+          "activityType": "Sequence",
+          "displayName": "Sequence",
+          "fullName": "Sequence"
+        }
+      }
+    }
+  ],
+  "evaluate": {
+    "mode": "strict",
+    "language": "javascript"
+  }
+}

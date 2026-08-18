@@ -1,0 +1,74 @@
+task_id: skill-api-workflow-diagnose-loop-iterator-name
+description: >
+  Diagnose (loop pitfall): the ForEach declares its iterator as `row` but the
+  body reads `$currentItem`, so the run dies with "$currentItem is not defined".
+  Passes validate — the static checker does not cross-check iterator names against
+  body expressions.
+
+  Covers rule 11 ($-prefixed iterators) and the loop category of
+  references/troubleshooting.md.
+tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/_shared/seed_fixture.py loop_iterator_name"
+    timeout: 30
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+
+initial_prompt: |
+  The API workflow in ./Workflow.json should sum a numeric `numbers` array and
+  return the sum as `total`. It passes validation but fails when it runs.
+
+  Diagnose and fix it. Keep the intent: total = sum of numbers.
+
+  Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json still present — repaired in place, not replaced wholesale"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used the local diagnose loop (not gated — a fix reached by
+      reading the file is equally valid, and 3 of 4 agents did exactly that)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+(validate|run)'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Repaired workflow validates"
+    command: >-
+      uip api-workflow validate ./Workflow.json --output json | grep -q '"Status": "Valid"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: repaired workflow returns the correct result"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"numbers":[10,20,30]}'
+      --output json | grep -qiE '"total":[ ]*60'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: still correct on a second, different input — not hardcoded"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"numbers":[5,5]}'
+      --output json | grep -qiE '"total":[ ]*10'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
