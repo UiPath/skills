@@ -27,6 +27,15 @@ pass verifies instead of re-discovering.
    resolve every named or inferred resource in ONE parallel batch of cache lookups; for each connector
    also check enabled connections.
 
+   > **Connections need `--all-folders`.** `uip is connections list --output json` searches only the
+   > default Integration Service scope and returns `Data: []` with *"No connections found for any
+   > connector"* on tenants holding hundreds of connections (measured: 0 vs 251 on one tenant). Always
+   > pass `--all-folders`. Without it every connector buckets **Empty** instead of **Ambiguous**, and
+   > the two offer the user different options — `Empty` offers "create during build", `Ambiguous`
+   > offers "pick a match" — so the default scope silently changes what the gate asks. The two scopes
+   > are not schema-compatible either: `--all-folders` returns PascalCase keys (`Id`, `Name`,
+   > `ConnectorKey`, `ConnectorName`, `State`, `Owner`). Parse for those, not camelCase.
+
    | Bucket | Definition | Action |
    |---|---|---|
    | Single confident match | 1 exact-name match across all folders, ≥ 1 shared name token; connectors: exactly 1 enabled connection | Adopt: identity + exact folder into SDD cells + a resolution record; disclose as a decision line. The only silent pick |
