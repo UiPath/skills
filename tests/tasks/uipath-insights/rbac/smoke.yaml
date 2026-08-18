@@ -1,0 +1,187 @@
+task_id: skill-insights-smoke-rbac-reads
+description: >
+  Smoke test: agent uses the uipath-insights skill to read tenant-scoped
+  Insights users, roles, and groups. Given a prompt asking who has Insights
+  access and what the roles permit, the agent should run the three RBAC list
+  reads, keep raw emails and nested role identifiers out of its summary, and
+  treat a denial or an empty result as a bounded answer rather than retrying
+  or falling back to org-level identity commands. The CLI is authenticated;
+  the tenant may or may not have the Insights Portal service provisioned, so
+  a permission or not-found result is a valid outcome.
+
+  Covers the 3 list reads of the 6 RBAC commands. `users get`, `roles get`,
+  and `groups get` are left out on purpose: each needs a GUID that does not
+  exist on an empty or unprovisioned tenant, so gating them would trade
+  tenant-agnosticism for surface coverage. They belong in an
+  integration-tier task against a seeded, Portal-provisioned tenant.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  I need a read-only picture of who can use Insights on this tenant. List
+  the users with Insights access and the roles they hold, list the groups
+  with Insights roles, and tell me what those roles actually permit. Do not
+  change any access. Summarize with names and counts, not raw email
+  addresses or internal identifiers. If a command is denied or comes back
+  empty, say so plainly and say what it does and does not prove, then move
+  on. If the output says more rows exist, page through them before you
+  summarize. Run each command at most once per page; do not retry failures.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # exclude_pattern on all three: an agent that probes `<command> --help` to
+  # discover flags would otherwise be credited with the read itself. The
+  # exclusion is anchored to a help probe of that same command rather than the
+  # bare string --help, so a read that merely shares a call with the word
+  # (an echo, a comment) still counts. Same intent as the bare --help exclusion
+  # in tests/tasks/uipath-agents/lowcode/inline_solution_agent_tool.
+  - type: command_executed
+    description: "Agent ran users list to enumerate Insights users"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+users\s+list'
+    exclude_pattern: 'uip\s+insights\s+users\s+list(?:(?!uip\s)[^&;|])*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran roles list to enumerate Insights roles"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+roles\s+list'
+    exclude_pattern: 'uip\s+insights\s+roles\s+list(?:(?!uip\s)[^&;|])*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran groups list to enumerate Insights groups"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+groups\s+list'
+    exclude_pattern: 'uip\s+insights\s+groups\s+list(?:(?!uip\s)[^&;|])*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so the criteria above pass
+  # even when the verbs don't exist in the installed CLI. The alerts and filters
+  # smoke tasks close that hole by re-running a real read at grading time, but no
+  # RBAC read can serve as that gate: these routes need the Insights Portal
+  # service (insights_) provisioned, and a tenant without it answers every RBAC
+  # read with a permission or not-found result. --help is the tenant-agnostic
+  # substitute. It exits 0 only when the CLI actually registers the group and
+  # exits 3 on an unknown one, so this still fails against a CLI that has not
+  # shipped the RBAC reads. It proves the command surface exists, not that the
+  # backend answered.
+  - type: run_command
+    description: "CLI path is real: the users group is registered in the installed CLI"
+    command: "uip insights users list --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # One gate per group: a CLI that ships users but not roles or groups would
+  # otherwise pass on the users probe alone.
+  - type: run_command
+    description: "CLI path is real: the roles group is registered in the installed CLI"
+    command: "uip insights roles list --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: the groups group is registered in the installed CLI"
+    command: "uip insights groups list --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Critical Rule 13's "do not reach an RBAC route through the SDK or a raw
+  # HTTP call", enforced the way the alerts smoke enforces its Rule 12
+  # sibling. Route strings are the PermissionService paths the CLI calls
+  # (/api/User, /api/Role, /api/Group), both casings.
+  - type: command_not_executed
+    description: "Agent did not bypass the CLI to reach an RBAC route"
+    tool_name: "Bash"
+    command_pattern: '(curl|wget|axios|insights-sdk)(?:(?!uip\s)[^&;|])*api/(User|Role|Group|user|role|group)s?\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids substitution and shell variables in a uip
+  # invocation. Same construction as the alerts smoke copy: the flag branch
+  # names only the flags these commands accept, because the (?!uip\s) barrier
+  # crosses newline-batched neighbours, so a generic --flag would match a
+  # neighbour's `curl --data $BODY`. The get branch catches a variable GUID.
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in a uip insights command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+(users|roles|groups)(?:(?!uip\s)[^&;|])*--(limit|offset|output)[\s=]+"?(\$\(|`|\$[A-Za-z_])|uip\s+insights\s+(users|roles|groups)\s+get\s+"?(\$\(|`|\$[A-Za-z_])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not attempt an RBAC write"
+    tool_name: "Bash"
+    # The verbs are guesses either way, since no RBAC write exists in the CLI to
+    # copy a name from. Cover the whole non-read vocabulary rather than the six
+    # most obvious ones. The trailing \b keeps `add` off a future `adduser`-style
+    # read while still catching `add-role`.
+    command_pattern: 'uip\s+insights\s+(users|roles|groups)\s+(create|update|delete|assign|unassign|remove|add|set|grant|revoke|edit|patch|put|invite|enable|disable)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not invent identity flags on RBAC reads"
+    tool_name: "Bash"
+    # Not .* : the grader compiles patterns with re.DOTALL, so .* bleeds past
+    # the end of the command and false-fails a batched call that pairs an RBAC
+    # read with a legitimate login carrying --tenant. Excluding & ; | is not
+    # enough on its own either, because the grader also matches a
+    # shlex-normalized haystack where newlines collapse to spaces
+    # (coder_eval/criteria/command_executed.py, _normalize_shell), so a
+    # newline-separated batch survives that class. The `uip` lookahead stops
+    # the scan at the next invocation, which is what holds on the normalized
+    # haystack, and it is the construct the alerts and filters smoke tasks use.
+    # Residual gap: a non-uip follow-on command in the same call can
+    # still be scanned. Critical Rule 2 forbids that batching, so a compliant
+    # agent never reaches it.
+    #
+    # Flag list uses the -id spellings rather than bare --role / --group /
+    # --user: the guide's own prose names those three as flags that do not
+    # exist, and an agent echoing that sentence would otherwise fail its own
+    # criterion. --service is not named by any rule but is a plausible
+    # invention once the guide names the Insights Portal service.
+    command_pattern: 'uip\s+insights\s+(users|roles|groups)\s+\S+(?:(?!uip\s)[^&;|])*--(tenant|organization|user-id|role-id|group-id|action|resource|service)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Inverted on purpose. An explicit structured --output is what switches the
+  # CLI's RBAC projection to the full view, which adds Email, nested role IDs
+  # and the role Resource string. The skill tells the agent to leave it off on
+  # these six commands (Critical Rule 1's one exception), so the convention
+  # being measured is the ABSENCE of the flag. Covers --output json,
+  # --output=json, --output yaml and the --json alias, since all four set
+  # formatWasExplicit. Advisory: pass_threshold 0 keeps a full-view call out of
+  # the pass/fail gate, because asking for a withheld field is legitimate when
+  # the user asked for it.
+  - type: command_not_executed
+    description: "Advisory: agent kept RBAC reads in the safe view (no explicit --output)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+(users|roles|groups)\s+\S+(?:(?!uip\s)[^&;|])*(--output[\s=]+(json|yaml)|--json\b)'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 0
