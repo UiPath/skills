@@ -32,21 +32,30 @@ on:
         description: 'Allow >50 tasks (cost guardrail).'
         type: boolean
         default: false
-      coder_eval_version:
-        description: 'coder_eval version to test (blank = pinned).'
+      # coder-eval is a dependency of the coder_eval_uipath plugin (private repo
+      # UiPath/coder_eval_uipath — registers the delegate-sdk agent and other
+      # UiPath-specific pieces), so the thing under test is the plugin ref; the
+      # framework wheel resolves from the plugin's dependency pin at install time.
+      coder_eval_uipath_ref:
+        description: 'coder_eval_uipath git ref to test (blank = main). coder-eval installs as its dependency.'
         type: string
         default: ''
       # Decouples the GHCR agent image from the wheel version, so an ad-hoc /
       # unreleased image (e.g. a codex-baked `sha-<commit>` build) can be tested
-      # while the host CLI installs a matching dev wheel via coder_eval_version.
+      # while the host CLI installs the wheel resolved from coder_eval_uipath_ref.
       coder_eval_image_tag:
-        description: 'Agent image tag (blank = coder_eval_version).'
+        description: 'Agent image tag (blank = resolved coder-eval version).'
         type: string
         default: ''
       cli_version:
         description: '@uipath/cli version.'
         type: string
         default: dev
+      # delegate-sdk = UiPath Autopilot via @uipath/delegate-stdio, from the
+      # coder_eval_uipath plugin. Linux runs it through the docker overlay image;
+      # Windows runs it in-process on the host (tempdir driver) with its own
+      # delegate-stdio install, ROPC user token, and shared interop — ports of
+      # coder_eval_uipath's daily.sh / daily-windows.ps1 wiring.
       agent:
         description: 'Agent to run.'
         type: choice
@@ -54,6 +63,7 @@ on:
           - claude
           - codex
           - antigravity
+          - delegate-sdk
         default: claude
       # Overrides the model for ANY agent. Blank keeps that harness's own repo
       # variable (CLAUDE_CODE_MODEL / CODEX_MODEL / ANTIGRAVITY_MODEL).
@@ -66,11 +76,10 @@ on:
 # of runs (e.g. the same task across claude / codex / antigravity) at once.
 
 # Exempt the first-party `coder-eval` wheel from safe-chain's
-# minimum-package-age suppression so a same-day pin in
-# tests/.coder-eval-version (or a fresh dev wheel passed via
-# `coder_eval_version`) still resolves — see smoke-skills.yml for the full
-# rationale. Workflow-level so both the Linux and Windows install steps, and
-# any job added later, inherit it.
+# minimum-package-age suppression so a same-day release resolved from
+# coder_eval_uipath's dependency pin still installs — see smoke-skills.yml
+# for the full rationale. Workflow-level so both the Linux and Windows
+# install steps, and any job added later, inherit it.
 env:
   SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
 
@@ -83,30 +92,22 @@ jobs:
       windows_globs:  ${{ steps.split.outputs.windows_globs }}
       linux_count:    ${{ steps.split.outputs.linux_count }}
       windows_count:  ${{ steps.split.outputs.windows_count }}
-      coder_eval_version: ${{ steps.ceref.outputs.version }}
-      coder_eval_image_tag: ${{ steps.ceref.outputs.image_tag }}
+      coder_eval_uipath_ref: ${{ steps.ceref.outputs.ref }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
-      # Single source of truth for the coder_eval version: the pin in
-      # tests/.coder-eval-version. A non-blank coder_eval_version input overrides
-      # it for ad-hoc runs. Resolved once here and passed to both run jobs as the
-      # wheel version (host CLI) + agent image tag (sandbox).
-      - name: Resolve coder_eval version (pinned; input overrides)
+      # coder-eval is a dependency of the coder_eval_uipath plugin, so the
+      # version under test is the plugin ref: the run jobs check out
+      # UiPath/coder_eval_uipath at this ref, install it, and let uv resolve the
+      # framework wheel from the plugin's own dependency pin. (The pin in
+      # tests/.coder-eval-version stays the source of truth for smoke-skills.yml
+      # and the nightly VM; this workflow follows the plugin's pin instead.)
+      - name: Resolve coder_eval_uipath ref (blank = main)
         id: ceref
         env:
-          CE_VERSION_INPUT: ${{ inputs.coder_eval_version }}
-          CE_IMAGE_TAG_INPUT: ${{ inputs.coder_eval_image_tag }}
+          CE_UIPATH_REF_INPUT: ${{ inputs.coder_eval_uipath_ref }}
         run: |
-          if [ -n "$CE_VERSION_INPUT" ]; then
-            version="$CE_VERSION_INPUT"
-          else
-            version="$(tr -d '[:space:]' < tests/.coder-eval-version)"
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          # Agent image tag defaults to the wheel version; a non-blank input
-          # decouples them (ad-hoc / unreleased image vs. dev-wheel host CLI).
-          echo "image_tag=${CE_IMAGE_TAG_INPUT:-$version}" >> "$GITHUB_OUTPUT"
+          echo "ref=${CE_UIPATH_REF_INPUT:-main}" >> "$GITHUB_OUTPUT"
 
       - name: Resolve globs, split by tag, enforce large-run gate
         id: split
@@ -176,32 +177,53 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
+      # The coder_eval_uipath plugin (private repo): source of the coder-eval
+      # dependency pin, registers the delegate-sdk agent via the
+      # `coder_eval.plugins` entry point, and carries the delegate docker-overlay
+      # build context. Needs a repo-read token — GH_PACKAGES_TOKEN is
+      # packages-only, so this is the one step that requires GH_PAT.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          repository: UiPath/coder_eval_uipath
+          ref: ${{ needs.partition.outputs.coder_eval_uipath_ref }}
+          token: ${{ secrets.GH_PAT }}
+          path: coder_eval_uipath
+
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
           python-version: '3.13'
 
       - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
 
-      # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
-      # deps). The Linux docker driver still imports the selected agent class on
-      # the host before dispatching work, so agent-specific extras must be
-      # installed here as well as in the container image.
-      - name: Install coder-eval
+      # Host coder-eval CLI = the coder_eval_uipath plugin (checkout above) plus
+      # the coder-eval wheel uv resolves from the plugin's dependency pin. The
+      # Linux docker driver still imports the selected agent class on the host
+      # before dispatching work, so the plugin (delegate-sdk) and agent-specific
+      # extras must be installed here as well as in the container image. Extras
+      # are unpinned on purpose: a single uv invocation resolves them to the same
+      # coder-eval version the plugin pins. The resolved version doubles as the
+      # default agent image tag (a non-blank coder_eval_image_tag input overrides
+      # it for ad-hoc / unreleased images).
+      - name: Install coder-eval (via coder_eval_uipath)
         env:
-          CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
           AGENT: ${{ inputs.agent }}
+          CE_IMAGE_TAG_INPUT: ${{ inputs.coder_eval_image_tag }}
         run: |
           if [ "$AGENT" = "codex" ]; then
-            uv pip install --system "coder-eval[codex]==${CE_VERSION}"
+            uv pip install --system ./coder_eval_uipath "coder-eval[codex]"
           elif [ "$AGENT" = "antigravity" ]; then
-            uv pip install --system "coder-eval[antigravity]==${CE_VERSION}"
+            uv pip install --system ./coder_eval_uipath "coder-eval[antigravity]"
           else
-            uv pip install --system "coder-eval==${CE_VERSION}"
+            uv pip install --system ./coder_eval_uipath
           fi
+          ce_version="$(python -c 'from importlib.metadata import version; print(version("coder-eval"))')"
+          echo "coder-eval resolved to ${ce_version} (from coder_eval_uipath's dependency pin)"
+          echo "CE_IMAGE_TAG=${CE_IMAGE_TAG_INPUT:-$ce_version}" >> "$GITHUB_ENV"
 
       # Pull the agent image from GHCR (never built from source); the skills
-      # image extends it below. Tag defaults to the wheel version but can be
-      # overridden (coder_eval_image_tag) for ad-hoc / unreleased images.
+      # image extends it below. Tag defaults to the resolved coder-eval version
+      # (CE_IMAGE_TAG from the install step) but can be overridden
+      # (coder_eval_image_tag) for ad-hoc / unreleased images.
       # Needs read:packages only — GH_PACKAGES_TOKEN, never the repo-write PAT.
       # This workflow is `workflow_dispatch`-triggered, so it is not exposed to
       # the fork/branch-push reader that motivates the split in smoke-skills.yml
@@ -209,7 +231,7 @@ jobs:
       - name: Pull coder-eval-agent image
         run: |
           echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          docker pull ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_image_tag }}
+          docker pull "ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}"
 
       # Build the skills extension image (`@uipath/cli` + `@uipath/admin-tool`
       # on top of coder-eval-agent). Matches smoke-skills.yml + daily.sh.
@@ -219,12 +241,34 @@ jobs:
           NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
         run: |
           docker build \
-            --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_image_tag }} \
+            --build-arg CODER_EVAL_IMAGE="ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}" \
             --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .
+
+      # delegate-sdk under the docker driver: the orchestrator runs INSIDE the
+      # container, so the coder_eval_uipath plugin (delegate-sdk registration)
+      # and the @uipath/delegate-stdio Node host it shells out to must live in
+      # the IMAGE — the host install above is invisible there. Overlay them onto
+      # skills-image and re-tag, so nightly.yaml's `image: skills-image:latest`
+      # reference picks them up unchanged; other agents keep the stock image.
+      # The overlay also wraps the container entrypoint with a supervised shared
+      # interop (see the Dockerfile for why). Mirrors daily.sh in coder_eval_uipath.
+      - name: Overlay skills image for delegate-sdk
+        if: inputs.agent == 'delegate-sdk'
+        env:
+          DOCKER_BUILDKIT: "1"
+          GH_NPM_REGISTRY_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+        run: |
+          docker build \
+            --build-arg BASE_IMAGE=skills-image:latest \
+            --build-arg DELEGATE_STDIO_VERSION=alpha \
+            --secret id=gh_npm,env=GH_NPM_REGISTRY_TOKEN \
+            -t skills-image:latest \
+            -f coder_eval_uipath/eval_runner/scripts/ci/delegate-overlay.Dockerfile \
+            coder_eval_uipath
 
       # ROPC bot-user auth via this repo's vendored script (mirrors the VM
       # cron's ROPC flow). Required because `uip flow debug` needs a real user
@@ -267,6 +311,7 @@ jobs:
           CLAUDE_CODE_MODEL:        ${{ vars.CLAUDE_CODE_MODEL }}
           CODEX_MODEL:              ${{ vars.CODEX_MODEL }}
           ANTIGRAVITY_MODEL:        ${{ vars.ANTIGRAVITY_MODEL }}
+          DELEGATE_MODEL:           ${{ vars.DELEGATE_MODEL }}
           CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
           CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
           GEMINI_API_KEY:           ${{ secrets.GEMINI_API_KEY }}
@@ -278,24 +323,67 @@ jobs:
           j="${TASK_PARALLELISM:-4}"
           # Agent selection. claude is the default; codex authenticates via
           # CODEX_API_KEY/CODEX_BASE_URL, antigravity via GEMINI_API_KEY (SDK baked into
-          # the agent image). The model always comes from the harness's own variable
-          # above, with the agent_model input overriding any of them for a one-off run.
-          # Passed explicitly because the experiment YAML pins no model (it is shared by
-          # all three harnesses). Driver is unchanged (docker here).
+          # the agent image), delegate-sdk via the ROPC user token minted above. The
+          # model always comes from the harness's own variable above, with the
+          # agent_model input overriding any of them for a one-off run. Passed
+          # explicitly because the experiment YAML pins no model (it is shared by all
+          # harnesses). Driver is unchanged (docker here).
+          delegate_overrides=""
           if [ "$AGENT" = "codex" ]; then
             model="${AGENT_MODEL:-${CODEX_MODEL:?unset — set the CODEX_MODEL repo variable}}"
             agent_flags="--type codex --model $model"
           elif [ "$AGENT" = "antigravity" ]; then
             model="${AGENT_MODEL:-${ANTIGRAVITY_MODEL:?unset — set the ANTIGRAVITY_MODEL repo variable}}"
             agent_flags="--type antigravity --model $model"
+          elif [ "$AGENT" = "delegate-sdk" ]; then
+            # Default kimi-k2-7-code (hyphenated id — the delegate host converts
+            # it to the backend's underscored form); the optional DELEGATE_MODEL
+            # repo variable or the agent_model input overrides it. The inherited
+            # claude default is rejected by the alpha Delegate backend, so a
+            # model must always be passed.
+            model="${AGENT_MODEL:-${DELEGATE_MODEL:-kimi-k2-7-code}}"
+            agent_flags="--type delegate-sdk --model $model"
+            # Cloud env slug for the Delegate backend + first-response stall
+            # recovery budget (mirrors daily.sh in coder_eval_uipath).
+            export DELEGATE_SDK_ENV="${DELEGATE_SDK_ENV:-alpha}"
+            export DELEGATE_STALL_TIMEOUT_S="${DELEGATE_STALL_TIMEOUT_S:-240}"
+            # Delegate auth: reuse the ROPC USER token refresh-auth.sh wrote —
+            # the Delegate backend rejects client_credentials tokens. The host
+            # reads auth + org/tenant identity (GUIDs AND slugs — slugs build the
+            # env=alpha backend URL) from these env vars, lifted straight out of
+            # ~/.uipath/.auth. Mirrors daily.sh in coder_eval_uipath.
+            AUTH_FILE="$HOME/.uipath/.auth"
+            AUTH_TOKEN="$(sed -n 's/^UIPATH_ACCESS_TOKEN=//p' "$AUTH_FILE")"
+            if [ -z "$AUTH_TOKEN" ]; then
+              echo "::error::no UIPATH_ACCESS_TOKEN in $AUTH_FILE — the ROPC login did not complete"
+              exit 1
+            fi
+            export AUTH_TOKEN
+            export TENANT_ID="$(sed -n 's/^UIPATH_TENANT_ID=//p' "$AUTH_FILE")"
+            export ORG_ID="$(sed -n 's/^UIPATH_ORGANIZATION_ID=//p' "$AUTH_FILE")"
+            export ORG_LOGICAL_NAME="$(sed -n 's/^UIPATH_ORGANIZATION_NAME=//p' "$AUTH_FILE")"
+            export TENANT_NAME="$(sed -n 's/^UIPATH_TENANT_NAME=//p' "$AUTH_FILE")"
+            # Live token channel: nightly.yaml bind-mounts ~/.uipath -> /.uipath,
+            # and the host re-reads the first READABLE path per turn — so the
+            # frozen AUTH_TOKEN env copy stops mattering past the ~1h ROPC TTL,
+            # PROVIDED the file stays fresh. This workflow mints the token once
+            # (no refresher loop like the nightly's), so runs longer than ~1h can
+            # still hit token expiry on late tasks.
+            export DELEGATE_AUTH_TOKEN_FILE="/.uipath/.auth:$AUTH_FILE"
+            # Docker forwards only an env allowlist into the container; append
+            # the delegate auth/env vars to nightly.yaml's own list (MergeField
+            # append-semantics). No spaces, so the unquoted expansion below stays
+            # two words. Mirrors run.py in coder_eval_uipath.
+            delegate_overrides="-D sandbox.docker.env_passthrough_extra=[AUTH_TOKEN,DELEGATE_AUTH_TOKEN_FILE,TENANT_ID,ORG_ID,USER_ID,ORG_LOGICAL_NAME,TENANT_NAME,DELEGATE_SDK_ENV,DELEGATE_STALL_TIMEOUT_S]"
           else
             model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
             agent_flags="--model $model"
           fi
-          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml $agent_flags -j $j ($TASK_COUNT task files)"
+          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml $agent_flags $delegate_overrides -j $j ($TASK_COUNT task files)"
           coder-eval run $TASK_GLOBS \
             -e experiments/nightly.yaml \
             $agent_flags \
+            $delegate_overrides \
             -j "$j" -v \
             --run-dir /tmp/runs
 
@@ -368,6 +456,17 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
+      # The coder_eval_uipath plugin (private repo): source of the coder-eval
+      # dependency pin and of the delegate-sdk agent this job runs in-process
+      # under the tempdir driver — see the Linux job's checkout for the full
+      # rationale on the token.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          repository: UiPath/coder_eval_uipath
+          ref: ${{ needs.partition.outputs.coder_eval_uipath_ref }}
+          token: ${{ secrets.GH_PAT }}
+          path: coder_eval_uipath
+
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
           python-version: '3.13'
@@ -382,29 +481,35 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
-      # deps). Windows tasks run under the tempdir driver -- no agent image.
-      - name: Install coder-eval
+      # Host coder-eval CLI = the coder_eval_uipath plugin (checkout above) plus
+      # the coder-eval wheel uv resolves from the plugin's dependency pin — same
+      # scheme as the Linux job. Windows tasks run under the tempdir driver — no
+      # agent image.
+      - name: Install coder-eval (via coder_eval_uipath)
         shell: bash
         env:
-          CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
           AGENT: ${{ inputs.agent }}
         run: |
-          uv pip install --system "coder-eval==${CE_VERSION}"
           # Windows runs the tempdir driver (agent on host), so the codex SDK
           # installed here is what the codex agent actually uses. openai-codex
           # 0.1.0b3 (verified against coder-eval 0.6.2) pulls a pre-release
           # cli-bin that spans both internal feeds, so allow pre-releases and
           # best-match across indexes.
           if [ "$AGENT" = "codex" ]; then
+            uv pip install --system ./coder_eval_uipath
             uv pip install --system --prerelease=allow --index-strategy unsafe-best-match \
               "openai-codex==0.1.0b3"
           elif [ "$AGENT" = "antigravity" ]; then
             # Tempdir driver runs the agent on the host, so the antigravity SDK
             # (google-antigravity, via the [antigravity] extra) must be installed
-            # here — mirrors the docker path baking it into the agent image.
-            uv pip install --system "coder-eval[antigravity]==${CE_VERSION}"
+            # here — mirrors the docker path baking it into the agent image. The
+            # unpinned extra rides the same resolve as the plugin, so one uv
+            # invocation picks a single coder-eval version.
+            uv pip install --system ./coder_eval_uipath "coder-eval[antigravity]"
+          else
+            uv pip install --system ./coder_eval_uipath
           fi
+          python -c 'from importlib.metadata import version; print("coder-eval resolved to", version("coder-eval"))'
 
       - name: Configure NuGet feed for Helm packages
         shell: bash
@@ -523,6 +628,77 @@ jobs:
           uip rpa list-instances --output json 2>&1 || true
           taskkill //F //IM UiPath.Studio.Helm.exe 2>/dev/null || true
 
+      # Delegate auth: a fresh ROPC USER token (the Delegate backend rejects
+      # client_credentials tokens), minted to a SEPARATE file so the uip CLI's
+      # own browser-OAuth login above stays intact — the nightly's
+      # daily-windows.ps1 keeps the two apart for the same reason. The file
+      # doubles as DELEGATE_AUTH_TOKEN_FILE (same KEY=VALUE format the host
+      # re-reads per turn on Linux).
+      - name: Mint delegate user token (ROPC)
+        if: inputs.agent == 'delegate-sdk'
+        shell: bash
+        env:
+          AUTH_FILE:                 ${{ github.workspace }}/.delegate-sdk-auth
+          UIPATH_URL:                https://alpha.uipath.com
+          UIPATH_ORGANIZATION_NAME:  ${{ secrets.UIPATH_ORG_NAME }}
+          UIPATH_ORGANIZATION_ID:    ${{ secrets.UIPATH_ORG_ID }}
+          UIPATH_TENANT_NAME:        ${{ secrets.UIPATH_TENANT_NAME }}
+          UIPATH_TENANT_ID:          ${{ secrets.UIPATH_TENANT_ID }}
+          CLIENT_ID:                 ${{ secrets.UIPATH_ROPC_CLIENT_ID }}
+          CLIENT_SECRET:             ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
+          CE_USERNAME:               ${{ secrets.UIPATH_BOT_USERNAME }}
+          CE_PASSWORD:               ${{ secrets.UIPATH_BOT_PASSWORD }}
+        run: bash .github/scripts/refresh-auth.sh
+
+      # The @uipath/delegate-stdio Node host the delegate-sdk agent shells out
+      # to. Windows runs the tempdir driver (agent in-process on this host), so
+      # the bundle must be installed HERE, into a fixed dir pinned via
+      # DELEGATE_STDIO_PATH (the agent's resolver probes only cwd/ancestors/HOME).
+      # `alpha` dist-tag: the package publishes only prereleases, so a bare
+      # install ETARGETs. The win32 interop runtime is an OPTIONAL npm dep that
+      # can be skipped SILENTLY on resolution failure, so verify it and retry
+      # explicitly at the version delegate-sdk pins. Mirrors daily-windows.ps1.
+      - name: Install @uipath/delegate-stdio
+        if: inputs.agent == 'delegate-sdk'
+        shell: bash
+        env:
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          delegate_dir="$HOME/.delegate-stdio"
+          mkdir -p "$delegate_dir"
+          tmp_npmrc="$(mktemp)"
+          cat > "$tmp_npmrc" <<EOF
+          @uipath:registry=https://npm.pkg.github.com/
+          //npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}
+          EOF
+          ( cd "$delegate_dir" && NPM_CONFIG_USERCONFIG="$tmp_npmrc" \
+              npm install "@uipath/delegate-stdio@alpha" )
+          interop_exe="$delegate_dir/node_modules/@uipath/delegate-runtime-win32-x64/interop/UiPath.Aria.ComputerUse.Api.exe"
+          if [ ! -f "$interop_exe" ]; then
+            runtime_version="$(node -p "require('$delegate_dir/node_modules/@uipath/delegate-sdk/package.json').optionalDependencies['@uipath/delegate-runtime-win32-x64']")"
+            for attempt in 1 2 3; do
+              echo "delegate-runtime-win32-x64 missing after install; explicit retry of pinned $runtime_version (attempt $attempt/3)"
+              ( cd "$delegate_dir" && NPM_CONFIG_USERCONFIG="$tmp_npmrc" \
+                  npm install "@uipath/delegate-runtime-win32-x64@$runtime_version" --no-save ) || true
+              [ -f "$interop_exe" ] && break
+            done
+            if [ ! -f "$interop_exe" ]; then
+              echo "::error::shared interop binary still missing at $interop_exe after 3 explicit installs of @uipath/delegate-runtime-win32-x64@$runtime_version"
+              exit 1
+            fi
+          fi
+          rm -f "$tmp_npmrc"
+          bundle="$delegate_dir/node_modules/@uipath/delegate-stdio/dist/delegate_stdio.mjs"
+          if [ ! -f "$bundle" ]; then
+            echo "::error::delegate-stdio bundle not found at $bundle after install"
+            exit 1
+          fi
+          resolved="$(node -p "require('$delegate_dir/node_modules/@uipath/delegate-stdio/package.json').version")"
+          echo "installed @uipath/delegate-stdio@$resolved — DELEGATE_STDIO_PATH=$bundle"
+          echo "DELEGATE_STDIO_PATH=$bundle"   >> "$GITHUB_ENV"
+          echo "DELEGATE_INTEROP_EXE=$interop_exe" >> "$GITHUB_ENV"
+
       # Run tasks one at a time on Windows: Helm state leaks between tasks
       # (stale Studio session, locked NuGet cache), so the loop kills Helm
       # between tasks. j=1 by construction.
@@ -548,9 +724,11 @@ jobs:
           CLAUDE_CODE_MODEL:        ${{ vars.CLAUDE_CODE_MODEL }}
           CODEX_MODEL:              ${{ vars.CODEX_MODEL }}
           ANTIGRAVITY_MODEL:        ${{ vars.ANTIGRAVITY_MODEL }}
+          DELEGATE_MODEL:           ${{ vars.DELEGATE_MODEL }}
           CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
           CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
           GEMINI_API_KEY:           ${{ secrets.GEMINI_API_KEY }}
+          DELEGATE_AUTH_FILE:       ${{ github.workspace }}/.delegate-sdk-auth
           # Redirect the temp root off the default %TEMP%. On the GH-hosted
           # Windows runner %TEMP% resolves to its 8.3 short form
           # (C:\Users\RUNNER~1\AppData\Local\Temp). coder-eval creates each
@@ -573,12 +751,57 @@ jobs:
           # harness's own variable above, with the agent_model input overriding it for a
           # one-off run. Passed explicitly because the experiment YAML pins no model.
           # Driver is unchanged (tempdir here).
+          interop_pid=""
           if [ "$AGENT" = "codex" ]; then
             model="${AGENT_MODEL:-${CODEX_MODEL:?unset — set the CODEX_MODEL repo variable}}"
             agent_flags="--type codex --model $model"
           elif [ "$AGENT" = "antigravity" ]; then
             model="${AGENT_MODEL:-${ANTIGRAVITY_MODEL:?unset — set the ANTIGRAVITY_MODEL repo variable}}"
             agent_flags="--type antigravity --model $model"
+          elif [ "$AGENT" = "delegate-sdk" ]; then
+            # Same model contract as the Linux job: kimi-k2-7-code default
+            # (hyphenated id), DELEGATE_MODEL repo variable / agent_model input override.
+            model="${AGENT_MODEL:-${DELEGATE_MODEL:-kimi-k2-7-code}}"
+            agent_flags="--type delegate-sdk --model $model"
+            export DELEGATE_SDK_ENV="${DELEGATE_SDK_ENV:-alpha}"
+            export DELEGATE_STALL_TIMEOUT_S="${DELEGATE_STALL_TIMEOUT_S:-240}"
+            # Auth + org/tenant identity from the mint step's file (NOT
+            # ~/.uipath/.auth — that is the uip CLI's own browser-OAuth login).
+            # The file doubles as the live token channel the host re-reads per
+            # turn; minted once here, so runs longer than the ~1h ROPC TTL can
+            # still hit token expiry on late tasks.
+            export AUTH_TOKEN="$(sed -n 's/^UIPATH_ACCESS_TOKEN=//p' "$DELEGATE_AUTH_FILE")"
+            if [ -z "$AUTH_TOKEN" ]; then
+              echo "::error::no UIPATH_ACCESS_TOKEN in $DELEGATE_AUTH_FILE — the ROPC mint did not complete"
+              exit 1
+            fi
+            export TENANT_ID="$(sed -n 's/^UIPATH_TENANT_ID=//p' "$DELEGATE_AUTH_FILE")"
+            export ORG_ID="$(sed -n 's/^UIPATH_ORGANIZATION_ID=//p' "$DELEGATE_AUTH_FILE")"
+            export ORG_LOGICAL_NAME="$(sed -n 's/^UIPATH_ORGANIZATION_NAME=//p' "$DELEGATE_AUTH_FILE")"
+            export TENANT_NAME="$(sed -n 's/^UIPATH_TENANT_NAME=//p' "$DELEGATE_AUTH_FILE")"
+            export DELEGATE_AUTH_TOKEN_FILE="$DELEGATE_AUTH_FILE"
+            # ONE shared interop for the whole run, so the SDK runs connect-only
+            # instead of auto-spawning/killing a throwaway interop per task
+            # (contention on ~/.delegate-sdk/interop.pid). Health-gated; on
+            # failure warn and fall back to SDK auto-spawn — safe at the j=1
+            # this loop runs. Mirrors daily-windows.ps1's Start-SharedInterop.
+            interop_log="$RUNNER_TEMP/delegate-interop.log"
+            ( cd "$(dirname "$DELEGATE_INTEROP_EXE")" && ASPNETCORE_ENVIRONMENT=Production \
+                exec "$DELEGATE_INTEROP_EXE" --urls="http://localhost:5055" ) >"$interop_log" 2>&1 &
+            interop_pid=$!
+            deadline=$((SECONDS + 60))
+            until curl -fsS -m 3 "http://localhost:5055/health" >/dev/null 2>&1; do
+              if [ "$SECONDS" -ge "$deadline" ]; then break; fi
+              sleep 1
+            done
+            if curl -fsS -m 3 "http://localhost:5055/health" >/dev/null 2>&1; then
+              export INTEROP_URL="http://localhost:5055"
+              echo "shared interop healthy; INTEROP_URL=$INTEROP_URL (log: $interop_log)"
+            else
+              echo "::warning::shared interop did not pass /health within 60s; tasks fall back to SDK auto-spawn (log: $interop_log)"
+              kill "$interop_pid" 2>/dev/null || true
+              interop_pid=""
+            fi
           else
             model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
             agent_flags="--model $model"
@@ -608,6 +831,10 @@ jobs:
               break
             done
           done
+          if [ -n "$interop_pid" ]; then
+            kill "$interop_pid" 2>/dev/null || true
+            taskkill //F //IM UiPath.Aria.ComputerUse.Api.exe 2>/dev/null || true
+          fi
           exit $overall_exit
 
       - name: Upload eval report
