@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 
-PROJECT = Path("CustomerEscalationTriage")
+PROJECT = Path("CustomerEscalationTriageSolution") / "CustomerEscalationTriage"
 BPMN_FILE = PROJECT / "CustomerEscalationTriage.bpmn"
 STRUCTURE_CHECKER = Path(__file__).with_name(
     "check_customer_escalation_structure.py"

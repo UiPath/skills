@@ -22,11 +22,10 @@ while _directory != os.path.dirname(_directory) and not os.path.isdir(
     _directory = os.path.dirname(_directory)
 sys.path.insert(0, _directory)
 
-from _shared.bpmn_assertions import assert_package_lifecycle  # noqa: E402
 from _shared.bpmn_check import require_no_private_connector_values  # noqa: E402
 
 
-PROJECT = Path("CustomerEscalationTriage")
+PROJECT = Path("CustomerEscalationTriageSolution") / "CustomerEscalationTriage"
 BPMN = PROJECT / "CustomerEscalationTriage.bpmn"
 EVIDENCE = PROJECT / "registry-evidence"
 
@@ -172,6 +171,64 @@ OPTIONAL_CONNECTOR_INPUTS = {
 
 def fail(message: str) -> NoReturn:
     raise SystemExit(f"FAIL: {message}")
+
+
+def load_project_json(name: str) -> dict[str, Any]:
+    path = PROJECT / name
+    if not path.is_file():
+        fail(f"missing project metadata: {path}")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"{path} is not valid JSON: {exc}")
+    if not isinstance(payload, dict):
+        fail(f"{path} must contain a JSON object")
+    return payload
+
+
+def require_cli_project_metadata(
+    bpmn_name: str,
+    start_id: str,
+    entry_point_id: str,
+) -> None:
+    project = load_project_json("project.uiproj")
+    if project.get("Name") != PROJECT.name:
+        fail(f"project.uiproj Name must be {PROJECT.name}")
+    if project.get("ProjectType") != "ProcessOrchestration":
+        fail("project.uiproj ProjectType must be ProcessOrchestration")
+    if "main" in project:
+        fail("project.uiproj must not duplicate the runtime main path")
+
+    expected_main = f"/content/{bpmn_name}#{start_id}"
+    operate = load_project_json("operate.json")
+    if operate.get("main") != expected_main:
+        fail(f"operate.json main must be {expected_main}")
+    if operate.get("contentType") != "ProcessOrchestration":
+        fail("operate.json contentType must be ProcessOrchestration")
+
+    entries = load_project_json("entry-points.json").get("entryPoints")
+    if not isinstance(entries, list) or len(entries) != 1:
+        fail("entry-points.json must contain exactly one entry point")
+    entry = entries[0]
+    if not isinstance(entry, dict):
+        fail("entry-points.json entry point must be an object")
+    if entry.get("uniqueId") != entry_point_id:
+        fail("entry-points.json uniqueId must match uipath:entryPointId")
+    if entry.get("filePath") != expected_main:
+        fail(f"entry-points.json filePath must be {expected_main}")
+    if entry.get("type") != "ProcessOrchestration":
+        fail("entry-points.json type must be ProcessOrchestration")
+
+    descriptor = load_project_json("package-descriptor.json")
+    expected_files = {
+        "operate.json": "operate.json",
+        "entry-points.json": "entry-points.json",
+        "bindings.json": "bindings_v2.json",
+        bpmn_name: bpmn_name,
+    }
+    if descriptor.get("files") != expected_files:
+        fail("package-descriptor.json must preserve the CLI files map")
+    load_project_json("bindings_v2.json")
 
 
 def q(namespace: str, name: str) -> str:
@@ -3484,6 +3541,7 @@ def main() -> None:
     )
     if len(entry_points) != 1 or not entry_points[0].attrib.get("value"):
         fail("root start event must declare one non-empty uipath:entryPointId")
+    entry_point_id = entry_points[0].attrib["value"]
 
     require_unique_ids(root)
     variables, ids_to_names = require_variables(process, start_id, end_id)
@@ -3536,7 +3594,7 @@ def main() -> None:
         nested_flows.update(scope_flows)
     require_di(root, nodes, flows, nested_nodes, nested_flows)
     require_no_private_connector_values(root)
-    assert_package_lifecycle(PROJECT, BPMN.name, start_id)
+    require_cli_project_metadata(BPMN.name, start_id, entry_point_id)
 
     print(
         f"OK: registry-derived project has {len(nodes) + len(nested_nodes)} visible "

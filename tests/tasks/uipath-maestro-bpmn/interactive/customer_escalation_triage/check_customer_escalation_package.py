@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, NoReturn
 
 
-PROJECT = Path("CustomerEscalationTriage")
+PROJECT = Path("CustomerEscalationTriageSolution") / "CustomerEscalationTriage"
 EXPECTED_ARCHIVE_BASENAMES = {
     "CustomerEscalationTriage.bpmn",
     "bindings_v2.json",
