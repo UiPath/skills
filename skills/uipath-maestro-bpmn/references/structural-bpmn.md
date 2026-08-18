@@ -535,21 +535,28 @@ Re-check after any edit:
 
 ## Validation
 
-Validate with the CLI — it runs the full PO.Frontend canvas rule set offline
-(the same Node/Edge/CanvasState reconstruction and every canvas rule), plus the
-deploy-readiness checks:
+Run final file validation only after coherent diagram interchange exists:
+complete `BPMNDiagram` coverage, a finite-bounds `BPMNShape` with positive
+width and height for every rendered node, and a `BPMNEdge` with at least two
+finite waypoints for every rendered sequence flow. A semantic-only validator
+can return a successful result for a no-layout file without reconstructing the
+DI-driven canvas. Do not invoke `validate` until DI is complete.
+
+After DI is complete, validate with the CLI. It runs the canvas rules offline,
+plus the deploy-readiness checks:
 
 ```bash
 uip maestro bpmn validate <file.bpmn> --output json
 ```
 
-Exit 0 means the document passes all rules. Exit 1 lists the blocking errors,
-each with its rule code (gateway/condition, fake-join, superfluous-gateway,
-error end/boundary event, timer-duration/required-field, single-blank-start,
-single-conditional-outgoing-flow, variable-reference, method-parentheses,
-input-type, event-object, and IS-connector checks). Warnings are reported but do
-not block. If `validate` is unknown or runs only deploy-readiness checks, update
-the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
+Exit 0 means the post-layout document passes the reported rules. Exit 1 lists
+the blocking errors, each with its rule code (gateway/condition, fake-join,
+superfluous-gateway, error end/boundary event, timer-duration/required-field,
+single-blank-start, single-conditional-outgoing-flow, variable-reference,
+method-parentheses, input-type, event-object, and IS-connector checks). Warnings
+are reported but do not block. If `validate` is unknown or runs only
+deploy-readiness checks, update the CLI — see
+[cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
 
 If the CLI is unavailable, fall back to a well-formed-XML parse plus the
 structural checklist below — it mirrors the same blocking rules:
