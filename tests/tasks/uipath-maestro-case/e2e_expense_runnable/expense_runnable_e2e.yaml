@@ -56,7 +56,7 @@ initial_prompt: |
     `solutionsSupport`: those fields make `uip solution resources refresh` fail
     with "Node already added to the graph" in this eval environment.
   - The SDD resource labels are aliases for deployed resource NAMES. Map alias →
-    deployed name exactly: `WeatherAPI` → `API Workflow`, `CountLetters` →
+    deployed name exactly: `WeatherAPI` → `WeatherAPI`, `CountLetters` →
     `CountLetters`, `ProcurementProcess` → `ProcurementProcess`, `ProjectEuler` →
     `RPA Workflow`, and `CaseTest` → `Maestro Case`. Do not substitute an SDD
     alias for a deployed name. The alias on the left is NOT a resource key: keep
