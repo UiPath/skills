@@ -80,6 +80,6 @@ In Phase 2, always write the canonical stub from [connector-trigger-impl.md § C
 
 Confirm `metadata.caseExitRules[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksCaseComplete`), `marksCaseComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. Verify no `root` key exists at the top level.
 
-For `wait-for-connector`, Phase 2 verification expects the exact two-entry placeholder context plus empty inputs/outputs/bindings. After Phase 3, EVERY such rule must have no `"placeholder"` values, inputs/outputs must use `root-<ruleId>`, and ConnectionId + FolderKey root bindings must exist. **A stub surviving Phase 3 is case-fatal, not a reportable open item** — it makes the whole case non-startable and halts the build at [implementation.md § Step 12 Check 14](../../../implementation.md#step-12--end-of-phase-3-validator-pass).
+For `wait-for-connector`, Phase 2 verification expects the exact two-entry placeholder context plus empty inputs/outputs/bindings. After Phase 3, EVERY such rule must have no `"placeholder"` values, inputs/outputs must use `root-<ruleId>`, and ConnectionId + FolderKey root bindings must exist. **A stub surviving Phase 3 is case-fatal, not a reportable open item** — it makes the whole case non-startable and halts the build at [implementation.md § Step 12 Check 15](../../../implementation.md#step-12--end-of-phase-3-validator-pass).
 
 <!-- END: impl-json.md -->

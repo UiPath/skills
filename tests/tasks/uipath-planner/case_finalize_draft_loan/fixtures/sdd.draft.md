@@ -590,7 +590,7 @@ Rejected).
 
 | WHEN | IF |
 |------|-----|
-| `selected-tasks-completed("Title Search", "Flood Zone Certification", "Enter Appraisal Value", "Insurance Verification", "Collateral Data Retrieval")` | — |
+| `selected-tasks-completed("Title Search", "Flood Zone Certification", "Insurance Verification", "Collateral Data Retrieval")` | — |
 
 **HITL Implementation:** JSON Schema
 

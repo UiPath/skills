@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Grade Step 12.2 / Check 15 — a build carrying unresolved work must ship an issue log.
+"""Grade Step 12.2 / Check 16 — a build carrying unresolved work must ship an issue log.
 
 Regression guarded
 ------------------
@@ -173,8 +173,8 @@ def main() -> int:
             f"  {len(placeholders)} placeholder task(s){': ' + preview if preview else ''}\n"
             f"  {unresolved} <UNRESOLVED> marker(s) in tasks.md\n"
             "  The operator receives unwired resources with no record of which ones.\n"
-            "  Step 12.2 requires a reconstructed log when the in-reasoning list was lost.\n"
-            "  See implementation.md § Step 12.2 (Check 15)."
+            "  Step 12.1 reconstructs the log from artifacts when the flush was skipped.\n"
+            "  See implementation.md § Step 12.2 (Check 16)."
         )
         return 1
 
@@ -186,7 +186,9 @@ def main() -> int:
         )
         return 1
 
-    reconstructed = "reconstructed at Step 12.2" in text
+    # One marker, stamped by Step 12.1 § Recovery. The 12.2 form is accepted for
+    # logs written before the recovery step was consolidated there.
+    reconstructed = "reconstructed at Step 12.1" in text or "reconstructed at Step 12.2" in text
     note = "  (reconstructed log — severity/step attribution approximate)" if reconstructed else ""
     print(f"\nPASS: unresolved work is recorded in {issues.relative_to(root)}.{note}")
     return 0

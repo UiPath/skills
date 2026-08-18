@@ -74,7 +74,7 @@ A validator can be fulfilled by a tenant-registered **external** provider (a "BY
 >
 > The usual [Imports Pattern](#imports-pattern) rule still governs which module you import from: a LangChain agent imports from `uipath_langchain.guardrails` (adapter registration — see Critical Rule 8), everything else from `uipath.platform.guardrails`. And on a framework with no published adapter, the decorator carries the same silent-no-op risk it does for every other validator — that caveat belongs to the decorator *mechanism*, not to BYO.
 
-**Wire format** — both styles emit the same thing: `validatorType: "byo"` plus `byoValidatorName: "<name>"`. That is the identical field a low-code `agent.json` guardrail uses to pin a BYO configuration, so coded and low-code agents reference BYOG the same way.
+**Wire format** — both coded styles emit `validatorType: "byo"` plus `byoValidatorName: "<name>"`. The only field shared with low-code is `byoValidatorName`: a low-code `agent.json` pins the same BYOG configuration by adding `byoValidatorName` while keeping `validatorType` = the real validator id (e.g. `pii_detection`). `validatorType: "byo"` is the coded SDK wire format — never write it in a low-code `agent.json`.
 
 Discovery steps (in addition to the fetched docs):
 

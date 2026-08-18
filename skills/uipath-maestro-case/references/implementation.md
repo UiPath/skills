@@ -8,7 +8,7 @@ Execute the `tasks.md` plan, building `caseplan.json` via direct JSON edits per 
 >
 > **Input:** `tasks/tasks.md` — the complete handoff artifact.
 
-> **Six phases follow planning.** Execution splits into **Phase 2 — Prototyping** (reviewable preview: structure, conditions, SLA/escalation, and connector-rule stubs), **Phase 3 — Implementation** (connector schemas, task values, and connector-rule upgrades), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run), **Phase 7 — Publish to Orchestrator** (optional `solution pack` + `solution publish`). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, Phase 6 entry, and Phase 7 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbers are stable labels; follow the order stated by each phase.
+> **Six phases follow planning.** Execution splits into **Phase 2 — Prototyping** (reviewable preview: structure, conditions, SLA/escalation, and connector-rule stubs), **Phase 3 — Implementation** (connector schemas, task values, and connector-rule upgrades), **Phase 4 — Validate** (authoritative validate + dump), **Phase 5 — Publish** (optional Studio Web upload), **Phase 6 — Debug** (optional CLI debug run), **Phase 7 — Publish to Orchestrator** (optional `case pack` + `solution pack` + `solution publish`). Hard stops gate Phase 2→3, Phase 4 retry exhaustion, Phase 5 entry, Phase 6 entry, and Phase 7 entry. Read [phased-execution.md](phased-execution.md) for full phase contracts, informational Phase 2 validate, hard-stop prompts, re-entry protocol, retry policy, and abort semantics. Step numbers are stable labels; follow the order stated by each phase.
 
 ## Per-plugin execution
 
@@ -23,6 +23,7 @@ Every plugin uses direct JSON writes via its `impl-json.md`. Cross-cutting mecha
    - **<10 T-entries** — N Edits in sequence, one per T-entry. Skip the re-Read between sibling Edits.
    - **≥10 T-entries** — single whole-section Edit or Write replacing the section's container (e.g., `schema.nodes`, a stage's `data.tasks`). Compose the complete post-section state in reasoning from the section-entry Read, then emit one write. Untouched siblings (other sections, root fields, unrelated nodes) MUST be copied verbatim — drop nothing.
 3. **One validate** at section boundary.
+4. **One issue-log flush** at the same boundary — append the section's buffered issues to `tasks/build-issues.md` per [`plugins/logging/impl-json.md` § Flush](plugins/logging/impl-json.md), then clear the buffer. The first flush creates the file; later flushes append to its Journal table. **Flush even when the section produced zero issues** — after the first section the file must exist, and its existence is what proves the log survived the build.
 
 TaskUpdate items keyed by T-number are the audit trail — mark each `in_progress` before composing the entry's mutation, `completed` after the write returns success. The audit trail stays T-by-T even when the file diff collapses to one whole-section write.
 
@@ -49,12 +50,14 @@ Full contract — recovery, tool primitive selection (Edit default, whole-sectio
 
 ## Issue Log — Initialize Before Step 6
 
-Before any build step, initialize an empty issue list **in the agent's reasoning** (not as a file, not via subprocess). All plugins append to this shared list during execution. Dump to `tasks/build-issues.md` via the Write tool after Step 12. See [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md) for the entry format, severity levels, and file schema.
+Before any build step, initialize an empty issue buffer **in the agent's reasoning** (not as a file, not via subprocess). All plugins append to it during the current section, and **the buffer is flushed to `tasks/build-issues.md` at every section boundary, then cleared** — it is NOT a whole-build accumulator. See [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md) for the entry format, severity levels, flush mechanics, and file schema.
 
 ```text
-# pseudocode — kept in the agent's reasoning, not on disk
-issues = []  # shared across all steps
+# pseudocode — per-section buffer, flushed at each section boundary
+issues = []
 ```
+
+> **Why incremental.** A whole-build buffer held in reasoning is lost to context pressure before it is ever written, and no Step 12 check reads the log. Flushing per section bounds worst-case loss to one section and rides the validate seam already at that boundary.
 
 ---
 
@@ -265,7 +268,7 @@ Read `caseplan.json` and scan all four condition scopes for `wait-for-connector`
 
 For each matched rule whose connector resolved in planning, run the connector-trigger `case spec --type trigger --input-details` procedure, mint its output IDs/element IDs, and gather its root Connection/Folder bindings. Then Edit **only that rule's `uipath` block**. Preserve the enclosing condition array plus the rule's `id`, `rule`, `conditionExpression`, scope, and placement. Apply declared rule-output bindings after the real outputs exist.
 
-If the connector is `<UNRESOLVED>` or `case spec` fails, leave the stub unchanged and log it — then let **Check 14** halt the build. Do NOT list it in the completion report and proceed: a surviving stub makes the whole case non-startable ([connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback)). After all successful upgrades, populate the IS cache and regenerate `bindings_v2.json` once. Re-scan: every rule must be free of `"placeholder"`. Full procedure and scope-specific `elementId` rules: [`connector-trigger-impl.md § Target: connector-bound condition rule`](connector-trigger-impl.md#target-connector-bound-condition-rule).
+If the connector is `<UNRESOLVED>` or `case spec` fails, leave the stub unchanged and log it — then let **Check 15** halt the build. Do NOT list it in the completion report and proceed: a surviving stub makes the whole case non-startable ([connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback)). After all successful upgrades, populate the IS cache and regenerate `bindings_v2.json` once. Re-scan: every rule must be free of `"placeholder"`. Full procedure and scope-specific `elementId` rules: [`connector-trigger-impl.md § Target: connector-bound condition rule`](connector-trigger-impl.md#target-connector-bound-condition-rule).
 
 ## Step 11.5 — Resolve in-expression `vars.$xref` markers (whole-file pass)
 
@@ -300,9 +303,15 @@ After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker
 
   **Non-interactive repair:** re-run `case spec --type trigger` (or `--type activity`) for the failing node, persist the response to its spec-cache file, splice `context` / `inputs` / `outputs` verbatim per [connector-trigger-impl.md § Step 4](connector-trigger-impl.md#step-4--substitute-placeholders-in-caseshapecontext) and [§ Step 5](connector-trigger-impl.md#step-5--mint-var--id--elementid-on-inputs-and-outputs), append the missing root bindings per [§ Root-level bindings](connector-trigger-impl.md#root-level-bindings), then re-run Check 7 to resync `bindings_v2.json`. Re-scan after repair; halt before Phase 4 if any resolved connector node still fails after one repair pass. If `case spec` itself fails on the retry, keep the degraded shape, log it under `## Open Items for User` as **"connector node <name> is not runnable — `context` unresolved"**, and report it — do not silently emit it as complete. `uip maestro case validate` success does not satisfy this check: it reports `Valid` for a connector task with an empty `context` and no root bindings.
 
-- **Check 13 — Rule task-selector completeness** — Enumerate every rule across all 4 condition scopes (stage-entry / stage-exit / task-entry, plus case-exit under `metadata.caseExitRules`) whose rule type requires a task selector (`selected-tasks-completed`). Each MUST carry a non-empty `selectedTasksIds` array in which every id resolves to a task in the owning stage. **Non-interactive repair:** resolve the missing ids from the rule's T-entry `selected-tasks-ids` names via `tasks/id-map.json` using EXACT `tasks.md` display names (paraphrased or shortened names are the common miss — match the task's exact name, per the conditions plugins' selector contract); rewrite the rule, re-scan. Unresolvable after one pass → **AskUserQuestion** (name the intended task / repair the plan / continue with best-effort emit, logged under Open Items). Halt before Phase 4 while any selector is empty with no user decision. `uip maestro case validate` reports these as `... has no task(s) selected` — that finding surfacing in Phase 4 means this check was skipped.
+- **Check 13 — Rule selector integrity (task and stage references)** — Enumerate every rule across all 4 condition scopes (stage-entry / stage-exit / task-entry, plus case-exit under `metadata.caseExitRules`) whose rule type requires a task selector (`selected-tasks-completed`). Each MUST carry a non-empty `selectedTasksIds` array in which every id resolves to a task in the owning stage, and each resolved task MUST have no `adhoc` entry rule. **Non-interactive repair:** resolve missing ids from the rule's T-entry `selected-tasks-ids` names via `tasks/id-map.json` using EXACT `tasks.md` display names (paraphrased or shortened names are the common miss — match the task's exact name, per the conditions plugins' selector contract); rewrite the rule, re-scan. If any resolved task is adhoc, stop and return to the plan: required routing cannot depend on optional user-launched work, and replacing the selector without redesigning that route is forbidden. Unresolvable after one pass → **AskUserQuestion** (name the intended task / repair the plan / continue with best-effort emit, logged under Open Items). Halt before Phase 4 while any selector is empty with no user decision or selects an adhoc task; build-with-best does not waive the adhoc restriction. `uip maestro case validate` reports empty selectors as `... has no task(s) selected` but does not enforce the adhoc restriction, so a clean validate is not evidence this check passed. **Stage references too:** in the same pass, every `exitToStageId` and every `selectedStageId` (`selected-stage-completed` / `selected-stage-exited`) MUST resolve to an existing `case-management:Stage` node `id`; repair identically, re-resolving the T-entry's `exit-to-stage` / `selected-stage` name through `tasks/id-map.json`.
 
-- **Check 14 — No surviving connector-rule placeholder stub (CASE-FATAL, halts)** — Scan every rule across all 4 condition scopes (stage-entry / stage-exit / task-entry, plus case-exit under `metadata.caseExitRules`) for a `wait-for-connector` rule whose `uipath.context` still carries `connectorKey: "placeholder"` / `operation: "placeholder"`. **Every survivor is a build failure**, independent of its registry entry — this check does NOT exempt `selected: null` the way Check 12 does, because an unresolved connector rule is exactly the fatal case.
+- **Check 14 — Variable `default` encoding** — Scan `variables.inputs[]`, `variables.outputs[]`, and `variables.inputOutputs[]`. Every entry carrying a `default` MUST hold a **JSON string**, whatever the entry's `type`. An object or array `default` is **silently deleted** by the caseplan → BPMN converter (`bpmn-moddle.ts` keeps only primitive attributes), leaving the variable null at runtime; the first task bound to it fails with `AGENT_STARTUP.INPUT_VALIDATION_ERROR / <input> Field required`. Numbers and booleans survive serialization but violate the field's declared string type and are equally non-conforming.
+
+  **Nothing upstream catches this.** `uip maestro case validate` returns `Valid`; the frontend's own Zod schema types the field `z.any()` and parses an object clean, so borrowing it as a gate does not work here. The enforcement point is [`global-vars/impl-json.md` § `default` encoding](plugins/variables/global-vars/impl-json.md#default-encoding-every-type-mandatory) and this check.
+
+  **Non-interactive repair:** re-encode in place — `{"a":1}` → `"{\"a\":1}"`, `5` → `"5"`, `true` → `"true"` (lowercase JSON, not Python `True`), `{}` → `"{}"`. Do not drop the value and do not change the variable's `type`. Re-scan once; halt before Phase 4 if any non-string `default` remains.
+
+- **Check 15 — No surviving connector-rule placeholder stub (CASE-FATAL, halts)** — Scan every rule across all 4 condition scopes (stage-entry / stage-exit / task-entry, plus case-exit under `metadata.caseExitRules`) for a `wait-for-connector` rule whose `uipath.context` still carries `connectorKey: "placeholder"` / `operation: "placeholder"`. **Every survivor is a build failure**, independent of its registry entry — this check does NOT exempt `selected: null` the way Check 12 does, because an unresolved connector rule is exactly the fatal case.
 
   **This check is the halt point — do not pre-empt it.** An unresolvable connector found during Phase 1 planning or Phase 3 Step 10.5 does NOT abort the run early. Emit the Rule 8 stub, build the full structure, and arrive here. Bailing at discovery leaves no `caseplan.json`, no `tasks.md`, and no `build-issues.md` — the author gets an explanation instead of an artifact — and it silently removes remediation (b) below, *remove the rule and ship the working remainder*, which is normally the only option that unblocks them without waiting on the connector. Build it, then refuse to ship it.
 
@@ -318,7 +327,7 @@ After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker
 
   Write `rule(s)` literally, regardless of N — the marker is matched mechanically, so do not pluralize it. List each offending `(scope, stage, condition, rule id, connector)` beneath it. This line is the machine-readable halt marker: its presence means "an artifact exists but must not be run or published." The completion report MUST reproduce it verbatim and MUST NOT describe the build as complete, successful, or ready. "Continue with best-effort emit" is NOT offered: unlike Checks 1/2/4/5/13, the artifact is not partially working — it cannot start at all, so emitting it produces a case that is 100% dead while reporting success. **Never enter Phase 4, publish, debug, or report completion while any stub survives.**
 
-**Build-with-best policy:** for any user pick of "continue with best-effort emit" on a Check 1, Check 2, Check 4, Check 5, or Check 13 AskUserQuestion, append a `## Open Items for User` entry to `tasks/build-issues.md` and proceed to Phase 4. Check 14 is deliberately excluded — it has no best-effort escape. AskUserQuestion is the surface; build-with-best is the escape. The skill conservatively emits what it has; Phase 4 validate stays green (structural validity is intact); runtime concerns are listed for pre-publish review.
+**Build-with-best policy:** for any user pick of "continue with best-effort emit" on a Check 1, Check 2, Check 4, Check 5, or Check 13 AskUserQuestion, append a `## Open Items for User` entry to `tasks/build-issues.md` and proceed to Phase 4. **Check 14 and Check 15 have no best-effort escape** — a deleted default is not a partial result, and a case that cannot start is not a partial build. AskUserQuestion is the surface; build-with-best is the escape. The skill conservatively emits what it has; Phase 4 validate stays green (structural validity is intact); runtime concerns are listed for pre-publish review.
 
 **Reporting:** at end of Phase 4, count entries in the `## Open Items for User` section of `tasks/build-issues.md` (read the file after writing). If count > 0, the completion report MUST include a literal line of the form:
 
@@ -340,33 +349,29 @@ Authoritative validation. Full contract — command, retry policy, AskUserQuesti
 
 Run validate per [phased-execution.md § Phase 4](phased-execution.md#phase-4--validate). On success: proceed to Step 12.1. On 3rd failure: hard-stop prompt per the same section.
 
-## Step 12.1 — Dump issue log
+## Step 12.1 — Summarize the issue log
 
-Write issue list to `tasks/build-issues.md` per [`plugins/logging/impl-json.md`](plugins/logging/impl-json.md).
+The journal has been on disk since the first section boundary; this step does **not** create it. Flush any buffered issues from the final section, then read the journal back and write the grouped counts into the summary block per [`plugins/logging/impl-json.md` § Summary](plugins/logging/impl-json.md). Counts come from the file, not from reasoning — that is the point of flushing incrementally.
 
-## Step 12.2 — Issue-log completeness gate (Check 15) — PHASE 4 EXIT
+If `tasks/build-issues.md` is absent here, the incremental flush was skipped: reconstruct from on-disk artifacts and stamp the `NOTE:` line per [§ Recovery](plugins/logging/impl-json.md). A build carrying `<UNRESOLVED>` markers or placeholder tasks must not reach Phase 5 with no log.
 
-Runs immediately after the Step 12.1 dump; gates entry to Phase 5. Unlike Checks 1–14 this cannot live in the Step 12 validator pass — the file it inspects does not exist until 12.1 has run.
+## Step 12.2 — Issue-log completeness gate (Check 16) — PHASE 4 EXIT
+
+Runs immediately after the Step 12.1 summary; gates entry to Phase 5. Unlike Checks 1–15 this cannot live in the Step 12 validator pass — it inspects a file that Step 12.1 is responsible for completing.
 
 **Predicate.** The build **carries unresolved work** when ANY of these hold:
 
 1. `tasks/tasks.md` contains one or more `<UNRESOLVED` markers, OR
 2. any task in `caseplan.json` is a placeholder (`data: {}`), OR
-3. any `wait-for-connector` rule still carries the placeholder stub (Check 14 abort path).
+3. any `wait-for-connector` rule still carries the placeholder stub (Check 15 abort path).
 
 When the build carries unresolved work, `tasks/build-issues.md` MUST exist and MUST contain at least one issue entry — a header-only or empty file fails this gate. When the build carries none, the file is optional.
 
-**Why this gate exists.** The issue list is held **in the agent's reasoning** for the entire build ([`plugins/logging/impl-json.md`](plugins/logging/impl-json.md) § Setup) and dumped exactly once, at the very end. On a long build that in-memory list is the first thing lost to context pressure, and nothing downstream notices: Checks 1–14 inspect `caseplan.json` and its sidecars, never the log, and the Step 12 **Reporting** clause *presumes* the file exists ("read the file after writing"). Observed: a 52-minute build with **39 placeholder tasks and 120 `<UNRESOLVED>` markers** emitted no `build-issues.md` at all and still passed every other gate. The operator was handed 39 unwired resources with no record of which ones.
+**Why this gate exists.** Nothing else in the pipeline reads the issue log. Checks 1–15 inspect `caseplan.json` and its sidecars; the Step 12 **Reporting** clause *presumes* the file exists ("read the file after writing"). The journal is flushed at each section boundary and Step 12.1 recovers it from artifacts if that flush was skipped — but neither step refuses to continue, so a build can still reach Phase 5 with no log, or with a header and no entries, while every other gate passes. This check is the one place that refuses.
 
-**Non-interactive repair.** Do not prompt. Reconstruct the log from the artifacts that survive on disk — `<UNRESOLVED>` markers in `tasks.md`, placeholder tasks in `caseplan.json`, unresolved entries in `tasks/registry-resolved.json` (`selected: null`), and any surviving connector stub — write `tasks/build-issues.md` per the logging plugin, then re-scan once.
+**Non-interactive repair.** Do not prompt. Step 12.1 § Recovery already defines the reconstruction and its `NOTE:` stamp — re-run that once, then re-scan. Do not invent a second marker here.
 
-**A reconstructed log is explicitly second-best and must say so.** It records what the artifacts prove, not what the build actually observed: severities collapse to `SKIPPED`, and per-step provenance is gone. Stamp it with a literal line above the issue table:
-
-```
-NOTE: reconstructed at Step 12.2 from on-disk artifacts — the in-reasoning issue log was lost. Severity and step attribution are approximate.
-```
-
-Halt before Phase 5 if the file is still absent or entry-less after one repair pass. `uip maestro case validate` success does not satisfy this gate — a case with 39 unwired placeholders validates clean.
+Halt before Phase 5 if the file is still absent or entry-less after one repair pass. `uip maestro case validate` success does not satisfy this gate — a case full of unwired placeholders validates clean.
 
 On success → proceed to Phase 5.
 
@@ -416,11 +421,11 @@ After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user 
 
 # Phase 7 — Publish to Orchestrator (Step 16)
 
-Optional `solution pack` + `solution publish` to the tenant solution feed. Full contract — prompt options, publish commands, version bumping, failure handling — in [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). This section is a bridge — do NOT duplicate contract here.
+Optional `case pack` (BPMN recompile) + `solution pack` + `solution publish` to the tenant solution feed. Full contract — prompt options, publish commands, version bumping, failure handling — in [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). This section is a bridge — do NOT duplicate contract here.
 
 ## Step 16 — Publish to Orchestrator
 
-Run AskUserQuestion per [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). On `Publish to Orchestrator` → run `uip solution resources refresh`, then `uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json`, then `uip solution publish "<packagePath>" --wait --output json`. Pack the solution directory, not the case project — never `uip maestro case pack`. Read `<packagePath>` from the pack response `Data.Packages` — never guess the filename. On `Done` → exit skill. Never auto-run (Rule 12).
+Run AskUserQuestion per [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). On `Publish to Orchestrator` → run `uip solution resources refresh`, then `uip maestro case pack "<SolutionDir>/<ProjectName>" "<SolutionDir>/dist" --output json`, then `uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json`, then `uip solution publish "<packagePath>" --wait --output json`. **Never skip `case pack`** — it compiles `caseplan.json` → `caseplan.json.bpmn`, and it runs on every pass regardless of which earlier phases were skipped. Publish the `solution pack` `.zip`, never the `case pack` `.nupkg`. Read `<packagePath>` from the `solution pack` response `Data.Packages` — never guess the filename. On `Done` → exit skill. Never auto-run (Rule 12).
 
 Stops at publish — `uip solution deploy run` is out of scope.
 <!-- END: implementation.md -->

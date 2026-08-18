@@ -1,4 +1,4 @@
-"""Unit tests for check_build_issues_log.py — the Step 12.2 / Check 15 grader.
+"""Unit tests for check_build_issues_log.py — the Step 12.2 / Check 16 grader.
 
 Run with ``pytest``; CI runs them via ``pytest tests/tasks/uipath-maestro-case/``.
 

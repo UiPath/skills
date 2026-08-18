@@ -88,7 +88,7 @@ success_criteria:
 
   - type: run_command
     description: >
-      Step 12.2 / Check 15 — this tenant hosts none of the referenced systems, so the
+      Step 12.2 / Check 16 — this tenant hosts none of the referenced systems, so the
       build is expected to be placeholder-heavy. A build carrying unresolved work MUST
       ship a non-empty tasks/build-issues.md; otherwise the operator receives unwired
       resources with no record of which ones.

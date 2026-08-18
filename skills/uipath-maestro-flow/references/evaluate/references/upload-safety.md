@@ -1,3 +1,4 @@
+<!--skill-flavor:upload-safety-content:start-->
 # Upload Safety: Do Not Auto-Run `uip solution upload`
 
 The eval run requires the Flow solution to exist in Studio Web. The temptation, when an eval run errors with a missing-solution or missing-IDs error, is to "fix" it with `uip solution upload`. **Don't.**
@@ -80,3 +81,4 @@ Even with explicit consent, do not chain `solution upload` automatically into th
 - **Don't auto-retry an eval run after a failed solution-resolution by attempting `uip solution upload` and re-running.** That doubles down on the wrong action.
 - **Don't run `uip solution upload` while another user might be editing the solution on Studio Web.** Even with explicit consent, warn the user that overwriting concurrent edits is a possible outcome.
 - **Don't combine `flow debug` and `eval run` in the same session against the same solution.** Each carries its own Studio Web debug session; mixing them confuses run IDs and may trigger unexpected uploads.
+<!--skill-flavor:upload-safety-content:end-->

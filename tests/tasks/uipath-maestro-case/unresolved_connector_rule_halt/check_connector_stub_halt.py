@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Grade the Check 14 halt: an unresolvable wait-for-connector rule must never ship silently.
+"""Grade the Check 15 halt: an unresolvable wait-for-connector rule must never ship silently.
 
 Regression guarded
 ------------------
@@ -22,7 +22,7 @@ A. No stub survives  -> the agent resolved the connector or removed the rule.
    Additionally require structural coherence, so "removal" cannot mean gutting the
    file into something incoherent.
 B. A stub survives   -> the agent MUST have halted: tasks/build-issues.md carries the
-   literal BLOCKED marker line from implementation.md Step 12 Check 14.
+   literal BLOCKED marker line from implementation.md Step 12 Check 15.
 
 Fail
 ----
@@ -37,7 +37,7 @@ import re
 import sys
 from pathlib import Path
 
-# implementation.md § Step 12 Check 14 mandates this literal line in build-issues.md.
+# implementation.md § Step 12 Check 15 mandates this literal line in build-issues.md.
 BLOCKED_MARKER = re.compile(
     r"BLOCKED:\s*case is not startable\s*[—-]\s*\d+\s+unresolved wait-for-connector rule\(s\)"
     r"\s+still carry the placeholder stub\.",
@@ -179,7 +179,7 @@ def main() -> int:
         if BLOCKED_MARKER.search(issues_text):
             print(
                 "\nPASS (branch B): a stub survives AND the build halted with the "
-                "Check 14 BLOCKED marker in build-issues.md."
+                "Check 15 BLOCKED marker in build-issues.md."
             )
             return 0
         where = (
@@ -187,7 +187,7 @@ def main() -> int:
         )
         print(
             f"\nFAIL: {len(stubs)} placeholder connector-rule stub(s) survived, but "
-            f"{where} carries no Check 14 BLOCKED marker.\n"
+            f"{where} carries no Check 15 BLOCKED marker.\n"
             "  Expected a literal line matching:\n"
             "    BLOCKED: case is not startable — <N> unresolved wait-for-connector "
             "rule(s) still carry the placeholder stub.\n"
@@ -195,7 +195,7 @@ def main() -> int:
             "1 element executes)\n"
             "  while `uip maestro case validate` still reports Valid — emitted as if "
             "it were complete.\n"
-            "  See implementation.md § Step 12 Check 14."
+            "  See implementation.md § Step 12 Check 15."
         )
         return 1
 

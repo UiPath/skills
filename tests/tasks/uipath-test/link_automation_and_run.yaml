@@ -32,9 +32,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered folder key with `folders list -n <folder-name> --all`"
+    description: "Agent discovered folder key with `folders list -n|--name <folder-name> --all`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+list\s+-n\s+\S+'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*(-n|--name)\s+\S)uip\s+(or|orchestrator)\s+folders\s+list\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

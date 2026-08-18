@@ -116,6 +116,24 @@ def write_baseline_function_agent(root: Path) -> None:
     )
 
 
+def sync_entry_point_schema(
+    root: Path, *, input_schema: dict, output_schema: dict
+) -> None:
+    """Repoint the derived entry-point schemas after overwriting `main.py`.
+
+    `write_baseline_function_agent` writes `entry-points.json` for the baseline
+    `Input`/`Output` models, so an injector that replaces `main.py` with
+    different models must call this. Otherwise the fixture ships a schema
+    mismatch that a read-only reviewer can only resolve by editing the project.
+    """
+    path = root / "entry-points.json"
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    entry_point = doc["entryPoints"][0]
+    entry_point["input"] = input_schema
+    entry_point["output"] = output_schema
+    path.write_text(json.dumps(doc, indent=2), encoding="utf-8")
+
+
 # ---------------------------------------------------------------------------
 # LangChain (LangGraph) baseline — for coded guardrail review tasks.
 #

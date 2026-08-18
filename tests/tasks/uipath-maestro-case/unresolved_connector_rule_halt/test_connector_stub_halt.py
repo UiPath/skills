@@ -1,4 +1,4 @@
-"""Unit tests for check_connector_stub_halt.py — the Check 14 grader.
+"""Unit tests for check_connector_stub_halt.py — the Check 15 grader.
 
 Run with ``pytest`` from any directory; CI runs them via the
 ``maestro-case checker unit tests`` job (``pytest tests/tasks/uipath-maestro-case/``).
@@ -146,7 +146,7 @@ def test_surviving_stub_without_marker_fails(tmp_path):
     """Pre-fix behaviour: emit the dead case, report it complete. Must FAIL."""
     res = run_checker(tmp_path, case=caseplan(stage_entry=connector_rule(STUB_UIPATH)))
     assert res.returncode == 1, res.stdout
-    assert "no Check 14 BLOCKED marker" in res.stdout
+    assert "no Check 15 BLOCKED marker" in res.stdout
 
 
 def test_surviving_stub_with_marker_passes(tmp_path):
@@ -216,7 +216,7 @@ def test_open_item_mention_is_not_a_halt(tmp_path):
         ),
     )
     assert res.returncode == 1, (
-        "an Open Item mentioning the placeholder must NOT satisfy Check 14 — "
+        "an Open Item mentioning the placeholder must NOT satisfy Check 15 — "
         "that is exactly the pre-fix output:\n" + res.stdout
     )
 

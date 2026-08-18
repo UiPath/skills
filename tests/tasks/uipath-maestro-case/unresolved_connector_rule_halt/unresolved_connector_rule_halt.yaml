@@ -9,7 +9,7 @@ description: >
   CASE-FATAL PLACEHOLDER GUARD — an approved sdd.md puts a wait-for-connector entry rule
   on a non-required secondary stage, bound to a connector that exists on no tenant. Phase 2
   legitimately writes the placeholder stub; Phase 3 Step 10.5 cannot upgrade it. Step 12
-  Check 14 must then HALT: a surviving stub registers no subscription at case start, which
+  Check 15 must then HALT: a surviving stub registers no subscription at case start, which
   makes the ENTIRE case non-startable (start event fails, 1 element executes) even though
   the stub sits on a stage nothing routes to, and `uip maestro case validate` reports Valid
   throughout. Regression guarded: the skill used to emit the stub, log it as an ordinary
@@ -67,7 +67,7 @@ success_criteria:
     description: >
       PRIMARY. Either no placeholder connector-rule stub survives (agent removed or
       resolved the rule, leaving a coherent plan), or one survives AND the build halted
-      with the Check 14 BLOCKED marker. A surviving stub with no marker is the regression.
+      with the Check 15 BLOCKED marker. A surviving stub with no marker is the regression.
     command: "python3 $TASK_DIR/check_connector_stub_halt.py"
     timeout: 30
     expected_exit_code: 0
@@ -97,7 +97,7 @@ success_criteria:
 
   - type: run_command
     description: >
-      Step 12.2 / Check 15 — the build recorded its unresolved work rather than exiting
+      Step 12.2 / Check 16 — the build recorded its unresolved work rather than exiting
       silently. Stronger than a file_exists: a header-only log fails.
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/check_build_issues_log.py"
     timeout: 30

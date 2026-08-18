@@ -16,6 +16,107 @@ description: >
   coverage gap, go/no-go signoff). Requires a fixture project in the
   tenant — see references at the bottom of this file.
 tags: [uipath-test, integration, mode:diagnose, lifecycle:generate, feature:test-case, feature:compliance]
+# Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the EVFX- contract.
+#
+# BANK is referenced by this task and no other, so it is already collision-free
+# and the fixture keeps its discoverable names — the task grades the agent's
+# ability to FIND the active regression suite, so renaming it to EVFX-* would
+# remove the thing under test.
+#
+# What drifted is history, not naming: the 2026-08-05 nightly reported "the
+# active regression suite has 10 tests but no recorded execution", so the
+# testcaselogs drill-down had no execution to open and the report had no real
+# result data to cite. Seed one finished execution with mixed results, once —
+# the guard means every later run finds it and creates nothing.
+pre_run:
+  - command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys
+      P = "BANK"
+      # Exactly the distribution this file documents below: 10 logs as
+      # 5 Passed / 2 Failed / 1 Restricted / 2 None. Cycling a shorter list
+      # produced 4/2/2/2 and exposed a different readiness profile from the
+      # one maintainers and the evaluation are told to expect.
+      SUITE = "Active Regression Suite"
+      RESULTS = (["Passed"] * 5) + (["Failed"] * 2) + ["Restricted"] + (["None"] * 2)
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED — {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:220]} err={err[:150]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      sets = call("sets", "tm", "testsets", "list", "--project-key", P).get("Data") or []
+      if not sets:
+          fail(f"no test sets in {P}")
+      # Resolve the documented suite by EXACT name and stop unless there is
+      # exactly one. A substring match on "regression" could select a
+      # different suite than the one the task queries, seeding history into
+      # the wrong set while the intended fixture stays empty; sets[0] was
+      # worse still, writing into whatever happened to come back first.
+      matches = [t for t in sets if (t.get("Name") or "") == SUITE]
+      if len(matches) != 1:
+          fail(f"expected exactly one {SUITE!r} in {P}, found {len(matches)}; "
+               f"refusing to guess. Sets present: "
+               f"{[t.get('Name') for t in sets][:8]}")
+      ts = matches[0]
+      print(f"FIXTURE: target suite {ts.get('Name')!r} ({ts.get('TestSetKey')})", flush=True)
+
+      done = sorted((e for e in call("ex", "tm", "executions", "list", "--project-key", P,
+                                     "--test-set-id", ts["Id"]).get("Data") or []
+                     if e.get("Status") == "Finished"),
+                    key=lambda e: e.get("Created") or "", reverse=True)
+
+      def results_of(eid):
+          return [l.get("Result") for l in
+                  call("logs", "tm", "executions", "testcaselogs", "list",
+                       "--project-key", P, "--execution-id", eid).get("Data") or []]
+
+      # Presence of SOME finished execution is not the property the task reads.
+      # Exiting on that alone let a stale or partial execution -- 0 logs, or a
+      # different result mix -- satisfy the guard while the readiness profile
+      # differed from the one this file documents. Verify the distribution, and
+      # repair the newest execution in place rather than appending a new one.
+      eid = done[0]["Id"] if done else None
+      if eid and sorted(results_of(eid)) == sorted(RESULTS):
+          print(f"FIXTURE: {eid} already matches the documented distribution")
+          raise SystemExit(0)
+
+      if not eid:
+          r = call("run", "tm", "testsets", "run", "--test-set-key", ts["TestSetKey"],
+                   "--execution-type", "manual")
+          eid = (r.get("Data") or {}).get("ExecutionId")
+          if not eid:
+              fail("could not start a manual execution")
+
+      logs = call("logs", "tm", "executions", "testcaselogs", "list",
+                  "--project-key", P, "--execution-id", eid).get("Data") or []
+      if len(logs) != len(RESULTS):
+          fail(f"execution {eid} has {len(logs)} logs, expected {len(RESULTS)} "
+               f"(suite {SUITE!r} should hold {len(RESULTS)} test cases)")
+      for i, l in enumerate(logs):
+          res = RESULTS[i]
+          call(f"finish.{i}", "tm", "testcaselog", "finish", "--project-key", P,
+               "--execution-id", eid, "--test-case-id", l["TestCaseId"],
+               "--result", res, "--has-error", "true" if res == "Failed" else "false",
+               "--executed-by", "eval-fixture@uipath.com")
+
+      got = results_of(eid)
+      if sorted(got) != sorted(RESULTS):
+          fail(f"execution {eid} closed as {got}, expected {RESULTS}")
+      print(f"FIXTURE: execution {eid} carries {got}", flush=True)
+      EOF
+    timeout: 280
+
 initial_prompt: |
   I'm a QA Lead. We're deploying new loan-approval workflows tonight, but a
   UAT tester reported inconsistent approval behavior for the same customer

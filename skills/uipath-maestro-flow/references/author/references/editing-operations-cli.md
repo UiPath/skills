@@ -16,7 +16,8 @@ The primitive commands below are support commands for carve-out workflows only. 
 uip maestro flow node add <ProjectName>.flow <node-type> --output json \
   --input '<INPUT_JSON>' \
   --label "<LABEL>" \
-  --position <X>,<Y>
+  --position <X>,<Y> \
+  --parent <PARENT_NODE_ID>
 ```
 
 **What the CLI handles automatically:**
@@ -31,6 +32,7 @@ uip maestro flow node add <ProjectName>.flow <node-type> --output json \
 | `--input` | No | JSON object of node-specific inputs (expression, script, URL, etc.). Omit for nodes with no inputs (merge, end, terminate). |
 | `--label` | No | Display label shown on the canvas |
 | `--position` | No | `x,y` coordinates. Any value is fine (e.g. `0,0`) — `flow format` rewrites positions on save. |
+| `--parent` | No | ID of an existing container node (e.g. a `core.logic.loop`). Sets `parentId` on the new node, placing it inside that container. Required for every node in a loop body — see [loop/impl.md](plugins/loop/impl.md). |
 | `--output json` | Yes (for parsing) | Structured JSON response with the assigned node `id` |
 
 **Shell quoting tip:** If `--input` JSON contains special characters (quotes, braces, `$vars`), write it to a temp file and pass `--input "$(cat /tmp/input.json)"`.

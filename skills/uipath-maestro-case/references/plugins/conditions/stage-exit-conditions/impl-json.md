@@ -30,7 +30,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 2. Generate rule ID: `Rule_` + 6 alphanumeric chars
 3. Locate the target stage in `schema.nodes` by ID
 4. Initialize `stageNode.data.exitConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md))
-5. Read `type`, `exit-to-stage`, `marks-stage-complete`, and `rule-type` from tasks.md; pick the recipe below
+5. Read `type`, `exit-to-stage`, `marks-stage-complete`, and `rule-type` from tasks.md; pick the recipe below. `exit-to-stage` is a stage **name** — resolve it to `exitToStageId` through `tasks/id-map.json`; never derive the id from the label (`Stage_<name>`).
 6. Set `displayName`: use tasks.md `display-name` if present; else default by `marks-stage-complete`: `true` → `Complete Rule {N}`, `false` → `Exit Rule {N}`. `N` = 1-based index **within the same label kind** — at append time, count existing entries in `stageNode.data.exitConditions[]` whose `marksStageComplete` equals this condition's value, then `N = count + 1`. FE numbers complete and exit rules with independent counters — do NOT use the array's overall length. Never emit a blank or omitted `displayName`.
 7. Append the condition object to `stageNode.data.exitConditions[]`
 
@@ -130,6 +130,6 @@ The exception lane's entry is `selected-stage-exited("<origin>") + IF =js:(vars.
 
 ## Post-Write Verification
 
-Confirm target stage's `data.exitConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksStageComplete`), `type`, `exitToStageId` (if set), `marksStageComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, EVERY such rule must have no `"placeholder"` values, use `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. **A stub surviving Phase 3 is case-fatal, not a reportable open item** — it makes the whole case non-startable and halts the build at [implementation.md § Step 12 Check 14](../../../implementation.md#step-12--end-of-phase-3-validator-pass).
+Confirm target stage's `data.exitConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksStageComplete`), `type`, `exitToStageId` (if set), `marksStageComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, EVERY such rule must have no `"placeholder"` values, use `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. **A stub surviving Phase 3 is case-fatal, not a reportable open item** — it makes the whole case non-startable and halts the build at [implementation.md § Step 12 Check 15](../../../implementation.md#step-12--end-of-phase-3-validator-pass).
 
 <!-- END: impl-json.md -->

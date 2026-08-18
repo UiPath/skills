@@ -14,7 +14,9 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
 | [Run reports `Completed`, work not done](#run-reports-completed-but-the-work-never-happened) | Run finishes `Completed`, but the API call / node it depended on failed | `inputs.errorHandlingEnabled: true` on a node with no handler, or an `error` edge routed back into the happy path |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
+<!--skill-flavor:project-creation-recovery-index:start-->
 | [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run with `--skip-solution-registration` (opts out of auto-scaffold + registration) |
+<!--skill-flavor:project-creation-recovery-index:end-->
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (MST-9107 + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
 
@@ -245,6 +247,7 @@ uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_
 
 ---
 
+<!--skill-flavor:project-creation-recovery:start-->
 ## Single-nested layout
 
 ### Symptom
@@ -281,6 +284,7 @@ If the absolute path doesn't exist, the `init` step was wrong — do not try to 
 ### Reference
 
 [Author greenfield journey — Step 2](../../author/references/greenfield.md) — the canonical scaffold sequence.
+<!--skill-flavor:project-creation-recovery:end-->
 
 ---
 

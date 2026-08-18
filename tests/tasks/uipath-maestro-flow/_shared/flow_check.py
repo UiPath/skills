@@ -318,6 +318,69 @@ def assert_flow_uses_connector_target(
     )
 
 
+def assert_loop_body_nodes_parented(
+    *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Assert every node wired inside a loop body has ``parentId`` set to the
+    loop's ID. Without ``parentId``, the runtime executes the node outside the
+    loop context — per-iteration variables like ``currentItem`` are
+    inaccessible and outputs come back null."""
+    project_dir = _find_project(project_glob)
+    for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
+        with open(path) as f:
+            flow = json.load(f)
+        nodes_by_id = {n["id"]: n for n in flow.get("nodes") or []}
+        edges = flow.get("edges") or []
+        loops = [n for n in nodes_by_id.values() if n.get("type") == "core.logic.loop"]
+        for loop_node in loops:
+            loop_id = loop_node["id"]
+            body_ids = _collect_loop_body_ids(loop_id, edges, nodes_by_id)
+            for nid in body_ids:
+                node = nodes_by_id[nid]
+                actual_parent = node.get("parentId")
+                if actual_parent != loop_id:
+                    _fail(
+                        f"Node {nid!r} is wired inside loop {loop_id!r} but "
+                        f"{'has no parentId' if actual_parent is None else f'has parentId={actual_parent!r}'}. "
+                        f"Add \"parentId\": \"{loop_id}\" to the node."
+                    )
+
+
+def _collect_loop_body_ids(
+    loop_id: str, edges: list[dict], nodes_by_id: dict[str, dict]
+) -> list[str]:
+    """Walk edges from a loop's ``start`` port and collect reachable node IDs,
+    stopping at the loop's ``continue`` and ``break`` ports."""
+    outgoing: dict[str, list[tuple[str, str, str]]] = {}
+    for e in edges:
+        src = e.get("sourceNodeId", "")
+        src_port = e.get("sourcePort", "")
+        tgt = e.get("targetNodeId", "")
+        tgt_port = e.get("targetPort", "")
+        outgoing.setdefault(src, []).append((src_port, tgt, tgt_port))
+    body: list[str] = []
+    visited: set[str] = set()
+    stack = [
+        tgt
+        for src_port, tgt, _ in outgoing.get(loop_id, [])
+        if src_port == "start" and tgt != loop_id
+    ]
+    while stack:
+        nid = stack.pop()
+        if nid in visited or nid == loop_id:
+            continue
+        visited.add(nid)
+        if nid not in nodes_by_id:
+            continue
+        body.append(nid)
+        for _, tgt, tgt_port in outgoing.get(nid, []):
+            if tgt == loop_id and tgt_port in ("continue", "break"):
+                continue
+            if tgt not in visited:
+                stack.append(tgt)
+    return body
+
+
 def collect_outputs(payload: dict) -> list[Any]:
     """Return the declared output values — global variables and per-element
     outputs only. Excludes metadata (IDs, timestamps, status strings).
