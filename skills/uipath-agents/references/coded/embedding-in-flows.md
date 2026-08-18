@@ -77,8 +77,10 @@ If the solution and flow project don't yet exist, run `uip solution init "<Solut
 4. Register the agent in the solution — **this is the step that mints the `resource.key`** the flow will reference:
 
    ```bash
+<!--skill-flavor:flow-solution-registration-paths:start-->
    cd <SolutionDir>
    uip solution projects add <CodedAgentProject> <SolutionName>.uipx --output json
+<!--skill-flavor:flow-solution-registration-paths:end-->
    ```
 
    After this command, `resources/solution_folder/process/agent/<CodedAgentProject>.json` holds the `resource.key` UUID.

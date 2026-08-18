@@ -223,7 +223,9 @@ uip maestro flow eval simulation remove connector-send-email \
 
 ### `uip maestro flow eval run start`
 
+<!--skill-flavor:upload-safety-run-start-prereq:start-->
 Start a Studio Web evaluation run. The Flow solution **must already exist in Studio Web** — see [upload-safety.md](upload-safety.md).
+<!--skill-flavor:upload-safety-run-start-prereq:end-->
 
 | Flag | Required | Description | Default |
 |------|----------|-------------|---------|
