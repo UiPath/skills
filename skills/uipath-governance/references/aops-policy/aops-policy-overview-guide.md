@@ -77,8 +77,10 @@ which uip && uip --version
 
 If not installed (both commands fail):
 ```bash
-npm install -g @uipath/uipcli
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
 ```
+
+Windows PowerShell: `irm https://download.uipath.com/uipath-cli/install.ps1 | iex`. The official installer also prepares Node.js, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
 
 ### Step 1 — Check login status
 
