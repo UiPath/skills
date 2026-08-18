@@ -1,0 +1,96 @@
+task_id: skill-admin-fedcred-maintain-e2e
+description: >
+  End-to-end test (outcome-graded) of the federated-credential MAINTAIN verbs on
+  an external app that already has credentials: external-apps
+  federated-credentials get / update / delete. federated_credentials_e2e.yaml
+  covers only the create path (and creates the app it uses); this task never
+  creates a credential — it retargets one and deletes another.
+
+  The load-bearing behaviour is that `federated-credentials update` is a FULL
+  REPLACE: every field is required, so an agent that sends only the new subject
+  without first reading the credential drops the issuer or audience. The verify
+  script reads the credential list back and asserts the new subject landed WHILE
+  issuer and audience survived — a lazy single-flag update cannot pass.
+
+  Uses its own PERSISTENT host app ("ce-identity-fedcred-maintain-host", created
+  once and never deleted). Identity-service has a create->read cross-partition
+  inconsistency (PLT-107839 investigation): a freshly-created app is not yet
+  materialized in the org partition the federated-credentials endpoint queries, so
+  fed-cred calls 400 with "Client not found in partition" on brand-new apps. A
+  dedicated durable host — not the smoke's "ce-identity-fedcred-host" — keeps the
+  two tests from fighting over one credential list under -jN. pre_run clears and
+  reseeds the two credentials; post_run deletes credentials only, keeping the host.
+tags: [uipath-admin, e2e, mode:build, lifecycle:setup, identity, external-app]
+
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''setup_fedcred_maintain.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_fedcred_maintain.py''))"'
+    timeout: 60
+
+run_limits:
+  expected_turns: 10
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Our GitHub Actions deployment pipeline moved off the main branch. On the
+  existing "ce-identity-fedcred-maintain-host" external app:
+
+  - The "ce-fedcred-main" federated credential must now trust the release branch
+    of myorg/myrepo instead of the main branch. Everything else about that
+    credential — which identity provider it trusts and what audience it expects —
+    must come out unchanged.
+  - "ce-fedcred-legacy" points at a repository we retired. Remove it.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant read-back: ce-fedcred-main now targets refs/heads/release with issuer and audience preserved (full-replace update done correctly), ce-fedcred-legacy deleted"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_fedcred_maintained.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed the app's federated credentials to resolve the named credentials to IDs"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+federated-credentials\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the credential back with federated-credentials get using both positional IDs"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+federated-credentials\s+get\s+"?[^\s-]\S*\s+"?[^\s-]\S*'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated the credential with the new subject on the client-ID + credential-ID positional pair"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+federated-credentials\s+update\s+"?[^\s-]\S*\s+"?[^\s-]\S*.*--subject'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the retired credential with both positional IDs"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+federated-credentials\s+delete\s+"?[^\s-]\S*\s+"?[^\s-]\S*'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not invent a top-level federated-credentials verb — it is a subcommand of external-apps"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+federated-credentials\b'
+    weight: 1.0
+    pass_threshold: 1.0

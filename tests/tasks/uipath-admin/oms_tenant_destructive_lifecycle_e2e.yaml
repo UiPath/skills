@@ -1,0 +1,156 @@
+task_id: skill-admin-oms-tenant-destructive-lifecycle-e2e
+description: >
+  End-to-end test of the destructive tenant surface: agent creates a
+  throwaway tenant, then drives `tenants update`, `tenants disable`,
+  `tenants enable`, and `tenants delete` against it, reading state back
+  with `tenants get` and polling each async operation (Rule 18).
+
+  Primary assertion is the Rule 20 safety contract — every destructive
+  verb must carry an explicit tenant id rather than falling through to
+  the login-tenant default. A negative guard fails any `tenants
+  delete` / `tenants disable` whose first token after the verb is a flag
+  (i.e. no positional target), and a second guard fails invented
+  hard-delete flags (Rule 19 — `tenants delete` is soft-only).
+
+  The tenant under test is a fixture the task creates itself
+  ("TenantDestructClie2e", renamed to "TenantDestructClie2eOld") — no
+  pre-existing tenant is ever targeted. A `cleanup_tenant.py` post_run
+  safety net soft-deletes any surviving fixture tenant so an incomplete
+  run leaves no orphan on the org.
+
+  Distinct from oms_tenant_create_poll_e2e (create + poll only) and
+  oms_tenant_disable_smoke (single disable call): this task is the
+  update/enable/disable/delete quadrant plus the explicit-target safety
+  rules, none of which are exercised elsewhere.
+
+  Command-construction plus local-artifact grading — no live tenant.
+  The one content check asserts the create body written to disk is a
+  valid CreateTenantRequestDto (`services` a plain string array, not a
+  `{name: true}` map, which OMS rejects on create).
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, oms, tenant-lifecycle]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  I need to rehearse our tenant decommissioning runbook before we use it
+  for real. Stand up a throwaway tenant called "TenantDestructClie2e",
+  then take it through the whole retirement path: rename it to
+  "TenantDestructClie2eOld", take it offline, bring it back online, and
+  finally retire it. Read the tenant's state back from the platform after
+  each step so I can see the runbook holds up.
+
+  Important:
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail with auth errors — that is expected and acceptable.
+    Run each command exactly once regardless of errors. If a lookup gives
+    you no tenant id, use a placeholder id and keep going so every step
+    of the runbook is exercised.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-admin skill"
+    skill_name: "uipath-admin"
+    expected_skill: "uipath-admin"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resolved provisioning regions before create (advisory — codex may skip)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+organizations\s+regions\s+list\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent created the fixture tenant with a --file body (inline create returns HTTP 400)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+create(?=[\s\S]*--file\s)[\s\S]*'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Create body on disk is a valid CreateTenantRequestDto: fixture name, a region, and `services` as a plain string array (not a {name: true} map)"
+    command: 'CHECK_TENANT_NAME=TenantDestructClie2e python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''check_tenant_create_body.py''))"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent renamed the tenant via `tenants update <TENANT_ID> --name`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+update\s+(?!-)\S+[\s\S]*--name\s'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent disabled the tenant with an explicit positional tenant id (Rule 20)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+disable\s+(?!-)\S+'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent recorded an audit reason on disable (advisory — --reason is recommended, not required)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+disable\s+[\s\S]*--reason\s'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent re-enabled the tenant with an explicit positional tenant id"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+enable\s+(?!-)\S+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent soft-deleted the tenant with an explicit positional tenant id (Rule 20)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+delete\s+(?!-)\S+'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Rule 20: `tenants delete` / `tenants disable` must never run without a positional tenant id (would target the login tenant)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+(?:delete|disable)(?:\s+--\S+|\s*$)'
+    weight: 2.0
+
+  - type: command_not_executed
+    description: "Rule 19: `tenants delete` is soft-only — no invented hard-delete/force/purge flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+delete[\s\S]*--(?:hard|hard-delete|permanent|force|purge)\b'
+    weight: 1.5
+
+  - type: command_executed
+    description: "Agent polled the async tenant operations via `organizations operation get` (Rule 18)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+organizations\s+operation\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read tenant state back with `tenants get`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+post_run:
+  - command: 'CLEANUP_TENANT_MARKER="TenantDestructClie2e" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_tenant.py''))"'
+    timeout: 60

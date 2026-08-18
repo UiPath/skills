@@ -1,0 +1,104 @@
+task_id: skill-admin-extapp-inspect-update-e2e
+description: >
+  End-to-end test (outcome-graded) of the external-app MAINTAIN verbs:
+  external-apps list / get / update / delete-secret / delete. Today only create
+  (identity_create_external_app_smoke) and generate-secret
+  (identity_external_app_secret_rotate_smoke) are covered — nothing inspects,
+  edits, or retires an existing OAuth2 registration.
+
+  pre_run seeds two apps so a read-back can grade an update AND a delete without
+  the delete erasing the update evidence (see identity_user_lifecycle_e2e.yaml).
+  'ce-identity-extapp-active' is seeded with OR.Folders,OR.Jobs,OR.Assets plus a
+  second secret described 'ce-extapp-stale-secret'; the agent renames the app,
+  narrows its scopes, and deletes that secret. 'ce-identity-extapp-retired' is
+  deleted outright. The verify script reads the app back: scopes are REPLACED not
+  merged, so an agent that appends instead of replacing leaves OR.Assets behind
+  and fails.
+
+  Targets are named, never given as client IDs, so Rule 5 (resolve before
+  mutating) is exercised. The prompt does NOT tell the agent to read the app
+  before editing it — the skill teaches that, so the graded `get` call measures
+  whether it landed.
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, identity, external-app]
+
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''setup_extapp_maintain.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_extapp_maintain.py''))"'
+    timeout: 60
+
+run_limits:
+  expected_turns: 12
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  We are consolidating the OAuth2 app registrations in my UiPath organization.
+  Show me what is registered today, then:
+
+  - "ce-identity-extapp-active" is our surviving integration. Rename it to
+    "ce-identity-extapp-consolidated" and cut its permissions back so it can only
+    reach Orchestrator folders and jobs — it must no longer have any access to
+    assets. It also carries an old secret described "ce-extapp-stale-secret" that
+    was leaked; remove that secret but keep the app's other secret working.
+  - "ce-identity-extapp-retired" is dead — remove the whole registration.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant read-back: app renamed in place with scopes narrowed to Folders+Jobs (Assets dropped), stale secret gone with another surviving, retired app deleted"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_extapp_maintained.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed external apps to resolve the named apps to client IDs (Rule 5)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected an app with external-apps get and a positional client ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+get\s+"?[0-9a-fA-F]{8}-'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent replaced the app's application scopes via external-apps update --app-scope"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+update\s+"?[0-9a-fA-F]{8}-.*--app-scope'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent removed the leaked secret with delete-secret and a positional secret ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+delete-secret\s+"?[\w-]+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the retired app with a positional client ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+delete\s+"?[0-9a-fA-F]{8}-'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not pass the client ID as a flag on external-apps — it is positional (anti-pattern 2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+\S+\s+.*--(client-id|app-id|secret-id)\b'
+    weight: 1.0
+    pass_threshold: 1.0

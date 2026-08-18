@@ -1,0 +1,106 @@
+task_id: skill-admin-identity-maintain-lifecycle-e2e
+description: >
+  End-to-end test (outcome-graded) of the identity MAINTAIN verbs on objects that
+  already exist: groups get/update/delete and robot-accounts get/update/delete.
+  Existing coverage is create+list heavy; nothing exercises inspecting, editing,
+  or retiring an existing group or robot account.
+
+  pre_run seeds four markers — two custom groups and two robot accounts — so a
+  read-back can grade an update AND a delete on each object type at once. A
+  single object cannot grade both (the delete erases the update evidence — see
+  identity_user_lifecycle_e2e.yaml), so one object of each type is renamed and
+  the other retired. The verify script reads tenant state back: the renamed group
+  exists under its new name and not the old one, the stale group is gone, the
+  kept robot carries its new display name, and the retired robot is gone. It also
+  asserts a BuiltIn group survived (SKILL.md anti-pattern 1).
+
+  Prompts name every target by NAME, never by UUID, so Rule 5 (resolve the named
+  principal before mutating) is actually exercised. The prompt deliberately does
+  NOT tell the agent to inspect before mutating or to spare built-in groups — the
+  skill teaches both (Rule 6, anti-pattern 1), so the graded `get` calls and the
+  BuiltIn-survival assertion measure whether the skill landed.
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, identity, groups, robot-account]
+
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''setup_identity_maintain.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_identity_maintain.py''))"'
+    timeout: 60
+
+run_limits:
+  expected_turns: 16
+  max_turns: 50
+  turn_timeout: 600
+
+initial_prompt: |
+  Quarterly identity cleanup in my UiPath organization. Four things:
+
+  - The group "ce-identity-maintain-group" is now our renamed team — it should be
+    called "ce-identity-maintain-group-renamed".
+  - The group "ce-identity-maintain-stale-group" is being retired. Tell me who is
+    still in it and confirm that person's account details first, then remove the
+    group.
+  - The robot account "ce-identity-maintain-bot" is mislabelled — its display
+    name should read "Maintain Bot Updated".
+  - The robot account "ce-identity-maintain-retired-bot" is decommissioned —
+    remove it.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant read-back: group renamed in place, stale group deleted, robot display name updated, retired robot deleted, built-in groups intact"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_identity_maintained.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed groups to resolve the named groups to IDs (Rule 5)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed robot accounts to resolve the named robots to IDs (Rule 5)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+robot-accounts\s+list'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected a group with groups get and a positional ID (not --group-id)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+get\s+"?[0-9a-fA-F]{8}-'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected a robot account with robot-accounts get and a positional ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+robot-accounts\s+get\s+"?[0-9a-fA-F]{8}-'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent read the remaining member's account with users get before retiring the stale group"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+get\s+"?[0-9a-fA-F]{8}-'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Agent must not pass identity resource IDs as flags — they are positional (anti-pattern 2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+(groups|robot-accounts|users)\s+\S+\s+.*--(group-id|robot-account-id|user-id)\b'
+    weight: 1.5
+    pass_threshold: 1.0
