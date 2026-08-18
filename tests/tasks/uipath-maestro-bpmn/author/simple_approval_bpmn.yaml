@@ -40,13 +40,13 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "BPMN source was created"
-    path: "ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn"
+    path: "ExpenseApprovalBpmnSolution/ExpenseApprovalBpmn/ExpenseApprovalBpmn.bpmn"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_exists
     description: "Project metadata was created"
-    path: "ExpenseApprovalBpmn/project.uiproj"
+    path: "ExpenseApprovalBpmnSolution/ExpenseApprovalBpmn/project.uiproj"
     weight: 1.0
     pass_threshold: 1.0
 
