@@ -11,9 +11,13 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  # Generated recorders: the sandbox shims uip/curl into cli_mocks/ and appends
+  # each invocation to cli_mocks/calls.jsonl, the log cli_called reads by default.
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, the documents are 150-page
@@ -31,7 +35,6 @@ success_criteria:
   # triggers (so gpt_4o would be wrong here).
   - type: cli_called
     description: "Agent switched to a more capable model via `configure-model --model gemini_2_5_pro`"
-    log: "mocks/calls.jsonl"
     verb: "ixp projects configure-model"
     positional: ["my_invoices-f1afa9ef-ixp"]
     flags:

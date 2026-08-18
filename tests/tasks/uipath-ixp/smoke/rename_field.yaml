@@ -10,9 +10,13 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  # Generated recorders: the sandbox shims uip/curl into cli_mocks/ and appends
+  # each invocation to cli_mocks/calls.jsonl, the log cli_called reads by default.
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, rename the field "Amount" in
@@ -27,7 +31,6 @@ initial_prompt: |
 success_criteria:
   - type: cli_called
     description: "Agent renamed field \"Amount\" to \"Total Amount\" via `fields rename` (right group)"
-    log: "mocks/calls.jsonl"
     verb: "ixp fields rename"
     positional: ["my_invoices-f1afa9ef-ixp"]
     flags:
@@ -42,7 +45,6 @@ success_criteria:
   # slip past the guard.
   - type: cli_called
     description: "Agent did NOT delete the field (rename must not destroy it)"
-    log: "mocks/calls.jsonl"
     verb: "ixp fields delete"
     min_count: 0
     max_count: 0

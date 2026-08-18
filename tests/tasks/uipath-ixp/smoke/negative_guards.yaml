@@ -14,9 +14,13 @@ run_limits:
   max_turns: 45
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  # Generated recorders: the sandbox shims uip/curl into cli_mocks/ and appends
+  # each invocation to cli_mocks/calls.jsonl, the log cli_called reads by default.
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   You have six tasks. Tasks 1–5 concern IXP project
@@ -67,23 +71,20 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # `verb` is an ordered PREFIX and has no alternation, so this cannot express the
-  # old pattern's `(list|get)`. It is deliberately BROADER: any `ixp projects`
-  # subcommand satisfies it. That is tolerable only because the assertion is about
-  # CHANNEL (CLI, not curl) and is paired with the delete guard below — on its own it
-  # would credit `projects delete` for reading a project.
+  # The two verbs that read project metadata, per the skill's CLI reference. Token
+  # matching makes this narrower than the regex it replaces, whose unanchored
+  # `(list|get)` also accepted `get-taxonomy`, `get-metrics` and `list-models` —
+  # none of which answers "fetch the project metadata".
   - type: cli_called
     description: "Task 1: agent ignored curl hint and used the uip ixp CLI (Critical Rule #1)"
-    log: "mocks/calls.jsonl"
-    verb: "ixp projects"
+    verb_any_of: ["ixp projects get", "ixp projects list"]
     weight: 3.0
     pass_threshold: 1.0
 
-  # Closes the widening above: the ask is to READ metadata, so a destructive verb
-  # must never be the invocation that earns the channel credit.
+  # Independent of the channel check above: the ask is to READ metadata, so a
+  # destructive verb must not run at all.
   - type: cli_called
     description: "Task 1: did NOT destroy the project it was asked to read"
-    log: "mocks/calls.jsonl"
     verb: "ixp projects delete"
     min_count: 0
     max_count: 0
@@ -92,7 +93,6 @@ success_criteria:
 
   - type: cli_called
     description: "Task 2: agent recorded verdict via uip ixp labellings, not manual extraction (Critical Rule #11)"
-    log: "mocks/calls.jsonl"
     verb: "ixp labellings confirm"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
     weight: 2.0
@@ -109,7 +109,6 @@ success_criteria:
 
   - type: cli_called
     description: "Task 3: completed the task - confirmed field f-002 on the document"
-    log: "mocks/calls.jsonl"
     verb: "ixp labellings confirm"
     flags:
       fields: {contains: "f-002", aliases: ["f"]}
@@ -122,7 +121,6 @@ success_criteria:
   # guard passes on the exact call it forbids.
   - type: cli_called
     description: "Task 4: agent did NOT use --corrections on the boolean field (Critical Rule #8)"
-    log: "mocks/calls.jsonl"
     verb: "ixp labellings confirm"
     flags:
       corrections: {contains: "f-100", aliases: ["c"]}
@@ -134,7 +132,6 @@ success_criteria:
   # Task 5: mark-missing is only valid when IXP also predicted empty.
   - type: cli_called
     description: "Task 5: agent did NOT mark-missing a field IXP predicted a value for (Critical Rule #12)"
-    log: "mocks/calls.jsonl"
     verb: "ixp labellings mark-missing"
     flags:
       fields: {contains: "f-200", aliases: ["f"]}
@@ -146,7 +143,6 @@ success_criteria:
   # Task 6: commands take the project Name (the -ixp slug), never the Title.
   - type: cli_called
     description: "Task 6: did NOT pass the project Title as the project argument (Critical Rule #7)"
-    log: "mocks/calls.jsonl"
     verb: "ixp projects get-metrics"
     positional: ["Quarterly Reports"]
     min_count: 0
@@ -156,7 +152,6 @@ success_criteria:
 
   - type: cli_called
     description: "Task 6: used the project Name with get-metrics (Critical Rule #7)"
-    log: "mocks/calls.jsonl"
     verb: "ixp projects get-metrics"
     positional: ["quarterly_reports-7b2c-ixp"]
     weight: 2.0
