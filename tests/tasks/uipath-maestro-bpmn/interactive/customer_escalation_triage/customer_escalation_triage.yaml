@@ -10,7 +10,8 @@ description: >
   Slack work. Independent graders validate, pack, and run hidden scenarios
   against the exact submitted artifact in live Alpha, verify typed business
   outputs, traces, and external side effects, then delete every created issue,
-  file, message, and ephemeral Alpha solution.
+  file, message, and ephemeral Alpha solution whose identifier the harness
+  recovers.
 tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:setup, shape:multi-node, node:decision, node:subflow, node:loop, connector, feature:connections, feature:activities, feature:registry, feature:transform, feature:escalation, feature:conversational, feature:approval-gate, path-to-ga]
 
 run_limits:
@@ -168,8 +169,9 @@ simulation:
     tenant folders. It must retrieve and save the exact live registry responses
     for BPMN.ScriptTask, BPMN.Variables, and each enriched
     Intsvc.ActivityExecution object used for Jira create/update, Drive copy,
-    and Slack send under CustomerEscalationTriage/registry-evidence/. The BPMN
-    must include registry-derived connector activities, element-scoped
+    and Slack send under
+    CustomerEscalationTriageSolution/CustomerEscalationTriage/registry-evidence/.
+    The BPMN must include registry-derived connector activities, element-scoped
     connection/folder bindings, and three matching Connection resources in
     bindings_v2.json. Include full BPMN DI and project metadata, pass the CLI
     validator, and pack successfully. The agent must not upload, publish, run,
@@ -206,7 +208,7 @@ simulation:
     - "If the agent writes project files before DESIGN APPROVED, reject the work and do not compensate by dumping missing requirements."
     - "If the agent asks how to encode XML, expressions, mappings, iterator syntax, or registry payloads, restate the business/process outcome and direct it to the BPMN skill and live registry. Never provide implementation snippets, node ids, or a reference graph."
     - "If asked for upload, publish, run, or debug permission, decline."
-    - "Before accepting completion, ask the agent to inspect and quote the serialized Jira create and update request bodies and confirm both contain a dynamic correlationId reference in fields.description. Also require it to compare the serialized Slack body to the saved enrichment's exact required request field names and correct any provider-familiar synonym such as text. Require it to quote the serialized incoming JiraUnavailable error-flow condition and confirm the condition itself—not merely its upstream topology—contains jiraAvailable=false plus explicit Sev1/Sev2 eligibility. Then confirm independent local validation, packing, six saved registry responses under CustomerEscalationTriage/registry-evidence/, three connection resources, that every public output has an explicit assignment on every completing path, and that it did not execute the BPMN."
+    - "Before accepting completion, ask the agent to inspect and quote the serialized Jira create and update request bodies and confirm both contain a dynamic correlationId reference in fields.description. Also require it to compare the serialized Slack body to the saved enrichment's exact required request field names and correct any provider-familiar synonym such as text. Require it to quote the serialized incoming JiraUnavailable error-flow condition and confirm the condition itself—not merely its upstream topology—contains jiraAvailable=false plus explicit Sev1/Sev2 eligibility. Then confirm independent local validation, packing, six saved registry responses under CustomerEscalationTriageSolution/CustomerEscalationTriage/registry-evidence/, three connection resources, that every public output has an explicit assignment on every completing path, and that it did not execute the BPMN."
     - "Keep replies concise and in character. Emit the stop token only after every revealed requirement is addressed and the agent reports successful local validation and packing."
   max_turns: 20
 
@@ -280,7 +282,7 @@ success_criteria:
 
   - type: file_exists
     description: "CustomerEscalationTriage BPMN source was created"
-    path: "CustomerEscalationTriage/CustomerEscalationTriage.bpmn"
+    path: "CustomerEscalationTriageSolution/CustomerEscalationTriage/CustomerEscalationTriage.bpmn"
     weight: 1.5
     pass_threshold: 1.0
 
@@ -318,7 +320,7 @@ success_criteria:
 
   - type: run_command
     description: "The UiPath CLI validator independently accepts the generated BPMN"
-    command: "uip maestro bpmn validate CustomerEscalationTriage/CustomerEscalationTriage.bpmn --output json"
+    command: "uip maestro bpmn validate CustomerEscalationTriageSolution/CustomerEscalationTriage/CustomerEscalationTriage.bpmn --output json"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -333,7 +335,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The exact submitted project executes hidden scenarios in live Alpha; runtime variables, element traces, incidents, typed error handling, connector side effects, sequential iteration order, and exact business outputs are asserted, and every created issue, file, message, and ephemeral solution is deleted"
+    description: "The exact submitted project executes hidden scenarios in live Alpha; runtime variables, element traces, incidents, typed error handling, connector side effects, sequential iteration order, and exact business outputs are asserted, and every created issue, file, message, and ephemeral solution whose identifier the harness recovers is deleted"
     command: "python3 $TASK_DIR/check_customer_escalation_structure.py && python3 $TASK_DIR/check_customer_escalation_behavior.py"
     timeout: 10800
     expected_exit_code: 0

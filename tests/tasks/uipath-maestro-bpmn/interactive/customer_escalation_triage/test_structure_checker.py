@@ -88,6 +88,68 @@ def test_command_guard_covers_executable_shell_prefixes() -> None:
         assert pattern.search(command) is None, command
 
 
+def test_cli_project_metadata_matches_generated_scaffold() -> None:
+    bpmn_name = "CustomerEscalationTriage.bpmn"
+    start_id = "Start_1"
+    entry_point_id = "entry-point-1"
+    expected_main = f"/content/{bpmn_name}#{start_id}"
+    with tempfile.TemporaryDirectory() as directory:
+        project = Path(directory) / "CustomerEscalationTriage"
+        project.mkdir()
+        metadata = {
+            "project.uiproj": {
+                "Name": project.name,
+                "ProjectType": "ProcessOrchestration",
+            },
+            "operate.json": {
+                "main": expected_main,
+                "contentType": "ProcessOrchestration",
+            },
+            "entry-points.json": {
+                "entryPoints": [
+                    {
+                        "uniqueId": entry_point_id,
+                        "filePath": expected_main,
+                        "type": "ProcessOrchestration",
+                    }
+                ]
+            },
+            "package-descriptor.json": {
+                "files": {
+                    "operate.json": "operate.json",
+                    "entry-points.json": "entry-points.json",
+                    "bindings.json": "bindings_v2.json",
+                    bpmn_name: bpmn_name,
+                }
+            },
+            "bindings_v2.json": {"resources": []},
+        }
+        for name, payload in metadata.items():
+            (project / name).write_text(json.dumps(payload), encoding="utf-8")
+
+        original_project = checker.PROJECT
+        checker.PROJECT = project
+        try:
+            checker.require_cli_project_metadata(
+                bpmn_name,
+                start_id,
+                entry_point_id,
+            )
+            metadata["project.uiproj"]["main"] = bpmn_name
+            (project / "project.uiproj").write_text(
+                json.dumps(metadata["project.uiproj"]),
+                encoding="utf-8",
+            )
+            with raises(SystemExit, match="must not duplicate"):
+                checker.require_cli_project_metadata(
+                    bpmn_name,
+                    start_id,
+                    entry_point_id,
+                )
+        finally:
+            checker.PROJECT = original_project
+
+
 def variable(name: str, variable_id: str, variable_type: str = "string") -> ET.Element:
     return ET.Element(
         checker.q(checker.UIPATH_NS, "inputOutput"),
