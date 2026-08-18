@@ -177,6 +177,10 @@ During draft finalization, do NOT open these links — the draft is the settled 
 the complete normalization contract; finalization preserves existing display names verbatim.
 Template-local rules:
 - Every stage and task carries a concrete `Design Rationale` and prose `Description`.
+- Secondary stages use `### Secondary Stage: {Name}`, `Stage Kind: secondary`, `Required for Case
+  Completion: No`, and every secondary-stage ENTRY ROW carries `Interrupting: Yes` — including
+  decision-keyed rows (`selected-stage-completed`/`-exited` + `IF`). The only `Interrupting: No` entry row
+  on a secondary stage is a parallel-oversight `sla-status-change` row.
 - Stage-picker repair is a replacement, never a duplicate: when `user-selected-stage` requires picker
   exposure from an origin, replace that origin's `required-tasks-completed | exit-only | Yes` completion
   row with `required-tasks-completed | wait-for-user | Yes`. Keep exactly one `required-tasks-completed`
