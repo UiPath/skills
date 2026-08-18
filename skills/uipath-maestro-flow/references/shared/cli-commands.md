@@ -91,17 +91,23 @@ uip maestro flow pack <project-path> <OutputDir> --output json
 
 Requires `content/package-descriptor.json` and `content/operate.json` in the project. Output: `<Name>.flow.Flow.<version>.nupkg`.
 
+<!--skill-flavor:upload-pack-note:start-->
 > **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-solution](/uipath:uipath-solution) for `solution publish` commands.
+<!--skill-flavor:upload-pack-note:end-->
 
 ## uip solution resources refresh
 
+<!--skill-flavor:upload-refresh-prereq:start-->
 Re-scan all projects in the solution and sync resource declarations (connections, processes, queues, etc.) from their `bindings_v2.json` files. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists. **Always run this before `uip solution upload` or `uip maestro flow debug`.**
+<!--skill-flavor:upload-refresh-prereq:end-->
 
 ```bash
 uip solution resources refresh --solution-folder <SolutionDir> --output json
 ```
 
+<!--skill-flavor:upload-solution-dir-note:start-->
 `<SolutionDir>` is the solution directory (containing the `.uipx` file). The command has no positional solution argument; omit `--solution-folder` only when the current directory is already the solution root.
+<!--skill-flavor:upload-solution-dir-note:end-->
 
 ## uip solution resources add / remove / edit
 
@@ -127,6 +133,7 @@ echo '{"slaInHours":"4"}' | uip solution resources edit <KEY> --patch - --output
 
 `add` is idempotent on `(kind, name, folder)` for local and on resource key for remote; a retry returns `Status: "Unchanged"`. `edit` is the only command that mutates an existing resource's spec — `refresh` never overwrites; it skips resources already in the solution. None of these touch `bindings_v2.json` — if a flow node still binds the resource, the next `refresh` will re-import it. See [uipath-solution Step 9–11](/uipath:uipath-solution) for the full contract.
 
+<!--skill-flavor:upload-command-section:start-->
 ## uip solution upload
 
 Upload a solution directly to Studio Web. **Requires `uip login`.**
@@ -138,6 +145,7 @@ uip solution upload <SolutionDir> --output json
 `uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. Use the exact solution root path (or `.` from inside the solution root). If your shell is inside a nested project folder, pass the absolute solution root path or `..`; do not pass the solution name again. Uploads the solution to Studio Web where the user can visualize, inspect, edit, and publish the flow from the browser.
 
 > **This is the default publish path.** When the user asks to "publish" without specifying where, run `uip solution upload <SolutionDir>` to push to Studio Web. Share the resulting URL with the user.
+<!--skill-flavor:upload-command-section:end-->
 
 ## uip maestro flow debug
 

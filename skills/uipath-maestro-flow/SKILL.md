@@ -25,8 +25,10 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, di
 
 **Operate** — publishing, running, or managing a deployed flow. Read [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).
 
+<!--skill-flavor:upload-scope-bullets:start-->
 - Push a flow to Studio Web (`uip solution upload`)
 - Deploy a flow to Orchestrator (`uip maestro flow pack` + `uip solution publish`)
+<!--skill-flavor:upload-scope-bullets:end-->
 - Debug a flow end-to-end against real systems
 - Trigger a deployed process
 - Check job status or stream traces
@@ -43,7 +45,9 @@ Comprehensive guide for creating, editing, validating, debugging, publishing, di
 - Create evaluators (`exact-match`, `json-similarity`, `contains`, `llm-judge-*`) for a Flow project
 - Create eval sets, add data points (test cases), pin entry points
 - Start Studio Web eval runs, poll status, fetch results, compare runs
+<!--skill-flavor:upload-eval-scope-bullet:start-->
 - Decide whether to call `uip solution upload` (almost always: don't auto-run; ask first)
+<!--skill-flavor:upload-eval-scope-bullet:end-->
 
 ## Capability router
 
