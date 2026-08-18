@@ -446,7 +446,7 @@ test("Studio Web inherits all API Workflow references and adds only host scope",
     composed,
     /Authoring HTTP Request \/ Gmail \/ Outlook \/ GitHub \/ Slack \/ etc\. activities via `uip api-workflow registry resolve` \+ `stub`/,
   );
-  assert.match(composed, /Project creation must use the live `proxy-tools-Solution` \/ `CreateProjects` schema/);
+  assert.match(composed, /Project creation must use the live `CreateProjects` schema/);
   assert.ok(!containsFlavorMarker(composed));
 });
 
