@@ -87,12 +87,14 @@ uip insights jobs process-details --time-range 1440 --output json
 
 User wants to see if things are getting better or worse.
 
+Resolve both week boundaries to epoch milliseconds first, with the platform-specific `date` recipes under Absolute Time Ranges in [`jobs-commands-guide.md`](jobs-commands-guide.md). Treat `--started-before` as exclusive: pass this Monday 00:00:00 UTC as the upper bound so the window covers all of last week.
+
 ```bash
 # This week (last 7 days)
 uip insights jobs summary --time-range 10080 --output json
 
-# For last week, use absolute timestamps
-# Calculate: last Monday to this Monday in epoch ms
+# Last week: absolute boundaries, resolved per Absolute Time Ranges
+# in jobs-commands-guide.md, passed as literal numbers
 uip insights jobs summary \
   --started-after <last-monday-epoch-ms> \
   --started-before <this-monday-epoch-ms> \
@@ -121,6 +123,8 @@ uip insights jobs top-failures --time-range 1440 \
 ```
 
 A folder with no recent Insights activity will not appear. Hand off to `uipath-platform` for the full visible inventory.
+
+To scope by several folders or processes at once, repeat the flag once per value; see the repeatable-options rule in [`jobs-commands-guide.md`](jobs-commands-guide.md).
 
 ## Interpreting Array Data
 
