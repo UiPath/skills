@@ -169,10 +169,10 @@ uip insights jobs failure-details --time-range 1440 --output json
 Four discovery groups expose scope candidates with recent Insights activity:
 
 ```bash
-uip insights filter-folders list --output json     # {folderName, folderKey} rows
-uip insights filter-processes list --output json   # {processName, folderKey} rows
-uip insights filter-queues list --output json      # {queueName, folderKey} rows
-uip insights filter-machines list --output json    # {machineName, machineKey} rows
+uip insights filter-folders list --output json     # {FolderName, FolderKey} rows
+uip insights filter-processes list --output json   # {ProcessName, FolderKey} rows
+uip insights filter-queues list --output json      # {QueueName, FolderKey} rows
+uip insights filter-machines list --output json    # {MachineName, MachineKey} rows
 ```
 
 Rules that differ from the jobs commands:
@@ -190,7 +190,7 @@ Before any command that takes a folder key, process name, machine name, or (futu
 # 1. Discover candidates
 uip insights filter-folders list --output json
 
-# 2. Match the user's words against folderName values. If Pagination
+# 2. Match the user's words against FolderName values. If Pagination
 #    shows HasMore: true, page with --offset (or raise --limit) until
 #    every row has been seen BEFORE concluding anything is absent.
 #    Multiple matches -> ask the user which one. Zero matches across
@@ -198,7 +198,7 @@ uip insights filter-folders list --output json
 #    last 30 days and ask for more detail. Never guess or fabricate a key.
 
 # 3. Use the exact key from the response
-uip insights jobs summary --time-range 1440 --folder-key "<folderKey from step 1>" --output json
+uip insights jobs summary --time-range 1440 --folder-key "<FolderKey from step 1>" --output json
 ```
 
 ---

@@ -107,7 +107,7 @@ User asks about a specific Orchestrator folder.
 
 ```bash
 # Step 1: Find the folder key. Two sources return the same GUID:
-# Insights-active folders (last 30 days): GUID is the folderKey field
+# Insights-active folders (last 30 days): GUID is the FolderKey field
 uip insights filter-folders list --output json
 # Fallback, full folder inventory (requires uipath-platform): GUID is the Key field
 uip or folders list --output json
