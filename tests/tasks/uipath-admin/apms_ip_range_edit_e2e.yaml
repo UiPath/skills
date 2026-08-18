@@ -7,7 +7,7 @@ description: >
 
   Command-construction only — no live tenant. What matters is correct
   command sequencing and flag usage for ip-range CRUD.
-tags: [uipath-admin, e2e, mode:build, lifecycle:edit, apms, ip-ranges]
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, apms, ip-ranges]
 
 run_limits:
   expected_turns: 10

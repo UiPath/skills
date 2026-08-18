@@ -27,7 +27,7 @@ description: >
   specific sign-ins for a user that was never resolved fails. The agent's
   user-level filter cannot be reproduced by the harness, so an empty result
   passes without a live comparison and the llm_judge carries the answer's gate.
-tags: [uipath-admin, e2e, mode:diagnose, audit, investigation, login-history, scope-org]
+tags: [uipath-admin, e2e, mode:diagnose, lifecycle:discover, audit, investigation, login-history, scope-org]
 max_iterations: 2
 
 initial_prompt: |
