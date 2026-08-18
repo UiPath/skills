@@ -12,12 +12,17 @@ CANARIES = (
     "GENERATED_ONLY_CANARY_ALPHA_9F3C",
     "GENERATED_ONLY_CANARY_BETA_7D2A",
 )
-REFRESH_MANAGED_TOKENS = ("entry-points.json", "legacyrequest", "legacyresponse")
-DEFECT_SECTIONS = (
-    "critical finding",
-    "warning",
-    "improvement opportunit",
-    "rule finding",
+REFRESH_MANAGED_TOKENS = (
+    ".agent-builder",
+    ".local/build",
+    "entry-points.json",
+    "legacyrequest",
+    "legacyresponse",
+)
+FINDING_SECTION_PREFIXES = (
+    "critical findings",
+    "warnings",
+    "improvement opportunities",
 )
 HEADING = re.compile(r"^#{2,4}\s+(.+?)\s*$")
 MIN_REPORT_BYTES = 500
@@ -66,10 +71,10 @@ def defect_sections(report: str):
         if not match:
             lines.append(line)
             continue
-        if any(name in heading.lower() for name in DEFECT_SECTIONS):
+        if heading.lower().startswith(FINDING_SECTION_PREFIXES):
             yield heading, lines
         heading, lines = match.group(1), []
-    if any(name in heading.lower() for name in DEFECT_SECTIONS):
+    if heading.lower().startswith(FINDING_SECTION_PREFIXES):
         yield heading, lines
 
 
@@ -84,15 +89,18 @@ def check_report() -> None:
         fail("report does not classify the project as a low-code agent")
     if "validation" not in normalized and "validate" not in normalized:
         fail("report does not include the validation result")
-    has_review_result = any(
-        token in normalized
-        for token in ("agent review", "review cli", "review result", "cli grade")
+    summary_grade = re.search(
+        r"(?m)^\s*-\s+\*\*Agent Grade:\*\*\s+([ABCDF])(?:\s|$)", report
     )
-    has_grade = bool(
-        re.search(r"\bgrade\b\s*(?:\||:|-)?\s*\**(?:a|b|c|d|f)\b", normalized)
+    if not summary_grade:
+        fail("report does not include a valid Summary Agent Grade")
+    final_grade = re.search(
+        r"(?m)^\*\*Final grade: ([ABCDF])\*\*\Z", report.rstrip()
     )
-    if not has_review_result and not has_grade:
-        fail("report does not include the review CLI result or grade")
+    if not final_grade:
+        fail("report does not end with '**Final grade: <A-F>**'")
+    if summary_grade.group(1) != final_grade.group(1):
+        fail("Summary Agent Grade and final grade do not match")
     surfaced_canaries = [canary for canary in CANARIES if canary in report]
     if surfaced_canaries:
         fail(f"report surfaced generated-only canaries: {surfaced_canaries}")
@@ -100,16 +108,15 @@ def check_report() -> None:
         cited = [line.strip() for line in lines if mentions_refresh_managed(line)]
         if cited:
             fail(
-                f"report files refresh-managed entry-points.json state as a defect "
-                f"under '{heading}': {cited[:2]} — refresh regenerates that file from "
-                "agent.json, so a pre-refresh mismatch is stale by construction"
+                f"report files refresh-managed state as a defect under "
+                f"'{heading}': {cited[:2]}"
             )
 
 
 def main() -> None:
     check_derived_state()
     check_report()
-    print("PASS: refreshed derived state and report boundary are valid")
+    print("PASS: refreshed derived state, report boundary, and grade footer are valid")
 
 
 if __name__ == "__main__":

@@ -4,9 +4,10 @@ CODED_OUTPUT_ENUM_MISSING_ON_CLASSIFIER.
 
 Overwrites main.py with a classifier whose output field `classification` is
 a bare `str` (no Literal / Enum / pattern) even though the agent maps to a
-small fixed set (Billing / Technical / Account). The judgment rule fires
-when an output field is classifier-shaped by name AND the agent's logic maps
-to an enumerated set — recognizing the classifier shape is a semantic read.
+small fixed set (Billing / Technical / Account), then synchronizes the
+derived entry-point schemas. The judgment rule fires when an output field is
+classifier-shaped by name AND the agent's logic maps to an enumerated set —
+recognizing the classifier shape is a semantic read.
 """
 
 import os
@@ -19,7 +20,10 @@ sys.path.insert(
         os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
     ),
 )
-from coded_scaffold import write_baseline_function_agent  # noqa: E402
+from coded_scaffold import (  # noqa: E402
+    sync_entry_point_schema,
+    write_baseline_function_agent,
+)
 
 MAIN_PY = '''from pydantic import BaseModel, Field
 from uipath.tracing import traced
@@ -51,6 +55,29 @@ def main() -> None:
     root = Path("CodedAgent")
     write_baseline_function_agent(root)
     (root / "main.py").write_text(MAIN_PY, encoding="utf-8")
+    sync_entry_point_schema(
+        root,
+        input_schema={
+            "type": "object",
+            "properties": {
+                "email_body": {
+                    "type": "string",
+                    "description": "The support email to triage",
+                }
+            },
+            "required": ["email_body"],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "classification": {
+                    "type": "string",
+                    "description": "One of: Billing, Technical, or Account",
+                }
+            },
+            "required": ["classification"],
+        },
+    )
     print("Injected classifier with bare-str output field 'classification' (no Literal/Enum)")
 
 

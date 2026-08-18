@@ -114,7 +114,7 @@ Rarely, a directory may contain nested `.uipx` files:
 
 ## Validation Command Reference
 
-> **You MUST run these commands yourself via Bash.** Do not just list them — execute them, parse the output, and include every Error, Warning, and Info result in the review report.
+> **You MUST run these commands yourself via Bash.** Do not just list them — execute them, parse the output, and account for every result in the review report: Error / Warning / Info counts in the validation table, plus a detail line per Error and Warning.
 
 ### RPA Validation and Workflow Analyzer
 
@@ -320,28 +320,33 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 
 ### Automated Validation & Workflow Analyzer Results
 
-> This section is MANDATORY. Every review must include the output of `uip rpa validate` (for RPA), `uip agent validate` (for agents), `uip maestro flow validate` (for flows), etc. Report ALL Errors, Warnings, and Info.
+> This section is MANDATORY. Every review must include the output of `uip rpa validate` (for RPA), `uip agent validate` (for agents), `uip maestro flow validate` (for flows), etc. Every result is reported as a count in the table below; Errors and Warnings additionally get a detail line.
 
 | Project | File | Command | Errors | Warnings | Info |
 |---|---|---|---|---|---|
 | ... | ... | ... | ... | ... | ... |
 
-**Validation Details:**
+**Validation Details:** *(Errors and Warnings only — omit the heading entirely when there are none)*
 - [V-E-001] Project/File: **ST-RULE-ID** — Description
 - [V-W-001] Project/File: **ST-RULE-ID** — Description
-- [V-I-001] Project/File: **ST-RULE-ID** — Description
 
 ### Critical Findings (blocks deployment)
-1. [C-001] <finding title> — `<project/file path>` — <recommendation>
-2. [C-002] ...
+
+| ID | Rule | Recommendation |
+|---|---|---|
+| C-001 | `<rule_id>` or `—` | `<project/file path>`: <issue>. <fix>. |
 
 ### Warnings (should fix before production)
-1. [W-001] <finding title> — `<project/file path>` — <recommendation>
-2. [W-002] ...
+
+| ID | Rule | Recommendation |
+|---|---|---|
+| W-001 | `<rule_id>` or `—` | `<project/file path>`: <issue>. <fix>. |
 
 ### Improvement Opportunities
-1. [I-001] <finding title> — `<project/file path>` — <recommendation>
-2. [I-002] ...
+
+| ID | Rule | Recommendation |
+|---|---|---|
+| I-001 | `<rule_id>` or `—` | `<project/file path>`: <issue>. <fix>. |
 
 ### Per-Project Summary
 | Project | Type | Validation | Quality | Grade | Key Findings |
@@ -359,7 +364,11 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 - Queue usage: <observation and recommendation>
 - Bulk operations: <observation and recommendation>
 - Transaction handling: <observation and recommendation>
+
+**Final grade: <A–F>**
 ```
+
+> **`Final grade:` is the report's last line — nothing follows it.** No notes, caveats, or commentary, inside the report or after it. It restates the Summary's `Agent Grade` letter (the two must match) so the grade stays visible at the tail. Letter only — no label, no derivation. Agent projects only; omit when the review has no agent projects. See SKILL.md Step 4.5 + [agent-grading-rubric.md](agents/agent-grading-rubric.md).
 
 **Overall Quality determination** (all project types):
 - **Good** — 0 Critical findings, 0-3 Warnings

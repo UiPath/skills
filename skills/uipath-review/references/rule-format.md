@@ -30,7 +30,7 @@ Each catalog file uses one H2 section per logical checker (e.g., `## SchemaCheck
 | `info` | Info | `I-D-` |
 | `judgment` | Warning (default; agent picks Critical / Warning / Info based on contextual severity) | `W-D-` (or `C-D-` / `I-D-` when the agent escalates / de-escalates with reasoning logged in the finding's `description`) |
 
-The `-D-` infix marks the finding as rule-driven (vs `-V-` for Step 2 validation output, or no infix for manual checklist findings). Review-CLI findings carry the `RuleId` the CLI emits and are reported in the same "Rule Findings" subsection.
+The `-D-` infix marks the finding as rule-driven (vs `-V-` for Step 2 validation output, or no infix for manual checklist findings). Review-CLI findings carry the `RuleId` the CLI emits and are reported in the same severity table.
 
 ## Detection method — the judgment form
 
