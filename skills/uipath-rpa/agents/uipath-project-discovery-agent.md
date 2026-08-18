@@ -36,7 +36,7 @@ You are a project discovery agent. Analyze a UiPath automation project, write th
 
 A project with no authored content yields a document of empty tables. Run this gate **before** any discovery work.
 
-Count authored files with Glob, excluding generated and metadata directories (`.local/`, `.codedworkflows/`, `.objects/`, `.entities/`, `.screenshots/`, `.settings/`, `obj/`, `bin/`):
+Count authored files with Glob, excluding every dot-directory (any path segment starting with `.` — `.local/`, `.codedworkflows/`, `.objects/`, `.settings/`, `.templates/`, …) plus `obj/` and `bin/`:
 
 ```
 **/*.xaml     → XAML workflow count
@@ -49,9 +49,9 @@ Write nothing and return the matching `SKIP:` line when **any** condition holds:
 |-----------|--------|
 | No `project.json` found | `SKIP: no project.json — nothing to discover` |
 | 0 authored `.xaml` + `.cs` files | `SKIP: empty project — no workflow files` |
-| Exactly 1 authored file, it is the scaffolded entry point (`Main.xaml`, `Main.cs`, or `TestCase.xaml`), and its body holds no child activity inside the root `Sequence` (XAML) / no statement in the `Execute` body (coded) | `SKIP: freshly-scaffolded project — no authored content` |
+| Exactly 1 authored file, it is a scaffolded entry point (`Main.xaml` process/template, `NewActivity*.xaml` library, `TestCase.xaml` test automation, `Main.cs` coded), and it holds no authored logic — root `Sequence` empty or containing only `Comment` activities (XAML) / no statement in the `Execute` body (coded) | `SKIP: freshly-scaffolded project — no authored content` |
 
-Read that single entry point to decide the third condition — an untouched scaffold has an empty root `Sequence`. Any authored activity or statement means the project is real: proceed to Step 3.
+Read that single entry point to decide the third condition. Scaffold noise is not authored content: ViewState metadata (`sap:WorkflowViewStateService.ViewState`) is a property element, not a child activity, and the blank test-case scaffold ships a `Comment` activity (`// Blank Test Case`) inside the root `Sequence`. Any other activity or statement means the project is real: proceed to Step 3.
 
 A user request to regenerate does NOT override the gate — a project with nothing in it has nothing to regenerate from. Return the `SKIP:` line either way.
 

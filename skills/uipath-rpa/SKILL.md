@@ -84,10 +84,10 @@ Discovery on a project with no authored content returns a document of empty tabl
 | Condition | How to check |
 |-----------|--------------|
 | Greenfield — no `project.json` (you are about to create the project) | Step 0 found no `project.json` |
-| Empty project — 0 authored workflow files | Glob `**/*.xaml` and `**/*.cs`, excluding `.local/`, `.codedworkflows/`, `.objects/`, `.entities/`, `obj/`, `bin/` → combined count is 0 |
-| Freshly scaffolded — only the untouched entry point | Same count is 1, the file is `Main.xaml`, `Main.cs`, or `TestCase.xaml`, and its body holds no child activity inside the root `Sequence` (XAML) / no statement in the `Execute` body (coded) |
+| Empty project — 0 authored workflow files | Glob `**/*.xaml` and `**/*.cs`, excluding every dot-directory (any path segment starting with `.`) plus `obj/` and `bin/` → combined count is 0 |
+| Freshly scaffolded — only the untouched entry point | Same count is 1, the file is a scaffolded entry point (`Main.xaml` process/template, `NewActivity*.xaml` library, `TestCase.xaml` test automation, `Main.cs` coded), and it holds no authored logic — root `Sequence` empty or containing only `Comment` activities (XAML) / no statement in the `Execute` body (coded) |
 
-When the gate trips: proceed straight to the skill workflow and write no context files now. **After the build completes**, write both context files yourself (discovery-flow step 3 below) from what you just created: structure, dependencies, entry points.
+When the gate trips: proceed straight to the skill workflow and write no context files now. **After the build completes**, write both context files yourself from what you just created (structure, dependencies, entry points), using the same file paths and `AGENTS.md` marker logic as discovery-flow step 3 below.
 
 **Discovery flow** (used for both missing and stale context):
 1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at [`agents/uipath-project-discovery-agent.md`](agents/uipath-project-discovery-agent.md). Use whichever spawn mechanism your host supports:
