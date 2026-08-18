@@ -122,7 +122,9 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    expression/error mappings, retry attributes), then generate one
    `BPMNShape`/`BPMNEdge` per node and flow. For local authoring prompts, use the
    plain project layout `<ProjectName>/<ProjectName>.bpmn` with
-   `<ProjectName>/project.uiproj`; do not create `*Solution/`, package files, or
+   `<ProjectName>/project.uiproj` whose lowercase `"main"` references the BPMN
+   filename (a `project.uiproj` that does not reference the BPMN file breaks
+   packing and validation); do not create `*Solution/`, package files, or
    `.uipx` artifacts unless the user explicitly asks to package or operate the
    project.
    When adding draft or preserve-only case-management variants, include a real
@@ -150,9 +152,11 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
    wording such as "connection and process binding" because it hides the concrete
    artifact the CLI must supply.
-   If a local-only prompt asks for `operate.json`, `entry-points.json`,
-   `bindings_v2.json`, or `package-descriptor.json`, follow the minimal local
-   metadata shape in
+   In an Integration Service draft handoff, never hand-author `operate.json`,
+   `entry-points.json`, `bindings_v2.json`, or `package-descriptor.json` —
+   they are CLI-owned enrichment: leave them absent and name them as blockers.
+   Only when a local-only prompt explicitly asks for them (or packing requires
+   them), follow the minimal local metadata shape in
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape).
    Do not copy CLI scaffold metadata shapes into a synthetic local project.
 4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas
