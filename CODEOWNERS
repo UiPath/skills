@@ -74,8 +74,8 @@
 /tests/tasks/activation/uipath-functions.jsonl @AlexBizon @UiPath/team-coded-agents
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
-/skills/uipath-planner/ @RaduAna-Maria @abhiram-vad
-/tests/tasks/uipath-planner/ @RaduAna-Maria @abhiram-vad
+/skills/uipath-planner/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
+/tests/tasks/uipath-planner/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
 # Case-design evals migrated from uipath-maestro-case (planner-sole-SDD-author) — case owners stay reviewers
 /tests/tasks/uipath-planner/_shared/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
 /tests/tasks/uipath-planner/case_design_interview/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
