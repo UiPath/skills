@@ -8,6 +8,9 @@ tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, connect
 run_limits:
   expected_turns: 19
   max_turns: 80
+  # Same 900s-default kill as the other three: PR #2660 verification run
+  # (32160708457) died at 903s with 74 turns of work on the shared runner.
+  turn_timeout: 1800
 initial_prompt: |
   Create a local BPMN draft project named "SlackDigestBoundaryBpmn".
   The intended process is:

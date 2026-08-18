@@ -10,6 +10,9 @@ tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "fe
 run_limits:
   expected_turns: 20
   max_turns: 80
+  # Nightly default turn_timeout (900s) kills this build mid-work on claude:
+  # 2026-08-18 run died at 903s with 0 criteria graded (also 08-11).
+  turn_timeout: 1800
 
 sandbox:
   template_sources:
