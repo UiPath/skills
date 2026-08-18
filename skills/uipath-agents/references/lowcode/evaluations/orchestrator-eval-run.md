@@ -1,6 +1,6 @@
 # Orchestrator Runtime Eval Commands
 
-Manage and run runtime evaluations for agents published as Orchestrator packages. All commands are scoped by `--process-key` (deployment GUID) and hit the agents runtime API.
+Manage and run runtime evaluations for agents published as Orchestrator packages. All commands are scoped by `--process-key` (process key GUID) and hit the agents runtime API.
 
 ## Command Structure
 
@@ -10,9 +10,9 @@ uip or eval
 ├── run list                         List eval set runs for a process
 ├── run get <evalSetRunId>           Get details of a specific run
 ├── run results <evalSetRunId>       View per-item results
-├── evaluator list/get/create/delete Manage evaluators
-├── eval-set list/get/create/delete  Manage eval sets (dataset containers)
-├── evaluation list/get/create/delete Manage data points within eval sets
+├── evaluator list/get/create/update/delete Manage evaluators
+├── eval-set list/get/create/update/delete  Manage eval sets (dataset containers)
+├── evaluation list/get/create/update/delete Manage data points within eval sets
 └── schedule create/list/get/update/pause/resume/delete
                                      Manage scheduled recurring eval runs
 ```
@@ -56,7 +56,7 @@ uip or eval execute-and-evaluate \
   --process-key "9e4b2f17-7c3a-4d81-b592-3f6e8a1d5c09" \
   --workload-id "a1b2c3d4-0000-0000-0000-000000000001" \
   --items '[{"id":"i1","name":"Test","inputs":{"input":"hello"},"expectedOutput":{},"expectedBehavior":""}]' \
-  --evaluators '[{"id":"ev-1","version":"","evaluatorTypeId":"5","evaluatorConfig":{"name":"Semantic","category":1,"type":5,"prompt":"Score 0-100...","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}}]' \
+  --evaluators '[{"id":"ev-1","version":"","evaluatorTypeId":"uipath-llm-judge-output-semantic-similarity","evaluatorConfig":{"name":"Semantic","prompt":"Score 0-100...","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}}]' \
   --output json
 ```
 
@@ -120,11 +120,29 @@ uip or eval evaluator create \
 | `--folder-key` | Yes | Folder key (GUID) |
 | `--name` | Yes | Evaluator name |
 | `--description` | Yes | Evaluator description |
-| `--evaluator-type-id` | Yes | Type ID (e.g. `1`=exact-match, `5`=semantic-similarity, `6`=json-similarity, `7`=trajectory) |
+| `--evaluator-type-id` | Yes | Type ID (e.g. `uipath-exact-match`, `uipath-llm-judge-output-semantic-similarity`, `uipath-llm-judge-trajectory-similarity`) |
 | `--evaluator-config` | Yes | Evaluator config as JSON object |
 | `--version` | No | Version string (default: `1.0`) |
 
 Output code: `EvaluatorCreated`.
+
+### evaluator update
+
+```bash
+uip or eval evaluator update <evaluatorId> \
+  --process-key <guid> \
+  [--name <name>] \
+  [--description <text>] \
+  [--evaluator-type-id <id>] \
+  [--evaluator-config <json>] \
+  [--version <version>] \
+  [--tenant <tenant>] \
+  --output json
+```
+
+At least one optional field must be provided. The command fetches the current state, merges your changes, and PUTs the full object back (the backend has no PATCH endpoint).
+
+Output code: `EvaluatorUpdated`.
 
 ### evaluator delete
 
@@ -146,7 +164,7 @@ CRUD for eval sets (dataset containers) scoped by process key.
 uip or eval eval-set list --process-key <guid> [--limit <n>] [--offset <n>] [--tenant <tenant>] --output json
 ```
 
-Output code: `EvalSetList`. Fields: EvalSetId, Name, Version, Description, BatchSize, EvaluatorRefs, CreatedAt. Includes `Pagination` field.
+Output code: `EvalSetList`. Fields: EvalSetId, Name, Description, BatchSize, EvaluatorRefs, CreatedAt. Includes `Pagination` field.
 
 ### eval-set get
 
@@ -164,7 +182,6 @@ uip or eval eval-set create \
   --workload-id <guid> \
   --folder-key <guid> \
   --name <name> \
-  [--version <version>] \
   [--description <text>] \
   [--batch-size <n>] \
   [--timeout-minutes <n>] \
@@ -179,13 +196,30 @@ uip or eval eval-set create \
 | `--workload-id` | Yes | Workload ID (GUID) |
 | `--folder-key` | Yes | Folder key (GUID) |
 | `--name` | Yes | Eval set name |
-| `--version` | No | Version (default: `1.0`) |
 | `--description` | No | Description |
 | `--batch-size` | No | Max concurrent evaluations |
 | `--timeout-minutes` | No | Timeout per evaluation |
 | `--evaluator-refs` | No | Evaluator IDs to link (space-separated) |
 
 Output code: `EvalSetCreated`.
+
+### eval-set update
+
+```bash
+uip or eval eval-set update <evalSetId> \
+  --process-key <guid> \
+  [--name <name>] \
+  [--description <text>] \
+  [--batch-size <n>] \
+  [--timeout-minutes <n>] \
+  [--evaluator-refs <refs...>] \
+  [--tenant <tenant>] \
+  --output json
+```
+
+At least one optional field must be provided. Fetches current state, merges changes, PUTs the full object.
+
+Output code: `EvalSetUpdated`.
 
 ### eval-set delete
 
@@ -256,6 +290,25 @@ uip or eval evaluation create \
 
 Output code: `EvaluationCreated`.
 
+### evaluation update
+
+```bash
+uip or eval evaluation update <evaluationId> \
+  --process-key <guid> \
+  --eval-set-id <guid> \
+  [--name <name>] \
+  [--inputs <json>] \
+  [--expected-output <json>] \
+  [--expected-behavior <text>] \
+  [--evaluation-criterias <json>] \
+  [--tenant <tenant>] \
+  --output json
+```
+
+At least one optional field must be provided. Fetches current state, merges changes, PUTs the full object.
+
+Output code: `EvaluationUpdated`.
+
 ### evaluation delete
 
 ```bash
@@ -309,15 +362,15 @@ CRUD for scheduled recurring eval runs.
 ```bash
 uip or eval schedule create \
   --process-key <guid> \
-  --workload-id <guid> \
   --eval-set-id <guid> \
   --cron <expression> \
-  --folder-key <guid> \
+  [--workload-id <guid>] \
+  [--folder-key <guid>] \
   [--tenant <tenant>] \
   --output json
 ```
 
-All flags are required except `--tenant`. Cron is a five-field UTC expression (e.g. `"0 9 * * *"`).
+`--process-key`, `--eval-set-id`, and `--cron` are required. `--workload-id` and `--folder-key` are auto-resolved from the eval set when omitted. Pass them explicitly to override.
 
 Output code: `EvalScheduleCreated`. Fields: ScheduleId, WorkloadId, ProcessKey, FolderKey, EvalSetId, CronExpression, Status, CreatedAt.
 
@@ -347,8 +400,8 @@ Create evaluators, eval sets, and data points via CRUD, then run against the eva
 uip or eval evaluator create \
   --process-key "$PROCESS_KEY" --workload-id "$WORKLOAD_ID" --folder-key "$FOLDER_KEY" \
   --name "Semantic Similarity" --description "LLM output comparison" \
-  --evaluator-type-id 5 \
-  --evaluator-config '{"name":"Semantic","type":5,"category":1,"prompt":"As an expert evaluator, analyze the semantic similarity of these outputs to determine a score from 0-100.\n----\nExpectedOutput:\n{{ExpectedOutput}}\n----\nActualOutput:\n{{ActualOutput}}\n","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}' \
+  --evaluator-type-id uipath-llm-judge-output-semantic-similarity \
+  --evaluator-config '{"name":"Semantic","prompt":"As an expert evaluator, analyze the semantic similarity of these outputs to determine a score from 0-100.\n----\nExpectedOutput:\n{{ExpectedOutput}}\n----\nActualOutput:\n{{ActualOutput}}\n","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}' \
   --output json
 
 # 2. Create an eval set linking the evaluator
@@ -364,23 +417,29 @@ uip or eval evaluation create \
   --expected-output '{"content":"Hi there!"}' \
   --output json
 
-# 4. Run the eval referencing the eval set
+# 4. Update the eval set to add more evaluator refs if needed
+uip or eval eval-set update "$EVAL_SET_ID" \
+  --process-key "$PROCESS_KEY" \
+  --evaluator-refs "$EVALUATOR_ID" "$ANOTHER_EVALUATOR_ID" \
+  --output json
+
+# 5. Run the eval — items and evaluators are passed inline
 uip or eval execute-and-evaluate \
   --process-key "$PROCESS_KEY" \
   --workload-id "$WORKLOAD_ID" \
   --eval-set-id "$EVAL_SET_ID" \
   --items '[{"id":"i1","name":"Greeting test","inputs":{"input":"hello"},"expectedOutput":{"content":"Hi there!"},"expectedBehavior":""}]' \
-  --evaluators '[{"id":"'"$EVALUATOR_ID"'","version":"","evaluatorTypeId":"5","evaluatorConfig":{"name":"Semantic","type":5,"category":1,"prompt":"Score 0-100...","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}}]' \
+  --evaluators '[{"id":"'"$EVALUATOR_ID"'","version":"","evaluatorTypeId":"uipath-llm-judge-output-semantic-similarity","evaluatorConfig":{"name":"Semantic","prompt":"Score 0-100...","model":"gpt-4.1-2025-04-14","targetOutputKey":"*"}}]' \
   --output json
 
-# 5. Check results
+# 6. Check results
 uip or eval run list --process-key "$PROCESS_KEY" --output json
 uip or eval run results "$EVAL_SET_RUN_ID" --process-key "$PROCESS_KEY" --output json
 
-# 6. Schedule recurring runs against the eval set
+# 7. Schedule recurring runs (workload-id and folder-key auto-resolved from eval set)
 uip or eval schedule create \
-  --process-key "$PROCESS_KEY" --workload-id "$WORKLOAD_ID" \
-  --eval-set-id "$EVAL_SET_ID" --folder-key "$FOLDER_KEY" \
+  --process-key "$PROCESS_KEY" \
+  --eval-set-id "$EVAL_SET_ID" \
   --cron "0 9 * * *" --output json
 ```
 
