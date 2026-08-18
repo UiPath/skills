@@ -12,6 +12,11 @@
 set -e
 
 LIMIT=1024
+# Claude Code truncates `description` + `when_to_use` together at this many
+# characters. Reported as a warning rather than enforced: three skills already
+# ship over it, and failing them here would break PRs that only touch their
+# own SKILL.md. The number is what matters — it is invisible otherwise.
+COMBINED_LIMIT=1536
 FAILED=0
 
 # Determine which files to check
@@ -38,11 +43,22 @@ for file in $FILES; do
 
   len=${#desc}
 
+  # when_to_use is optional; missing means a combined total equal to len
+  wtu=$(sed -n 's/^when_to_use: "\(.*\)"$/\1/p' "$file" | head -1)
+  if [ -z "$wtu" ]; then
+    wtu=$(sed -n 's/^when_to_use: \(.*\)$/\1/p' "$file" | head -1)
+  fi
+  combined=$((len + ${#wtu}))
+
   if [ "$len" -gt "$LIMIT" ]; then
     echo "❌ $file: description exceeds $LIMIT characters ($len chars)"
     FAILED=1
   else
-    echo "✓ $file: $len chars"
+    echo "✓ $file: $len chars (description + when_to_use: $combined)"
+  fi
+
+  if [ "$combined" -gt "$COMBINED_LIMIT" ]; then
+    echo "⚠️  $file: description + when_to_use is $combined chars, over the $COMBINED_LIMIT Claude Code shows. The tail is truncated in the skill listing."
   fi
 done
 
