@@ -79,15 +79,15 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
 
 ### Skip gate: nothing to discover yet
 
-Discovery on a project with no authored content returns a document of empty tables and costs a subagent round-trip. **Do NOT spawn the discovery agent** when any row matches:
+Discovery on a project with no authored content returns empty tables and costs a subagent round-trip. **Do NOT spawn the discovery agent** when any row matches:
 
 | Condition | How to check |
 |-----------|--------------|
 | Greenfield — no `project.json` (you are about to create the project) | Step 0 found no `project.json` |
-| Empty project — 0 authored workflow files | Glob `**/*.xaml` and `**/*.cs`, excluding every dot-directory (any path segment starting with `.`) plus `obj/` and `bin/` → combined count is 0 |
-| Freshly scaffolded — only the untouched entry point | Same count is 1, the file is a scaffolded entry point (`Main.xaml` process/template, `NewActivity*.xaml` library, `TestCase.xaml` test automation, `Main.cs` coded), and it holds no authored logic — root `Sequence` empty or containing only `Comment` activities (XAML) / no statement in the `Execute` body (coded) |
+| Empty project — 0 authored workflow files | Glob `**/*.xaml` + `**/*.cs`, excluding dot-directories and `obj/`, `bin/` → count 0 |
+| Freshly scaffolded — only the untouched entry point | Count 1; file is a scaffold entry point (`Main.xaml` process/template, `NewActivity*.xaml` library, `TestCase.xaml` test, `Main.cs` coded); no authored logic — root `Sequence` empty or only `Comment` activities (XAML) / empty `Execute` body (coded) |
 
-When the gate trips: proceed straight to the skill workflow and write no context files now. **After the build completes**, write both context files yourself from what you just created (structure, dependencies, entry points), using the same file paths and `AGENTS.md` marker logic as discovery-flow step 3 below.
+Gate tripped: write no context files now, proceed with the skill workflow. **After the build**, write both context files yourself from what you just created — same paths and `AGENTS.md` marker logic as discovery-flow step 3.
 
 **Discovery flow** (used for both missing and stale context):
 1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at [`agents/uipath-project-discovery-agent.md`](agents/uipath-project-discovery-agent.md). Use whichever spawn mechanism your host supports:

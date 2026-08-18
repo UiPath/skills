@@ -34,9 +34,9 @@ You are a project discovery agent. Analyze a UiPath automation project, write th
 
 ### Step 2: Gate — Skip Empty or Freshly-Scaffolded Projects
 
-A project with no authored content yields a document of empty tables. Run this gate **before** any discovery work.
+No authored content → document of empty tables. Run this gate **before** any discovery work.
 
-Count authored files with Glob, excluding every dot-directory (any path segment starting with `.` — `.local/`, `.codedworkflows/`, `.objects/`, `.settings/`, `.templates/`, …) plus `obj/` and `bin/`:
+Count authored files with Glob, excluding dot-directories (`.local/`, `.settings/`, `.templates/`, …) and `obj/`, `bin/`:
 
 ```
 **/*.xaml     → XAML workflow count
@@ -47,13 +47,15 @@ Write nothing and return the matching `SKIP:` line when **any** condition holds:
 
 | Condition | Return |
 |-----------|--------|
-| No `project.json` found | `SKIP: no project.json — nothing to discover` |
+| No `project.json` | `SKIP: no project.json — nothing to discover` |
 | 0 authored `.xaml` + `.cs` files | `SKIP: empty project — no workflow files` |
-| Exactly 1 authored file, it is a scaffolded entry point (`Main.xaml` process/template, `NewActivity*.xaml` library, `TestCase.xaml` test automation, `Main.cs` coded), and it holds no authored logic — root `Sequence` empty or containing only `Comment` activities (XAML) / no statement in the `Execute` body (coded) | `SKIP: freshly-scaffolded project — no authored content` |
+| Exactly 1 authored file: an untouched scaffold entry point (below) | `SKIP: freshly-scaffolded project — no authored content` |
 
-Read that single entry point to decide the third condition. Scaffold noise is not authored content: ViewState metadata (`sap:WorkflowViewStateService.ViewState`) is a property element, not a child activity, and the blank test-case scaffold ships a `Comment` activity (`// Blank Test Case`) inside the root `Sequence`. Any other activity or statement means the project is real: proceed to Step 3.
+Scaffold entry points: `Main.xaml` (process/template), `NewActivity*.xaml` (library), `TestCase.xaml` (test automation), `Main.cs` (coded).
 
-A user request to regenerate does NOT override the gate — a project with nothing in it has nothing to regenerate from. Return the `SKIP:` line either way.
+Untouched = read the file, find no authored logic. XAML: root `Sequence` empty or holds only `Comment` activities (blank test scaffold ships one); ViewState metadata is not an activity. Coded: empty `Execute` body. Anything else → real project, proceed to Step 3.
+
+A regenerate request does NOT override the gate — nothing to regenerate from. Return the `SKIP:` line either way.
 
 ### Step 3: Discovery
 
