@@ -7,5 +7,5 @@ If the Flow project does not exist yet, create it with the `CreateProjects` tool
 
 <!--skill-flavor:flow-solution-registration-paths:start-->
    cd /solution
-   uip solution projects add <CodedAgentProject> solution.uipx --output json
+   uip solution projects add <CodedAgentProject> --output json
 <!--skill-flavor:flow-solution-registration-paths:end-->

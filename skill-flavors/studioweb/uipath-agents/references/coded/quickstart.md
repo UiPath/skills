@@ -5,5 +5,18 @@ Use when the coded agent is tightly coupled to one flow and lives as a sibling f
 <!--skill-flavor:flow-project-creation:start-->
 1. **Create the Flow project with the `CreateProjects` tool** (skip if it already exists). Inspect the live `CreateProjects` schema, invoke it for a Flow project using exactly the fields and enum values it declares, then locate the generated project in the Studio Web workspace/VFS.
 
-2. **Resolve the names the later steps need — no commands to run here.** `CreateProjects` returns the generated project name in its result, so read `<FlowName>` from there (or from the VFS listing) rather than inventing it. In the current Studio Web harness the solution is always named `solution`: the solution root is `/solution` and its manifest is `solution.uipx`, so read every `<SolutionName>` below as `solution`. Steps 5–8 pass these names to the CLI as arguments. Run steps 3–8 from `/solution` unless a step changes directory.
+2. **Resolve the names the later steps need — no commands to run here.** `CreateProjects` returns the generated project name in its result, so read `<FlowName>` from there (or from the VFS listing) rather than inventing it. The solution root is `/solution`; run steps 3–8 from there unless a step changes directory. Studio Web owns the solution manifest and does not expose it — never name, read, or edit a `.uipx` file, and omit the optional solution-file argument wherever a `uip solution` command accepts one.
 <!--skill-flavor:flow-project-creation:end-->
+
+<!--skill-flavor:agent-solution-registration:start-->
+   cd ..
+   uip solution projects add "<AgentName>" --output json
+<!--skill-flavor:agent-solution-registration:end-->
+
+<!--skill-flavor:agent-scaffold-solution-root:start-->
+3. **Scaffold the coded agent as a sibling folder.** From the solution root (`/solution`):
+<!--skill-flavor:agent-scaffold-solution-root:end-->
+
+<!--skill-flavor:agent-scaffold-result-paths:start-->
+   Result: `/solution/<AgentName>/` sibling to `/solution/<FlowName>/`.
+<!--skill-flavor:agent-scaffold-result-paths:end-->
