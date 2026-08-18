@@ -173,6 +173,8 @@ Every row must have Category.
 **Authoring rules** (owned by the reference files — block shape and cell grammar:
 [render-stages-tasks.md](../../references/case/render-stages-tasks.md); type enum, gates, sequencing:
 [model.md](../../references/case/model.md); task-level SLA surface: [slas.md](../../references/case/slas.md)).
+During draft finalization, do NOT open these links — the draft is the settled design and this template is
+the complete normalization contract; finalization preserves existing display names verbatim.
 Template-local rules:
 - Every stage and task carries a concrete `Design Rationale` and prose `Description`.
 - Stage-picker repair is a replacement, never a duplicate: when `user-selected-stage` requires picker
