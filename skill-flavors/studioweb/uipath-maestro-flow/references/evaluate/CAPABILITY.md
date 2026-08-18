@@ -1,5 +1,5 @@
 <!--skill-flavor:upload-safety-critical-rule:start-->
-2. **Never attempt `uip solution upload`.** Studio Web owns the solution, so the eval run's "solution must exist in Studio Web" prerequisite is already satisfied by the host. If a run still reports the solution as missing, report the host capability gap — do not try to push local state.
+2. **Studio Web owns the solution.** The eval run's "solution must exist in Studio Web" prerequisite is already satisfied by the host. If a run still reports the solution as missing, report the host capability gap.
 <!--skill-flavor:upload-safety-critical-rule:end-->
 
 <!--skill-flavor:upload-safety-workflow-comment:start-->
@@ -13,7 +13,6 @@
 <!--skill-flavor:upload-safety-task-row:end-->
 
 <!--skill-flavor:upload-safety-antipattern:start-->
-- **Don't attempt `uip solution upload`.** Studio Web owns solution state. When an eval run errors with "solution not found in Studio Web", report the host gap instead of pushing the working tree.
 <!--skill-flavor:upload-safety-antipattern:end-->
 
 <!--skill-flavor:upload-safety-next-step:start-->

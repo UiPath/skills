@@ -1,5 +1,5 @@
 <!--skill-flavor:single-nested-intro:start-->
-Capability index for postmortem on a failed run. Diagnose owns the diagnostic priority ladder (incidents → runtime variables → flow correlation → traces) and the catalog of known recurring failure modes (MST-9107, MST-9061, HITL-stuck, reused reference IDs).
+Capability index for postmortem on a failed `flow debug` or deployed process run. Diagnose owns the diagnostic priority ladder (incidents → runtime variables → flow correlation → traces) and the catalog of known recurring failure modes (MST-9107, MST-9061, HITL-stuck, reused reference IDs).
 <!--skill-flavor:single-nested-intro:end-->
 
 <!--skill-flavor:single-nested-task-row:start-->

@@ -10,7 +10,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 <!--skill-flavor:upload-refresh-rule:end-->
 
 <!--skill-flavor:upload-publish-default-rule:start-->
-2. **Publication is owned by Studio Web — never run a publish or upload command.** When the user asks to publish or deploy, report that the host owns publication and let them drive it from Studio Web. Do not substitute `uip solution upload`, `uip maestro flow pack`, or `uip solution publish`.
+2. **Publication is owned by Studio Web.** When the user asks to publish or deploy, report that the host owns publication and let them drive it from Studio Web.
 <!--skill-flavor:upload-publish-default-rule:end-->
 
 <!--skill-flavor:ship-journey-row:start-->
@@ -20,7 +20,6 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 <!--skill-flavor:ship-common-tasks-rows:end-->
 
 <!--skill-flavor:upload-antipatterns:start-->
-- **Never run a publish, upload, or Orchestrator deploy command.** Studio Web owns publication — report the capability gap instead of substituting a CLI path.
 <!--skill-flavor:upload-antipatterns:end-->
 
 <!--skill-flavor:ship-reference-entry:start-->
