@@ -187,6 +187,36 @@ SDD row: `Category=Variable`, no `sourceTriggers`, optional `Default`.
 
 No trigger.outputs[] write, no root.inputs[] / outputs[] writes.
 
+### `default` encoding — EVERY type, MANDATORY
+
+`default` is **a JSON string on every variable, whatever its `type`**. Never emit an object, array,
+number, or boolean there.
+
+```jsonc
+"default": "{\"amount\":125.5}"   // jsonSchema — string-encoded JSON
+"default": "5"                     // integer
+"default": "true"                  // boolean
+"default": "2029-10-12"            // date
+"default": ""                      // file (must be empty) / no default
+```
+
+**A non-primitive `default` is deleted, silently.** The caseplan → BPMN converter keeps only primitive
+attributes ([`bpmn-moddle.ts` `onlyPrimitiveVariableFields`](https://github.com/UiPath/PO.Frontend/blob/develop/src/services/serialization/bpmn-moddle.ts#L323-L331)):
+
+```ts
+if (value === null || typeof value !== "object") { result[key] = value; }
+```
+
+An object default is dropped, the emitted BPMN carries no `default` attribute for that variable, and
+the variable is **null at runtime** while every string-defaulted variable beside it keeps `default=""`.
+The first task reading it fails — observed as `AGENT_STARTUP.INPUT_VALIDATION_ERROR / <input> Field
+required` on a task bound to `=vars.<thatVariable>`. Observed on a shipped build: 13 affected
+variables, one carrying the payload an agent task required.
+
+Nothing upstream catches it. `uip maestro case validate` returns `Valid`; the FE's own Zod schema
+types this field `z.any()` and parses it clean; only the serializer notices, and it does not report.
+**This recipe is the enforcement point** — Step 12 Check 14 is the backstop.
+
 ### Trigger-sourced Variable (Pattern C)
 
 SDD row: `Category=Variable`, `sourceTriggers: T02`, `sourceFields: response.subject`.
@@ -359,11 +389,17 @@ Custom outputs are an existing task-plugin concept, unchanged by B's redesign. T
 
 ## jsonSchema type
 
+Note the string-encoded `default`. `body` and `_jsonSchema` are objects — those are correct as objects
+and survive serialization via a separate CDATA path; only `default` is string-encoded.
+
 ```json
 { "id": "caseData", "name": "caseData", "type": "jsonSchema",
+  "default": "{\"status\":\"Open\"}",
   "body": { "type": "object", "properties": { "status": { "type": "string" } } },
   "_jsonSchema": { "type": "object", "properties": { "status": { "type": "string" } } } }
 ```
+
+An empty jsonSchema default is `"{}"` (a two-character string), never `{}`.
 
 ## file type
 
