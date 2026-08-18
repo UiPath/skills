@@ -72,16 +72,26 @@ When a required field is missing the API may return `errorDetails: {}` (no field
 **Response 201** — the created process object **at the top level** (not nested): `process_id`, `process_uuid`, `process_name`, … Record `process_id`. *(Used by the publish flow.)*
 
 ### POST `/automations/{process_id}/documents`
-Attach a document to a process. **Link-based** (a link/embed URL + metadata), not a raw file upload — byte upload is a separate `media` endpoint that is not usable yet. Governed by `open-api-service` `ProcessDocumentValidator` (`src/models/schema/processDocumentRequest.schema.ts`). **Required fields, verified live:**
+Attach a document to a process — **by uploaded bytes (`file`) or by link (`embed_link`)**. Governed by `open-api-service` `ProcessDocumentValidator` (`src/api/v1/services/processDocumentValidator.class.ts`; schema `src/models/schema/processDocumentRequest.schema.ts`). **Required fields, verified against the validator source:**
 
 ```json
-{ "document_title": "…", "document_description": "…", "document_type_id": 1, "embed_link": "https://…" }
+{
+  "document_title": "…",
+  "document_description": "…",
+  "document_type_id": 1,
+  "file": { "file_name": "…", "mimetype": "…", "file_content": "<base64>", "file_encoding": "base64" }
+}
 ```
 
 - `document_title` (**not** `document_name`), `document_description`, `document_type_id` are all required by the schema.
-- Plus **exactly one** of `embed_link` or `file` — enforced in the handler (not the schema), so omitting both 400s with `"One and only one of embed_link or file need to be specified."` Use `embed_link`.
+- Plus **exactly one** of `file` or `embed_link` — an XOR enforced in the handler, not the schema. Sending both, or neither, 400s with `"One and only one of embed_link or file need to be specified."`
+- **`file` — byte upload, the default.** Validated by `EncodedFileValidator`: `file_name`, `mimetype`, `file_content`, `file_encoding` are all required and must be non-empty, and `file_encoding` must be `base64` — the only accepted value. No mimetype allowlist. The JSON body limit is **300mb**, so a PDD-sized `.docx` or `.md` fits with room to spare.
+- **`embed_link`** — use only when the document already lives at a URL and the bytes are not available.
 
 Returns the created `document_id`. *(Used by the publish flow.)*
+
+### POST `/automations/{process_id}/media`  *(not needed for documents)*
+A separate byte-upload route taking the same `EncodedFileValidator` shape. Documents do **not** need it — `/documents` accepts `file` directly.
 
 ### GET `/automations?search=<text>&limit=<n>&offset=<n>`
 Search/list processes. Returns a paged list (results under a resource key, e.g. `processes`, or a bare array). Use to resolve a name → `process_id`. *(Used by the get flow.)*
