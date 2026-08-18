@@ -84,7 +84,7 @@ class ResourceBindingTests(unittest.TestCase):
             {
                 "resources": [
                     {
-                        "key": "Shared/uipath-maestro-case/NameToAgeFixed2.API Workflow",
+                        "key": "Shared/uipath-agents/WeatherAPI.WeatherAPI",
                         "value": {"name": {"defaultValue": "API Workflow"}},
                     },
                     {
@@ -113,8 +113,8 @@ class ResourceBindingTests(unittest.TestCase):
                 {
                     "resources": [
                         {
-                            "key": "Shared/uipath-maestro-case/NameToAgeFixed2.NameToAgeFixed2",
-                            "value": {"name": {"defaultValue": "NameToAgeFixed2"}},
+                            "key": "Shared/uipath-agents/WeatherAPI.WeatherAPI",
+                            "value": {"name": {"defaultValue": "WeatherAPI"}},
                         }
                     ]
                 }
