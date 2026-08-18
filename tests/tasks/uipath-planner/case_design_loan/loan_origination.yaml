@@ -65,6 +65,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: >
+      ordered work is authored as runs-sequentially — a plain in-order run must not be
+      written as current-stage-entered on the first task or
+      selected-tasks-completed("<previous>") on its follower. Both are legal enum values
+      and pass the shape check, so nothing else catches this; the result renders as
+      "Runs out of sequence" and its completion is not reset when the stage re-enters.
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/check_sequential_activation.py"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "design declares all 4 exception lanes"
     command: "cat *sdd*.md 2>/dev/null | grep -Eiq 'customer comms' && cat *sdd*.md 2>/dev/null | grep -Eiq 'escalation' && cat *sdd*.md 2>/dev/null | grep -Eiq 'withdrawn' && cat *sdd*.md 2>/dev/null | grep -Eiq 'rejected'"
     timeout: 10
