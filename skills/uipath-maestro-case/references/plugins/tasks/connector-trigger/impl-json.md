@@ -4,13 +4,13 @@
 
 > **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --type trigger --input-details` once, reads the populated `caseShape`, substitutes placeholders, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Fetch the populated trigger task scaffold via `uip maestro case spec --type trigger --input-details`, then drop it into `caseplan.json` as a `wait-for-connector` task. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `tasks.md` and threads them through the spec call.
+Fetch the populated trigger task scaffold via `uip maestro case spec --type trigger --input-details`, then drop it into `caseplan.json` as a `wait-for-connector` task. Field discovery and reference resolution follow [connector-trigger-guide.md](../../../connector-trigger-guide.md); this recipe reads the resulting evidence.
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-impl.md](../../../connector-trigger-impl.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **task-specific** parts.
 
 ## Prerequisites from Planning
 
-The `tasks.md` entry provides:
+The resolution-evidence entry provides:
 
 | Field | Example |
 |---|---|
@@ -27,16 +27,16 @@ The `tasks.md` entry provides:
 
 ## Configuration Workflow
 
-### Step 1 — Build `--input-details` JSON from tasks.md
+### Step 1 — Build `--input-details` JSON from resolution evidence
 
-Construct the input-details object literally from `tasks.md`:
+Construct the input-details object literally from the matching evidence entry:
 
 ```jsonc
 {
-    // eventParameters from tasks.md input-values.eventParameters (or omit when absent)
+    // eventParameters from inputValues.eventParameters (or omit when absent)
     "eventParameters": "<input-values.eventParameters or omit>",
-    // filter — FilterTree object from tasks.md (or omit when not authored)
-    "filter": "<filter from tasks.md or omit>"
+    // filter — normalized FilterTree (or omit when absent)
+    "filter": "<filter from resolution evidence or omit>"
 }
 ```
 
@@ -50,7 +50,7 @@ Single CLI call replaces the legacy `get-connection` + `case tasks describe --ty
 
 This is a hard gate — do NOT proceed to write the task until every required event parameter has a non-empty value in the populated `caseShape.inputs[name="eventParameters"].body`.
 
-1. From the lean planning-phase spec (run with `--skip-case-shape` per [common § Planning Pipeline 5](../../../connector-trigger-planning.md#5-validate-required-event-parameters-hard-gate)), collect `inputs.eventParameters[?required]`.
+1. From the lean resolution spec (`--skip-case-shape`; [hard gate](../../../connector-trigger-guide.md#5-validate-required-event-parameters-hard-gate)), collect `inputs.eventParameters[?required]`.
 2. After Step 2's call (with the populated caseShape), scan `caseShape.inputs[name="eventParameters"].body` and verify every required event parameter has a value.
 3. If any required event parameter is missing, **AskUserQuestion** — list the missing parameters with their `name` and what kind of value is expected.
 4. Re-run Step 2 after collecting the missing values, OR fall back to placeholder task per Rule 8 if user declines to provide a value.
@@ -84,10 +84,10 @@ For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** pe
 {
   "id": "<taskId>",
   "type": "wait-for-connector",
-  "displayName": "<display-name from tasks.md>",
+  "displayName": "<exact SDD task name>",
   "elementId": "<stageId>-<taskId>",
-  "isRequired": "<from tasks.md, default true>",
-  "shouldRunOnlyOnce": "<from tasks.md runOnlyOnce, default false>",
+  "isRequired": "<from SDD envelope, default true>",
+  "shouldRunOnlyOnce": "<from SDD envelope, default false>",
   "data": {
     "serviceType": "Intsvc.WaitForEvent",
     "context": "<caseShape.context — placeholders substituted in Step 5>",

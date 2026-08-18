@@ -25,7 +25,7 @@
       "source": "Orchestrator",
       "folderType": "Standard"
     },
-    "rationale": "Resolved from an earlier SDD revision that named the workflow LegacyPostingFunction. This cache is STALE relative to the current SDD."
+    "rationale": "Resolved from an earlier SDD revision that named the workflow LegacyPostingFunction. This evidence is STALE relative to the current SDD."
   },
   {
     "stage": "Resolve Resources",

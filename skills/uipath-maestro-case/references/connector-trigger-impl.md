@@ -2,7 +2,9 @@
 
 Shared **write** logic for connector-based triggers: the single `case spec --input-details` call, binding-ID mint, `caseShape.context` splice + placeholder substitution, the connector-bound condition-rule target, the placeholder stub, and root bindings.
 
-Planning — TypeCache lookup, connection pick, spec discovery, reference resolution, the required-param gate, SDD mapping, and input-values + filter authoring — is in the companion [connector-trigger-planning.md](connector-trigger-planning.md), which also holds the `tasks.md` field list this file reads from.
+TypeCache lookup, connection selection, spec discovery, reference resolution,
+the required-parameter gate, and normalized evidence are in
+[connector-trigger-guide.md](connector-trigger-guide.md).
 
 Used by three:
 - [connector-trigger task](plugins/tasks/connector-trigger/impl-json.md) — in-stage `wait-for-connector` task (target: `task.data`)
@@ -15,16 +17,17 @@ Used by three:
 
 > **Each connector trigger runs its own `case spec`.** Even when two triggers share the same `connection-id`, `caseShape` is task-shape-specific (different `objectName`, `eventOperation`, `inputs`, `outputs`). Never reuse another task's spec output.
 
-### Step 1 — Build `--input-details` JSON from tasks.md
+### Step 1 — Build `--input-details` JSON from resolution evidence
 
-Construct the input-details object literally from `tasks.md`:
+Construct the input-details object literally from the matching
+`case-build/registry-resolved.json` entry:
 
 ```jsonc
 {
-    // eventParameters from tasks.md input-values.eventParameters (or omit when no event params authored)
+    // eventParameters from inputValues.eventParameters (or omit when absent)
     "eventParameters": "<input-values.eventParameters or omit>",
-    // filter — FilterTree object from tasks.md (or omit when not authored)
-    "filter": "<filter from tasks.md or omit>"
+    // filter — normalized FilterTree object (or omit when absent)
+    "filter": "<filter from resolution evidence or omit>"
 }
 ```
 
@@ -40,7 +43,7 @@ uip maestro case spec --type trigger \
   --output json
 ```
 
-The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details`). The CLI returns the full `caseShape` populated with values from `--input-details`. Add `--object-name "<picked entity>"` for entity-typed Curated triggers ([planning § 2 Resolve the connection](connector-trigger-planning.md#2-resolve-the-connection)).
+The detail-pass call omits `--skip-case-shape` (incompatible with `--input-details`). The CLI returns the full `caseShape` populated with values from `--input-details`. Add `--object-name "<picked entity>"` when required by [connector-trigger-guide.md § 2](connector-trigger-guide.md#2-resolve-the-connection).
 
 Save the response. The interesting parts:
 
@@ -89,7 +92,7 @@ The CLI emits placeholders the skill resolves at write-time:
 
 The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above and the key-casing normalization in [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase). **Every other key — current or future, top-level or nested — must be copied from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
 
-> **Mechanical contract — two passes, never combined.** At gather time, persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task / rule / trigger node). Pass 1: Read that file and splice `Data.CaseShape.Context` **verbatim — PascalCase keys intact** — into the target shape (the two placeholders are unique literal strings; substitute inline or via a later Edit). Pass 2, after the write: re-case keys with per-key `Edit` calls per [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase). The skill is a substituter, not a composer. Re-casing WHILE transcribing forces re-composition from memory — that is where subtrees get dropped. **Never retype `context` content from agent reasoning.**
+> **Mechanical contract — two passes, never combined.** At gather time, persist the full `case spec` response to `case-build/spec-cache.<elementId>.json` (one file per task / rule / trigger node). Pass 1: Read that file and splice `Data.CaseShape.Context` **verbatim — PascalCase keys intact** — into the target shape (the two placeholders are unique literal strings; substitute inline or via a later Edit). Pass 2, after the write: re-case keys with per-key `Edit` calls per [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase). The skill is a substituter, not a composer. Re-casing WHILE transcribing forces re-composition from memory — that is where subtrees get dropped. **Never retype `context` content from agent reasoning.**
 
 #### Normalize key casing (PascalCase → camelCase)
 
@@ -141,7 +144,7 @@ The same stub therefore has two lifetimes: temporary for a resolved connector aw
 
 ### Procedure (Phase 3)
 
-1. Resolve the connector in planning exactly as the task does — [connector-trigger-planning.md § Planning Pipeline](connector-trigger-planning.md#planning-pipeline). The condition plugin's `planning.md` records the same fields (`type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter`) — T-entry layout: [connector-trigger-planning.md § tasks.md fields](connector-trigger-planning.md#tasksmd-fields-planning). **Event parameters and filter accept `=vars.X` / `=js:` expressions exactly like the task** — they compile into `rule.uipath.context` / filter via `case spec --type trigger --input-details` (`input-values` + filter). Only the literal request `body` input is value-less (an event sends no body).
+1. Resolve the connector through [connector-trigger-guide.md § Resolution Pipeline](connector-trigger-guide.md#resolution-pipeline). Condition-rule evidence carries the same identity, connection, object, operation, mode, input-values, and optional filter fields as a task. **Event parameters and filters accept `=vars.X` / `=js:` expressions exactly like the task** — they compile into `rule.uipath.context` / filter via `case spec --type trigger --input-details`. Only the literal request `body` input is value-less (an event sends no body).
 2. Run `case spec --type trigger --input-details` ([§ Phase 3 Implementation](#phase-3-implementation--single-cli-call)) to mint the populated `caseShape`.
 3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` in `caseShape.context` ([§ Step 4](#step-4--substitute-placeholders-in-caseshapecontext)). If the caseShape carries a `{{TRIGGER_REGISTRATION_KEY}}` entry (event-parameter connectors only), substitute it exactly as the task does ([§ Step 3](#step-3--mint-binding-ids-and-when-applicable-trigger-registration-key)) — there is no rule-specific variant.
 4. Mint `var` / `id` / `elementId` on `caseShape.inputs[]` / `outputs[]` ([§ Step 5](#step-5--mint-var--id--elementid-on-inputs-and-outputs)), with `elementId = <ownerNodeId>-<ruleId>`. Apply the output dedup rule.
@@ -162,7 +165,7 @@ The same stub therefore has two lifetimes: temporary for a resolved connector aw
 }
 ```
 
-5b. If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) — rewrite each already-minted output entry per its `->` / `=` operator. Skip when the rule has no `uipath.outputs[]` (stub placeholder — the stub always emits `uipath`, but with empty `outputs[]`).
+5b. If the SDD rule has Outputs rows, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules). Skip when the rule has no `uipath.outputs[]` (placeholder stub).
 
 6. Append root bindings (ConnectionId + FolderKey) and run the deferred Step 10.5 `bindings_v2` sync — identical to the task ([§ Root-level bindings](#root-level-bindings)).
 
@@ -175,7 +178,7 @@ The same stub therefore has two lifetimes: temporary for a resolved connector aw
 
 ### Placeholder fallback
 
-Phase 2 uses this exact shape for every connector-bound condition rule. Two paths make it permanent: **Scenario A** — connector not found in TypeCache ([planning § 1 No-match](connector-trigger-planning.md#1-find-the-trigger-in-typecache), after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the [planning § 2 create offer](connector-trigger-planning.md#2-resolve-the-connection) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight to a permanent placeholder.
+The structural pass uses this exact shape for every unresolved connector-bound condition rule. It may remain only after the grouped fallback gate: either the connector has no exact TypeCache match or its connection remains unresolved after create is declined/fails. When `Connections` is empty, offer to create one first — do not jump straight to a permanent placeholder.
 
 Emit a **stub `uipath`**, never a bare rule. The stub is the minimum shape accepted by validation: `serviceType` plus the two `context` entries named `connectorKey` and `operation`, each with literal value `"placeholder"`, and empty `inputs` / `outputs` / `bindings`. Do not pad it with resolved fields (`connection`, `objectName`, …); Phase 3 replaces the entire `uipath` block when resolution succeeds.
 
@@ -193,11 +196,11 @@ Emit a **stub `uipath`**, never a bare rule. The stub is the minimum shape accep
     "outputs": [],
     "bindings": []
   },
-  "conditionExpression": "<carry from the T-entry if present>"
+  "conditionExpression": "<carry from the normalized SDD row if present>"
 }
 ```
 
-This stub is a **deliberate mock**. While temporary, it is simply Phase 2 build state. If it remains after Phase 3, Studio Web flags it and the rule **fails at debug/run**. A remaining stub has no real outputs, Connection/Folder bindings, IS-cache entry, or rule-specific `bindings_v2` resource. Stamp unresolved `tasks.md` entries with Rule 8 markers, log them, and list them in the completion report as **"replace the `placeholder` connector values before debug / publish-to-run."** Upgrade later by re-running the [§ Procedure](#procedure-phase-3).
+This stub is a **deliberate mock**. While temporary, it is structural build state. If it remains after the detail pass, Studio Web flags it and the rule **fails at debug/run**. A remaining stub has no real outputs, Connection/Folder bindings, IS-cache entry, or rule-specific `bindings_v2` resource. Mark the resolution-evidence entry `placeholder`, log it, and list it in the completion report as **"replace the `placeholder` connector values before debug / publish-to-run."** Upgrade later by re-running the procedure.
 
 ---
 
@@ -205,8 +208,8 @@ This stub is a **deliberate mock**. While temporary, it is simply Phase 2 build 
 
 Read [bindings/impl-json.md § Full binding shape — connector tasks](plugins/variables/bindings/impl-json.md) for the canonical 7-field shape on each entry (all required — omitting any causes Studio Web render failure). Per-trigger value sources:
 
-- `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this trigger's `tasks.md` entry
-- `<connectorKey>` (drives ConnectionBinding templated `name`): from `tasks.md`
+- `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this trigger's resolution-evidence entry
+- `<connectorKey>` (drives ConnectionBinding templated `name`): from resolution evidence
 - `<folderKey>` (FolderKey binding `default`): from `spec.connection.folderKey` in Step 2 response. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
 
 Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of-truth code: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
@@ -220,13 +223,13 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 ## What NOT to Do (shared)
 
 - **Do NOT call legacy `uip maestro case tasks describe --type connector-trigger` or `uip is triggers describe`.** `case spec --type trigger` replaces both. The legacy commands still work but produce a different shape that doesn't include `caseShape` or placeholders.
-- **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and splice `Data.caseShape.context` verbatim. See Step 4.
+- **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `case-build/spec-cache.<elementId>.json` at gather time; at Write time, Read it and splice `Data.caseShape.context` verbatim. See Step 4.
 - **Do NOT leave spec PascalCase keys in the finished node — and do NOT re-case by retyping.** The write is PascalCase-verbatim (pass 1); the re-case is per-key `Edit` with `replace_all` (`"Name":` → `"name":`, pass 2). Retyping the subtree to change casing is the memory-reconstruction failure above wearing a different hat. See [§ Normalize key casing](#normalize-key-casing-pascalcase--camelcase).
 - **Do NOT use `CuratedTrigger` or `Intsvc.Trigger` activityType.** The CLI overrides to `CuratedWaitFor` (in-stage task) or emits the trigger shape directly. Trust the CLI's `essentialConfiguration` value.
 - **Do NOT hand-write JMESPath filter expressions.** Build a structured filter tree and pass it under `--input-details.filter`; the CLI compiles all three sinks.
 - **Do NOT use `filterExpression` as a `--input-details` input.** The CLI rejects raw `filterExpression` strings (MST-8802). Pass the structured tree only.
 - **Do NOT pass `ceqlExpression` for triggers** — that's the activity-side rejection key. Triggers compile to JMESPath via the `filter` tree.
-- **Do NOT duplicate a required event-param value in the freeform `filter` tree.** The CLI AND-joins required event params into the filter expression automatically (see [planning § Mandatory-filter contract](connector-trigger-planning.md#mandatory-filter-contract-required-event-params)); duplicating the clause double-applies it and narrows event matching to a strict subset of intended events. Set required event-param values via `eventParameters` ONLY.
+- **Do NOT duplicate a required event-param value in the freeform `filter` tree.** The CLI AND-joins required event params into the filter expression automatically (see [connector trigger guide](connector-trigger-guide.md#7-build-the-spec-input)); duplicating the clause double-applies it and narrows event matching to a strict subset of intended events. Set required event-param values via `eventParameters` ONLY.
 - **Never reuse a reference ID from a prior case or session.** Reference IDs (mailbox folders, Slack channels, Jira projects) are scoped to the authenticated account behind each connection. Always resolve fresh via `uip is resources run list` against the current `--connection-id`. See [/uipath:uipath-platform — reference-resolution.md § Reference IDs Are Connection-Scoped (CRITICAL)](../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical).
 - **Do NOT auto-inject `entryConditions`** (for in-stage tasks). The implementation step in [implementation.md](implementation.md) handles them.
 

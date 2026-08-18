@@ -112,7 +112,8 @@ When triggered: input is a PDD, or an explicit design/architect request. Three p
 
 When triggered: an SDD with the `Planner Handoff` marker is detected (or Phase D just wrote one).
 
-1. Read the SDD's `## Planner Handoff` header. **`Status: draft` → refuse task derivation** (unfinished Phase D or a blocking SME item — offer resume or regenerate; missing field = legacy → ready; open default-carried SME items on a `ready` SDD travel into tasks as assumptions). Reuse the execution autonomy chosen in Phase D — do not re-ask. If `SDD scope: solution`, run the root algorithm: resolve the Solution root, verify every indexed child (exists, same Solution ID, ready), read every child's architecture, merge shared resources, emit ONE canonical tasks file (see pdd-driven-lane-guide Step 3).
+1. Read the SDD's `## Planner Handoff` header. **`Status: draft` → refuse downstream work** (unfinished Phase D or a blocking SME item — offer resume or regenerate; missing field = legacy → ready). Reuse the execution autonomy chosen in Phase D — do not re-ask. If `SDD scope: solution`, run the root algorithm: resolve the Solution root, verify every indexed child (exists, same Solution ID, ready), read every child's architecture, merge shared resources, and emit one canonical task file (see pdd-driven-lane-guide Step 3).
+   - **Case fast path:** when the SDD uses the Case template (`Project list section` names `Stages & Tasks` and `Integrations`, or the body contains `## Section 1: Case Definition`), do not derive a task file or numbered work-item list. `uipath-planner` is the sole Case SDD author; its ready SDD is the complete build contract. Hand the SDD path directly to `uipath-maestro-case`, which runs deterministic preflight and lowering. Stop Lane A here.
 2. If `<process>-tasks.md` already exists, ask `continue / regenerate` (1 prompt). See [plan-and-tasks-format.md → Regenerate logic](references/plan-and-tasks-format.md#regenerate-logic-pdd-driven-lane-only).
 3. Parse the SDD project list section. Pick the multi-skill pattern.
 4. Ask the UI batch (3 questions, 1 call) only if the SDD's Application Inventory lists UI applications and the answers aren't already resolved.
@@ -198,7 +199,7 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 
 | File | Purpose |
 |------|---------|
-| [PDD-driven Lane Guide](references/pdd-driven-lane-guide.md) | Lane A end-to-end — read SDD header, parse project list, derive tasks, write tasks.md, emit live tasks |
+| [PDD-driven Lane Guide](references/pdd-driven-lane-guide.md) | Lane A end-to-end for non-Case SDDs; Case SDDs use the direct handoff above |
 | [Non-PDD Lane Guide](references/non-pdd-lane-guide.md) | Lane B end-to-end — elicitation, project-type inference, filesystem detection, UI batch, write plan.md |
 | [Multi-skill Patterns Guide](references/multi-skill-patterns-guide.md) | The named multi-skill patterns (RPA build+deploy, Flow with local/deployed resources, Agent with RPA tools, etc.). Used by both lanes. |
 | [Plan and Tasks Format](references/plan-and-tasks-format.md) | Header schema, task row schema, identity tuple, status states, regenerate-with-preservation algorithm, TaskCreate mapping, anti-hallucination rule, quality rules |

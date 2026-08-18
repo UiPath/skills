@@ -1,8 +1,8 @@
 # Create-on-Missing — shared rule text (all creatable types)
 
-Kind-agnostic rule text for building a missing resource inline at the [Rule 17 gate](../../registry-discovery.md#must-confirm-before-placeholder-fallback). Orchestration (gate, select, § 1c build-dedup, parallel build, sequential register, rediscover/verify/bind) lives in [registry-discovery.md § Create-on-Missing](../../registry-discovery.md#create-on-missing-build-and-rediscovery); this file holds the per-type steps every creatable type shares. Per-type deltas — the Step 2 builder brief, build-kind choice, debug-provisioning behavior, § 3b adopt tokens — live in each type's `planning.md` § Creating-inline section, which points here.
+Kind-agnostic rules for building a missing resource inline at the [fallback gate](../../registry-discovery.md#must-confirm-before-placeholder-fallback). Orchestration—selection, dedupe, delegated build, sequential registration, rediscovery, verification, and binding—lives in [registry-discovery.md](../../registry-discovery.md#create-on-missing-build-and-rediscovery). This file holds shared binding invariants.
 
-**Plugging in a new creatable type** (RPA, agentic process, …): add a "Creating a `<type>` inline" section to the type's `planning.md` that points to this file for Steps 1/1b/3/Failure and supplies only the deltas: a Step 2 brief, a `resourceSubType` row in the [§ Step 3 table](#step-3--binding-invariants), debug-provisioning behavior, and § 3b adopt tokens. The § Step 3 table row is the only edit needed in this file.
+**Plugging in a new creatable type** requires extending registry discovery's closed creatable set and adding only its builder brief, resource subtype, adoption token, and binding-invariant row here.
 
 ## Step 1 — Compute the pinned I/O contract
 
@@ -11,13 +11,13 @@ Declare to the builder **only the fields the case wires**. Per wired field:
 - **Wired to a typed Case Variable** — output `O -> var` (the `->` extract operator) or input bound `=vars.<v>` → **required, type pinned** from the variable's `Type` (SDD Case Variables table; the only planning-authoritative type source).
 - **Wired but type not knowable at planning** — cross-task ref (`<- "Stage"."Task".out`), literal, or `=metadata.*` → **required, name only**; the builder picks the type that best fits the field's purpose. Reconciled at verify (the consumer's real type, known at implementation).
 - **Unwired** — the case neither stores the output into a var nor feeds/consumes the field → **omit from the contract**; the builder free-styles whatever the resource's purpose needs.
-- **`=`-computed output row** (`<caseVar> = <expr>` — set / compute / copy, per [io-binding planning § SDD Outputs projection](../variables/io-binding/planning.md#sdd-outputs-table-to-tasksmd-projection-mandatory)) → **not a resource output**: the case computes it at task completion, the resource never emits it → **exclude from the contract**. Only `->` extract rows are resource outputs.
+- **`=`-computed output row** (`<caseVar> = <expr>` — set / compute / copy, per [I/O binding implementation](../variables/io-binding/impl-json.md)) → **not a resource output**: the case computes it at task completion, so exclude it from the builder contract. Only `->` extract rows are resource outputs.
 
 No field-name heuristic, no silent `string` default. The case vocabulary (`string`/`integer`/`float`/`double`/`boolean`/`datetime`/`date`/`jsonSchema`/`file`) is passed through; mapping it onto the type's native I/O schema is the type skill's concern.
 
 **Deduped builds** ([registry-discovery.md § 1c](../../registry-discovery.md#1c--dedup-the-selected-builds-one-resource-per-name-and-type)): when § 1c merged several create-selected tasks into ONE resource, their wirings are identical by construction (§ 1c merges only on matching I/O) — compute the contract from any one of them.
 
-> **Projection is not normalization.** The pinned builder contract contains resource field names/types only; it does not replace the case binding rows. After the sibling is built, copy each original SDD Outputs row into `tasks.md` with its operator and destination unchanged. In particular, a pinned output named `greeting` from `greeting -> greeting` must remain `greeting -> greeting`, not collapse to bare `greeting` merely because the resource field and case variable share a name.
+> **Projection is not normalization.** The pinned builder contract contains resource field names/types only; it does not replace the SDD binding rows. Preserve every original Outputs row's operator and destination unchanged. `greeting -> greeting` must not collapse to bare `greeting`.
 
 ## Step 1b — Compose the Purpose from the SDD
 

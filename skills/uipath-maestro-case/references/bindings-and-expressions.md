@@ -70,7 +70,7 @@ Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime 
 
 In any `=js:` expression use **strict** `===` / `!==`, never loose `==` / `!=`. JS eval coerces types on loose equality (`vars.flag == "true"` is truthy for the string `"true"`), which silently breaks boolean/number routing — and validation passes either way (loose `==` is valid JS), so nothing flags it.
 
-SDD IF columns and `tasks.md` conditions use natural shorthand — `approved == true`, `status != "done"`. When rewriting into a `conditionExpression` (or any `=js:` sink) you MUST upgrade the operator: `approved == true` → `=js:vars.approved === true`. Do NOT transcribe `==` / `!=` verbatim.
+SDD IF columns use natural shorthand — `approved == true`, `status != "done"`. When rewriting into a `conditionExpression` (or any `=js:` sink) you MUST upgrade the operator: `approved == true` → `=js:vars.approved === true`. Do NOT transcribe `==` / `!=` verbatim.
 
 ### Conservative rule for `=metadata.X`
 
@@ -78,15 +78,15 @@ The lookup-path resolver has NO `=metadata.` branch — plain `=metadata.X` is N
 
 `metadata.X` is a **closed field set** — see [case-schema.md § 1](case-schema.md#1-top-level--metadata) for the full list (`caseIdentifier`, `slaRules`, `caseExitRules`, …) plus the platform-only runtime field `metadata.ExternalId`. It is NOT a namespace for arbitrary business data. A field the SDD's "Case Metadata" table lists for human-readability (e.g. `Priority`) is authored as a **case variable**, not a `metadata` key — reference it as `=js:vars.priority`, never `=js:metadata.priority` (which resolves to `undefined`).
 
-### Planner-emit form
+### SDD source form
 
-The planner emits `tasks.md` using SDD-natural references — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<- "Stage"."Task".out` (verbatim, unresolved). Other `=`-prefixed forms (`=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments`) also pass through to impl for per-sink wrap; see [Expression Prefixes](#expression-prefixes) for the full set. The implementation step rewrites to the canonical sink form when constructing `caseplan.json`. Detail: [plugins/variables/io-binding/planning.md](plugins/variables/io-binding/planning.md) and each plugin's `impl-json.md`.
+The Planner SDD uses natural references — `=vars.X`, `=metadata.X`, `=bindings.X`, and cross-task `<- "Stage"."Task".out`. Other `=`-prefixed forms (`=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments`) pass directly into lowering for the sink-specific wrap; see [Expression Prefixes](#expression-prefixes). The implementation step rewrites to canonical form while constructing `caseplan.json`. Detail: [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md) and each task recipe.
 
 ## Cross-Task References
 
-Cross-task references wire the output of an earlier task into an input of a later task. The planning syntax uses **names** (human-readable), which the implementation phase resolves to variable IDs via direct JSON lookup.
+Cross-task references wire the output of an earlier task into an input of a later task. The SDD syntax uses **names** (human-readable), which lowering resolves to generated IDs through the semantic locator map.
 
-### Planning syntax (in `tasks.md`)
+### SDD syntax
 
 ```
 input_name <- "Stage Name"."Task Name".output_name
@@ -105,13 +105,13 @@ uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json
 uip maestro case tasks describe --type connector-activity --id "<typeId>" --connection-id "<uuid>" --output json
 ```
 
-Output names appear in the response under the output schema. Record them in the source task's `outputs:` field in `tasks.md` so downstream references can be validated.
+Output names appear in the response under the output schema. The source task's SDD Outputs rows must declare them so downstream references can be checked against both authored intent and the resolved runtime contract.
 
 ### Validation rule
 
-Every cross-task reference in `tasks.md` MUST point to:
-1. A stage that exists (created by an earlier `Create stage "..."` task).
-2. A task inside that stage that exists (created by an earlier `Add ... task "..." to "<stage>"` task).
+Every cross-task reference in the SDD MUST point to:
+1. A declared stage.
+2. A declared task inside that stage.
 3. An output name listed in that task's `outputs:` field.
 
 Missing any of the three → halt planning and ask the user; do not fabricate.
@@ -207,6 +207,6 @@ vars.$xref('Stage Name','Task Name','output_name')
 - **Plain `=metadata.X` anywhere.** The lookup-path resolver has no `=metadata.` branch. Always wrap as `=js:metadata.X` (or `=js:(metadata.X)` for connector body / parens-required sinks).
 - **Dotted access via plain prefix.** `=vars.user.email` looks up a variable with id literally `user.email` and fails. Use `=js:vars.user.email`.
 - **`=js:(...)` outer parens on `conditionExpression`.** Conditions use bare `=js:<expr>` per FE convention. Sub-clause parens go inside when combining: `=js:(vars.X) && (vars.Y)` — outer wrap stays bare.
-- **Manually building filter-expression strings.** For filter sinks, author a structured FilterTree with `isLiteral: true` values when possible. Variable-bearing filters use `` =js:`<template>` `` with `${vars.X}` interpolations — see [connector-trigger-planning.md](connector-trigger-planning.md).
+- **Manually building filter-expression strings.** For filter sinks, author a structured FilterTree with `isLiteral: true` values when possible. Variable-bearing filters use `` =js:`<template>` `` with `${vars.X}` interpolations — see [connector-trigger-guide.md](connector-trigger-guide.md).
 
 <!-- END: bindings-and-expressions.md -->

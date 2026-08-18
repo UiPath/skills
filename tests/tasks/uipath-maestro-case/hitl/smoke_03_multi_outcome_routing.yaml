@@ -149,8 +149,7 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available.
-  - Treat the generated plan as pre-approved — do not block on any HARD STOP
-    / AskUserQuestion approval step.
+  - Treat the supplied Planner SDD as approved and build it directly.
   - Skeleton action task is acceptable if the action-app is unresolved; the
     `approved` output binding can stay as a planning note when the schema
     cannot be discovered (skeleton tasks omit `data.outputs`).

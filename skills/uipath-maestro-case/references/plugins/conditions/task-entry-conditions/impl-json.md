@@ -33,8 +33,8 @@ Rules use DNF — outer array is OR, inner array is AND.
 3. Locate the target stage in `schema.nodes` by ID
 4. Locate the target task inside `stageNode.data.tasks[lane][index]` (search every lane until the task ID is found)
 5. Initialize `task.entryConditions = []` if absent
-6. Read `rule-type` from tasks.md; pick the recipe below
-7. Set `displayName`: use tasks.md `display-name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `task.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
+6. Read `rule-type` from the normalized SDD row; pick the recipe below.
+7. Set `displayName`: use the SDD value if present; else default to `Entry Rule {N}`, where `N` is its 1-based index in `task.entryConditions[]`. Never emit a blank or omitted `displayName`.
 8. Append the condition object to `task.entryConditions[]`
 
 ## Rule Types
@@ -57,7 +57,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 ]]
 ```
 
-`selectedTasksIds` is a JSON string array. Resolve each planned selector to its taskId via `tasks/id-map.json` using the task's EXACT `tasks.md` display name — never a paraphrase or shortened form. Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required downstream flow cannot depend on optional user-launched work. **Never write a `selected-tasks-completed` rule with an empty or partially resolved `selectedTasksIds`** — an unresolvable name is a stop-and-ask (AskUserQuestion: name the intended task, or repair the plan), never an empty emit. `uip maestro case validate`'s `has no task(s) selected` finding must never be the discovery mechanism (Step 12 Check 13 catches it first).
+`selectedTasksIds` is a JSON string array. Resolve each SDD selector through semantic key `task:<stage>/<exact task name>` in `id-map.json`. Resolve only same-stage, non-adhoc tasks. Never write an empty or partially resolved selection; return an unresolvable name as an SDD mismatch.
 
 ### adhoc — expression gate
 
@@ -149,6 +149,6 @@ When a *stage* should take the case instead, the rule goes on the stage's `entry
 
 ## Post-Write Verification
 
-Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`), non-empty `displayName` (SDD value or `Entry Rule {N}` default), and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use the owning stage's `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
+Confirm the target task's `entryConditions[]` count equals its authored SDD rows. Each entry carries a `c` ID, non-empty display name, and the expected rule plus side fields. A resolved connector rule has no `"placeholder"` values and carries root bindings; a remaining stub maps to reported resolution evidence.
 
 <!-- END: impl-json.md -->

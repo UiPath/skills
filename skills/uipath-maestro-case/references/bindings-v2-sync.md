@@ -90,9 +90,9 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 
 | Field | Source | Plugin step |
 |---|---|---|
-| `id` | `connection-id` from `tasks.md` | Planning |
+| `id` | `connectionId` from `case-build/registry-resolved.json` | Resolution |
 | `name` | `.Data.Connections[selected].name` from `get-connection` | Step 1 |
-| `connectorKey` | `connector-key` from `tasks.md` | Planning |
+| `connectorKey` | `connectorKey` from `case-build/registry-resolved.json` | Resolution |
 | `connectorName` | `.Data.Connections[selected].connector.name` from `get-connection` | Step 1 |
 | `folderKey` | `.Data.Connections[selected].folder.key` from `get-connection` | Step 1 |
 | `folderName` | `.Data.Connections[selected].folder.name` from `get-connection` | Step 1 |

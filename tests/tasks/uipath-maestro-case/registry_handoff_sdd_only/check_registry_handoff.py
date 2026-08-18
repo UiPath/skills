@@ -32,15 +32,15 @@ def load_json(path: Path):
         return json.load(handle)
 
 
-registry_path = Path("tasks/registry-resolved.json")
-entries = load_json(registry_path)
+registry_path = Path("case-build/registry-resolved.json")
+document = load_json(registry_path)
+entries = document.get("resources", []) if isinstance(document, dict) else document
 assert isinstance(entries, list), "registry-resolved.json must be a list"
 assert len(entries) == len(EXPECTED), (
     f"expected one fresh audit entry per SDD task, got {len(entries)}"
 )
 
 cache_root = Path.home() / ".uip" / "case-resources"
-tasks_text = Path("tasks/tasks.md").read_text(encoding="utf-8")
 
 for name, expected in EXPECTED.items():
     matching_entries = [
@@ -120,8 +120,3 @@ for name, expected in EXPECTED.items():
         f"{name} resolved to an ephemeral debug-solution deploy "
         f"({sel_folder!r}); expected the canonical resource"
     )
-
-    assert name in tasks_text, f"tasks.md omitted resource name {name}"
-
-assert "Post Invoice" in tasks_text
-assert "Draft Notification" in tasks_text

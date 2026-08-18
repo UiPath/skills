@@ -156,13 +156,11 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available.
-  - Treat the generated plan as pre-approved — do not block on any HARD STOP
-    / AskUserQuestion approval step.
+  - Treat the supplied Planner SDD as approved and build it directly.
   - If either resource is unresolved, write a skeleton task per the
-    skeleton-tasks reference. tasks.md MUST still record the cross-task
-    references in a fenced wiring-notes code block (e.g.
-    `approved <- "Review"."Review Expense".approved`). When both tasks
-    resolve, the downstream input MUST be bound via `=vars.<varId>`.
+    placeholder-tasks reference and preserve the resource-resolution result in
+    `case-build/registry-resolved.json`. When both tasks resolve, the downstream
+    input MUST be bound via `=vars.<varId>`.
   - Do NOT run `uip maestro case debug`.
 
   **REQUIRED — before finishing, write report.json at the sandbox root**:
@@ -198,16 +196,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Cross-task wiring is recorded — `=vars.` in caseplan.json OR Review Expense.approved reference in tasks.md"
-    command: "grep -q '=vars\\.' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json || grep -q 'Review Expense.*approved' tasks/tasks.md"
+    description: "Cross-task wiring is emitted or remains explicit in the approved SDD"
+    command: "grep -q '=vars\\.' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json || grep -q 'approved' sdd.md"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "tasks.md records the action output binding for approved"
-    path: "tasks/tasks.md"
+    description: "The approved SDD records the action output binding for approved"
+    path: "sdd.md"
     includes:
       - "approved"
     weight: 1.5

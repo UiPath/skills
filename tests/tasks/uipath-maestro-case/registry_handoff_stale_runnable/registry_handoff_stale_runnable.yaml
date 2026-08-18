@@ -9,13 +9,13 @@
 # --------------------------------------------------------------------------------------
 task_id: skill-case-registry-handoff-stale-runnable
 description: >
-  PHASE 1 STALE-CACHE HANDOFF (RUNNABLE) — an approved sdd.md is staged with a Phase 0
-  tasks/registry-resolved.json from an earlier SDD revision that named the runnable
+  PHASE 2 STALE-EVIDENCE HANDOFF (RUNNABLE) — an approved sdd.md is staged with
+  case-build/registry-resolved.json from an earlier SDD revision that named the runnable
   resources differently. The cached api-workflow and agent selections are stale: their
   searchQuery/selected names no longer match the SDD's portable `Resolved Resource` names.
-  Phase 1 must reject the stale entries, re-resolve FinancialPostingFunction (api-workflow)
+  Resolution must reject the stale entries, re-resolve FinancialPostingFunction (api-workflow)
   and EmailDrafter (agent) from the current SDD, and write a corrected
-  tasks/registry-resolved.json before stopping at the Phase 1 approval gate. Complements
+  case-build/registry-resolved.json before stopping. Complements
   registry_handoff_action_case_sdd_only (action + case-management) by covering the RUNNABLE
   branch of the stale-cache carryover rule.
 tags:
@@ -43,12 +43,11 @@ sandbox:
       path: fixtures
 
 initial_prompt: |
-  This approved `sdd.md` is authoritative. Its staged `tasks/registry-resolved.json` came
+  This approved `sdd.md` is authoritative. Its staged `case-build/registry-resolved.json` came
   from an earlier SDD revision that named the runnable resources differently, so it is
-  stale. Run Phase 1 planning only: re-resolve the api-workflow and agent tasks from the
+  stale. Run resource resolution only: re-resolve the api-workflow and agent tasks from the
   concrete `Resolved Resource` names in the CURRENT SDD, replacing the mismatched cached
-  entries. Produce `tasks/tasks.md` and a fresh `tasks/registry-resolved.json`, then stop
-  at the Phase 1 plan-approval gate. Do not create a solution or caseplan.
+  entries. Produce fresh `case-build/registry-resolved.json`, then stop before lowering.
 
   The `uip` CLI is already available and authenticated. Use the approved SDD as written:
   do not redo Phase 0, re-interview me, or trust the stale cached names. Before starting,
@@ -56,20 +55,14 @@ initial_prompt: |
 
 success_criteria:
   - type: file_exists
-    description: "Phase 1 produced tasks.md from the authoritative SDD"
-    path: "tasks/tasks.md"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Phase 1 rewrote the registry cache"
-    path: "tasks/registry-resolved.json"
+    description: "Resolution rewrote the stale evidence"
+    path: "case-build/registry-resolved.json"
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "The fresh audit resolves the CURRENT SDD names (stale-vs-fresh is graded precisely by check_registry_handoff.py; a discarded name may legitimately appear in a rationale line, so this only checks the fresh names are present)"
-    command: "grep -Fq 'FinancialPostingFunction' tasks/registry-resolved.json && grep -Fq 'EmailDrafter' tasks/registry-resolved.json"
+    command: "grep -Fq 'FinancialPostingFunction' case-build/registry-resolved.json && grep -Fq 'EmailDrafter' case-build/registry-resolved.json"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -81,14 +74,6 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 4.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "tasks.md binds the current resource names"
-    command: "grep -Fq 'FinancialPostingFunction' tasks/tasks.md && grep -Fq 'EmailDrafter' tasks/tasks.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -106,13 +91,12 @@ simulation:
     before the approved SDD's runnable resources were renamed. You only need Phase 1
     planning regenerated from the authoritative SDD.
   goal: |
-    Produce tasks/tasks.md and a corrected registry audit from the staged sdd.md,
-    replacing the stale api-workflow and agent selections and stopping before Phase 2.
+    Produce corrected case-build registry evidence from the staged SDD and stop.
   constraints:
     - "Do not change the SDD or provide alternate resource names."
     - "Do not trust the stale cached names (LegacyPostingFunction / PreviousEmailDrafter); the SDD's Resolved Resource names are authoritative."
     - "If asked to choose among exact-name registry matches, choose the match whose name exactly matches the SDD Resolved Resource and use its exact folder."
-    - "When shown tasks.md for approval, say the plan is sufficient and ask the agent to stop before Phase 2."
+    - "Do not request or accept an intermediate implementation plan."
     - "Do not request Phase 0 or any design changes."
     - "Keep replies short — one sentence or a single option pick."
   max_turns: 12

@@ -89,7 +89,7 @@ Keyed by `var.name`. Branch on `var.type`:
   3. else `getTypeAndFormatForType(var.subType)` if `subType` is a primitive,
   4. else `{}`.
 
-> The current case-variable type enum ([`global-vars/planning.md` § Types](plugins/variables/global-vars/planning.md)) is `string | integer | float | double | boolean | datetime | date | jsonSchema | file` — no `array` or `time`. Those two rows are ported from the FE for fidelity/future-proofing; today array-shaped data arrives as `jsonSchema` with an array body (handled by the jsonSchema branch).
+> The current case-variable type enum ([global-vars implementation](plugins/variables/global-vars/impl-json.md)) is `string | integer | float | double | boolean | datetime | date | jsonSchema | file` — no `array` or `time`. Those two rows are ported from the FE for fidelity/future-proofing; today array-shaped data arrives as `jsonSchema` with an array body (handled by the jsonSchema branch).
 
 ### `rewriteJobAttachmentRefs` (nested JobAttachment rewrite)
 
@@ -159,7 +159,7 @@ Non-HALT. For each entry in `entryPoints[]` (`triggerId` = `filePath` after `#`)
 3. **Uniqueness guard** — `filePath` `#`-fragments unique across `entryPoints[]`. The trigger append is blind — a re-run duplicates an entry; the refresh propagates schemas to duplicates but cannot dedup (that is trigger-plugin identity).
 4. **Orphan guard** — every `inputs[].elementId` matches some entry's trigger fragment (an orphaned In-arg projects into no entry and silently vanishes from the contract).
 
-On a (1)/(2) mismatch → re-run the Procedure (deterministic recompute), re-check once. On a (3)/(4) finding or still-divergent (1)/(2) → log to `## Open Items for User` in `tasks/build-issues.md`, continue. Never HALT (build-with-best policy, [`implementation.md` § Step 12](implementation.md)).
+On a (1)/(2) mismatch → re-run the Procedure (deterministic recompute), re-check once. On a (3)/(4) finding or still-divergent (1)/(2) → log to `## Open Items for User` in `case-build/build-issues.md`, continue. Never hide the divergence; the release gate remains blocked until it is resolved or explicitly accepted.
 
 ## Worked example
 

@@ -1,5 +1,4 @@
 import json
-import re
 from pathlib import Path
 
 
@@ -49,10 +48,10 @@ EXPECTED = {
 }
 
 
-registry_path = Path("tasks/registry-resolved.json")
-tasks_path = Path("tasks/tasks.md")
+registry_path = Path("case-build/registry-resolved.json")
 
-entries = json.loads(registry_path.read_text(encoding="utf-8"))
+document = json.loads(registry_path.read_text(encoding="utf-8"))
+entries = document.get("resources", []) if isinstance(document, dict) else document
 assert isinstance(entries, list), "registry-resolved.json must be a list"
 assert len(entries) == len(EXPECTED), (
     f"expected one corrected audit entry per SDD task, got {len(entries)}"
@@ -140,33 +139,11 @@ for display_name in DISPLAY_NAMES:
         f"registry lookup incorrectly substituted task display name {display_name}"
     )
 
-tasks_text = tasks_path.read_text(encoding="utf-8")
-assert ACTION_RESOURCE in tasks_text, "action placeholder lost its Action App title"
-assert CASE_RESOURCE in tasks_text, "case placeholder lost its Child Case name"
-assert "action-app" in tasks_text.lower(), "action unresolved marker is missing"
-assert "case-management" in tasks_text.lower(), "case-management task is missing"
-
 assert resolved_entry is not None
 resolved_folder = resolved_entry.get("deploymentFolder", {}).get("fullyQualifiedName", "")
 resolved_id = resolved_entry.get("id")
 assert resolved_folder, "resolved Action App cache entry has no deployment folder"
 assert resolved_id, "resolved Action App cache entry has no id"
-
-heading = re.search(
-    rf'(?ms)^## T\d+: Add action task "{re.escape(RESOLVED_DISPLAY_NAME)}".*?(?=^## T\d+:|\Z)',
-    tasks_text,
-)
-assert heading, f"tasks.md omitted resolved action task {RESOLVED_DISPLAY_NAME}"
-resolved_body = heading.group(0)
-assert re.search(rf'(?m)^- name:\s*["\']?{re.escape(RESOLVED_ACTION)}["\']?\s*$', resolved_body), (
-    "resolved Action task omitted its selected name binding"
-)
-assert re.search(rf'(?m)^- folder-path:\s*["\']?{re.escape(resolved_folder)}["\']?\s*$', resolved_body), (
-    "resolved Action task omitted its selected folder-path binding"
-)
-assert re.search(rf'(?m)^- taskTypeId:\s*["\']?{re.escape(resolved_id)}["\']?\s*$', resolved_body), (
-    "resolved Action task did not retain the selected Action App id"
-)
 
 assert not Path(ACTION_RESOURCE).exists(), "an Action App sibling directory was created"
 assert not Path(CASE_RESOURCE).exists(), "a child-case sibling directory was created"

@@ -8,14 +8,14 @@ direct-json: supported
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).
 
-## Input spec (from `tasks.md`)
+## Input spec (from normalized SDD)
 
 | Field | Required | Notes |
 |---|---|---|
-| `displayName` (from T-entry title) | yes | Stage label |
-| `description` | yes | Always emit, sourced from the T-entry's description field in `sdd.md`. |
-| `isRequired` | yes | From `sdd.md`; fall back to `false` when the T-entry does not specify. Consumed by later case-exit rule `required-stages-completed`. |
-| Stage kind | yes | `primary` or `secondary` — determined by the T-entry plugin (`Create stage …` vs `Create secondary stage …`) |
+| `displayName` | yes | Exact SDD stage name. |
+| `description` | yes | Always emit from the SDD stage description. |
+| `isRequired` | yes | From the SDD; fall back to `false` when omitted. Consumed by later case-exit rule `required-stages-completed`. |
+| Stage kind | yes | Exact SDD `primary` or `secondary` classification. |
 
 ## ID generation
 
@@ -23,7 +23,7 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 - Suffix length: 6
 - Algorithm: per [`case-editing-operations.md § ID Generation`](../../case-editing-operations.md#id-generation)
 
-Record `T<n> → Stage_xxxxxx` in `id-map.json` for downstream cross-reference.
+Record `stage:<exact SDD name> → Stage_xxxxxx` in `id-map.json` for downstream cross-reference.
 
 ## Layout fields
 
@@ -53,7 +53,7 @@ Append (or prepend) this object to `nodes` — both orderings are valid for the 
 
 **Do not initialize `entryConditions` or `exitConditions` on a primary Stage at creation time.** Primary stages acquire those keys later when the condition plugins (stage-entry-conditions / stage-exit-conditions) write them — do not create the keys here.
 
-> **Do NOT author edges (Rule 20) — adding a stage node NEVER adds an edge.** Model an SDD "A → B" arrow as B's `entryConditions` (plus A's `exitConditions` when A diverges), never as an edge. See [stages/planning.md § Wiring constraints](planning.md).
+> **Do NOT author edges (Rule 20) — adding a stage node NEVER adds an edge.** Model an SDD "A → B" arrow as B's `entryConditions` (plus A's `exitConditions` when A diverges), never as an edge.
 
 ## Recipe — Secondary Stage
 
@@ -90,7 +90,7 @@ After writing, confirm:
 
 - `nodes` contains the new node with the generated ID
 - `nodes[].type` is always `case-management:Stage`
-- `nodes[].data.label` matches the T-entry's displayName
+- `nodes[].data.label` exactly matches the SDD stage name
 - `nodes[].data.isRequired` is present and boolean
 - NO `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18). Only `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` remain
 - For a secondary stage: `data.stageType == "secondary"`, and `data.entryConditions: []` and `data.exitConditions: []` are present (initialized as empty arrays at creation time)

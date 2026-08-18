@@ -57,7 +57,7 @@ cd <SolutionDir> && uip maestro case init <ProjectName>
 
 Register a project with an existing solution. Used in two scenarios in this skill:
 
-1. **Standard SKILL path** — after the case plugin (T01 in `impl-json.md`) writes `project.uiproj` directly via JSON authoring without invoking `case init`, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
+1. **Standard skill path** — after the Case scaffold writes `project.uiproj` directly without invoking `case init`, the project is not auto-registered, so this command is required.
 2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `Skipped` or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered` (the normal outcome both inside a solution and when it auto-scaffolds one outside), this command is redundant. When it returns `OptedOut` (`--skip-solution-registration` was passed), both auto-scaffold and registration were skipped intentionally — run this only if you later decide to register.
 
 ```bash
@@ -102,7 +102,7 @@ uip solution upload <SolutionDir> --output json --output-filter "{Status: Status
 
 > **`--output-filter` is mandatory on upload.** The raw upload response is large enough that the agent truncates it and loses `DesignerUrl`. The JMESPath projection `{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}` (applied to the response envelope's `Data` field) reduces the response to the three fields the skill actually reads, so `DesignerUrl` always survives.
 
-> **On a missing `DesignerUrl`**, re-run the upload once **without** `--output-filter` and dump the unfiltered response to `tasks/upload-response.json` — the filter hides any error/diagnostic fields that explain why the URL is absent.
+> **On a missing `DesignerUrl`**, re-run the upload once **without** `--output-filter` and save the unfiltered response to `case-build/upload-response.json` — the filter hides diagnostic fields that may explain why the URL is absent.
 
 > **This is the default publish path.** When the user asks to "publish" without specifying where, run `resource refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"`. Share the resulting URL with the user.
 
@@ -246,7 +246,7 @@ uip maestro case spec --type <activity|trigger> \
 | `--type <activity\|trigger>` | **(required)** Whether the typeId is an activity or trigger TypeCache entry. |
 | `--activity-type-id <uuid>` | **(required)** Studio Web `uiPathActivityTypeId` from the relevant TypeCache index. |
 | `--connection-id <uuid>` | **(required)** IS connection UUID. Pick from `case registry get-connection` first. |
-| `--object-name <name>` | Override the typecache `objectName`. Required in two cases: (1) **entity-typed Curated triggers** whose typecache stores a placeholder (e.g. Data Service `{tenantEntityName\|folderEntityName}`); (2) **Generic-typed activities/triggers** (activity typecache `activityType === "Generic"`; trigger typecache `activityType === "GenericTrigger"`) whose typecache definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord` covering Account/Contact/Lead/...). The CLI errors at spec-fetch time when missing in case (2) — opaque `unknown_error`, see [`connector-trigger-planning.md`](connector-trigger-planning.md). Discovery: `uip is resources list/describe` (Generic) or `uip is triggers objects` (entity-typed Curated). See [`connector-integration.md`](connector-integration.md) and [`connector-trigger-planning.md`](connector-trigger-planning.md). |
+| `--object-name <name>` | Override the typecache `objectName`. Required in two cases: (1) **entity-typed Curated triggers** whose typecache stores a placeholder (e.g. Data Service `{tenantEntityName\|folderEntityName}`); (2) **Generic-typed activities/triggers** (activity typecache `activityType === "Generic"`; trigger typecache `activityType === "GenericTrigger"`) whose typecache definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord` covering Account/Contact/Lead/...). The CLI errors at spec-fetch time when missing in case (2) — opaque `unknown_error`, see [`connector-trigger-guide.md`](connector-trigger-guide.md). Discovery: `uip is resources list/describe` (Generic) or `uip is triggers objects` (entity-typed Curated). See [`connector-integration.md`](connector-integration.md) and [`connector-trigger-guide.md`](connector-trigger-guide.md). |
 | `--skip-case-shape` | Omit `caseShape` from the response. Use during planning for a leaner payload. Mutually exclusive with `--input-details`. |
 | `--input-details <json>` | Pre-fill values into the generated `caseShape`. Activity accepts `{bodyParameters?, queryParameters?, pathParameters?, filter?}`; trigger accepts `{eventParameters?, filter?}`. Connection identity is NOT in input — derived from `--connection-id` and TypeCache. Mutually exclusive with `--skip-case-shape`. Full contract: [`case-spec-input-details.md`](case-spec-input-details.md). |
 

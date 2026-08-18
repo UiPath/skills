@@ -2,9 +2,9 @@
 
 Unified issue log for the implementation phase. Initialized by `implementation.md`, written to by any plugin, dumped to markdown after build.
 
-> **No `planning.md`** — logging is an implementation-only utility (not a planned node type), so it has no planning doc. Intentional, not a gap.
+> Logging is an implementation-only utility, not an SDD node type.
 
-> **Pseudocode only.** The snippets below are data-shape specifications, not runnable code. The agent holds the issue list in its own reasoning during a run and emits `tasks/build-issues.md` with the Write tool at dump time. Do NOT create a `.py` script or shell out to Python — per [`case-editing-operations.md § Tool usage`](../../case-editing-operations.md#tool-usage--mandatory), Read/Write/Edit are the only I/O primitives.
+> **Pseudocode only.** The snippets below are data-shape specifications, not runnable code. The agent holds the issue list in memory and emits `case-build/build-issues.md` at dump time. Do NOT create a mutation helper script — per [`case-editing-operations.md § Tool usage`](../../case-editing-operations.md#tool-usage--mandatory), artifact writes remain reviewable.
 
 ## Setup
 
@@ -33,7 +33,7 @@ issues.append({                 # pseudocode — not executed
 
 ## Dump
 
-After Step 12 (validate), group issues by `plugin` and write to `tasks/build-issues.md`:
+After validation, group issues by `plugin` and write to `case-build/build-issues.md`:
 
 ```markdown
 # Build Issues — <CaseName>

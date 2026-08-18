@@ -4,7 +4,7 @@ description: >
   validation failure. A two-stage built-in-timer case is built with a known
   invalid enum value (`invalid-exit-type`) for Stage 1's completion exitType.
   After validate fails (expected), the skill MUST dump the shared issue log to
-  tasks/build-issues.md (Phase 4 / Step 12.1). All tasks are built-in timers,
+  case-build/build-issues.md after validation. All tasks are built-in timers,
   so the build is fully local (no registry/cloud needed).
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node]
 
@@ -121,8 +121,7 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available.
-  - Treat the generated plan as pre-approved — do not block on any HARD STOP
-    / AskUserQuestion approval step.
+  - Treat the supplied Planner SDD as approved and build it directly.
   - Do NOT run `uip maestro case debug`.
   - The `invalid-exit-type` exitType in Stage 1's completion condition is
     intentional — reproduce it exactly in the caseplan.json; do NOT correct it
@@ -131,8 +130,8 @@ initial_prompt: |
   Run `uip maestro case validate TimerLogCase/TimerLogCase/caseplan.json
   --output json`. Validation is expected to fail due to the invalid exitType.
   After validate completes (regardless of exit code), write the issue log to
-  `tasks/build-issues.md`. The task is NOT complete until validate has run and
-  `tasks/build-issues.md` exists.
+  `case-build/build-issues.md`. The task is NOT complete until validate has run and
+  that evidence file exists.
 
 success_criteria:
   - type: run_command
@@ -144,14 +143,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "logging plugin dumped the shared issue log to tasks/build-issues.md (written even on a clean build)"
-    path: "tasks/build-issues.md"
+    description: "logging plugin dumped the shared issue log to case-build/build-issues.md (written even on a clean build)"
+    path: "case-build/build-issues.md"
     weight: 3.0
     pass_threshold: 1.0
 
   - type: file_contains
     description: "build-issues.md carries the issue-log header naming this case (per logging/impl-json.md dump template)"
-    path: "tasks/build-issues.md"
+    path: "case-build/build-issues.md"
     includes:
       - "Build"
       - "TimerLogCase"

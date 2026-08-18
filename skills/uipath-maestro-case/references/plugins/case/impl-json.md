@@ -8,16 +8,16 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 
 ## Purpose
 
-Create the full project on disk in a single plugin invocation — 5 scaffold files + `caseplan.json`. Runs exactly once per project as T01 in every `tasks.md`. Two sections:
+Create the full project on disk in one invocation — five scaffold files plus `caseplan.json`. Run exactly once at the start of direct SDD lowering.
 
 1. **§ Scaffold** — write the 5 boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
 2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
 Solution setup (`uip solution init`) and project registration (`uip solution projects add`) are CLI — see [implementation.md Step 6](../../implementation.md). Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 6); this recipe writes all case fields directly into the initial `caseplan.json`.
 
-**No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
+**No trigger is emitted by this recipe.** The trigger recipe runs after the scaffold.
 
-## Input spec (from `tasks.md`)
+## Input spec (from normalized SDD)
 
 | Field | Required | Notes |
 |---|---|---|
@@ -29,7 +29,7 @@ Solution setup (`uip solution init`) and project registration (`uip solution pro
 | `directly-pass-task-outputs` | no | Boolean. Defaults to `true`. Set `false` only when sdd.md requests it. |
 | `description` | no | Defaults to empty string. Always emitted so downstream consumers read a consistent shape. |
 
-See [`planning.md`](planning.md) for how these fields are sourced from `sdd.md`.
+Use the metadata and case settings returned by `inspect-sdd`; do not infer a second contract.
 
 ## § Scaffold — write project boilerplate
 
@@ -94,7 +94,7 @@ Use the Write tool for each. All 5 files go directly into `<SolutionDir>/<Projec
 }
 ```
 
-> Emit `entryPoints: []` empty. The triggers plugin owns every `entryPoints[]` insertion starting at T02 — that way the path fragment always matches the real primary-trigger ID.
+> Emit `entryPoints: []` empty. Trigger recipes own every `entryPoints[]` insertion so each path fragment matches the real trigger ID.
 
 #### `bindings_v2.json`
 
@@ -141,18 +141,18 @@ If any check fails, halt and report.
 ## § Write caseplan.json — Pre-write checks
 
 1. **Scaffold has run.** The 5 files listed in § Scaffold must exist in `<SolutionDir>/<ProjectName>/`. They were written earlier in this same plugin invocation; if missing, halt (bug — re-run the plugin from the start).
-2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `tasks.md` from scratch per SKILL.md Rule 6, so a collision here means a genuine re-run and overwriting is correct.
+2. **Collision behavior: stop.** If `caseplan.json` already exists, route to brownfield editing or require an explicit rebuild choice. Never treat mere existence as permission to overwrite.
 
 ## ID generation
 
 - Top-level `id` is generated: prefix `case-` + 10 chars from `[A-Za-z0-9]` (per `case-editing-operations.md` § ID Generation algorithm). Example: `case-aBcDeFgHiJ`.
-- **No trigger ID emitted at T01.** The triggers plugin owns primary-trigger creation at T02.
+- **No trigger ID emitted by the scaffold.** Trigger recipes own trigger creation.
 
 Record in `id-map.json`:
 
 ```json
 {
-  "T01": { "kind": "case", "id": "case-aBcDeFgHiJ" }
+  "case": { "kind": "case", "id": "case-aBcDeFgHiJ" }
 }
 ```
 
@@ -160,7 +160,7 @@ The `id` value mirrors the actual top-level `id` written into `caseplan.json` �
 
 ## Recipe — Skeleton (no trigger)
 
-Pure skeleton: top-level fields + `metadata` block + empty `bindings: []` + empty `variables` + empty `nodes: []` + empty `edges: []` + empty `layout: {}`. Primary trigger is the triggers plugin's responsibility at T02.
+Pure skeleton: top-level fields + `metadata` block + empty `bindings: []` + empty `variables` + empty `nodes: []` + empty `edges: []` + empty `layout: {}`. Trigger creation is the trigger recipe's responsibility.
 
 ### Minimal variant (no description)
 
@@ -223,14 +223,14 @@ Adds top-level `description` field (NOT inside `metadata`):
 
 > **`intsvcActivityConfig` always emitted** — set `metadata.intsvcActivityConfig: "v2"` on every caseplan.
 >
-> **`caseDirectlyPassTaskOutputs` always emitted** — write `metadata.caseDirectlyPassTaskOutputs` on every caseplan, value from the T01 `directly-pass-task-outputs` field (defaults to `true` when sdd.md is silent). When `true`, task outputs pass directly through messages instead of shared variables, fixing race conditions on task outputs in cases with parallel tasks. Emit `false` only when sdd.md explicitly requests it.
+> **`caseDirectlyPassTaskOutputs` always emitted** — write `metadata.caseDirectlyPassTaskOutputs` on every caseplan, value from the normalized SDD `directly-pass-task-outputs` field (defaults to `true` when the SDD is silent). When `true`, task outputs pass directly through messages instead of shared variables, fixing race conditions on task outputs in cases with parallel tasks. Emit `false` only when the SDD explicitly requests it.
 
 ## caseIdentifier — constant vs external
 
-Set `caseIdentifierType` from the T01 `identifier-type` (default `constant`); lives under `metadata.*`.
+Set `caseIdentifierType` from the normalized SDD `identifier-type` (default `constant`); it lives under `metadata.*`.
 
 - **`constant`** — write the literal prefix from sdd.md (`"caseIdentifier": "LOAN"`).
-- **`external`** — copy the T01 `case-identifier` expression **verbatim** into `caseIdentifier` (e.g. `"=vars.poNumber"` or `` "=js:`${metadata.InstanceId}-${vars.region}`" ``). Do NOT transform or `=js:`-wrap it — unlike task-input sinks ([bindings-and-expressions.md](../../bindings-and-expressions.md)), this value is written as authored. Valid forms + variable eligibility: [planning.md § External identifier value](planning.md).
+- **`external`** — copy the normalized SDD `case-identifier` expression **verbatim** into `caseIdentifier` (e.g. `"=vars.poNumber"` or `` "=js:`${metadata.InstanceId}-${vars.region}`" ``). Do NOT transform or `=js:`-wrap it — unlike task-input sinks ([bindings-and-expressions.md](../../bindings-and-expressions.md)), this value is written as authored.
 
 ## Formatting
 

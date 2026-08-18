@@ -17,19 +17,19 @@ Append one secondary manual trigger to the schema. This plugin performs **two fi
 
 The sibling-file sync is the main reason this plugin needs a dedicated JSON recipe rather than reusing a generic "add node" primitive — orchestrator discovers entry points via `entry-points.json`, so a trigger node without a matching entry is invisible to runtime.
 
-## Input spec (from `tasks.md`)
+## Input spec (from normalized SDD)
 
 | Field | Required | Notes |
 |---|---|---|
-| `displayName` | yes | T-entry title or `display-name:` field. Fallback: `Trigger ${existingTriggerCount + 1}`. The first manual trigger written into a fresh caseplan therefore defaults to `"Trigger 1"`. |
-| `description` | yes | Always emitted into `data.description`. Sourced from the T-entry's `description:` field when present; otherwise the LLM infers a natural-language description from surrounding sdd.md context. |
+| `displayName` | yes | Exact SDD trigger name. Fallback: `Trigger ${existingTriggerCount + 1}` only when the SDD schema permits omission. |
+| `description` | yes | Always emitted into `data.description` from the SDD. |
 
 Position is not a user input. It is computed statefully (see below).
 
 ## Pre-flight
 
-1. **`caseplan.json` exists** at `<SolutionDir>/<ProjectName>/caseplan.json`. Created by the `case` plugin at T01. If absent, run that plugin first — do not synthesize.
-2. **`entry-points.json` exists** in the same directory (sibling of `caseplan.json`). Written by the `case` plugin's § Scaffold at T01. If absent, hard-fail (`entry-points.json not found in <dir>. Run the case plugin first to scaffold the project.`). Do not lazily create it — a missing `entry-points.json` indicates an incomplete project scaffold, not a recoverable state.
+1. **`caseplan.json` exists** at `<SolutionDir>/<ProjectName>/caseplan.json`, created by the Case scaffold. If absent, scaffold first.
+2. **`entry-points.json` exists** beside it. If absent, hard-fail; this is an incomplete scaffold, not a recoverable trigger state.
 3. Both files must be parseable JSON. Read → validate → modify → write.
 
 ## ID generation
@@ -41,11 +41,11 @@ Position is not a user input. It is computed statefully (see below).
   node -e "console.log(crypto.randomUUID())"
   ```
 
-Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference — e.g., the global-vars plugin resolves this trigger's node id for an In-argument whose `sourceTriggers` names this trigger's T-number (or when it is the primary trigger and the In-arg leaves `sourceTriggers` blank).
+Record `trigger:<exact SDD name> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference. The global-vars plugin uses this semantic key for an In-argument whose `sourceTriggers` names the trigger; a blank source resolves to the normalized contract's primary trigger.
 
 ## Default-name fallback
 
-If the T-entry does not supply `display-name`:
+If the normalized SDD does not supply a display name:
 
 ```text
 existingTriggers = schema.nodes.filter(n => n.type === "uipath.case.trigger")

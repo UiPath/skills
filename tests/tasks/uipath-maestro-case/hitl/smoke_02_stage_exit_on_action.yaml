@@ -134,8 +134,7 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available in the environment.
-  - Treat the generated plan as pre-approved — do not block on any HARD STOP
-    / AskUserQuestion approval step.
+  - Treat the supplied Planner SDD as approved and build it directly.
   - Skeleton action task is acceptable if the action-app is unresolved.
   - Do NOT run `uip maestro case debug`.
 

@@ -27,7 +27,7 @@ initial_prompt: |
   This test environment has no live tenant — the action-app for the
   reviewer step is intentionally unlikely to resolve. When that happens
   the skill REQUIRES you to write a skeleton action task per
-  references/skeleton-tasks.md:
+  references/placeholder-tasks.md:
   - `type: "action"`
   - `displayName` set
   - `id`, `elementId`, `isRequired`, `shouldRunOnlyOnce` set
@@ -183,8 +183,7 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available.
-  - Treat the generated plan as pre-approved — do not block on any HARD STOP
-    / AskUserQuestion approval step.
+  - Treat the supplied Planner SDD as approved and build it directly.
   - Do NOT fabricate a `taskTypeId` for the action task to silence
     skeleton warnings. Validation tolerates the skeleton warning; mocks
     cause harder-to-diagnose failures downstream.
@@ -246,7 +245,7 @@ success_criteria:
                   for t in lane:
                       if t.get('type') == 'action':
                           d = t.get('data') or {}
-                          # Skeleton: data must be {} (or have only action-only extras per skeleton-tasks.md, never taskTypeId)
+                          # Placeholder: data must be {} (or have only documented action-only extras, never taskTypeId)
                           ctx = d.get('context') or {}
                           if ctx.get('taskTypeId'):
                               print('FAIL: skeleton action task has taskTypeId set'); sys.exit(1)

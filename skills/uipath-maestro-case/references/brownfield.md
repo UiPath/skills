@@ -2,11 +2,11 @@
 
 Targeted changes to an existing `caseplan.json`. Skips the design handoff and the Phase 1–7 build pipeline. Terminates at `validate`, then hands off to Phase 5 (publish) / Phase 6 (debug) / Phase 7 (publish to Orchestrator).
 
-> **Greenfield (new case from `sdd.md`) uses a different journey.** If `caseplan.json` does not yet exist, or the user wants to (re)build from a spec, see [planning.md](planning.md) → [implementation.md](implementation.md) → [phased-execution.md](phased-execution.md) instead.
+> **Greenfield (new case from `sdd.md`) uses a different journey.** If `caseplan.json` does not yet exist, or the user wants to (re)build from a spec, see [greenfield.md](greenfield.md) → [implementation.md](implementation.md) → [phased-execution.md](phased-execution.md) instead.
 
 ## When this journey applies
 
-`caseplan.json` already exists AND the user wants a targeted edit ("add a stage", "remove task X", "change this condition", "swap the trigger"). No `sdd.md`, no `tasks.md`, no planning phase, no prototyping hard stop. Routing lives in [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
+`caseplan.json` already exists AND the user wants a targeted edit ("add a stage", "remove task X", "change this condition", "swap the trigger"). No new SDD is required and no intermediate planning artifact is created. Routing lives in [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
 
 ## Kickoff — set dev expectations first
 
@@ -40,7 +40,7 @@ Record the outcome (pulled from SW at `<SolutionId>`, or local-only) for the fre
 
 Edit size never changes the journey — many edits still stay brownfield (in-place, IDs preserved). No complexity threshold escalates to greenfield. Batch multi-edit passes per [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical): one `validate` at the end, not per edit.
 
-When an edit touches many nodes or reads like "rebuild this case", confirm scope first via AskUserQuestion — `Edit in place` (default) vs `Rebuild from an updated spec` (greenfield via [planning.md](planning.md), re-mints IDs). Only an explicit rebuild choice or a new/updated `sdd.md` escalates to greenfield.
+When an edit touches many nodes or reads like "rebuild this case", confirm scope first via AskUserQuestion — `Edit in place` (default) vs `Rebuild from an updated Planner SDD` (greenfield via [greenfield.md](greenfield.md), re-mints IDs). Only an explicit rebuild choice or a new/updated `sdd.md` escalates to greenfield.
 
 ## Read this first
 

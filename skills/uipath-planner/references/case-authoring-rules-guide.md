@@ -4,7 +4,7 @@ Content-quality contract for a Case Management SDD authored by this skill. The [
 
 The downstream build skill (`uipath-maestro-case`) trusts the SDD as written. These rules make that trust safe.
 
-> **Phase terminology legend.** This contract predates the planner becoming the sole case-SDD author, and its build-pipeline phase names are kept because the downstream build skill still uses them: **Phase 0** = this design lane (now owned by `uipath-planner`); **Phase 1** = the build skill's planning pass (verify-only when this lane already resolved resources); **Phase 2/3** = the build skill's prototyping/implementation passes; `tasks/registry-resolved.json` = the build skill's resolution audit file, seeded from this lane's resolution ledger. Checks marked "enforced at build" run in `uipath-maestro-case`, not here.
+> **Ownership and phase terminology.** `uipath-planner` is the sole Case SDD author. The downstream `uipath-maestro-case` skill consumes a ready SDD directly: Phase 1 deterministic preflight, Phase 2 resource resolution, Phase 3 lowering, then verification/release gates. `case-build/registry-resolved.json` is disposable resolution evidence, not a design artifact.
 
 ## Read map — load only what the activity needs
 
@@ -313,11 +313,11 @@ Required whenever **any** SLA is configured — case, stage, or `action` task. O
 
 ### 1.3 Triggers
 
-≥ 1 trigger required. One row per triggering event. Number triggers sequentially starting at **T02** (T01 reserved for the case file). The T-number is the reference key used by Case Variables rows whose value comes from this trigger's payload (§1.5).
+At least one trigger is required. One row per triggering event. Each row uses an exact, unique business name; that name is the stable reference key used by Case Variables.
 
 | Field | Required? | Value |
 |---|---|---|
-| T# | yes | `T<N>` — sequential, starts at `T02` |
+| Name | yes | Exact, unique business trigger name |
 | Trigger Type | yes | `Manual` / `Intsvc.TimerTrigger` / `Intsvc.EventTrigger` (`Manual` is author shorthand — see note) |
 | Source | conditional | Connector or system for `Intsvc.EventTrigger`; schedule expression for `Intsvc.TimerTrigger`; `Manual` literal for `Manual` |
 | Configuration | conditional | User-stated intent only — see Configuration rules below. `Intsvc.EventTrigger` MUST have a concrete operation phrase. |
@@ -391,23 +391,23 @@ A variable used anywhere in the plan that meets the test above appears in this t
 | Name | yes | camelCase, no role suffix |
 | Category | yes | `In` / `Out` / `Variable` — NEVER `—`. Drives the build skill's `global-vars` pattern shape. |
 | Type | yes | Platform type enum (see the platform case schema (owned by the build skill `uipath-maestro-case`)): `string`, `integer`, `float`, `double`, `boolean`, `datetime`, `date`, `jsonSchema`, `file`. **`file`** is a JobAttachment record (`{ID, FullName, MimeType, Metadata}`) — see `[case-sdd-examples.md](../assets/templates/case-sdd-examples.md)` Use Cases 9–11 for caller-pre-upload, connector-download, and multipart-send patterns. File-typed In-args carry an implicit caller obligation (see §1.5 In semantics + Approve summary reminder). Use `string` for JSON-shaped values; never emit `json` or `jsonSchema`. |
-| sourceTriggers | conditional | `Variable`: single `T<N>` or comma-separated CSV (`T02, T03`) when multiple triggers feed the same slot. `In`: optional single `T<N>` selecting the bound trigger (blank = primary trigger T02; never a CSV). Empty for pure state and `Out`. |
-| sourceFields | conditional | `Variable` only: single bare payload path when one trigger; **keyed format** `T<N>: <path>; T<M>: <path>` when `sourceTriggers` is CSV. Empty on `In` rows even when `sourceTriggers` names a trigger (`In` selects a trigger, extracts no field). Dot-paths only — no array indexing in v1. |
+| sourceTriggers | conditional | `Variable`: one exact trigger name or comma-separated exact names when multiple triggers feed the same slot. `In`: optional one trigger name (blank = primary trigger; never CSV). Empty for pure state and `Out`. |
+| sourceFields | conditional | `Variable` only: one bare payload path for one trigger; **keyed format** `<trigger name>: <path>; <trigger name>: <path>` for multiple triggers. Empty on `In` rows. Dot-paths only — no array indexing in v1. |
 | Default | optional | Concrete default or empty. |
 | Description | yes | One-line meaning. |
 
 **Category semantics** (canonical definition in the build skill's `global-vars` plugin):
 
-- **`In`** — caller-supplied case argument (manual trigger via API) OR `Default`-initialized (event / timer triggers, which have no caller). `sourceTriggers`: blank → binds the primary trigger (T02; default); a single `T<N>` → binds that trigger — never a CSV (one trigger only). `sourceFields` MUST stay empty — an In-arg selects a trigger but does not extract a payload field; for payload-extraction use `Variable` + `sourceTriggers` + `sourceFields` (see Use Case 2 in [case-sdd-examples.md](../assets/templates/case-sdd-examples.md)). **`In` of `Type: file`** — programmatic caller must pre-create a JobAttachment (`POST /odata/Attachments` then `PUT` bytes) and pass `{ID, FullName, MimeType, Metadata}` plus `StartProcessDto.Attachments[]`. Maestro Studio Web's "Start case" dialog does this automatically; non-Studio callers do it themselves. Surface this obligation in the Approve summary whenever any file-In-arg exists; see §Finalization step 11.
+- **`In`** — caller-supplied case argument (manual trigger via API) OR `Default`-initialized (event / timer triggers). Blank `sourceTriggers` binds the primary trigger; one exact name binds that trigger. Never use CSV. `sourceFields` stays empty. For payload extraction use `Variable` + sources. **File In** callers must pre-create a JobAttachment; surface this obligation in the review.
 - **`Out`** — case argument returned to caller. Value comes from a producer (a task's Outputs row that targets this Name via `-> {name}` or `{name} = {expr}`) OR from `Default` when no producer fires. `sourceTriggers` MUST be empty (direction mismatch: trigger → case is forbidden for `Out`).
-- **`Variable`** — case-internal state. Populated by one trigger's payload (`T<N>` + single path), multiple triggers sharing the same slot (CSV + keyed `T<N>: <path>` format), a task's Outputs row, or `Default` only.
+- **`Variable`** — case-internal state. Populated by one trigger name + path, multiple trigger names + keyed paths, a task Outputs row, or `Default` only.
 
 **Config-as-`In` pattern.** Business rules the case needs at runtime — priority bands, approval thresholds, exception taxonomy, payment controls — can be carried as a single `In` variable of `Type: string` whose `Default` is a JSON object, overridable at case start and consumed by agents (e.g. `businessRulesJson`). This gives business logic a first-class, replicable home in the SDD instead of scattering it across prose. Use `string` for the JSON-shaped value (never `json`). For a genuinely structured payload that the FE picker must navigate, use `Type: jsonSchema` and carry its schema in the variable's `body` — a `jsonSchema`/`file` variable without a `body` cannot have its sub-fields picked.
 
 **`sourceFields` notation:**
 
 - **Single-trigger:** bare path. `response.subject`, `response.user.id`, `Error.code`.
-- **Multi-trigger:** keyed `T<N>: <path>; T<M>: <path>` — every T-number listed in `sourceTriggers` MUST have a matching keyed entry. Mismatch = Phase 2 validator error. Example: `T02: response.user; T03: response.initiator`.
+- **Multi-trigger:** keyed `<trigger name>: <path>; <trigger name>: <path>` — every name listed in `sourceTriggers` MUST have a matching keyed entry. Mismatch is a preflight error.
 
 **Out-arg producer rule.** Every `Out` row MUST have at least one of:
 
@@ -551,7 +551,7 @@ If the requirement says corrected work is resubmitted through a review or decisi
 
 Defines per-task detail blocks. Every task opens with an **Entry Condition** block. Additional blocks depend on task type.
 
-Every task also declares **Design Rationale**: one concrete sentence explaining why the selected task type fits the actor/work and why the selected activation mode fits the timing. For sequential tasks, name the ordering/dependency evidence; for parallel tasks, state that the work is independent. This rationale is persisted into the matching task and task-entry T-entries in `tasks.md`.
+Every task also declares **Design Rationale**: one concrete sentence explaining why the selected type fits the actor/work and why activation fits the timing. Sequential tasks name ordering evidence; parallel tasks state independence. This rationale remains in the SDD and is checked against the lowered task.
 
 ### Entry Condition block (every task)
 
@@ -595,9 +595,9 @@ Multiple entry conditions render as multiple rows (DNF outer-OR). When `current-
 | Output Schema | Table: `Field | Type | Binding` (arrow form `-> =vars.<id>`) |
 | Buttons | Table only when `is_decision: Yes`: `Button | Maps To | Behavior` |
 
-**HITL Implementation:** the Action App title is the portable Phase 0 → Phase 1 lookup name. Establish it before registry lookup and preserve it when the app is unresolved so a different machine can retry discovery without `tasks/registry-resolved.json`. The action plugin still requires a deployed Action App from `action-apps-index.json` to build a resolved task; when no matching app exists, keep the title, set Action App ID + Deployment Folder to `<UNRESOLVED>`, emit a `high` review item, and fall back to a Rule-8 placeholder. Action Apps are not created inline.
+**HITL Implementation:** the Action App title is the portable lookup name. Preserve it when unresolved so another machine can retry without the resolution cache. A resolved action still requires a deployed app; otherwise keep the title/intent, mark identity and folder unresolved, emit a high review item, and use an accepted placeholder. Action Apps are not created inline.
 
-**Input/Output Schema fidelity.** The Input Schema and Output Schema `Field` cells MUST be a subset of the resolved app's actual schema (from `uip maestro case tasks describe --type action --id <actionAppId>`, fetched at Resolve and persisted in `tasks/registry-resolved.json`). Never author a field the deployed app does not expose — it cannot bind (the io-binding plugin has no `data.inputs[]` slot to write into). A field the user described but the app lacks → Ask (deploy a task-specific app / drop the field / placeholder), never silently author it. **Code-switched app (sanctioned — do NOT flag):** reusing ONE deployed app across many `action` tasks is correct and expected when each task carries a **distinct `actionType`** dispatch value and its declared fields are a **subset of the app's schema**. This is the normalized human-decision-app pattern — a single app whose code-behind switches on `actionType` and renders the right form; a full case routes every human decision through it (the working aged-invoice case uses one app across all 7 of its action tasks). It is the generic-substitute anti-pattern ONLY when tasks reuse the app **without** a distinct `actionType`, or declare a field the app does not expose (won't bind) — see §Architect's lens `rev_substitute_app` and §Finalization step 16.
+**Input/Output Schema fidelity.** Declared fields MUST be a subset of the resolved app schema; resolution persists that contract in `case-build/registry-resolved.json`. Never author a field the app does not expose. Reusing one code-switched app is valid when every task has a distinct `actionType` and compatible field subset.
 
 **Recipient encoding** (typed prefix is the only allowed format):
 
@@ -667,19 +667,19 @@ No `<UNRESOLVED>` on Duration / Until — timer cannot fire without it. Block Ap
 
 ### `process` / `agent` / `rpa` / `api-workflow` task — required cells
 
-These four runnable types share a single render block. The SDD surfaces both portable resource intent and resolution state. `Resolved Resource` is always a concrete intended name; `Resource Identity` alone says whether Resolve selected a live resource. This keeps the document usable when Phase 0 and Phase 1 run on different machines and `tasks/registry-resolved.json` is not transferred.
+These four runnable types share a render block. The SDD surfaces portable resource intent and resolution state. `Resolved Resource` is the intended name; `Resource Identity` says whether a live resource was selected. This keeps the document portable when build-time resolution evidence is absent.
 
 | Cell | Required? | Value |
 |---|---|---|
 | Resolved Resource | yes | A concrete intended resource `name` (the `name`-binding default) — e.g. `AgedInvoiceMockIntegrationApi`, `InvoiceTriageAgent`. Use the selected registry entry's canonical name when resolved; otherwise retain the user-requested name. NEVER write `<UNRESOLVED>` in this cell. |
 | Folder Path | yes | Resolved `folders[0].fullyQualifiedName` (the `folderPath`-binding default), or `<UNRESOLVED>` when `Resource Identity` is unresolved. A concrete value must be the exact resource folder, never a parent path. |
-| Resource Identity | yes | The resolution-status cell. Write the resolved id (+version): `apiWorkflowId` / `agentId` / `processOrchestrationId`, or `<UNRESOLVED>` when no live resource was selected. Also carry it in `tasks/registry-resolved.json` when that optional cache exists. |
+| Resource Identity | yes | Resolved id (+version), or `<UNRESOLVED>` when no live resource was selected. The build may mirror it into `case-build/registry-resolved.json`. |
 | Binding Sub-Type | yes | `resourceSubType` on the bindings: `Api` (api-workflow) / `Agent` (agent) / `ProcessOrchestration` (process) / `—` (rpa). Omitting it makes Studio Web report the resource as not found. |
 | Dispatch / Operation | conditional | When the resource is a shared façade dispatched by a parameter (e.g. one mock-integration api selected by `requestSource`, one code-switched action app), name the selector + value (`requestSource = "RegisterCaseShell"`). `—` for single-purpose resources. Also appears as an Inputs row (literal binding). |
 | Inputs | yes | Table: `Field | Type | Binding` — `Field` MUST match the runnable's declared In argument name verbatim; `Binding` per §Binding cell |
 | Outputs | yes | Table: `Field | Binding / Value` — `Field` MUST match the runnable's declared Out argument name verbatim for `->` rows (or `—` for `=` rows); see §Outputs cell operators |
 
-**Where the rest of the metadata lives.** Deep per-type runtime metadata that does NOT affect replication of the case plan (agent system prompt, RPA package version, api-workflow endpoint URL, process release tag) stays out of the SDD body — it is resolved during Phase 1 discovery (the build skill's Phase 1 planning (`uipath-maestro-case`)) and persisted in `tasks/registry-resolved.json` under the task's resolution entry (exact keys: `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`). The SDD carries the resource **name + folder + id + sub-type** (above). Phase 1 may reuse deeper metadata only after the cached type/name/folder/identity matches the current SDD per the build skill's carryover contract; otherwise it re-runs discovery from the SDD and replaces the stale entry. Mapping:
+**Where the rest of the metadata lives.** Runtime metadata that does not affect design stays out of the SDD. Phase 2 resolution persists it in `case-build/registry-resolved.json` under the resource entry (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `ioContract`, `rationale`). The SDD carries resource name + folder + identity + subtype. Cached metadata is reusable only when type/name/folder/identity and the SDD digest still match.
 
 | Task type | Registry source | Identity field in `registry-resolved.json` |
 |---|---|---|
@@ -746,7 +746,7 @@ For worked patterns by Category and operator, see [`case-sdd-examples.md`](../as
 
 ### Resolved-resource I/O completeness
 
-When a task resolves to a **live** resource (`process` / `agent` / `rpa` / `api-workflow` / `action` / `execute-connector-activity` / `wait-for-connector` / `case-management`), the SDD's binding contract MUST cover that resource's declared I/O — not merely match names verbatim where rows exist (§Binding cell, §Outputs cell). The declared contract is the one pulled during build-phase discovery (`tasks describe` for runnables, `spec` for connectors — Phase 1 per the build skill's Phase 1 planning (`uipath-maestro-case`), re-verified in Phase 3) and persisted — including each input's `required` flag and the full output-field list — in `tasks/registry-resolved.json`. Coverage is two-directional:
+When a task resolves to a **live** resource, the SDD binding contract MUST cover its declared I/O. Phase 2 fetches (`tasks describe` or connector spec) and persists required inputs plus all output fields in `case-build/registry-resolved.json`; the detail pass re-verifies it. Coverage is two-directional:
 
 **Inputs — required-coverage.** Every **required** declared input has an Inputs row whose `Binding` is non-empty (any allowed form in §Binding cell), OR is explicitly `<UNRESOLVED>` paired with a `high` review item (`rev_unbound_input_<task>_<field>`). A required input silently absent from the Inputs table is the defect this rule catches — it resolves to runtime null and faults the job. **Optional** declared inputs MAY be omitted; an optional input the user described but did not map → `medium` review item (build-phase discovery behavior). Never invent a `Default` to suppress an unmapped required input.
 
@@ -781,7 +781,7 @@ The new SDD shape carries producer / consumer signal across three places (NOT a 
 
 | Producer signal | Where it lives |
 |---|---|
-| Trigger payload extraction | §1.5 row's `sourceTriggers` (T-number) + `sourceFields` (payload path) |
+| Trigger payload extraction | §1.5 row's exact `sourceTriggers` name + `sourceFields` payload path |
 | Task-output extraction | Producing task's Outputs row → `-> <caseVar>` |
 | Task-output set / compute / copy | Producing task's Outputs row → `<caseVar> = <expr>` |
 | Case-start default | §1.5 row's `Default` |
@@ -829,19 +829,19 @@ Pattern X1 is preferred unless an actual connector emits the close event. When t
 
 1. Every variable referenced by any `=vars.<name>` (or `=vars.<name>.<sub>`) anywhere in `sdd.md` (task Inputs, IF columns, exit rules, button `Maps To`, SLA expressions) has a matching §1.5 row whose `Name` equals `<name>` — OR `<name>` is an upstream task's auto-emitted output field (see §Variable lineage closure → Task-output direct reference; never add a §1.5 row to back such a ref).
 2. Every §1.5 row's `Category` is exactly one of `In` / `Out` / `Variable` — never blank, never `—`.
-3. **`In` row consistency:** `sourceFields` is empty. `sourceTriggers` is empty (binds the primary trigger) OR a single `T<N>` that exists in tasks.md (binds that trigger) — never a CSV. A CSV `sourceTriggers`, or any non-empty `sourceFields`, on an `In` row is an error.
+3. **`In` row consistency:** `sourceFields` is empty. `sourceTriggers` is empty (primary trigger) or one exact trigger name — never CSV. An unknown name is an error.
 4. **`Out` row consistency:** `sourceTriggers` is empty. Closure requires either (a) non-empty `Default`, OR (b) a task Outputs row in the case plan targeting this Name via `-> {name}` or `{name} = {expr}`. (PR 860 added a Phase 2 validator: `Out` + non-empty `sourceTriggers` → reject.)
-5. **`Variable` row consistency:** if `sourceTriggers` is non-empty, `sourceFields` MUST have a matching entry for every T-number listed. For CSV `sourceTriggers`, `sourceFields` MUST use keyed `T<N>: <path>; T<M>: <path>` format with one keyed entry per T-number — strict, no defaults. Single-T-number rows use a bare path.
+5. **`Variable` row consistency:** if `sourceTriggers` is non-empty, `sourceFields` has a matching entry for every trigger name. CSV sources require keyed `<trigger name>: <path>` entries; single-source rows use a bare path.
 6. **Stage-order closure.** For each consumer of `vars.<caseVar>`, identify producers (trigger-extraction, task Outputs row `->` or `=`). At least one producer's stage index ≤ consumer's stage index AND (same stage) task index < consumer's task index. If no producer exists, the §1.5 row MUST satisfy the `Category: In` or non-empty `Default` escape.
 7. **`->` row payload path present.** Every Outputs `-> {caseVar}` row has a non-empty `Field` cell (the runtime path). Every `=` row has `Field` exactly `—`.
 8. **Forbidden body vocabulary.** No occurrence in any narrative cell of: `Pattern C`, `bridge`, `companion`, `inputOutputs[]`, `=jsonString:` (outside connector `Operation Configuration` cells), `groupOperator`, `essentialConfiguration` (as prose), `savedFilterTrees`, `dispatcher`, `Phase 2 validator`, `Phase 3 dispatcher`, `Q10 II`, `Finding #N`, `io-binding`, `aliased into / from / back into`, `reassign`, `originalVar`, `auto-mint`. These are skill-internal terms — see [case-sdd-template.md § Output Rules](../assets/templates/case-sdd-template.md).
-9. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness). For each task resolved to a live resource (contract present in `tasks/registry-resolved.json`): every **required** declared input has a non-empty `Binding` row OR `<UNRESOLVED>` + a paired `high` review item; every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract. An upstream-output-fed input (whole-value `<-` or `vars.$xref(...)`) satisfies coverage with NO §1.5 row — do not flag it as a missing variable. Skip tasks whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` (no contract).
+9. **Resolved-resource I/O completeness.** For each live resource contract in `case-build/registry-resolved.json`, every required input is bound or explicitly unresolved with a high review item, and every `->` field exists in the output contract. Upstream-output references satisfy coverage without a Case Variable row. Skip accepted unresolved identities.
 
 Any failure → fix in the model before presenting the confirmation (lineage defects are the agent's, not the user's); a genuinely unfixable item becomes a row in the confirmation's `Review Flags` table.
 
 ## Review items
 
-A review item is a structured gap escalation. The design lane emits one whenever a field could not be fully resolved but the build's planning pass needs the context. They live in the in-memory model and surface as rows in the confirmation's `Review Flags` table — never in the `sdd.md` body (per [case-sdd-template.md § Output Rules](../assets/templates/case-sdd-template.md)); the build's Phase 1 persists them into `tasks/registry-resolved.json` under the matching task's `review_items[]` array when it writes that file.
+A review item is a structured gap escalation. It lives in the in-memory model and confirmation Review Flags, never the SDD body. Phase 2 persists accepted unresolved context into `case-build/registry-resolved.json` under the matching `review_items[]`.
 
 Shape:
 
@@ -939,7 +939,7 @@ When Phase 0 defaults or infers a value, record provenance so Phase 1 and downst
 1. **Inline in `sdd.md`** — italic source attribution after the value: `Manual _(source: user-stated)_`. Omit attribution when the kind is `user-stated`.
 2. **Confirmation `Decisions I Made` table** — see [case-design-lane-guide.md § Confirm](case-design-lane-guide.md#confirm--the-single-checkpoint).
 
-**Design rationale is durable, not chat-only.** Provenance says *where a value came from*; rationale says *why the design choice fits*. Persist the latter in each stage/task `Design Rationale` field and in each case/stage SLA rationale field. The confirmation may summarize those reasons, but it is not their sole storage. Phase 1 copies the rationale to each matching `tasks.md` T-entry so an implementer can review the choice without the original conversation.
+**Design rationale is durable, not chat-only.** Persist it in each stage/task and SLA rationale field. The confirmation may summarize it, but the SDD is the authoritative storage and the parity checker verifies the lowered element without a duplicate planning artifact.
 
 Provenance kinds:
 
@@ -995,10 +995,10 @@ Phase 0 runs these checks **once, against the in-memory case model, before prese
 13. **Domain-fidelity scan.** Run a single pass over every narrative cell (Description, persona name, stage name, task name, button label, app-view purpose). For each customer-named entity surfaced in §Source ledger as `verbatim:"..."`, confirm the rendered cell still uses the verbatim phrase (no synonym drift). Mismatch → list and offer `Re-edit` with the verbatim phrase pre-filled.
 14. **Architect's-lens advisory pass.** Run the §Architect's lens checks. Emit `medium` review items for each trigger (the `high` variants — `rev_substitute_app`, and `rev_no_failure_path` at the ≥ 2-connector threshold — emit `high` and gate via the opt-in). `medium` is non-blocking; Approve summary surfaces the count.
 15. **Decision-routing closure.** For every `action` task with `is_decision: Yes`, each button's `Maps To` variable+value MUST be consumed by ≥ 1 downstream rule (stage-entry `IF`, task-entry `IF`, stage-exit, or case-exit) OR the button's Behavior MUST declare it terminal (no routing claim). When a button's Behavior names a destination stage / lane ("route to / send to / via the X lane") and no entry condition keys off that variable+value, the branch is dead → **blocking error**. Pair with §Logical integrity step 5 (lane reachability). A fully-orphaned decision variable (produced by a button, read by nothing) on an `is_decision: Yes` task is blocking; the `medium` `rev_orphan_decision` variant in §Architect's lens applies only when the variable IS read but not for branching.
-16. **Action-app schema fidelity.** For every `action` task whose HITL Implementation resolves to a concrete deployed app, every declared Input Schema and Output Schema `Field` MUST exist in that app's schema (from `tasks describe`, persisted in `tasks/registry-resolved.json` at Resolve). A declared field absent from the app → `high` review item (`rev_action_schema_<task>`); it cannot bind. One app bound to ≥ 2 tasks trips `rev_substitute_app` (§Architect's lens) **only** when the tasks lack distinct `actionType` dispatch values or declare fields outside the app schema; a code-switched app (distinct `actionType` per task, fields ⊆ app schema) is the sanctioned normalized-action-app pattern and does NOT trip it.
+16. **Action-app schema fidelity.** Every declared action Input/Output field exists in the resolved app contract stored in `case-build/registry-resolved.json`. Missing fields produce a high review item. Multi-task code-switched apps remain valid with distinct `actionType` values and compatible subsets.
 17. **Required-task presence.** Every primary stage whose completion exit uses `required-tasks-completed` MUST contain ≥ 1 task with `Required: Yes`. A `required-tasks-completed` exit over a stage where no task is required is vacuous — the runtime resolves it without gating on real work (and the CLI flags it as `CASE_MGMT_..._NO_REQUIRED_TASK` at `validate`). Catch it at the Approve gate: zero `Required: Yes` tasks in such a stage → blocking error (offer `Re-edit` to mark the stage's terminal/primary task required). Tasks default to `Required: Yes` unless the SDD says otherwise, so this fires only when the author explicitly cleared every task's Required flag.
 18. **Resolved-resource presence (standalone replicability).** Every process/agent/rpa/api-workflow task has a concrete `Resolved Resource`; every action has a concrete Action App title in `HITL Implementation`; every case-management task has a concrete `Child Case`. These portable names are never `<UNRESOLVED>`. Each task also has its required type-specific identity + folder pair (`Resource Identity` + `Folder Path`, or `Action App ID` + `Deployment Folder`): a concrete identity requires the exact concrete folder; an unresolved identity permits an unresolved folder and requires a paired `high` review item. Every connector task has `Connection ID` + `Activity Type ID`. Missing portable intent, or unresolved identity with no review item, is a blocking error.
-19. **Resolved-resource I/O completeness** (§Resolved-resource I/O completeness; audit-checklist item 9). For every task resolved to a live resource (contract in `tasks/registry-resolved.json`): every **required** declared input is bound (any §Binding cell form, incl. an upstream-output ref — which needs NO §1.5 row) OR `<UNRESOLVED>` + a paired `high` review item (`rev_unbound_input_<task>_<field>`); every Outputs `-> caseVar` row's `Field` exists verbatim in the resolved output contract (a phantom field → `high` `rev_phantom_output_<task>_<field>`). Unbound required input with no review item → blocking error. Step 16 is the `action`-app instance of the output-fidelity direction; this step extends both directions to all runnable/connector types. Tasks whose type-specific identity (`Resource Identity` or `Action App ID`) is `<UNRESOLVED>` (no contract) are skipped.
+19. **Resolved-resource I/O completeness.** For every live resource contract in `case-build/registry-resolved.json`, bind every required input or pair it with an unresolved high review item; require every `->` source field to exist. Unreviewed missing inputs are blocking. Skip accepted unresolved identities.
 20. **Re-entry attempt check.** For each `return-to-origin`, rework, correction, or resubmission loop, classify the loop as new attempt, re-evaluate existing fact, or optional repeat work. New-attempt loops must leave request/review/decision producer tasks rerunnable (`Run Only Once: No`) and reset or attempt-scope the routing variables they produce. Re-evaluate-only loops must document which existing fact the origin re-reads.
 
 On pass: present the §Confirm checkpoint (decision-first Case Review with Case Snapshot, Primary Journey, Other Paths Considered, SLA and Escalations, Rules and Outcomes, Resources and Integrations, a complete `Decisions I Made` table, Review Flags, and Caller obligation when applicable). The review names every stage and task but omits data, variables, and task inputs/outputs. A Build answer is the consent — the SDD ships per the lane's terminal step ([case-design-lane-guide.md § Terminal step](case-design-lane-guide.md#terminal-step--who-writes-what)); an explicit sign-off request adds one approval prompt before any file is created; design-only/draft requests save and stop. Corrections update the model and re-run only the affected checks.
@@ -1009,7 +1009,7 @@ On fail: fix the model and re-run the failed checks (plus any whose inputs chang
 
 - **Do NOT silently accept a user-proposed type when a compliance trigger phrase is in the transcript.** Tier 2 of the authority hierarchy overrides user preference; Ask before recording.
 - **Do NOT create the SDD file before the confirmation's Build (or save) answer.** Finalization validates the in-memory model before the confirmation; the file renders only after consent — batched with the first build actions (build handoff), or alone for design-only/draft requests. Never render with a failing fixable check or an undisclosed decision, and never build past a `high` item without the `Build despite N flagged items` pick.
-- **Do NOT leave design rationale only in chat.** The confirmation's `Decisions I Made` table is transient; stage kind/routing, task type/activation/sequencing, and SLA/escalation reasons must also live in the SDD's `Design Rationale` fields so the build's planning pass can preserve them.
+- **Do NOT leave design rationale only in chat.** Stage routing, task type/activation/sequence, and SLA reasons live in the SDD so direct lowering and parity can preserve them.
 - **Do NOT treat a validating case as proof the SDD followed the template.** `caseplan.json` validation checks executable JSON, not whether `sdd.md` preserved the template. A summary-style `sdd.md` with top-level `Source`, `Case Objective`, `Task Plan`, or `Acceptance Scenarios` sections is a render defect even when the built case validates.
 - **Do NOT repeat a global event on every primary stage.** External withdrawn/cancel events belong on one interrupting secondary-stage entry rule. An SLA response that enters a stage belongs on one scoped `sla-status-change` entry, with interrupting set by whether it diverts active work. Per-stage task/exit duplication is a modeling defect.
 - **Do NOT invent a stage, task, or routing change for an SLA the source only asks to notify about.** Absent a stated response, at-risk and breached are `notify-only` (§ SLA response model).
@@ -1023,8 +1023,8 @@ On fail: fix the model and re-run the failed checks (plus any whose inputs chang
 - **Do NOT emit `external-agent`, `external-workflow`, `document-extraction`, `flow-process`, `connector-activity`, `connector-trigger`, or `wait-for-event` as task types.** This skill generates 9 of the CLI's 10 types (closed 9-value enum). `external-agent`, `external-workflow`, `document-extraction`, and `flow-process` are **not supported yet**. The rest are not CLI task types at all.
 - **Do NOT author task inputs as bare field-name lists** (`**Inputs:** a, b, c`). Use the `Field | Type | Binding` table — bare lists force Phase 1 into name-match inference.
 - **Do NOT close variable lineage by guessing producers.** If no producer fires before a consumer AND the §1.5 row has no `Default`, that is an open-lineage error — surface it. Never silently retag the row's `Category` to `In` or invent a `Default` to suppress the failure.
-- **Do NOT populate `sourceTriggers` on `Out` rows.** PR 860's Phase 2 validator rejects `Out` + non-empty `sourceTriggers` (direction mismatch). An `In` row MAY carry a single `T<N>` to bind to a specific trigger (blank = primary), but its `sourceFields` MUST stay empty and a CSV is forbidden. For trigger-payload extraction, use `Category: Variable` (see §1.5 and [case-sdd-examples.md](../assets/templates/case-sdd-examples.md) Use Case 2).
-- **Do NOT use bare `sourceFields` paths when `sourceTriggers` is CSV.** Multi-trigger rows MUST use keyed `T<N>: <path>; T<M>: <path>` format with one entry per T-number. Mismatch is a Phase 2 validator error.
+- **Do NOT populate `sourceTriggers` on `Out` rows.** An `In` row may carry one exact trigger name (blank = primary), but `sourceFields` stays empty and CSV is forbidden. Trigger-payload extraction uses `Category: Variable`.
+- **Do NOT use bare `sourceFields` paths when `sourceTriggers` is CSV.** Multi-trigger rows use keyed `<trigger name>: <path>` entries, one per source. Mismatch is a deterministic preflight error.
 - **Do NOT mix `->` and `=` operators on the same target case variable within one task's Outputs.** Each target appears in at most one row per task — no double-binding.
 - **Do NOT leak skill-internal vocabulary into SDD narrative cells.** `Pattern C`, `bridge`, `companion`, `io-binding`, `dispatcher`, `Finding #N`, `aliased into`, `auto-mint`, etc. belong inside skill references — not in `sdd.md` Descriptions or notes. See [case-sdd-template.md § Output Rules](../assets/templates/case-sdd-template.md).
 - **Do NOT downgrade a `high` review item to `medium` to pass the Approve gate.** The severity ladder is mechanical; downgrade only when the underlying issue actually resolves.

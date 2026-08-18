@@ -3,8 +3,8 @@ description: >
   Quality test: agent maps a business description to a correctly-shaped
   `action` task — taskTitle, priority, recipient, and the planned input/
   output fields. Verifies that even when the action-app is unresolved
-  (skeleton path), the agent still records the planning fields in tasks.md
-  and writes valid JSON. Tests action-task field design (priority enum,
+  (placeholder path), the approved SDD remains the source for the intended
+  fields and the emitted JSON stays valid. Tests action-task field design (priority enum,
   recipient handling, taskTitle requirement).
 tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl]
 initial_prompt: |
@@ -181,12 +181,11 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available.
-  - Treat the generated plan as pre-approved — do not block on any HARD STOP
-    / AskUserQuestion approval step.
+  - Treat the supplied Planner SDD as approved and build it directly.
   - If the action-app or the process resource is unresolved, write a
-    skeleton task per the skeleton-tasks reference. The `tasks.md` plan
-    must still capture taskTitle, priority, recipient, and the intended
-    inputs/outputs in a fenced wiring-notes block.
+    placeholder task per the placeholder-tasks reference. Preserve resolution
+    status in `case-build/registry-resolved.json`; do not add an intermediate
+    planning document.
   - Do NOT run `uip maestro case debug`.
 
   **REQUIRED — before finishing, write report.json at the sandbox root**:
@@ -198,7 +197,7 @@ initial_prompt: |
       "input_fields":  ["<field names>"],
       "output_fields": ["<field names>"]
     },
-    "task_title": "<taskTitle from tasks.md or caseplan.json>",
+    "task_title": "<taskTitle from the SDD or caseplan.json>",
     "priority":   "<priority value>",
     "recipient":  "<recipient or empty if none>",
     "validation_passed": true
@@ -224,24 +223,24 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "tasks.md captures the task-title (resolved or skeleton path)"
-    command: "grep -i 'task-title\\|taskTitle\\|Task Title' tasks/tasks.md"
+    description: "The approved SDD captures the task title"
+    command: "grep -i 'task-title\\|taskTitle\\|Task Title' sdd.md"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "tasks.md captures priority: High"
-    command: "grep -i 'priority.*high' tasks/tasks.md"
+    description: "The approved SDD captures priority: High"
+    command: "grep -i 'priority.*high' sdd.md"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "tasks.md captures the recipient email"
-    command: "grep -i 'po-approvals@corp.com' tasks/tasks.md"
+    description: "The approved SDD captures the recipient email"
+    command: "grep -i 'po-approvals@corp.com' sdd.md"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5

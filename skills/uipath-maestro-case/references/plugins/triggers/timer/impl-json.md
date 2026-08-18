@@ -12,7 +12,7 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../
 
 Add a scheduled trigger to a case. Adapts shape to whether any Trigger node already exists in `schema.nodes`: emits the initial `trigger_1` minimal shape if none, or a secondary trigger with full render fields if one or more exist. Dual-file write: `caseplan.json` + `entry-points.json`.
 
-## Input spec (from `tasks.md`)
+## Input spec (from normalized SDD)
 
 | Field | Required | Notes |
 |---|---|---|
@@ -43,7 +43,7 @@ Emit the canonical first-trigger shape with the timer `uipath` block:
     "inputs": {
       "serviceType": "timer",
       "timerType": "timeCycle",
-      "timeCycle": "<timeCycle from tasks.md>"
+      "timeCycle": "<timeCycle from SDD>"
     }
   }
 }
@@ -67,7 +67,7 @@ Emit a secondary trigger with `data.parentElement` included:
     "inputs": {
       "serviceType": "timer",
       "timerType": "timeCycle",
-      "timeCycle": "<timeCycle from tasks.md>"
+      "timeCycle": "<timeCycle from SDD>"
     }
   }
 }
@@ -100,7 +100,7 @@ Locate `entry-points.json` adjacent to `caseplan.json` (same directory). Append 
 - First-trigger path: literal `trigger_1` (no randomness).
 - Secondary path: `trigger_` prefix + 6 random chars per [`case-editing-operations.md § ID Generation`](../../../case-editing-operations.md#id-generation).
 
-Record `T<n> → <triggerId>` in `id-map.json` for downstream cross-reference — incl. resolving an In-argument's bound trigger node when its `sourceTriggers` names this timer (or, when this timer is itself the primary trigger T02, an In-arg with blank `sourceTriggers`).
+Record `trigger:<exact SDD trigger name> → <triggerId>` in `id-map.json`. Blank `sourceTriggers` resolves to the normalized contract's primary trigger.
 
 ## Post-write validation
 

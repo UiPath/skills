@@ -95,7 +95,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
-| `version` | string | Schema version — `"27.0.0"`. Emitted by the `case` plugin at T01. |
+| `version` | string | Schema version — `"27.0.0"`. Emitted by the Case scaffold. |
 | `name` | string | Human-readable name |
 | `description` | string? | Case description |
 | `metadata.caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
@@ -103,7 +103,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | `metadata.caseAppEnabled` | boolean | Whether the Case App UI is enabled |
 | `metadata.publishVersion` | number? | Publish version — `2` for current schema |
 | `metadata.caseUnifiedSchemaEnabled` | boolean? | Unified-schema flag (`true`) |
-| `metadata.caseDirectlyPassTaskOutputs` | boolean? | Passes task outputs directly through messages instead of shared variables, fixing race conditions on task outputs in cases with parallel tasks. Schema-optional, defaults `true` when absent; skill emits the T01 `directly-pass-task-outputs` value (`true` unless sdd.md requested `false`). |
+| `metadata.caseDirectlyPassTaskOutputs` | boolean? | Passes task outputs directly through messages instead of shared variables, fixing race conditions on parallel work. Defaults `true`; emit `false` only when the SDD requests it. |
 | `metadata.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
 | `metadata.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Every rule has a non-empty target-unique `displayName` without `:`; default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
 | `metadata.caseExitRules` | CaseExitCondition[]? | Conditions that mark the case as complete |
@@ -113,7 +113,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 `caseIdentifierType` picks how `caseIdentifier` resolves at runtime:
 
 - **`constant`** (default) — `caseIdentifier` is a literal 2-4 char prefix (`"LOAN"`). Runtime emits the case external id as `<prefix>-<generated>`.
-- **`external`** — `caseIdentifier` is a `=`-prefixed expression (bare `=vars.<id>` or `=js:<expr>`). Runtime evaluates it; the result becomes the case external id verbatim (no prefix). Same `=vars.<id>` / `=js:` convention as [bindings-and-expressions.md](bindings-and-expressions.md) — no other engine. Field lives under `metadata`. Authoring forms + variable eligibility: [`plugins/case/planning.md` § External identifier value](plugins/case/planning.md).
+- **`external`** — `caseIdentifier` is a `=`-prefixed expression (bare `=vars.<id>` or `=js:<expr>`). Runtime evaluates it; the result becomes the case external id verbatim (no prefix). Same `=vars.<id>` / `=js:` convention as [bindings-and-expressions.md](bindings-and-expressions.md) — no other engine. Field lives under `metadata`; copy the Planner SDD value verbatim.
 
 ### CaseExitCondition
 
@@ -136,7 +136,7 @@ Rule structure uses DNF — see §4.
 
 ### a) Trigger Node — `"uipath.case.trigger"`
 
-Entry point. Written by the triggers plugin at T02. Exactly one per case (single-trigger cases); additional triggers use the `trigger_` ID prefix.
+Entry point. Written by trigger recipes after the scaffold. Exactly one per trigger; the primary trigger uses `trigger_1` and additional triggers use the `trigger_` prefix.
 
 ```json
 {

@@ -50,20 +50,20 @@ Fourteen v1-supported patterns. Two intentionally-dropped patterns documented at
 
 In Case Triggers:
 ```markdown
-| T# | Trigger Type        | Source  | Configuration                |
-|----|---------------------|---------|------------------------------|
-| T02 | Intsvc.EventTrigger | Outlook | Email received in Inbox      |
+| Name | Trigger Type        | Source  | Configuration                |
+|------|---------------------|---------|------------------------------|
+| Email received | Intsvc.EventTrigger | Outlook | Email received in Inbox      |
 ```
 
 In Case Variables:
 ```markdown
 | Name         | Category | Type   | sourceTriggers | sourceFields       | Default | Description                  |
 |--------------|----------|--------|----------------|--------------------|---------|------------------------------|
-| emailSubject | Variable | string | T02            | response.subject  |         | Subject line of incoming email|
-| emailFrom    | Variable | string | T02            | response.from     |         | Sender address                |
+| emailSubject | Variable | string | Email received  | response.subject  |         | Subject line of incoming email|
+| emailFrom    | Variable | string | Email received  | response.from     |         | Sender address                |
 ```
 
-**Runtime behavior:** when T02 fires, the engine evaluates `response.subject` against the trigger's payload and writes the value to `vars.emailSubject`. Same for `vars.emailFrom`. Both available at case-start time.
+**Runtime behavior:** when `Email received` fires, the engine evaluates `response.subject` against that trigger's payload and writes `vars.emailSubject`. Same for `vars.emailFrom`.
 
 **Note:** dot-path nesting is supported (`response.user.email`, `response.attachments.first.filename`). Array indexing (`items[0]`) is NOT supported in v1.
 
@@ -77,29 +77,29 @@ In Case Variables:
 
 In Case Triggers (multiple trigger rows):
 ```markdown
-| T# | Trigger Type        | Source  | Configuration                |
-|----|---------------------|---------|------------------------------|
-| T02 | Intsvc.EventTrigger | Outlook | Email received in Inbox      |
-| T03 | Intsvc.EventTrigger | Slack   | Message posted in #intake     |
+| Name | Trigger Type        | Source  | Configuration                |
+|------|---------------------|---------|------------------------------|
+| Email received | Intsvc.EventTrigger | Outlook | Email received in Inbox      |
+| Intake message posted | Intsvc.EventTrigger | Slack   | Message posted in #intake     |
 ```
 
 In Case Variables — one row with CSV + keyed format:
 ```markdown
 | Name        | Category | Type   | sourceTriggers | sourceFields                                | Default | Description                  |
 |-------------|----------|--------|----------------|---------------------------------------------|---------|------------------------------|
-| caseStarter | Variable | string | T02, T03       | T02: response.user; T03: response.initiator |         | Whoever initiated the case   |
+| caseStarter | Variable | string | Email received, Intake message posted | Email received: response.user; Intake message posted: response.initiator | | Whoever initiated the case |
 ```
 
 **Runtime behavior:**
-- T02 (email) fires → engine extracts `response.user` → writes to `vars.caseStarter`
-- T03 (Slack) fires → engine extracts `response.initiator` → writes to `vars.caseStarter`
+- `Email received` fires → engine extracts `response.user` → writes to `vars.caseStarter`
+- `Intake message posted` fires → engine extracts `response.initiator` → writes to `vars.caseStarter`
 - Only one trigger fires per case lifecycle in practice, so last-writer-wins is moot.
 
 **Notation rules:**
-- Each T-number in `sourceTriggers` MUST have a matching keyed entry in `sourceFields`. Mismatch → Phase 2 validation error.
-- Order of T-numbers doesn't matter — the keyed format disambiguates per-trigger.
+- Each trigger name in `sourceTriggers` MUST have a matching keyed entry in `sourceFields`. Mismatch is a deterministic preflight error.
+- Name order does not matter—the keyed format disambiguates each trigger.
 - Same Type and same Default apply across all listed triggers.
-- CSV `sourceTriggers` is a `Variable`-only construct. An `In`-arg binds to exactly ONE trigger — a single `sourceTriggers` T-number with **empty** `sourceFields` (see Use Case 3b).
+- CSV `sourceTriggers` is Variable-only. An In argument binds to exactly one named trigger with empty `sourceFields`.
 
 **When to use Use Case 2b vs declaring per-trigger Variables:**
 - **Use Case 2b** when the value is *semantically the same thing* across triggers (e.g., "the initiator", "the customer ID"). One variable, one downstream reference.
@@ -115,9 +115,9 @@ In Case Variables — one row with CSV + keyed format:
 
 In Case Triggers:
 ```markdown
-| T# | Trigger Type        | Source              | Configuration                          |
-|----|---------------------|---------------------|----------------------------------------|
-| T02 | Intsvc.EventTrigger | Salesforce ServiceCloud | Claim webhook received (POST /claims) |
+| Name | Trigger Type        | Source              | Configuration                          |
+|------|---------------------|---------------------|----------------------------------------|
+| Claim webhook received | Intsvc.EventTrigger | Salesforce ServiceCloud | Claim webhook received (POST /claims) |
 ```
 
 In Case Variables — one row, `Type: file`, `sourceTriggers` populated:
@@ -125,12 +125,12 @@ In Case Variables — one row, `Type: file`, `sourceTriggers` populated:
 ```markdown
 | Name        | Category | Type | sourceTriggers | sourceFields                | Default | Description                                    |
 |-------------|----------|------|----------------|-----------------------------|---------|------------------------------------------------|
-| damagePhoto | Variable | file | T02            | response.attachment         |         | Damage photo uploaded by claimant at intake    |
+| damagePhoto | Variable | file | Claim webhook received | response.attachment | | Damage photo uploaded by claimant at intake |
 ```
 
 **Runtime behavior:**
 
-- T02 fires. The connector spec (or webhook adapter) emits `response.attachment` as a JobAttachment record `{ID, FullName, MimeType, Metadata}` — the engine resolves the spec path and writes the record to `vars.damagePhoto`.
+- `Claim webhook received` fires. The connector spec emits `response.attachment` as a JobAttachment record and writes it to `vars.damagePhoto`.
 - Downstream tasks can wire `=vars.damagePhoto` (whole record — multipart file inputs, attachment sub-binding) or `=vars.damagePhoto.FullName` (sub-field — log line, email subject substitution).
 - Caller-pre-upload obligation (Use Case 9) does NOT apply — the trigger-side connector emits the JobAttachment record automatically as part of payload extraction.
 
@@ -150,9 +150,9 @@ In Case Variables — one row, `Type: file`, `sourceTriggers` populated:
 
 In Case Triggers:
 ```markdown
-| T# | Trigger Type | Source | Configuration |
-|----|--------------|--------|---------------|
-| T02 | Manual       | API    | N/A           |
+| Name | Trigger Type | Source | Configuration |
+|------|--------------|--------|---------------|
+| API start | Manual       | API    | N/A           |
 ```
 
 In Case Variables:
@@ -165,38 +165,38 @@ In Case Variables:
 
 **Runtime behavior:** caller submits `{applicantId: "ALC-123", requestedAmount: 50000}` via API. Engine routes these to `vars.applicantId` and `vars.requestedAmount` at case start. Downstream tasks read them via `=vars.applicantId` etc.
 
-**Trigger type:** `In` works with any trigger type — manual, timer, or event. For event triggers, the In-arg's `Default` value propagates through to the case variable at trigger fire (no caller-override path, since events don't have an API caller). Use `In` when authoring a value that *could* be caller-supplied; use `Variable` + `sourceTriggers` + `sourceFields` (Use Case 2) when the value is *extracted from* the trigger's payload directly. In a multi-trigger case, bind an In-arg to a specific (non-primary) trigger via a single `sourceTriggers` T-number — see Use Case 3b.
+**Trigger type:** `In` works with manual, timer, or event triggers. Use `In` for caller/default input and `Variable` + sources for payload extraction. In a multi-trigger case, bind an In argument to one exact trigger name.
 
 ---
 
 ## Use Case 3b — In-arg bound to a specific trigger
 
-**Scenario:** A case starts from more than one trigger. By default an In-arg binds to the **primary trigger** (T02). To bind a caller-supplied value to a *different* trigger, name that trigger in `sourceTriggers`.
+**Scenario:** A case starts from more than one trigger. By default an In argument binds to the primary trigger. To bind it to another trigger, use that exact name in `sourceTriggers`.
 
 **SDD authoring:**
 
 In Case Triggers (two triggers):
 ```markdown
-| T# | Trigger Type        | Source | Configuration             |
-|----|---------------------|--------|---------------------------|
-| T02 | Manual              | API    | N/A                       |
-| T03 | Intsvc.EventTrigger | Slack  | Message posted in #intake |
+| Name | Trigger Type        | Source | Configuration             |
+|------|---------------------|--------|---------------------------|
+| API start | Manual              | API    | N/A                       |
+| Intake message posted | Intsvc.EventTrigger | Slack  | Message posted in #intake |
 ```
 
 In Case Variables:
 ```markdown
 | Name       | Category | Type   | sourceTriggers | sourceFields | Default      | Description                                       |
 |------------|----------|--------|----------------|--------------|--------------|---------------------------------------------------|
-| caseId     | In       | string |                |              |              | Bound to the primary trigger (T02) — blank sourceTriggers |
-| approverId | In       | string | T03            |              | "unassigned" | Bound to the T03 event trigger; events have no caller, so it initializes from Default at trigger fire |
+| caseId     | In       | string |                |              |              | Bound to the primary trigger — blank sourceTriggers |
+| approverId | In       | string | Intake message posted |              | "unassigned" | Bound to the named event trigger; initializes from Default |
 ```
 
 **Rules:**
-- `sourceTriggers` on an `In` row is a SINGLE T-number — never a CSV. A CSV is the multi-trigger `Variable` form (Use Case 2b).
+- `sourceTriggers` on an `In` row is one exact trigger name—never CSV.
 - `sourceFields` stays EMPTY on `In` rows. An In-arg *selects* a trigger; it does not *extract* a payload field — that's the `Variable` operation (Use Case 2).
-- Blank `sourceTriggers` = bind to the primary trigger (T02) — backward compatible with the single-trigger case.
+- Blank `sourceTriggers` binds the primary trigger.
 
-**Runtime behavior:** `caseId` is supplied by the API caller at case start via the primary manual trigger (T02). `approverId` is bound to the T03 event trigger, which has no API caller — so it initializes from its `Default` (`"unassigned"`) when that trigger fires. Downstream tasks read each via `=vars.caseId` / `=vars.approverId`.
+**Runtime behavior:** `caseId` comes from the API caller through `API start`. `approverId` binds to `Intake message posted` and initializes from `"unassigned"` when that event fires.
 
 ---
 
@@ -311,7 +311,7 @@ In Case Variables:
 ```markdown
 | Name     | Category | Type       | sourceTriggers | sourceFields | Default | Description              |
 |----------|----------|------------|----------------|--------------|---------|--------------------------|
-| eventData | Variable | jsonSchema | T02            | response    |         | Full event payload       |
+| eventData | Variable | jsonSchema | Event received | response    |         | Full event payload       |
 ```
 
 In a downstream task's Inputs:
@@ -372,9 +372,9 @@ Optional producer (if a task DOES produce the value):
 
 In Case Triggers:
 ```markdown
-| T# | Trigger Type | Source | Configuration |
-|----|--------------|--------|---------------|
-| T02 | Manual       | API    | N/A           |
+| Name | Trigger Type | Source | Configuration |
+|------|--------------|--------|---------------|
+| API start | Manual       | API    | N/A           |
 ```
 
 In Case Variables:
@@ -524,8 +524,8 @@ When writing a new SDD, run through this list:
 
 - [ ] Every variable referenced via `=vars.X` somewhere (input bindings, conditions, SLA expressions) — declared in Case Variables OR is a task's auto-emitted schema field
 - [ ] Every `Out` Category row has either a `Default` value OR a producer task with a matching binding row
-- [ ] Every `In` Category row has `sourceFields` empty, and `sourceTriggers` either blank (binds the primary trigger) or a single `T<N>` (binds that trigger) — never a CSV
-- [ ] Every `Variable` with `sourceTriggers` set has matching entries in `sourceFields` — single path for one trigger; keyed `T<N>: <path>` format for CSV multi-trigger (an `In` row is the exception: a single `sourceTriggers` T-number with **no** `sourceFields`)
+- [ ] Every `In` row has empty `sourceFields`, and `sourceTriggers` is blank or one exact trigger name—never CSV
+- [ ] Every sourced `Variable` has a matching field path for each exact trigger name; multi-trigger rows use keyed name/path entries
 - [ ] Every `sourceFields` is a valid dot-path (no `[0]` indexing)
 - [ ] In each task's Outputs table: each target case variable appears in ≤1 row
 - [ ] In each task's Outputs table: `->` rows have a non-empty Field column; `=` rows have `Field` as `—`

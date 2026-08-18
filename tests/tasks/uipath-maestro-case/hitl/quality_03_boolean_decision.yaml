@@ -221,8 +221,7 @@ initial_prompt: |
 
   Important:
   - The `uip` CLI is already available.
-  - Treat the generated plan as pre-approved — do not block on any HARD STOP
-    / AskUserQuestion approval step.
+  - Treat the supplied Planner SDD as approved and build it directly.
   - If any task resource is unresolved, write a skeleton task; the
     `approved` boolean field MUST still be referenced verbatim in the
     `IF` expressions of the four exit/entry conditions listed above.
