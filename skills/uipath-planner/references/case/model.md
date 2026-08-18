@@ -174,10 +174,13 @@ Safe display characters for stage labels, task display names, and condition/SLA/
 ^[A-Za-z0-9 _-]+$
 ```
 
-Never `:` — case-execution events are colon-delimited, so a colon in a name breaks routing. Repair an
-unsafe generated or carried name mechanically: replace runs of disallowed characters with one space,
-collapse spaces, trim; keep words and casing; on an empty result or a collision, add a safe qualifier or
-numeric suffix and disclose the change.
+Never `:` — case-execution events are colon-delimited, so a colon in a name breaks routing. The safe
+charset governs names being MINTED or first carried into a design: repair those mechanically — replace
+runs of disallowed characters with one space, collapse spaces, trim; keep words and casing; on an empty
+result or a collision, add a safe qualifier or numeric suffix and disclose the change. A name read from an
+existing draft or SDD during finalization is preserved verbatim, punctuation included — finalization
+normalizes structure, never names. The one exception is `:` (the structural ban): surface it and ask,
+never silently keep or repair it.
 
 | Name | Unique across |
 |---|---|
