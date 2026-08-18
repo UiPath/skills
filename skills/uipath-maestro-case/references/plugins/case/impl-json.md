@@ -1,7 +1,3 @@
----
-direct-json: supported
----
-
 # case (root) — JSON Implementation
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).

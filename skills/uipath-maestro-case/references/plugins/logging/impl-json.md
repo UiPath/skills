@@ -52,8 +52,7 @@ _Summary written at Step 12.1._
 
 ## Journal
 
-Appended at each section boundary as the build proceeds. Chronological, not grouped —
-grouping happens in the summary above at Step 12.1.
+Appended at each section boundary as the build proceeds. Chronological, not grouped — grouping happens in the summary above at Step 12.1.
 
 | Sev | Step | Plugin | Message |
 |---|---|---|---|
@@ -68,8 +67,7 @@ A section with no issues appends nothing; the file already exists, which is the 
 
 ## Summary — Step 12.1
 
-Read the journal back, group by `plugin`, and replace **only** the block between
-`<!--build-issues:summary:start-->` and `<!--build-issues:summary:end-->`:
+Read the journal back, group by `plugin`, and replace **only** the block between `<!--build-issues:summary:start-->` and `<!--build-issues:summary:end-->`:
 
 ```markdown
 | Category | Errors | Warnings | Skipped |

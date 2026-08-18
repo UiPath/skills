@@ -124,7 +124,3 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(debug|publish)\b'
     weight: 1.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120
