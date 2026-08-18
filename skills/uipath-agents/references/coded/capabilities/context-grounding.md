@@ -31,6 +31,8 @@ Add the supported folder argument for the component you use when cross-folder ac
 
 ## Core Components
 
+Import paths below are LangChain/LangGraph (`uipath_langchain.*`). For LlamaIndex agents, use `uipath_llamaindex.retrievers.ContextGroundingRetriever` / `uipath_llamaindex.query_engines.ContextGroundingQueryEngine` — see [frameworks/llamaindex-integration.md](../frameworks/llamaindex-integration.md) § Context Grounding (RAG).
+
 ### ContextGroundingRetriever
 
 A document retrieval system using vector search to find relevant information based on natural language queries.
