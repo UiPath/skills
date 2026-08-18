@@ -83,7 +83,7 @@ where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 
 ## Step 6: Attach documents (PDD/SDD)
 
-For each document the caller wants attached (link-based — an embed/link URL + metadata, per the reference):
+Attach each document the caller supplies. **Upload the bytes** — the endpoint takes a base64 `file` object directly, so nothing needs hosting first. Fall back to `embed_link` only when the caller has a URL instead of bytes.
 
 ```bash
 curl -s -w "\n%{http_code}" -X POST \
@@ -93,18 +93,35 @@ curl -s -w "\n%{http_code}" -X POST \
   "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/automations/$PROCESS_ID/documents"
 ```
 
-Build `$DOC_PAYLOAD` per `ProcessDocumentValidator` — verified-live required fields:
+Build `$DOC_PAYLOAD` per `ProcessDocumentValidator`:
 
 ```json
-{ "document_title": "PDD - <name>", "document_description": "<desc>", "document_type_id": <int>, "embed_link": "https://…" }
+{
+  "document_title": "PDD - <name>",
+  "document_description": "<desc>",
+  "document_type_id": <int>,
+  "file": {
+    "file_name": "<name>.docx",
+    "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "file_content": "<base64 of the file bytes>",
+    "file_encoding": "base64"
+  }
+}
 ```
 
-- `document_title`, `document_description`, `document_type_id` are all required (note the field is `document_title`, **not** `document_name`).
-- You **must** also supply **exactly one** of `embed_link` or `file` — this is enforced in the handler, not the JSON schema, so it 400s with `"One and only one of embed_link or file need to be specified."` if omitted. This skill uses `embed_link` (link-based); byte upload via `file` is not usable yet.
+- `document_title`, `document_description`, `document_type_id` are all required (the field is `document_title`, **not** `document_name`).
+- Supply **exactly one** of `file` or `embed_link` — an XOR enforced in the handler, not the JSON schema. Both, or neither, 400s with `"One and only one of embed_link or file need to be specified."`
+- **`file` (default).** Base64-encode the file and send `file_name`, `mimetype`, `file_content`, `file_encoding`. `file_encoding` must be the literal `base64` — any other value fails with `"Invalid file."`, as does an empty `file_name`, `mimetype`, or `file_content`. Body limit is 300mb.
+- Common mimetypes: `.docx` → `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `.md` → `text/markdown`, `.pdf` → `application/pdf`.
+- Generate the base64 without loading the file into the conversation:
+
+```bash
+base64 -i "<FILE_PATH>" | tr -d '\n'   # macOS/Linux; use `base64 -w0 "<FILE_PATH>"` on GNU coreutils
+```
+
+- **`embed_link` (alternative).** Use only when the caller has a URL and no bytes: replace the `file` object with `"embed_link": "https://…"`. Never invent a URL.
 
 Record each returned `document_id`. On 400, surface the validation message and continue with the remaining documents.
-
-> Raw file-byte upload is not supported here (the `media` endpoint is not usable yet). Attach documents by link/URL. If the caller only has bytes, host them first and pass the link.
 
 ## Step 7: Report
 
