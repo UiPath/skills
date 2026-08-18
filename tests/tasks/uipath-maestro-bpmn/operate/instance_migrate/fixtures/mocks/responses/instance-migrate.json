@@ -1,0 +1,9 @@
+{
+  "instanceId": "inst-paused-005",
+  "folderKey": "folder-public",
+  "status": "Migrated",
+  "operation": "migrate",
+  "fromVersion": "1.0.0",
+  "toVersion": "2.0.0",
+  "succeeded": true
+}

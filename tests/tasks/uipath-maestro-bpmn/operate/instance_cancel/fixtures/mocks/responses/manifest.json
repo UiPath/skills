@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "_doc": "Mocked public-safe BPMN operate cancel of a single running instance.",
+  "rules": [
+    {
+      "match": "login status",
+      "file": "auth-status.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance list",
+      "file": "instance-list.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance cancel inst-run-002 -f folder-public",
+      "file": "instance-cancel.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance cancel inst-run-002 --folder-key folder-public",
+      "file": "instance-cancel.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance get inst-run-002 -f folder-public",
+      "file": "instance-get.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instance get inst-run-002 --folder-key folder-public",
+      "file": "instance-get.json",
+      "exit_code": 0
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"error\":\"unmocked public-safe BPMN command\"}\n",
+    "exit_code": 1
+  }
+}
