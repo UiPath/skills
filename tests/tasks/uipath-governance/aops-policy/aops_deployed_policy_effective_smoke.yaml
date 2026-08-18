@@ -1,0 +1,65 @@
+task_id: skill-gov-aops-policy-deployed-effective-smoke
+description: >
+  Smoke test (outcome-graded): the agent resolves which policy is actually in
+  effect for two (license type, product) pairs on this tenant. Both answers are
+  graded on the service's own resolution — either a policy with its
+  service-assigned id and the deployment scope it came from, or the documented
+  no-policy answer. Read-only: resolution never changes deployment state.
+tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, aops-policy, deployed-policy]
+
+run_limits:
+  expected_turns: 14
+
+initial_prompt: |
+  I need to know which AOps governance policy is actually in effect on the tenant
+  I am logged into. Resolve the effective policy for both of these and save each
+  raw JSON answer verbatim:
+
+  - license type `Attended`, product `AITrustLayer` -> ./aitl.json
+  - license type `E2E`, product `E2E` -> ./e2e.json
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "each answer is a real service resolution — a policy with its scope, or the documented no-policy answer"
+    command: |
+      python3 -c "
+      import json, re
+      def load(p): return json.load(open(p, encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      def resolution(path):
+          d = load(path)
+          res = d.get('Result') if isinstance(d, dict) else None
+          assert res in (None, 'Success'), f'{path}: resolution failed with Result={res}'
+          policy = next((x for x in dicts(d) if x.get('PolicyId') or x.get('PolicyName')), None)
+          if policy:
+              pid = str(policy.get('PolicyId') or '')
+              assert re.fullmatch(r'[0-9a-fA-F-]{36}', pid), f'{path}: resolved policy has no service id: {pid!r}'
+              scope = (policy.get('Deployment') or {}).get('Type')
+              assert scope in ('TENANT', 'USER', 'GROUP'), f'{path}: unexpected deployment scope {scope!r}'
+              pname = policy.get('PolicyName')
+              return f'{pname} via {scope}'
+          text = json.dumps(d).lower()
+          assert 'no policy applies' in text, f'{path}: neither a resolved policy nor the no-policy answer'
+          return 'no policy applies'
+      a = resolution('aitl.json')
+      b = resolution('e2e.json')
+      print(f'OK: AITrustLayer/Attended -> {a}; E2E/E2E -> {b}')
+      "
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\\s+deployment\\s+\\w+\\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

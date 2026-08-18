@@ -1,0 +1,47 @@
+task_id: skill-gov-access-policy-identity-lookup-smoke
+description: >
+  Smoke test (outcome-graded): authoring an access policy needs real identity
+  UUIDs for its actor rule. A marker group and robot account are seeded in
+  pre_run under this run's own names; the agent resolves all three subjects and
+  the check re-resolves them live. UUIDs are unguessable, so their presence in
+  the agent's output proves a real directory query whatever shape it saved.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, access-policy, identity-lookup]
+
+pre_run:
+  - command: 'GOV_GROUP_BASE="ce-gov-lookup-group" GOV_ROBOT_BASE="ce-gov-lookup-bot" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''setup_lookup_subjects.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''cleanup_lookup_subjects.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 14
+
+initial_prompt: |
+  I am authoring a UiPath access policy and need three identity UUIDs for the
+  policy's actor rule. Resolve each one against the organization's directory:
+
+  1. The user account this CLI is currently logged in as.
+  2. The robot account named in `seed.json` (the `subjects.robotName` field).
+  3. The group named in `seed.json` (the `subjects.groupName` field).
+
+  Save all three resolved UUIDs to ./identities.json.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "identities.json holds the real directory UUIDs for all three subjects"
+    command: 'GOV_LOOKUP_FILE="identities.json" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''verify_identity_lookup.py''))"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "resolving identities must not create or remove directory objects"
+    tool_name: "Bash"
+    command_pattern: 'admin\s+(users\s+(create|delete|invite)|groups\s+(create|delete|members\s+(add|revoke))|robot-accounts\s+(create|delete))'
+    weight: 2.0
+    pass_threshold: 1.0

@@ -1,0 +1,64 @@
+task_id: skill-gov-aops-policy-get-smoke
+description: >
+  Smoke test (outcome-graded): the agent resolves a seeded governance policy by
+  name and fetches its full record. Graded on the document read back — the seeded
+  description, the product registration and the form-data payload can only come
+  from a real retrieval.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, get]
+
+pre_run:
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-get" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Seeded for the aops-policy get scenario" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  The AOps governance policy named in `seed.json` (the `policy.name` field) is up
+  for review. Fetch its full details and save the complete JSON to ./policy.json.
+
+  Do NOT prompt the user for confirmation - this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "policy.json is the seeded policy as the service stores it (description, product, form data)"
+    command: |
+      python3 -c "
+      import json, re
+      seed = json.load(open('seed.json', encoding='utf-8-sig'))['policy']
+      d = json.load(open('policy.json', encoding='utf-8-sig'))
+      def dicts(o):
+          if isinstance(o, dict):
+              yield o
+              for v in o.values(): yield from dicts(v)
+          elif isinstance(o, list):
+              for v in o: yield from dicts(v)
+      wanted = seed['name']
+      pol = next((x for x in dicts(d) if x.get('Name') == wanted), None)
+      assert pol, f'saved JSON does not contain the {wanted} record'
+      ident = str(pol.get('Identifier') or '')
+      assert re.fullmatch(r'[0-9a-fA-F-]{36}', ident), f'no service-assigned identifier: {ident!r}'
+      assert ident == seed['identifier'], 'the retrieved identifier is not the seeded policy'
+      description = (pol.get('Description') or '').strip()
+      assert description == seed['description'], f'description was not read back: {description!r}'
+      product = (pol.get('Product') or {}).get('Name')
+      assert product == seed['product'], f'product came back as {product!r}'
+      payloads = [x for x in dicts(pol.get('Data')) if len(x) >= 3]
+      assert payloads, 'the record carries no form-data payload'
+      print(f'OK: seeded policy {wanted} retrieved under {product} with its form-data payload')
+      "
+    timeout: 20
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "nothing was deployed — governance deployment state is left untouched"
+    tool_name: "Bash"
+    command_pattern: 'aops-policy\s+deployment\s+\w+\s+(configure|remove|delete)'
+    weight: 2.0
+    pass_threshold: 1.0

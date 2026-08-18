@@ -1,0 +1,45 @@
+task_id: skill-gov-access-policy-create-e2e
+description: >
+  End-to-end (outcome-graded): the agent authors a tool-use access policy from
+  the request and creates it. Nothing is seeded — pre_run only records the name
+  the policy must carry — so the check passes only if a policy with that name
+  exists on the tenant afterwards, carrying its service-assigned UUID, the
+  requested description and all three rule blocks. The status assertion is the
+  point of the test: policies here must land as Simulated (evaluated and logged,
+  never enforced), because an Active policy would gate real traffic on the shared
+  test organization. `Inactive` and `Draft` are rejected by the service.
+tags: [uipath-governance, e2e, mode:build, lifecycle:setup, access-policy, create]
+
+pre_run:
+  - command: 'GOV_SEED_KEY="policy" GOV_POLICY_BASE="ce-gov-create" GOV_POLICY_DESCRIPTION="Simulation-mode guard for finance agents" GOV_RESOURCE_TYPE="Agent" GOV_ACTOR_PROCESS_TYPE="Flow" GOV_POLICY_PLAN_ONLY="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''setup_access_policy.py''))"'
+    timeout: 90
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''cleanup_access_policy.py''))"'
+    timeout: 120
+
+run_limits:
+  expected_turns: 22
+
+initial_prompt: |
+  Create a tool-use access policy on the tenant I am logged into:
+
+  - Name: exactly the `policy.name` value from `seed.json`.
+  - Description: exactly the `policy.description` value from `seed.json`.
+  - It should let Flows invoke Agents, with the account this CLI is logged in as
+    the actor identity.
+  - Run it in simulation mode - it must be evaluated and logged but must NOT
+    enforce anything yet.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-governance skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "the policy exists on the tenant as Simulated, with the requested description and its rules intact"
+    command: 'GOV_SEED_KEY="policy" GOV_CHECK="present" GOV_EXPECT_STATUS="Simulated" GOV_EXPECT_DESCRIPTION="Simulation-mode guard for finance agents" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''access-policy'',''verify_access_policy.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
