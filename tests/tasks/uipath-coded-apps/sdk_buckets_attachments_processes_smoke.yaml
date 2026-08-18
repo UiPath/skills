@@ -3,7 +3,7 @@ description: >
   Smoke test (mode:build): agent authors a service module using three SDK
   service classes the skill teaches but no other test exercises — `Buckets`
   (storage upload), `Attachments` (file fetch), and `Processes` (start a
-  process). Each via subpath import + constructor DI, with `.env.example`
+  process). Each via subpath import + constructor DI, with `uipath.json`
   scope coverage. Closes 3 of the 9 in-scope SDK component gaps in a single
   test (Buckets, Attachments, Processes were all `None` per the coverage
   report).
@@ -32,9 +32,10 @@ initial_prompt: |
      the `Processes` SDK service to start an Orchestrator process by name
      (returns the job id of the started run).
 
-  Also write `.env.example` with the standard `VITE_UIPATH_*` env vars. The
-  `VITE_UIPATH_SCOPE` value must cover all three services — look up the
-  required Orchestrator scopes for each (Buckets, Attachments, Processes/
+  Also write `uipath.json` — the skill's single SDK config source
+  (`clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, `redirectUri`).
+  The `scope` value must cover all three services — look up the required
+  Orchestrator scopes for each (Buckets, Attachments, Processes/
   Jobs.Write or Jobs.Start) in the skill's scope reference.
 
   Use subpath imports for every service class. Use constructor DI
@@ -52,8 +53,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: ".env.example was created"
-    path: ".env.example"
+    description: "uipath.json was created"
+    path: "uipath.json"
     weight: 1.0
     pass_threshold: 1.0
 
@@ -108,16 +109,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "VITE_UIPATH_SCOPE references the Buckets scope (Rule #16)"
-    command: "grep -E '^VITE_UIPATH_SCOPE=.*OR\\.Buckets' .env.example"
+    description: "uipath.json scope references the Buckets scope (Rule #16)"
+    command: "python3 -c \"import json,sys; sys.exit(0 if 'OR.Buckets' in str(json.load(open('uipath.json')).get('scope','')) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "VITE_UIPATH_SCOPE references a Jobs/Process-start scope (Rule #16 — Processes service needs Jobs.Write or equivalent)"
-    command: "grep -E '^VITE_UIPATH_SCOPE=.*(OR\\.Jobs|OR\\.Execution|OR\\.Processes)' .env.example"
+    description: "uipath.json scope references a Jobs/Process-start scope (Rule #16 — Processes service needs Jobs.Write or equivalent)"
+    command: "python3 -c \"import json,re,sys; sys.exit(0 if re.search(r'OR\\.(Jobs|Execution|Processes)', str(json.load(open('uipath.json')).get('scope',''))) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
