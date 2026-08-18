@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+import uuid
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -27,6 +28,7 @@ from _shared.bpmn_check import (  # noqa: E402
 )
 
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
+UIPATH_NS = "http://uipath.org/schema/bpmn"
 # ISO-8601 repeating interval: R[n]/ then a period or start-datetime.
 REPEATING = re.compile(r"^R\d*/")
 
@@ -51,6 +53,8 @@ def main() -> None:
             timer_starts.append(start)
     if not timer_starts:
         fail("no bpmn:startEvent with Intsvc.TimerTrigger + timerEventDefinition")
+    if len(timer_starts) != 1:
+        fail(f"expected exactly one timer start event; found {len(timer_starts)}")
     start = timer_starts[0]
 
     # No manual start: every start event must be the timer start (the flow port
@@ -58,6 +62,15 @@ def main() -> None:
     non_timer = [s for s in starts if s not in timer_starts]
     if non_timer:
         fail(f"a non-timer (manual) start event remains: {[attr(s, 'id') for s in non_timer]}")
+
+    entry_points = start.findall(f".//{{{UIPATH_NS}}}entryPointId")
+    if len(entry_points) != 1:
+        fail(f"timer start must carry exactly one uipath:entryPointId; found {len(entry_points)}")
+    entry_point_id = attr(entry_points[0], "value")
+    try:
+        uuid.UUID(entry_point_id)
+    except (AttributeError, ValueError):
+        fail(f"timer start entryPointId must be a valid GUID; found {entry_point_id!r}")
 
     timer_def = child(start, "timerEventDefinition")
     cycle = child(timer_def, "timeCycle")
