@@ -176,7 +176,7 @@ uip solution publish <packagePath> --wait --output json
 
 > **On failure**, print the CLI error verbatim, log it in `build-issues.md`, and re-show the Phase 7 prompt. Full contract: [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator).
 
-> Publish only lists the package on the feed. Installing it into an Orchestrator folder needs `uip solution deploy run` — out of Phase 7 scope.
+> Publish only lists the package on the feed. Installing it into an Orchestrator folder needs `uip solution deploy run` — out of Phase 7 scope; hand off to [`uipath-solution`](/uipath:uipath-solution).
 
 ---
 
