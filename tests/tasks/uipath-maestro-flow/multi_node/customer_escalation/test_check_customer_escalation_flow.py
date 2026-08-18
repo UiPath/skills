@@ -11,6 +11,8 @@ These tests pin down the contract that:
 - Structural requirements (>=5 nodes, exactly one decision with >=2
   branches, >=2 scripts, Slack reference, non-trigger Outlook/Graph
   reference) are still enforced.
+- The verdict is independent of the enclosing SOLUTION directory's name,
+  which the prompt never specifies (see `test_any_solution_name_passes`).
 """
 
 from __future__ import annotations
@@ -21,21 +23,45 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 
 CHECKER = Path(__file__).resolve().parent / "check_customer_escalation_flow.py"
 Node = dict[str, Any]
 Edge = dict[str, Any]
 
 
-def _flow_dir(tmp_path: Path) -> Path:
-    d = tmp_path / "CustomerEscalation" / "CustomerEscalation"
+def _flow_dir(tmp_path: Path, solution: str = "CustomerEscalationSolution") -> Path:
+    """Scaffold the real on-disk layout: `<Solution>/<Flow>/<Flow>.flow`.
+
+    The solution name defaults to something DIFFERENT from the flow name on
+    purpose. `uip maestro flow init` never produces a single-nested
+    `CustomerEscalation/CustomerEscalation/` tree — bare init auto-scaffolds
+    `CustomerEscalationSolution/`, and solution-first init lets the two names
+    diverge freely. A fixture pinned to `<Flow>/<Flow>/` kept these tests green
+    against a layout the CLI cannot emit, which is why the checker's
+    path-coupling survived to fail a real run.
+
+    `project.uiproj` is required: `find_project_dir` selects the project whose
+    manifest declares `ProjectType: "Flow"`.
+    """
+    d = tmp_path / solution / "CustomerEscalation"
     d.mkdir(parents=True)
+    (d / "project.uiproj").write_text(
+        json.dumps({"Name": "CustomerEscalation", "ProjectType": "Flow"})
+    )
     return d
 
 
-def _write_flow(tmp_path: Path, nodes: list[Node], edges: list[Edge]) -> None:
+def _write_flow(
+    tmp_path: Path,
+    nodes: list[Node],
+    edges: list[Edge],
+    solution: str = "CustomerEscalationSolution",
+) -> None:
     payload = {"version": "1.0.0", "nodes": nodes, "edges": edges}
-    (_flow_dir(tmp_path) / "CustomerEscalation.flow").write_text(json.dumps(payload))
+    flow_dir = _flow_dir(tmp_path, solution)
+    (flow_dir / "CustomerEscalation.flow").write_text(json.dumps(payload))
 
 
 def _run(cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -106,6 +132,24 @@ def test_outlook_connector_happy_path_passes(tmp_path: Path) -> None:
     """The original IS-connector shape (Tier 1) should still PASS."""
     nodes, edges = _outlook_connector_shape()
     _write_flow(tmp_path, nodes, edges)
+    result = _run(tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "solution",
+    ["CustomerEscalationSolution", "CustomerEscalation", "AcmeEscalations", "Sol-9QX2"],
+)
+def test_any_solution_name_passes(tmp_path: Path, solution: str) -> None:
+    """The enclosing solution's name must not affect the verdict.
+
+    The prompt names only the flow, so grading the solution directory would
+    grade an unstated requirement. Covers bare-init auto-scaffold
+    (`<Flow>Solution`), the matching name, and two names the prompt never
+    implies.
+    """
+    nodes, edges = _outlook_connector_shape()
+    _write_flow(tmp_path, nodes, edges, solution=solution)
     result = _run(tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
 
