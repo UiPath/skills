@@ -28,7 +28,7 @@ Detailed instructions for generating persona-tailored test reports from UiPath T
 
 4. **Include common metrics in all reports**
    - Status of each test execution
-   - Count of test case logs per execution with result: `none`, `passed`, `failed`, `restricted`
+   - Count of test case logs per execution with result: `none`, `passed`, `failed`, `restricted` — derive these counts by tallying the test case logs already fetched in step 1
    - List of frequently failing test cases
 
 5. **Add persona-specific content**
@@ -58,16 +58,9 @@ Detailed instructions for generating persona-tailored test reports from UiPath T
    | Developer | plus `## Failed Assertions` (assertion message per failing test case log) |
    | Release Manager | plus `## Go / No-Go` (success rate, blocker count, risk assessment) |
 
-   Keep the heading wording — downstream readers and graders look for these
-   exact section names. Add a persona-appropriate extra section when the data
-   warrants it, but never drop a required one; write "None" under a heading
-   that has no content rather than omitting the heading.
-
-   Derive the Results Breakdown counts by tallying the test case logs you
-   already fetched in step 1. Do NOT build a `--output-filter` aggregate
-   expression to compute them: a malformed filter aborts the command, and
-   under Critical Rule 11 that stops the whole report for a total you could
-   have counted from data already in hand.
+   Add a persona-appropriate extra section when the data warrants it, but
+   never drop a required one; write "None" under a heading that has no
+   content rather than omitting the heading.
 
 7. **Ask if further details are needed**
    - Follow [Analyse More](#analyse-more).
@@ -115,3 +108,4 @@ Stop when: the user is satisfied, the response has no more data, or 3 retries ha
 
 - **Do NOT generate a report without asking for the persona** — a release manager receiving raw test logs is noise; a tester receiving only a pass/fail count is missing the detail they need.
 - **Do NOT fabricate test results** — only report data returned by the API. If executions are empty, tell the user there are no results for the selected filters.
+- **Do NOT build `--output-filter` aggregate expressions to compute counts** — a malformed filter aborts the command, and under Critical Rule 11 that stops the whole report for totals you can tally from the test case logs already fetched.
