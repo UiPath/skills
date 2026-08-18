@@ -42,6 +42,9 @@ from _shared.flow_check import (  # noqa: E402
 SLACK_KEY = "uipath-salesforce-slack"
 SLACK_CHANNEL = "C0B2FDZD1M3"  # coding-agent-testing
 CASE_SENSITIVE = {"caseKey", "jiraIssueKey"}  # opaque ids — exact-case match
+# The four fields the prompt's single `classify` Script must return (caseKey is an
+# input echo, not a classification, so it's excluded).
+CLASSIFICATION_FIELDS = ("escalationPath", "severity", "engineeringNeeded", "responseMode")
 
 
 def verify_case(case: dict) -> tuple:
@@ -66,32 +69,36 @@ def verify_case(case: dict) -> tuple:
             must_contain=case["inputs"]["correlationId"],
             must_contain_loose=[case["expected"]["escalationPath"]],
         )
-    # The prompt requires ALL routing logic in ONE Script node. Bind the core
-    # classification (escalationPath + severity) to a single EXECUTED Script node:
-    # a flow that computes routing in Decision/End expressions with no Script, or
-    # splits escalationPath and severity across two nodes, has no single Script
-    # carrying both and fails here. (engineeringNeeded/responseMode are trivial
-    # derivations already verified as named outs above.)
+    # The prompt requires ALL routing logic in ONE Script that returns all four
+    # fields. Bind EVERY classification field (escalationPath, severity,
+    # engineeringNeeded, responseMode) to a single EXECUTED Script node: a flow that
+    # computes any of them in Decision/End expressions, or splits them across nodes,
+    # has no single Script carrying all four and fails here. (caseKey is an echo of
+    # the input correlationId, not a classification, so it is excluded.)
     script_nodes = completed_node_ids_of_type(payload, "script")
-    ep, sv = case["expected"]["escalationPath"], case["expected"]["severity"]
-    classifier_candidates = {
-        nid for nid in script_nodes if nid
-        and normalized(find_node_output_value(payload, "escalationPath", node_ids={nid})) == normalized(ep)
-        and normalized(find_node_output_value(payload, "severity", node_ids={nid})) == normalized(sv)
-    }
+
+    def is_classifier(nid: str) -> bool:
+        return all(
+            normalized(find_node_output_value(payload, f, node_ids={nid})) == normalized(case["expected"][f])
+            for f in CLASSIFICATION_FIELDS
+        )
+
+    classifier_candidates = {nid for nid in script_nodes if nid and is_classifier(nid)}
     if not classifier_candidates:
         raise SystemExit(
-            f"FAIL: {case['name']}: no single executed Script computed both escalationPath "
-            f"({ep!r}) and severity ({sv!r}) — the prompt requires one classifier Script"
+            f"FAIL: {case['name']}: no single executed Script computed all of "
+            f"{CLASSIFICATION_FIELDS} together — the prompt requires one classifier Script "
+            "that returns every field (not split across nodes or derived in End/Decision)"
         )
     # The task is tagged node:decision: routing must go through a Decision that
     # actually executed — a disconnected Decision or a Script->Slack shortcut fails.
     assert_node_type_executed(payload, "core.logic.decision")
     fired = completed_connector_node_ids(payload, SLACK_KEY)
     executed_decisions = completed_node_ids_of_type(payload, "core.logic.decision")
+    completed_ends = completed_node_ids_of_type(payload, "core.control.end")
     print(f"OK: {case['name']} produced the expected outcome"
           + (" + Slack message posted" if case.get("expect_slack") else ""))
-    return fired, executed_decisions, classifier_candidates
+    return fired, executed_decisions, classifier_candidates, completed_ends
 
 
 def main() -> None:
@@ -107,12 +114,15 @@ def main() -> None:
 
     escalation_nodes: set = set()
     triage_nodes: set = set()
+    escalation_ends: set = set()
+    triage_ends: set = set()
     per_case_decisions: list = []
     per_case_classifiers: list = []
     for case in cases:
-        fired, decisions, classifiers = verify_case(case)
+        fired, decisions, classifiers, ends = verify_case(case)
         is_escalation = case["expected"]["escalationPath"] == "escalation"
         (escalation_nodes if is_escalation else triage_nodes).update(fired)
+        (escalation_ends if is_escalation else triage_ends).update(ends)
         per_case_decisions.append(decisions)
         per_case_classifiers.append(classifiers)
 
@@ -159,9 +169,26 @@ def main() -> None:
         escalation_nodes, triage_nodes, executed_decision_ids=routing_decisions
     )
 
-    # The prompt requires TWO End nodes — one per branch. Each Slack branch must
-    # reach its OWN End; a flow that merges both sends into a single shared End fails.
+    # The prompt requires TWO End nodes — one per branch. Two checks together close
+    # the "unused private End + shared merged End" gaming: (a) structurally, each
+    # Slack branch must reach an End the other doesn't; (b) at RUNTIME, the End that
+    # actually COMPLETED on escalation cases must be disjoint from the one completed
+    # on triage cases — so a flow where both real paths merge into one shared End
+    # (with cosmetic unused private Ends downstream) fails even though the static
+    # reachability differs.
     assert_distinct_branch_ends(escalation_nodes, triage_nodes)
+    if not escalation_ends or not triage_ends:
+        raise SystemExit(
+            "FAIL: expected both escalation and triage cases to complete an End node "
+            f"(escalation_ends={sorted(escalation_ends)}, triage_ends={sorted(triage_ends)})"
+        )
+    shared = escalation_ends & triage_ends
+    if shared:
+        raise SystemExit(
+            f"FAIL: escalation and triage cases completed the SAME End node(s) {sorted(shared)} — "
+            "both branches merge into one shared End; the prompt requires a distinct End per branch"
+        )
+    print(f"OK: branches complete distinct Ends (escalation={sorted(escalation_ends)}, triage={sorted(triage_ends)})")
     print(
         f"OK: a Decision routes escalation vs triage through separate branches "
         f"(escalation={sorted(escalation_nodes)}, triage={sorted(triage_nodes)})"

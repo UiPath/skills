@@ -37,10 +37,13 @@ def _issue_not_found(env: dict) -> bool:
         or re.search(r'"providerErrorCode"\s*:\s*404\b', blob)
         or re.search(r'"statusCode"\s*:\s*"?404\b', blob)
     )
+    # Require the PROVIDER's error message to say the issue is absent — NOT a bare
+    # `issueId` token, which every get/delete request echoes in its own query and so
+    # would also appear on a connection/activity 404. Only Jira's own "Issue does
+    # not exist"-style message proves the requested issue key is gone.
     issue_specific = bool(
-        re.search(r"issue\s+(does\s+not\s+exist|not\s+found|no\s+longer\s+exists)", blob, re.I)
-        or re.search(r"(does\s+not\s+exist|not\s+found).{0,40}\bissue\b", blob, re.I)
-        or re.search(r"\bissueId\b", blob)
+        re.search(r"issue\s+(does\s+not\s+exist|not\s+found|no\s+longer\s+exists|is\s+not\s+found)", blob, re.I)
+        or re.search(r"(does\s+not\s+exist|not\s+found|no\s+longer\s+exists).{0,40}\bissue\b", blob, re.I)
     )
     return structured_404 and issue_specific
 
