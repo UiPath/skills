@@ -667,6 +667,12 @@ jobs:
           set -euo pipefail
           delegate_dir="$HOME/.delegate-stdio"
           mkdir -p "$delegate_dir"
+          # Windows-form path (C:/Users/...) for everything a NATIVE process
+          # touches: node -p can't resolve git-bash's MSYS form (/c/Users/...)
+          # inside a require() string (MODULE_NOT_FOUND, run 32124577606), and
+          # the GITHUB_ENV values below are consumed by native node/Python.
+          # Mixed form (forward slashes) keeps bash's own tests working too.
+          delegate_dir="$(cygpath -m "$delegate_dir")"
           tmp_npmrc="$(mktemp)"
           cat > "$tmp_npmrc" <<EOF
           @uipath:registry=https://npm.pkg.github.com/
