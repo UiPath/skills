@@ -73,6 +73,9 @@ the outer rule array is OR, each inner array is AND.
    `marksCaseComplete: true` (normally `required-stages-completed`). A stage completing never closes the
    case by itself; alternate outcomes (Rejected, Withdrawn, Cancelled) are case-exit rows with
    `marksCaseComplete: false`.
+5. **A gate sees case state as of its own event.** The extract of the task that fired the gate has not
+   run yet, so an `IF` that reads a case variable that task writes is stale — read the producing output
+   instead ([variables.md § Gate on the producer](variables.md#gate-on-the-producer-never-on-the-variable-it-writes)).
 
 ### Exit types
 

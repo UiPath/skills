@@ -115,6 +115,10 @@ guard. Any failure is blocking; offer `Re-edit` / `Restart` / `Abort`.
 7. **Every secondary stage is interrupting except a non-diverting SLA oversight row**
    ([model.md § Secondary stages](model.md#secondary-stages)). Wrong classification is blocking; never
    promote the lane to a regular stage.
+8. **No gate reads a variable its own trigger writes** — for every condition whose WHEN names a task,
+   the `IF` references that task's output, not a case variable the task's Outputs row feeds. The gate is
+   evaluated before the extract lands, so such a guard is dead on the first pass and the stage stalls with
+   no error ([variables.md § Gate on the producer](variables.md#gate-on-the-producer-never-on-the-variable-it-writes)).
 
 Worked example — a decision-routed return lane (AP Review → SLA Escalation on `requiresEscalation`):
 

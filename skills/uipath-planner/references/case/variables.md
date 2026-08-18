@@ -29,6 +29,28 @@ Declare a Case Variables row ONLY when one of these holds:
 A row that relays one task's output to one consumer is the relay anti-pattern —
 [review.md](review.md) flags it (`rev_relay_var`).
 
+Declaring a row does not make the value readable earlier — see below.
+
+## Gate on the producer, never on the variable it writes
+
+A rule is evaluated **before** the extract of the task that triggered it. So a gate keyed on a task's
+completion that reads the case variable that task's Outputs row feeds sees the value from the previous
+pass — `null` on the first one. The branch silently never fires, the stage stalls, and nothing errors.
+
+| Gate | `IF` reads | At gate time |
+|---|---|---|
+| `selected-tasks-completed("Decide")` + `=js:vars.decision === "reject"`, where `Decide` declares `Action -> decision` | the case variable `Decide` writes | ✗ stale / `null` |
+| `selected-tasks-completed("Decide")` + `=js:vars.action === "reject"`, where `action` is `Decide`'s own output | the producing output | ✓ populated |
+
+**Rule:** when a condition's WHEN names a task, its `IF` MUST read that task's own output. Keep the `->`
+extract whenever the value must persist (Case App, audit, a later stage reads it) — the extract is not
+what the gate reads.
+
+Applies wherever the WHEN names the producer: stage-exit `selected-tasks-completed`, task-entry
+`selected-tasks-completed`, and the `selected-stage-exited` lane entry paired with a diverting exit —
+that entry repeats the origin exit's guard, so it repeats the producer reference too. Guard pairs stay
+exact inverses of each other. (Verified on uip 1.198.0-preview.102, 2026-08-18.)
+
 ## Trigger payloads
 
 Validation never reads trigger-node outputs (verified on uip 1.198.0-preview.102). A trigger payload
