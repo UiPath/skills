@@ -1,5 +1,5 @@
 <!--skill-flavor:project-creation-scope:start-->
-- Create a new Flow project through Studio Web's live `proxy-tools-Solution` / `CreateProjects` capability
+- Create a new Flow project through Studio Web's live `CreateProjects` capability
 <!--skill-flavor:project-creation-scope:end-->
 
 <!--skill-flavor:project-creation-antipatterns:start-->

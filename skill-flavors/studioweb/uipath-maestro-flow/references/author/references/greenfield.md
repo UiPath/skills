@@ -32,7 +32,7 @@ Studio Web supplies the target solution and owns its project scaffolding and met
 
 ### T0 project-creation turn
 
-1. Inspect the live ProxyTool schema for `proxy-tools-Solution` and its `CreateProjects` operation.
+1. Inspect the live `CreateProjects` schema.
 2. Invoke `CreateProjects` for a Flow project using only the fields and enum values declared by that live schema. Treat the live schema as the request contract.
 3. After project creation succeeds, inspect the Studio Web workspace/VFS, locate the generated project and `.flow` entrypoint, and use that host-exposed tree as the source of truth for every subsequent edit.
 

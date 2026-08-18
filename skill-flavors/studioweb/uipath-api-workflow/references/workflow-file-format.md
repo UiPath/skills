@@ -1,7 +1,7 @@
 <!--skill-flavor:project-structure:start-->
 ## Project Structure in Studio Web
 
-Studio Web owns the project scaffold and solution-level metadata. Create an API Workflow project through the live `proxy-tools-Solution` / `CreateProjects` schema, then treat the files exposed by the Studio Web workspace/VFS as the authoritative project tree.
+Studio Web owns the project scaffold and solution-level metadata. Create an API Workflow project through the live `CreateProjects` schema, then treat the files exposed by the Studio Web workspace/VFS as the authoritative project tree.
 
 - Do not run a CLI init command or recreate a desktop/local project layout by hand.
 - Do not expect, search for, create, or edit a local `.uipx` solution metadata file.
