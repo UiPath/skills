@@ -1,6 +1,6 @@
 # SDD Authoring — Worked Examples by Use Case
 
-Companion to [`case-sdd-template.md`](case-sdd-template.md). Each section shows the SDD authoring snippets for a common pattern an author will encounter. Use as a reference when writing a new `sdd.md`.
+Companion to [`case-sdd-template.md`](case-sdd-template.md). Each section shows the SDD authoring snippets for a common pattern an author will encounter. Use as a reference when writing a new `sdd.md`. **Examples only** — the normative variable and output rules live in [`references/case/variables.md`](../../references/case/variables.md) and are linked, never redefined, here.
 
 Fourteen v1-supported patterns. Two intentionally-dropped patterns documented at the end with workarounds.
 
@@ -95,11 +95,7 @@ In Case Variables — one row with CSV + keyed format:
 - T03 (Slack) fires → engine extracts `response.initiator` → writes to `vars.caseStarter`
 - Only one trigger fires per case lifecycle in practice, so last-writer-wins is moot.
 
-**Notation rules:**
-- Each T-number in `sourceTriggers` MUST have a matching keyed entry in `sourceFields`. Mismatch → Phase 2 validation error.
-- Order of T-numbers doesn't matter — the keyed format disambiguates per-trigger.
-- Same Type and same Default apply across all listed triggers.
-- CSV `sourceTriggers` is a `Variable`-only construct. An `In`-arg binds to exactly ONE trigger — a single `sourceTriggers` T-number with **empty** `sourceFields` (see Use Case 3b).
+**Notation** (rules: [variables.md § Categories](../../references/case/variables.md)): keyed `sourceFields` entries per listed T-number; T-number order irrelevant; one Type + Default across all listed triggers; CSV is `Variable`-only (an `In`-arg binds exactly ONE trigger — Use Case 3b).
 
 **When to use Use Case 2b vs declaring per-trigger Variables:**
 - **Use Case 2b** when the value is *semantically the same thing* across triggers (e.g., "the initiator", "the customer ID"). One variable, one downstream reference.
@@ -191,10 +187,7 @@ In Case Variables:
 | approverId | In       | string | T03            |              | "unassigned" | Bound to the T03 event trigger; events have no caller, so it initializes from Default at trigger fire |
 ```
 
-**Rules:**
-- `sourceTriggers` on an `In` row is a SINGLE T-number — never a CSV. A CSV is the multi-trigger `Variable` form (Use Case 2b).
-- `sourceFields` stays EMPTY on `In` rows. An In-arg *selects* a trigger; it does not *extract* a payload field — that's the `Variable` operation (Use Case 2).
-- Blank `sourceTriggers` = bind to the primary trigger (T02) — backward compatible with the single-trigger case.
+**Rules** ([variables.md § Categories](../../references/case/variables.md)): single T-number (never CSV), empty `sourceFields` (an In-arg selects a trigger, extracts nothing — extraction is Use Case 2), blank = primary trigger (T02).
 
 **Runtime behavior:** `caseId` is supplied by the API caller at case start via the primary manual trigger (T02). `approverId` is bound to the T03 event trigger, which has no API caller — so it initializes from its `Default` (`"unassigned"`) when that trigger fires. Downstream tasks read each via `=vars.caseId` / `=vars.approverId`.
 
@@ -234,7 +227,9 @@ In the producing task (e.g., "Approve Decision" action task):
 
 ## Use Case 5 — Task extracts response field into case variable
 
-**Scenario:** Some task (any task type) produces a useful value in its response, and a downstream task needs to consume it.
+**Scenario:** Some task (any task type) produces a useful value in its response, and MULTIPLE downstream consumers (or a condition) need it — or it needs a rename or custom Default.
+
+> **Declare vs reference directly:** a Case Variables row is justified only by a rename, a custom `Default`/`Type`/`Description`, or ≥ 2 consumers / a condition read. One output feeding ONE downstream input is referenced directly with no row — see the task-local section at the end and [`variables.md`](../../references/case/variables.md).
 
 **SDD authoring** — declare the case variable in Case Variables, then bind in the producing task's Outputs:
 
@@ -293,11 +288,7 @@ In a task's Outputs table (e.g., "Mark In Review" — any task type works):
 - `vars.reviewCount = previous + 1` (computed)
 - `vars.enteredAt = "2026-05-17T15:30:00Z"` (computed)
 
-**Notes:**
-- `Field` column is `—` (empty / em-dash) for `=` rows.
-- Target case variable MUST be pre-declared in Case Variables.
-- Per task: each target case variable appears in at most one row (no double-binding). Mixing `->` and `=` for the same target in the same task is rejected.
-- Same task can have both `->` rows (extract from response) AND `=` rows (literal/computed writes).
+**Notes** (rules: [variables.md § Outputs grammar](../../references/case/variables.md)): `Field` is `—` on `=` rows; target pre-declared; one row per target per task, no `->`/`=` mixing on one target; a task may carry both operators on different targets.
 
 ---
 
@@ -500,11 +491,13 @@ Plus a task with:
 
 (Or use a task that calls an enrichment service via `->` extraction.)
 
-### NOT supported — Task-local-only variables (variables not declared in Case Variables)
+### Task-local variables — reference directly, no Case Variables row (the DEFAULT)
 
-In v1, **every variable accessible via `=vars.X` must appear in the Case Variables table** OR be an auto-emitted field of a task's response schema (which the skill exposes by the field's natural name, e.g., `=vars.score` for a task returning `{score: number}`).
-
-**Workaround:** if you want a "task-local" variable that doesn't pollute Case Variables, rely on the task's auto-emitted schema fields directly via their natural names. The skill auto-emits all of a task's response fields; you only need a Case Variables row when you want to RENAME the variable or expose it as case-level state with custom Default / Type / Description.
+Every `=vars.X` must resolve to a Case Variables row OR an auto-emitted field of a task's response schema
+(exposed by the field's natural name, e.g., `=vars.score` for a task returning `{score: number}`). Task
+outputs self-declare — rely on them directly; add a Case Variables row only per the declare test in
+[variables.md](../../references/case/variables.md) (rename, custom Default / Type / Description, or
+case-level state read in ≥ 2 places).
 
 **In an expression — `vars.$xref(...)`.** When the upstream output is one term *inside* a larger `=js:` expression (a composite payload, an `IF`, an SLA expression) rather than the whole input value, embed the in-expression marker `vars.$xref('Stage Name','Task Name','output_name')` (single quotes only). It resolves to the source output's runtime reference ID at build time (Step 11.5) — no Case Variables row, no "middle variable". Use whole-value `<- "Stage"."Task".out` when the output IS the entire input.
 
@@ -518,15 +511,8 @@ Full marker semantics: the build skill's `bindings-and-expressions.md` § In-exp
 
 ---
 
-## Authoring checklist
+## Checks
 
-When writing a new SDD, run through this list:
-
-- [ ] Every variable referenced via `=vars.X` somewhere (input bindings, conditions, SLA expressions) — declared in Case Variables OR is a task's auto-emitted schema field
-- [ ] Every `Out` Category row has either a `Default` value OR a producer task with a matching binding row
-- [ ] Every `In` Category row has `sourceFields` empty, and `sourceTriggers` either blank (binds the primary trigger) or a single `T<N>` (binds that trigger) — never a CSV
-- [ ] Every `Variable` with `sourceTriggers` set has matching entries in `sourceFields` — single path for one trigger; keyed `T<N>: <path>` format for CSV multi-trigger (an `In` row is the exception: a single `sourceTriggers` T-number with **no** `sourceFields`)
-- [ ] Every `sourceFields` is a valid dot-path (no `[0]` indexing)
-- [ ] In each task's Outputs table: each target case variable appears in ≤1 row
-- [ ] In each task's Outputs table: `->` rows have a non-empty Field column; `=` rows have `Field` as `—`
-- [ ] No skill-internal vocabulary in narrative cells (per Output Rules)
+No checklist lives here. Variable and output row consistency is normative in
+[`variables.md`](../../references/case/variables.md); the pre-confirmation gate is
+[`review.md § Finalization`](../../references/case/review.md).
