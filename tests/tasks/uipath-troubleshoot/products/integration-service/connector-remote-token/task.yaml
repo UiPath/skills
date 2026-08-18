@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-connector-remote-token
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   Faithful replay of an Integration Service connector-trigger failure. A
   ConnectorTriggerActivity faults with UiPath.Ipc.RemoteException wrapping

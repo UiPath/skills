@@ -1,0 +1,120 @@
+task_id: skill-case-build-from-planner-sdd
+description: >
+  RETURNED-SDD BUILD BOUNDARY — a planner-authored sdd.md (Case Definition
+  Blueprint shape WITH the `## Planner Handoff` header, Status: ready, resource
+  identities deliberately unresolved) is staged into the sandbox. The build
+  skill must consume it trust-as-written under the plan-only/no-build
+  exception: produce the compact `tasks/tasks.md` in maestro-case grammar and
+  stop. Regression target: the Planner Handoff header must NOT re-route the
+  request into planner Lane A (which would emit
+  `planner-returned-invoice-case-tasks.md` instead of `tasks/tasks.md`), and
+  the staged SDD must never be rewritten, renamed, or regenerated. Offline —
+  no tenant work is permitted or graded.
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - resource
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 60
+  turn_timeout: 1500
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The `sdd.md` in this folder is the approved design for our
+  PlannerReturnedInvoiceCase Maestro case — it came back from the solution
+  designer with its handoff header already marked ready.
+
+  Produce the implementation plan at `tasks/tasks.md` and stop before creating
+  caseplan.json. This is a plan-only/no-build run: do not query tenant
+  registry, connections, schemas, or users; keep the concrete resource names
+  from the SDD and mark tenant identities `resolve at build`.
+
+  Work from the SDD exactly as written — do not redesign it, do not rewrite,
+  rename, or regenerate the SDD file, and do not derive a cross-product task
+  list from the handoff header.
+
+success_criteria:
+  - type: file_exists
+    description: "Plan-only run produced the maestro-case plan at tasks/tasks.md"
+    path: "tasks/tasks.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Staged sdd.md is byte-identical — never rewritten, regenerated, or normalized"
+    command: "cmp -s sdd.md $TASK_DIR/fixtures/sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Planner Handoff header did not hijack the run into Lane A task derivation (no <case>-tasks.md at the root)"
+    command: "! ls ./*-tasks.md 2>/dev/null | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "tasks.md uses the maestro-case compact plan grammar — H2 T-entries with quoted task display names"
+    command: "grep -Eq '^## T[0-9]+.*\"Post Invoice\"' tasks/tasks.md && grep -Eq '^## T[0-9]+.*\"Draft Notification\"' tasks/tasks.md && grep -Eq '^## T0?1' tasks/tasks.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Concrete resource names preserved; tenant identities deferred as resolve at build"
+    command: "grep -Fq 'FinancialPostingFunction' tasks/tasks.md && grep -Fq 'EmailDrafter' tasks/tasks.md && grep -qi 'resolve at build' tasks/tasks.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No registry-derived audit files in the plan-only run (tenant lookup deferred)"
+    command: "! test -f tasks/registry-resolved.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Stopped at the plan — no solution scaffold, no caseplan.json"
+    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+simulation:
+  enabled: true
+  persona: |
+    You are the automation developer who received the approved
+    PlannerReturnedInvoiceCase SDD back from the solution designer. You only
+    need the implementation plan generated from it on this machine.
+  goal: |
+    Get tasks/tasks.md produced from the staged sdd.md exactly as written, then
+    stop before any caseplan or solution build.
+  constraints:
+    - "Do not change the SDD or provide alternate resource names."
+    - "If the agent proposes to re-run the design, rewrite the SDD, or derive a cross-product plan from the handoff header, tell it the design is settled — just produce the maestro-case implementation plan."
+    - "If asked about tenant resources, say identities resolve at build — this machine is offline."
+    - "When shown tasks.md, say the plan is sufficient and ask the agent to stop."
+    - "Keep replies short — one sentence or a single option pick."
+  max_turns: 10

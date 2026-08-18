@@ -30,7 +30,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 2. Generate rule ID: `Rule_` + 6 alphanumeric chars
 3. Locate the target stage in `schema.nodes` by ID
 4. Initialize `stageNode.data.exitConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md))
-5. Read `type`, `exit-to-stage`, `marks-stage-complete`, and `rule-type` from tasks.md; pick the recipe below
+5. Read `type`, `exit-to-stage`, `marks-stage-complete`, and `rule-type` from tasks.md; pick the recipe below. `exit-to-stage` is a stage **name** — resolve it to `exitToStageId` through `tasks/id-map.json`; never derive the id from the label (`Stage_<name>`).
 6. Set `displayName`: use tasks.md `display-name` if present; else default by `marks-stage-complete`: `true` → `Complete Rule {N}`, `false` → `Exit Rule {N}`. `N` = 1-based index **within the same label kind** — at append time, count existing entries in `stageNode.data.exitConditions[]` whose `marksStageComplete` equals this condition's value, then `N = count + 1`. FE numbers complete and exit rules with independent counters — do NOT use the array's overall length. Never emit a blank or omitted `displayName`.
 7. Append the condition object to `stageNode.data.exitConditions[]`
 
@@ -66,7 +66,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 ]]
 ```
 
-`selectedTasksIds` is a JSON string array, not a comma-separated string. Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required routing cannot depend on optional user-launched work.
+`selectedTasksIds` is a JSON string array, not a comma-separated string. Resolve each planned selector to its taskId via `tasks/id-map.json` using the task's EXACT `tasks.md` display name — never a paraphrase or shortened form (a rule labeled `Determine sign-off level` does not match a task named `Confirm funds and determine sign-off level`; the selector carries the task's exact name). Resolve only tasks in the same stage whose entry conditions are not `adhoc`. If a selected task is ad-hoc/manual, stop and repair the plan: required routing cannot depend on optional user-launched work. **Never write a `selected-tasks-completed` rule with an empty or partially resolved `selectedTasksIds`** — an unresolvable name is a stop-and-ask (AskUserQuestion: name the intended task, or repair the plan), never an empty emit. `uip maestro case validate`'s `has no task(s) selected` finding must never be the discovery mechanism (Step 12 Check 13 catches it first).
 
 ### wait-for-connector — bind a connector event
 
@@ -115,7 +115,7 @@ To route the **origin** stage into a decision/signal-routed exception lane (the 
     "conditionExpression": "=js:(vars.<signal> !== <exception-value>)" } ]] }
 ```
 
-The exception lane's entry is `selected-stage-exited("<origin>") + IF =js:(vars.<signal> === <exception-value>)`, `Interrupting: Yes`, exiting via `return-to-origin`. The two origin exits MUST be mutually exclusive: an ungated completion → dual-fire (next stage + lane both enter); a gated completion with no divert → deadlock (escalate path has no exit). `<signal>` is read directly from the producing task's output (no §1.5 relay var). See [`sdd-generation-rules.md` § Logical integrity step 5](../../../sdd-generation-rules.md#logical-integrity--stage-graph).
+The exception lane's entry is `selected-stage-exited("<origin>") + IF =js:(vars.<signal> === <exception-value>)`, `Interrupting: Yes`, exiting via `return-to-origin`. The two origin exits MUST be mutually exclusive: an ungated completion → dual-fire (next stage + lane both enter); a gated completion with no divert → deadlock (escalate path has no exit). `<signal>` is read directly from the producing task's output (no §1.5 relay var). See the design-side divert-and-return contract (case SDD content contract § Logical integrity step 5, `uipath-planner`).
 
 ## Rule-Type × marksStageComplete Matrix
 

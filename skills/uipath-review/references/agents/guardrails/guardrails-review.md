@@ -110,6 +110,8 @@ uip agent guardrails list --output json
 
 Build a `{ validatorId: status }` lookup from the `Data` array (use only `Status == "Available"`).
 
+> **`Validator` is not unique — key on `(Validator, IsByo)`, not `Validator` alone.** A tenant with a bring-your-own (BYOG) configuration for a validator has two entries sharing the same `Validator` name — one built-in, one BYO (`IsByo: true`). Collapsing them can point Audit Mode's Correctness/Actionability comparison at the wrong entry's `Parameters`/`AllowedScopes`. When the reviewed guardrail JSON carries `byoValidatorName`, match it against that entry's `ByoValidatorName`, not `Validator` alone. See [uipath-agents guardrails.md § BYO (bring-your-own) guardrails](/uipath:uipath-agents).
+
 ### If the catalog is unavailable
 
 If the catalog output contains `"Code": "GuardrailCatalogUnavailable"` (or the CLI is unavailable), **do not
@@ -128,6 +130,8 @@ guess**:
 
 For each guardrail in `agent.json`'s `guardrails[]` that the review CLI did **not** flag format-invalid, read
 its `validator`, `selector.scopes`, and action `$actionType`, then run two checks.
+
+> **A BYO-backed guardrail's tenant entry showing `Status: "Disabled"` is a configuration switch, not a format problem.** It means the tenant admin turned that specific BYOG configuration off (Admin → AI Trust Layer → Guardrails Configurations) — don't re-diagnose it as a schema/discriminator issue. If the agent's guardrail targets that disabled configuration (via `byoValidatorName`), it functions the same as targeting an `Unauthorised` validator — treat it as unable to protect and note it in the report.
 
 ### Actionability Check → `LC_GUARDRAIL_ACTION_INEFFECTIVE`
 

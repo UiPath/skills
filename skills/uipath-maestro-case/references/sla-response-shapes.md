@@ -1,6 +1,6 @@
 # SLA Response Shapes
 
-Canonical rules for turning an SLA at-risk / breach event into case behavior. Single source of truth — SKILL.md Rule 21, [sdd-generation-rules.md § SLA response model](sdd-generation-rules.md), [brownfield.md § SLA responses](brownfield.md#sla-responses-in-a-brownfield-edit), and the SLA / condition / task plugins all link here instead of restating it.
+Canonical rules for turning an SLA at-risk / breach event into case behavior. Single source of truth — SKILL.md Rule 21, the planner's case authoring rules (SLA response model — design side), [brownfield.md § SLA responses](brownfield.md#sla-responses-in-a-brownfield-edit), and the SLA / condition / task plugins all link here instead of restating it.
 
 An SLA **clock** ([plugins/sla/impl-json.md](plugins/sla/impl-json.md)) and its **response** are separate authoring decisions. Read the response off the requirement — never off the SLA's scope.
 

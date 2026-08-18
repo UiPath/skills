@@ -1,6 +1,6 @@
 # Brownfield — Edit an Existing Case
 
-Targeted changes to an existing `caseplan.json`. Skips the Phase 0–7 build pipeline. Terminates at `validate`, then hands off to Phase 5 (publish) / Phase 6 (debug) / Phase 7 (publish to Orchestrator).
+Targeted changes to an existing `caseplan.json`. Skips the design handoff and the Phase 1–7 build pipeline. Terminates at `validate`, then hands off to Phase 5 (publish) / Phase 6 (debug) / Phase 7 (publish to Orchestrator).
 
 > **Greenfield (new case from `sdd.md`) uses a different journey.** If `caseplan.json` does not yet exist, or the user wants to (re)build from a spec, see [planning.md](planning.md) → [implementation.md](implementation.md) → [phased-execution.md](phased-execution.md) instead.
 
@@ -101,7 +101,7 @@ Report: file path edited, what changed (nodes/tasks/conditions added/removed/mod
 |---|---|
 | **Publish to Studio Web** | Phase 5 — `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` (filter mandatory — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload)), print DesignerUrl. |
 | **Run debug session** | Phase 6 — executes the case for real (consent-gated, Rule 12). |
-| **Publish to Orchestrator** | Phase 7 — `uip solution pack` then `uip solution publish` to the tenant solution feed (consent-gated, Rule 12). |
+| **Publish to Orchestrator** | Phase 7 — `uip maestro case pack` (mandatory BPMN recompile), then `uip solution pack`, then `uip solution publish` to the tenant solution feed (consent-gated, Rule 12). |
 | **Done** (default) | Stop here. |
 | **Something else** | Free-form. |
 

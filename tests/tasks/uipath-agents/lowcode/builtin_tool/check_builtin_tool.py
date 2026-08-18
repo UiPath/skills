@@ -143,7 +143,23 @@ def assert_job_attachment_input(agent: dict) -> None:
             'FAIL: inputSchema.definitions["job-attachment"] must be an object '
             f'schema, got type={ja_def.get("type")!r}'
         )
-    print('OK: inputSchema.definitions["job-attachment"] is defined')
+
+    # Critical Rule LC18 — the job-attachment schema is canonical and copied
+    # verbatim; `x-uipath-resource-kind: "JobAttachment"` is the required marker
+    # that makes the runtime treat the field as a file rather than a plain
+    # object. A definition without it validates but silently loses the binding.
+    resource_kind = ja_def.get("x-uipath-resource-kind")
+    if resource_kind != "JobAttachment":
+        sys.exit(
+            'FAIL: inputSchema.definitions["job-attachment"] must carry '
+            '"x-uipath-resource-kind": "JobAttachment" (Critical Rule LC18 — the '
+            f"schema is canonical, copy it verbatim). Got {resource_kind!r}"
+        )
+
+    print(
+        'OK: inputSchema.definitions["job-attachment"] is defined with '
+        'x-uipath-resource-kind="JobAttachment"'
+    )
 
     props = schema.get("properties") or {}
     attachment_inputs = {}

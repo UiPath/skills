@@ -37,6 +37,8 @@ initial_prompt: |
   Important:
   - The `uip` CLI is already available in the environment.
   - Use `--output json` on any uip commands you run.
+  - Do NOT execute the test (`uip rpa run`): validation is enough proof,
+    and execution is slow.
 
 success_criteria:
   - type: command_executed

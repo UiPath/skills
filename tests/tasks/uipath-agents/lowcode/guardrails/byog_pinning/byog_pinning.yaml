@@ -1,0 +1,74 @@
+task_id: skill-agent-guardrail-byog-pinning
+description: >
+  BYO guardrail pinning on an existing agent. The sandbox is pre-seeded
+  with the Web Research Briefing solution (shared _fixtures copy,
+  guardrails empty), and a selective `uip` shim (mock_template/mocks/uip)
+  serves the discovery call — `uip agent guardrails list` returns a BYO
+  pii_detection entry named byog-smoke-agent-pin alongside the built-in
+  entry sharing the same Validator name — while every other uip command
+  (refresh/validate) passes through to the real CLI. The user only asks
+  to add their already-configured BYO guardrail to the agent. Verifies
+  the agent discovers the BYO entry (rather than assuming), disambiguates
+  it from the same-named built-in, and authors a builtInValidator
+  guardrail pinned via byoValidatorName — not a plain built-in guardrail
+  or an invented name. Discovery is mocked because the task's scope is
+  authoring, not tenant lifecycle: BYOG configurations can no longer be
+  seeded per-run (create probes the connection server-side, no skip
+  flag), and the graded behavior never executes the guardrail.
+tags: [uipath-agents, smoke, mode:build, lifecycle:edit, low-code, guardrail]
+
+run_limits:
+  expected_turns: 12
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: mock_template}
+    - {type: template_dir, path: ../_fixtures/WebResearchBriefingSolution}
+
+initial_prompt: |
+  Our admin registered a bring-your-own guardrail configuration named
+  `byog-smoke-agent-pin` — PII detection served by our external guardrail
+  provider.
+
+  Add a PII detection guardrail to my web research agent at
+  WebResearchBriefingSolution/WebResearchBriefingAgent that runs through
+  that BYO configuration — it should block email addresses and phone
+  numbers in the agent's output, with a 0.5 threshold for each.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent discovered the BYO entry via uip agent guardrails list (--byo or full list)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Guardrail added to the fixture agent and pinned to the BYO configuration (byoValidatorName == byog-smoke-agent-pin; block action; PascalCase entities)"
+    command: "python3 $TASK_DIR/check_byog_pinning.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

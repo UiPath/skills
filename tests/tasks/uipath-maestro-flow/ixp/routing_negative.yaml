@@ -62,7 +62,7 @@ initial_prompt: |
   - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
   - Run `uip maestro flow validate` at most ONCE. If it fails, stop.
   - Do NOT iterate on validation errors or rewrite the flow to fix them. A broken flow is acceptable.
-  - Exploration + an attempted node-add is enough — you do not need to build a working flow.
+  - You do not need a working flow — a skeleton whose nodes cover the steps of the request is enough. Leave a node unconfigured rather than leaving a step out.
 
 success_criteria:
   # Inverted twin of the positive routing.yaml grep.

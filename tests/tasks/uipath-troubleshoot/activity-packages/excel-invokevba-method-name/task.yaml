@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-invokevba-method-name
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose an Invoke VBA failure caused by
   EntryMethodName="ProcessInvoces" (typo, missing an "i") not matching the

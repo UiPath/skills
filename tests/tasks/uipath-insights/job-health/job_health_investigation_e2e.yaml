@@ -1,0 +1,108 @@
+task_id: skill-insights-job-health-investigation-e2e
+description: >
+  E2E test: agent uses the uipath-insights skill to run the full job-health
+  investigation journey against the live tenant — summary first, then
+  drill-down into top failures, failure reasons, and failure details —
+  and leaves behind the raw response envelopes plus a human-readable
+  report. Graded on command sequence and artifacts, not on data volume:
+  the shared tenant may have any amount of job history, so the check
+  script validates envelope structure (Result, Code, Data) and accepts
+  an empty window as a structural pass. The report is not graded on its
+  own prose: whenever top-failures names failing processes, the report
+  must name one of them, so an invented summary cannot pass.
+tags: [uipath-insights, e2e, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 24
+  turn_timeout: 600
+
+initial_prompt: |
+  Our automations have felt unreliable over the last week and I need to
+  know where we stand. Investigate the last 7 days of job executions:
+  how many jobs ran and how many succeeded, which process is failing
+  the most, and why it fails.
+
+  Leave evidence behind in the current directory:
+
+  - Save the full response envelope (not just its Data) of each query
+    you run to a JSON file named after the subcommand: `summary.json`,
+    `top-failures.json`, `failures-by-reason.json`, `failure-details.json`.
+    Redirect the command output straight to the file.
+  - Write `job-health-report.md` summarizing the overall success rate,
+    the worst processes, the most common failure reasons, and which
+    machines are affected.
+
+  If the window has no job history, say so in the report and still save
+  the response files — an empty window is a valid answer, not an error.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-insights skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran summary with the 7-day window (or an absolute epoch-ms range)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+summary\s(?:[^&;|\n]|\\\n)*--(time-range[=\s]+10080|started-after[=\s]+\d{13})'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran top-failures with a time-range flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+top-failures\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran failures-by-reason with a time-range flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+failures-by-reason\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent drilled into failure-details with a time-range flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+failure-details\s(?:[^&;|\n]|\\\n)*--(time-range|started-after)[=\s]+\d'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Investigation report written"
+    path: "job-health-report.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Summary envelope saved"
+    path: "summary.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Saved envelopes carry Result=Success with the correct Code per subcommand; report is non-trivial and names a failing process the CLI reported; a live CLI read confirms the tenant answers Insights queries; empty window passes structurally"
+    command: "python3 $TASK_DIR/check_job_health_investigation.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on the queries"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s(?:[^&;|\n]|\\\n)*--output[=\s]+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 0

@@ -1,0 +1,183 @@
+# --- Tenant fixtures (LIVE third-party sandboxes) -------------------------------------
+# This task grades OUTCOMES measured in third-party systems, so it is only valid when the
+# tenant carries these two Integration Service connections, both healthy:
+#   * uipath-microsoft-outlook365  dd657127-91f5-4568-a3a3-c024bc03fb0f
+#       "is-sandboxes-test@uipathsandboxes.onmicrosoft.com"  (folder uipath-maestro-case)
+#   * uipath-atlassian-jira        f5273a4d-d492-4bcd-a106-5a20bf89a3ef
+#       "is-sandboxes-test@uipath.com-uipath-sandbox-380"    (folder uipath-maestro-flow)
+# plus the Jira project SJP with issue type "Task" (id 10506).
+#
+# Both are SHARED sandboxes that other suites write to. Never grade on "the newest
+# record" — every probe matches this run's own token, minted per run by pre_run.
+#
+# The graders read those systems back THROUGH the same connections, so no third-party
+# credentials are needed in CI. If a connection is revoked or a fixture disappears, the
+# graders abort with "test precondition failed: … ENVIRONMENT gap" rather than reporting
+# a skill regression.
+#
+# Jira's connection lives in a different folder than the case solution; that is fine —
+# connection candidates are tenant-wide, and the skill emits a per-connection folderKey
+# binding. Do not "fix" it by moving the connection.
+# --------------------------------------------------------------------------------------
+task_id: skill-case-e2e-outcome-external
+description: >
+  OUTCOME-BASED E2E — grades whether the case ACHIEVED ITS BUSINESS OBJECTIVE in
+  third-party systems, not whether it was built a particular way. The agent gets an
+  approved SDD for a two-stage expense-approval case whose stages each produce a real
+  external effect: an Outlook 365 email notifying the approver, and a Jira issue filed
+  as the audit record, both carrying a per-run reference token. The harness executes
+  the case, then queries Microsoft Graph and Atlassian (through the tenant's own
+  Integration Service connections) to confirm both effects landed exactly once.
+  Deliberately NOT graded: caseplan topology and stage/task shape — any design that
+  achieves the objective passes. `uip maestro case validate` passing is advisory only,
+  and reaching finalStatus=Completed carries less weight than the effects themselves,
+  because a case can complete while notifying nobody (the Outlook connector's
+  `saveAsDraft` defaults to true, which drafts the message instead of sending it —
+  structural grading passes that, outcome grading correctly fails it).
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:setup, shape:multi-node, connector, feature:activities, feature:write-back]
+
+# NOTE on retries: a retry would re-run the agent AND the graders, and each grader
+# pass re-executes the case — duplicating records in the real mailbox and Jira
+# project. `max_iterations: 1` is NOT set here on purpose: `coder-eval plan` reports
+# it as an unknown top-level field that is ignored ("unknown top-level field
+# 'max_iterations' will be ignored"), so it would document a guarantee it does not
+# provide. The current execution model is one-shot (observed `iterations=1`); if a
+# supported retry control appears, cap it at 1 here.
+
+# Measured: a healthy run is ~14 min end to end (build ~12 min, refresh + debug ~1 min,
+# probes seconds). `task_timeout` must cover GRADING too — the reported duration
+# includes it (a failing run measured 1878 s, most of it grading). Worst case is a build
+# that runs long plus the slow paths in every grader: `case debug` burning its 600 s
+# poll, the instance follow-up (1200 s), and both outcome probes exhausting ~600 s each.
+# 7200 s keeps that from truncating mid-grade, which would masquerade as a different
+# failure and waste triage.
+run_limits:
+  task_timeout: 7200
+  max_turns: 300
+  turn_timeout: 1800
+
+# The case skill delegates reference reading to sub-agents; without Agent the whole
+# build runs inline in one context. Extends the experiment's allowed_tools — keep the
+# base list in sync with experiments/default.yaml.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
+# No template_sources: pre_run renders sdd-template.md into the sandbox as sdd.md with
+# this run's token substituted, so there is no dependency on staging order.
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/e2e_outcome_external/seed_outcome.py"
+    timeout: 60
+
+initial_prompt: |
+  I have an approved SDD for our OutcomeExpenseApproval case-management solution —
+  it's staged as `sdd.md` in this folder. Build a UiPath Case Management solution
+  named "OutcomeExpenseApproval" containing a project also named
+  "OutcomeExpenseApproval" from it.
+
+  What this has to achieve, in the real systems:
+  - The approver is NOTIFIED: an email carrying the request reference actually
+    arrives in the approver's mailbox. A saved draft notifies nobody.
+  - The audit record EXISTS: a Jira issue carrying the same reference is filed in
+    the audit project.
+
+  How you shape the case to get there is your call — I care that those two things
+  are true afterwards. Use the staged `sdd.md` as the source of truth for the
+  business requirements and the connection identities.
+
+  The CASE has to produce both effects when it runs. Do not send the email or file
+  the issue yourself from the shell — a hand-made record is not the automation I
+  asked for.
+
+  Important:
+  - The `uip` CLI is available and already authenticated against the target tenant.
+  - The SDD pins a connection ID for each connector because the tenant hosts several
+    connections per connector, including personal ones whose names collide with the
+    shared sandbox ones. Use the pinned connection IDs verbatim; resolve the activity
+    type IDs yourself against the registry.
+  - Treat all hard stops as pre-approved, including plan approval and any
+    publish-for-review gate. Choose the continue / skip-publish path and keep going.
+  - Do NOT call AskUserQuestion — it is not available in this harness.
+  - Do NOT publish the solution, and do NOT run `uip maestro case debug` yourself —
+    the harness executes the case and measures the results.
+
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Advisory: convention adherence, not the objective. "Not if it validated" — a case
+  # that validates while notifying nobody has not achieved anything.
+  - type: run_command
+    description: "ADVISORY — uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate OutcomeExpenseApproval/OutcomeExpenseApproval/caseplan.json --output json"
+    timeout: 60
+    weight: 1.0
+    pass_threshold: 0
+
+  # The execution vehicle. Deliberately lighter than the outcome probes below.
+  # timeout must EXCEED the grader's own slow path (600 s CLI debug poll +
+  # INSTANCE_WAIT_SECONDS 600 s), not equal it. At 1800 s they matched exactly and
+  # coder_eval killed the grader at the wall: no result published, lock stranded,
+  # and the next criterion started a SECOND debug run. Margin is the fix.
+  - type: run_command
+    description: "case executes: uip solution resources refresh then uip maestro case debug reaches finalStatus=Completed"
+    command: "python3 $TASK_DIR/check_case_ran.py"
+    timeout: 2400
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # THE OUTCOMES — measured in the third-party systems.
+  - type: run_command
+    description: "OUTCOME — the approver was notified: an email carrying this run's reference is present in the sandbox mailbox, as measured via Microsoft Graph"
+    command: "python3 $TASK_DIR/check_outcome_email.py"
+    timeout: 1800
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "OUTCOME — the audit record was filed: a Jira issue carrying this run's reference exists in the audit project, as measured via the Atlassian REST API"
+    command: "python3 $TASK_DIR/check_outcome_jira.py"
+    timeout: 1800
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  # Anti-gaming: both outcomes above are reachable by calling the connectors straight
+  # from the shell, with no case built at all. The CASE has to produce them, so direct
+  # mutating connector calls are disqualifying. Read-only `run list` stays allowed — the
+  # skill legitimately uses it to resolve reference fields (issue types, mail folders).
+  - type: command_not_executed
+    description: "Agent did not produce the external effects by hand — no direct mutating connector calls (uip is resources run create/update/replace/delete)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+resources\s+run\s+(create|update|replace|delete)\b'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # LOAD-BEARING for attribution, not just tidiness. The run token names the RUN,
+  # not which execution produced a record, so the harness's debug start is the only
+  # thing separating "the case did this" from "the agent did this". An agent that
+  # runs debug itself creates token-bearing records just before that floor, which a
+  # clock-skew allowance can admit. Hence weight 2.0, equal to the other guard.
+  #
+  # Pattern notes: `debug(?![-\w])` so the read-only `maestro case debug-instance`
+  # verbs are NOT caught; `(?!\s+--help)` so a syntax lookup is not punished; the
+  # leading anchor requires a real shell statement, not a mention inside an echo.
+  - type: command_not_executed
+    description: "Agent did not run case debug itself (the harness executes the case; agent-run debug makes outcomes unattributable)"
+    tool_name: "Bash"
+    command_pattern: '(?:^|[;&|]\s*|\bthen\s+|\bdo\s+)(uip|\$UIP)\s+maestro\s+case\s+debug(?![-\w])(?!\s+--help)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/e2e_outcome_external/cleanup_outcomes.py"
+    timeout: 180
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

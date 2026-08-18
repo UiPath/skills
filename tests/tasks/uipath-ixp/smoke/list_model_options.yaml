@@ -11,10 +11,12 @@ description: >
   retrieve, not a claim about work performed. The guard reads the invocation log
   rather than Bash text because a correct answer quotes `configure-model --model
   <id>` and may cite `list-models` to contrast it, which a text regex false-matches.
-  A correct run makes no `uip` call at all, so the log's integrity is what separates
-  "agent behaved" from "the sink was never written": `record_cli` seeds the log
-  empty and `cli_called` errors when it is missing, so both halves are now the
-  harness's guarantee rather than a task-level assertion.
+  No `uip` call is guaranteed in a correct run, so the guard carries no positive
+  control and adds no criterion for one (#2568). It forbids the trap verb only,
+  never every invocation — correct runs DO call other verbs while orienting. What
+  a positive control was protecting against is now structural: `record_cli` seeds
+  the log and `cli_called` errors when it is missing, so a re-pointed sink cannot
+  read as "the forbidden verb never ran".
 
   Distinct from pick_capable_model / change_model_variant: both mutate a project
   via configure-model; this enumerates the catalog and mutates nothing.
@@ -78,8 +80,13 @@ success_criteria:
     pass_threshold: 1.0
 
   # Log of ACTUAL executions: quoting the verb to contrast it is fine, running it
-  # is not. The generated recorder seeds the log empty, so "zero calls" and "no log
-  # at all" stay distinguishable — cli_called errors on the latter.
+  # is not. This is the structured form #2568 asked for: the verb path matches as
+  # tokens, so no seed-line include is needed to prove the log exists — a missing
+  # log errors instead of reading as "never ran".
+  #
+  # A `--help` probe is now exemptable (`flags: {help: {absent: true}}`), left off
+  # deliberately: a max_count 0 guard wants the fewest facets that capture the
+  # forbidden act, and none has been observed. Add it if one ever is.
   - type: cli_called
     description: "Agent did NOT mistake the catalog for version listing: no executed `projects list-models`"
     verb: "ixp projects list-models"

@@ -1,0 +1,87 @@
+task_id: skill-agent-coded-function-redirect
+description: >
+  Coded Function redirect. A user asks for a "coded agent" whose logic is
+  deterministic — no LLM, no reasoning. SKILL.md Critical Rule 1 requires the
+  agent to recognise this is NOT an agent (`uipath.json` `functions` map) and
+  hand off to `uipath-functions` with its distinct lifecycle
+  (`uip function new/init/pack/publish/run`) instead of scaffolding a coded
+  agent. Nothing covers that redirect today, so a skill that silently built a
+  LangGraph agent for pure arithmetic — observed on codex, run
+  2026-08-11 codex-ft-4 — passes every other task in the suite.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, coded]
+
+run_limits:
+  expected_turns: 34
+  turn_timeout: 1200
+
+initial_prompt: |
+  I need a UiPath coded agent called `calc-agent` in this directory. It's a
+  calculator: it takes `a` (number), `b` (number) and `operator` (string, one of
+  `add`, `subtract`, `multiply`, `divide`) and returns `result` (number). Every
+  operator has one exact answer — no model involved, no external calls, nothing
+  left up to interpretation.
+
+  Our ops team monitors these agents from Orchestrator, so its executions have
+  to show up in the trace view there.
+
+  Finally, run it locally with a = 17, b = 23, operator = multiply to confirm
+  it works.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in a
+  single pass.
+
+success_criteria:
+  # Agent-agnostic by construction: the checker credits a Claude `Skill` tool
+  # call AND a codex-style read of `skills/uipath-functions/**` off disk.
+  # uipath-agents engagement is deliberately NOT graded as a distractor —
+  # reading it is how the redirect is found.
+  - type: skill_triggered
+    description: "Agent handed off to the uipath-functions skill"
+    skill_name: "uipath-functions"
+    expected_skill: "uipath-functions"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT scaffold a coded agent for deterministic logic (SKILL.md Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+(new|init)\b'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the project with uip function new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+function\s+new'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent generated entry-points.json with uip function init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+function\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Both local-run spellings count: `uip function run` (CLI wrapper) and
+  # `uipath run` (the Python package entrypoint, what codex reaches for after
+  # `uv sync`). Grading one spelling would dock the other agent for a
+  # difference the skill does not mandate.
+  - type: command_executed
+    description: "Agent ran the function locally"
+    tool_name: "Bash"
+    command_pattern: '(uip\s+function\s+run|uipath\s+run)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Coded Function project shape: uipath.json functions map, matching entry-points.json, @traced() on the entry function, and no framework config"
+    command: "python3 $TASK_DIR/check_function_shape.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
