@@ -22,7 +22,10 @@ The bindings array stores resource metadata for tasks — process names, folder 
 | rpa | `"process"` | — | name + folderPath |
 | api-workflow | `"process"` | `"Api"` | name + folderPath |
 | case-management | `"process"` | `"CaseManagement"` | name + folderPath |
+| external-workflow | `"process"` | — | name + folderPath |
 | connector (activity/trigger) | `"Connection"` | — | ConnectionId + folderKey |
+
+> **`external-workflow` is the exception to the connector/non-connector split.** It resolves through the connector pipeline (its own TypeCache slice, `get-connection`, `tasks describe`) but binds like a non-connector task: a `name` + `folderPath` pair with `resource: "process"`. It does **not** get ConnectionId / folderKey bindings — its connection travels in `data.context[]`. See [external-workflow/impl-json.md](../../tasks/external-workflow/impl-json.md).
 
 ## Binding Creation
 

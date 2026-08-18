@@ -122,7 +122,7 @@ When the plan-only / no-build exception is not active, continue with the normal 
 
 ### 3.1 Task Type catalog
 
-> **Closed enum — 9 values.** sdd.md `Type:` and caseplan.json `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 16 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
+> **Closed enum — 10 values.** sdd.md `Type:` and caseplan.json `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 16 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
 
 | sdd.md `Type:` / caseplan.json `type` | Plugin folder |
 |---|---|
@@ -135,6 +135,9 @@ When the plan-only / no-build exception is not active, continue with the normal 
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
+| `external-workflow` | `plugins/tasks/external-workflow/` |
+
+> **`external-workflow` — resolves against its own index.** Its resources come from a separate TypeCache slice (`IntsvcExternalAutomation`) and land in `typecache-external-automation-activities-index.json`, disjoint from `typecache-activities-index.json` — never cross-type fallback between them. Resolution then follows the standard connector pipeline (search → `get-connection` → `tasks describe --type external-workflow --connection-id …`). When a CLI does not index that catalog the file is absent and the task falls back to a placeholder. See [external-workflow/planning.md](plugins/tasks/external-workflow/planning.md).
 
 > **`agent` & `api-workflow` — create-on-missing.** Both kinds can be built inline at the Rule 17 gate — flow in [§ 3.4](#34-unresolved-resources); type specifics: [agent](plugins/tasks/agent/planning.md#creating-an-agent-inline) / [api-workflow](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline). All other kinds (regular RPA `process`, action, connectors, agentic process) use the §3.4 placeholder path.
 

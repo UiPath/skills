@@ -167,7 +167,7 @@ Every row must have Category.
 - Primary stages use `### Stage {N}: {Stage Name}` and omit `Stage Kind` when the default is primary.
 - Secondary stages use `### Secondary Stage: {Stage Name}`, set `Stage Kind: secondary`, and every entry row uses `Interrupting: Yes`.
 - Every stage and task must have a concrete `Design Rationale` and prose `Description`.
-- Task Type must be one of: `action`, `agent`, `process`, `rpa`, `api-workflow`, `wait-for-timer`, `wait-for-connector`, `execute-connector-activity`, `case-management`.
+- Task Type must be one of: `action`, `agent`, `process`, `rpa`, `api-workflow`, `wait-for-timer`, `wait-for-connector`, `execute-connector-activity`, `case-management`, `external-workflow`.
 - `action` is the only task type that can carry task-level SLA.
 - Sequential work uses `runs-sequentially` on every task in the ordered task-set run, including the first task. When multiple independent tasks start after the same immediate predecessor, place them in the same next task set, mark `Activation Mode: parallel-after-predecessor`, and give each `runs-sequentially` instead of duplicate `selected-tasks-completed("<previous>")` entries. Use `selected-tasks-completed` only for fan-in, branch convergence, condition-result routing, or a non-immediate dependency; it must select only non-adhoc sibling tasks in the same stage.
 - Stage-picker repair is a replacement, never a duplicate: when `user-selected-stage` requires picker exposure from an origin, replace that origin's `required-tasks-completed | exit-only | Yes` completion row with `required-tasks-completed | wait-for-user | Yes`. Keep exactly one `required-tasks-completed` row; never add a second `Marks Stage Complete: No` row.
@@ -218,7 +218,7 @@ Every row must have Category.
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
+| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management \| external-workflow> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
 
 ##### Task <N>.<M>: <TASK_NAME>
 

@@ -199,11 +199,18 @@ Use the component type from the sdd.md to identify the **primary** cache file, t
 | CONNECTOR_TRIGGER | `typecache-triggers-index.json` |
 | PROCESS | `processOrchestration-index.json` |
 | EXTERNAL_AGENT | *(not in cache)* |
+| EXTERNAL_WORKFLOW | `typecache-external-automation-activities-index.json` |
 | TIMER | *(not in cache)* |
 
 For types marked "not in cache" (`EXTERNAL_AGENT`, `TIMER`), skip the cache lookup — these have no registry representation. `TIMER` → emit the `wait-for-timer` plugin shape. **`EXTERNAL_AGENT` has no generation plugin here — never write `type: external-agent`; model as `api-workflow` / `execute-connector-activity` per Rule 16.**
 
-**Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search the other cache files using the task's type-specific portable name, preserving the existing fallback behavior. For `process` tasks the fallback is a hard gate before any unresolved/placeholder outcome — see [`plugins/tasks/process/planning.md` § Registry Resolution](plugins/tasks/process/planning.md#registry-resolution). **Exception: do not cross-type-fallback an `action` or `case-management` lookup.** An Action App ID is valid only from `action-apps-index.json`, and a child-case `entityKey` is valid only from `caseManagement-index.json`; a same-named process is not a compatible substitute for either task type.
+> **`EXTERNAL_WORKFLOW` — separate catalog, same pipeline.** External automations are catalogued in TypeCache under project type `IntsvcExternalAutomation` and are indexed separately from the regular connector catalog. Search `typecache-external-automation-activities-index.json` (siblings exist for `-triggers-` and `-packages-`), then resolve through the standard connector pipeline: `registry get-connection --type typecache-external-automation-activities --activity-type-id <id>`, then `tasks describe --type external-workflow --id <id> --connection-id <connId>`.
+>
+> **Never cross-type fallback between the external and regular catalogs.** Their `uiPathActivityTypeId` sets are disjoint, so a same-named entry in `typecache-activities-index.json` is a different activity, not a substitute.
+>
+> **When the index file is absent after a successful pull**, this CLI does not index the external-automation catalog. That is a CLI coverage gap, not a missing tenant resource — **do not report it as "0 resources on this tenant."** Record `cacheFile: null` in `registry-resolved.json` with a rationale naming the gap and emit the placeholder per [external-workflow/planning.md](plugins/tasks/external-workflow/planning.md).
+
+**Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search the other cache files using the task's type-specific portable name, preserving the existing fallback behavior. For `process` tasks the fallback is a hard gate before any unresolved/placeholder outcome — see [`plugins/tasks/process/planning.md` § Registry Resolution](plugins/tasks/process/planning.md#registry-resolution). **Exception: do not cross-type-fallback an `action`, `case-management`, or `external-workflow` lookup.** An Action App ID is valid only from `action-apps-index.json`, a child-case `entityKey` only from `caseManagement-index.json`, and an external automation only from `typecache-external-automation-activities-index.json` — its `uiPathActivityTypeId` set is disjoint from the regular connector catalog, so a same-named entry there is a different activity. A same-named process is not a compatible substitute for any of the three.
 
 ### 2. Search by Name and Folder Path
 
@@ -282,7 +289,7 @@ After finding a match, map the **cache file type** (not the sdd.md component typ
 | `typecache-activities-index.json` | `execute-connector-activity` | `uiPathActivityTypeId` |
 | `typecache-triggers-index.json` | `wait-for-connector` | `uiPathActivityTypeId` |
 
-Additional `type` values not discoverable through cache: `rpa`, `wait-for-timer`. (`external-agent` is a real CLI type but has **no generation plugin here** — never emit it; model as `api-workflow` / `execute-connector-activity` per Rule 16.)
+Additional `type` values not discoverable through cache: `rpa`, `wait-for-timer`. (`external-workflow` IS cache-discoverable, but against its own `typecache-external-automation-activities-index.json` — see the note above. `external-agent` is a real CLI type but has **no generation plugin here** — never emit it; model as `api-workflow` / `execute-connector-activity` per Rule 16.)
 
 **Important:** The sdd.md component type determines the JSON `type` to write; the **cache file** supplies the entity identifier (`entityKey`). E.g. if sdd.md says "RPA" and the match is in `process-index.json`, write `type: "rpa"` (from sdd.md). The `entityKey` is recorded in `registry-resolved.json` and confirms the resource during planning — it is **not** written to the task node; non-connector tasks reference the resource via `data.name` / `data.folderPath` = `=bindings.<id>` (per the type's `impl-json.md`).
 

@@ -273,7 +273,7 @@ uip maestro case tasks describe --type connector-trigger --id <typeId> --connect
 
 | Flag | Description |
 |------|-------------|
-| `--type <type>` | **(required)** Task type: `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `connector-activity`, `connector-trigger`. Use `processOrchestration` for `AGENTIC_PROCESS`. |
+| `--type <type>` | **(required)** Task type: `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `connector-activity`, `connector-trigger`, `external-workflow`. Use `processOrchestration` for `AGENTIC_PROCESS`. `external-workflow` additionally **requires `--connection-id`**. |
 | `--id <id>` | **(required)** Unique ID of the task (entityKey or action-app id) |
 | `--connection-id <id>` | Connection UUID (required for `connector-activity` and `connector-trigger` types) |
 
@@ -355,7 +355,7 @@ uip maestro case registry get-connector --type typecache-triggers --activity-typ
 
 | Flag | Description |
 |------|-------------|
-| `-t, --type <type>` | **(required)** `typecache-activities` or `typecache-triggers` |
+| `-t, --type <type>` | **(required)** `typecache-activities` or `typecache-triggers`; for an external automation use `typecache-external-automation-activities` |
 | `--activity-type-id <id>` | **(required)** The `uiPathActivityTypeId` to look up |
 
 Output: `{ Entry, Config }`.
@@ -371,7 +371,7 @@ uip maestro case registry get-connection --type typecache-triggers --activity-ty
 
 | Flag | Description |
 |------|-------------|
-| `-t, --type <type>` | **(required)** `typecache-activities` or `typecache-triggers` |
+| `-t, --type <type>` | **(required)** `typecache-activities` or `typecache-triggers`; for an external automation use `typecache-external-automation-activities` |
 | `--activity-type-id <id>` | **(required)** The `uiPathActivityTypeId` to look up |
 
 Output: `{ Entry, Config, Connections }` — use a `Connections[].id` value as the `connectionId` written into a connector task's `data` in `caseplan.json`.

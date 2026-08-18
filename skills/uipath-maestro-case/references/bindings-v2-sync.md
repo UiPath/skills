@@ -10,7 +10,7 @@ Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.
 
 Run at these three points only:
 
-1. **End of Phase 2 Step 9** (after all non-connector tasks written) — covers all process/agent/rpa/action/api-workflow/case-management bindings
+1. **End of Phase 2 Step 9** (after all non-connector tasks written) — covers all process/agent/rpa/action/api-workflow/case-management/external-workflow bindings
 2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache for tasks
 3. **End of Phase 3 Step 10.5** (after Phase 2 connector-rule stubs are upgraded across the 4 scopes — stage-entry, stage-exit, case-exit, task-entry) — adds Connection bindings + populates IS cache for resolved rules. Phase 2 stubs add no bindings; without this sync, rule-introduced Connection/Folder bindings + IS-cache entries would be absent when `resource refresh` runs.
 
