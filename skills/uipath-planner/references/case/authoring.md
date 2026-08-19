@@ -30,10 +30,10 @@ Look beyond the primary flow. Check the source for each scenario; pick the small
 | Scenario | Candidate models |
 |---|---|
 | Rework / needs-info loop | Returning secondary lane (`return-to-origin`) |
-| Rejection, withdrawal, cancellation | Terminal secondary lane + non-completing case exit |
+| Rejection, withdrawal, cancellation | Terminal secondary lane + non-completing case exit. When a person can trigger it at any point, the lane is entered by that choice (`user-selected-stage`, paired with a `wait-for-user` exit on every stage it can be taken from) or by the inbound event that carries it — never by an `adhoc` task per stage with the stage exit gated on it |
 | SLA escalation | Response per [slas.md](slas.md) — notification only unless the source creates work |
 | External-system failure | Secondary lane on the failure event, or an advisory review item |
-| Manual override / worker-launched side work | `adhoc` task (`Required: No`) or `user-selected-stage` lane |
+| Manual override / worker-launched side work | Nothing downstream waits on it → `adhoc` task (`Required: No`). Something routes on it or waits for it → not `adhoc`: a `user-selected-stage` lane, or a flow-started task the gate can name |
 | Terminal outcomes different from success | Non-completing case-exit rows; XOR terminals (below) |
 
 Clear source signal → model it by best assumption and disclose in **Other Paths Considered**. No signal at
@@ -50,6 +50,7 @@ Classify before choosing entry rules (grammar: [model.md § Task activation](mod
 | Parallel after predecessor | "after A, do B and C", both independent | B and C share one next task set, each `runs-sequentially` — never duplicate `selected-tasks-completed("A")` |
 | Race | Confirmation vs timeout/cancel/withdrawal | Listener + clock armed while the obligation is pending; downstream work gated on the winning fact |
 | Optional side work | "may", "can manually", no required downstream dependency | `adhoc`, `Required: No` |
+| Person decides what happens next | "waits for X to choose", "never advances on its own" | `wait-for-user` exit on that stage + `user-selected-stage` entry on every destination it can pick |
 
 **Producer rule:** every non-start stage/task entry names its concrete producer before the confirmation —
 a source stage exit/completion, a task completion, a connector event, a paired `wait-for-user` exit, or a
