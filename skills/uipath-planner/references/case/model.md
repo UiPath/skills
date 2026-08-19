@@ -63,8 +63,13 @@ the outer rule array is OR, each inner array is AND.
 
 1. Tasks have NO exit or completion conditions — a task completes when its own work finishes; downstream
    gates key off `required-tasks-completed` / `selected-tasks-completed`.
-2. `Marks Complete: Yes` pairs only with `required-*` rules (or `wait-for-connector`). A `Yes` +
-   `selected-*` pair is a schema error.
+2. Completion rows (`Marks Complete: Yes`) use `required-tasks-completed` or `wait-for-connector` — the
+   pair `uip maestro case stage-exit-conditions add --marks-stage-complete true` writes. A completion row
+   keyed to `selected-tasks-completed` is legal and validates, but the CLI cannot author it and the stage
+   then completes on named tasks instead of its required set, so `isRequired` stops governing completion.
+   Do not author one; an existing design that carries one is valid, so leave it alone rather than
+   "fixing" it. Never place one beside a `required-*` completion row covering the same tasks —
+   overlapping completion rows are rejected as duplicates (verified uip 1.199.0).
 3. `required-*` rules are vacuous without an explicit `isRequired: true` member. Required status is
    explicit end-to-end — the SDD declares it per stage and task, and emission writes it verbatim. An
    absent flag equals `false` at the validator: `Case rule '<name>' has no required stage(s) selected` /
