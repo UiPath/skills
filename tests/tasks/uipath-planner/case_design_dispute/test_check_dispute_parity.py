@@ -190,3 +190,108 @@ def test_send_back_loop_detected(tmp_path):
     path.write_text(stage("| `required-tasks-completed` | — | return-to-origin | Yes | Back |"), encoding="utf-8")
     parsed = Sdd(path.read_text(encoding="utf-8"), str(path))
     assert check_send_back_loop(parsed) == []
+
+
+# -- draft-shaped documents -------------------------------------------------
+# A pre-finalization draft carries per-task Entry Condition tables and a
+# per-stage Tasks summary, but no `**Activation Mode:**` line and no
+# `**Task envelope**` block (see case_finalize_draft/fixtures/sdd.draft.md).
+# Both checks must still work off that shape.
+
+DRAFT_STAGE = """
+### Stage 1: Checking the dispute (`stage-checking`)
+
+**Type:** Stage
+**Required for Case Completion:** Yes
+
+#### Stage Entry Conditions
+
+| WHEN | IF | Interrupting |
+|------|-----|-------------|
+| `case-entered` | — | No |
+
+#### Stage Exit Conditions
+
+| WHEN | IF | Exit Type | Marks Stage Complete |
+|------|-----|-----------|---------------------|
+| `required-tasks-completed` | — | wait-for-user | Yes |
+
+#### Tasks
+
+| # | Task Name | Type | Required | Run Only Once | Persona | SLA |
+|---|-----------|------|----------|---------------|---------|-----|
+| 1 | Check the dispute details | action | Yes | No | Analyst | — |
+| 2 | Ask the cardholder a question | action | No | No | Analyst | — |
+| 3 | Order a fraud team check | action | No | No | Analyst | — |
+
+##### Task 1.1: Check the dispute details (`t01`)
+
+**Type:** action
+
+**Entry Condition:**
+
+| WHEN | IF |
+|------|-----|
+| `current-stage-entered` | — |
+
+##### Task 1.2: Ask the cardholder a question (`t02`)
+
+**Type:** action
+
+**Entry Condition:**
+
+| WHEN | IF |
+|------|-----|
+| `adhoc` | — |
+
+##### Task 1.3: Order a fraud team check (`t03`)
+
+**Type:** action
+
+**Entry Condition:**
+
+| WHEN | IF |
+|------|-----|
+| `adhoc` | — |
+
+### Secondary Stage: Dispute dropped (`stage-dropped`)
+
+#### Stage Entry Conditions
+
+| WHEN | IF | Interrupting |
+|------|-----|-------------|
+| `user-selected-stage` | — | Yes |
+"""
+
+
+def test_draft_shape_detects_adhoc_tasks_and_required_from_the_summary_table():
+    parsed = sdd(DRAFT_STAGE)
+    assert set(parsed.adhoc_tasks) == {"Ask the cardholder a question", "Order a fraud team check"}
+    assert parsed.task_required["Check the dispute details"] == "Yes"
+    assert parsed.task_required["Ask the cardholder a question"] == "No"
+    assert check_ondemand_actions(parsed) == []
+
+
+def test_draft_shape_pairing_and_selectors():
+    parsed = sdd(DRAFT_STAGE)
+    assert check_wait_for_user_pairing(parsed) == []
+    assert check_adhoc_stage_exit(parsed) == []
+    assert check_dropped_terminal(parsed) == []
+
+
+def test_draft_shape_flags_an_adhoc_selector_on_stage_exit():
+    text = DRAFT_STAGE.replace(
+        "| `required-tasks-completed` | — | wait-for-user | Yes |",
+        '| `required-tasks-completed` | — | wait-for-user | Yes |\n'
+        '| `selected-tasks-completed("Order a fraud team check")` | — | exit-only | No |',
+    )
+    issues = check_adhoc_stage_exit(sdd(text))
+    assert len(issues) == 1
+    assert "Order a fraud team check" in issues[0]
+
+
+def test_draft_shape_flags_a_required_adhoc_task():
+    text = DRAFT_STAGE.replace("| 3 | Order a fraud team check | action | No |", "| 3 | Order a fraud team check | action | Yes |")
+    issues = check_ondemand_actions(sdd(text))
+    assert len(issues) == 1
+    assert "Required: Yes" in issues[0]

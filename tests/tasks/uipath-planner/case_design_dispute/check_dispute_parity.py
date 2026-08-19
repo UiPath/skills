@@ -31,6 +31,7 @@ ENTRY_MARKER_RE = re.compile(r"^\*\*Entry Condition", re.I)
 EXIT_HEADING_RE = re.compile(r"^####\s+.*Exit Conditions", re.I)
 ENTRY_HEADING_RE = re.compile(r"^####\s+.*Entry Conditions", re.I)
 ENVELOPE_RE = re.compile(r"^\*\*Task envelope\*\*", re.I)
+TASKS_HEADING_RE = re.compile(r"^####\s+Tasks\s*$", re.I)
 RULE_TOKEN_RE = re.compile(r"`?\s*([a-z][a-z]+(?:-[a-z]+)*)")
 QUOTED_RE = re.compile(r"[\"“]([^\"“”]+)[\"”]")
 
@@ -65,6 +66,7 @@ class Sdd:
         task: str | None = None
         section: str | None = None
         envelope_pending = False
+        summary_cols: tuple[int | None, int | None] = (None, None)
 
         for line_no, raw in enumerate(text.splitlines(), 1):
             line = raw.strip()
@@ -82,6 +84,9 @@ class Sdd:
                 section, envelope_pending = None, False
                 continue
 
+            if TASKS_HEADING_RE.match(line):
+                section, task = "tasks-summary", None
+                continue
             if EXIT_HEADING_RE.match(line):
                 section, task = "stage-exit", None
                 continue
@@ -108,9 +113,21 @@ class Sdd:
                 continue
 
             cells = _cells(line)
+            header = [c.strip().lower() for c in cells]
             if _is_separator(cells) or cells[0].upper() in {"WHEN", "REQUIRED", "#"}:
                 if envelope_pending and cells and cells[0].upper() == "REQUIRED":
                     section = "envelope"
+                if section == "tasks-summary" and "required" in header:
+                    summary_cols = (
+                        next((i for i, h in enumerate(header) if "task name" in h or h == "task"), None),
+                        next((i for i, h in enumerate(header) if h == "required"), None),
+                    )
+                continue
+
+            if section == "tasks-summary" and all(i is not None for i in summary_cols):
+                name_idx, req_idx = summary_cols
+                if max(name_idx, req_idx) < len(cells):
+                    self.task_required.setdefault(_clean(cells[name_idx]), cells[req_idx])
                 continue
 
             if section == "envelope" and task and cells:
