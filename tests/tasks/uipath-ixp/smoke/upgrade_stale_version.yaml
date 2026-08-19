@@ -35,34 +35,42 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  - type: cli_called
     description: "Checked which versions are still deployable with `projects list-models`"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+list-models\b(?=.*my_invoices-f1afa9ef-ixp).*)[^\r\n]*$
+    log: "mocks/calls.jsonl"
+    verb: "ixp projects list-models"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
     weight: 1.5
     pass_threshold: 1.0
 
   # Substituting a version the user did not ask for is unambiguously wrong: the
   # request named version 9, and no other version is an acceptable consolation.
+  # `any_of` enumerates the deployable versions rather than negating 9, since a
+  # FlagMatch takes exactly one predicate and "not equal" is not one of them —
+  # and it is the deployable versions that are the tempting substitutes.
   # Positive control: the list-models line above.
-  - type: file_matches_regex
+  - type: cli_called
     description: "Did NOT silently move the deployment to some OTHER version as a substitute"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+upgrade\b.*--version\s+(?!9\b)\d+\b)[^\r\n]*$
-    must_match: false
+    log: "mocks/calls.jsonl"
+    verb: "ixp deployments upgrade"
+    tool: "uip"
+    flags:
+      version: {any_of: ["13", "14"]}
+    min_count: 0
+    max_count: 0
     weight: 1.5
     pass_threshold: 1.0
 
   # Nor is a rollback a fresh deploy: `create` on a folder that already hosts the
   # deployment is a 409, and version 9 is unavailable either way.
-  - type: file_matches_regex
+  - type: cli_called
     description: "Did NOT fall back to `deployments create` for the unavailable version"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+create\b)[^\r\n]*$
-    must_match: false
+    log: "mocks/calls.jsonl"
+    verb: "ixp deployments create"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -75,11 +83,14 @@ success_criteria:
   # would encode a preference as a correctness bar — the 2026-08-19 CI run scored
   # 0.50 on exactly that, having checked list-models FIRST and then attempted the
   # move anyway.
-  - type: file_matches_regex
+  - type: cli_called
     description: "Advisory: pre-flighted the version check instead of attempting a doomed upgrade"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+upgrade\b.*--version\s+9\b)[^\r\n]*$
-    must_match: false
+    log: "mocks/calls.jsonl"
+    verb: "ixp deployments upgrade"
+    tool: "uip"
+    flags:
+      version: "9"
+    min_count: 0
+    max_count: 0
     weight: 1.0
     pass_threshold: 0

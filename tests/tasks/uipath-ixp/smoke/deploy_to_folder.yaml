@@ -7,7 +7,9 @@ description: >
   `projects publish`, and must not `upgrade` a project that has no deployment
   yet (that is a 404, not a fallback deploy).
 
-  Harness is unauthenticated; CLI calls fail with auth errors.
+  Uses generated recorders (`sandbox.record_cli`) rather than the shared mock
+  template: every value the graded command needs is in the prompt, so nothing
+  has to be read back and "every call fails offline" is all this task wants.
   Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
@@ -15,9 +17,11 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   Project `my_invoices-f1afa9ef-ixp` has trained model version 13, which has
@@ -32,33 +36,39 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  # --version / --folder-key / --title are value-bearing by virtue of appearing
+  # under `flags`, so the project slug stays the first positional.
+  - type: cli_called
     description: "Deployed with `deployments create <Name> --version 13 --folder-key <key> --title invoices`"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+create\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--version\s+13\b)(?=.*--folder-key\s+["']?3f0a91c7-1111-2222-3333-444455556666)(?=.*--title\s+["']?invoices).*)[^\r\n]*$
+    verb: "ixp deployments create"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      version: "13"
+      folder-key: "3f0a91c7-1111-2222-3333-444455556666"
+      title: "invoices"
     weight: 3.0
     pass_threshold: 1.0
 
   # Nothing is deployed yet, so there is no deployment to move — `upgrade` here
   # is a 404, never a fallback deploy. Positive control: the create line above,
   # which a correct run is guaranteed to produce.
-  - type: file_matches_regex
+  - type: cli_called
     description: "Did NOT use `deployments upgrade` for a first-time deploy (upgrade never falls back to a deploy)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+upgrade\b)[^\r\n]*$
-    must_match: false
+    verb: "ixp deployments upgrade"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
     weight: 1.5
     pass_threshold: 1.0
 
   # Publishing makes a version usable INSIDE the project; it deploys nothing.
   # Version 13 is already trained, so no publish is warranted here.
-  - type: file_matches_regex
+  - type: cli_called
     description: "Did NOT substitute `projects publish` for a folder deployment"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+publish\b)[^\r\n]*$
-    must_match: false
+    verb: "ixp projects publish"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
     weight: 1.5
     pass_threshold: 1.0

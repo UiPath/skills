@@ -1,115 +1,210 @@
-#!/bin/sh
-# Deployment-serving `uip` mock for uipath-ixp smoke tasks whose correct path
-# STARTS with a read. Overlays the base mock_template (list it SECOND in
-# template_sources so this file wins).
-#
-# The base mock fails every invocation. That makes the upgrade path unwinnable:
-# `deployments upgrade` is addressed by DeploymentName — a backend-minted slug
-# that cannot be derived from the title (`invoices` -> `invoices-08963f00-ixp`,
-# suffix generated per deployment). With `deployments list` failing there is
-# nothing to carry into the graded write, and an agent that declines to invent
-# the slug correctly stops. Serving the read makes the graded shape reachable
-# and lets criteria assert the carried-over NAME rather than flag presence.
-#
-# Fixture — project my_invoices-f1afa9ef-ixp, folder
-# 3f0a91c7-1111-2222-3333-444455556666:
-#   DeploymentTitle "invoices" / DeploymentName "invoices-08963f00-ixp" on v13.
-# Versions 13 and 14 are both deployable, so moving to 14 is legitimate.
-# DeployedAt uses the service's `+00:00` offset, not `...Z`.
-#
-# `deployments list` is stateful, so an agent that re-reads to prove the move
-# landed sees its own write rather than stale v13 it would then re-apply. The
-# skill teaches exactly that re-read: upgrade echoes the REQUESTED version
-# without re-reading, so only `list` proves it.
-#
-# `deployments create` answers the real 409 DeploymentAlreadyExistsError with
-# the CLI's conflict hint rather than the generic offline failure: repointing
-# an existing deployment with `create` is the mis-model the create/upgrade
-# split exists to prevent, and a faithful 409 is what the skill documents.
-#
-# Logging matches the base mock exactly — same `uip ` prefix, same newline
-# normalization — so anchored `^uip\s+ixp …` criteria keep matching.
-{
-    printf 'uip %s' "$*" | tr '\r\n' '  '
-    printf '\n'
-} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+#!/usr/bin/env python3
+"""Deployment-serving `uip` mock for uipath-ixp smoke tasks whose correct path
+STARTS with a read. Overlays the base mock_template (list it SECOND in
+template_sources so this file wins).
 
-UPGRADED="$(dirname "$0")/.deployment-upgraded"
+The base mock fails every invocation. That makes the upgrade path unwinnable:
+`deployments upgrade` is addressed by DeploymentName -- a backend-minted slug
+that cannot be derived from the title (`invoices` -> `invoices-08963f00-ixp`,
+suffix generated per deployment). With `deployments list` failing there is
+nothing to carry into the graded write, and an agent that declines to invent the
+slug correctly stops. Serving the read makes the graded shape reachable and lets
+criteria assert the carried-over NAME rather than flag presence.
 
-FOLDER_KEY='3f0a91c7-1111-2222-3333-444455556666'
-DEPLOYMENT_NAME='invoices-08963f00-ixp'
-ARCHIVE_KEY='8c22d4e1-9999-8888-7777-666655554444'
+Python, not sh, for the reason the base mock is: `cli_called` reads `argv` as a
+LIST, and sh cannot emit correct JSON without hand-rolled escaping. Both sinks
+are written in the base mock's exact formats -- see ../mock_template/README.md
+section "Call log" for the record schema.
 
-case "$1 $2 $3" in
-"ixp projects list")
-cat <<'EOF'
-{"Result":"Success","Data":{"Projects":[{"Id":"f1afa9ef-1c4d-4b70-9e02-6d3b8a5c7e11","Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","CreatedAt":"2026-06-11T08:42:19Z"}],"Total":1,"Offset":0,"Limit":50}}
-EOF
-exit 0
-;;
-"or folders list")
-cat <<'EOF'
-{"Result":"Success","Data":[{"Key":"3f0a91c7-1111-2222-3333-444455556666","DisplayName":"Invoices","FullyQualifiedName":"Finance/Invoices"},{"Key":"8c22d4e1-9999-8888-7777-666655554444","DisplayName":"Archive","FullyQualifiedName":"Finance/Archive"}]}
-EOF
-exit 0
-;;
-"ixp projects list-models")
-cat <<'EOF'
-{"Result":"Success","Data":[{"ModelVersion":13,"TrainedTime":"2026-08-14T09:11:02Z","Pinned":true,"Tags":["live"]},{"ModelVersion":14,"TrainedTime":"2026-08-17T16:04:48Z","Pinned":true,"Tags":[]}]}
-EOF
-exit 0
-;;
-"ixp deployments list")
-    version=13
-    deployed_at='2026-08-18T11:26:25.367124+00:00'
-    if [ -f "$UPGRADED" ]; then
-        version=14
-        deployed_at='2026-08-19T07:52:10.114903+00:00'
-    fi
-    printf '{"Result":"Success","Code":"IxpDeploymentsList","Data":[{"DeploymentName":"%s","DeploymentTitle":"invoices","ModelVersion":%s,"FolderKey":"%s","DeployedAt":"%s"}]}\n' \
-        "$DEPLOYMENT_NAME" "$version" "$FOLDER_KEY" "$deployed_at"
-    exit 0
-;;
-"ixp deployments upgrade")
-    # Only the real DeploymentName resolves; the title 404s, as the service does.
-    # The service checks the version first, so a stale target is
-    # ModelVersionNotFoundError even when the deployment name is valid.
-    case " $* " in
-    *" --version 13 "*|*" --version 14 "*) : ;;
-    *)
-        echo '{"Result":"Failure","Message":"Failed to upgrade deployment","Context":{"HttpStatus":404},"Code":"invalid_argument","Details":"404 [ModelVersionNotFoundError] That model version is not deployable for this project."}' >&2
-        exit 1
-        ;;
-    esac
-    case "$*" in
-    *"$DEPLOYMENT_NAME"*)
-        : > "$UPGRADED"
-        printf '{"Result":"Success","Code":"IxpDeploymentsUpgrade","Data":{"ProjectName":"my_invoices-f1afa9ef-ixp","ModelVersion":14,"FolderKey":"%s","DeploymentName":"%s","DeploymentTitle":"invoices"}}\n' \
-            "$FOLDER_KEY" "$DEPLOYMENT_NAME"
-        exit 0
-        ;;
-    esac
-    echo '{"Result":"Failure","Message":"Failed to upgrade deployment","Context":{"HttpStatus":404},"Code":"invalid_argument","Details":"404 [DeploymentNotFoundError] No deployment matches that name in this folder."}' >&2
-    exit 1
-;;
-"ixp deployments create")
-    # The folder is part of the deployment identity: `invoices` already exists
-    # in the Invoices folder, so a create there conflicts — while the same
-    # title deploys cleanly into a DIFFERENT folder.
-    case "$*" in
-    *"$FOLDER_KEY"*) : ;;
-    *)
-        printf '{"Result":"Success","Code":"IxpDeploymentsCreate","Data":{"ProjectName":"my_invoices-f1afa9ef-ixp","ModelVersion":13,"FolderKey":"%s","DeploymentName":"invoices-5d41402b-ixp","DeploymentTitle":"invoices"}}
-' "$ARCHIVE_KEY"
-        exit 0
-        ;;
-    esac
-cat >&2 <<'EOF'
-{"Result":"Failure","Message":"Failed to deploy model","Context":{"HttpStatus":409},"Code":"invalid_argument","Details":"409 [DeploymentAlreadyExistsError] A deployment titled 'invoices' already exists in this folder on a different model version.","Instructions":"To change the version an existing deployment serves, use `uip ixp deployments upgrade <project-name> <deployment-name> --version <number> --folder-key <guid>`. Get <deployment-name> from the DeploymentName field of `uip ixp deployments list` — it is not the title you passed to --title."}
-EOF
-exit 1
-;;
-esac
+Fixture -- project my_invoices-f1afa9ef-ixp:
+  Finance/Invoices (3f0a91c7-...) hosts DeploymentTitle "invoices" /
+  DeploymentName "invoices-08963f00-ixp" on v13; Finance/Archive (8c22d4e1-...)
+  hosts nothing. Versions 13 and 14 are deployable, so moving to 14 is
+  legitimate. DeployedAt carries the service's `+00:00` offset, not `...Z`.
 
-echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
-exit 1
+This mock is a DISPATCHER, which is why `sandbox.record_cli` cannot replace it:
+`deployments list` is stateful, `create` is folder-aware, and `upgrade` validates
+the version before the name. State lives in a dot-prefixed marker beside the
+logs, so it stays out of graded globs and CI artifact uploads.
+"""
+
+import json
+import os
+import sys
+import time
+
+MOCK_DIR = os.path.dirname(os.path.abspath(__file__))
+FLAT_LOG = os.path.join(MOCK_DIR, "calls.log")
+JSON_LOG = os.path.join(MOCK_DIR, "calls.jsonl")
+UPGRADED = os.path.join(MOCK_DIR, ".deployment-upgraded")
+
+OFFLINE_STDERR = "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+
+PROJECT = "my_invoices-f1afa9ef-ixp"
+FOLDER_KEY = "3f0a91c7-1111-2222-3333-444455556666"
+ARCHIVE_KEY = "8c22d4e1-9999-8888-7777-666655554444"
+DEPLOYMENT_NAME = "invoices-08963f00-ixp"
+DEPLOYABLE = {"13", "14"}
+
+CONFLICT_HINT = (
+    "To change the version an existing deployment serves, use `uip ixp deployments "
+    "upgrade <project-name> <deployment-name> --version <number> --folder-key <guid>`. "
+    "Get <deployment-name> from the DeploymentName field of `uip ixp deployments list` "
+    "-- it is not the title you passed to --title."
+)
+
+
+def record(tool, args, exit_code):
+    """Append this invocation to both sinks, in the base mock's exact formats.
+
+    Best-effort: a failed write never breaks the agent's command. newline="\\n"
+    suppresses CRLF translation if a contributor runs the suite through a Windows
+    Python, keeping the flat log byte-comparable with CI.
+    """
+    flat = "{} {}".format(tool, " ".join(args)).replace("\r", " ").replace("\n", " ")
+    try:
+        with open(FLAT_LOG, "a", encoding="utf-8", errors="replace", newline="\n") as handle:
+            handle.write(flat + "\n")
+    except OSError:
+        pass
+
+    call = {"ts": round(time.time(), 3), "tool": tool, "argv": list(args), "exit": exit_code}
+    try:
+        with open(JSON_LOG, "a", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps(call) + "\n")
+    except OSError:
+        pass
+
+
+def flag_value(args, name):
+    """Value of `--name V`, or None. Mirrors the CLI: the value is the next token."""
+    try:
+        return args[args.index(name) + 1]
+    except (ValueError, IndexError):
+        return None
+
+
+def envelope(code, data):
+    return json.dumps({"Result": "Success", "Code": code, "Data": data})
+
+
+def failure(message, status, detail, instructions=None):
+    body = {
+        "Result": "Failure",
+        "Message": message,
+        "Context": {"HttpStatus": status},
+        "Code": "invalid_argument",
+        "Details": detail,
+    }
+    if instructions:
+        body["Instructions"] = instructions
+    return json.dumps(body)
+
+
+def dispatch(args):
+    """Return (stdout, stderr, exit_code) for this invocation."""
+    verb = " ".join(a for a in args[:3] if not a.startswith("-"))
+
+    if verb == "ixp projects list":
+        return envelope("IxpProjectsList", {
+            "Projects": [{
+                "Id": "f1afa9ef-1c4d-4b70-9e02-6d3b8a5c7e11",
+                "Name": PROJECT,
+                "Title": "My_Invoices",
+                "CreatedAt": "2026-06-11T08:42:19Z",
+            }],
+            "Total": 1,
+            "Offset": 0,
+            "Limit": 50,
+        }), "", 0
+
+    if verb == "or folders list":
+        return envelope("OrFoldersList", [
+            {"Key": FOLDER_KEY, "DisplayName": "Invoices",
+             "FullyQualifiedName": "Finance/Invoices"},
+            {"Key": ARCHIVE_KEY, "DisplayName": "Archive",
+             "FullyQualifiedName": "Finance/Archive"},
+        ]), "", 0
+
+    if verb == "ixp projects list-models":
+        return envelope("IxpProjectsListModels", [
+            {"ModelVersion": 13, "TrainedTime": "2026-08-14T09:11:02Z",
+             "Pinned": True, "Tags": ["live"]},
+            {"ModelVersion": 14, "TrainedTime": "2026-08-17T16:04:48Z",
+             "Pinned": True, "Tags": []},
+        ]), "", 0
+
+    if verb == "ixp deployments list":
+        upgraded = os.path.exists(UPGRADED)
+        return envelope("IxpDeploymentsList", [{
+            "DeploymentName": DEPLOYMENT_NAME,
+            "DeploymentTitle": "invoices",
+            "ModelVersion": 14 if upgraded else 13,
+            "FolderKey": FOLDER_KEY,
+            "DeployedAt": ("2026-08-19T07:52:10.114903+00:00" if upgraded
+                           else "2026-08-18T11:26:25.367124+00:00"),
+        }]), "", 0
+
+    if verb == "ixp deployments upgrade":
+        # The service checks the version FIRST, so a stale target is
+        # ModelVersionNotFoundError even when the deployment name is valid.
+        if flag_value(args, "--version") not in DEPLOYABLE:
+            return "", failure(
+                "Failed to upgrade deployment", 404,
+                "404 [ModelVersionNotFoundError] That model version is not deployable "
+                "for this project.",
+            ) + "\n", 1
+        # Only the real DeploymentName resolves; the title 404s, as the service does.
+        if DEPLOYMENT_NAME not in args:
+            return "", failure(
+                "Failed to upgrade deployment", 404,
+                "404 [DeploymentNotFoundError] No deployment matches that name in "
+                "this folder.",
+            ) + "\n", 1
+        try:
+            open(UPGRADED, "a").close()
+        except OSError:
+            pass
+        return envelope("IxpDeploymentsUpgrade", {
+            "ProjectName": PROJECT,
+            "ModelVersion": int(flag_value(args, "--version")),
+            "FolderKey": FOLDER_KEY,
+            "DeploymentName": DEPLOYMENT_NAME,
+            "DeploymentTitle": "invoices",
+        }), "", 0
+
+    if verb == "ixp deployments create":
+        # The folder is part of the deployment identity: `invoices` already exists
+        # in Finance/Invoices, so a create there conflicts -- while the same title
+        # deploys cleanly into a DIFFERENT folder, under its own minted slug.
+        if flag_value(args, "--folder-key") == FOLDER_KEY:
+            return "", failure(
+                "Failed to deploy model", 409,
+                "409 [DeploymentAlreadyExistsError] A deployment titled 'invoices' "
+                "already exists in this folder on a different model version.",
+                CONFLICT_HINT,
+            ) + "\n", 1
+        return envelope("IxpDeploymentsCreate", {
+            "ProjectName": PROJECT,
+            "ModelVersion": 13,
+            "FolderKey": flag_value(args, "--folder-key"),
+            "DeploymentName": "invoices-5d41402b-ixp",
+            "DeploymentTitle": "invoices",
+        }), "", 0
+
+    return "", OFFLINE_STDERR, 1
+
+
+def main(argv):
+    args = argv[1:]
+    out, err, code = dispatch(args)
+    record("uip", args, code)
+    if out:
+        sys.stdout.write(out + "\n")
+    if err:
+        sys.stderr.write(err)
+    return code
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

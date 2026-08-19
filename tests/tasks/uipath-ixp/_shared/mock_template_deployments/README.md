@@ -89,8 +89,48 @@ prevent. Note the `409` and both `404`s all surface `Code: invalid_argument` —
 `400`/`409`/`422` map alike — which is why the skill tells callers to branch on
 `Context.HttpStatus`.
 
+## Grading: `cli_called` over the JSONL sink
+
+Tasks grade with `cli_called`, pointed at this overlay's structured sink:
+
+```yaml
+- type: cli_called
+  log: "mocks/calls.jsonl"
+  verb: "ixp deployments upgrade"
+  positional: ["my_invoices-f1afa9ef-ixp", "invoices-08963f00-ixp"]
+  flags:
+    version: "14"
+```
+
+`log:` is required here — it defaults to `cli_mocks/calls.jsonl`, where
+`sandbox.record_cli` writes, and this overlay is not a generated recorder.
+
+This mock is **Python, not sh**, for the reason the base mock is: `cli_called`
+reads `argv` as a LIST, and sh cannot emit correct JSON without hand-rolled
+escaping. Both sinks are written, in the base mock's exact formats — `calls.log`
+flat for any legacy regex criterion, `calls.jsonl` structured for `cli_called`.
+
+Matching per-facet rather than over a rendered string is what lets a task assert
+the name/title distinction directly: `positional: [project, "invoices"]` on a
+`max_count: 0` guard catches the title in the deployment slot, and does **not**
+match `invoices-08963f00-ixp`. Guards that do not declare `--version` /
+`--folder-key` under `flags` should list them in `value_flags`, so a flag value
+cannot leak into the positional list and let argument ordering dodge the guard.
+
+## Why not `sandbox.record_cli`
+
+`record_cli` replaces a hand-written mock only when every response is static.
+`RecordedCli.stdout` is one string per tool, while this overlay is a
+**dispatcher**: `deployments list` is stateful, `create` is folder-aware, and
+`upgrade` validates the version before the name. Those per-invocation responses
+are the whole reason the read-before-write path is gradeable, so this stays a
+hand-written mock. A task that only needs "every call fails offline" should use
+`record_cli` instead and skip this overlay entirely — `smoke/deploy_to_folder.yaml`
+does.
+
 ## Constraints
 
 Logging matches the base mock exactly — same `uip ` prefix, same newline
-normalization — so anchored `^uip\s+ixp …` criteria keep matching. Change one
-and change both. `mocks/uip` must stay mode `755`.
+normalization, same JSONL record schema — so criteria written against either
+sink keep matching. Change one and change both. `mocks/uip` must stay mode
+`755`, and must stay valid under the `python3` the smoke image provides.

@@ -35,42 +35,56 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  # Per-facet matching is what lets this assert the carried-over NAME: the slug
+  # is the second positional, so a constructed title cannot satisfy it.
+  - type: cli_called
     description: "Moved the deployment with `deployments upgrade <Name> invoices-08963f00-ixp --version 14 --folder-key <key>`"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+upgrade\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*invoices-08963f00-ixp)(?=.*--version\s+14\b)(?=.*--folder-key\s+["']?3f0a91c7-1111-2222-3333-444455556666).*)[^\r\n]*$
+    log: "mocks/calls.jsonl"
+    verb: "ixp deployments upgrade"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "invoices-08963f00-ixp"]
+    flags:
+      version: "14"
+      folder-key: "3f0a91c7-1111-2222-3333-444455556666"
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_matches_regex
+  - type: cli_called
     description: "Read the DeploymentName from `deployments list` instead of constructing it from the title"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+list\b(?=.*my_invoices-f1afa9ef-ixp).*)[^\r\n]*$
+    log: "mocks/calls.jsonl"
+    verb: "ixp deployments list"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
     weight: 1.5
     pass_threshold: 1.0
 
-  # `upgrade` is addressed by DeploymentName. The title in the deployment
-  # positional is a clean 404 — the failure the name/title split exists to
-  # prevent. Positive control: the upgrade line above.
-  - type: file_matches_regex
+  # `upgrade` is addressed by DeploymentName. The title in the deployment slot is
+  # a clean 404 — the failure the name/title split exists to prevent. The slot is
+  # matched exactly, so this does NOT fire on `invoices-08963f00-ixp`.
+  # `value_flags` is load-bearing: --version / --folder-key are not declared under
+  # `flags` here, so without it their values stay non-flag, shift the positional
+  # slots, and argument ordering dodges the guard.
+  - type: cli_called
     description: "Did NOT pass the title `invoices` where the DeploymentName belongs"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+upgrade\s+\S+\s+["']?invoices["']?(\s|$))[^\r\n]*$
-    must_match: false
+    log: "mocks/calls.jsonl"
+    verb: "ixp deployments upgrade"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "invoices"]
+    value_flags: ["version", "folder-key", "output"]
+    min_count: 0
+    max_count: 0
     weight: 2.0
     pass_threshold: 1.0
 
   # The deployment already exists on another version, so `create` is a 409, not
   # a repoint. Reaching for it is the mis-model the create/upgrade split exists
   # to prevent. Positive control: the upgrade line above.
-  - type: file_matches_regex
+  - type: cli_called
     description: "Did NOT try to repoint the existing deployment with `deployments create` (409, not a repoint)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+create\b)[^\r\n]*$
-    must_match: false
+    log: "mocks/calls.jsonl"
+    verb: "ixp deployments create"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
     weight: 2.0
     pass_threshold: 1.0

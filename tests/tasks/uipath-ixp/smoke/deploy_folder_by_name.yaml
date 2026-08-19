@@ -32,39 +32,51 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  - type: cli_called
     description: "Resolved the folder name to its key with `uip or folders list`"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+or\s+folders\s+list\b)[^\r\n]*$
+    log: "mocks/calls.jsonl"
+    verb: "or folders list"
+    tool: "uip"
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_matches_regex
+  - type: cli_called
     description: "Deployed with `deployments create <Name> --version 13 --folder-key 8c22d4e1-…` (the resolved Archive key)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+create\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--version\s+13\b)(?=.*--folder-key\s+["']?8c22d4e1-9999-8888-7777-666655554444).*)[^\r\n]*$
+    log: "mocks/calls.jsonl"
+    verb: "ixp deployments create"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      version: "13"
+      folder-key: "8c22d4e1-9999-8888-7777-666655554444"
     weight: 3.0
     pass_threshold: 1.0
 
   # `--folder-key` takes the GUID. The name or path shaped into that flag is the
-  # mistake key-only addressing invites. Positive control: the create line above.
-  - type: file_matches_regex
+  # mistake key-only addressing invites, and it fails only server-side, so the
+  # agent gets no local signal. Scoped to ONE flag value, which a whole-line
+  # pattern could not do. Positive control: the create line above.
+  - type: cli_called
     description: "Did NOT pass the folder name or path as --folder-key"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+\S+\b.*--folder-key\s+["']?(Finance|Archive))[^\r\n]*$
-    must_match: false
+    log: "mocks/calls.jsonl"
+    verb: "ixp deployments create"
+    tool: "uip"
+    flags:
+      folder-key: {matches_regex: "^(Finance|Archive)"}
+    min_count: 0
+    max_count: 0
     weight: 2.0
     pass_threshold: 1.0
 
   # There is no `--folder-path` option on either deployment verb.
-  - type: file_matches_regex
+  - type: cli_called
     description: "Did NOT invent a `--folder-path` option"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+\S+\b.*--folder-path\b)[^\r\n]*$
-    must_match: false
+    log: "mocks/calls.jsonl"
+    verb: "ixp deployments create"
+    tool: "uip"
+    flags:
+      folder-path: {present: true}
+    min_count: 0
+    max_count: 0
     weight: 1.5
     pass_threshold: 1.0
