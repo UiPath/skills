@@ -142,7 +142,7 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 
 11. **Labels replace the full set.** `tasks labels --labels` overwrites all labels on the task — include every label to keep, and pass `[]` to clear them all.
 
-12. **`data save` takes no type flag.** The command resolves the task type itself; pass the task ID, `--folder-id`, and `--data` (a JSON object).
+12. **`data save` takes no type flag.** The command resolves the task type itself; pass the task ID, a folder option (`--folder-id`/`--folder-path`/`--folder-key`), and `--data` (a JSON object).
 
 ---
 
@@ -152,7 +152,7 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 |------|----------------|
 | List all tasks | `tasks list` |
 | List tasks in a folder | `tasks list --folder-id <id>` |
-| List tasks in a folder by path/key | `tasks list --folder-path <path>` or `tasks list --folder-key <guid>` |
+| List tasks in a folder by path/key | `tasks list --folder-path "<path>"` or `tasks list --folder-key <guid>` |
 | List tasks as admin | `tasks list --as-admin` |
 | Get task details | `tasks get <task-id>` |
 | Get task with type hint | `tasks get <task-id> --task-type FormTask --folder-id <id>` |
@@ -162,7 +162,7 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 | Unassign a task | `tasks unassign <task-id>` |
 | Complete a task | `tasks complete <task-id> --type <type> --folder-id <id>` |
 | Complete with action | `tasks complete <task-id> --type FormTask --folder-id <id> --action "Approve" --data '{...}'` |
-| List assignable users | `tasks users <folder-id>` or `tasks users --folder-path <path>` |
+| List assignable users | `tasks users <folder-id>` or `tasks users --folder-path "<path>"` |
 | List task catalogs | `tasks catalogs list --folder-id <id>` |
 | Get a catalog | `tasks catalogs get <catalog-id> --folder-id <id>` |
 | Create a catalog | `tasks catalogs create --name <name> --folder-id <id>` |
