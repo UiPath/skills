@@ -20,12 +20,18 @@ description: >
   skill teaches both (Rule 6, anti-pattern 1), so the inspect-before-mutate
   assertion and the built-in-survival assertion measure whether the skill landed.
 
-  The group inspect is graded on intent, not on one verb: `groups get <ID>` and
-  `groups members list <ID>` both count. Observed on run 32275177549 — the agent
-  reached the same state via `groups list --search` + `groups members list` and
-  never called `groups get`, while it did use `robot-accounts get`. A strict
-  `groups get` requirement was therefore testing style, not capability; it is
-  kept as an advisory criterion so coverage reporting still records the verb.
+  Both inspects are graded on INTENT — a targeted read of the specific object
+  before mutating it — not on one verb, because the agent picks `get` vs
+  `list --search` non-deterministically per object type. Measured across two
+  runs: 32275177549 used `robot-accounts get` but never `groups get`;
+  32276612664 did the exact reverse. Gating on either specific verb therefore
+  fails about half of all runs while the workflow itself is correct, so each
+  strict `get` is kept as an advisory criterion that records the verb for
+  coverage reporting without flaking the task.
+
+  The deterministic coverage this task guarantees is the MUTATION quadrant —
+  groups update/delete and robot-accounts update/delete — asserted through the
+  weight-6.0 tenant read-back, which no choice of read path can shortcut.
 tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, identity, groups, robot-account]
 
 pre_run:
@@ -98,12 +104,20 @@ success_criteria:
     pass_threshold: 0
 
   - type: command_executed
-    description: "Agent inspected a robot account with robot-accounts get and a positional ID"
+    description: "Agent read the specific robot account before mutating it (robot-accounts get by positional ID, or a targeted list --search)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+robot-accounts\s+get\s+"?[0-9a-fA-F]{8}-'
+    command_pattern: 'uip\s+admin\s+robot-accounts\s+(?:get\s+"?[0-9a-fA-F]{8}-|list\s[\s\S]*--search)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used `robot-accounts get` specifically for the inspect (advisory — `list --search` reaches the same state)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+robot-accounts\s+get\s+"?[0-9a-fA-F]{8}-'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     description: "Advisory: agent read the remaining member's account with users get before retiring the stale group"
