@@ -12,11 +12,9 @@ description: >
   rather than Bash text because a correct answer quotes `configure-model --model
   <id>` and may cite `list-models` to contrast it, which a text regex false-matches.
   No `uip` call is guaranteed in a correct run, so the guard carries no positive
-  control and adds no criterion for one (#2568). It forbids the trap verb only,
-  never every invocation — correct runs DO call other verbs while orienting. What
-  a positive control was protecting against is now structural: `record_cli` seeds
-  the log and `cli_called` errors when it is missing, so a re-pointed sink cannot
-  read as "the forbidden verb never ran".
+  control and asserts none. It forbids the trap verb only, never every invocation —
+  correct runs DO call other verbs while orienting. A re-pointed sink cannot read as
+  "never ran": the log is seeded by the harness, and a missing one errors.
 
   Distinct from pick_capable_model / change_model_variant: both mutate a project
   via configure-model; this enumerates the catalog and mutates nothing.
@@ -28,8 +26,6 @@ run_limits:
   expected_turns: 4
 
 sandbox:
-  # Generated recorders: the sandbox shims uip/curl into cli_mocks/ and appends
-  # each invocation to cli_mocks/calls.jsonl, the log cli_called reads by default.
   record_cli:
     - tool: uip
       stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
@@ -80,13 +76,9 @@ success_criteria:
     pass_threshold: 1.0
 
   # Log of ACTUAL executions: quoting the verb to contrast it is fine, running it
-  # is not. This is the structured form #2568 asked for: the verb path matches as
-  # tokens, so no seed-line include is needed to prove the log exists — a missing
-  # log errors instead of reading as "never ran".
-  #
-  # A `--help` probe is now exemptable (`flags: {help: {absent: true}}`), left off
-  # deliberately: a max_count 0 guard wants the fewest facets that capture the
-  # forbidden act, and none has been observed. Add it if one ever is.
+  # is not. A `--help` probe would be exemptable (`flags: {help: {absent: true}}`);
+  # left off, since a max_count 0 guard wants the fewest facets and none has been
+  # observed.
   - type: cli_called
     description: "Agent did NOT mistake the catalog for version listing: no executed `projects list-models`"
     verb: "ixp projects list-models"

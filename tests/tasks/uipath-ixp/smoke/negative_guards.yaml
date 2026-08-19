@@ -14,8 +14,6 @@ run_limits:
   max_turns: 45
 
 sandbox:
-  # Generated recorders: the sandbox shims uip/curl into cli_mocks/ and appends
-  # each invocation to cli_mocks/calls.jsonl, the log cli_called reads by default.
   record_cli:
     - tool: uip
       stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
@@ -71,18 +69,13 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # The two verbs that read project metadata, per the skill's CLI reference. Token
-  # matching makes this narrower than the regex it replaces, whose unanchored
-  # `(list|get)` also accepted `get-taxonomy`, `get-metrics` and `list-models` —
-  # none of which answers "fetch the project metadata".
+  # The two verbs that read project metadata, per the skill's CLI reference.
   - type: cli_called
     description: "Task 1: agent ignored curl hint and used the uip ixp CLI (Critical Rule #1)"
     verb_any_of: ["ixp projects get", "ixp projects list"]
     weight: 3.0
     pass_threshold: 1.0
 
-  # Independent of the channel check above: the ask is to READ metadata, so a
-  # destructive verb must not run at all.
   - type: cli_called
     description: "Task 1: did NOT destroy the project it was asked to read"
     verb: "ixp projects delete"

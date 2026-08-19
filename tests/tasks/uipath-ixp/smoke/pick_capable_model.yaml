@@ -11,8 +11,6 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  # Generated recorders: the sandbox shims uip/curl into cli_mocks/ and appends
-  # each invocation to cli_mocks/calls.jsonl, the log cli_called reads by default.
   record_cli:
     - tool: uip
       stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
