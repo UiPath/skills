@@ -10,9 +10,11 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, rename the field "Amount" in
@@ -25,19 +27,25 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
+  - type: cli_called
     description: "Agent renamed field \"Amount\" to \"Total Amount\" via `fields rename` (right group)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+rename\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["']?Invoice Header)(?=.*--field\s+["']?Amount)(?=.*--new-name\s+["']?Total Amount).*)[^\r\n]*$
+    verb: "ixp fields rename"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      group: "Invoice Header"
+      field: "Amount"
+      new-name: "Total Amount"
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_matches_regex
+  # A rename must not destroy the field. Extra facets here would only give a
+  # delete more ways to slip past the guard.
+  - type: cli_called
     description: "Agent did NOT delete the field (rename must not destroy it)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+fields\s+delete\b)[^\r\n]*$
-    must_match: false
+    verb: "ixp fields delete"
+    tool: "uip"
+    min_count: 0
+    max_count: 0
     weight: 1.0
     pass_threshold: 1.0

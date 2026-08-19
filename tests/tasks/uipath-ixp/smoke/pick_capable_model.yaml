@@ -11,9 +11,11 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, the documents are 150-page
@@ -27,12 +29,14 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # Deterministic: the skill maps 100+ page docs to gemini_2_5_pro, which the
-  # 150-page prompt triggers (so gpt_4o would be wrong here).
-  - type: file_matches_regex
+  # The skill maps 100+ page docs to gemini_2_5_pro, which the 150-page prompt
+  # triggers (so gpt_4o would be wrong here).
+  - type: cli_called
     description: "Agent switched to a more capable model via `configure-model --model gemini_2_5_pro`"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+configure-model\b(?=.*--model\s+gemini_2_5_pro\b).*)[^\r\n]*$
+    verb: "ixp projects configure-model"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      model: "gemini_2_5_pro"
     weight: 3.0
     pass_threshold: 1.0
