@@ -1,0 +1,76 @@
+task_id: skill-ixp-upgrade-deployment-smoke
+description: >
+  Smoke: a folder already serves v13 of the project; the agent moves it to v14
+  with `deployments upgrade`, addressing the deployment by the DeploymentName
+  read from `deployments list`.
+  Trap: `create` only ever adds — re-deploying the title on another version is
+  a 409, not a repoint. Second trap: `upgrade` takes the backend-minted
+  DeploymentName (`invoices-08963f00-ixp`), not the title (`invoices`) the
+  deployment was created under; the suffix cannot be derived, so the agent has
+  to read it rather than construct it.
+
+  Overlays the deployment-serving mock so the read succeeds — see
+  ../_shared/mock_template_deployments/README.md. Grades command shape.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_deployments}
+
+initial_prompt: |
+  Orchestrator folder `3f0a91c7-1111-2222-3333-444455556666` currently serves
+  model version 13 of IXP project `my_invoices-f1afa9ef-ixp`, deployed under the
+  title `invoices`. Trained version 14 is ready. Make that folder serve version
+  14 instead.
+
+  Important:
+  - The `uip` CLI in this environment is not connected to a live tenant;
+    some commands fail. Run each command once and move on. Do NOT retry or
+    attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Moved the deployment with `deployments upgrade <Name> invoices-08963f00-ixp --version 14 --folder-key <key>`"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+deployments\s+upgrade\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*invoices-08963f00-ixp)(?=.*--version\s+14\b)(?=.*--folder-key\s+["']?3f0a91c7-1111-2222-3333-444455556666).*)[^\r\n]*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Read the DeploymentName from `deployments list` instead of constructing it from the title"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+deployments\s+list\b(?=.*my_invoices-f1afa9ef-ixp).*)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # `upgrade` is addressed by DeploymentName. The title in the deployment
+  # positional is a clean 404 — the failure the name/title split exists to
+  # prevent. Positive control: the upgrade line above.
+  - type: file_matches_regex
+    description: "Did NOT pass the title `invoices` where the DeploymentName belongs"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+deployments\s+upgrade\s+\S+\s+["']?invoices["']?(\s|$))[^\r\n]*$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The deployment already exists on another version, so `create` is a 409, not
+  # a repoint. Reaching for it is the mis-model the create/upgrade split exists
+  # to prevent. Positive control: the upgrade line above.
+  - type: file_matches_regex
+    description: "Did NOT try to repoint the existing deployment with `deployments create` (409, not a repoint)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+deployments\s+create\b)[^\r\n]*$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0

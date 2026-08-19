@@ -1,0 +1,70 @@
+task_id: skill-ixp-deploy-folder-by-name-smoke
+description: >
+  Smoke: the folder is named, not keyed. Agent resolves the name to its GUID
+  with `uip or folders list`, then deploys with `--folder-key <guid>`.
+  Trap: `--folder-key` takes a key and there is no `--folder-path` form, so a
+  folder name or path passed as the key is wrong; the CLI does not validate the
+  key format client-side, so an invented or name-shaped value fails only
+  server-side.
+
+  Overlays the deployment-serving mock so the folder lookup succeeds — see
+  ../_shared/mock_template_deployments/README.md. Grades command shape.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_deployments}
+
+initial_prompt: |
+  Trained model version 13 of IXP project `my_invoices-f1afa9ef-ixp` needs to be
+  callable at runtime from the Orchestrator folder named `Finance/Archive`.
+  Deploy it there.
+
+  Important:
+  - The `uip` CLI in this environment is not connected to a live tenant;
+    some commands fail. Run each command once and move on. Do NOT retry or
+    attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Resolved the folder name to its key with `uip or folders list`"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+or\s+folders\s+list\b)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Deployed with `deployments create <Name> --version 13 --folder-key 8c22d4e1-…` (the resolved Archive key)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+deployments\s+create\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--version\s+13\b)(?=.*--folder-key\s+["']?8c22d4e1-9999-8888-7777-666655554444).*)[^\r\n]*$
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # `--folder-key` takes the GUID. The name or path shaped into that flag is the
+  # mistake key-only addressing invites. Positive control: the create line above.
+  - type: file_matches_regex
+    description: "Did NOT pass the folder name or path as --folder-key"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+deployments\s+\S+\b.*--folder-key\s+["']?(Finance|Archive))[^\r\n]*$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # There is no `--folder-path` option on either deployment verb.
+  - type: file_matches_regex
+    description: "Did NOT invent a `--folder-path` option"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+deployments\s+\S+\b.*--folder-path\b)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0

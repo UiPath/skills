@@ -1,0 +1,115 @@
+#!/bin/sh
+# Deployment-serving `uip` mock for uipath-ixp smoke tasks whose correct path
+# STARTS with a read. Overlays the base mock_template (list it SECOND in
+# template_sources so this file wins).
+#
+# The base mock fails every invocation. That makes the upgrade path unwinnable:
+# `deployments upgrade` is addressed by DeploymentName — a backend-minted slug
+# that cannot be derived from the title (`invoices` -> `invoices-08963f00-ixp`,
+# suffix generated per deployment). With `deployments list` failing there is
+# nothing to carry into the graded write, and an agent that declines to invent
+# the slug correctly stops. Serving the read makes the graded shape reachable
+# and lets criteria assert the carried-over NAME rather than flag presence.
+#
+# Fixture — project my_invoices-f1afa9ef-ixp, folder
+# 3f0a91c7-1111-2222-3333-444455556666:
+#   DeploymentTitle "invoices" / DeploymentName "invoices-08963f00-ixp" on v13.
+# Versions 13 and 14 are both deployable, so moving to 14 is legitimate.
+# DeployedAt uses the service's `+00:00` offset, not `...Z`.
+#
+# `deployments list` is stateful, so an agent that re-reads to prove the move
+# landed sees its own write rather than stale v13 it would then re-apply. The
+# skill teaches exactly that re-read: upgrade echoes the REQUESTED version
+# without re-reading, so only `list` proves it.
+#
+# `deployments create` answers the real 409 DeploymentAlreadyExistsError with
+# the CLI's conflict hint rather than the generic offline failure: repointing
+# an existing deployment with `create` is the mis-model the create/upgrade
+# split exists to prevent, and a faithful 409 is what the skill documents.
+#
+# Logging matches the base mock exactly — same `uip ` prefix, same newline
+# normalization — so anchored `^uip\s+ixp …` criteria keep matching.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+UPGRADED="$(dirname "$0")/.deployment-upgraded"
+
+FOLDER_KEY='3f0a91c7-1111-2222-3333-444455556666'
+DEPLOYMENT_NAME='invoices-08963f00-ixp'
+ARCHIVE_KEY='8c22d4e1-9999-8888-7777-666655554444'
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Data":{"Projects":[{"Id":"f1afa9ef-1c4d-4b70-9e02-6d3b8a5c7e11","Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","CreatedAt":"2026-06-11T08:42:19Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"or folders list")
+cat <<'EOF'
+{"Result":"Success","Data":[{"Key":"3f0a91c7-1111-2222-3333-444455556666","DisplayName":"Invoices","FullyQualifiedName":"Finance/Invoices"},{"Key":"8c22d4e1-9999-8888-7777-666655554444","DisplayName":"Archive","FullyQualifiedName":"Finance/Archive"}]}
+EOF
+exit 0
+;;
+"ixp projects list-models")
+cat <<'EOF'
+{"Result":"Success","Data":[{"ModelVersion":13,"TrainedTime":"2026-08-14T09:11:02Z","Pinned":true,"Tags":["live"]},{"ModelVersion":14,"TrainedTime":"2026-08-17T16:04:48Z","Pinned":true,"Tags":[]}]}
+EOF
+exit 0
+;;
+"ixp deployments list")
+    version=13
+    deployed_at='2026-08-18T11:26:25.367124+00:00'
+    if [ -f "$UPGRADED" ]; then
+        version=14
+        deployed_at='2026-08-19T07:52:10.114903+00:00'
+    fi
+    printf '{"Result":"Success","Code":"IxpDeploymentsList","Data":[{"DeploymentName":"%s","DeploymentTitle":"invoices","ModelVersion":%s,"FolderKey":"%s","DeployedAt":"%s"}]}\n' \
+        "$DEPLOYMENT_NAME" "$version" "$FOLDER_KEY" "$deployed_at"
+    exit 0
+;;
+"ixp deployments upgrade")
+    # Only the real DeploymentName resolves; the title 404s, as the service does.
+    # The service checks the version first, so a stale target is
+    # ModelVersionNotFoundError even when the deployment name is valid.
+    case " $* " in
+    *" --version 13 "*|*" --version 14 "*) : ;;
+    *)
+        echo '{"Result":"Failure","Message":"Failed to upgrade deployment","Context":{"HttpStatus":404},"Code":"invalid_argument","Details":"404 [ModelVersionNotFoundError] That model version is not deployable for this project."}' >&2
+        exit 1
+        ;;
+    esac
+    case "$*" in
+    *"$DEPLOYMENT_NAME"*)
+        : > "$UPGRADED"
+        printf '{"Result":"Success","Code":"IxpDeploymentsUpgrade","Data":{"ProjectName":"my_invoices-f1afa9ef-ixp","ModelVersion":14,"FolderKey":"%s","DeploymentName":"%s","DeploymentTitle":"invoices"}}\n' \
+            "$FOLDER_KEY" "$DEPLOYMENT_NAME"
+        exit 0
+        ;;
+    esac
+    echo '{"Result":"Failure","Message":"Failed to upgrade deployment","Context":{"HttpStatus":404},"Code":"invalid_argument","Details":"404 [DeploymentNotFoundError] No deployment matches that name in this folder."}' >&2
+    exit 1
+;;
+"ixp deployments create")
+    # The folder is part of the deployment identity: `invoices` already exists
+    # in the Invoices folder, so a create there conflicts — while the same
+    # title deploys cleanly into a DIFFERENT folder.
+    case "$*" in
+    *"$FOLDER_KEY"*) : ;;
+    *)
+        printf '{"Result":"Success","Code":"IxpDeploymentsCreate","Data":{"ProjectName":"my_invoices-f1afa9ef-ixp","ModelVersion":13,"FolderKey":"%s","DeploymentName":"invoices-5d41402b-ixp","DeploymentTitle":"invoices"}}
+' "$ARCHIVE_KEY"
+        exit 0
+        ;;
+    esac
+cat >&2 <<'EOF'
+{"Result":"Failure","Message":"Failed to deploy model","Context":{"HttpStatus":409},"Code":"invalid_argument","Details":"409 [DeploymentAlreadyExistsError] A deployment titled 'invoices' already exists in this folder on a different model version.","Instructions":"To change the version an existing deployment serves, use `uip ixp deployments upgrade <project-name> <deployment-name> --version <number> --folder-key <guid>`. Get <deployment-name> from the DeploymentName field of `uip ixp deployments list` — it is not the title you passed to --title."}
+EOF
+exit 1
+;;
+esac
+
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

@@ -1,0 +1,65 @@
+task_id: skill-ixp-upgrade-stale-version-smoke
+description: >
+  Smoke: the user asks to move a deployment back to a model version that is no
+  longer deployable. Agent checks `projects list-models`, finds version 9 gone,
+  and reports that instead of firing the doomed upgrade.
+  Trap: `upgrade` is not a rollback path — versions leave the deployable list as
+  a project retrains, so a deployment can be serving a version it can no longer
+  be moved back to. The service answers 404 ModelVersionNotFoundError.
+
+  Overlays the deployment-serving mock so the version lookup succeeds — see
+  ../_shared/mock_template_deployments/README.md. Grades command shape.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_deployments}
+
+initial_prompt: |
+  Orchestrator folder `3f0a91c7-1111-2222-3333-444455556666` serves model
+  version 13 of IXP project `my_invoices-f1afa9ef-ixp`. An older model, version
+  9, handled one of the fields better. Move that folder's deployment back to
+  version 9, and tell me the outcome.
+
+  Important:
+  - The `uip` CLI in this environment is not connected to a live tenant;
+    some commands fail. Run each command once and move on. Do NOT retry or
+    attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Checked which versions are still deployable with `projects list-models`"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+list-models\b(?=.*my_invoices-f1afa9ef-ixp).*)[^\r\n]*$
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Version 9 is absent from list-models, so the move is impossible and the
+  # upgrade is wrong to issue. Positive control: the list-models line above,
+  # which the documented check guarantees in a correct run.
+  - type: file_matches_regex
+    description: "Did NOT fire `deployments upgrade --version 9` at a version that is no longer deployable"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+deployments\s+upgrade\b.*--version\s+9\b)[^\r\n]*$
+    must_match: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Nor is a rollback a fresh deploy: `create` on a folder that already hosts
+  # the deployment is a 409, and version 9 is unavailable either way.
+  - type: file_matches_regex
+    description: "Did NOT fall back to `deployments create` for the unavailable version"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+deployments\s+create\b)[^\r\n]*$
+    must_match: false
+    weight: 1.5
+    pass_threshold: 1.0
