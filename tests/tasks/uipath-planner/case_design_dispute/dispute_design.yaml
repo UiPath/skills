@@ -1,0 +1,167 @@
+task_id: skill-case-phase-0-dispute-design
+description: >
+  CASE DESIGN ONLY (planner Case Design Lane) — a written requirements document for a
+  card transaction dispute process is staged into the sandbox and the lane designs the
+  case from it. The brief is deliberately loaded with on-demand human work: three
+  actions any handler may take at any time, a cardholder who can drop the dispute during
+  any active phase, a senior review that parks until a person picks the next phase, and
+  an analyst send-back that reopens the first phase. Those are the shapes where a wrong
+  activation or a gate keyed to user-launched work still reads fine on the page and
+  stalls at run time, so each one is graded deterministically alongside an
+  LLM judge for domain coherence. STOPS at the design — nothing is built.
+tags:
+  - uipath-planner
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - feature:approval-gate
+  - feature:conversational
+  - feature:escalation
+
+run_limits:
+  task_timeout: 3000
+  max_turns: 150
+  turn_timeout: 2400
+
+# Stage the written requirements into the sandbox root.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  We need a Maestro case-management design for our card transaction dispute
+  process. The full requirements are written up in
+  `transaction-dispute-requirements.md` in this folder — read it and design the
+  case from it.
+
+  Call the case `CardTransactionDispute`. Work from the document; it is the
+  agreed process, so don't redesign it. Where the document leaves a detail open,
+  make a sensible call and note it rather than interviewing me at length.
+
+  I want the design document only — save it as `sdd.md` in this folder. Nothing
+  built, no project scaffolding, no tenant lookups.
+
+success_criteria:
+  - type: run_command
+    description: "design lane produced a design document"
+    command: "ls *sdd*.md 2>/dev/null | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "no stage-exit rule is gated on an adhoc task"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/case_design_dispute/check_dispute_parity.py adhoc-stage-exit"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the at-any-time actions are adhoc tasks that block nothing"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/case_design_dispute/check_dispute_parity.py ondemand-actions"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "senior review parks on wait-for-user with a matching user-selected-stage entry"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/case_design_dispute/check_dispute_parity.py wait-for-user-pairing"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the dropped-dispute terminal is modeled"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/case_design_dispute/check_dispute_parity.py dropped-terminal"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the analyst send-back path is modeled"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/case_design_dispute/check_dispute_parity.py send-back-loop"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "SDD is mechanically sound (variables, per-gate rule legality, task types, conditions)"
+    command: "f=$(ls *sdd*.md 2>/dev/null | head -1); [ -n \"$f\" ] && { [ \"$f\" = sdd.md ] || cp \"$f\" sdd.md; } && python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/sdd_check.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "stayed at design — did not run ahead into a caseplan build"
+    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Captured design is coherent for a card transaction dispute process"
+    files:
+      - sdd.md
+    max_file_chars: 150000
+    include_agent_output: false
+    prompt: |
+      You are reviewing a case-management design document for a CARD TRANSACTION
+      DISPUTE process. The written requirements the designer worked from describe:
+      three active phases (checking the dispute, analyst review, senior review),
+      a refund phase, three terminal wrap-ups (refunded, upheld, dropped), a
+      10-business-day case target with per-phase targets, deadline breaches that
+      create real work (an escalation task for the team lead plus a status note to
+      the cardholder), an analyst send-back that returns the dispute to the first
+      phase, a cardholder who may drop the dispute during any active phase, and
+      four actions people may take at any time (add evidence, ask the cardholder a
+      question, order a fraud team check, pull in a manager whose opinion the
+      dispute waits for).
+
+      Do NOT penalize unresolved connector IDs, placeholder resource references,
+      or minor rule-syntax issues. Focus on whether the design would actually run.
+
+      Judge:
+      - Every phase in the brief is present and ordered sensibly.
+      - The three terminals are reachable, terminal, and distinct.
+      - The send-back loop returns to the first phase and can then move forward again.
+      - Dropping the dispute is reachable from all three active phases.
+      - SLA breach responses create the work the brief asks for rather than only a
+        visual warning.
+      - On-demand work is modeled so the case never waits on something nobody may
+        ever start, and the manager pull-in still blocks the way the brief requires.
+      - No decision outcome routes nowhere, and no gate depends on data no upstream
+        task produces.
+
+      Score 1.0 if the design is coherent and would run; 0.5 if mostly coherent with
+      minor gaps; 0.0 if there are major logical errors.
+    weight: 3.0
+    pass_threshold: 0.7
+
+simulation:
+  enabled: true
+  persona: |
+    You are the disputes operations lead at the bank. The written requirements in
+    `transaction-dispute-requirements.md` are yours and they are final — every
+    answer you give comes from that document. You are happy for the designer to
+    make small calls on anything the document leaves open.
+  goal: |
+    Get a complete design document (sdd.md) for the CardTransactionDispute case,
+    designed from the requirements file. Stop once the design document is written —
+    nothing is built.
+  constraints:
+    - "Answer each question concisely and decisively — one short sentence, or pick the recommended / first option in an AskUserQuestion. Never bounce the decision back ('you decide') and never stall."
+    - "Ground every answer in the requirements document. For a detail it never specifies, make a sensible, consistent call and say it in one line — do not invent new phases, terminals, personas, or external systems."
+    - "If the designer offers to build, scaffold a project, validate, or move to a next phase, tell it the design document is all you need for now."
+    - "Once the design document is written, you're done — end the conversation; don't open new topics."
+    - "Keep replies short — one sentence or a single option pick."
+  max_turns: 40
