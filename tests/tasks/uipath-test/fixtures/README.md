@@ -24,6 +24,9 @@ and therefore exact for this scheme.
 | `release_signoff_wait_report_e2e` | CLAIM | `EVFX-SIGNOFF-SET`, `EVFX-SIGNOFF-TC{1,2}` | No execution; both cases automation-linked |
 | `organize_testcases_into_testsets` | CLAIM | the `EVFX-ORG-*` namespace | Nothing pre-created; the task creates `EVFX-ORG-<YYYYMMDD-HHMMSS>-*` and `pre_run` clears earlier days |
 | `integration_release_readiness_qa_lead` | BANK | the existing regression suite (no `EVFX-` names) | 1 Finished execution mixing `Passed`/`Failed`/`Restricted`/`None` |
+| `project_scaffold_build` | its own scratch project | the `EVFX-SCAFFOLD-*` namespace | Nothing pre-created; the task creates `EVFX-SCAFFOLD-<YYYYMMDD-HHMMSS>-*` and `pre_run` clears earlier days |
+| `testset_curation_by_label_build` | CLAIM | `EVFX-CURATE-TC{1,2,3}`, labels `EVFX-CURATE-tier{1,2}`, the `EVFX-CURATE-SET-*` namespace | 3 test cases, labelled tier1/tier1/tier2, no execution; the task creates `EVFX-CURATE-SET-<YYYYMMDD-HHMMSS>-*` and `pre_run` clears earlier days |
+| `customfield_schema_multiscope_build` | HEALTH | the `EVFX-SCHEMA-*` namespace | Nothing pre-created; the task creates one multi-scope definition and `pre_run` clears earlier days |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the

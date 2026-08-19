@@ -1,0 +1,115 @@
+# Designs a MULTI-SCOPE custom field — one definition visible on Requirement,
+# TestCase and TestSet at once, via the variadic `--scope-list`. That form is
+# mutually exclusive with `--object-type` and is asserted by no other task:
+# customfield_definition_crud_smoke grades the single-scope `--object-type`
+# path, and customfield_population_integration grades the per-object label and
+# value ROWS rather than the definition.
+#
+# The failure this catches is a skill that only knows the single-scope shape and
+# so creates three separate fields with the same name. That looks correct in the
+# CLI output and is wrong in the product: three unrelated definitions cannot be
+# reported on together, which is the entire reason to scope one field across
+# three object types.
+task_id: skill-test-customfield-schema-multiscope-build
+description: >
+  Integration test: agent uses the uipath-test skill to design one custom field
+  definition scoped across Requirement, TestCase and TestSet in the HEALTH
+  project. Asserts that the agent (a) checks login status with --output json,
+  (b) creates a SINGLE definition using the variadic `--scope-list` rather than
+  three single-scope definitions, (c) supplies --value-hints and --default-value
+  so the field is usable by the people filling it in, and (d) verifies the
+  result with `customfield get`. The skill — not the prompt — must teach that
+  --scope-list and --object-type are mutually exclusive, that --data-type accepts
+  only Text or Label, and that the object-type values are case-sensitive
+  PascalCase.
+tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 14
+  max_turns: 30
+
+# The definitions this task creates are its deliverable — scratch, not fixtures,
+# and nothing else reads them. Swept in PRE_run sparing today's stamp so two
+# concurrent nightly models never delete each other's field mid-run.
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, datetime
+      P, PREFIX = "HEALTH", "EVFX-SCHEMA-"
+      today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      fields = call("tm", "customfield", "list", "--project-key", P,
+                    "--filter", PREFIX).get("Data") or []
+      stale = []
+      for f in fields:
+          name = f.get("Name") or ""
+          if not name.startswith(PREFIX) or name.startswith(PREFIX + today):
+              continue
+          fid = f.get("Id")
+          if fid:
+              stale.append(fid)
+      if stale:
+          call("tm", "customfield", "delete", "--project-key", P, "--field-ids", *stale)
+      print(f"CLEANUP: removed {len(stale)} {PREFIX}* custom field definition(s) from earlier days")
+      PYEOF
+    timeout: 180
+
+initial_prompt: |
+  In the HEALTH project I need one custom field that our auditors can fill in on
+  requirements, on test cases and on test sets — the same field on all three, so
+  I can report across them together. It should hold free text, suggest the
+  accepted values to whoever is filling it in, and start out with a sensible
+  default.
+
+  Name it `EVFX-SCHEMA-<STAMP>-<TAG>`, where <STAMP> is the current UTC date and
+  time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase hex characters you
+  generate once for this session. Confirm afterwards that the field really
+  exists with the scope you intended.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with `--output json` (Critical Rules #1 + #3)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created ONE definition scoped across all three object types with the variadic --scope-list"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+HEALTH)(?=[\s\S]*--name\s+["\x27]?EVFX-SCHEMA-)(?=[\s\S]*--scope-list\b)(?=[\s\S]*Requirement)(?=[\s\S]*TestCase)(?=[\s\S]*TestSet)uip\s+tm\s+customfield\s+create\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Definition was created as Text with both --value-hints and --default-value so it is usable by the filler"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--data-type\s+Text)(?=[\s\S]*--value-hints\s+\S)(?=[\s\S]*--default-value\s+\S)uip\s+tm\s+customfield\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the result with `customfield get` rather than trusting the create output"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+HEALTH)(?=[\s\S]*--output\s+json)uip\s+tm\s+customfield\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not create single-scope definitions with --object-type — three same-named fields cannot be reported on together"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+customfield\s+create[\s\S]*--object-type\b'
+    weight: 1.5
+    pass_threshold: 1.0
