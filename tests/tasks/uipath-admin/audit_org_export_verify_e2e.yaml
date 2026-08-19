@@ -38,7 +38,7 @@ description: >
   publish, on top of #2534 (json folder) + #1372 (adds `uip admin audit`)).
   Until then `--output-path` is treated as the exact output folder (no
   generated subfolder) and the verifier reports no generated export found.
-tags: [uipath-admin, e2e, mode:operate, audit, export, scope-org, real-artifact]
+tags: [uipath-admin, e2e, mode:operate, lifecycle:discover, audit, export, scope-org, real-artifact]
 
 initial_prompt: |
   Can you export the full organization-level audit trail from 2 days
