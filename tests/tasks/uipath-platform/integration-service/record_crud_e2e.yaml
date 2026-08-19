@@ -7,9 +7,6 @@ description: >
   delete) plus the already-covered create in one lifecycle walk.
 tags: [uipath-platform, e2e, mode:build, lifecycle:setup, integration-service, connector, ipe]
 
-run_limits:
-  expected_turns: 18
-
 sandbox:
   python: {}
   node: {}

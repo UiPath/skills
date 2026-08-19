@@ -10,9 +10,6 @@ description: >
   command shape.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, template]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   I need to update an existing AITrustLayer governance policy. Before
   editing, fetch the current form template for the AITrustLayer product

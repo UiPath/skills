@@ -12,7 +12,6 @@ description: >
 tags: [uipath-agents, e2e, mode:build, low-code, inline-flow]
 
 run_limits:
-  expected_turns: 66
   turn_timeout: 1200
 
 # An agent left to itself often models "escalate to a human" as a human-in-the-loop

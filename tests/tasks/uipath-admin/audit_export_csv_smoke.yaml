@@ -15,9 +15,6 @@ description: >
   by up to ~48h, so yesterday may genuinely hold no rows.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, audit, export]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   I need yesterday's tenant audit events as a single CSV I can open in
   Excel for a quick review. Put it in a folder called audit-yesterday.

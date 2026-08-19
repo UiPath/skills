@@ -7,9 +7,6 @@ description: >
   90% of real coded-apps work. Closes the brownfield-coverage gap
   identified in tests/reports/uipath-coded-apps.md.
 tags: [uipath-coded-apps, integration, mode:build, lifecycle:generate]
-run_limits:
-  expected_turns: 10
-
 # Skill refs defer SDK signatures/scopes to the npm package — preinstall so the agent reads them locally.
 sandbox:
   node:

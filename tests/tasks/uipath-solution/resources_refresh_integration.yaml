@@ -15,9 +15,6 @@ description: >
   ran resources refresh).
 tags: [uipath-solution, integration, mode:build, lifecycle:setup]
 
-run_limits:
-  expected_turns: 12
-
 initial_prompt: |
   I'm preparing a UiPath solution for packaging.
 

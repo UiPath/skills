@@ -25,7 +25,6 @@ tags:
   ]
 
 run_limits:
-  expected_turns: 35
   turn_timeout: 1200
 
 initial_prompt: |

@@ -7,9 +7,6 @@ description: >
   (both require browser interaction).
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service, connector, feature:connections, ipe]
 
-run_limits:
-  expected_turns: 7
-
 initial_prompt: |
   I want to use the Salesforce connector through UiPath Integration Service.
   Help me find and verify a connection for the "uipath-salesforce-sfdc"

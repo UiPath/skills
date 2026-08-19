@@ -9,7 +9,6 @@ description: >
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
 run_limits:
-  expected_turns: 16
   task_timeout: 1800
   turn_timeout: 1500
 

@@ -18,7 +18,6 @@ tags: [uipath-coded-apps, integration, dashboard, mode:operate, lifecycle:setup]
 # script + full pipeline); CI runners are 1.5-2x slower, so the experiment
 # default turn_timeout (900s) is too tight — same trap that hit the e2e tests.
 run_limits:
-  expected_turns: 12
   turn_timeout: 1200
   task_timeout: 1500
 

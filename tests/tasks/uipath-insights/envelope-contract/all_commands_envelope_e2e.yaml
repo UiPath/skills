@@ -16,7 +16,6 @@ description: >
 tags: [uipath-insights, e2e, mode:operate, lifecycle:discover]
 
 run_limits:
-  expected_turns: 24
   turn_timeout: 600
 
 initial_prompt: |

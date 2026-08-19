@@ -14,9 +14,6 @@ post_run:
   - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_group_marker.py''))"'
     timeout: 30
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Add the first user in my organization to the "ce-identity-smoke-group" group.
 

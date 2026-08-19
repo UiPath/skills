@@ -8,9 +8,6 @@ description: >
   would be `import`ed per Rule #9, so a fetch keeps `getAppBase()` the required
   tool and avoids overlap with the import-time path.
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Inside a UiPath Coded Web App, write `src/loadConfig.ts` at the sandbox root —
   a function `loadConfig()` that `fetch`es `config.json` served alongside your

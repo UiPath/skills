@@ -11,9 +11,6 @@ tags: [uipath-platform, e2e, mode:build, lifecycle:discover, traces, feedback]
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
 
-run_limits:
-  expected_turns: 16
-
 initial_prompt: |
   Run a feedback round-trip on a real trace:
   - Start a job for process `bf544b24-9133-41b5-9361-4f9f75c64467` and save the result to job.json

@@ -15,7 +15,6 @@ description: >
 tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:test-case]
 
 run_limits:
-  expected_turns: 16
   max_turns: 40
   turn_timeout: 1500
   task_timeout: 1800

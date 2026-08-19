@@ -5,7 +5,6 @@ description: >
 tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl, resource]
 
 run_limits:
-  expected_turns: 14
   max_turns: 80
 initial_prompt: |
   Create a local BPMN project named "EmployeeAccessBpmn" with this flow:

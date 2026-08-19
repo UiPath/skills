@@ -7,7 +7,6 @@ description: >
 tags: [uipath-planner, e2e, lifecycle:generate]
 
 run_limits:
-  expected_turns: 16
   # This is the comprehensive Master-Project PDD (Dispatcher + Performer +
   # Queue architecture). Authoring the full §1–§18 SDD is a single unbroken
   # autonomous turn that drafts ~100k output tokens / ~730 lines before the

@@ -19,11 +19,6 @@ agent:
   # allowed_tools uses replace strategy — restate the full default list.
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
 
-run_limits:
-  # Simulation interleaves user+agent turns, so visible-turn count runs higher
-  # than a single-shot task. Advisory only — max_turns (experiment) is the cap.
-  expected_turns: 18
-
 sandbox:
   template_sources:
     - type: template_dir

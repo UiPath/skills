@@ -9,9 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, pat]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   I have a personal access token that's expiring soon. List my tokens
   to find it, then regenerate the first token in the list with a new

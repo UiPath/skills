@@ -22,7 +22,6 @@ tags: [uipath-maestro-bpmn, e2e, "mode:operate", "lifecycle:setup", path-to-ga]
 # on the shared runner). task_timeout adds headroom for grading (incl. the
 # check's possible live-recovery debug run) on top.
 run_limits:
-  expected_turns: 30
   task_timeout: 3300
   max_turns: 120
   turn_timeout: 2400

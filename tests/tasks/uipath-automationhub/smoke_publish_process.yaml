@@ -13,9 +13,6 @@ description: >
   (the single most important rule; sending it 401s a cloud token).
 tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
 
-run_limits:
-  expected_turns: 10
-
 initial_prompt: |
   Publish the approved business process below to UiPath Automation Hub using
   the `uipath-automationhub` skill, and attach its PDD document.

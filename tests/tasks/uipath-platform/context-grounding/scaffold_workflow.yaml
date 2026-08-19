@@ -9,9 +9,6 @@ description: >
   skill supplies the commands.
 tags: [uipath-platform, integration, mode:build, lifecycle:generate, context-grounding]
 
-run_limits:
-  expected_turns: 10
-
 initial_prompt: |
   Our ops team keeps standing up knowledge bases by hand and getting it wrong —
   half the time the index comes back empty when someone searches it. I want a

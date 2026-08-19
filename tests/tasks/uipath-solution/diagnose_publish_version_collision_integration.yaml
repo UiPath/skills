@@ -10,9 +10,6 @@ description: >
   version (e.g. `solution pack --version 1.0.1`) and re-publish.
 tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   My `uip solution publish` is failing. It packed fine, but publish errors
   out complaining about a processKey / name+version collision. I published

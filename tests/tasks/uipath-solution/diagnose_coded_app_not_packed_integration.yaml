@@ -37,9 +37,6 @@ description: >
   folder as a solution project.
 tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   My UiPath solution has a coded app project sitting in its folder, but it
   is not showing up in the solution manifest, and `uip solution pack`

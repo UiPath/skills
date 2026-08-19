@@ -17,9 +17,6 @@ description: >
   Audit.Read scope surfaces as an explicit message rather than a silent pass.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   I'm new here — in UiPath Admin, what kinds of audit events can I see at the
   organization level, and what can I see at the tenant level? Save the complete

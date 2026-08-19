@@ -6,9 +6,6 @@ description: >
   A 404 response (no traces for this job key) is an acceptable outcome.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, traces]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   I want to inspect the LLM trace spans for a completed job. The job key is `11111111-2222-3333-4444-555566667777`. Fetch them.
 

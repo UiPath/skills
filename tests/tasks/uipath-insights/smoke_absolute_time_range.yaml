@@ -6,9 +6,6 @@ description: >
   instead of --time-range. Auth errors are expected (no live tenant).
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   Show me job metrics from July 1st 2026 to July 5th 2026 specifically.
   I want the summary and the completed timeline for that exact date range.

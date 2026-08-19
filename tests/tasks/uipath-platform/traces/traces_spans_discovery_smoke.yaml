@@ -10,9 +10,6 @@ description: >
   the agent reaches for and the shape of the commands, not tenant data.
 tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, traces]
 
-run_limits:
-  expected_turns: 12
-
 initial_prompt: |
   A support ticket points at job `9f2c1d84-77ab-4e0e-9a63-2f1b0c5e7a10`, which ran
   in the `Shared/uipath-platform` folder.

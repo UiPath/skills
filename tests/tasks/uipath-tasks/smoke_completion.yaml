@@ -8,9 +8,6 @@ description: >
   carry --action and --data. Runs against fake IDs; auth errors expected.
 tags: [uipath-tasks, smoke, completion]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   Use --output json on every uip tasks command. Task IDs and folder IDs
   are numeric.

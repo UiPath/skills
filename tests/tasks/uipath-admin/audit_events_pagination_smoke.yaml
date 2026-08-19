@@ -14,9 +14,6 @@ description: >
   really can return more than one page.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, pagination]
 
-run_limits:
-  expected_turns: 4
-
 initial_prompt: |
   I'm doing a compliance review — I need the 500 most recent audit events from
   this tenant's audit trail over the last 30 days, across all event sources

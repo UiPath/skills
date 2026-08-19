@@ -14,7 +14,6 @@ description: >
 tags: [uipath-rpa, windows, legacy, smoke, create, validate]
 
 run_limits:
-  expected_turns: 15
   max_turns: 40
   turn_timeout: 900
   task_timeout: 900

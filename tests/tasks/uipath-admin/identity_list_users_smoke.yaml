@@ -5,9 +5,6 @@ description: >
   not the command string.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, identity]
 
-run_limits:
-  expected_turns: 4
-
 initial_prompt: |
   List all users in my UiPath organization. Save the complete JSON result
   to ./users.json so it can be reviewed.

@@ -22,9 +22,6 @@ description: >
   assertions are structural.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, audit, export]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   Can you export all of yesterday's tenant audit events as JSON files so
   I can archive them? Save them in a folder called audit-yesterday.

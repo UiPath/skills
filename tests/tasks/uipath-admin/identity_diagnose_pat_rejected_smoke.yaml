@@ -6,9 +6,6 @@ description: >
   command string.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, troubleshoot, identity, pat]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   One of my personal access tokens might be expired or have the wrong scopes —
   it's getting 403 on Orchestrator folder listings. Retrieve my PATs so their

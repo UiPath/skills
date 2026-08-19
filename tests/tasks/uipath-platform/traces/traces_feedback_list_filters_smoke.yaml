@@ -10,9 +10,6 @@ description: >
   Auth/404 responses are acceptable outcomes — the graded behavior is command shape.
 tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, traces, feedback]
 
-run_limits:
-  expected_turns: 12
-
 initial_prompt: |
   Weekly agent-quality review, folder key `2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2`.
   Two reads:

@@ -20,9 +20,6 @@ tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover, traces]
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
 
-run_limits:
-  expected_turns: 18
-
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/traces/seed_faulted_incident.py"
     timeout: 120

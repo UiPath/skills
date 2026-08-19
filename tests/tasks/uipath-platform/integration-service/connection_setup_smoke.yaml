@@ -7,9 +7,6 @@ description: >
   task that exercises list/ping/recovery paths only.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup, integration-service, connector, feature:connections, ipe]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   I want to set up a new UiPath Integration Service connection for the
   "uipath-hubspot-hubspotcrm" connector. Drive the create flow through

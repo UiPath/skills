@@ -10,7 +10,6 @@ description: >
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, node:inline-agent, feature:eval]
 
 run_limits:
-  expected_turns: 30
   max_turns: 75
 
 initial_prompt: |

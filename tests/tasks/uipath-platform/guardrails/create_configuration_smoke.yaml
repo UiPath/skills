@@ -16,9 +16,6 @@ description: >
   ByoGuardrailProbeFailed and persists nothing, exactly like the real CLI.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup, guardrail]
 
-run_limits:
-  expected_turns: 12
-
 sandbox:
   mock_path_dirs: [mocks]
   template_sources:

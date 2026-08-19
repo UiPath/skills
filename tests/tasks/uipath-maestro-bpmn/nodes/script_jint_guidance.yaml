@@ -5,7 +5,6 @@ description: >
 tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, shape:single-node, node:script]
 
 run_limits:
-  expected_turns: 15
   max_turns: 60
 initial_prompt: |
   Create a local BPMN project named "RiskScoreScriptBpmn".

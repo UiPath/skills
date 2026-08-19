@@ -9,7 +9,6 @@ description: >
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
 run_limits:
-  expected_turns: 12
   # Lane A only derives tasks from an existing SDD (no full SDD authoring), so a
   # modest budget suffices. Kept above the experiment defaults as headroom.
   task_timeout: 1800

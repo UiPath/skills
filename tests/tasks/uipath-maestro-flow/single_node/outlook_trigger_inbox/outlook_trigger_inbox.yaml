@@ -14,7 +14,6 @@ description: >
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, feature:trigger, connector, mode:build, ipe]
 
 run_limits:
-  expected_turns: 61
   turn_timeout: 1200
 
 initial_prompt: |

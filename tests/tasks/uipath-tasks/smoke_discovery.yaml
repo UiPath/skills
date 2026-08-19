@@ -8,9 +8,6 @@ description: >
   is applied consistently. Runs against fake IDs — auth errors are expected.
 tags: [uipath-tasks, smoke, discovery]
 
-run_limits:
-  expected_turns: 9
-
 initial_prompt: |
   You are exploring UiPath Action Center. Perform each discovery step in order.
   Use --output json on every uip tasks command.

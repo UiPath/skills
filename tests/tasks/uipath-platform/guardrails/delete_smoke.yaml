@@ -11,9 +11,6 @@ description: >
   configuration by ByoValidatorName fails at runtime.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:teardown, guardrail]
 
-run_limits:
-  expected_turns: 10
-
 sandbox:
   mock_path_dirs: [mocks]
   template_sources:

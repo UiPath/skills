@@ -8,7 +8,6 @@ description: >
   Python→uipath-agents").
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:discover]
 run_limits:
-  expected_turns: 3
   max_turns: 6
   turn_timeout: 180
 

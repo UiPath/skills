@@ -15,7 +15,6 @@ description: >
 tags: [uipath-process-mining, e2e, mode:build, lifecycle:setup, custom, pipeline]
 
 run_limits:
-  expected_turns: 18
   max_turns: 40
   turn_timeout: 600
 

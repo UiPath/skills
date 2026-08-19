@@ -7,9 +7,6 @@ description: >
   entirely in the sandbox tempdir — no tenant interaction.
 tags: [uipath-solution, integration, mode:build, lifecycle:generate]
 
-run_limits:
-  expected_turns: 14
-
 initial_prompt: |
   I want a deployable package built from a UiPath solution.
 

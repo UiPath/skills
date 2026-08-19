@@ -10,9 +10,6 @@ description: >
   agent loads the skill and invokes the right discovery command.
 tags: [uipath-process-mining, smoke, mode:diagnose, lifecycle:discover, app-types]
 
-run_limits:
-  expected_turns: 4
-
 initial_prompt: |
   I want to build a UiPath Process Mining app. Show me which process-app
   templates (app types) are available on my UiPath organization so I can

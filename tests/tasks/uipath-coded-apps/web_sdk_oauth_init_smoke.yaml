@@ -9,9 +9,6 @@ description: >
   (`action_sdk_construction_smoke` asserts `.initialize()` MUST NOT appear in
   Action apps; this test asserts it MUST appear in Web apps).
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
-run_limits:
-  expected_turns: 10
-
 initial_prompt: |
   Inside a UiPath Coded Web App, author the OAuth bootstrap files needed for
   the SDK to authenticate with the UiPath tenant via PKCE.

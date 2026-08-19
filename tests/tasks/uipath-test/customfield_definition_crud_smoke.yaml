@@ -15,7 +15,6 @@ description: >
 tags: [uipath-test, smoke, mode:operate, lifecycle:manage, feature:customfield]
 
 run_limits:
-  expected_turns: 12
   max_turns: 35
 
 # Clean slate + safety net: main's consent-less runs (and any failed run)

@@ -16,9 +16,6 @@ description: >
   the same org-scope query is empty for it too.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, scope-org]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Show me the 50 most recent organization-level audit events from the
   last 7 days — I want to see who joined the org and any recent

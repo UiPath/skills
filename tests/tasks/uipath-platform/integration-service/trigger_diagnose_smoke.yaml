@@ -6,9 +6,6 @@ description: >
   (`uip is webhooks config`). First diagnose-mode test on the IS axis.
 tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, integration-service, connector, ipe]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   An Outlook365 EMAIL_RECEIVED trigger is not firing. Diagnose by inspecting
   the trigger object's payload shape and the webhook configuration so I can

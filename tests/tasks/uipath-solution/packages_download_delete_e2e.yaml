@@ -22,7 +22,6 @@ post_run:
     timeout: 120
 
 run_limits:
-  expected_turns: 16
   turn_timeout: 600
 
 initial_prompt: |

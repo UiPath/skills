@@ -7,9 +7,6 @@ description: >
   CLI auth failure is expected; this validates command shape only.
 tags: [uipath-platform, smoke, licensing, tenants]
 
-run_limits:
-  expected_turns: 6
-
 sandbox:
   # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
   # filesystem side effect. Some agent backends (Antigravity) run commands via

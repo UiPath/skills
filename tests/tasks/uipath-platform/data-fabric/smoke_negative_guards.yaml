@@ -11,7 +11,6 @@ description: >
   refusal reasoning quality — no self-report file.
 tags: [uipath-platform, data-fabric, smoke, entities, records, mode:diagnose, lifecycle:discover]
 run_limits:
-  expected_turns: 12
   max_turns: 30
 
 initial_prompt: |

@@ -11,9 +11,6 @@ description: >
   shape and the deliberate omission of `--span-id`.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, feedback]
 
-run_limits:
-  expected_turns: 10
-
 initial_prompt: |
   An agent I invoked directly from Studio Web returned a bad answer on trace
   `7d3a91e0f5c24b8ea0c6d219bb47f0a3`. Nothing was orchestrating it — no robot

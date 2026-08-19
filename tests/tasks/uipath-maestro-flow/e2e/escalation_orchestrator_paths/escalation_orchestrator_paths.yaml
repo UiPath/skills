@@ -17,7 +17,6 @@ description: >
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, connector, feature:escalation]
 
 run_limits:
-  expected_turns: 80
   max_turns: 200
   task_timeout: 5400
   turn_timeout: 1800

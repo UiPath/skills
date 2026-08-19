@@ -5,9 +5,6 @@ description: >
   the tenant, not the command string.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, troubleshoot, identity, smtp]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   Our platform invitation emails stopped working — users aren't receiving
   invites. Retrieve the current SMTP configuration so it can be reviewed for

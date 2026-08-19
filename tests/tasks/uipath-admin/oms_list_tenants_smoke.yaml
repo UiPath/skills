@@ -9,9 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, list, oms]
 
-run_limits:
-  expected_turns: 4
-
 initial_prompt: |
   List all tenants in my UiPath organization.
 

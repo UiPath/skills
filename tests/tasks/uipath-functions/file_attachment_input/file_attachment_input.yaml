@@ -8,7 +8,6 @@ description: >
 tags: [uipath-functions, smoke, mode:build, lifecycle:generate, feature:framework-simple]
 
 run_limits:
-  expected_turns: 35
   max_turns: 60
 
 initial_prompt: |

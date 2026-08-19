@@ -8,7 +8,6 @@ description: >
   the brownfield-version gap identified in tests/reports/uipath-coded-apps.md.
 tags: [uipath-coded-apps, integration, mode:build, lifecycle:setup]
 run_limits:
-  expected_turns: 25
   turn_timeout: 900
 
 initial_prompt: |

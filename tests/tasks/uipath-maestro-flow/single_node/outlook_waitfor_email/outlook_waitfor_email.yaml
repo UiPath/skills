@@ -28,7 +28,6 @@ tags:
     wait-for-event,
   ]
 run_limits:
-  expected_turns: 55
   turn_timeout: 600
 
 initial_prompt: |

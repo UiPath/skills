@@ -23,16 +23,10 @@ description: >
 tags: [uipath-agents, e2e, mode:operate, lifecycle:setup, low-code, feature:eval]
 
 run_limits:
-  # 80 tracks the 2026-08-11 sonnet-5 run (80 visible turns) and sits with the
-  # other low-code e2e tasks of this shape — inline_context_index 90,
-  # inline_external_apiworkflow_tool 87, inline_solution_{agent,maestro}_tool 80.
-  # The earlier 40 was estimated off codex runs, which report a single turn
-  # regardless of work done and so carry no signal here.
-  expected_turns: 80
-  # ~50% headroom over the observed 80. Deliberately below the 200 that the 43
-  # low-code tasks without an explicit cap inherit from default.yaml: nothing has
-  # come near exhausting this, and at ~$4/run on sonnet the cap earns its keep as
-  # a cost stop.
+  # ~50% headroom over the 80 visible turns of the 2026-08-11 sonnet-5 run.
+  # Deliberately below the 200 that the 43 low-code tasks without an explicit cap
+  # inherit from default.yaml: nothing has come near exhausting this, and at
+  # ~$4/run on sonnet the cap earns its keep as a cost stop.
   max_turns: 120
   task_timeout: 5400
   # `eval run start --wait` blocks in a single Bash call while the cloud worker

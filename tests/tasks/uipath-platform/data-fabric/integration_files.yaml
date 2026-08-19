@@ -8,7 +8,6 @@ description: >
   upload/download/delete workflow including overwrite semantics and byte integrity.
 tags: [uipath-platform, data-fabric, integration, files, mode:build, lifecycle:setup]
 run_limits:
-  expected_turns: 25
   turn_timeout: 1200
 
 initial_prompt: |

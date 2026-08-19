@@ -7,9 +7,6 @@ description: >
   commands for the others. Auth errors are expected (no live tenant).
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover, negative]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Handle each of these four requests using the appropriate approach.
   Use --output json on every uip command. The CLI is not connected to a live

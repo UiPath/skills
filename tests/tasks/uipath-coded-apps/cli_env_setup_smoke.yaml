@@ -10,7 +10,6 @@ description: >
   Indirect to Direct — none of these had a covering test.
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
-  expected_turns: 8
   turn_timeout: 600
 
 initial_prompt: |

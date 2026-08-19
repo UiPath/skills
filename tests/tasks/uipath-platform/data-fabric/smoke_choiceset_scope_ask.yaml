@@ -9,7 +9,6 @@ description: >
 tags: [uipath-platform, smoke, data-fabric, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 6
   max_turns: 12
 
 initial_prompt: |

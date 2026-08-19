@@ -7,9 +7,6 @@ description: >
   cursor-loop signature (`nextCursor` + `hasNextPage` + loop construct +
   accumulation) — no runtime required.
 tags: [uipath-coded-apps, smoke, mode:operate, lifecycle:generate]
-run_limits:
-  expected_turns: 8
-
 # Skill refs defer SDK signatures/scopes to the npm package — preinstall so the agent reads them locally.
 sandbox:
   node:

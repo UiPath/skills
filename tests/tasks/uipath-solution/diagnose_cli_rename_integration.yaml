@@ -11,9 +11,6 @@ description: >
   = pre-rename) and use the canonical `init` verb.
 tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   I'm following an older runbook for UiPath solutions. When I run:
 

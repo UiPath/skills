@@ -13,7 +13,6 @@ tags: [uipath-functions, smoke, mode:build, lifecycle:generate, lifecycle:execut
   # Bumping headroom to 40.
 
 run_limits:
-  expected_turns: 25
   max_turns: 40
   turn_timeout: 1200
 

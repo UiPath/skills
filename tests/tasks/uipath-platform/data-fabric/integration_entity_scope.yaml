@@ -8,7 +8,6 @@ description: >
   folder ID and reports the returned error. Covers S-SC-01 through S-SC-05.
 tags: [uipath-platform, data-fabric, integration, entity-scope, mode:operate, lifecycle:setup]
 run_limits:
-  expected_turns: 25
   turn_timeout: 1200
 
 initial_prompt: |

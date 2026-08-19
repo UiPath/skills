@@ -31,9 +31,6 @@ description: >
   to clarify scope rather than silently defaulting to one.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, scope-ambiguity]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   Show me the Admin audit trail for the last 24 hours.
 

@@ -9,9 +9,6 @@ description: >
   command shape.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, deployment]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   I need to see which AOps governance policy deployments are assigned
   at the group scope. List all group-level deployments, then fetch

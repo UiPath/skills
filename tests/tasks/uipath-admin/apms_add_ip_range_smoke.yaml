@@ -9,9 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, apms, ip-management]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   Add the CIDR range 203.0.113.0/24 to our organization's IP allowlist
   with the description "New York Office".

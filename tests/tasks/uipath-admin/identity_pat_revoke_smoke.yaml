@@ -14,9 +14,6 @@ post_run:
   - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_pat_marker.py''))"'
     timeout: 30
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   One of my personal access tokens is compromised: the one described exactly
   "ce-identity-smoke-revoke-pat". Revoke it.

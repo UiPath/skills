@@ -21,9 +21,6 @@ description: >
   actually inspecting the workspace.
 tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
 
-run_limits:
-  expected_turns: 8
-
 pre_run:
   - command: |
       set -e

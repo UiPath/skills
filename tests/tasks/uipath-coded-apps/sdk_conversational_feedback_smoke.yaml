@@ -9,7 +9,6 @@ description: >
   `uipath.json` scope coverage.
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
-  expected_turns: 8
   # The one task in this family that cannot finish inside the smoke default of
   # 40. Measured on run 32182757902: it reaches its first Write at tool-call
   # #48 and finishes at 57 turns. Capped at 40 (run 32184723921) it produced no

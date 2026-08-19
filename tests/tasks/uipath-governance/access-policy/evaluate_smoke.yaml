@@ -10,9 +10,6 @@ description: >
   command shape.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, access-policy]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   Evaluate whether a specific resource invocation would be allowed
   by access policies. Run a PDP dry-run evaluation for:

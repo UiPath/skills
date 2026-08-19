@@ -7,9 +7,6 @@ description: >
   Command-construction only — no live tenant available.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, authz, role-assignment, grant]
 
-run_limits:
-  expected_turns: 7
-
 initial_prompt: |
   Grant user bob@example.com the "Automation Developer" role
   (role id: 11111111-2222-3333-4444-555555555555) on this tenant.

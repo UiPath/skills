@@ -6,9 +6,6 @@ description: >
   the prompt. Auth errors are expected (no live tenant).
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
-run_limits:
-  expected_turns: 10
-
 initial_prompt: |
   I want a complete picture of my job monitoring data from Insights. Run every
   available uip insights jobs subcommand for the last 24 hours.

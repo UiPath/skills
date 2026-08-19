@@ -8,7 +8,6 @@ description: >
 tags: [uipath-platform, data-fabric, integration, entities, records, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 20
   max_turns: 50
   turn_timeout: 600
 

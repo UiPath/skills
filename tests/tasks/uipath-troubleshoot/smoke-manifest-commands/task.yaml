@@ -17,7 +17,6 @@ agent:
   allowed_tools: ["Bash"]
 
 run_limits:
-  expected_turns: 1
   turn_timeout: 60
   max_turns: 1
 

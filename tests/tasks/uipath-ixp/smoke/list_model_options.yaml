@@ -22,9 +22,6 @@ description: >
   Harness is unauthenticated; CLI calls fail with auth errors.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:discover]
 
-run_limits:
-  expected_turns: 4
-
 sandbox:
   record_cli:
     - tool: uip

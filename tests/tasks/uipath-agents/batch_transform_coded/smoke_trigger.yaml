@@ -6,9 +6,6 @@ description: >
   Python-coded-agent + CSV signal pair.
 tags: [uipath-agents, smoke, coded, lifecycle:discover, context-grounding, mode:build]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   I have a Python coded-agent project (`pyproject.toml` with uipath +
   uipath-langchain, plus `langgraph.json`). The agent should batch-

@@ -6,7 +6,6 @@ description: >
 tags: [uipath-maestro-bpmn, e2e, "mode:build", lifecycle:generate, "node:business-rule", "feature:orchestrator"]
 
 run_limits:
-  expected_turns: 28
   turn_timeout: 1200
 
 initial_prompt: |

@@ -12,9 +12,6 @@ description: >
   `x-ah-openapi-auth`, and (5) stay read-only (never POST / never create).
 tags: [uipath-automationhub, smoke, mode:operate, lifecycle:discover]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Using the `uipath-automationhub` skill, fetch process `12345` from UiPath
   Automation Hub and list its attached documents (PDD/SDD). You already have the

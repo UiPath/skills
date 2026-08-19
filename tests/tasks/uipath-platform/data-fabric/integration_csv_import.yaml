@@ -16,7 +16,6 @@ tags:
     lifecycle:setup,
   ]
 run_limits:
-  expected_turns: 25
   turn_timeout: 600
 
 initial_prompt: |

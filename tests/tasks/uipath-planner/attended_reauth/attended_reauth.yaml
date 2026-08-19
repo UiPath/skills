@@ -14,7 +14,6 @@ run_limits:
   # guides, select scope, generate §1–§18). Mirror the gap_detection / e2e
   # budgets: the experiment task_timeout fires before the SDD lands unless
   # BOTH the wall clock and the long authoring turn are raised.
-  expected_turns: 25
   task_timeout: 2700
   turn_timeout: 1800
 

@@ -11,9 +11,6 @@ description: >
   <val>` or `deploy config link <file> <name> --name <existing>`.
 tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Deploying my solution fails. `uip solution deploy run` reports:
 

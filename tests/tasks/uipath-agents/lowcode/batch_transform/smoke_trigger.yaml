@@ -6,9 +6,6 @@ description: >
   for the low-code + CSV signal pair.
 tags: [uipath-agents, smoke, mode:build, low-code, lifecycle:discover, context-grounding]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   I'm building a low-code agent in Studio Web Agent Builder. I want it to take a
   CSV upload and add two new LLM-filled columns: a category and a confidence

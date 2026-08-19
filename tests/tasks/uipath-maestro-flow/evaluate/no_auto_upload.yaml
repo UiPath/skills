@@ -9,7 +9,6 @@ description: >
 tags: [uipath-maestro-flow, mode:operate, lifecycle:execute, feature:eval]
 
 run_limits:
-  expected_turns: 26
   max_turns: 50
 
 initial_prompt: |

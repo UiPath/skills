@@ -8,7 +8,6 @@ description: >
 tags: [uipath-platform, smoke, data-fabric, entities, bulk-import, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 8
   max_turns: 15
 
 initial_prompt: |

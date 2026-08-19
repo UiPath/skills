@@ -12,9 +12,6 @@ description: >
   NOT an empty manifest, which the CLI forbids by design.
 tags: [uipath-solution, integration, mode:build, lifecycle:setup]
 
-run_limits:
-  expected_turns: 16
-
 initial_prompt: |
   I over-populated a UiPath solution and want to drop one project.
 

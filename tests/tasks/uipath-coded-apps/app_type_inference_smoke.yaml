@@ -11,9 +11,6 @@ description: >
   prompt) — this test grades the identification step itself, promoting
   Rule 1 from Indirect to Direct.
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Our claims processors get work items in their UiPath task inbox. When
   they open one, a form should show the claim details the automation

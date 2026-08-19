@@ -10,7 +10,6 @@ description: >
 tags: [uipath-maestro-flow, integration, connector, ceql, filter, uipath-microsoft-azureactivedirectory, ipe, mode:build]
 
 run_limits:
-  expected_turns: 34
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200

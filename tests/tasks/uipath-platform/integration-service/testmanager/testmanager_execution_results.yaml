@@ -9,7 +9,6 @@ description: >
 tags: [uipath-platform, integration, test-manager, resources, execute]
 
 run_limits:
-  expected_turns: 40
   max_turns: 60
 
 sandbox:

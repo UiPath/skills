@@ -7,9 +7,6 @@ description: >
   Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
 
-run_limits:
-  expected_turns: 5
-
 sandbox:
   mock_path_dirs: [mocks]
   template_sources:

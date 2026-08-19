@@ -6,9 +6,6 @@ description: >
   `--include-connection-details` flag for resolving connector metadata.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
-run_limits:
-  expected_turns: 13
-
 initial_prompt: |
   I want to audit which BYO LLM product configurations are currently active on
   this tenant.

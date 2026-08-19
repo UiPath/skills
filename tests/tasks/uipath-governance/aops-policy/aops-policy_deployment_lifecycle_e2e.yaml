@@ -16,7 +16,6 @@ description: >
 tags: [uipath-governance, e2e, aops-policy, deployment, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 35
   max_turns: 70
 
 pre_run:

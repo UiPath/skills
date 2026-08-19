@@ -19,7 +19,6 @@ description: >
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:loop, node:switch, node:decision, connector, e2e, uipath-atlassian-jira, ipe, mode:build]
 
 run_limits:
-  expected_turns: 55
   task_timeout: 2700
   max_turns: 150
   turn_timeout: 900

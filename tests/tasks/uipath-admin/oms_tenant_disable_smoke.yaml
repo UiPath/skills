@@ -9,9 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, oms, tenant-lifecycle]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   Disable the "Staging" tenant in our organization. First list tenants
   to find the tenant ID, then run the disable command. If the tenant

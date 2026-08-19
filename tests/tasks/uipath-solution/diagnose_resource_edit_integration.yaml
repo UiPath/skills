@@ -12,9 +12,6 @@ description: >
   that mutates an existing resource's spec.
 tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   I need to change an asset resource's value in my UiPath solution before
   I package it.

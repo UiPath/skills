@@ -7,9 +7,6 @@ description: >
   JSON Schema shape with all four sections and the canonical Approve/Reject
   outcomes structure.
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Author `action-schema.json` at the sandbox root for a UiPath Coded Action
   App. The app reviews purchase orders: the form receives a PO number and a
