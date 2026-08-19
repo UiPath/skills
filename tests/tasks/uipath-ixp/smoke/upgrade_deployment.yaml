@@ -15,6 +15,11 @@ tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 5
 
+# TODO: mock the specific verb once coder_eval's RecordedCli supports per-verb
+# responses. The DeploymentName is stated in the prompt because `deployments list`
+# cannot be served per-verb here; that keeps the name/title trap gradeable but does
+# not prove the agent went and looked the slug up. Serve `deployments list` and the
+# lookup itself becomes assertable.
 sandbox:
   record_cli:
     - tool: uip

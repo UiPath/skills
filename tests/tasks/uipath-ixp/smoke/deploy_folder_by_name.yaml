@@ -18,6 +18,12 @@ tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 5
 
+# TODO: mock the specific verb once coder_eval's RecordedCli supports per-verb
+# responses. `record_cli` shadows the whole `uip` binary, so the one `stdout` below
+# answers EVERY verb — a later `deployments create` echoes the folder list too.
+# Harmless while grading is on command shape, but it is why a task needing several
+# DIFFERENT reads cannot use recorders (see upgrade_stale_version). The verb-prefix
+# matching this needs already exists in the `cli_called` criterion.
 sandbox:
   record_cli:
     - tool: uip

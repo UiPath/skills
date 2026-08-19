@@ -17,6 +17,13 @@ tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 6
 
+# TODO: mock the specific verb once coder_eval's RecordedCli supports per-verb
+# responses. `list-models` cannot be served here: `record_cli` has one exit_code for
+# the whole `uip` binary, so the 0 needed to answer the read would also make the
+# doomed `upgrade --version 9` look successful. So the agent learns only that the
+# call failed, and this grades that it WENT to `list-models` before writing rather
+# than that it reasoned from the real version list. Serve the read and this becomes
+# the stronger assertion.
 sandbox:
   record_cli:
     - tool: uip
