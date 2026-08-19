@@ -130,7 +130,7 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 
 5. **FormTask and AppTask require `--action` and `--data` for completion.** Other task types allow optional action and data.
 
-6. **Assign accepts `--user-id` or `--user` (email).** Use `tasks users <folder-id>` (or `tasks users --folder-path <path>`) to discover assignable users and their IDs.
+6. **Assign accepts `--user-id` or `--user` (email).** Use `tasks users <folder-id>` (or `tasks users --folder-path <path>` / `--folder-key <guid>`) to discover assignable users and their IDs.
 
 7. **Always discover before acting.** Use `tasks list` or `tasks get` to inspect task state before performing assign/complete operations.
 
@@ -162,7 +162,7 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 | Unassign a task | `tasks unassign <task-id>` |
 | Complete a task | `tasks complete <task-id> --type <type> --folder-id <id>` |
 | Complete with action | `tasks complete <task-id> --type FormTask --folder-id <id> --action "Approve" --data '{...}'` |
-| List assignable users | `tasks users <folder-id>` or `tasks users --folder-path "<path>"` |
+| List assignable users | `tasks users <folder-id>`, `tasks users --folder-path "<path>"`, or `tasks users --folder-key <guid>` |
 | List task catalogs | `tasks catalogs list --folder-id <id>` |
 | Get a catalog | `tasks catalogs get <catalog-id> --folder-id <id>` |
 | Create a catalog | `tasks catalogs create --name <name> --folder-id <id>` |
@@ -218,7 +218,9 @@ uip tasks get <task-id> --output json
 | Completion fails for FormTask | Missing `--action` or `--data` | FormTask and AppTask require both `--action` and `--data` |
 | Cannot assign | User lacks permissions in folder | Run `tasks users <folder-id>` to list eligible users |
 | `A folder is required` | Non-interactive run without a folder option | Pass `--folder-id`, `--folder-path`, or `--folder-key` |
-| `Folder not found for path/key ...` | The value doesn't match a folder this login can access | Run `uip or folders list` and use a listed `Path` or `Key` |
+| `Folder not found: '<value>'.` | The path/key doesn't match a folder this login can access | Run `uip or folders list` and use a listed `Path` or `Key` |
+| `Invalid --folder-key: <value>` | The key is not a UUID | Use the GUID from the `Key` column of `uip or folders list` |
+| `Error resolving folder path/key '<value>'` | The folder lookup itself failed (permissions or network) | Check the error detail in `Instructions`; verify access with `uip or folders list` |
 
 ---
 
