@@ -1,46 +1,52 @@
-# Builds a test set by LABEL SELECTOR, not by explicit keys. That distinction is
-# the whole point of the task and is what keeps it disjoint from
+# Builds a test set by LABEL SELECTOR inside a throwaway project the agent
+# creates and then deletes. Nothing in CLAIM, HEALTH or BANK is read or written,
+# so the labelled cases this task needs cannot be mistaken for — or collide with
+# — another task's fixtures, and no tenant residue survives the run.
+#
+# Cleanup is in-scenario because this framework has no post_run (tests/README.md:
+# "There is no post_run. The agent creates and deletes its own ephemeral
+# resources as part of the test scenario"). Deleting the project removes the
+# cases, labels and set inside it in one call.
+#
+# The label selector is what keeps this disjoint from
 # organize_testcases_into_testsets, which grades the `--test-case-keys` form and
 # `testcases list --filter`. Nothing else under tests/tasks/uipath-test/ asserts
-# `testcases add --labels`.
+# `testcases add --labels`. Project creation is deliberately NOT graded here —
+# that surface belongs to project_scaffold_build, and grading it twice would
+# make the two tasks overlap.
 #
 # The label form carries a documented trap: `--labels A,B` is read as ONE label
-# named "A,B" and silently matches nothing, so the set comes back empty with a
-# success exit code. Grading the comma form as a forbidden command is the only
-# way to catch a skill that teaches the wrong separator.
+# named "A,B" and matches nothing, so the set comes back empty with a zero exit
+# code. Grading the comma form as forbidden is the only way to catch a skill
+# that teaches the wrong separator, because the CLI itself does not complain.
 task_id: skill-test-testset-curation-by-label-build
 description: >
   Integration test: agent uses the uipath-test skill to assemble a regression
-  test set from labelled test cases in the CLAIM project. Asserts that the agent
-  (a) checks login status with --output json, (b) discovers the available labels
-  server-side rather than listing every test case, (c) creates a test set and
-  populates it with `testcases add --test-set-key --labels`, passing BOTH tier
-  labels in one space-separated variadic call, and (d) never uses the
-  comma-joined `--labels A,B` form, which the CLI reads as a single label and
-  which therefore matches nothing. The skill — not the prompt — must teach the
-  label selector, its space-separated shape, and that label matching is OR,
-  exact and case-sensitive.
+  test set from labelled test cases, inside a throwaway project it creates and
+  deletes. Asserts that the agent (a) checks login status with --output json,
+  (b) applies the tier labels with `objectlabel add`, (c) populates the set with
+  `testcases add --test-set-key --labels`, passing BOTH tier labels in one
+  space-separated variadic call, (d) never uses the comma-joined `--labels A,B`
+  form, which the CLI reads as a single label and which therefore matches
+  nothing, (e) does not fall back to enumerating `--test-case-keys`, which
+  defeats the selector the request asks for, and (f) deletes the project with
+  --yes. The skill — not the prompt — must teach the label selector, its
+  space-separated shape, and that label matching is OR, exact and case-sensitive.
 tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:test-case]
 
 run_limits:
-  expected_turns: 18
-  max_turns: 35
+  expected_turns: 28
+  max_turns: 50
 
-# Seeds the labelled test cases this task reads, then clears earlier days' output
-# sets. Create-if-absent per the EVFX contract rule 3: the three test cases are
-# permanent fixtures owned by this task, re-labelled idempotently on every run
-# (objectlabel add upserts), so a healthy fixture is left untouched. The
-# deliverable SETS are scratch and swept in pre_run, sparing today's stamp so two
-# concurrent nightly models never delete each other's work.
+# Belt-and-braces only: the scenario deletes its own project. This exists for
+# the run that dies mid-scenario, which would otherwise strand a project.
+# Spares today's stamp so concurrent nightly models never delete each other's
+# work-in-progress.
 pre_run:
   - command: |
       python3 - <<'PYEOF'
       import json, subprocess, datetime
-      P = "CLAIM"
-      TC_PREFIX, SET_PREFIX = "EVFX-CURATE-TC", "EVFX-CURATE-SET-"
-      TIERS = {"EVFX-CURATE-TC1": "EVFX-CURATE-tier1",
-               "EVFX-CURATE-TC2": "EVFX-CURATE-tier1",
-               "EVFX-CURATE-TC3": "EVFX-CURATE-tier2"}
+      PREFIX = "EVFX-CURATE-"
       today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
 
       def call(*a):
@@ -51,56 +57,42 @@ pre_run:
           except Exception:
               return {}
 
-      def cases():
-          data = call("tm", "testcases", "list", "--project-key", P,
-                      "--filter", TC_PREFIX).get("Data") or []
-          return {c.get("Name"): c for c in data}
-
-      existing = cases()
-      created = 0
-      for name in TIERS:
-          if name not in existing:
-              call("tm", "testcases", "create", "--project-key", P, "--name", name)
-              created += 1
-      if created:
-          existing = cases()
-
-      labelled = 0
-      for name, label in TIERS.items():
-          case = existing.get(name)
-          cid = (case or {}).get("Id")
-          if not cid:
-              continue
-          call("tm", "objectlabel", "add", "--project-key", P,
-               "--object-type", "TestCase", "--object-ids", cid, "--labels", label)
-          labelled += 1
-      print(f"SEED: {created} test case(s) created, {labelled} label assignment(s) applied")
-
-      sets = call("tm", "testsets", "list", "--project-key", P,
-                  "--filter", SET_PREFIX).get("Data") or []
+      projects = call("tm", "project", "list", "--filter", PREFIX).get("Data") or []
       removed = 0
-      for t in sets:
-          name = t.get("Name") or ""
-          if not name.startswith(SET_PREFIX) or name.startswith(SET_PREFIX + today):
+      for p in projects:
+          name = p.get("Name") or ""
+          if not name.startswith(PREFIX) or name.startswith(PREFIX + today):
               continue
-          call("tm", "testsets", "delete", "--test-set-key", t["TestSetKey"], "--yes")
+          key = p.get("ProjectKey") or p.get("Key")
+          if not key:
+              continue
+          call("tm", "project", "delete", "--project-key", key, "--yes")
           removed += 1
-      print(f"CLEANUP: removed {removed} {SET_PREFIX}* test set(s) from earlier days")
+      print(f"ORPHAN SWEEP: removed {removed} stranded {PREFIX}* project(s) from earlier days")
       PYEOF
-    timeout: 240
+    timeout: 180
 
 initial_prompt: |
-  In the CLAIM project some test cases are tagged with the labels
-  `EVFX-CURATE-tier1` and `EVFX-CURATE-tier2`. Build me one regression test set
-  that contains every test case carrying either of those two labels, and
-  populate it by label rather than by naming individual test cases — new cases
-  get tagged all the time and I do not want to re-list keys each release.
+  I want to see how our release-tier tagging would work before I apply it to a
+  real project. In a throwaway project of your own:
 
-  Name the test set `EVFX-CURATE-SET-<STAMP>-<TAG>`, where <STAMP> is the
-  current UTC date and time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase
-  hex characters you generate once for this session. Earlier sessions left their
-  own sets behind; create your own rather than reusing or extending one, and do
-  not stop to ask which existing set to use.
+  Set up three test cases. Tag two of them as tier 1 and the third as tier 2,
+  using the label names `EVFX-CURATE-tier1` and `EVFX-CURATE-tier2`. Then build
+  me one regression test set holding every test case that carries either of
+  those two labels — populate it by label, not by naming individual test cases,
+  because in the real project new cases get tagged all the time and I do not
+  want to re-list keys every release.
+
+  Name the project `EVFX-CURATE-<STAMP>-<TAG>` with a project key of `EVCU`
+  followed by 4 uppercase hex characters, where <STAMP> is the current UTC date
+  and time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase hex characters you
+  generate once for this session. The random tag and key suffix matter: another
+  session may start in the very same second. Do not reuse or extend any existing
+  project.
+
+  I authorize you to delete this project and everything inside it when you are
+  done. Do not ask me to confirm the deletion — you already have my approval for
+  this exact project. Deleting it is the final required step.
 
 success_criteria:
   - type: command_executed
@@ -112,19 +104,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered the labels server-side instead of listing every test case (Critical Rule #9)"
+    description: "Agent applied the tier labels to its test cases with `objectlabel add`"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--object-type\s+TestCase)(?=[\s\S]*--filter\s+["\x27]?EVFX-CURATE-)uip\s+tm\s+objectlabel\s+list\b'
+    command_pattern: '(?=[\s\S]*--object-type\s+TestCase)(?=[\s\S]*--object-ids\s+\S)(?=[\s\S]*--labels\s+["\x27]?EVFX-CURATE-tier)uip\s+tm\s+objectlabel\s+add\b'
     min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent created a test set to hold the curated cases"
-    tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--name\s+["\x27]?EVFX-CURATE-SET-)uip\s+tm\s+testsets?\s+create\b'
-    min_count: 1
-    weight: 1.0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -136,7 +120,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not comma-join --labels — the CLI reads `A,B` as one label and matches nothing"
+    description: "Agent did not comma-join --labels — the CLI reads `A,B` as one label and silently matches nothing"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+testcases?\s+add[\s\S]*--labels\s+\S+,'
     weight: 2.0
@@ -147,4 +131,12 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+testcases?\s+add[\s\S]*--test-case-keys\b'
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted its throwaway project with --yes, leaving no tenant residue (Critical Rule #6)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*(--yes|-y)\b)uip\s+tm\s+project\s+delete\b'
+    min_count: 1
+    weight: 2.0
     pass_threshold: 1.0
