@@ -36,6 +36,27 @@ def _name(item):
     return item.get("Name") or item.get("name") or item.get("displayName") or ""
 
 
+# `groups list` reports Type as a numeric enum, NOT the string the skill docs
+# imply: 0 = built-in (Everyone, Administrators, Automation Users, ...),
+# 1 = custom. SKILL.md anti-pattern 1 describes these as `type: "BuiltIn"`,
+# which never appears in CLI output — comparing against that string silently
+# matched nothing and reported every tenant as having no built-ins left.
+BUILTIN_GROUP_TYPE = 0
+
+
+def _is_builtin(group):
+    raw = group.get("Type", group.get("type"))
+    if isinstance(raw, bool):
+        return False
+    if isinstance(raw, int):
+        return raw == BUILTIN_GROUP_TYPE
+    if isinstance(raw, str):
+        text = raw.strip()
+        # Tolerate a future CLI that switches the enum to a label or numeric string.
+        return text == str(BUILTIN_GROUP_TYPE) or text.lower() in {"builtin", "built-in", "system"}
+    return False
+
+
 def groups():
     data = run_cli(["admin", "groups", "list"])
     if not data or data.get("Result") != "Success":
@@ -71,8 +92,8 @@ def main():
         fail(f"group still named '{GROUP_SEEDED}' — a new group was created instead of renaming the existing one")
     if GROUP_STALE in group_names:
         fail(f"group '{GROUP_STALE}' still exists — it was not deleted")
-    if not any((g.get("Type") or g.get("type") or "") == "BuiltIn" for g in gs):
-        fail("no BuiltIn group left on the tenant — built-in groups must never be deleted")
+    if not any(_is_builtin(g) for g in gs):
+        fail("no built-in group left on the tenant — built-in groups must never be deleted")
 
     def bot_updated():
         rs = robots()

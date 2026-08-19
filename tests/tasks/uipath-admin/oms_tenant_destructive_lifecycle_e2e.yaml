@@ -23,14 +23,29 @@ description: >
   update/enable/disable/delete quadrant plus the explicit-target safety
   rules, none of which are exercised elsewhere.
 
-  Command-construction plus local-artifact grading — no live tenant.
-  The one content check asserts the create body written to disk is a
-  valid CreateTenantRequestDto (`services` a plain string array, not a
-  `{name: true}` map, which OMS rejects on create).
+  Grading is command-construction plus one local-artifact content check:
+  the create body written to disk must be a valid CreateTenantRequestDto
+  (`services` a plain string array, not a `{name: true}` map, which OMS
+  rejects on create).
+
+  NOTE — this task DOES create and destroy a real tenant when the runner
+  is authenticated (verified on run 32275177549: it provisioned
+  TenantDestructClie2e and drove the full retirement path). It is not a
+  dry run. Two safety properties keep that contained: every destructive
+  verb is asserted to carry an explicit positional tenant id (Rule 20),
+  so the login tenant is never the target, and `cleanup_tenant.py`
+  soft-deletes any surviving fixture.
+
+  Rule 18 polling is graded advisory-only: the prompt never asks for a
+  poll and oms_tenant_create_poll_e2e owns that assertion. Observed on
+  32275177549: after the agent's `tenants delete` reported Success the
+  tenant was still `status=Enabled` when post_run ran, i.e. delete is
+  async and status does not flip synchronously — confirming the tenant
+  cannot be verified as retired without the operation poll.
 tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, oms, tenant-lifecycle]
 
 run_limits:
-  expected_turns: 16
+  expected_turns: 36
   max_turns: 40
   turn_timeout: 600
 
@@ -136,12 +151,12 @@ success_criteria:
     weight: 1.5
 
   - type: command_executed
-    description: "Agent polled the async tenant operations via `organizations operation get` (Rule 18)"
+    description: "Agent polled the async operation via `organizations operation get` (Rule 18 — advisory here: this prompt never asks for a poll, create can return synchronously, and oms_tenant_create_poll_e2e owns this assertion)"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+organizations\s+operation\s+get\b'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     description: "Agent read tenant state back with `tenants get`"

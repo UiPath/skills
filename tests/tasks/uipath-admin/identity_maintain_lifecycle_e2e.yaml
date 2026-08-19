@@ -12,13 +12,20 @@ description: >
   the other retired. The verify script reads tenant state back: the renamed group
   exists under its new name and not the old one, the stale group is gone, the
   kept robot carries its new display name, and the retired robot is gone. It also
-  asserts a BuiltIn group survived (SKILL.md anti-pattern 1).
+  asserts a built-in group survived (SKILL.md anti-pattern 1).
 
   Prompts name every target by NAME, never by UUID, so Rule 5 (resolve the named
   principal before mutating) is actually exercised. The prompt deliberately does
   NOT tell the agent to inspect before mutating or to spare built-in groups — the
-  skill teaches both (Rule 6, anti-pattern 1), so the graded `get` calls and the
-  BuiltIn-survival assertion measure whether the skill landed.
+  skill teaches both (Rule 6, anti-pattern 1), so the inspect-before-mutate
+  assertion and the built-in-survival assertion measure whether the skill landed.
+
+  The group inspect is graded on intent, not on one verb: `groups get <ID>` and
+  `groups members list <ID>` both count. Observed on run 32275177549 — the agent
+  reached the same state via `groups list --search` + `groups members list` and
+  never called `groups get`, while it did use `robot-accounts get`. A strict
+  `groups get` requirement was therefore testing style, not capability; it is
+  kept as an advisory criterion so coverage reporting still records the verb.
 tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, identity, groups, robot-account]
 
 pre_run:
@@ -30,7 +37,7 @@ post_run:
     timeout: 60
 
 run_limits:
-  expected_turns: 16
+  expected_turns: 28
   max_turns: 50
   turn_timeout: 600
 
@@ -75,12 +82,20 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inspected a group with groups get and a positional ID (not --group-id)"
+    description: "Agent inspected the specific group by positional ID before mutating it (groups get or groups members list)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+groups\s+get\s+"?[0-9a-fA-F]{8}-'
+    command_pattern: 'uip\s+admin\s+groups\s+(?:get|members\s+list)\s+"?[0-9a-fA-F]{8}-'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used `groups get` specifically for the inspect (advisory — `groups list --search` / `groups members list` reach the same state)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+get\s+"?[0-9a-fA-F]{8}-'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     description: "Agent inspected a robot account with robot-accounts get and a positional ID"

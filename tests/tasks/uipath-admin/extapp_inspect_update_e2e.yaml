@@ -30,7 +30,7 @@ post_run:
     timeout: 60
 
 run_limits:
-  expected_turns: 12
+  expected_turns: 17
   max_turns: 40
   turn_timeout: 600
 
