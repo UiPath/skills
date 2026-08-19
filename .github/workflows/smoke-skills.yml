@@ -401,6 +401,12 @@ jobs:
           set -euo pipefail
           bash .github/scripts/refresh-auth.sh
 
+          # coder-eval 0.11+ drops DAC_OVERRIDE/DAC_READ_SEARCH from task
+          # containers (reference anti-cheat), so container-root can no longer
+          # read the host-owned ~/.uipath extra_mount by capability. Widen it via
+          # the "other" bits — mirrors coder-eval's own grant_container_access.
+          chmod -R o+rwX "$HOME/.uipath"
+
           # Fail once at setup, with a direct error, rather than letting every
           # guardrail task discover an unusable auth context independently.
           docker run --rm \
