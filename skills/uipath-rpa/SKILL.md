@@ -1,7 +1,7 @@
 ---
 name: uipath-rpa
-description: "Always invoke for `.xaml` or `.cs` workflow files. UiPath RPA — create, edit, build, run, debug `.cs` coded workflows and `.xaml` workflows. UI automation with Object Repository selectors, test case authoring, Integration Service connector calls. Live desktop/browser UI exploration and control. Deploy via `.uipx`→uipath-solution. Non-solution Orchestrator ops→uipath-platform. Test reports→uipath-test. Agents→uipath-agents."
-when_to_use: "User wants to create, edit, debug, or run a UiPath automation — '.cs' coded workflows or '.xaml' files. Triggers: 'build a workflow', 'automate Excel/email/web/PDF/queue items', 'add a try-catch', 'fix this XAML error', 'scrape this site', 'process invoices', 'create a test case', or project.json shows UiPath dependencies. NOT for '.flow' files (→uipath-maestro-flow), Python agents (→uipath-agents)."
+description: "Always invoke for `.xaml` or `.cs` workflow files. UiPath RPA — create, edit, build, **pack to `.nupkg`**, run, debug `.cs` coded workflows and `.xaml` workflows. UI automation with Object Repository selectors, test case authoring, Integration Service connector calls. Live desktop/browser UI exploration and control. Packing an RPA project stays here (`uip rpa pack` vs `uip rpa-legacy pack` is decided by `targetFramework` — see Project Type Detection); only solution-level `.uipx` deployment→uipath-solution. Non-solution Orchestrator ops→uipath-platform. Test reports→uipath-test. Agents→uipath-agents."
+when_to_use: "User wants to create, edit, debug, run, or **pack/package** a UiPath automation — '.cs' coded workflows or '.xaml' files. Triggers: 'build a workflow', 'pack this project', 'build a .nupkg', 'package and upload this process', 'automate Excel/email/web/PDF/queue items', 'add a try-catch', 'fix this XAML error', 'scrape this site', 'process invoices', 'create a test case', or project.json shows UiPath dependencies. Invoke BEFORE running any `uip rpa` or `uip rpa-legacy` command — the two are not interchangeable. NOT for '.flow' files (→uipath-maestro-flow), Python agents (→uipath-agents)."
 ---
 
 # UiPath RPA Assistant
@@ -111,7 +111,9 @@ Before creating or modifying anything, determine which project to work with. See
 After establishing `PROJECT_DIR`, **first check `project.json` for `targetFramework`**:
 
 - **`targetFramework: "Legacy"` (or field absent in an older project) → Legacy mode.** Stop here and switch to the Legacy-mode workflow: [references/legacy/legacy-mode-guide.md](references/legacy/legacy-mode-guide.md). Legacy projects use the standalone `uip rpa-legacy` CLI, .NET Framework 4.6.1, classic activities (no "X" suffix), and `mscorlib` assembly references. The rest of this SKILL.md (modern mode) does NOT apply to Legacy projects.
-- **`targetFramework: "Windows"` or `"Portable"` (Cross-platform) → Modern mode**, continue below.
+- **`targetFramework: "Windows"` or `"Portable"` (Cross-platform) → Modern mode**, continue below. Both use the `uip rpa` CLI — `"Windows"` here means Modern Windows-only, **not** Windows-Legacy.
+
+> **`uip rpa-legacy` is for `targetFramework: "Legacy"` ONLY — never as a fallback when `uip rpa` is unavailable.** "legacy" names the legacy *uipcli*, not legacy *projects*. It packs a Modern (`Windows`/`Portable`) project successfully and exits 0, so a passing pack is not evidence you picked the right tool. Fix `uip rpa` instead.
 
 For modern projects, determine whether this is a **coded** or **XAML** project:
 
