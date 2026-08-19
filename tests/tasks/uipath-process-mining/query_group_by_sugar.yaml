@@ -8,7 +8,7 @@ description: >
 
   Command-construction only — no live tenant. Commands fail with auth errors;
   what matters is the shape of the query the agent constructs.
-tags: [uipath-process-mining, mode:diagnose, query, aggregate]
+tags: [uipath-process-mining, smoke, mode:diagnose, lifecycle:discover, query, aggregate]
 
 run_limits:
   expected_turns: 6
@@ -56,7 +56,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent must NOT hand-write a raw aggregate body with bare column names"
     tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+query\s+run\b.*--body-json\b.*"groupBy"'
+    command_pattern: 'uip\s+pm\s+query\s+run\b.*--body-json\b.*"groupBy"\s*:\s*\[\s*"(?!F__)'
     weight: 2.5
 
   - type: command_not_executed

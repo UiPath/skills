@@ -18,7 +18,10 @@ sys.path.insert(
         os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
     ),
 )
-from coded_scaffold import write_baseline_function_agent  # noqa: E402
+from coded_scaffold import (  # noqa: E402
+    sync_entry_point_schema,
+    write_baseline_function_agent,
+)
 
 MAIN_PY = '''from pydantic import BaseModel, Field
 from uipath.tracing import traced
@@ -50,6 +53,33 @@ def main() -> None:
     root = Path("CodedAgent")
     write_baseline_function_agent(root)
     (root / "main.py").write_text(MAIN_PY, encoding="utf-8")
+    sync_entry_point_schema(
+        root,
+        input_schema={
+            "type": "object",
+            "properties": {
+                "customer_email": {
+                    "type": "string",
+                    "description": "Customer email address",
+                },
+                "email_body": {
+                    "type": "string",
+                    "description": "Body of the customer email",
+                },
+            },
+            "required": ["customer_email", "email_body"],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "summary": {
+                    "type": "string",
+                    "description": "Summary of the email",
+                }
+            },
+            "required": ["summary"],
+        },
+    )
     print("Injected @traced helper with PII params (email_body/customer_email) and no hide_input")
 
 

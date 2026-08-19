@@ -1,6 +1,6 @@
 # Brownfield — Edit an Existing Case
 
-Targeted changes to an existing `caseplan.json`. Skips the Phase 0–6 build pipeline. Terminates at `validate`, then hands off to Phase 5 (publish) / Phase 6 (debug).
+Targeted changes to an existing `caseplan.json`. Skips the design handoff and the Phase 1–7 build pipeline. Terminates at `validate`, then hands off to Phase 5 (publish) / Phase 6 (debug) / Phase 7 (publish to Orchestrator).
 
 > **Greenfield (new case from `sdd.md`) uses a different journey.** If `caseplan.json` does not yet exist, or the user wants to (re)build from a spec, see [planning.md](planning.md) → [implementation.md](implementation.md) → [phased-execution.md](phased-execution.md) instead.
 
@@ -17,6 +17,7 @@ Before the first edit, present the flow once so the dev knows the steps and wher
 > - I make the edit, then **validate** and fix errors.
 > - **Debug** (optional) — **you choose** whether to run the case for real (live emails / API calls).
 > - **Publish** (optional) — **you choose** whether to upload to Studio Web.
+> - **Publish to Orchestrator** (optional) — **you choose** whether to publish the case to Orchestrator.
 
 ## Pull latest first (before editing)
 
@@ -100,9 +101,10 @@ Report: file path edited, what changed (nodes/tasks/conditions added/removed/mod
 |---|---|
 | **Publish to Studio Web** | Phase 5 — `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` (filter mandatory — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload)), print DesignerUrl. |
 | **Run debug session** | Phase 6 — executes the case for real (consent-gated, Rule 12). |
+| **Publish to Orchestrator** | Phase 7 — `uip maestro case pack` (mandatory BPMN recompile), then `uip solution pack`, then `uip solution publish` to the tenant solution feed (consent-gated, Rule 12). |
 | **Done** (default) | Stop here. |
 | **Something else** | Free-form. |
 
-Do not run debug or publish without explicit selection. On selection, follow the existing [phased-execution.md](phased-execution.md) Phase 5 / Phase 6 contracts.
+Do not run debug, publish, or publish to Orchestrator without explicit selection. On selection, follow the existing [phased-execution.md](phased-execution.md) Phase 5 / Phase 6 / Phase 7 contracts.
 
 <!-- END: brownfield.md -->

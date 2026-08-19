@@ -9,11 +9,10 @@ description: >
   task (task-entry selected-tasks-completed), and an adhoc PROCESS task
   (registry unresolved → skeleton, exercising the non-timer task type
   in a downstream stage that no other multi_stages_tasks test covers). Finalize
-  exits via selected-tasks-completed (marks-stage-complete: false)
-  routing to Done. Finalize entry uses selected-stage-completed on
+  exits via required-tasks-completed with no exit-only hand-off.
+  Finalize entry uses selected-stage-completed on
   Process; Done entry uses selected-stage-completed on Finalize. Closes
-  gaps: stage-exit required-tasks-completed +
-  selected-tasks-completed, stage-entry selected-stage-completed,
+  gaps: stage-exit required-tasks-completed, stage-entry selected-stage-completed,
   task-entry runs-sequentially + current-stage-entered + adhoc +
   selected-tasks-completed, root string AND number Variables,
   and a non-timer (process) skeleton task in a multi-stage flow.
@@ -35,7 +34,7 @@ initial_prompt: |
 
   **Case Definition Blueprint** · Generic — Task-Driven Stage Completion Coverage
 
-  Three-stage linear flow that exercises task-driven stage completion, the under-covered task-entry rule-types, and a non-timer task type embedded in a multi-stage flow. Process exits via required-tasks-completed; Finalize's Region Check fires on current-stage-entered and the stage exits via selected-tasks-completed to Done.
+  Three-stage linear flow that exercises task-driven stage completion, the under-covered task-entry rule-types, and a non-timer task type embedded in a multi-stage flow. Process exits via required-tasks-completed; Finalize's Region Check fires on current-stage-entered and the stage exits via required-tasks-completed.
 
   > **Unresolved-fallback rule.** The Optional Audit process is NOT registered in the tenant. The agent MUST leave `taskTypeId` as `<UNRESOLVED: ...>`, omit inputs/outputs, and emit a skeleton process task. DO NOT fabricate a taskTypeId. The skeleton's TaskId is still captured and the task still carries its task-entry condition.
 
@@ -144,7 +143,7 @@ initial_prompt: |
 
   ### Stage 2: Finalize (`finalize`)
   **Type:** Stage
-  **Description:** Gated review steps, conditional on Process. Exits via selected-tasks-completed routing to Done.
+  **Description:** Gated review steps, conditional on Process. Exits via required-tasks-completed.
   **Required for Case Completion:** Yes
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
@@ -154,10 +153,6 @@ initial_prompt: |
   | WHEN | IF | Exit Type | Marks Stage Complete |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
-  #### Stage Exit Conditions
-  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
-  |---|---|---|---|---|
-  | selected-tasks-completed ("Audit done") | selected-tasks: Optional Audit | exit-only | Done | No |
   #### Tasks
   | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
   |---|---------|-----------|------|----------|---------------|---------|-----|
@@ -272,7 +267,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Process exit=required-tasks-completed; Finalize exit=selected-tasks-completed; Finalize entry=selected-stage-completed; Done entry=selected-stage-completed on Finalize; tasks carry runs-sequentially/current-stage-entered/selected-tasks-completed/adhoc task-entry rules; First Step and Second Step are consecutive single-task runs-sequentially task sets in Process data.tasks; First Step timer is non-repeating timeDuration (PT2S, no repeat); Second Step timer is non-repeating timeDuration (PT5S, no repeat); Region Check fires on current-stage-entered; root has string variable 'region' AND number variable 'priorityScore'; 'Optional Audit' is an adhoc-only process-typed skeleton task in Finalize"
+    description: "Process exit=required-tasks-completed; Finalize exit=required-tasks-completed with no exit-only hand-off; Finalize entry=selected-stage-completed; Done entry=selected-stage-completed on Finalize; tasks carry runs-sequentially/current-stage-entered/selected-tasks-completed/adhoc task-entry rules; First Step and Second Step are consecutive single-task runs-sequentially task sets in Process data.tasks; First Step timer is non-repeating timeDuration (PT2S, no repeat); Second Step timer is non-repeating timeDuration (PT5S, no repeat); Region Check fires on current-stage-entered; root has string variable 'region' AND number variable 'priorityScore'; 'Optional Audit' is an adhoc-only process-typed skeleton task in Finalize"
     command: "python3 $TASK_DIR/check_task_dependency_chain.py"
     timeout: 720
     expected_exit_code: 0

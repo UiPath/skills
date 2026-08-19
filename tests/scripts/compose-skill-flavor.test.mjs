@@ -406,7 +406,7 @@ test("empty canonical blocks add flavor guidance without shadowing shared edits"
   assert.ok(!containsFlavorMarker(secondBuilt));
 });
 
-test("Studio Web inherits all API Workflow references and adds only host scope", () => {
+test("Studio Web inherits API Workflow authoring guidance and applies its host command contract", (t) => {
   const canonicalPath = join(REPO_ROOT, "skills", "uipath-api-workflow", "SKILL.md");
   const overridePath = join(
     REPO_ROOT,
@@ -417,6 +417,14 @@ test("Studio Web inherits all API Workflow references and adds only host scope",
   );
   const canonical = readFileSync(canonicalPath, "utf8");
   const override = readFileSync(overridePath, "utf8");
+  assert.match(
+    canonical,
+    /description: "UiPath API Workflow assistant — author, run, validate, package, publish, deploy, and troubleshoot JSON workflows/,
+  );
+  assert.match(
+    canonical,
+    /Run with `--no-auth --output json` after each addition\. Fix what breaks\. Repeat\./,
+  );
   const findings = [];
   const composed = stripMarkerBoundaries(
     composeText(
@@ -440,14 +448,122 @@ test("Studio Web inherits all API Workflow references and adds only host scope",
   }
   assert.match(
     composed,
-    /CLI operations that Studio Web exposes, including validation and `uip api-workflow registry resolve` \/ `stub`/,
+    /shared references for JSON authoring, troubleshooting, static validation, `uip api-workflow registry resolve` \/ `stub`, read-only Integration Service discovery, and the host-intercepted active-solution publish bridge/,
   );
   assert.match(
     composed,
     /Authoring HTTP Request \/ Gmail \/ Outlook \/ GitHub \/ Slack \/ etc\. activities via `uip api-workflow registry resolve` \+ `stub`/,
   );
-  assert.match(composed, /Project creation must use the live `proxy-tools-Solution` \/ `CreateProjects` schema/);
+  assert.match(composed, /Apply the Studio Web capability map above and inspect live host schemas/);
   assert.ok(!containsFlavorMarker(composed));
+
+  const studioRoot = join(REPO_ROOT, "skill-flavors", "studioweb");
+  const output = mkdtempSync(join(tmpdir(), "api-workflow-studioweb-contract-"));
+  t.after(() => rmSync(output, { recursive: true, force: true }));
+  materializeComposition(createCompositionPlan(REPO_ROOT, studioRoot), output);
+
+  const builtSkillRoot = join(output, "uipath-api-workflow");
+  const builtFiles = new Map(
+    [
+      "SKILL.md",
+      "references/cli-reference.md",
+      "references/connector-activity-discovery.md",
+      "references/expressions-and-context.md",
+      "references/operating-published-workflows.md",
+      "references/task-types.md",
+      "references/troubleshooting.md",
+      "references/workflow-file-format.md",
+    ].map((relativePath) => [
+      relativePath,
+      readFileSync(join(builtSkillRoot, relativePath), "utf8"),
+    ]),
+  );
+  const builtContract = [...builtFiles.values()].join("\n");
+  // Flavor markers are Markdown comments and cannot safely split YAML frontmatter.
+  // The canonical description is preserved and asserted above; audit the composed guidance body here.
+  const builtGuidance = [...builtFiles]
+    .map(([relativePath, source]) =>
+      relativePath === "SKILL.md" ? source.replace(/^---\n[\s\S]*?\n---\n/, "") : source,
+    )
+    .join("\n");
+
+  for (const [relativePath, source] of builtFiles) {
+    assert.ok(!containsFlavorMarker(source), `${relativePath} must be marker-free`);
+  }
+  assert.match(builtFiles.get("SKILL.md"), /Studio Web Capability Map/);
+  assert.match(
+    builtFiles.get("SKILL.md"),
+    /verify the returned `\/solution\/<projectName>` directory with `LsDirectory`/,
+  );
+  assert.match(builtContract, /\/solution\/<projectName>\/Workflow\.json/);
+  assert.match(builtContract, /uip api-workflow validate Workflow\.json --output json/);
+  assert.match(builtContract, /uip api-workflow registry resolve/);
+  assert.match(builtContract, /uip api-workflow registry stub/);
+  assert.match(builtContract, /uip is connections ping/);
+  assert.match(builtContract, /\/skills\/synthetic\/proxy-tools-Api\/SKILL\.md/);
+  assert.match(builtContract, /RunProject/);
+  assert.match(builtContract, /explicit (?:user )?consent[\s\S]*RunProject/);
+  assert.match(builtContract, /actual (?:host )?tool result as execution evidence/);
+  assert.match(builtContract, /uip solution publish --help/);
+  assert.match(builtContract, /explicit user publish request or approval/);
+  assert.match(builtContract, /active Studio Web solution is implicit/);
+  assert.match(
+    builtContract,
+    /uip solution publish \[--description <text>\].*\[--release-notes <text>\].*\[--version <version>\].*\[--location <value>\].*\[--location-name <value>\].*\[--personal-workspace\]/,
+  );
+  assert.match(builtContract, /request was accepted[\s\S]*Publish history/);
+  assert.doesNotMatch(builtContract, /--input-arguments/);
+  assert.doesNotMatch(builtContract, /uip is resources run/);
+  assert.doesNotMatch(builtContract, /uip api-workflow run/);
+  assert.doesNotMatch(builtContract, /^\s*uip solution publish\s+[^\n]*\.zip/m);
+  assert.match(builtFiles.get("references/troubleshooting.md"), /jq empty Workflow\.json/);
+  assert.doesNotMatch(
+    builtContract,
+    /uip (?:login|logout|auth|config|api-workflow (?:init|build|pack|run|bindings sync)|solution (?:init|pack|deploy|resources refresh)|is connections edit|or |traces )|\.uipx|bindings_v2\.json|project\.uiproj|entry-points\.json|userProfile\/|No worker implementation available/i,
+  );
+  assert.doesNotMatch(
+    builtGuidance,
+    /\brun --no-auth\b|\bruns? locally\b|\bruns? from the CLI\b|\blocal CLI runtime\b|\bresource refresh\b/i,
+  );
+  assert.doesNotMatch(builtContract, /^\s*node -e /m);
+  assert.doesNotMatch(
+    builtFiles.get("references/operating-published-workflows.md"),
+    /uip or jobs (?:start|list|logs|stop)/,
+  );
+
+  const flavorSource = [...treeFileBytes(join(studioRoot, "uipath-api-workflow"))]
+    .filter(([relativePath]) => relativePath.endsWith(".md"))
+    .map(([, source]) => source.toString("utf8"))
+    .join("\n");
+  assert.doesNotMatch(
+    flavorSource,
+    /\b(?:do not|don't|never|forbidden|unsupported|must not|instead of|rather than)\b/i,
+  );
+  assert.doesNotMatch(
+    flavorSource,
+    /uip (?:login|logout|auth|config|api-workflow (?:init|build|pack|run|bindings sync)|solution (?:init|pack|deploy|resources refresh)|is connections edit|or |traces )|\.uipx|bindings_v2\.json|project\.uiproj|entry-points\.json|userProfile\/|No worker implementation available/i,
+  );
+
+  const defaultCliReference = readFileSync(
+    join(REPO_ROOT, "skills", "uipath-api-workflow", "references", "cli-reference.md"),
+    "utf8",
+  );
+  assert.match(defaultCliReference, /^uip api-workflow init <name>/m);
+  assert.match(defaultCliReference, /^uip api-workflow run <file>/m);
+  assert.match(defaultCliReference, /^uip solution publish <packagePath>/m);
+  assert.match(
+    readFileSync(
+      join(
+        REPO_ROOT,
+        "skills",
+        "uipath-api-workflow",
+        "references",
+        "expressions-and-context.md",
+      ),
+      "utf8",
+    ),
+    /--input-arguments '\{"name":"Alice","count":3\}'/,
+  );
 });
 
 test("new canonical skills are automatically included in existing flavors", (t) => {

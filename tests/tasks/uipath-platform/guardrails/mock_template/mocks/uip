@@ -1,0 +1,662 @@
+#!/usr/bin/env python3
+"""Selective `uip` shim for the BYOG admin-configuration smoke task.
+
+Serves the two read paths the task needs (`guardrails byo-configurations
+list`, `is connections list`/`ping`) and the write path it grades
+(`byo-configurations create`, plus `probe` / `list-validators` / `delete`).
+Every other invocation exec's the REAL `uip` found later on PATH.
+
+Why mock: the graded behavior is which commands the skill drives and in
+what order, not tenant state. Without a mock the task has to tell the
+agent "commands will fail with auth errors, run them anyway" — coaching
+that no real user would write and that makes the run a test of prompt
+compliance instead of a test of the skill. With the CLI answering, the
+prompt is just what an admin would actually ask, and whether the agent
+gets there is entirely down to the skill.
+
+`create` really enforces the probe (see probe_pair): a fabricated or
+placeholder --connection-id fails with ByoGuardrailProbeFailed and
+persists nothing, exactly like the shipped CLI. So the agent cannot pass
+by inventing a GUID — it has to discover the connection first.
+
+Created records persist to `.byog-state.json` for the rest of the run, so a
+read-back `list` after a create shows what was just created instead of
+contradicting it.
+
+Response shapes are copied from the CLI's own documented examples in
+packages/admin/guardrails-tool/src/commands/byo-configurations.ts, so the
+fields the skill teaches are the fields that come back. Data responses are
+always JSON regardless of `--output` (the skill tells the agent to pass it
+anyway); `--help` is handed to the real CLI so flag questions get real
+answers.
+
+`mock_path_dirs: [mocks]` PATH-prepends this script's directory inside the
+sandbox. Linux smoke only (no `windows` tag), hence no `uip.cmd` twin —
+same as the ixp and byog_pinning mocks.
+"""
+
+import json
+import os
+import shutil
+import sys
+
+MOCK_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Two guardrail-capable connections (prod and the DR instance the rebind task
+# repoints to), plus a decoy that is enabled and default but serves no
+# validators — so binding the right one takes reading ConnectorName rather
+# than grabbing the first id.
+CONTENT_SAFETY_ID = "18fb337c-29b7-4162-a9e8-0c05b01cf4df"
+CONTENT_SAFETY_DR_ID = "9d5e21ab-4c07-4f3e-8b62-1a7c0e93f5d8"
+DECOY_ID = "7c2a91e4-5b83-4d1f-9a06-3e5f8b1c204d"
+
+CONNECTIONS = [
+    {
+        "Id": CONTENT_SAFETY_ID,
+        "Name": "Azure AI Content Safety - Prod",
+        "ConnectorName": "Azure AI Content Safety",
+        "ConnectorKey": "uipath-azure-contentsafety",
+        "State": "Enabled",
+        "IsDefault": "No",
+        "Owner": "admin@codereval.local",
+        "Folder": "Shared",
+        "FolderKey": "627fe423-5c73-464a-abff-41fdaad6ac19",
+        "ByoaConnection": "No",
+    },
+    {
+        "Id": CONTENT_SAFETY_DR_ID,
+        "Name": "Azure AI Content Safety - DR",
+        "ConnectorName": "Azure AI Content Safety",
+        "ConnectorKey": "uipath-azure-contentsafety",
+        "State": "Enabled",
+        "IsDefault": "No",
+        "Owner": "admin@codereval.local",
+        "Folder": "Shared",
+        "FolderKey": "627fe423-5c73-464a-abff-41fdaad6ac19",
+        "ByoaConnection": "No",
+    },
+    {
+        "Id": DECOY_ID,
+        "Name": "Team Slack",
+        "ConnectorName": "Slack",
+        "ConnectorKey": "uipath-salesforce-slack",
+        "State": "Enabled",
+        "IsDefault": "Yes",
+        "Owner": "admin@codereval.local",
+        "Folder": "Shared",
+        "FolderKey": "627fe423-5c73-464a-abff-41fdaad6ac19",
+        "ByoaConnection": "No",
+    },
+]
+
+# Validators per connection. The decoy serves none — probing it fails with
+# VALIDATOR_NOT_SUPPORTED, the same way a wrong-service connection does.
+VALIDATORS = {
+    CONTENT_SAFETY_ID: [
+        {
+            "Validator": "pii_detection",
+            "DisplayName": "PII detection",
+            "Description": None,
+            "Status": "Available",
+            "AllowedScopes": ["Agent", "Llm", "Tool"],
+            "PayloadMinSizeLimit": None,
+            "PayloadMaxSizeLimit": 10000,
+        },
+        {
+            "Validator": "harmful_content",
+            "DisplayName": "Harmful content",
+            "Description": None,
+            "Status": "Available",
+            "AllowedScopes": ["Agent", "Llm", "Tool"],
+            "PayloadMinSizeLimit": None,
+            "PayloadMaxSizeLimit": 10000,
+        },
+    ],
+    DECOY_ID: [],
+}
+VALIDATORS[CONTENT_SAFETY_DR_ID] = VALIDATORS[CONTENT_SAFETY_ID]
+
+# Two configurations already registered, so `list` is non-empty and the agent
+# can see for itself that a requested name is free. The names are also the
+# tenant-uniqueness tripwire if the agent reuses one. The update task targets
+# byog-pii-prod and the delete task targets byog-legacy-harmful, so neither
+# task's mutation can mask the other's assertion.
+SEEDED = [
+    {
+        "Id": "b41d0c77-9e52-4a8f-b3d1-08de7f19aa02",
+        "ConnectionId": CONTENT_SAFETY_ID,
+        "ValidatorName": "byog-legacy-harmful",
+        "ValidatorType": "harmful_content",
+        "FallbackOnUiPath": False,
+        "Enabled": True,
+        "CreatedAt": "2026-06-18T09:12:00Z",
+        "UpdatedAt": None,
+        "ConnectorKey": "uipath-azure-contentsafety",
+        "ConnectorName": "Azure AI Content Safety",
+        "ConnectionName": "Azure AI Content Safety - Prod",
+        "ValidConnection": True,
+    },
+    {
+        "Id": "3fa1c8d2-77e4-4b09-9c15-08de7f2201bd",
+        "ConnectionId": CONTENT_SAFETY_ID,
+        "ValidatorName": "byog-pii-prod",
+        "ValidatorType": "pii_detection",
+        "FallbackOnUiPath": True,
+        "Enabled": True,
+        "CreatedAt": "2026-07-02T11:40:00Z",
+        "UpdatedAt": None,
+        "ConnectorKey": "uipath-azure-contentsafety",
+        "ConnectorName": "Azure AI Content Safety",
+        "ConnectionName": "Azure AI Content Safety - Prod",
+        "ValidConnection": True,
+    },
+]
+
+# Mutations persist for the rest of the run. Agents routinely read back with
+# `list` after a write; a static list would answer "not there" right after
+# create said "Created" (or keep showing a record after delete said "Deleted"),
+# which reads as a failed write and sends the agent into retries that have
+# nothing to do with the behavior under test.
+#
+# Shape: {"created": [record, ...], "updated": {id: {field: value}}, "deleted": [id]}
+# `updated` holds only changed fields so a seeded record can be edited without
+# copying it, and `deleted` is a tombstone list so seeded records can be
+# removed too — they are not in `created`, so filtering that alone would leave
+# a deleted seed visible in `list`.
+STATE_PATH = os.path.join(os.path.dirname(MOCK_DIR), ".byog-state.json")
+
+EMPTY_STATE = {"created": [], "updated": {}, "deleted": []}
+
+
+def load_state():
+    if not os.path.exists(STATE_PATH):
+        return json.loads(json.dumps(EMPTY_STATE))
+    try:
+        with open(STATE_PATH) as fh:
+            state = json.load(fh)
+    except (OSError, ValueError):
+        return json.loads(json.dumps(EMPTY_STATE))
+    for key, empty in EMPTY_STATE.items():
+        state.setdefault(key, json.loads(json.dumps(empty)))
+    return state
+
+
+def save_state(state):
+    try:
+        with open(STATE_PATH, "w") as fh:
+            json.dump(state, fh)
+    except OSError:
+        pass  # a read-only sandbox degrades to the seeded list, never crashes
+
+
+def all_configurations():
+    """Seeded + created, with update overrides applied and tombstones removed."""
+    state = load_state()
+    deleted = set(state["deleted"])
+    updated = state["updated"]
+    out = []
+    for record in SEEDED + state["created"]:
+        if record["Id"] in deleted:
+            continue
+        if record["Id"] in updated:
+            record = dict(record, **updated[record["Id"]])
+        out.append(record)
+    return out
+
+
+def find_configuration(configuration_id):
+    for record in all_configurations():
+        if record["Id"] == configuration_id:
+            return record
+    return None
+
+
+def connection_meta(connection_id):
+    for connection in CONNECTIONS:
+        if connection["Id"] == connection_id:
+            return {
+                "ConnectorKey": connection["ConnectorKey"],
+                "ConnectorName": connection["ConnectorName"],
+                "ConnectionName": connection["Name"],
+            }
+    return {}
+
+
+def emit(payload, exit_code=0):
+    print(json.dumps(payload, indent=2))
+    return exit_code
+
+
+def failure(code, message, instructions=None, data=None):
+    payload = {"Result": "Failure", "Code": code, "Message": message}
+    if instructions is not None:
+        payload["Instructions"] = instructions
+    if data is not None:
+        payload["Data"] = data
+    return payload
+
+
+# Flags that consume the next token as their value. Without this the naive
+# "anything not starting with '-' is positional" rule reads the VALUE of
+# `--output json` as the connector-key positional, so
+# `is connections list --output json` — the exact form the skill tells agents
+# to use — answers "no connections found for connector 'json'". An agent then
+# reasonably concludes the connection does not exist, which is a lie the mock
+# told it. Keep this list in step with any value-taking flag a task's prompt
+# could plausibly lead an agent to type.
+VALUE_FLAGS = {
+    "--output",
+    "--output-filter",
+    "--connection-id",
+    "--validator-name",
+    "--validator-type",
+    "--login-validity",
+    "--folder",
+    "--folder-key",
+    "--profile",
+    "--filter",
+    "--limit",
+    "--scope",
+}
+
+
+def positionals(args):
+    """Positional tokens, skipping flags and the values they consume."""
+    out = []
+    skip = False
+    for arg in args:
+        if skip:
+            skip = False
+            continue
+        if arg.startswith("-"):
+            if arg in VALUE_FLAGS:
+                skip = True
+            continue
+        out.append(arg)
+    return out
+
+
+def flag(args, name):
+    """Value of --name <v> or --name=<v>; None when absent."""
+    for i, a in enumerate(args):
+        if a == name:
+            return args[i + 1] if i + 1 < len(args) else None
+        if a.startswith(name + "="):
+            return a.split("=", 1)[1]
+    return None
+
+
+def probe_pair(connection_id, validator_type):
+    """Mirror the server-side probe: reachability, then validator support."""
+    if connection_id not in VALIDATORS:
+        return None, (
+            "REACHABILITY_FAILED",
+            f"Connection {connection_id} is invalid or you do not have access to it",
+        )
+    served = [v["Validator"] for v in VALIDATORS[connection_id]]
+    if validator_type not in served:
+        return None, (
+            "VALIDATOR_NOT_SUPPORTED",
+            f"The connected service does not serve validator '{validator_type}'. "
+            f"Available: {', '.join(served) if served else 'none'}",
+        )
+    return {
+        "ConnectionId": connection_id,
+        "ValidatorType": validator_type,
+        "ConnectorKey": "uipath-azure-contentsafety",
+        "IsAvailable": True,
+        "Verdict": "PASSED",
+        "Details": None,
+        "DurationMs": 842,
+        "Error": None,
+    }, None
+
+
+def probe_failure(connection_id, validator_type, err):
+    code, message = err
+    return failure(
+        "ByoGuardrailProbeFailed",
+        f"Probe failed for validator '{validator_type}' on connection "
+        f"'{connection_id}' — {code}: {message}",
+        data={
+            "ConnectionId": connection_id,
+            "ValidatorType": validator_type,
+            "IsAvailable": False,
+            "Error": {"Code": code, "Message": message},
+        },
+    )
+
+
+def handle_byo_configurations(verb, args):
+    if verb == "list":
+        return emit(
+            {
+                "Result": "Success",
+                "Code": "ByoGuardrailConfigurationsList",
+                "Data": all_configurations(),
+            }
+        )
+
+    if verb == "list-validators":
+        connection_id = flag(args, "--connection-id")
+        if connection_id not in VALIDATORS:
+            return emit(
+                probe_failure(connection_id, "*", (
+                    "REACHABILITY_FAILED",
+                    f"Connection {connection_id} is invalid or you do not "
+                    "have access to it",
+                )),
+                1,
+            )
+        return emit(
+            {
+                "Result": "Success",
+                "Code": "ByoGuardrailValidatorsList",
+                "Data": VALIDATORS[connection_id],
+            }
+        )
+
+    if verb == "probe":
+        connection_id = flag(args, "--connection-id")
+        validator_type = flag(args, "--validator-type")
+        result, err = probe_pair(connection_id, validator_type)
+        if err:
+            return emit(probe_failure(connection_id, validator_type, err), 1)
+        return emit(
+            {
+                "Result": "Success",
+                "Code": "ByoGuardrailProbeSucceeded",
+                "Data": result,
+            }
+        )
+
+    if verb == "create":
+        connection_id = flag(args, "--connection-id")
+        validator_name = flag(args, "--validator-name")
+        validator_type = flag(args, "--validator-type")
+        missing = [
+            name
+            for name, value in (
+                ("--connection-id", connection_id),
+                ("--validator-name", validator_name),
+                ("--validator-type", validator_type),
+            )
+            if not value
+        ]
+        if missing:
+            return emit(
+                failure(
+                    "MissingRequiredOption",
+                    f"required option(s) missing: {', '.join(missing)}",
+                ),
+                1,
+            )
+
+        # Probe runs before the save, as the real command does.
+        _, err = probe_pair(connection_id, validator_type)
+        if err:
+            return emit(probe_failure(connection_id, validator_type, err), 1)
+
+        if any(c["ValidatorName"] == validator_name for c in all_configurations()):
+            return emit(
+                failure(
+                    "ByoGuardrailConfigurationCreateFailed",
+                    "Failed to create BYO guardrail configuration",
+                    instructions=(
+                        '409 Conflict: {"detail":"A configuration with '
+                        f'validator name \'{validator_name}\' already exists '
+                        'in this tenant."}'
+                    ),
+                ),
+                1,
+            )
+
+        record = {
+            "Id": "c9f4a2e1-6b70-4c3a-8d15-08de9042bb31",
+            "ConnectionId": connection_id,
+            "ValidatorName": validator_name,
+            "ValidatorType": validator_type,
+            "FallbackOnUiPath": "--fallback-on-ui-path" in args,
+            "Enabled": "--disabled" not in args,
+            "CreatedAt": "2026-08-12T00:00:00Z",
+            "UpdatedAt": None,
+            "ConnectorKey": "uipath-azure-contentsafety",
+            "ConnectorName": "Azure AI Content Safety",
+            "ConnectionName": "Azure AI Content Safety - Prod",
+            "ValidConnection": True,
+        }
+        state = load_state()
+        state["created"].append(record)
+        save_state(state)
+        return emit(
+            {
+                "Result": "Success",
+                "Code": "ByoGuardrailConfigurationCreated",
+                "Data": record,
+            }
+        )
+
+    if verb == "update":
+        positional = positionals(args)
+        target = positional[3] if len(positional) > 3 else None
+
+        # ValidatorName/ValidatorType are locked at creation — the real command
+        # has no such flags, so Commander rejects them before any API call.
+        for locked in ("--validator-name", "--validator-type"):
+            if any(a == locked or a.startswith(locked + "=") for a in args):
+                return emit(
+                    failure(
+                        "UnknownOption",
+                        f"unknown option '{locked}'",
+                        instructions=(
+                            "ValidatorName and ValidatorType cannot be changed; "
+                            "delete and re-create the configuration instead."
+                        ),
+                    ),
+                    1,
+                )
+
+        connection_id = flag(args, "--connection-id")
+        fallback = None
+        if "--fallback-on-ui-path" in args:
+            fallback = True
+        if "--no-fallback-on-ui-path" in args:
+            fallback = False
+        enabled = None
+        if "--enabled" in args:
+            enabled = True
+        if "--disabled" in args:
+            enabled = False
+        if "--enabled" in args and "--disabled" in args:
+            return emit(
+                failure(
+                    "ConflictingOptions",
+                    "option '--enabled' cannot be used with option '--disabled'",
+                ),
+                1,
+            )
+
+        # Refused client-side, before any API call, when nothing would change.
+        if connection_id is None and fallback is None and enabled is None:
+            return emit(
+                failure(
+                    "NoUpdatableField",
+                    "Provide at least one of --connection-id, "
+                    "--fallback-on-ui-path/--no-fallback-on-ui-path, or "
+                    "--enabled/--disabled to update.",
+                    instructions=(
+                        "ValidatorName and ValidatorType cannot be changed; "
+                        "delete and re-create the configuration instead."
+                    ),
+                ),
+                1,
+            )
+
+        existing = find_configuration(target)
+        if existing is None:
+            return emit(
+                failure(
+                    "ByoGuardrailConfigurationNotFound",
+                    f"No BYO guardrail configuration found with id '{target}'",
+                    instructions=(
+                        "Run 'uip guardrails byo-configurations list' to find a "
+                        "valid configuration id."
+                    ),
+                ),
+                1,
+            )
+
+        # Probe ONLY when the connection binding changes. Re-probing on every
+        # edit would make a configuration whose vendor is down impossible to
+        # disable — the one moment you most need to.
+        changes = {}
+        if connection_id is not None:
+            _, err = probe_pair(connection_id, existing["ValidatorType"])
+            if err:
+                return emit(
+                    probe_failure(connection_id, existing["ValidatorType"], err), 1
+                )
+            changes["ConnectionId"] = connection_id
+            changes.update(connection_meta(connection_id))
+        if fallback is not None:
+            changes["FallbackOnUiPath"] = fallback
+        if enabled is not None:
+            changes["Enabled"] = enabled
+        changes["UpdatedAt"] = "2026-08-13T00:00:00Z"
+
+        state = load_state()
+        merged = dict(state["updated"].get(target, {}), **changes)
+        state["updated"][target] = merged
+        save_state(state)
+        return emit(
+            {
+                "Result": "Success",
+                "Code": "ByoGuardrailConfigurationUpdated",
+                "Data": dict(existing, **changes),
+            }
+        )
+
+    if verb == "delete":
+        positional = positionals(args)
+        target = positional[3] if len(positional) > 3 else None
+        if "--force" not in args:
+            return emit(
+                failure(
+                    "ByoGuardrailConfigurationDeleteRefused",
+                    "Refusing to delete without --force. Deletion is permanent.",
+                ),
+                1,
+            )
+        if find_configuration(target) is None:
+            return emit(
+                failure(
+                    "ByoGuardrailConfigurationNotFound",
+                    f"No BYO guardrail configuration found with id '{target}'",
+                    instructions=(
+                        "Run 'uip guardrails byo-configurations list' to find a "
+                        "valid configuration id."
+                    ),
+                ),
+                1,
+            )
+        # Tombstone rather than filter `created`: seeded records are not in
+        # `created`, so filtering alone would leave a deleted seed in `list`.
+        state = load_state()
+        state["deleted"].append(target)
+        save_state(state)
+        return emit(
+            {
+                "Result": "Success",
+                "Code": "ByoGuardrailConfigurationDeleted",
+                "Data": {"Id": target},
+            }
+        )
+
+    return None
+
+
+def handle_connections(verb, args):
+    if verb == "list":
+        positional = positionals(args)
+        connector_key = positional[3] if len(positional) > 3 else None
+        data = CONNECTIONS
+        if connector_key:
+            data = [c for c in CONNECTIONS if c["ConnectorKey"] == connector_key]
+        if not data:
+            return emit(
+                {
+                    "Result": "Success",
+                    "Code": "ConnectionsList",
+                    "Message": (
+                        f"No connections found for connector '{connector_key}'."
+                    ),
+                    "Data": [],
+                }
+            )
+        return emit(
+            {"Result": "Success", "Code": "ConnectionsList", "Data": data}
+        )
+
+    if verb == "ping":
+        positional = positionals(args)
+        target = positional[3] if len(positional) > 3 else None
+        known = {c["Id"] for c in CONNECTIONS}
+        if target not in known:
+            return emit(
+                failure(
+                    "ConnectionPingFailed",
+                    f"Connection {target} is invalid or you do not have "
+                    "access to it",
+                ),
+                1,
+            )
+        return emit(
+            {
+                "Result": "Success",
+                "Code": "ConnectionPing",
+                "Data": {"ConnectionId": target, "State": "Enabled"},
+            }
+        )
+
+    return None
+
+
+def real_uip():
+    path = os.environ.get("PATH", "")
+    parts = [
+        p
+        for p in path.split(os.pathsep)
+        if p and os.path.abspath(p) != MOCK_DIR
+    ]
+    return shutil.which("uip", path=os.pathsep.join(parts))
+
+
+def main():
+    args = sys.argv[1:]
+    literal = positionals(args)
+
+    # A help request is a question about flags, not about tenant data. Answering
+    # it with a canned JSON payload reads as "that flag does not exist", so let
+    # the real CLI print its own help.
+    wants_help = "--help" in args or "-h" in args
+
+    handled = None
+    if wants_help:
+        pass
+    elif literal[:2] == ["guardrails", "byo-configurations"] and len(literal) > 2:
+        handled = handle_byo_configurations(literal[2], args)
+    elif literal[:2] in (["is", "connections"], ["integrations", "connections"]):
+        if len(literal) > 2:
+            handled = handle_connections(literal[2], args)
+    if handled is not None:
+        return handled
+
+    real = real_uip()
+    if not real:
+        sys.stderr.write("uip (shim): real uip CLI not found on PATH\n")
+        return 127
+    os.execv(real, [real] + args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

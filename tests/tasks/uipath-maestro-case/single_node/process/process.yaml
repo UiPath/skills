@@ -6,7 +6,7 @@ description: >
   `type: "process"` task. Validates the resulting case file and runs
   `uip maestro case debug` end-to-end, asserting only that the case
   finalStatus is `Completed`.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
 run_limits:
@@ -86,7 +86,7 @@ initial_prompt: |
 
   | Field | Value |
   |---|---|
-  | Process Reference | Name "ProcurementProcess", Folder "Shared/uipath-agents" |
+  | Process Reference | Name "ProcurementProcess", Folder "Shared/uipath-agents/ProcurementProcess" |
   | Component Type | PROCESS |
   ```
 
@@ -95,6 +95,11 @@ initial_prompt: |
   debug` yourself — the test harness runs it. Do NOT ask for approval,
   confirmation, or feedback. Build end-to-end in a single pass and finish
   with `uip maestro case validate` passing on the resulting caseplan.json.
+
+  Resolve `ProcurementProcess` from `processOrchestration-index.json`; this
+  fixture contains the exact entry there. Use `process-index.json` only as a
+  fallback, and do not write a placeholder — use the resolved `entityKey` as
+  the task's `taskTypeId`.
 
 success_criteria:
   - type: run_command

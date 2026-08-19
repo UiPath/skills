@@ -41,9 +41,13 @@ The `<resourceKey>` is the local UUID minted by `uip solution projects add` — 
 
 ## Scaffolding the Sibling-Folder Coded Agent
 
+<!--skill-flavor:flow-integration-ownership:start-->
 The full end-to-end workflow (solution init → flow scaffold → agent scaffold → register → wire → validate) is owned by [`quickstart.md` § Scenario 2](quickstart.md#quick-start-scenario-2--in-solution-coded-agent-in-a-flow). This file covers the agent-side detail of step 3 (scaffold) and step 5 (registration) in finer detail; the canonical sequence stays in the quickstart so it remains executable in one pass.
+<!--skill-flavor:flow-integration-ownership:end-->
 
+<!--skill-flavor:flow-project-creation:start-->
 If the solution and flow project don't yet exist, run `uip solution init "<SolutionName>"` and then `uip maestro flow init "<FlowName>"` from inside the solution **before** the steps below — those calls are the start of Scenario 2.
+<!--skill-flavor:flow-project-creation:end-->
 
 1. From the solution directory, create the agent folder and scaffold inside it:
 
@@ -70,6 +74,7 @@ If the solution and flow project don't yet exist, run `uip solution init "<Solut
    uip codedagent init
    ```
 
+<!--skill-flavor:flow-solution-registration-paths:start-->
 4. Register the agent in the solution — **this is the step that mints the `resource.key`** the flow will reference:
 
    ```bash
@@ -78,6 +83,7 @@ If the solution and flow project don't yet exist, run `uip solution init "<Solut
    ```
 
    After this command, `resources/solution_folder/process/agent/<CodedAgentProject>.json` holds the `resource.key` UUID.
+<!--skill-flavor:flow-solution-registration-paths:end-->
 
 
 ### Flow Discovery
@@ -98,6 +104,22 @@ Without `--local`, `registry list`/`get` query the tenant registry (Orchestrator
 
 ## Wiring the Agent's Inputs
 
-For inputs that reference flow variables, use `{ "type": "literal", "expression": "{{ $vars.X }}", "fieldType": "string" }` — NOT `=js:...` expressions. `=js:` ships as a literal string to the agent activity and fails at runtime with `Cannot find name '<identifier>'`.
+One `inputs.<field>` entry per property in the agent's input schema (`entry-points.json`, mirrored in the definition's `inputDefinition.properties`). Two valid value shapes, same binding:
+
+```json
+"inputs": {
+  "<INPUT_FIELD>": {
+    "type": "jsExpression",
+    "expression": "$vars.<UPSTREAM_NODE_ID>.output.<FIELD>",
+    "fieldType": "<FIELD_TYPE>"
+  }
+}
+```
+
+- `jsExpression` — bare `$vars...` expression, no `=js:` prefix. Upstream values read as `$vars.<nodeId>.output.<field>`; flow globals as `$vars.<global>`.
+- `literal` — text template; static text mixable with `{{ }}` interpolations: `{ "type": "literal", "expression": "{{ $vars.<UPSTREAM_NODE_ID>.output.<FIELD> }}", "fieldType": "<FIELD_TYPE>" }`.
+- `<FIELD_TYPE>` is the property's JSON-schema type from the agent's input schema (e.g. `string`, `boolean`, `number`) — read it from there, do not invent it.
+
+NEVER a plain `"=js:..."` string value — it ships as a literal string to the agent activity and fails at runtime with `Cannot find name '<identifier>'`. Complete worked example (trigger → agent → end): uipath-maestro-flow skill, agent-plugin reference § Wiring Inputs.
 
 Input-only rule. Mapping the agent's output back to a flow-level global on an End node DOES use `=js:` — see [variables-and-expressions.md § Variable Updates](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md#variable-updates-variableupdates).

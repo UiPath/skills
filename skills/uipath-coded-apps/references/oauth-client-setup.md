@@ -24,6 +24,8 @@ Needed inputs: app name, redirect URI(s), required OAuth scopes (from [oauth-sco
 
 The CLI takes **flat, comma-separated scope names** (e.g. `OR.Assets,OR.Tasks.Read`) — no portal resource-label grouping. Identity resolves each scope to its resource. Coded web apps use the browser PKCE (authorization_code) flow, so they need **`--user-scope`** (delegated), and a non-confidential client:
 
+> **Delimiter trap — `uipath.json` vs CLI.** The `scope` field in `uipath.json` is **space**-separated; `--user-scope`/`--app-scope` are **comma**-separated. Never paste the `uipath.json` string into the CLI: a space-separated list is sent as ONE scope name and fails with `HTTP 400: ... Not all scopes=<your whole list> are present in database` — even though every individual name is valid. Convert spaces → commas first.
+
 - `--non-confidential` — public client, no secret (required for browser PKCE).
 - Non-confidential apps support `--user-scope` only. Do NOT pass `--app-scope` with `--non-confidential` — the CLI rejects it.
 - `--redirect-uri` is required for non-confidential / `--user-scope` apps.
@@ -90,7 +92,7 @@ Fall back to the [Manual portal steps](#manual-portal-fallback) only when:
 - the signed-in identity lacks external-app admin permission (`403`) — hand the manual steps to an org admin, OR
 - the CLI genuinely lacks the verb (`uip admin external-apps --help` shows nothing — very old CLI; prefer upgrading).
 
-A missing scope name (`scope not found`) is NOT a fallback trigger — fix the name via `uip admin scopes list` and retry.
+A missing scope name (`scope not found` / `Not all scopes=<list> are present in database`) is NOT a fallback trigger. If the rejected `scopes=` string contains **spaces**, the delimiter is the bug — comma-separate and retry (see [Scope model](#scope-model--cli-vs-portal)). Otherwise fix the name via `uip admin scopes list` and retry.
 
 ## Manual portal fallback
 

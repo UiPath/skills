@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-execute-non-query-out-param-size
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose an Execute Non Query failure
   where a stored procedure (CommandType=StoredProcedure) is invoked over

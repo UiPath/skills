@@ -1,0 +1,72 @@
+task_id: skill-tasks-smoke-catalogs
+description: >
+  Smoke test: agent uses the uipath-tasks skill to run the task catalog
+  commands offline — list catalogs in a folder, get a catalog by ID, create a
+  catalog with a retention policy, and update a catalog. Tests correct CLI verbs
+  and flags (--folder-id, --name, --retention-action Delete|Archive), and that
+  --output json is applied. Runs against fake IDs — auth errors are expected.
+tags: [uipath-tasks, smoke, mode:operate, lifecycle:setup, catalogs]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 16
+
+initial_prompt: |
+  You are managing UiPath Action Center task catalogs. Perform each step in
+  order. Use --output json on every uip tasks command, and pass --folder-id 123
+  on every command (this is a non-interactive run, so the folder cannot be
+  picked interactively).
+
+  1. List task catalogs in folder ID 123.
+  2. Get catalog ID 55 in folder 123.
+  3. Create a catalog in folder 123 named "Invoices" with a retention action of
+     Delete and a retention period of 90 days.
+  4. Update catalog 55 in folder 123: rename it to "Invoices 2026".
+
+  Important:
+  - The uip CLI is NOT connected to a live tenant. Commands fail with auth
+    errors — that is expected. Run each command once and move on. Do NOT retry
+    or attempt to login. If a command is not recognized or returns an error, do
+    NOT investigate, retry, or run help — record the outcome and continue.
+  - Retention actions are only Delete or Archive. Do not use any other value.
+  - Do NOT invent other IDs. Use folder 123 and catalog 55 as given.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed task catalogs in a folder"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+catalogs\s+list\s+.*--folder-id\s+123'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent got a catalog by ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+catalogs\s+get\s+55\s+.*--folder-id\s+123'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a catalog with a Delete retention policy"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+catalogs\s+create\s+.*--name\s+.*--retention-action\s+Delete'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated a catalog"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+catalogs\s+update\s+55\s+.*--folder-id\s+123'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use an invalid retention action"
+    tool_name: "Bash"
+    command_pattern: '--retention-action\s+(None|Purge|Keep)'
+    weight: 1.0
+    pass_threshold: 1.0

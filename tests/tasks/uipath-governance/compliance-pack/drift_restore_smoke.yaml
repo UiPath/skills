@@ -9,7 +9,12 @@ description: >
   "restore", they ask for posture, and the drift data is what turns the answer
   into a restore offer.
 
-  Platform note: uip commands fail with auth errors - expected.
+  Platform note: in CI the tenant is live and these commands succeed; locally
+  they fail with auth errors. The prompt must not assert either way — telling
+  the agent "auth errors expected" made it grep output.txt for auth keywords,
+  hit the words "unauthorized"/"forbidden" in the ISO 42001 control prose that
+  `catalog get` returns, and abort before running coverage (run
+  2026-08-07_04-44-12).
 tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
 
 sandbox:
@@ -36,8 +41,13 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - uip CLI is not connected to a live tenant - auth errors expected.
-  - Run each command once, capture output, move on. Do NOT retry or login.
+  - A uip command may fail with an auth error. If one does, carry on with the
+    remaining steps - do NOT retry or login.
+  - Decide whether a command succeeded from the `Result` field of that command's
+    own JSON response. Do NOT search the accumulated output.txt for words like
+    "unauthorized" or "forbidden" - the ISO 42001 control descriptions contain
+    them as ordinary policy text, so that check reports failure on a good run.
+  - Run each command once, capture output, move on.
   - Always pass --output json.
   - Do NOT prompt for confirmation - this is an automated test.
 

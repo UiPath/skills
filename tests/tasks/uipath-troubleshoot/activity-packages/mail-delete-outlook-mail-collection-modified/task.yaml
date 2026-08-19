@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-delete-outlook-mail-collection-modified
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Delete Outlook Mail Message
   failure caused by deleting inside a For Each over the live List<MailMessage>

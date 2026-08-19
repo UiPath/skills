@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1",
+  "bindings": [
+    {
+      "id": "slack",
+      "name": "slack",
+      "resource": "Connection",
+      "resourceKey": "<slack-connection-id>",
+      "default": "<slack-connection-id>",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
+      "id": "shared",
+      "name": "shared",
+      "resource": "Connection",
+      "resourceKey": "<folder-key>",
+      "default": "<folder-key>",
+      "propertyAttribute": "folderKey"
+    }
+  ]
+}

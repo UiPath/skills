@@ -52,6 +52,15 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # CQ7: the prompt asks for a one-shot local run, so the interactive `dev`
+  # server is the wrong tool. Sole carrier of this rule in the suite.
+  - type: command_not_executed
+    description: "Agent did NOT use the interactive dev server for a non-interactive run (CQ7)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+dev\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "LangGraph project shape, lazy-LLM-init invariant, schema sync"
     command: "python3 $TASK_DIR/check_langgraph_classifier.py"

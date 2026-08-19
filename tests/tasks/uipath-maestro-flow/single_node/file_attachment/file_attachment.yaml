@@ -1,13 +1,15 @@
 task_id: skill-flow-file-attachment-debug
 description: >
   Build a Flow whose trigger exposes a file-typed input variable, read the
-  uploaded attachment in a Script node, and surface its file name as flow
-  output. Then verify the operate path: `uip maestro flow debug
-  --attachment <varId>=<localPath>` uploads the local file, the runtime
-  resolves it to a Flow Attachment object ({ID, FullName, MimeType, Metadata}),
-  and the flow completes. The checker binds a randomly-named local file the
-  agent never saw and asserts that name appears in the output — proving the
-  attachment actually flowed through, not a hardcoded literal.
+  uploaded attachment's name, and surface it as flow output. Any node shape the
+  skill sanctions is acceptable — a Script node body or the End node's
+  `outputs.<varId>.source` `=js:` binding both resolve `.FullName`. Then verify
+  the operate path: `uip maestro flow debug --attachment <varId>=<localPath>`
+  uploads the local file, the runtime resolves it to a Flow Attachment object
+  ({ID, FullName, MimeType, Metadata}), and the flow completes. The checker binds
+  a randomly-named local file the agent never saw and asserts that name appears
+  in the output — proving the attachment actually flowed through, not a
+  hardcoded literal.
 tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node]
 
 agent:

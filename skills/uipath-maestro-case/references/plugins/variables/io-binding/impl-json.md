@@ -115,9 +115,9 @@ Normal, bare, and reassigned outputs use their own `.id`. This is load-bearing w
 
 For each task input in `tasks.md`:
 
-**Literals/expressions** — write the value string directly to `input.value`. Values shown are POST-rewrite — impl translates `=metadata.X` from `tasks.md` to `=js:metadata.X` per the [canonical-form table](../../../bindings-and-expressions.md#canonical-form-per-sink) (plain `=metadata.X` is not resolved by the lookup-path evaluator):
+**Literals/expressions** — write the value string directly to `input.value`. Values shown are POST-rewrite — impl translates `=metadata.X` from `tasks.md` to `=js:metadata.X` per the [canonical-form table](../../../bindings-and-expressions.md#canonical-form-per-sink) (plain `=metadata.X` is not resolved by the lookup-path evaluator). **A quoted string literal's quotes are SDD delimiters, never payload** — same rule as the `=` output side above: `tasks.md`'s `APIInput1 = "literal-seed"` emits `"value": "literal-seed"`, NOT `"value": "\"literal-seed\""`. `tasks.md` keeps the SDD cell's own quotes ([planning.md § code spans](planning.md)); `caseplan.json` strips them. Embedded delimiters pass `validate` and ship the quote characters to the resource as payload:
 ```
-"=vars.amount"  |  "=js:metadata.ExternalId"  |  "50"  |  "=js:new Date()"
+"=vars.amount"  |  "=js:metadata.ExternalId"  |  "literal-seed"  |  "50"  |  "=js:new Date()"
 ```
 
 **Cross-task references** (`input <- "Stage A"."Task X".outputName`) — resolve first:
@@ -312,7 +312,7 @@ Pick one:
 
 ### Check 5 — Resolved-resource I/O completeness
 
-Verifies each resolved task's binding contract **covers** its resource's declared I/O — the build-side re-check of [sdd-generation-rules.md § Resolved-resource I/O completeness](../../../sdd-generation-rules.md#resolved-resource-io-completeness) (Approve-gate item 9 / Finalization step 19). Where Checks 1–4 verify that references which *exist* resolve, Check 5 verifies the *right set of references exists*: required inputs are not silently missing, and extract outputs name real fields.
+Verifies each resolved task's binding contract **covers** its resource's declared I/O — the build-side re-check of the design-side Resolved-resource I/O completeness rule (case SDD content contract, `uipath-planner`) (Approve-gate item 9 / Finalization step 19). Where Checks 1–4 verify that references which *exist* resolve, Check 5 verifies the *right set of references exists*: required inputs are not silently missing, and extract outputs name real fields.
 
 Read each resolved task's persisted contract from `tasks/registry-resolved.json` (per-input `name` + `required` flag, declared output-field list — written at §Resolve). **Skip** any task with no persisted contract (Rule 17 placeholder / `<UNRESOLVED>`) — same treatment as Check 2's unresolved-producer branch.
 

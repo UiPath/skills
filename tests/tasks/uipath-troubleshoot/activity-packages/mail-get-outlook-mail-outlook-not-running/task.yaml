@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-get-outlook-mail-outlook-not-running
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Get Outlook Mail Messages
   failure where the QueueMailIntake process faults on every unattended run

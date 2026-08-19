@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-export-pdf-missing-output-dir
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose an Export to PDF failure that
   surfaces only as a generic "Command Failed" because the output directory

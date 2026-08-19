@@ -24,8 +24,8 @@ initial_prompt: |
   groups whose displayName equals "active". Find the registered Entra/Azure AD connector key 
   before wiring the node.
 
-  Branch on the result: if the call fails, stop the flow with the error "CeqlWhere test failed"; 
-  if it succeeds, log "CeqlWhere test passed". 
+  Branch on the result: if the call fails, stop the flow immediately;
+  if it succeeds, log "CeqlWhere test passed".
   Validate the final flow file.
 
 success_criteria:

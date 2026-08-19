@@ -296,12 +296,12 @@ The architectural core sections differ per template. For each product, generate 
 - §12 Project Structure
 
 **Case Management:**
-- §3 Stages
-- §4 Tasks Grid (per stage, lanes × index)
-- §7 Data Definitions (case data objects, supporting objects, data flow)
-- §13 Task Type Registry (RPA / AGENT / API_WORKFLOW / CONNECTOR / HITL)
-- §14 Integrated Components
-- §15 Project Structure
+- §1 Case Definition (case metadata, SLA rules, triggers, case exit conditions, case variables)
+- §2 Stages & Tasks (one complete stage block per stage; task summary table plus one complete detail block per task)
+- §3 Personas & App Views
+- §4 Integrations (resource roll-up for connectors, API workflows, agents, processes/RPA, child cases, external agents, IXP models, coded functions)
+- Case section headings render in the template's long form (`## Section 1: Case Definition`, …) — the heading TEXT is load-bearing downstream (`uipath-maestro-case` parses it verbatim); `§N` is the reference notation in planner docs only. Do not emit the legacy planner-only `§3 Stages` / `§4 Tasks Grid` / `§13 Task Type Registry` format.
+- Case body content obeys [references/case/](case/) — the model ([case/model.md](case/model.md)), authoring method ([case/authoring.md](case/authoring.md)), render contracts, and the finalization gate ([case/review.md](case/review.md)); tenant grounding runs per [case/grounding.md](case/grounding.md). For conversational (non-PDD) case requests, delegated case design, and case draft finalization, the whole flow is the Case Design Lane — [case-design-lane-guide.md](case-design-lane-guide.md) — not the generic 3-phase model in this guide.
 
 **Agents:**
 - §2 Agent Framework (LangGraph / LlamaIndex / OpenAI Agents / Simple Function)
@@ -335,7 +335,7 @@ Each template has a primary inventory table. Map PDD steps to units:
 | RPA (Master Project) | Workflow Inventory **per sub-project** | `.xaml` or `.cs` workflow files, grouped by sub-project |
 | Flow | Nodes Inventory | Flow nodes |
 | BPMN | Activities Inventory | BPMN activities / tasks (service, script, user, call activity, subprocess) |
-| Case | Tasks Grid | Tasks per lane/index |
+| Case | §2 Stages & Tasks | Stage blocks plus task summary/detail blocks |
 | Agents | Tools | Python functions, RPA/API workflow bindings |
 | Coded Apps | Pages + Components | Routes and React/Angular/Vue components |
 | API Workflows | Execution Flow steps | Activities (HTTP, Connector, Script) |
@@ -353,7 +353,7 @@ Type each step's verb and place it on the best-fit component per [Product Select
 
 For each integrated component detected in Phase 1 (and each non-primary placement from Step 3), flag it in the appropriate section of the template:
 
-- **HITL** — host-aware routing: Flow hosts → flag touchpoints; implementation task routes to `uipath-human-in-the-loop`. Coded Agents → escalation is part of the `uipath-agents` build task (the HITL skill defers coded-agent wiring to it). BPMN userTask → flagged in §9 HITL Touchpoints, authored inline by `uipath-maestro-bpmn` (no HITL-skill task). Case → inline HITL task type in the Tasks Grid (never the HITL skill). RPA → Action Center / long-running workflow flagged in the RPA template.
+- **HITL** — host-aware routing: Flow hosts → flag touchpoints; implementation task routes to `uipath-human-in-the-loop`. Coded Agents → escalation is part of the `uipath-agents` build task (the HITL skill defers coded-agent wiring to it). BPMN userTask → flagged in §9 HITL Touchpoints, authored inline by `uipath-maestro-bpmn` (no HITL-skill task). Case → `action` task detail block in §2 Stages & Tasks with Action App intent (never the HITL skill). RPA → Action Center / long-running workflow flagged in the RPA template.
 - **Integration Service connectors** → list in Application Inventory (RPA) or Connectors section (others); check `uip is connectors list` — implementation task routes to `uipath-platform` to configure an existing connector, or `uipath-connector-builder` to build a custom one when none exists
 - **IXP / Document Understanding models** (extraction from semi-structured documents) → list in the host template's "IXP / Document Understanding Models" table (Flow / BPMN / Case / Agent / RPA templates carry it); for an API Workflow or Coded App primary, record the model as its own row in §Solution / Project Breakdown instead. Implementation task routes to `uipath-ixp`, ordered before its consumers
 - **Coded Functions** (TypeScript / JavaScript / Python — atomic deterministic transform / compute: parsing, scoring, custom-auth API calls, IS-connection queries) — only when extraction is justified per [placement rule 6](product-selection-guide.md#per-task-component-placement-the-to-be-per-step); host-native logic stays in the host's own inventory → list in the host template's "Coded Functions" table (Flow / BPMN / Case / Agent templates carry it). Implementation task routes to `uipath-functions`, ordered before its consumers; no per-project SDD file (see [Template Mapping](product-selection-guide.md#template-mapping))
@@ -370,14 +370,14 @@ Present the architectural core to the user. Wait for approval or adjustments.
 
 > **Progress:** Mark "Generate architecture (Phase 2)" as `completed`. Mark "Generate full SDD (Phase 3)" as `in_progress`.
 
-> **Write early, append incrementally — the file on disk is the deliverable.** Do NOT hold the entire SDD in context and write only at the very end. As soon as Phase 2 has produced the architectural core, write a first valid file: the header + `## Planner Handoff` header **and** the `<!-- planner-handoff:v1 -->` marker + `## Decisions Made` block (autonomous) + the Phase 1 / Phase 2 sections you already have. Then append the remaining Phase 3 sections to that file with follow-up `Edit`/`Write` calls. Rationale: a long autonomous turn can hit the per-turn watchdog mid-generation — an incrementally-written file leaves a gradeable, useful SDD on disk instead of nothing. The Planner Handoff header + marker MUST be in this first write so detection (and grading) works even on a partial file — **with `Status: draft` and `Template validation: pending`**: the marker says "planner SDD", the Status field says whether it is consumable. Step 1.5 (SME resolution) and the Step 2 superset check still run; they patch and verify the already-on-disk file rather than gating the first write. Flipping `Status` to `ready` is the LAST write of Phase D — an interrupted run leaves `draft` on disk and Lane A refuses to derive tasks from it.
+> **Write early, append incrementally — the file on disk is the deliverable.** Do NOT hold the entire SDD in context and write only at the very end. As soon as Phase 2 has produced the architectural core, write a first valid file: the title/header + `## Planner Handoff` header **and** the `<!-- planner-handoff:v1 -->` marker + `## Decisions Made` block (autonomous) + the Phase 1 / Phase 2 sections you already have. Then append the remaining Phase 3 sections to that file with follow-up `Edit`/`Write` calls. Rationale: a long autonomous turn can hit the per-turn watchdog mid-generation — an incrementally-written file leaves a gradeable, useful SDD on disk instead of nothing. The Planner Handoff header + marker MUST be in this first write so detection (and grading) works even on a partial file — **with `Status: draft` and `Template validation: pending`**: the marker says "planner SDD", the Status field says whether it is consumable. Step 1.5 (SME resolution) and the Step 2 superset check still run; they patch and verify the already-on-disk file rather than gating the first write. Flipping `Status` to `ready` is the LAST write of Phase D — an interrupted run leaves `draft` on disk and Lane A refuses to derive tasks from it.
 
 ### Step 1: Generate Remaining Sections
 
 Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. Section assignments per phase:
 
 **Phase 1 produces (for all templates):**
-- Header & Document History (process name, today's date, version 1.0)
+- Header & Document History (process name, today's date, version 1.0). The Case template's title heading is `# SDD — {Case Name}`.
 - Overview section (§1)
 - Process/Flow/Lifecycle diagram (§2 for most templates)
 - Detailed steps / nodes description where applicable
@@ -432,7 +432,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 > **Progress:** Mark "Resolve SME review items" as `completed`. Mark "Write SDD to disk" as `in_progress`.
 
 1. Assemble all sections in template order. If you followed the write-early principle above, the file already holds the header + handoff + Phase 1/2 sections — finalize it by appending/patching the remaining sections in template order rather than rewriting from scratch.
-2. **Fill the `## Planner Handoff` header** that appears in every template after `## Document History`. This is the load-bearing detection contract. The Entry Guard accepts **either** the heading OR the adjacent `<!-- planner-handoff:v1 -->` HTML marker as a detection signal — both ship in every template and both should survive into the generated file (so a later session, or a hand-written SDD, still routes to Lane A):
+2. **Fill the `## Planner Handoff` header** that appears near the top of every template. Every template places it after `## Document History`. This is the load-bearing detection contract. The Entry Guard accepts **either** the heading OR the adjacent `<!-- planner-handoff:v1 -->` HTML marker as a detection signal — both ship in every template and both should survive into the generated file (so a later session, or a hand-written SDD, still routes to Lane A):
 
    ```markdown
    <!-- DO NOT RENAME: uipath-planner detects SDDs via this exact heading or the marker below. -->
@@ -449,7 +449,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    | **Solution ID** | <SOLUTION_NAME_KEBAB>                       ← same value in the root and every child; Lane A verifies the match
    | **Project SDD role** | root | child                           ← `root` in the solution overview, `child` in every per-project SDD
    | **Independently executable** | no                              ← children only; Lane A refuses to derive tasks from a child directly
-   | **Project list section** | §11 / §10 + §11 / Project Inventory ← template-specific (RPA single: §11; RPA Master: §10 + §11; Flow: §3 + §7; BPMN: §4 + §9; etc.)
+   | **Project list section** | §11 / §10 + §11 / Project Inventory ← template-specific (RPA single: §11; RPA Master: §10 + §11; Flow: §3 + §7; BPMN: §4 + §9; Case: §2 + §4; etc.)
    | **Tasks file** | `<PROCESS_NAME_KEBAB>-tasks.md`             ← planner writes here on first run. Solution scope: root AND every child carry the SAME canonical `<SOLUTION_NAME_KEBAB>-tasks.md` — exactly one tasks file per solution, never one per project
    | **Generated by** | uipath-planner
    | **Generation date** | <YYYY-MM-DD>
@@ -458,7 +458,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    Do NOT rename the heading or strip the marker. They are redundant on purpose — keeping both means a hand-edit of one signal does not silently break Lane A detection.
 
-3. **Autonomous-mode Decisions Made block.** If `Execution autonomy: autonomous`, insert a `## Decisions Made` block immediately after the Planner Handoff header and before any `Action Required — SME Review Items` block or the Table of Contents. The block makes the five highest-leverage architectural picks scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document. In `Execution autonomy: interactive`, this block is optional — the user already reviewed each decision at the Phase 1/Phase 2 checkpoints. Skip the block for interactive runs.
+3. **Autonomous-mode Decisions Made block.** If `Execution autonomy: autonomous`, insert a `## Decisions Made` block immediately after the Planner Handoff header and before any `Action Required — SME Review Items` block or product body. It sits before the Table of Contents in every template. The block makes the highest-leverage architectural picks scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document. In `Execution autonomy: interactive`, this block is optional — the user already reviewed each decision at the Phase 1/Phase 2 checkpoints. Skip the block for interactive runs.
 
    Format:
 
@@ -482,11 +482,11 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - Row 1 always appears, even when nothing was blocked (`cloud; no products blocked`) — the reviewer must see which platform the architecture assumes.
    - For Solution scope, rows 3-5 repeat per RPA project (use a sub-table or one row per project — keep concise).
    - For non-RPA scopes (e.g., Single-product Agent), rows 3-5 collapse to N/A with one row covering the product-specific Level-1.5-equivalent (framework choice, app type, etc.).
-   - The block does NOT replace the per-section detail later in the SDD — §10 / §11 / §13 still carry the full justification. The block is the **scannable index** of those decisions.
+   - The block does NOT replace the per-section detail later in the SDD — the product body still carries the full justification in its architecture, stage/task, framework, or project-structure sections. The block is the **scannable index** of those decisions.
 
    In BOTH modes, also emit the `## Recommended Scope` block directly after `## Decisions Made` (directly after the Planner Handoff header when that block is absent — interactive runs): copy the Phase 1 summary's `Recommendation:`, `Delivery model:`, and `Blocked by platform:` lines (see [product-selection-guide.md → Summary block](product-selection-guide.md#summary-block)). Autonomous mode skips the Phase 1 presentation, so this copy is the only durable record of the Constraint Gate outcome.
 
-4. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header (and after the `## Decisions Made` / `## Recommended Scope` blocks if present) and before the Table of Contents:
+4. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header (and after the `## Decisions Made` / `## Recommended Scope` blocks if present) and before the product body. This sits before the Table of Contents in every template:
 
 ```markdown
 ## Action Required — SME Review Items
@@ -528,6 +528,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    Minimum required H2 headings per template:
    - **RPA template:** §1 Process Overview, §2 Process Map, §3 Detailed Process Steps, §4 Business Rules, §5 Data Definitions, §6 Value Mappings, §7 Exception Handling, §8 Error Handling, §9 Application Inventory, §10 Master Project Architecture, §11 Project Structure, §12 Queue Architecture (omit only when the design defines or consumes no Orchestrator queue), §13 Implementation Mode, §14 Packages, §15 Credentials & Assets, §16 Deployment Environment, §17 Testing Strategy, §18 Next Steps
+   - **Case template:** §1 Case Definition, §2 Stages & Tasks, §3 Personas & App Views, §4 Integrations, plus the unnumbered H2s `## Document History`, `## Planner Handoff`, `## Table of Contents`, `## Non-Functional Requirements`, `## Testing Strategy`, `## Next Steps`. Also verify every modeled stage has a `### Stage ...` or `### Secondary Stage ...` block, every modeled task has a `##### Task ...` detail block, and every task detail block contains the exact marker `**Task envelope**` before its Required / Run Only Once / Skip Condition table.
    - **Other templates:** check the template file's TOC; the rule is the same — every H2 in the template appears in the generated SDD.
 
    For any missing required H2:

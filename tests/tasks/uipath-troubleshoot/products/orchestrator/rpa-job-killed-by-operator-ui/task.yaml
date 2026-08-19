@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-rpa-job-killed-by-operator-ui
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose a faulted LongRunningProcess job that
   ended with System.Exception: "Job stopped with an unexpected exit code:

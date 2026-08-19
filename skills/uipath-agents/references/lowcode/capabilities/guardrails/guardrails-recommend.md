@@ -33,7 +33,9 @@ else:
   uip agent guardrails catalog --output json > .guardrails-catalog-cache.json
   ```
 
-Inspect the saved JSON. If the output contains `"Code": "GuardrailCatalogUnavailable"`, surface the message to the user and **stop** — do not fall back to guessing. This means the catalog endpoint is not yet available for this tenant. Note: the CLI writes all structured output (both success and error JSON) to stdout, so the redirect captures error responses correctly — do not add `2>&1`.
+Inspect the saved JSON. **Only stop for the specific, structured signal that the catalog endpoint itself is unavailable:** the output contains `"Code": "GuardrailCatalogUnavailable"`. In that exact case, surface the message to the user and **stop** — do not fall back to guessing. Note: the CLI writes all structured output (both success and error JSON) to stdout, so the redirect captures error responses correctly — do not add `2>&1`.
+
+**A generic CLI parse error is a different signal — do not stop for it.** If the output is instead something like `"Message": "error: unknown command 'catalog'"` (a `ValidationError`/parse error, not `GuardrailCatalogUnavailable`), that means this CLI build predates the `catalog` subcommand — it is an older/local build, not a tenant-side unavailability. Do not halt the whole workflow on this. Fall back to `uip agent guardrails list` plus built-in reasoning about the request, note in the report that the catalog command wasn't available on this CLI build, and continue.
 
 The cache file is `.guardrails-catalog-cache.json` in the current working directory. Add it to `.gitignore` if one exists.
 
@@ -46,6 +48,8 @@ uip agent guardrails list --output json
 ```
 
 Build a lookup of `{ validatorId: status }` from the `Data` array. You will use this in Steps 2 and 5 to filter recommendations.
+
+> **`Validator` is not unique — key the lookup on `(Validator, IsByo)`, not `Validator` alone.** A tenant with a bring-your-own (BYOG) configuration for a validator sees two entries sharing the same `Validator` name — one built-in (`IsByo` absent/false), one BYO (`IsByo: true`, carrying `ByoValidatorName`/`ByoConfigurationId`/etc.). Collapsing them into a single `{ validatorId: status }` key silently picks whichever entry happens to win the collision and can validate against the wrong `Parameters`/`AllowedScopes`. See [guardrails.md § BYO (bring-your-own) guardrails](guardrails.md#byo-bring-your-own-guardrails).
 
 > **Catalog vs. list — the key distinction:** The catalog lists all guardrails that exist on the platform (with rich metadata for reasoning). The guardrails list returns only those accessible to this tenant. Only recommend validators where `Status == "Available"` in the list.
 
@@ -73,6 +77,11 @@ its input or output (literal word/phrase, regex, number, boolean, or always),
 use the custom deterministic recipe below. This decision happens before
 built-in catalog candidate ranking:
 
+0. **Run the Step 0 catalog and guardrails-list fetches now, even though this
+   branch does not use their content to pick a validator.** They are still
+   mandatory discovery/audit steps before writing any guardrail — this branch
+   only skips catalog-driven *ranking* (step 2 below), not the Step 0 calls
+   themselves.
 1. Treat quoted text and a distinct all-caps token such as `CONFIDENTIAL` as
    an exact literal predicate, even when the surrounding request is phrased
    semantically (for example, "worried it might publish CONFIDENTIAL content"
@@ -92,8 +101,8 @@ built-in catalog candidate ranking:
 Broad semantic threats without an exact mechanical predicate continue through
 the built-in catalog ranking in Step 2.
 
-Once this deterministic branch matches, the catalog/list calls remain
-mandatory discovery steps but cannot replace or override the custom rule with
+Once this deterministic branch matches, the Step 0 catalog/list calls (already
+run per step 0 above) cannot replace or override the custom rule with
 `llm_as_judge`, PII detection, or any other built-in validator.
 
 ### Step 2 — Catalog-Driven Recommendation Analysis
@@ -113,6 +122,8 @@ For **each entry** in the catalog (`guardrails[]` array from the cached JSON):
 5. If the validator is a candidate: use the catalog entry's `examples[].config` to determine the appropriate scope, stage, action, and parameters. The example config is the authoritative template for parameter shape.
 
 Do **not** apply predetermined knowledge about which guardrail maps to which schema field. Let the catalog entry's authored fields drive every recommendation decision.
+
+> **Built-in vs. BYO — default to built-in.** When a matched validator has both a built-in entry and one or more `Available` BYO (`IsByo: true`) entries in the guardrails list, recommend the built-in implementation (omit `byoValidatorName`) by default, and mention that a BYO alternative exists. Only recommend a specific BYO configuration when the user names it or asks for BYO explicitly.
 
 ### Step 3 — De-duplicate Overlapping Validators
 
@@ -183,8 +194,11 @@ Generate a fresh UUID for each guardrail `id`.
 Write the new guardrail blocks to `agent.json`'s `guardrails[]` array. Then run:
 
 ```bash
+uip agent refresh "<AgentName>" --output json
 uip agent validate "<AgentName>" --output json
 ```
+
+`refresh` regenerates `entry-points.json` and `bindings_v2.json` so Studio Web sees the updated guardrails — always run it before `validate`, matching [guardrails.md](guardrails.md)'s base walkthrough.
 
 **Deterministic completion gate:** when the request matched the exact
 named-Tool branch, re-read `agent.json` before validation and confirm the
@@ -211,7 +225,7 @@ For each existing guardrail in `agent.json`'s `guardrails[]`:
 
 ### Correctness Check
 
-Run `uip agent guardrails list --output json` (from Step 0) and find the matching validator by `Validator` name. The `Parameters` array is the authoritative source for all validation rules:
+Run `uip agent guardrails list --output json` (from Step 0) and find the matching validator by `Validator` name. **If more than one entry shares that `Validator` name** (a built-in plus one or more BYOG entries), disambiguate before reading `Parameters`: the guardrail JSON carries `byoValidatorName` when it targets a specific BYO configuration — match on that against the list entries' `ByoValidatorName`; if the guardrail JSON has no `byoValidatorName`, it targets the built-in entry (`IsByo` absent/false). Validating against the wrong entry's `Parameters` produces false correctness findings. The `Parameters` array (of the correctly matched entry) is the authoritative source for all validation rules:
 
 | CLI field | What to check |
 |-----------|---------------|
@@ -252,7 +266,7 @@ If the user asks to fix identified issues: apply corrections to `agent.json`, ru
 ## Critical Rules
 
 1. **Always fetch catalog first** (use cache if fresh); **always fetch guardrails list second** (no cache). Both are required before any analysis.
-2. **If `GuardrailCatalogUnavailable`** → surface the message and stop. Do not fall back to guessing or hardcoded recommendations.
+2. **If the catalog call returns `"Code": "GuardrailCatalogUnavailable"`** → surface the message and stop. Do not fall back to guessing or hardcoded recommendations. **A generic CLI error (e.g. `"unknown command 'catalog'"`) is not this signal** — that means an older CLI build, not tenant unavailability; fall back to `guardrails list` + built-in reasoning and note the limitation in the report instead of halting.
 3. **Only recommend `Available` validators**. Mention `Unauthorised` ones to the user so they can contact their administrator.
 4. **Every recommendation must cite** the catalog entry's `when_to_use` or a specific `use_cases` item that matched the agent's context. Do not recommend a guardrail without explaining why it applies.
 5. **Never recommend two validators with the same `security_category` at the same scope and stage** (e.g. `prompt_injection` + `user_prompt_attacks` at Llm PRE). De-duplicate per Step 3: drop catalog-deprecated entries, keep the best fit, mention the alternative. Derive the grouping and deprecation from the catalog's own fields — do not hardcode validator names.
@@ -265,3 +279,4 @@ If the user asks to fix identified issues: apply corrections to `agent.json`, ru
 12. **All map-enum keys must exactly match the corresponding enum-list values** — no extra or missing keys. This is the most common correctness error.
 13. **Read [guardrails.md](guardrails.md) before writing any JSON** — discriminator fields, PascalCase constraints, and parameter shapes are specified there and cannot be safely inferred.
 14. **Do NOT use TaskCreate, TaskUpdate, or other task-tracking tools for guardrail edits.** Edit `agent.json` directly — task management tools add bookkeeping turns without benefit and push runs over their turn budget.
+15. **`Validator` is not unique — disambiguate built-in vs. BYO by `IsByo` before matching on name.** A tenant can have both a built-in and one or more BYOG entries sharing the same `Validator` name. Key any lookup on `(Validator, IsByo)`, and when an existing guardrail carries `byoValidatorName`, match it against `ByoValidatorName` — not `Validator` alone — before reading `Parameters`/`AllowedScopes` for correctness or recommendation. Default recommendations to the built-in entry unless the user asks for BYO. See [guardrails.md § BYO (bring-your-own) guardrails](guardrails.md#byo-bring-your-own-guardrails).
