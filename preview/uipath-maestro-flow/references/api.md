@@ -9,9 +9,9 @@ Exact `@uipath/flow-sdk` authoring signatures and option shapes, from the public
 declarations. Signatures, fields, optionality, and declaration comments are
 generated from the built types; longer tutorials stay in the node references.
 
-**Flow construction** — [SCHEDULE_PRESETS](#schedulepresets-const) · [manual](#manual-function) · [onEvent](#onevent-function) · [scheduled](#scheduled-function) · [flow](#flow-function) · [subflow](#subflow-function)
+**Flow construction** — [SCHEDULE_PRESETS](#schedulepresets-const) · [manual](#manual-function) · [onEvent](#onevent-function) · [scheduled](#scheduled-function) · [formTrigger](#formtrigger-function) · [flow](#flow-function) · [subflow](#subflow-function)
 
-**Actions** — [DELAY_PRESETS](#delaypresets-const) · [http](#http-function) · [script](#script-function) · [transform](#transform-function) · [hitl](#hitl-function) · [summarize](#summarize-function) · [batchTransform](#batchtransform-function) · [ixpExtract](#ixpextract-function) · [delay](#delay-function) · [mock](#mock-function) · [rpaWorkflow](#rpaworkflow-function) · [apiWorkflow](#apiworkflow-function) · [agenticProcess](#agenticprocess-function) · [agent](#agent-function) · [inlineAgent](#inlineagent-function) · [queueItem](#queueitem-function) · [connector](#connector-function) · [waitForEvent](#waitforevent-function)
+**Actions** — [DELAY_PRESETS](#delaypresets-const) · [http](#http-function) · [script](#script-function) · [transform](#transform-function) · [hitl](#hitl-function) · [summarize](#summarize-function) · [batchTransform](#batchtransform-function) · [ixpExtract](#ixpextract-function) · [delay](#delay-function) · [mock](#mock-function) · [rpaWorkflow](#rpaworkflow-function) · [apiWorkflow](#apiworkflow-function) · [agenticProcess](#agenticprocess-function) · [agent](#agent-function) · [inlineAgent](#inlineagent-function) · [documentClassify](#documentclassify-function) · [dynamicExtract](#dynamicextract-function) · [dataFabricRead](#datafabricread-function) · [dataFabricUpdate](#datafabricupdate-function) · [queueItem](#queueitem-function) · [connector](#connector-function) · [waitForEvent](#waitforevent-function)
 
 **Expressions and types** — [lit](#lit-function) · [v](#v-function) · [DEFAULT_TRIGGER_ID](#defaulttriggerid-const) · [input](#input-function) · [entryInput](#entryinput-function) · [out](#out-function) · [ran](#ran-function) · [err](#err-function) · [js](#js-function) · [tmpl](#tmpl-function) · [types](#types-const)
 
@@ -19,9 +19,9 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Builders** — [FlowBuilder](#flowbuilder-class) · [StepList](#steplist-class) · [ArmBuilder](#armbuilder-class)
 
-**Option shapes** — [TriggerOptions](#triggeroptions-interface) · [EventSubscription](#eventsubscription-interface) · [ScheduledInputs](#scheduledinputs-interface) · [HttpInputs](#httpinputs-type) · [ScriptInputs](#scriptinputs-interface) · [TransformInputs](#transforminputs-interface) · [HitlInputs](#hitlinputs-interface) · [SummarizeInputs](#summarizeinputs-interface) · [BatchTransformInputs](#batchtransforminputs-interface) · [IxpExtractInputs](#ixpextractinputs-interface) · [DelayInputs](#delayinputs-interface) · [RpaWorkflowInputs](#rpaworkflowinputs-interface) · [ApiWorkflowInputs](#apiworkflowinputs-interface) · [AgenticProcessInputs](#agenticprocessinputs-type) · [AgentInputs](#agentinputs-interface) · [InlineAgentInputs](#inlineagentinputs-interface) · [QueueItemInputs](#queueiteminputs-interface) · [ConnectorOpts](#connectoropts-interface) · [NodeOptions](#nodeoptions-interface) · [HttpInputsBase](#httpinputsbase-interface) · [AgenticProcessInputsBase](#agenticprocessinputsbase-interface) · [LoopOptions](#loopoptions-interface) · [DoWhileOptions](#dowhileoptions-interface)
+**Option shapes** — [TriggerOptions](#triggeroptions-interface) · [EventSubscription](#eventsubscription-interface) · [ScheduledInputs](#scheduledinputs-interface) · [HttpInputs](#httpinputs-type) · [ScriptInputs](#scriptinputs-interface) · [TransformInputs](#transforminputs-interface) · [HitlInputs](#hitlinputs-interface) · [SummarizeInputs](#summarizeinputs-interface) · [BatchTransformInputs](#batchtransforminputs-interface) · [IxpExtractInputs](#ixpextractinputs-interface) · [DelayInputs](#delayinputs-type) · [RpaWorkflowInputs](#rpaworkflowinputs-interface) · [ApiWorkflowInputs](#apiworkflowinputs-interface) · [AgenticProcessInputs](#agenticprocessinputs-type) · [AgentInputs](#agentinputs-interface) · [InlineAgentInputs](#inlineagentinputs-interface) · [DocumentClassifyInputs](#documentclassifyinputs-interface) · [DynamicExtractInputs](#dynamicextractinputs-interface) · [DataFabricReadInputs](#datafabricreadinputs-interface) · [DataFabricUpdateInputs](#datafabricupdateinputs-interface) · [QueueItemInputs](#queueiteminputs-interface) · [ConnectorOpts](#connectoropts-interface) · [NodeOptions](#nodeoptions-interface) · [HttpInputsBase](#httpinputsbase-interface) · [DocValidationInputs](#docvalidationinputs-interface) · [AgenticProcessInputsBase](#agenticprocessinputsbase-interface) · [LoopOptions](#loopoptions-interface) · [DoWhileOptions](#dowhileoptions-interface)
 
-**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [TriggerSpec](#triggerspec-type) · [TriggerDescriptor](#triggerdescriptor-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ConnectorDescriptor](#connectordescriptor-type) · [ConnectorMeta](#connectormeta-interface) · [TriggerMeta](#triggermeta-interface) · [EventFilter](#eventfilter-interface) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [OutputColumn](#outputcolumn-interface) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type)
+**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [TriggerSpec](#triggerspec-type) · [TriggerDescriptor](#triggerdescriptor-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ConnectorDescriptor](#connectordescriptor-type) · [ConnectorMeta](#connectormeta-interface) · [TriggerMeta](#triggermeta-interface) · [EventFilter](#eventfilter-interface) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [HitlRecipient](#hitlrecipient-interface) · [OutputColumn](#outputcolumn-interface) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [AgentGuardrail](#agentguardrail-type) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [DataFabricFilter](#datafabricfilter-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [HttpBranch](#httpbranch-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [InOutField](#inoutfield-interface) · [HitlChannel](#hitlchannel-type) · [HitlAssigneeType](#hitlassigneetype-type) · [HitlConnection](#hitlconnection-interface) · [CustomGuardrail](#customguardrail-interface) · [BuiltInValidatorGuardrail](#builtinvalidatorguardrail-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [GuardrailSelector](#guardrailselector-interface) · [GuardrailAction](#guardrailaction-type) · [GuardrailRule](#guardrailrule-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type) · [GuardrailScope](#guardrailscope-type) · [GuardrailFieldReference](#guardrailfieldreference-interface) · [GuardrailFieldSelector](#guardrailfieldselector-type)
 
 ## SCHEDULE_PRESETS (const)
 
@@ -72,6 +72,17 @@ export declare function scheduled(inputs: ScheduledInputs): TriggerSpec;
 ````
 
 Behavior and worked examples: [scheduled-trigger.md](scheduled-trigger.md).
+
+## formTrigger (function)
+
+````ts
+/**
+ * Start the flow from a FORM a person fills in (`core.trigger.form`) — the
+ * platform renders one field per flow input and the submitted values ARE the
+ * flow's inputs.
+ */
+export declare function formTrigger(): TriggerSpec;
+````
 
 ## flow (function)
 
@@ -263,10 +274,49 @@ export declare function inlineAgent(inputs: InlineAgentInputs): ActionSpec;
 
 Behavior and worked examples: [inline-agent.md](inline-agent.md).
 
+## documentClassify (function)
+
+````ts
+/**
+ * Classify a document into a document type (`uipath.document.classify`). The
+ * result publishes `ClassificationResult` — an array of typed classifications
+ * with page ranges and confidences.
+ */
+export declare function documentClassify(inputs: DocumentClassifyInputs): ActionSpec;
+````
+
+## dynamicExtract (function)
+
+````ts
+/**
+ * Extract fields from a document with an INLINE schema — Dynamic Extract
+ * (`uipath.ixp.extract-document-builder`), the newer of the two extraction
+ * shapes. No deployed IXP project is referenced: the extraction schema rides
+ * the node. The result publishes `ExtractionResult` (and `Taxonomy`).
+ */
+export declare function dynamicExtract(inputs: DynamicExtractInputs): ActionSpec;
+````
+
+## dataFabricRead (function)
+
+````ts
+export declare function dataFabricRead(inputs: DataFabricReadInputs): ActionSpec;
+````
+
+## dataFabricUpdate (function)
+
+````ts
+/**
+ * Update an entity record in Data Fabric (`core.datafabric.update`). Target the
+ * record by id or through an earlier `dataFabricRead` step; downstream
+ * reads of this step observe the record AFTER the write.
+ */
+export declare function dataFabricUpdate(inputs: DataFabricUpdateInputs): ActionSpec;
+````
+
 ## queueItem (function)
 
 ````ts
-/** Declare an Orchestrator QUEUE ITEM step. */
 export declare function queueItem(inputs: QueueItemInputs): ActionSpec;
 ````
 
@@ -727,6 +777,29 @@ export interface HitlInputs {
      * first is the primary (default) one.
      */
     outcomes: Outcome[];
+    /** Who gets the task and how. Omit for the definition's default delivery. */
+    recipient?: HitlRecipient;
+    /** Action Center labels, comma-separated (the platform stores one string). */
+    labels?: string;
+    /**
+     * Route each outcome from its OWN port instead of the single `completed`
+     * exit. Selects the node's **1.1** definition, whose exits are
+     * `outcome-<id>` handles (one per outcome; ids are the outcome names
+     * slugified, e.g. `'Approve'` → `outcome-approve`).
+     */
+    outcomePorts?: boolean;
+    /**
+     * Expose the task's runtime error as a bindable `out('<step>', 'error')`
+     * object (`{ code, message, detail, category, status }`). Selects the node's
+     * **1.2** definition — which also routes per outcome, so this implies
+     * `outcomePorts`. Base variant only.
+     */
+    exposeError?: boolean;
+    /**
+     * The document to validate. Required by — and only legal with —
+     * `variant: 'document-validation'`.
+     */
+    document?: DocValidationInputs;
 }
 ````
 
@@ -830,10 +903,10 @@ export interface IxpExtractInputs {
 }
 ````
 
-## DelayInputs (interface)
+## DelayInputs (type)
 
 ````ts
-export interface DelayInputs {
+export type DelayInputs = {
     /**
      * How long to wait, as an ISO-8601 duration: `PT30S`, `PT15M`, `PT2H`,
      * `P1D`, `P1W`. `PT` separates the time part, so `P1M` is a MONTH and
@@ -842,7 +915,19 @@ export interface DelayInputs {
      * `https://docs.digi.com/resources/documentation/digidocs/90001488-13/reference/r_iso_8601_duration_format.htm`
      */
     duration: string;
-}
+    /** Impossible together with `duration` — a delay waits one way or the other. */
+    until?: never;
+} | {
+    /**
+     * Wait until an ABSOLUTE date-time, ISO-8601: `2026-09-01T09:00:00Z` or
+     * `2026-09-01T09:00:00+02:00`. The platform's timeDate timer: the run
+     * parks until the wall clock reaches this moment (already-past dates
+     * fire immediately).
+     */
+    until: string;
+    /** Impossible together with `until` — a delay waits one way or the other. */
+    duration?: never;
+};
 ````
 
 ## RpaWorkflowInputs (interface)
@@ -1030,6 +1115,19 @@ export interface InlineAgentInputs {
     /** How many tool-calling rounds the agent may take, 1–100. */
     maxIterations?: number;
     /**
+     * The harness the agent runs on — `'standard'` (the default) or
+     * `'advanced'`. Naming it selects the node's **1.3** definition (the
+     * registry's current, which adds the field); omitting it emits the 1.2
+     * definition byte-identically.
+     */
+    mode?: 'standard' | 'advanced';
+    /**
+     * Safety rails over the agent's inputs, outputs, LLM calls and tools — the
+     * platform's own array shape (`AgentGuardrail`), carried on the node
+     * (its 1.2 definition already declares the input) and in the `agent.json`.
+     */
+    guardrails?: AgentGuardrail[];
+    /**
      * GROUND the agent on tenant knowledge — one or more Context Grounding
      * (semantic) indexes, wired to the agent's own `context` handle.
      */
@@ -1046,6 +1144,101 @@ export interface InlineAgentInputs {
      * wired to the agent's own `escalation` handle (its TOP port).
      */
     escalation?: EscalationRef | EscalationRef[];
+}
+````
+
+## DocumentClassifyInputs (interface)
+
+````ts
+export interface DocumentClassifyInputs {
+    /** The document to classify — a file reference (`input('file')`, `out('fetch', 'fileRef')`, …). */
+    fileRef: string | Expr;
+    /** Page range to classify, e.g. `'1-3'`. Omit for the whole document. */
+    pageRange?: string;
+    /** Split multi-document files into per-type page ranges. */
+    splitPages?: boolean;
+    /** Model configuration overrides; omit for the platform defaults (gemini_2_5_flash). */
+    modelConfig?: Record<string, unknown>;
+}
+````
+
+## DynamicExtractInputs (interface)
+
+````ts
+export interface DynamicExtractInputs {
+    /** The document to extract from — a file reference. */
+    fileRef: string | Expr;
+    /**
+     * The IXP model deployment the extraction runs against. Dynamic Extract
+     * authors its SCHEMA inline, but execution still needs a model: Studio Web's
+     * panel destructures `modelName` and `folderKey`, and the platform rejects an
+     * instance without them.
+     */
+    model: {
+            /** The deployment's model name, e.g. `'invoiceixp-cef0d447-ixp'`. */
+            modelName: string;
+            /** Folder key (GUID) the deployment lives in. */
+            folderKey: string;
+            /** The IXP project's id (GUID). */
+            projectId?: string;
+            /** The IXP project's display name. */
+            projectName?: string;
+            /** Folder display name. */
+            folderName?: string;
+            /** Deployment version tag; omit for the live version. */
+            versionTag?: string;
+        };
+    /**
+     * The extraction schema (the node's inline taxonomy): a JSON-schema-shaped
+     * document describing the fields to extract. This is the Dynamic Extract
+     * node's defining input — authored inline rather than referencing a deployed
+     * IXP project (use `ixpExtract` for those).
+     */
+    schema?: Record<string, unknown>;
+    /** Page range to extract, e.g. `'1-3'`. Omit for the whole document. */
+    pageRange?: string;
+    /** Model configuration overrides; omit for the platform defaults. */
+    modelConfig?: Record<string, unknown>;
+}
+````
+
+## DataFabricReadInputs (interface)
+
+````ts
+export interface DataFabricReadInputs {
+    /** The Data Fabric entity's name, e.g. `'Invoices'`. */
+    entity: string;
+    /** Filter rows selecting the record to read. Omit to read the first record. */
+    filters?: DataFabricFilter[];
+    /** Folder key (GUID) for folder-scoped entities. */
+    folderKey?: string;
+}
+````
+
+## DataFabricUpdateInputs (interface)
+
+````ts
+export interface DataFabricUpdateInputs {
+    /** The Data Fabric entity's name, e.g. `'Invoices'`. */
+    entity: string;
+    /**
+     * Which record to update: `{ byId: <record id> }`, or `{ fromRead: '<step>' }`
+     * naming an earlier `dataFabricRead` step whose record this write targets.
+     */
+    record: {
+            byId: string | Expr;
+            fromRead?: never;
+        } | {
+            fromRead: string;
+            byId?: never;
+        };
+    /**
+     * The columns to write, by field name. An empty string is a real write — it
+     * clears the column.
+     */
+    set: Record<string, string | Expr>;
+    /** Folder key (GUID) for folder-scoped entities. */
+    folderKey?: string;
 }
 ````
 
@@ -1148,6 +1341,12 @@ export interface NodeOptions {
 
 ````ts
 interface HttpInputsBase {
+    /**
+     * Conditional response branches — extra source ports (`branch-<name>`)
+     * beside the default. See `HttpBranch`; both HTTP node families
+     * declare them.
+     */
+    branches?: HttpBranch[];
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     url: string | Expr;
     headers?: Record<string, string | Expr>;
@@ -1230,6 +1429,35 @@ interface HttpInputsBase {
      * @enforcedBy HTTP_RETRY_COUNT_INVALID Must be a non-negative integer.
      */
     retryCount?: number;
+}
+````
+
+## DocValidationInputs (interface)
+
+````ts
+/**
+ * The Document Validation task's subject — `variant: 'document-validation'`
+ * only. The reviewer gets the platform's validation station (or a custom app
+ * with a Validation Control) over a document and its extraction result.
+ */
+export interface DocValidationInputs {
+    /**
+     * The extraction result to validate — bind the `ExtractionResult` output of
+     * an upstream Extract step, e.g. `out('extract', 'ExtractionResult')`.
+     * Required: the station has nothing to validate without it.
+     */
+    extractionResult: Expr | string;
+    /** Storage bucket id holding the document. */
+    storageBucket?: string;
+    /** The document's id within the bucket. */
+    documentId?: string;
+    /**
+     * `'standard'` (default) for the native validation station, `'custom'` for a
+     * custom app with a Validation Control — which then requires `taxonomy`.
+     */
+    render?: 'standard' | 'custom';
+    /** The taxonomy the custom app validates against. Required when `render: 'custom'`. */
+    taxonomy?: Expr | string;
 }
 ````
 
@@ -1430,6 +1658,8 @@ export type TriggerSpec = {
 } | {
     kind: 'event';
     subscription: EventSubscription;
+} | {
+    kind: 'form';
 };
 ````
 
@@ -1529,6 +1759,18 @@ export type ActionSpec = {
     /** Which OBJECT a generic operation addresses — see `ConnectorOpts.object`. */
     object?: string;
     inputs: Record<string, unknown>;
+} | {
+    kind: 'documentClassify';
+    inputs: DocumentClassifyInputs;
+} | {
+    kind: 'dynamicExtract';
+    inputs: DynamicExtractInputs;
+} | {
+    kind: 'dataFabricRead';
+    inputs: DataFabricReadInputs;
+} | {
+    kind: 'dataFabricUpdate';
+    inputs: DataFabricUpdateInputs;
 } | {
     kind: 'waitEvent';
     subscription: EventSubscription;
@@ -1662,7 +1904,7 @@ export type TransformOperation = {
 ## HitlVariant (type)
 
 ````ts
-export type HitlVariant = 'quick-form' | 'action-app';
+export type HitlVariant = 'quick-form' | 'action-app' | 'document-validation';
 ````
 
 ## AppRef (interface)
@@ -1680,7 +1922,7 @@ export interface AppRef {
 ## FormField (type)
 
 ````ts
-export type FormField = ShownField | AskedField;
+export type FormField = ShownField | AskedField | InOutField;
 ````
 
 ## Outcome (type)
@@ -1690,6 +1932,26 @@ export type Outcome = string | {
     name: string;
     action?: 'Continue' | 'End';
 };
+````
+
+## HitlRecipient (interface)
+
+````ts
+export interface HitlRecipient {
+    channels?: HitlChannel[];
+    assignee: {
+            type: HitlAssigneeType;
+            /**
+             * The user email / group name / expression, per `type`. The engine lowers
+             * this to its `{ Value, Type }` recipient contract; without one the task
+             * falls back to the tenant's assignment default.
+             */
+            value?: string;
+            /** Display name the designer shows next to the pick. Cosmetic. */
+            displayName?: string;
+        };
+    connections?: Partial<Record<'Slack' | 'teams', HitlConnection>>;
+}
 ````
 
 ## OutputColumn (interface)
@@ -1757,6 +2019,12 @@ export type AgentFlavour = 'coded' | 'lowcode';
 export type InlineAgentFieldType = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array';
 ````
 
+## AgentGuardrail (type)
+
+````ts
+export type AgentGuardrail = CustomGuardrail | BuiltInValidatorGuardrail;
+````
+
 ## ContextIndexRef (interface)
 
 ````ts
@@ -1802,6 +2070,17 @@ export interface EscalationRef {
     taskTitle?: string;
     priority?: 'low' | 'medium' | 'high' | 'critical';
     labels?: string[];
+}
+````
+
+## DataFabricFilter (interface)
+
+````ts
+export interface DataFabricFilter {
+    field: string;
+    operator?: string;
+    value: string | Expr;
+    or?: boolean;
 }
 ````
 
@@ -1998,6 +2277,15 @@ export interface BuiltEntryPoint {
 }
 ````
 
+## HttpBranch (interface)
+
+````ts
+export interface HttpBranch {
+    name: string;
+    condition: Expr;
+}
+````
+
 ## ScriptReturnType (type)
 
 ````ts
@@ -2061,6 +2349,100 @@ export interface AskedField {
     type: FormFieldType;
     direction: 'output';
     required?: boolean;
+}
+````
+
+## InOutField (interface)
+
+````ts
+export interface InOutField {
+    id: string;
+    label?: string;
+    type: FormFieldType;
+    direction: 'inOut';
+    value: Expr;
+    required?: boolean;
+}
+````
+
+## HitlChannel (type)
+
+````ts
+export type HitlChannel = 'Slack' | 'teams' | 'Email' | 'ActionCenter';
+````
+
+## HitlAssigneeType (type)
+
+````ts
+export type HitlAssigneeType = 'user' | 'group' | 'staticEmail' | 'staticGroupName' | 'workload' | 'roundRobin' | 'custom';
+````
+
+## HitlConnection (interface)
+
+````ts
+export interface HitlConnection {
+    name?: string | null;
+    key: string;
+    folderPath?: string | null;
+}
+````
+
+## CustomGuardrail (interface)
+
+````ts
+export interface CustomGuardrail {
+    id: string;
+    $guardrailType: 'custom';
+    name: string;
+    description?: string;
+    selector: GuardrailSelector;
+    action: GuardrailAction;
+    enabledForEvals: boolean;
+    rules: GuardrailRule[];
+}
+````
+
+## BuiltInValidatorGuardrail (interface)
+
+````ts
+export interface BuiltInValidatorGuardrail {
+    id: string;
+    $guardrailType: 'builtInValidator';
+    name: string;
+    description?: string;
+    selector: GuardrailSelector;
+    action: GuardrailAction;
+    enabledForEvals: boolean;
+    validatorType: string;
+    validatorParameters: Array<{
+            $parameterType: 'enum-list';
+            id: string;
+            value: string[];
+        } | {
+            $parameterType: 'map-enum';
+            id: string;
+            value: Record<string, number>;
+        } | {
+            $parameterType: 'number';
+            id: string;
+            value: number;
+        } | {
+            $parameterType: 'text';
+            id: string;
+            value: string;
+        } | {
+            $parameterType: 'enum';
+            id: string;
+            value: string;
+        } | {
+            $parameterType: 'text-list';
+            id: string;
+            value: string[];
+        } | {
+            $parameterType: 'boolean';
+            id: string;
+            value: boolean;
+        }>;
 }
 ````
 
@@ -2154,6 +2536,54 @@ export type AggregationOperation = 'count' | 'sum' | 'average' | 'min' | 'max' |
 export type FormFieldType = 'text' | 'number' | 'boolean' | 'date-time';
 ````
 
+## GuardrailSelector (interface)
+
+````ts
+export interface GuardrailSelector {
+    scopes: GuardrailScope[];
+    matchNames?: string[];
+}
+````
+
+## GuardrailAction (type)
+
+````ts
+export type GuardrailAction = {
+    $actionType: 'block';
+    reason: string;
+} | {
+    $actionType: 'filter';
+    fields: GuardrailFieldReference[];
+} | {
+    $actionType: 'log';
+    severityLevel: 'Info' | 'Warning' | 'Error';
+};
+````
+
+## GuardrailRule (type)
+
+````ts
+export type GuardrailRule = {
+    $ruleType: 'word';
+    fieldSelector: GuardrailFieldSelector;
+    operator: 'contains' | 'doesNotContain' | 'equals' | 'doesNotEqual' | 'startsWith' | 'doesNotStartWith' | 'endsWith' | 'doesNotEndWith' | 'isEmpty' | 'isNotEmpty' | 'matchesRegex';
+    value?: string;
+} | {
+    $ruleType: 'number';
+    fieldSelector: GuardrailFieldSelector;
+    operator: 'equals' | 'doesNotEqual' | 'greaterThan' | 'greaterThanOrEqual' | 'lessThan' | 'lessThanOrEqual';
+    value: number;
+} | {
+    $ruleType: 'boolean';
+    fieldSelector: GuardrailFieldSelector;
+    operator: 'equals';
+    value: boolean;
+} | {
+    $ruleType: 'always';
+    applyTo: 'input' | 'output' | 'inputAndOutput';
+};
+````
+
 ## BuiltinToolName (type)
 
 ````ts
@@ -2164,4 +2594,31 @@ export type BuiltinToolName = 'analyzefiles' | 'summarize' | 'batchtransform';
 
 ````ts
 export type ProcessToolKind = 'process' | 'agent' | 'api' | 'flow' | 'maestro';
+````
+
+## GuardrailScope (type)
+
+````ts
+export type GuardrailScope = 'Agent' | 'Llm' | 'Tool';
+````
+
+## GuardrailFieldReference (interface)
+
+````ts
+export interface GuardrailFieldReference {
+    path: string;
+    source: 'input' | 'output';
+    title?: string;
+}
+````
+
+## GuardrailFieldSelector (type)
+
+````ts
+export type GuardrailFieldSelector = {
+    $selectorType: 'all';
+} | {
+    $selectorType: 'specific';
+    fields: GuardrailFieldReference[];
+};
 ````
