@@ -22,7 +22,7 @@ number from it.
 Usage
 -----
     python3 scripts/check-eval-run.py RUN_DIR [--expect-experiment NAME]
-                                              [--min-turns N] [--json]
+                                              [--min-output-tokens N] [--json]
 
     # typical: the repo's own experiment must have been used
     python3 scripts/check-eval-run.py tests/runs/my-run --expect-experiment skill-tests-default
@@ -40,7 +40,7 @@ import sys
 JUDGE_UNCONFIGURED = "judge transport unconfigured"
 
 
-def replicate_findings(task_json: pathlib.Path, min_turns: int, regrade: bool = False) -> list[str]:
+def replicate_findings(task_json: pathlib.Path, min_output_tokens: int, regrade: bool = False) -> list[str]:
     """Reasons this replicate is not evidence. Empty list == trustworthy."""
     out: list[str] = []
     try:
@@ -84,7 +84,7 @@ def replicate_findings(task_json: pathlib.Path, min_turns: int, regrade: bool = 
             f"(turns={turns}, agent={t.get('agent_type')}). Usually a provider error "
             "(expired credit, auth); check conversation.log"
         )
-    elif min_turns > 0 and produced < min_turns:
+    elif min_output_tokens > 0 and produced < min_output_tokens:
         out.append(f"only {produced} output token(s) — suspiciously little work")
 
     for crit in t.get("success_criteria_results") or []:
@@ -104,7 +104,7 @@ def main() -> int:
     ap.add_argument("run_dir", type=pathlib.Path)
     ap.add_argument("--expect-experiment", default=None,
                     help="fail unless the run's experiment report names this experiment")
-    ap.add_argument("--min-output-tokens", dest="min_turns", type=int, default=1,
+    ap.add_argument("--min-output-tokens", type=int, default=1,
                     help="minimum model output tokens for a replicate to count (default 1)")
     ap.add_argument("--regrade", action="store_true",
                     help="the run came from `coder-eval evaluate` (no agent executed): "
@@ -123,7 +123,8 @@ def main() -> int:
     if args.regrade:
         report["experiment"] = "(re-grade — no experiment)"
     elif exp_md.is_file():
-        first = exp_md.read_text(encoding="utf-8").splitlines()[0] if exp_md.read_text(encoding="utf-8") else ""
+        content = exp_md.read_text(encoding="utf-8")
+        first = content.splitlines()[0] if content else ""
         name = first.split(":", 1)[-1].strip() if ":" in first else first.strip()
         report["experiment"] = name
         if args.expect_experiment and name != args.expect_experiment:
@@ -143,7 +144,7 @@ def main() -> int:
 
     bad = 0
     for tj in task_jsons:
-        findings = replicate_findings(tj, args.min_turns, regrade=args.regrade)
+        findings = replicate_findings(tj, args.min_output_tokens, regrade=args.regrade)
         rel = tj.relative_to(run_dir).parent
         report["replicates"].append({"replicate": str(rel), "findings": findings})
         bad += bool(findings)
