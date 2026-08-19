@@ -86,11 +86,40 @@ TASK_DETAIL_MARKERS = {
 
 
 def _find_sdd() -> str:
-    matches = sorted(p for p in glob.glob("**/sdd.md", recursive=True) if "/.venv/" not in p)
-    if not matches:
-        sys.exit("FAIL: no sdd.md found under the current directory")
-    return matches[0]
+    """Locate the SDD whatever basename the lane's mode chose.
 
+    Build handoff writes `sdd.md`; direct design writes `<case-name-kebab>-sdd.md`;
+    a draft request writes `sdd.draft.md`. Globbing only `sdd.md` made this checker
+    unusable on the two design paths — it exited FAIL before reading anything, so
+    wiring it into a design task would have produced a criterion that can never pass.
+    Prefer the finalized basenames over a draft when both exist.
+    """
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+    patterns = ("**/sdd.md", "**/*-sdd.md", "**/sdd.draft.md", "**/*-sdd.draft.md")
+    for pat in patterns:
+        matches = sorted(
+            p for p in glob.glob(pat, recursive=True)
+            if "/.venv/" not in p and "/node_modules/" not in p
+        )
+        if matches:
+            return matches[0]
+    sys.exit(
+        "FAIL: no SDD found under the current directory "
+        "(looked for sdd.md, *-sdd.md, sdd.draft.md, *-sdd.draft.md)"
+    )
+
+
+def _split_row(line: str) -> list[str]:
+    """Split a markdown table row on UNESCAPED pipes only.
+
+    A JS guard containing `||` must be written `\\|\\|` inside a table, so splitting
+    on every `|` invents phantom cells and shifts every column to its right. That
+    made rule-legality and exit-type checks fail on correct input whenever an IF
+    expression used a logical OR — common in mutually-exclusive completion guards.
+    """
+    parts = re.split(r"(?<!\\)\|", line.strip().strip("|"))
+    return [c.replace("\\|", "|").strip() for c in parts]
 
 def _rule_token(cell: str) -> str | None:
     """Leading rule keyword from a WHEN cell (``case-entered``, ``adhoc``, …)."""
@@ -252,7 +281,7 @@ def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
         if case_sla:
             check_duration(case_sla.group(1), case_sla.group(2), line_no)
 
-        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        cells = _split_row(line)
         if in_stage_sla and len(cells) >= 2 and re.fullmatch(r"\d+(?:\.\d+)?", cells[0]):
             check_duration(cells[0], cells[1], line_no)
         if in_variable_sla and len(cells) >= 3 and re.fullmatch(r"\d+(?:\.\d+)?", cells[1]):
@@ -505,7 +534,7 @@ def main() -> None:
             gate = None; continue
         if not (gate and s.startswith("|")):
             continue
-        cells = [c.strip() for c in s.strip().strip("|").split("|")]
+        cells = _split_row(s)
         if not cells:
             continue
         # Header row: capture Marks-Complete / Exit-Type column positions by name
