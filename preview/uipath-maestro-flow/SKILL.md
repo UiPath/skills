@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ a065b21. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 335134d. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -154,6 +154,25 @@ Prefer self-contained variables because there may be no caller supplying inputs.
 
 **Reference: [`references/scheduled-trigger.md`](references/scheduled-trigger.md)**
 
+## Entry points (multiple triggers)
+
+A flow may have more than one root. `.trigger()` / `.input()` stay the DEFAULT
+root; `.entryPoint(id, trigger, { inputs?, version? }, prefixFn?)` adds another
+— its own trigger node, its own scoped inputs (read them with
+`entryInput('<id>', '<name>')`), and an optional prefix that runs before the
+root joins the first shared step. A prefix that ends terminally (or hands off
+with `.stepToRef(...)`) joins nothing.
+
+```ts
+flow('order-intake')
+  .input({ order: types.object })                       // default (manual) root
+  .entryPoint('nightly', scheduled({ every: 'R/P1D' }), {
+    inputs: { batchDate: types.string },
+  }, (b) => b.step('loadBatch', script({
+    code: 'return { note: $vars.nightly.output.batchDate };', returns: 'object' })))
+  .step('normalize', script({ code: 'return 1;' }))     // shared body
+```
+
 ## Connector events
 
 Start on, or pause for, an Integration Service event subscription.
@@ -298,7 +317,7 @@ Confirm identity and exact argument casing on the tenant; `.onError(...)` is sup
 
 Run a deployed Maestro agentic process synchronously.
 
-Signature: `agenticProcess({ key, name, folderPath, inputs?, returns? })`.
+Signature: `agenticProcess({ key, name, folderPath, inputs?, returns?, form?, completion? })`.
 
 ```ts
 .step('intake', agenticProcess({ key: processKey,
@@ -306,7 +325,9 @@ Signature: `agenticProcess({ key, name, folderPath, inputs?, returns? })`.
   inputs: { productId: 1 }, returns: { status: 'boolean' } }))
 ```
 
-Confirm identity and argument names live; declared outputs may still be null, and `.onError(...)` is supported.
+Confirm identity and argument names live; declared outputs may still be null;
+`.onError(...)` is supported. `form: 'bpmn' | 'flow' | 'case'` picks the published
+form; `completion: 'fire-and-forget'` waits for nothing — see the reference.
 
 **Reference: [`references/agentic-process.md`](references/agentic-process.md)**
 
@@ -542,7 +563,7 @@ Discover tenant-specific fields and ids rather than guessing; preserve every sce
 
 Run a body once for each value in a collection.
 
-Signature: `.loop(name, collection, bodyFn)`.
+Signature: `.loop(name, collection, bodyFn, options?)`.
 
 ```ts
 .loop('eachOrder', input('orders'), (body) => body
@@ -550,9 +571,32 @@ Signature: `.loop(name, collection, bodyFn)`.
     'return { id: $vars.eachOrder.currentItem.id };' })))
 ```
 
-The SDK has no per-iteration flow-variable mutation; keep per-item work in the body.
+Per-iteration flow-variable writes go through `{ updates }` on a body step.
+Options select the richer loop contract: `parallel: true`, `completionCondition`
+(checked after each iteration, stops early), and `body.break()` exits the whole
+loop from inside an arm. See the reference for the option details and examples.
 
 **Reference: [`references/loops.md`](references/loops.md)**
+
+## Do while
+
+Run a body, then repeat **while a condition is true** — checked AFTER each
+pass, so the body always runs at least once (`core.logic.dowhile`). The
+container publishes no data output: write results to a `.var()` from inside
+the body with `{ updates }`. `limit` caps iterations (1–10,000; blank means
+the platform default of 10,000), and `body.break()` works exactly as in
+`.loop()`.
+
+Signature: `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })`.
+
+```ts
+.var('page', types.number, 1)
+.doWhile('paginate', js`$vars.fetch.output.hasNextPage === true`, (body) => body
+  .step('fetch', http({ url: tmpl`https://api.example.test/items?page=${v('page')}`,
+    method: 'GET', managed: false, returns: { hasNextPage: 'boolean' } }),
+    { updates: { page: js`$vars.page + 1` } }),
+  { limit: 50 })
+```
 
 ## Return and end
 

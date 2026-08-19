@@ -9,19 +9,19 @@ Exact `@uipath/flow-sdk` authoring signatures and option shapes, from the public
 declarations. Signatures, fields, optionality, and declaration comments are
 generated from the built types; longer tutorials stay in the node references.
 
-**Flow construction** — [SCHEDULE_PRESETS](#schedulepresets-const) · [onEvent](#onevent-function) · [scheduled](#scheduled-function) · [flow](#flow-function) · [subflow](#subflow-function)
+**Flow construction** — [SCHEDULE_PRESETS](#schedulepresets-const) · [manual](#manual-function) · [onEvent](#onevent-function) · [scheduled](#scheduled-function) · [flow](#flow-function) · [subflow](#subflow-function)
 
 **Actions** — [DELAY_PRESETS](#delaypresets-const) · [http](#http-function) · [script](#script-function) · [transform](#transform-function) · [hitl](#hitl-function) · [summarize](#summarize-function) · [batchTransform](#batchtransform-function) · [ixpExtract](#ixpextract-function) · [delay](#delay-function) · [mock](#mock-function) · [rpaWorkflow](#rpaworkflow-function) · [apiWorkflow](#apiworkflow-function) · [agenticProcess](#agenticprocess-function) · [agent](#agent-function) · [inlineAgent](#inlineagent-function) · [queueItem](#queueitem-function) · [connector](#connector-function) · [waitForEvent](#waitforevent-function)
 
-**Expressions and types** — [lit](#lit-function) · [v](#v-function) · [DEFAULT_TRIGGER_ID](#defaulttriggerid-const) · [input](#input-function) · [out](#out-function) · [ran](#ran-function) · [err](#err-function) · [js](#js-function) · [tmpl](#tmpl-function) · [types](#types-const)
+**Expressions and types** — [lit](#lit-function) · [v](#v-function) · [DEFAULT_TRIGGER_ID](#defaulttriggerid-const) · [input](#input-function) · [entryInput](#entryinput-function) · [out](#out-function) · [ran](#ran-function) · [err](#err-function) · [js](#js-function) · [tmpl](#tmpl-function) · [types](#types-const)
 
 **Generated descriptors** — [descriptor](#descriptor-function) · [triggerDescriptor](#triggerdescriptor-function)
 
 **Builders** — [FlowBuilder](#flowbuilder-class) · [StepList](#steplist-class) · [ArmBuilder](#armbuilder-class)
 
-**Option shapes** — [TriggerOptions](#triggeroptions-interface) · [EventSubscription](#eventsubscription-interface) · [ScheduledInputs](#scheduledinputs-interface) · [HttpInputs](#httpinputs-type) · [ScriptInputs](#scriptinputs-interface) · [TransformInputs](#transforminputs-interface) · [HitlInputs](#hitlinputs-interface) · [SummarizeInputs](#summarizeinputs-interface) · [BatchTransformInputs](#batchtransforminputs-interface) · [IxpExtractInputs](#ixpextractinputs-interface) · [DelayInputs](#delayinputs-interface) · [RpaWorkflowInputs](#rpaworkflowinputs-interface) · [ApiWorkflowInputs](#apiworkflowinputs-interface) · [AgenticProcessInputs](#agenticprocessinputs-interface) · [AgentInputs](#agentinputs-interface) · [InlineAgentInputs](#inlineagentinputs-interface) · [QueueItemInputs](#queueiteminputs-interface) · [ConnectorOpts](#connectoropts-interface) · [HttpInputsBase](#httpinputsbase-interface)
+**Option shapes** — [TriggerOptions](#triggeroptions-interface) · [EventSubscription](#eventsubscription-interface) · [ScheduledInputs](#scheduledinputs-interface) · [HttpInputs](#httpinputs-type) · [ScriptInputs](#scriptinputs-interface) · [TransformInputs](#transforminputs-interface) · [HitlInputs](#hitlinputs-interface) · [SummarizeInputs](#summarizeinputs-interface) · [BatchTransformInputs](#batchtransforminputs-interface) · [IxpExtractInputs](#ixpextractinputs-interface) · [DelayInputs](#delayinputs-interface) · [RpaWorkflowInputs](#rpaworkflowinputs-interface) · [ApiWorkflowInputs](#apiworkflowinputs-interface) · [AgenticProcessInputs](#agenticprocessinputs-type) · [AgentInputs](#agentinputs-interface) · [InlineAgentInputs](#inlineagentinputs-interface) · [QueueItemInputs](#queueiteminputs-interface) · [ConnectorOpts](#connectoropts-interface) · [NodeOptions](#nodeoptions-interface) · [HttpInputsBase](#httpinputsbase-interface) · [AgenticProcessInputsBase](#agenticprocessinputsbase-interface) · [LoopOptions](#loopoptions-interface) · [DoWhileOptions](#dowhileoptions-interface)
 
-**Supporting types** — [TriggerDescriptor](#triggerdescriptor-type) · [TriggerSpec](#triggerspec-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ConnectorDescriptor](#connectordescriptor-type) · [ConnectorMeta](#connectormeta-interface) · [TriggerMeta](#triggermeta-interface) · [EventFilter](#eventfilter-interface) · [ScheduleEvery](#scheduleevery-type) · [TypeDesc](#typedesc-type) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [OutputColumn](#outputcolumn-interface) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [VarDecl](#vardecl-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type)
+**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [TriggerSpec](#triggerspec-type) · [TriggerDescriptor](#triggerdescriptor-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ConnectorDescriptor](#connectordescriptor-type) · [ConnectorMeta](#connectormeta-interface) · [TriggerMeta](#triggermeta-interface) · [EventFilter](#eventfilter-interface) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [OutputColumn](#outputcolumn-interface) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type)
 
 ## SCHEDULE_PRESETS (const)
 
@@ -34,6 +34,19 @@ generated from the built types; longer tutorials stay in the node references.
  * just the ones that round-trip as a named preset rather than as "custom".
  */
 export declare const SCHEDULE_PRESETS: readonly ["R/PT5M", "R/PT15M", "R/PT30M", "R/PT1H", "R/PT6H", "R/PT12H", "R/P1D", "R/P1W"];
+````
+
+## manual (function)
+
+````ts
+/**
+ * The manual trigger, explicitly. Omitting `.trigger(...)` means exactly this —
+ * the factory exists so decompiled source can carry the trigger's exact
+ * definition version (`.trigger(manual(), { version: '1.0.0' })`) instead of
+ * leaving the default implicit, and so hand-written flows can opt into the
+ * same explicitness.
+ */
+export declare function manual(): TriggerSpec;
 ````
 
 ## onEvent (function)
@@ -181,6 +194,7 @@ Behavior and worked examples: [delay.md](delay.md).
 ## mock (function)
 
 ````ts
+/** Declare a PLACEHOLDER step — "a real node goes here later". */
 export declare function mock(): ActionSpec;
 ````
 
@@ -262,8 +276,9 @@ Behavior and worked examples: [queue.md](queue.md).
 
 ````ts
 /**
- * Typed form: a generated descriptor supplies the nodeType and statically-checked
- * input types — `connector(CreateIssue, { fields: { summary: '…' } }, { connection })`.
+ * Declare an Integration Service connector action — the typed form, where a
+ * generated descriptor supplies the nodeType and statically-checked input types:
+ * `connector(CreateIssue, { fields: { summary: '…' } }, { connection })`.
  */
 export declare function connector<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: ConnectorOpts): ActionSpec;
 
@@ -280,7 +295,8 @@ Behavior and worked examples: [connector-params.md](connector-params.md).
 
 ````ts
 /**
- * Typed form: a generated trigger descriptor identifies the event —
+ * Wait mid-flow until a connector event fires, then continue with its payload —
+ * the typed form, where a generated trigger descriptor identifies the event:
  * `waitForEvent(EmailReceived, { where: { … } })`.
  */
 export declare function waitForEvent<W extends Record<string, string>>(descriptor: TriggerDescriptor<W, unknown>, opts?: TriggerOptions<W>): ActionSpec;
@@ -317,6 +333,18 @@ export declare const DEFAULT_TRIGGER_ID = "start";
 ````ts
 /** Reference a flow input by name → `$vars.<triggerId>.output.<name>`. */
 export declare function input(name: string): Expr;
+````
+
+## entryInput (function)
+
+````ts
+/**
+ * Reference an ENTRY POINT's scoped input: `entryInput('nightly', 'batchDate')`
+ * reads `$vars.nightly.output.batchDate` — an input declared on
+ * `.entryPoint('nightly', …, { inputs: { batchDate: … } })`. `input(name)`
+ * remains the spelling for the DEFAULT root's inputs.
+ */
+export declare function entryInput(entryPointId: string, name: string): Expr;
 ````
 
 ## out (function)
@@ -430,13 +458,37 @@ declare class FlowBuilder extends StepList {
      */
     name(n: string): this;
     /**
+     * Set the flow's description — persisted as the top-level `description`
+     * field of the emitted `.flow`, shown in the designer's flow header.
+     */
+    description(text: string): this;
+    /**
+     * Set designer layout — node positions/sizes and edge routes — keyed by the
+     * flow's own logical ids (step names, the trigger id, `end`). Optional pure
+     * metadata: nothing here changes what the flow does, and omitting it leaves
+     * the serializer's default arrangement. Unknown keys fail compilation rather
+     * than being dropped.
+     */
+    layout(layout: FlowLayout): this;
+    /**
      * Set what starts the flow. Omit this call for the **manual** trigger (a
      * caller starts the flow on demand) — that is the default and what most
      * flows want.
      *
      * @defaultValue the manual trigger
      */
-    trigger(spec: TriggerSpec): this;
+    trigger(spec: TriggerSpec | FlowTrigger, options?: NodeOptions): this;
+    /**
+     * Add an ADDITIONAL flow root (design §5.1): its own trigger node, its own
+     * scoped inputs (read them with `entryInput('<id>', '<name>')`), and an
+     * optional prefix that runs before the root joins the shared body. Without a
+     * prefix the root connects straight to the first shared step; a prefix that
+     * ends terminally (or hands off with `.stepToRef()`) joins nothing.
+     */
+    entryPoint(id: string, trigger: TriggerSpec | FlowTrigger, options?: {
+            version?: string;
+            inputs?: Record<string, TypeDesc | VarSpec>;
+        }, prefixFn?: (b: StepList) => void): this;
     /**
      * Rename the trigger node. The designer can rename it, so the SDK can too.
      *
@@ -446,11 +498,11 @@ declare class FlowBuilder extends StepList {
     /** Set the flow's version. */
     version(vsn: string): this;
     /** Declare the flow's inputs. Read them with `input('<name>')`. */
-    input(shape: Record<string, TypeDesc>): this;
+    input(shape: Record<string, TypeDesc | VarSpec>): this;
     /** Declare the flow's outputs — what `.return(...)` binds values to. */
-    output(shape: Record<string, TypeDesc>): this;
+    output(shape: Record<string, TypeDesc | VarSpec>): this;
     /** Declare a flow-level variable. Read it with `v('<name>')`. */
-    var(name: string, type: TypeDesc, defaultValue?: unknown): this;
+    var(name: string, type: TypeDesc | VarSpec, defaultValue?: unknown): this;
     /** Finish the flow and return the graph the compiler serializes. */
     build(): BuiltFlow;
 }
@@ -463,7 +515,7 @@ declare class FlowBuilder extends StepList {
 declare class StepList {
     steps: Step[];
     /** Add an action node (see `http` / `script` / `subflow`). */
-    step(name: string, spec: FlowActionSpec): this;
+    step(name: string, spec: FlowActionSpec | FlowAction, options?: NodeOptions): this;
     /**
      * Handle the PREVIOUS step's failure: if it fails, the flow runs `bodyFn`'s
      * steps instead of continuing.
@@ -478,7 +530,7 @@ declare class StepList {
      */
     stepToList(port: string, bodyFn: (b: StepList) => void): this;
     /** Branch on a condition. `thenFn`/`elseFn` receive a sub-builder for each arm. */
-    branch(name: string, cond: Expr, thenFn: (b: ArmBuilder) => void, elseFn?: (b: ArmBuilder) => void): this;
+    branch(name: string, cond: Expr, thenFn: (b: ArmBuilder) => void, elseFn?: (b: ArmBuilder) => void, options?: NodeOptions): this;
     /**
      * N-way branch on the value of `on` — one arm per case, plus an optional
      * default arm. Each arm gets its own sub-builder, exactly like `.branch`.
@@ -487,23 +539,39 @@ declare class StepList {
             value: CaseValue;
             body: (b: ArmBuilder) => void;
             label?: string;
-        }[], defaultFn?: (b: StepList) => void): this;
+        }[], defaultFn?: (b: StepList) => void, options?: NodeOptions): this;
     /**
      * Run two or more arms **in parallel** from this point and join them back
      * together on a Merge node — the one place the builder stops being a straight
      * chain.
      */
-    parallel(name: string, arms: ((b: StepList) => void)[]): this;
+    parallel(name: string, arms: ((b: StepList) => void)[], options?: NodeOptions): this;
     /** Iterate `collection`; `bodyFn` receives a sub-builder for the loop body. */
-    loop(name: string, collection: Expr, bodyFn: (b: StepList) => void): this;
+    loop(name: string, collection: Expr, bodyFn: (b: StepList) => void, options?: LoopOptions): this;
+    /**
+     * Run the body, then repeat **while `condition` is true** — the condition is
+     * checked AFTER each iteration, so the body always runs at least once
+     * (`core.logic.dowhile`). The container publishes no data output; write
+     * results to a `.var()` from inside the body (`{ updates }`), and read the
+     * loop's progress nowhere — unlike `.loop()` there is no `currentItem`.
+     */
+    doWhile(name: string, condition: Expr, bodyFn: (b: StepList) => void, options?: DoWhileOptions): this;
+    /**
+     * Exit the enclosing `.loop()` / `.doWhile()` through its **break handle**,
+     * ending the whole loop now — not just this iteration. Terminal on its path:
+     * nothing may follow it, exactly like `.terminate()`. Using it enables the
+     * container's break handle automatically. Compilation fails when there is no
+     * enclosing container.
+     */
+    break(): this;
     /** Stop the **whole run**, here and now — not just this path. */
-    terminate(name: string, label?: string): this;
+    terminate(name: string, label?: string, options?: NodeOptions): this;
     /** Go to another step, by name — an edge, not a node. */
     stepToRef(target: string): this;
     /** Go to another step from a NAMED PORT — a side exit. */
     stepToRef(port: string, target: string): this;
     /** Terminate this path, binding flow outputs to expressions. */
-    return(values?: Record<string, Expr | unknown>): this;
+    return(values?: Record<string, Expr | unknown>, options?: NodeOptions): this;
 }
 ````
 
@@ -843,42 +911,11 @@ export interface ApiWorkflowInputs {
 }
 ````
 
-## AgenticProcessInputs (interface)
+## AgenticProcessInputs (type)
 
 ````ts
-export interface AgenticProcessInputs {
-    /**
-     * The published agentic process's key (a GUID). It becomes part of the node's
-     * type, `uipath.core.agentic-process.<key>`. Find it with
-     * `uip or processes list --all-folders --process-type ProcessOrchestration` (an
-     * agentic process's `ProcessKey` reads `<name>.agentic.<name>`; the GUID you want
-     * is the row's `Key`) or `uip maestro flow registry search agentic`.
-     */
-    key: string;
-    /** The process's name in Orchestrator — e.g. `'ProcurementProcess'`. */
-    name: string;
-    /**
-     * The Orchestrator folder holding it — e.g.
-     * `'Shared/uipath-agents/ProcurementProcess'`.
-     */
-    folderPath: string;
-    /**
-     * The PROCESS's own input arguments, by its own argument names (e.g.
-     * `{ productId: 1 }`). Not a fixed schema — every agentic process declares its
-     * own, and only the deployed process knows them.
-     */
-    inputs?: Record<string, unknown>;
-    /**
-     * The process's OUTPUT arguments — the fields it returns, and their types (e.g.
-     * `{ status: 'boolean' }`). Required if anything reads the step's output, for the
-     * same reason as `rpaWorkflow`'s and `apiWorkflow`'s: the schema lives on the
-     * tenant and authoring happens offline, so an undeclared read is rejected.
-     *
-     * @enforcedBy AGENTIC_READ_WITHOUT_RETURNS Reading a field off the result requires
-     *   declaring it here.
-     */
-    returns?: Record<string, 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'>;
-}
+/** What `agenticProcess()` takes: the shared fields plus the completion policy. */
+export type AgenticProcessInputs = AgenticProcessInputsBase & AgenticProcessCompletion;
 ````
 
 ## AgentInputs (interface)
@@ -1080,6 +1117,33 @@ export interface ConnectorOpts {
 }
 ````
 
+## NodeOptions (interface)
+
+````ts
+/**
+ * Options shared by every builder method that creates a definition-backed node
+ * (design §5.2). More fields (label overrides, variable updates) arrive in
+ * later phases; today this carries exact version selection.
+ */
+export interface NodeOptions {
+    /**
+     * The EXACT `definitions[].version` (and node `typeVersion`) this node must
+     * compile against — a request and a constraint, never a "latest" selector.
+     * Omit it and the SDK uses its pinned default for the node family; name a
+     * version the SDK cannot resolve exactly and compilation fails rather than
+     * substituting another version.
+     */
+    version?: string;
+    /**
+     * Flow-variable assignments applied when this node completes — the format's
+     * `variables.variableUpdates[nodeId]`, attached to the real node exactly as
+     * Flow JSON stores it. Keys name declared `.var()` variables (or flow
+     * outputs); values are `Expr`s or raw literals.
+     */
+    updates?: Record<string, Expr | unknown>;
+}
+````
+
 ## HttpInputsBase (interface)
 
 ````ts
@@ -1169,24 +1233,212 @@ interface HttpInputsBase {
 }
 ````
 
-## TriggerDescriptor (type)
+## AgenticProcessInputsBase (interface)
 
 ````ts
-export type TriggerDescriptor<W = Record<string, string>, O = Record<string, unknown>> = TriggerMeta & {
-    readonly __where?: W;
-    readonly __output?: O;
+interface AgenticProcessInputsBase {
+    /**
+     * The published agentic process's key (a GUID). It becomes part of the node's
+     * type, `uipath.core.agentic-process.<key>`. Find it with
+     * `uip or processes list --all-folders --process-type ProcessOrchestration` (an
+     * agentic process's `ProcessKey` reads `<name>.agentic.<name>`; the GUID you want
+     * is the row's `Key`) or `uip maestro flow registry search agentic`.
+     */
+    key: string;
+    /** The process's name in Orchestrator — e.g. `'ProcurementProcess'`. */
+    name: string;
+    /**
+     * The Orchestrator folder holding it — e.g.
+     * `'Shared/uipath-agents/ProcurementProcess'`.
+     */
+    folderPath: string;
+    /**
+     * The PROCESS's own input arguments, by its own argument names (e.g.
+     * `{ productId: 1 }`). Not a fixed schema — every agentic process declares its
+     * own, and only the deployed process knows them.
+     */
+    inputs?: Record<string, unknown>;
+    /**
+     * Which published form this Agentic Process is (design §2.1): the three forms
+     * share one public concept and differ only in wire identity. `'bpmn'` (the
+     * default, and what this factory always emitted) is a Maestro BPMN process
+     * orchestration; `'flow'` is a published Maestro Flow; `'case'` is a Case
+     * Management process.
+     */
+    form?: 'bpmn' | 'flow' | 'case';
+}
+````
+
+## LoopOptions (interface)
+
+````ts
+/**
+ * Loop-specific options (design §5.2). Any of these — or a `b.break()` in the
+ * body — selects the loop's v2.4 definition (the current Workbench contract,
+ * with inner `start`/`continue`/`break` handles); a plain `.loop()` keeps the
+ * SDK's long-pinned 1.0.0 emission unchanged. An explicit `{ version: '1.0.0' }`
+ * combined with any of these fails compilation: that definition cannot express
+ * them.
+ */
+export interface LoopOptions extends NodeOptions {
+    /** Run iterations in parallel instead of sequentially. */
+    parallel?: boolean;
+    /**
+     * Stop early when this condition (evaluated after each iteration) is true —
+     * e.g. `js`$vars.hits.output.length >= 10``.
+     */
+    completionCondition?: Expr;
+    /**
+     * Show the loop's break handle without wiring one — set automatically when
+     * the body calls `b.break()`.
+     */
+    breakEnabled?: boolean;
+}
+````
+
+## DoWhileOptions (interface)
+
+````ts
+/**
+ * Do-while options (design §3.1). `limit` caps iterations; the platform
+ * defaults a blank limit to 10,000 and rejects values outside 1–10,000.
+ */
+export interface DoWhileOptions extends NodeOptions {
+    /** Maximum iterations, 1–10,000. Blank means the platform default (10,000). */
+    limit?: number;
+    /** Show the break handle without wiring one — set automatically by `b.break()`. */
+    breakEnabled?: boolean;
+}
+````
+
+## ContributionDiagnostic (interface)
+
+````ts
+export interface ContributionDiagnostic {
+    code: string;
+    message: string;
+    severity: 'error' | 'warning';
+}
+````
+
+## DefinitionReference (type)
+
+````ts
+export type DefinitionReference = {
+    /** Resolve from the SDK's bundled core definitions. */
+    source: 'bundled';
+    /** The definition's `nodeType`, e.g. `'core.logic.delay'`. */
+    nodeType: string;
+    /** The exact definition version; also becomes the node's `typeVersion`. */
+    version: string;
+} | {
+    /** Resolve from the connector library supplied at compile time. */
+    source: 'library';
+    /** The definition's `nodeType`. */
+    nodeType: string;
+    /** The exact definition version; also becomes the node's `typeVersion`. */
+    version: string;
+} | {
+    /** Carry an exact registry/Workbench definition in memory. */
+    source: 'snapshot';
+    /** The definition's `nodeType`; must equal `manifest.nodeType`. */
+    nodeType: string;
+    /** The exact definition version; must equal `manifest.version`. */
+    version: string;
+    /** The complete node manifest, exactly as the platform serves it. */
+    manifest: unknown;
 };
+````
+
+## ContributionContext (interface)
+
+````ts
+export interface ContributionContext {
+    requestedVersion?: string;
+}
+````
+
+## BindingContribution (interface)
+
+````ts
+export interface BindingContribution {
+    id: string;
+    name: string;
+    type: string;
+    resource: string;
+    resourceKey: string;
+    default?: string;
+    propertyAttribute?: string;
+    resourceSubType?: string;
+}
+````
+
+## NodeContribution (interface)
+
+````ts
+export interface NodeContribution {
+    definition: DefinitionReference;
+    inputs?: Record<string, unknown>;
+    outputs?: Record<string, unknown>;
+    bindings?: BindingContribution[];
+}
+````
+
+## FlowNode (class)
+
+````ts
+export declare abstract class FlowNode<TOutputs = unknown> {
+    readonly __outputs?: TOutputs;
+    abstract readonly role: 'action' | 'trigger' | 'resource';
+    abstract contribute(context: ContributionContext): NodeContribution;
+    diagnostics(): ContributionDiagnostic[];
+}
+````
+
+## FlowAction (class)
+
+````ts
+export declare abstract class FlowAction<TOutputs = unknown> extends FlowNode<TOutputs> {
+    get role(): 'action';
+}
+````
+
+## FlowTrigger (class)
+
+````ts
+export declare abstract class FlowTrigger<TPayload = unknown> extends FlowNode<TPayload> {
+    get role(): 'trigger';
+}
+````
+
+## FlowResource (class)
+
+````ts
+export declare abstract class FlowResource extends FlowNode<never> {
+    get role(): 'resource';
+}
 ````
 
 ## TriggerSpec (type)
 
 ````ts
 export type TriggerSpec = {
+    kind: 'manual';
+} | {
     kind: 'scheduled';
     inputs: ScheduledInputs;
 } | {
     kind: 'event';
     subscription: EventSubscription;
+};
+````
+
+## TriggerDescriptor (type)
+
+````ts
+export type TriggerDescriptor<W = Record<string, string>, O = Record<string, unknown>> = TriggerMeta & {
+    readonly __where?: W;
+    readonly __output?: O;
 };
 ````
 
@@ -1330,10 +1582,31 @@ export interface EventFilter {
 export type ScheduleEvery = SchedulePreset | (string & {});
 ````
 
+## FlowLayout (interface)
+
+````ts
+export interface FlowLayout {
+    nodes?: Record<string, NodeLayout>;
+    edges?: Record<string, EdgeRoute>;
+}
+````
+
 ## TypeDesc (type)
 
 ````ts
 export type TypeDesc = (typeof types)[keyof typeof types];
+````
+
+## VarSpec (interface)
+
+````ts
+export interface VarSpec {
+    type: TypeDesc;
+    description?: string;
+    subType?: string;
+    schema?: Record<string, unknown>;
+    default?: unknown;
+}
 ````
 
 ## BuiltFlow (interface)
@@ -1342,12 +1615,16 @@ export type TypeDesc = (typeof types)[keyof typeof types];
 export interface BuiltFlow {
     id: string;
     name: string;
+    description?: string;
     version: string;
     inputs: VarDecl[];
     outputs: VarDecl[];
     vars: VarDecl[];
     steps: Step[];
     trigger?: TriggerSpec;
+    triggerOptions?: NodeOptions;
+    layout?: FlowLayout;
+    entryPoints?: BuiltEntryPoint[];
     triggerId?: string;
 }
 ````
@@ -1422,6 +1699,44 @@ export interface OutputColumn {
     name: string;
     description: string;
 }
+````
+
+## AgenticProcessCompletion (type)
+
+````ts
+export type AgenticProcessCompletion = {
+    /** Wait for the process and publish its outputs (the default). */
+    completion?: 'wait';
+    /**
+     * The process's OUTPUT arguments — the fields it returns, and their types (e.g.
+     * `{ status: 'boolean' }`). Required if anything reads the step's output, for the
+     * same reason as `rpaWorkflow`'s and `apiWorkflow`'s: the schema lives on the
+     * tenant and authoring happens offline, so an undeclared read is rejected.
+     *
+     * `uip maestro flow registry get uipath.core.agentic-process.<process>` shows what
+     * the platform synthesizes, under `outputDefinition.output.schema.properties`.
+     *
+     * Worth knowing before you assert on a value: a process can DECLARE a field and
+     * still leave it empty. `Shared/uipath-agents/ProcurementProcess` declares
+     * `{status: boolean}` and every job returns `{"status": null}` (measured
+     * 2026-07-29, four jobs) — the field arrives, the value does not.
+     *
+     * @enforcedBy AGENTIC_READ_WITHOUT_RETURNS Reading a field off the result requires
+     * declaring it here.
+     */
+    returns?: Record<string, 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'>;
+} | {
+    /**
+     * Dispatch the process and continue immediately — the platform's
+     * fire-and-forget switch. The node keeps only its `error` output (dispatch
+     * failures still route), and `check` rejects any read of the step's result.
+     * A local replay treats this as dispatch-only: it never fabricates the
+     * output a real run would not publish.
+     */
+    completion: 'fire-and-forget';
+    /** Impossible by design: an async dispatch publishes no output. */
+    returns?: never;
+};
 ````
 
 ## AgentLocation (type)
@@ -1509,6 +1824,7 @@ export type Step = {
     kind: 'action';
     name: string;
     spec: FlowActionSpec;
+    options?: NodeOptions;
 } | {
     kind: 'branch';
     name: string;
@@ -1518,6 +1834,7 @@ export type Step = {
     cond: Expr;
     then: Step[];
     otherwise: Step[];
+    options?: NodeOptions;
 } | {
     kind: 'switch';
     name: string;
@@ -1525,12 +1842,33 @@ export type Step = {
     on: Expr;
     cases: SwitchArm[];
     default?: Step[];
+    options?: NodeOptions;
 } | {
     kind: 'loop';
     name: string;
     label?: string;
     collection: Expr;
     body: Step[];
+    options?: LoopOptions;
+}
+/**
+ * A do-while container (`core.logic.dowhile`): run the body, then repeat
+ * while `condition` is true, up to `options.limit` iterations.
+ */
+ | {
+    kind: 'doWhile';
+    name: string;
+    label?: string;
+    condition: Expr;
+    body: Step[];
+    options?: DoWhileOptions;
+}
+/**
+ * Exit the enclosing loop/do-while through its break handle. Terminal on its
+ * path — nothing after it can run. Only valid inside a container body.
+ */
+ | {
+    kind: 'break';
 }
 /**
  * A fan-out and its join. `arms` is one step list per arm — an ARRAY, because
@@ -1543,6 +1881,7 @@ export type Step = {
     name: string;
     label?: string;
     arms: Step[][];
+    options?: NodeOptions;
 }
 /**
  * A hard stop: `core.logic.terminate`, a BPMN End event carrying a
@@ -1553,6 +1892,7 @@ export type Step = {
     kind: 'terminate';
     name: string;
     label?: string;
+    options?: NodeOptions;
 }
 /**
  * An edge to another step, by name. Creates no node of its own: it is ONE
@@ -1584,6 +1924,7 @@ export type Step = {
     kind: 'return';
     name: string;
     values: Record<string, Expr>;
+    options?: NodeOptions;
 };
 ````
 
@@ -1599,6 +1940,39 @@ export type FlowActionSpec = ActionSpec | SubflowSpec;
 export type CaseValue = string | number | boolean;
 ````
 
+## NodeLayout (interface)
+
+````ts
+export interface NodeLayout {
+    position: {
+            x: number;
+            y: number;
+        };
+    size?: {
+            width: number;
+            height: number;
+        };
+    collapsed?: boolean;
+}
+````
+
+## EdgeRoute (interface)
+
+````ts
+export interface EdgeRoute {
+    waypoints?: {
+            x: number;
+            y: number;
+            id?: string;
+        }[];
+    routedWaypoints?: {
+            x: number;
+            y: number;
+            id?: string;
+        }[];
+}
+````
+
 ## VarDecl (interface)
 
 ````ts
@@ -1606,6 +1980,21 @@ export interface VarDecl {
     name: string;
     type: TypeDesc;
     default?: unknown;
+    description?: string;
+    subType?: string;
+    schema?: Record<string, unknown>;
+}
+````
+
+## BuiltEntryPoint (interface)
+
+````ts
+export interface BuiltEntryPoint {
+    id: string;
+    trigger: TriggerSpec;
+    options?: NodeOptions;
+    inputs: VarDecl[];
+    steps: Step[];
 }
 ````
 

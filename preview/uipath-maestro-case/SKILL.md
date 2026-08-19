@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ a065b21. Canonical source lives there;
+`typescript/sdk/skill/SKILL-case.md` @ 335134d. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This is a snapshot of a generated file. In flow-builder-sdk,
@@ -131,6 +131,7 @@ export declare function casePlan(id: string): CaseBuilder;
 /**
      * Declare a read/write case variable.
      *
+     * @remarks
      * Readable from a `=js:vars.<name>` expression, like a trigger-bound In-arg.
      *
      * This comment used to say the opposite — that only `.input(shape, { from })`
@@ -158,6 +159,8 @@ export declare function casePlan(id: string): CaseBuilder;
      * projected into that trigger's `entry-points.json` input schema. A declared
      * In-arg is readable as `=vars.<name>` (its `inputOutputs` companion resolves it).
      *
+     * @example
+     * **Bind case In-args to a trigger's payload**
      * ```ts
      * const t = manualTrigger();
      * casePlan('x').trigger(t)
@@ -270,6 +273,8 @@ export interface CaseVarDecl {
  * vs array is `body.type`. Use in `.var()`/`.input()`/`.output()` where a
  * {@link TypeDesc} is expected.
  *
+ * @example
+ * **Declare an object variable and an array variable**
  * ```ts
  * .var('caseData', jsonSchema({ type: 'object', properties: { status: { type: 'string' } } }))
  * .var('attachments', jsonSchema({ type: 'array', items: { type: 'string' } }))
@@ -376,6 +381,7 @@ export interface ExitOpts {
      * `exitToStage` — including backward edges (returning to an earlier stage is just
      * an exit that routes there).
      *
+     * @remarks
      * The destination still evaluates its own `entryWhen(...)`, and only
      * STAGE-ENTRY rules are legal there: `selected-stage-completed` /
      * `selected-stage-exited` / `user-selected-stage` / `case-entered`. Do NOT try to
@@ -625,6 +631,7 @@ export interface ActionSpecData {
  * `InputOutput` row (`{ name, type, displayName? }`) under `data.inputs[]` /
  * `data.outputs[]`.
  *
+ * @remarks
  * Note: no `required` flag — on a task's io row `required` means "must hold a
  * value now", which `uip maestro case validate` rejects as an empty required
  * field at author time. Whether the assignee must fill a field is governed by the
@@ -777,6 +784,7 @@ export interface RuleOpts {
     /**
      * Symbolic stage label (for `selected-stage-completed` / `selected-stage-exited`).
      *
+     * @remarks
      * Both rules serialize identically — to `selectedStageId` — so this SDK draws no
      * distinction between them; the difference is interpreted at runtime. Use
      * `selected-stage-exited` for an interrupting exception-stage entry (what the
@@ -788,6 +796,7 @@ export interface RuleOpts {
      * Task references for `selected-tasks-completed`. Resolved **case-wide, not
      * per-stage** — a rule in one stage may reference a task in another.
      *
+     * @remarks
      * Two forms:
      * - bare `'Task Name'` — the normal form.
      * - qualified `'<Stage Label>/<Task Name>'` — also accepted, and clearer when a
@@ -1009,6 +1018,7 @@ export interface EventTriggerOpts {
      * (`=response.<field>`). Pass `{ source, type }` for a non-`string` type. Each
      * emits a trigger `outputs[]` row plus a readable root `inputOutputs` companion.
      *
+     * @remarks
      * With **no** outputs the event trigger is a **placeholder** (`data.uipath`
      * carries only `serviceType`) — the offline shape for an event on a connector
      * not yet registered; attach the real connection after registering it.
