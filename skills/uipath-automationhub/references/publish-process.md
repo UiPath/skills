@@ -42,7 +42,11 @@ Parse `data.properties.schema.properties` for the field catalog (Assessment Type
 
 ## Step 4: Collect the inputs, then assemble the payload
 
-**Collect every required input BEFORE the first POST** — do not discover gaps one 400 at a time. The caller may have supplied some (e.g. a Process Scribe hand-off object); resolve the rest with the recipes below, and use `AskUserQuestion` for anything only the user can decide. The six required inputs:
+**Collect every required input BEFORE the first POST** — do not discover gaps one 400 at a time.
+
+First, **enumerate the tenant's actual required set from the live schema** (Step 3): walk `data.properties.schema.properties` and collect every question whose `required` flag is set — tenant admins can mark **additional** questions required (commonly "Applications used" and "Thin applications used"), so the baseline table below is the *minimum*, never the whole list. Add the two questions the backend enforces without flagging (owner + submitter). Then resolve a value for **each** required question: from the caller's supplied data (e.g. a Process Scribe hand-off object), from the discovery recipes below, or via `AskUserQuestion` — never by inventing one.
+
+The six baseline inputs:
 
 | Input | How to resolve when not supplied |
 |---|---|
@@ -52,6 +56,8 @@ Parse `data.properties.schema.properties` for the field catalog (Assessment Type
 | **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by **label** (e.g. "Standard Operating Procedure") and send that `answer_option` code. Never reuse the template's placeholder code. |
 | **Owner email** | `GET /users` → the list is under `data.users[]`, the field is **`user_email`** (prefer `user_is_active: 1`); a non-listed address 400s (`Cannot identify owner by email`). Default to the signed-in user — confirm which listed email is theirs. |
 | **Submitter email** | Same recipe as owner; usually the same person. |
+
+**Tenant-required application questions** ("Applications used", "Thin applications used", and similar): the valid answers are the tenant's application inventory — `GET /appinventory` (paged; entries carry the app id, name, version, language). Match what the caller's material names, but if the documents leave the systems unconfirmed, `AskUserQuestion` with the inventory entries — **never record an application the material does not support**. Follow that question's own schema shape for how the selected entries are encoded in `user_inputs`.
 
 Then build `user_inputs` using the template's **structure** but the **collected values**:
 - Place each value in its `AssessmentType > section > question` slot.
@@ -85,7 +91,7 @@ where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 - **201** → the envelope is `{ "message": "Resource Created", "statusCode": 201, "data": { … } }` — read **`data.process_id`** (it is nested, NOT top-level). Keep it for Step 6. A 201 means the process WAS created: if a field read comes back undefined, re-read the response — **never re-POST** (that creates a duplicate and 409s).
 - **400** → fix and retry. The message shapes seen live:
   - `errorDetails: { "<question>": ["An answer selection is required…"] }` → that required field is missing/empty; add it.
-  - `errorDetails: {}` with `"Please fill in all the required information"` → a required field the API **won't name** is missing — almost always **owner** (`OVR-PROCESS_OWNER`) or **submitter** (`OVR-OVERVIEW_PROCESS_SUBMITTER`). Send the full required set from Step 4.
+  - `errorDetails: {}` with `"Please fill in all the required information"` → a required field the API **won't name** is missing. Check in order: (1) owner (`OVR-PROCESS_OWNER`) / submitter (`OVR-OVERVIEW_PROCESS_SUBMITTER`) — enforced but never flagged; (2) **diff your payload against every `required`-flagged question in the live schema** — tenant admins add required questions (e.g. "Applications used" / "Thin applications used"), and a payload missing any of them gets this same generic 400. Fill the gaps (Step 4 recipes), then retry once.
   - `"Invalid Category Id."` → `OVERVIEW_CATEGORY` isn't a real category on this tenant (see Step 4).
   - `Cannot set properties of undefined (setting 'co_question_answer_option_value')` → an enum field carries an invalid `answer_option` code (you left a template placeholder in). Use a code from that field's `enum`.
 - **401** → re-authenticate. **409** → duplicate name; ask the user for a new name or stop.
