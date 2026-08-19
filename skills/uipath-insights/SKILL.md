@@ -1,7 +1,7 @@
 ---
 name: uipath-insights
-description: "UiPath Insights job monitoring via `uip insights` — query job execution metrics, failure analysis, and process performance. Covers job KPIs, failure reasons, completion trends, process breakdowns. For Orchestrator job start/stop/logs→uipath-platform, root-cause analysis of specific errors→uipath-troubleshoot, RPA workflow authoring→uipath-rpa."
-when_to_use: "User says 'job failures', 'automation health', 'job success rate', 'processing time', 'which processes fail the most', 'failure reasons', 'job trends', 'how many jobs ran', 'insights dashboard', 'job metrics', 'job KPIs', 'job performance', 'uncompleted jobs', 'pending jobs', 'faulted jobs', 'job timeline', 'process details'. Also 'uip insights', 'insights jobs'. NOT for starting/stopping jobs (uipath-platform), NOT for root-cause debugging of a specific job error (uipath-troubleshoot), NOT for queue metrics (not yet supported)."
+description: "UiPath Insights job monitoring via `uip insights` — query job execution metrics, failure analysis, and process performance. Covers job KPIs, failure reasons, completion trends, process breakdowns. Also filter discovery — folders, processes, queues, and machines with recent activity, for choosing exact scope before alerts or filtered queries. For Orchestrator job start/stop/logs→uipath-platform, root-cause analysis of specific errors→uipath-troubleshoot, RPA workflow authoring→uipath-rpa."
+when_to_use: "User says 'job failures', 'automation health', 'job success rate', 'processing time', 'which processes fail the most', 'failure reasons', 'job trends', 'how many jobs ran', 'insights dashboard', 'job metrics', 'job KPIs', 'job performance', 'uncompleted jobs', 'pending jobs', 'faulted jobs', 'job timeline', 'process details', 'which folders can you see', 'what processes are active', 'find the folder key', 'discover queues', 'which machines reported', 'filter-folders', 'filter-processes'. Also 'uip insights', 'insights jobs'. NOT for starting/stopping jobs (uipath-platform), NOT for root-cause debugging of a specific job error (uipath-troubleshoot), NOT for queue item metrics (queue discovery is supported via filter-queues; metrics are not)."
 allowed-tools: Bash, Read
 ---
 
@@ -9,7 +9,7 @@ allowed-tools: Bash, Read
 
 Insights provides analytics and monitoring for UiPath automation execution. This skill covers **job monitoring** — querying aggregated job execution data for dashboards, health checks, and failure investigation.
 
-All operations go through `uip insights jobs <subcommand> --output json`.
+Job monitoring goes through `uip insights jobs <subcommand> --output json`; scope discovery goes through the `uip insights filter-*` groups. <!-- uip-check-skip -->
 
 ---
 
@@ -20,6 +20,7 @@ All operations go through `uip insights jobs <subcommand> --output json`.
 - Monitoring job execution trends over time (completed/uncompleted timelines)
 - Getting per-process performance breakdowns
 - Drilling into specific failure details for investigation
+- Discovering which folders, processes, queues, or machines have recent activity, to pick an exact scope (see Filter Discovery Commands)
 
 > **Not in scope:** Starting, stopping, or managing individual jobs (use `uip or jobs` via uipath-platform). Root-cause debugging of a specific job's error (use uipath-troubleshoot). Queue item metrics, robot utilization, or dashboard CRUD (not yet available in CLI).
 
@@ -47,7 +48,7 @@ uip login tenant set MyTenant
 
 ## Critical Rules
 
-1. **A time range is always required.** Every `uip insights jobs` command needs either `--time-range <minutes>` (relative) or both `--started-after <epoch-ms>` and `--started-before <epoch-ms>` (absolute). Without one, the command fails. For absolute ranges, pass literal epoch-millisecond numbers, resolved beforehand (see Workflow: Absolute Time Range). Common values:
+1. **A time range is always required — for `jobs` commands only.** Every `uip insights jobs` command needs either `--time-range <minutes>` (relative) or both `--started-after <epoch-ms>` and `--started-before <epoch-ms>` (absolute). Without one, the command fails. `filter-*` commands take no time flags at all (see Filter Discovery Commands). For absolute ranges, pass literal epoch-millisecond numbers, resolved beforehand (see Workflow: Absolute Time Range). Common values:
    - `--time-range 60` — last 1 hour
    - `--time-range 1440` — last 24 hours
    - `--time-range 10080` — last 7 days
@@ -163,6 +164,45 @@ uip insights jobs failure-details --time-range 1440 --output json
 
 ---
 
+## Filter Discovery Commands
+
+Four discovery groups expose scope candidates with recent Insights activity:
+
+```bash
+uip insights filter-folders list --output json     # {FolderName, FolderKey} rows
+uip insights filter-processes list --output json   # {ProcessName, FolderKey} rows
+uip insights filter-queues list --output json      # {QueueName, FolderKey} rows
+uip insights filter-machines list --output json    # {MachineName, MachineKey} rows
+```
+
+Rules that differ from the jobs commands:
+
+1. **No time flags.** The backend applies its own fixed 30-day activity window. `--time-range` is rejected as an unknown option. Do not add it.
+2. **`--limit` / `--offset` paginate client-side.** Default limit is 50; `Pagination.Total` and `HasMore` show whether more rows exist.
+3. **Empty is normal and is not proof of absence.** An empty result means no visible activity in the last 30 days for the current caller. Never tell the user a resource does not exist based on filter output.
+4. **Results are permission-bounded.** Folders, processes, and queues are restricted to folders the caller can access; machines are tenant-wide.
+
+### Workflow: discover before you act
+
+Before any command that takes a folder key, process name, machine name, or (future) alert scope:
+
+```bash
+# 1. Discover candidates
+uip insights filter-folders list --output json
+
+# 2. Match the user's words against FolderName values. If Pagination
+#    shows HasMore: true, page with --offset (or raise --limit) until
+#    every row has been seen BEFORE concluding anything is absent.
+#    Multiple matches -> ask the user which one. Zero matches across
+#    all pages -> report that nothing with that name was active in the
+#    last 30 days and ask for more detail. Never guess or fabricate a key.
+
+# 3. Use the exact key from the response
+uip insights jobs summary --time-range 1440 --folder-key "<FolderKey from step 1>" --output json
+```
+
+---
+
 ## Workflow: Investigate Job Health
 
 Follow this pattern when a user asks about automation health or job failures:
@@ -214,7 +254,7 @@ uip insights jobs failures-by-reason --time-range 1440 \
   --output json
 ```
 
-To discover available folder keys, use `uip or folders list --output json` (from the uipath-platform skill).
+To discover available folder keys, use `uip or folders list --output json` (from the uipath-platform skill), or `uip insights filter-folders list --output json` for folders with recent Insights activity — usually the right scope source for monitoring tasks, since the Orchestrator list shows all folders the caller can administer.
 
 ---
 
