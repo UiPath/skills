@@ -69,7 +69,7 @@ Body:
 
 When a required field is missing the API may return `errorDetails: {}` (no field named) with `"Please fill in all the required information"` — that is almost always the un-flagged owner/submitter.
 
-**Response 201** — the created process object **at the top level** (not nested): `process_id`, `process_uuid`, `process_name`, … Record `process_id`. *(Used by the publish flow.)*
+**Response 201** — the standard envelope with the created process **nested under `data`**: `{ "message": "Resource Created", "statusCode": 201, "data": { "process_id": …, "process_uuid": …, "process_name": … } }`. Read **`data.process_id`** — it is NOT at the top level. If you received a 201 the process WAS created — never re-POST because a field read came back undefined; re-read the response instead. *(Used by the publish flow.)*
 
 ### POST `/automations/{process_id}/documents`
 Attach a document to a process — **by uploaded bytes (`file`) or by link (`embed_link`)**. Governed by `open-api-service` `ProcessDocumentValidator` (`src/api/v1/services/processDocumentValidator.class.ts`; schema `src/models/schema/processDocumentRequest.schema.ts`). **Required fields, verified against the validator source:**
@@ -88,10 +88,10 @@ Attach a document to a process — **by uploaded bytes (`file`) or by link (`emb
 
   | id | Type | id | Type |
   |---|---|---|---|
-  | 1 | PDD (Process Definition Document) | 7 | INF (Input Files) |
-  | 2 | SDD (Solution Design Document) | 8 | OUF (Output Files) |
-  | 3 | DSD (Detailed Solution Design) | 9 | MISC (anything else) |
-  | 4 | SOP (Standard Operating Procedure) | 10 | TCD (Task Capture Document) |
+  | 1 | PDD (Process Definition Document) | 7 | INF (Input File) |
+  | 2 | SDD (Solution Design Document) | 8 | OUF (Output File) |
+  | 3 | DSD (Development Specification Document) | 9 | MISC ("Misc." — anything else) |
+  | 4 | SOP (Standard Operating Procedure) | 10 | TCD (Task Capture Document — **special**: accepts only `zip`/`ssp` uploads, **no embed_link**) |
   | 5 | DWI (Detailed Work Instructions) | 11 | ASC (Automation Source Code) |
   | 6 | PM (Process Map) | | |
 
@@ -100,16 +100,16 @@ Attach a document to a process — **by uploaded bytes (`file`) or by link (`emb
 - **`file` — byte upload, the default.** Validated by `EncodedFileValidator`: `file_name`, `mimetype`, `file_content`, `file_encoding` are all required and must be non-empty, and `file_encoding` must be `base64` — the only accepted value. No mimetype allowlist. The JSON body limit is **300mb**, so a PDD-sized `.docx` or `.md` fits with room to spare.
 - **`embed_link`** — use only when the document already lives at a URL and the bytes are not available.
 
-Returns the created `document_id`. *(Used by the publish flow.)*
+Returns the standard envelope with the created id **nested under `data`** — read **`data.document_id`**. *(Used by the publish flow.)*
 
 ### POST `/automations/{process_id}/media`  *(not needed for documents)*
 A separate byte-upload route taking the same `EncodedFileValidator` shape. Documents do **not** need it — `/documents` accepts `file` directly.
 
 ### GET `/hierarchy`
-The tenant's category tree: `data.levels` (level names) + `data.categories` (each with `category_id`, name, and nested subcategories). **This is how to resolve a valid `OVERVIEW_CATEGORY` id** — it works even on a tenant with zero processes. *(Used by the publish flow.)*
+The tenant's category tree (verified live): `data.levels` (level names) + `data.categories[]`, each with `category_id`, `category_name`, `category_is_active`, and nested `subcategories`. **This is how to resolve a valid `OVERVIEW_CATEGORY` id** — it works even on a tenant with zero processes. Only pick nodes with **`category_is_active: 1`** — `0` means archived and the write will be rejected or hidden. *(Used by the publish flow.)*
 
 ### GET `/users?limit=<n>`
-The Automation Hub users on the tenant (key `users`; entries carry the email, name, and active flag). **This is how to resolve a valid owner/submitter email** — both must be provisioned AH users, and this endpoint is the ground truth. *(Used by the publish flow.)*
+The Automation Hub users on the tenant (verified live): paged envelope with the list under **`data.users[]`**; each entry carries **`user_email`**, `user_first_name`/`user_last_name`, and `user_is_active`. **This is how to resolve a valid owner/submitter email** — both must be provisioned AH users (prefer `user_is_active: 1`), and this endpoint is the ground truth. *(Used by the publish flow.)*
 
 ### GET `/automations?search=<text>&limit=<n>&offset=<n>`
 Search/list processes. Returns a paged list (results under a resource key, e.g. `processes`, or a bare array). Use to resolve a name → `process_id`. *(Used by the get flow.)*

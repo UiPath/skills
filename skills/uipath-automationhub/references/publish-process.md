@@ -48,9 +48,9 @@ Parse `data.properties.schema.properties` for the field catalog (Assessment Type
 |---|---|
 | Process **name** | Ask the user. Non-empty; a duplicate name 409s. |
 | **Description** | Ask the user, or derive from the supplied material and confirm. |
-| **Category id** | `GET /hierarchy` → pick from `data.categories[]` (`category_id`, names, nested subcategories). One clear fit → propose it; several plausible → `AskUserQuestion` with the names. **Never send the template's `1`.** (Works on an empty tenant — do not depend on an existing process.) |
+| **Category id** | `GET /hierarchy` → pick from `data.categories[]` (`category_id`, `category_name`, nested `subcategories`) — **only nodes with `category_is_active: 1`** (0 = archived). One clear fit → propose it; several plausible → `AskUserQuestion` with the names. **Never send the template's `1`.** (Works on an empty tenant — do not depend on an existing process.) |
 | **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by **label** (e.g. "Standard Operating Procedure") and send that `answer_option` code. Never reuse the template's placeholder code. |
-| **Owner email** | `GET /users` → must be one of these emails; a non-listed address 400s (`Cannot identify owner by email`). Default to the signed-in user — confirm which listed email is theirs. |
+| **Owner email** | `GET /users` → the list is under `data.users[]`, the field is **`user_email`** (prefer `user_is_active: 1`); a non-listed address 400s (`Cannot identify owner by email`). Default to the signed-in user — confirm which listed email is theirs. |
 | **Submitter email** | Same recipe as owner; usually the same person. |
 
 Then build `user_inputs` using the template's **structure** but the **collected values**:
@@ -82,7 +82,7 @@ curl -s -w "\n%{http_code}" -X POST \
 ```
 where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 
-- **201** → read `process_id` from the **top level** of the response (not nested in `data`). Keep it for Step 6.
+- **201** → the envelope is `{ "message": "Resource Created", "statusCode": 201, "data": { … } }` — read **`data.process_id`** (it is nested, NOT top-level). Keep it for Step 6. A 201 means the process WAS created: if a field read comes back undefined, re-read the response — **never re-POST** (that creates a duplicate and 409s).
 - **400** → fix and retry. The message shapes seen live:
   - `errorDetails: { "<question>": ["An answer selection is required…"] }` → that required field is missing/empty; add it.
   - `errorDetails: {}` with `"Please fill in all the required information"` → a required field the API **won't name** is missing — almost always **owner** (`OVR-PROCESS_OWNER`) or **submitter** (`OVR-OVERVIEW_PROCESS_SUBMITTER`). Send the full required set from Step 4.
@@ -131,7 +131,7 @@ base64 -i "<FILE_PATH>" | tr -d '\n'   # macOS/Linux; use `base64 -w0 "<FILE_PAT
 
 - **`embed_link` (alternative).** Use only when the caller has a URL and no bytes: replace the `file` object with `"embed_link": "https://…"`. Never invent a URL.
 
-Record each returned `document_id`. On 400, surface the validation message and continue with the remaining documents.
+Record each returned id — it is nested: read **`data.document_id`** from the response envelope. On 400, surface the validation message and continue with the remaining documents.
 
 ## Step 7: Verify, then report
 

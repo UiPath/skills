@@ -30,7 +30,7 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
   "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/automations/$PROCESS_ID/documents"
 ```
 
-Each entry (key `documents`) carries `document_id`, `document_title`, `document_type_id`, and **either** a `file_id` (file-backed) **or** an `embed_link` (link-backed). *(Optional: `/automations/$PROCESS_ID/components` for linked components.)*
+The list is under **`data.documents[]`** (standard envelope). Each entry carries `document_id`, `document_title`, `document_type_id`, and **either** a `file_id` (file-backed) **or** an `embed_link` (link-backed). *(Optional: `/automations/$PROCESS_ID/components` for linked components.)*
 
 ## Step 3b: Download a document (when the caller wants the bytes)
 
