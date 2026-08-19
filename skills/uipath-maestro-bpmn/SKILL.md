@@ -6,7 +6,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 # Reasoning budget
 - Match reasoning to step difficulty and bias toward acting; for mechanical / IO / format steps, if a
-  provided script already covers, run it — don't re-derive it.
+  provided script already covers the task, run it — don't re-derive it.
 - Save deep, extended reasoning for the one genuinely hard judgment a script can't make for you.
 
 # Working style
