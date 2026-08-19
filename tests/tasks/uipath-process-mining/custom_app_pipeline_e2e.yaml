@@ -11,15 +11,10 @@ description: >
   log and sequences the pipeline commands with correct namespaces/flags.
 
   The event log is staged as ./events.csv so the agent has a real file to
-  upload. Without it the agent correctly refuses to invent the data the
-  prompt claims exists, and the run stalls hunting for the file before it
-  ever reaches `apps create` — 0.111 on the 2026-08-19 nightly.
+  upload.
 tags: [uipath-process-mining, e2e, mode:build, lifecycle:setup, custom, pipeline]
 
 run_limits:
-  # 18, not 10: with the event log staged the pipeline actually executes, and
-  # both agents land at 14-16 visible turns. The old 10 was calibrated against
-  # a run that gave up early hunting for the missing CSV.
   expected_turns: 18
   max_turns: 40
   turn_timeout: 600
