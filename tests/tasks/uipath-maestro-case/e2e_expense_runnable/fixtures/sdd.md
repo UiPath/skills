@@ -147,7 +147,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeName |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -250,7 +250,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeEmail |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -339,7 +339,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeName |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -544,7 +544,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeName |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -612,7 +612,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeName |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -749,7 +749,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeEmail |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -815,7 +815,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.employeeEmail |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -849,7 +849,7 @@
 
 | Workflow | Folder | Resource ID (+version) | Inputs → Outputs | Used By Tasks |
 |----------|--------|------------------------|------------------|---------------|
-| WeatherAPI | Shared/uipath-agents/WeatherAPI | be88b8d6-ec4d-484c-9474-805dd82d8d68 | location → temprature | Validate Expense Data, Send Approval Request, Policy Compliance Check, Payment Confirmation, Send Approval Confirmation, Log Rejection for Audit, Send Withdrawal Confirmation |
+| WeatherAPI | Shared/uipath-agents/WeatherAPI | be88b8d6-ec4d-484c-9474-805dd82d8d68 | location → temperature | Validate Expense Data, Send Approval Request, Policy Compliance Check, Payment Confirmation, Send Approval Confirmation, Log Rejection for Audit, Send Withdrawal Confirmation |
 
 ### Agents
 

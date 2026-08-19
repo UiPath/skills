@@ -143,7 +143,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.invoiceId |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -420,7 +420,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.invoiceId |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -557,7 +557,7 @@
 
 | Field | Type | Binding |
 |-------|------|---------|
-| name | string | =vars.invoiceId |
+| location | string | "Seattle" |
 
 **Outputs:**
 
@@ -591,7 +591,7 @@
 
 | Workflow | Folder | Resource ID (+version) | Inputs → Outputs | Used By Tasks |
 |----------|--------|------------------------|------------------|---------------|
-| WeatherAPI | Shared/uipath-agents/WeatherAPI | be88b8d6-ec4d-484c-9474-805dd82d8d68 | location → temprature | Register case, Close case and update KPIs, Create incident record |
+| WeatherAPI | Shared/uipath-agents/WeatherAPI | be88b8d6-ec4d-484c-9474-805dd82d8d68 | location → temperature | Register case, Close case and update KPIs, Create incident record |
 
 ### Agents
 
