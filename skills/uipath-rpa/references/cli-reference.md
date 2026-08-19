@@ -93,17 +93,9 @@ When a package is installed, its activity docs land under `{PROJECT_DIR}/.local/
 
 `uip rpa run` runs a workflow with no debugging; the `debug` group drives breakpoints, stepping, and exception handling (see [debugging.md](debugging.md)). For UI automation, prefer `debug start` over `run` so the app is preserved for selector repair on error. Cancel an active run or session with `uip rpa execution cancel`. Pass workflow inputs as repeatable `--input-arguments key=value` pairs (see [Passing structured inputs](#passing-structured-inputs)); discover the remaining flags (log level, skip-build, profiling) via `--help`.
 
-Both `run` and `debug start` return the same envelope: `{Result, Code, Data: {runResult: "<json-string>"}, ...}`. `Data.runResult` is a **JSON string** — parse it separately:
+Both wrap the result in `{Result, Code, Data}`. **`Data`'s inner shape varies by CLI build and run state — read it by key presence, never by assumed schema.** A completed run returns the fields flat (`output`, `errors`, `logEntries` — the workflow's own `Log Message` output arrives in `logEntries`); suspended and stepping debug sessions, and older builds, nest a JSON-encoded string on `Data.runResult` (`HasErrors`, `ErrorMessage`, `DebugState`, `DebugDetails`, `Profiling`). Field-by-field meaning for both shapes: [debugging.md § Output Format](debugging.md#output-format).
 
-- `Output` — the workflow's own serialized output arguments JSON, populated when the run completes. **Carries the workflow's data, not a verdict.**
-- `HasErrors` — `true` iff execution finished unsuccessfully (compile/validation failure, unhandled exception that ended the run, cancellation, or timeout); `false` otherwise — including while a debug session is `Suspended` on an exception, since the outcome is not decided yet.
-- `ErrorMessage` — formatted error chain when `HasErrors: true`; on debug responses it may instead carry guidance with `HasErrors: false`; `null` otherwise.
-- `DebugState` / `DebugDetails` — debug sessions only (`null` on plain `run`). Every debug command returns at the next stable state — `Paused` (activity + locals in `DebugDetails`), `Suspended` (exception + locals), `Running` (wait timed out), or `Completed`. See [debugging.md § The stable-state debug loop](debugging.md#the-stable-state-debug-loop-headless).
-- `Profiling.OutputDirectory` — present only when `--profiling` was passed on a start verb and collection succeeded; absolute path to the per-run `*.uistat` files and runtime screenshots. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance).
-
-Workflow log output (`Log Message`, system traces) does **not** appear in `runResult` — logs stream in real time on a separate channel; the envelope carries only the verdict, debug state, and output data.
-
-> **Single source of truth for success/failure of a completed run: outer `Result` (equivalently `HasErrors` inside `runResult`).** `Result: "Success"` already accounts for compile failures, validation failures, and unhandled exceptions — the CLI propagates them. **DO NOT infer failure from a streamed log entry's `Level`.** A successful workflow may emit `Log Message` at `Error`/`Warning` level as observability — that is workflow data, not a CLI failure. Treating log levels as a verdict flips green runs to "failed" and burns retries. In a debug session, check `DebugState` before `HasErrors` — `Suspended` means an exception awaits your decision while `HasErrors` is still `false`.
+> **A completed run passed only when `Data.errors` is empty AND `Data.output` is `"Session ended"`.** The outer `Result` qualifies the CLI invocation, not the workflow — it stays `Success` through unhandled exceptions, compile failures, and a missing entry point, so **never read `Result: "Success"` as a passing run**. Both conditions are required, because `errors` stays empty for a missing entry point and for a debug session suspended on an exception. **DO NOT infer failure from a log entry's `level`** — a clean run that logs at `Error` still returns `errors: []` and `output: "Session ended"`; treating log levels as a verdict flips green runs to "failed" and burns retries. Field-by-field behavior per scenario: [debugging.md § Output Format](debugging.md#output-format).
 
 ---
 
@@ -132,13 +124,13 @@ Rules:
 
 `uip rpa validate` returns diagnostics for a file or the whole project, re-validating first by default (`--skip-validation` reads cached, possibly stale, results; `--min-severity` filters). Confirm flags via `uip rpa validate --help`.
 
-> **Known issue: an absolute `--file-path` with an absolute `--project-dir` falsely fails** with `The targeted project file <X> is not in the project folder <Y>`. The CLI normalizes `--file-path` to forward slashes but leaves `--project-dir` with backslashes, then string-compares — same path, different separators. Pass `--file-path` **relative** to the project directory (e.g. `--file-path "Main.xaml"`) to sidestep it. For a project-level compile gate without this quirk, use `build`.
+`--file-path` accepts a path relative to the project directory (`--file-path "Main.xaml"`) or an absolute one, with either separator style; forward-slash, backslash, and mixed forms all resolve. Prefer the relative form — it is shorter and keeps commands portable across machines.
 
 ---
 
 ## build
 
-`uip rpa build` compiles the project — catching runtime-compile failures `validate` misses (including attribute-form expression failures like `JIT compilation is disabled for non-Legacy projects` in C#-expression XAML projects). Required before returning a project to the user (see [§ Project Build Verification](#project-build-verification-required-before-returning-a-project)). Takes the project directory as a **positional** argument and runs independently of Studio IPC. Discover flags (log level, skip-analyze, governance, NuGet sources) via `uip rpa build --help`.
+`uip rpa build` compiles the whole project — every workflow, not only the files a per-file `validate` was pointed at (§ What each phase covers). Required before returning a project to the user (see [§ Project Build Verification](#project-build-verification-required-before-returning-a-project)). Takes the project directory as a **positional** argument and runs independently of Studio IPC. Discover flags (log level, skip-analyze, governance, NuGet sources) via `uip rpa build --help`.
 
 `run` and `debug start` compile internally, so a successful smoke test implies `build` would pass. When no smoke test runs (side effects, interactive workflow, no test input), `build` is the required compilability check.
 
@@ -274,7 +266,7 @@ PHASE 2 — build-clean (per-project, once per edit session):
     3. EXIT to Smoke Test
 ```
 
-**Why both phases.** `validate` is static analysis: catches structural XAML, missing references, analyzer rules, schema violations. `build` is the compiler: catches **unknown member names** (e.g. `NGetText.Value` when the output member is `TextString` (or legacy `Text`)), **invalid enum values** (e.g. `Operator="StartsWith"` when the enum has no such member), **member resolution / CacheMetadata failures**, and attribute-form C# expression JIT failures. `validate` returns "no diagnostics found" for these; `build` flags them at compile time. Per-file `validate` plus one end-of-session `build` covers both error classes — trusting only `validate` ships broken workflows.
+**Why both phases.** Per-file `validate` covers one file deeply — structural XAML, missing references, analyzer rules, schema violations, unknown members, invalid enums, and expression compilation. `build` covers the project broadly — every workflow including untouched ones, project-scope analyzer rules, and packaging. Validating each edited file does not establish that the project compiles, and building does not tell you which file to fix without re-running `validate` on the offender. Neither replaces the other, and neither detects an attribute-form expression that silently resolves to a literal (§ What each phase covers).
 
 **Target the specific file:** `validate --file-path` validates only the file you changed (faster than whole-project). `build` is project-scoped (no `--file-path`); when it errors, the output names the offending file — re-run `validate --file-path` on it as part of Phase 2's fix loop.
 
@@ -299,18 +291,33 @@ Every project returned to the user must compile. Phase 2 of the iteration loop a
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
-`validate` is static analysis and misses compile-time failures: unknown member names, invalid enum values, member resolution / CacheMetadata failures, and JIT failures like `JIT compilation is disabled for non-Legacy projects` — see [xaml/csharp-activity-binding-guide.md § C# Expression Pitfalls](xaml/csharp-activity-binding-guide.md#c-expression-pitfalls). If `build` fails, apply the Phase 2 fix loop (fix one root cause, re-run, cap at 5 attempts). A successful `run` smoke test substitutes for `build` — `run` compiles internally. Prefer the `run --skip-build` form when `build` has just passed (see Smoke Test below).
+If `build` fails, apply the Phase 2 fix loop (fix one root cause, re-run, cap at 5 attempts). A successful `run` smoke test substitutes for `build` — `run` compiles internally.
 
-### Errors `build` catches that `validate` misses
+### What each phase covers
 
-| Error class | Example | Why `validate` misses it |
-|-------------|---------|----------------------------|
-| Unknown member name | `<uix:NGetText Value="[x]" />` (correct: `TextString`) | `validate` does not resolve property names against activity assemblies |
-| Invalid enum value | `Operator="StartsWith"` on `VerifyExpressionWithOperator` (enum has no such member) | Enum membership is checked at CacheMetadata / compile time, not static parse |
-| CacheMetadata / member resolution | Required-extension misses, type-mismatch on `InArgument<T>` | Surfaces only when the runtime instantiates the activity |
-| Attribute-form C# expressions | `Value="x + y"` in `expressionLanguage: CSharp` projects | JIT compiler needs the expression in element form — see [xaml/csharp-activity-binding-guide.md § C# Expression Pitfalls](xaml/csharp-activity-binding-guide.md#c-expression-pitfalls) |
+Per-file `validate` loads the target file through the workflow designer **and** compiles its expressions, so it reports these on the file it was pointed at:
 
-When you see "no diagnostics found" from `validate`, you have not validated the file. Run `build` next.
+| Error class | Example | Reported as |
+|-------------|---------|-------------|
+| Unknown member name | `<uix:NGetText Value="[x]" />` (correct: `TextString`) | `Could not load <file>: 'Cannot set unknown member '<Class>.<Prop>''` |
+| Invalid enum value | `ClickType="BogusValue"` | `Could not load <file>: 'Failed to create a '<Prop>' from the text '<value>''` |
+| Broken expression | `undefinedSymbol + 1` inside a `CSharpValue` | `CS0103: The name '<symbol>' does not exist in the current context` |
+
+**`build` is still required, because its scope is the whole project, not the file you validated.** It compiles every workflow — including ones you never touched or never validated — and applies project-scope analyzer rules and packaging. A project whose every edited file validates clean still fails `build` when an unrelated file is broken, which is exactly the state a partial edit session leaves behind.
+
+**Neither phase catches an attribute-form expression on an `InArgument<Object>`.** `Message="calcResult"` deserializes as a literal string, so `validate` reports no diagnostics, `build` succeeds, the run succeeds — and the activity logs the text `calcResult` instead of the variable's value. There is no error anywhere; the only signal is wrong output. This is why the gate ends with a smoke test whose **output is inspected**, not merely a run that exits clean — see [§ Smoke Test](#smoke-test) and [xaml/csharp-activity-binding-guide.md § C# Expression Pitfalls](xaml/csharp-activity-binding-guide.md#c-expression-pitfalls).
+
+### Expected non-defect warnings
+
+`build` prints `[WARN]` lines for enabled analyzer rules. These are **not** build failures and do not gate delivery (§ Validation Iteration Loop, Rule 6). Recurring ones that are correct-by-design and must not be "fixed":
+
+| Warning | Rule | Why it is expected |
+|---|---|---|
+| `<activity> does not have the verification feature enabled` | — (matches no rule in the enabled `analyzer-rules list` output) | `VerifyOptions` is deliberately off by default; add only when the user asks. Observed once per `NClick` on a clean UIA build. Policy: the UIA package guide's § Execution Verification Policy. |
+| `Your organization requires your project to have an Automation Hub URL defined` | `ST-USG-034` | Org governance setting, not a workflow property. Resolved in Project Settings by the project owner. |
+| `<name> display name is defined many times. Current allowed threshold is 1` | `ST-NMG-004` | Real but cosmetic. Fix only while authoring the activity — repeated identical steps (two clicks on the same button) need disambiguating names anyway. |
+
+Warnings naming a rule ID you do not recognize: look it up with `analyzer-rules list --scope <scope>` (§ analyzer-rules list) rather than guessing, and only when a warning actually blocks an acceptance criterion.
 
 ## Smoke Test
 
@@ -327,7 +334,7 @@ uip rpa run --file-path "<FILE>" --skip-build --input-arguments key=value --outp
 uip rpa run --file-path "<FILE>" --skip-build --log-level Verbose --output json
 ```
 
-Use bare `run` (without `--skip-build`) whenever the build artifact may be stale: **(a)** no recent project-level `build` has been performed, OR **(b)** any file has been edited between the last successful `build` and this `run`. `--skip-build` executes the existing compiled artifact, so any post-build edit is silently ignored until a fresh `build` runs.
+`--skip-build` still compiles the workflow it executes — it skips the project build/pack step, not compilation. A post-build edit **is** picked up: an edit that introduces a compile error under `--skip-build` aborts the run with that error rather than silently executing the previous artifact. So `--skip-build` is safe after any edit, and there is no stale-artifact caveat to work around.
 
 **When to run:**
 1. Workflow has no compilation errors but you want to verify runtime behavior

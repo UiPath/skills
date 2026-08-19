@@ -566,12 +566,11 @@ Activity-level mechanics below. For the expression/code layer (LINQ filter/sort/
 - **Assert activities** require `BookmarkResumptionHelper` extension (added via `metadata.RequireExtension<BookmarkResumptionHelper>()` in CacheMetadata)
 - **TakeScreenshotInCaseOfSucceedingAssertion** and **TakeScreenshotInCaseOfFailingAssertion** are `[RequiredArgument]` on assert activities even though they default to `false`
 
-## Enum-Valued Properties Are a `validate` Blind Spot
+## Enum-Valued Properties Fail the Whole File, Not Just the Activity
 
-Activity properties typed as enums (e.g. `Operator`, `ClickType`, `KeyModifiers`, `EmptyFieldMode`, comparison/filter strategies) are checked at compile time against the activity's enum, **not** during `validate` static analysis. An invalid identifier on an enum-typed attribute returns "no diagnostics found" from `validate` and surfaces only at `build` / `CacheMetadata` time. Two consequences:
+Activity properties typed as enums (e.g. `Operator`, `ClickType`, `KeyModifiers`, `EmptyFieldMode`, comparison/filter strategies) accept only the exact members declared for the installed package version. An invalid identifier is a **deserialization** failure, not a localized property error: `validate` reports `Could not load <file>: 'Failed to create a '<Prop>' from the text '<value>''` and the entire activity tree fails to load, so a single bad enum value blocks the file — and blocks Object Repository linking against it, which needs the file to deserialize.
 
-1. Always read `{projectRoot}/.local/docs/packages/<PackageId>/activities/<Activity>.md` for the exact, package-version-specific enum members before authoring an enum-valued attribute. Do not infer values from naming intuition or from prose in this skill.
-2. Always run `uip rpa build` after `validate` clears — it is the only validator that catches invalid enum identifiers (see [../cli-reference.md § Validation Iteration Loop](../cli-reference.md#validation-iteration-loop)).
+Always read `{projectRoot}/.local/docs/packages/<PackageId>/activities/<Activity>.md` for the exact, package-version-specific enum members before authoring an enum-valued attribute. Do not infer values from naming intuition or from prose in this skill.
 
 ## Package Version Changes Break XAML
 
