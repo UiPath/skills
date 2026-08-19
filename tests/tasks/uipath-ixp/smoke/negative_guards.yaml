@@ -107,10 +107,13 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # Names the document: without it, confirming f-002 on Task 2's doc-abc-123 — or on
+  # nothing at all, since document-id is optional on `confirm` — earned Task 3.
   - type: cli_called
-    description: "Task 3: completed the task - confirmed field f-002 on the document"
+    description: "Task 3: completed the task - confirmed field f-002 on doc-def-456"
     verb: "ixp labellings confirm"
     tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "doc-def-456"]
     flags:
       fields: {contains: "f-002", aliases: ["f"]}
     weight: 1.0
