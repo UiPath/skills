@@ -98,7 +98,7 @@ where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 
 ## Step 6: Attach documents (PDD/SDD)
 
-Attach each document the caller supplies. **Upload the bytes** — the endpoint takes a base64 `file` object directly, so nothing needs hosting first. Fall back to `embed_link` only when the caller has a URL instead of bytes.
+Attach each document the caller supplies — **default to all of them**; never silently skip a supplied file. The one exception: if two supplied files appear to be the *same document in different formats*, ask which to attach — as part of the single up-front clarifying round (Step 4), not a separate round. **Upload the bytes** — the endpoint takes a base64 `file` object directly, so nothing needs hosting first. Fall back to `embed_link` only when the caller has a URL instead of bytes.
 
 ```bash
 curl -s -w "\n%{http_code}" -X POST \
