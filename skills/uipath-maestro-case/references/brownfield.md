@@ -106,3 +106,5 @@ Report: file path edited, what changed (nodes/tasks/conditions added/removed/mod
 | **Something else** | Free-form. |
 
 Do not run debug, publish, or publish to Orchestrator without explicit selection. On selection, follow the existing [phased-execution.md](phased-execution.md) Phase 5 / Phase 6 / Phase 7 contracts.
+
+<!-- END: brownfield.md -->
