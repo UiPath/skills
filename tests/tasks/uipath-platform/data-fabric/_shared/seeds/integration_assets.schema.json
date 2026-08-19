@@ -3,7 +3,7 @@
   "description": "Seed entity for integration_files brownfield test (FILE field upload/download/delete lifecycle).",
   "fields": [
     {
-      "fieldName": "AssetName",
+      "name": "AssetName",
       "displayName": "Asset Name",
       "type": "STRING",
       "isRequired": true,
@@ -11,7 +11,7 @@
       "lengthLimit": 100
     },
     {
-      "fieldName": "Document",
+      "name": "Document",
       "displayName": "Document File",
       "type": "FILE"
     }
