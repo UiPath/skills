@@ -150,14 +150,17 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
 
 Check every attached `document_id` appears (file-backed entries also carry a `file_id`). If one is missing, report it as failed — never report a document as attached without seeing it in this list.
 
-Then summarize: the created `process_id`, the verified document ids (and any that failed), and a link to view it:
+Then summarize with **deep links straight to the created process and its documents** — the 201 response's `data.process_slug` is the URL segment (URL-encode it). Emit these links only after the verification read-back above succeeded:
 
 ```
 Published to Automation Hub:
   Process: <name>  (process_id: <id>)
   Documents: PDD ✓ (doc 12, file 42), SDD ✓ (doc 13, file 43)
-  View: {baseUrl}/{org}/{tenant}/automationhub_/process-repository
+  View process:   {baseUrl}/{org}/{tenant}/automationhub_/automation-profile/{process_slug}
+  View documents: {baseUrl}/{org}/{tenant}/automationhub_/automation-profile/{process_slug}/documentation
 ```
+
+Always build the links from the **same org/tenant** the process was created on — never another tenant's segments.
 
 ## Notes
 

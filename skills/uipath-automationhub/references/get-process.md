@@ -54,6 +54,7 @@ Process: <name>  (process_id: <id>)
   Status:   <phase/status>
   Category: <category>
   Owner:    <owner>
+  View:     {baseUrl}/{org}/{tenant}/automationhub_/automation-profile/{process_slug}/documentation
 Documents:
   - PDD  (document_id 12, file_id 42 — downloadable)
   - SDD  (document_id 13, embed_link — link only)
