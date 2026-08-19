@@ -1,0 +1,75 @@
+#!/bin/sh
+# Metrics-serving `uip` mock for uipath-ixp smoke tasks that must DIAGNOSE from
+# the full get-metrics payload. Overlays the base mock_template (list it SECOND
+# in template_sources so this file wins).
+#
+# The base mock fails every invocation, which makes this scenario unwinnable:
+# the correct path reads metrics and carries the numbers into a written
+# diagnosis. A failing read leaves nothing to diagnose.
+#
+# Fixture — project my_invoices-f1afa9ef-ixp, ModelVersion 12, built so that F1
+# ALONE cannot produce the right answer:
+#
+#   Invoice Number   F1 0.60  P 0.45  R 0.95   Ann 40   -> PRECISION (over-extracts)
+#   Vendor Address   F1 0.60  P 0.95  R 0.45   Ann 40   -> RECALL    (misses it)
+#   Bill-To Name     F1 1.00  P 1.00  R 1.00   Ann 40   -> no work needed
+#   Freight Charge   F1 0.889 P 0.80  R 1.00   Ann  5   -> above target, tiny sample
+#
+# The first two carry the SAME F1 and need OPPOSITE rewrites. An agent reading
+# only F1 cannot tell them apart and must guess; one reading the
+# Precision/Recall split gets both right. That is the discriminator.
+#
+# Two further traps, both faithful to real API behaviour:
+#   * ErrorRate is exactly 1 - Precision on every row (0.55, 0.05, 0, 0.20).
+#     It is not an independent signal and must not be diagnosed from.
+#   * Bill-To Name has F1 1.00 yet Quality "good", while the project scores 0.77
+#     with ProjectScoreQuality "good" too. Field Quality and ProjectScoreQuality
+#     do not share a scale, so an agent gating on the LABEL rather than the
+#     number flags a field that is already perfect.
+#
+# get-taxonomy is served so field ids can be resolved to names; the graded
+# artifact is keyed by field id, which needs no join.
+#
+# Logging matches the base mock exactly — same `uip ` prefix, same newline
+# normalization — so anchored `^uip\s+ixp …` criteria keep matching.
+{
+    printf 'uip %s' "$*" | tr '\r\n' '  '
+    printf '\n'
+} >> "$(dirname "$0")/calls.log" 2>/dev/null || true
+
+case "$1 $2 $3" in
+"ixp projects list")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsList","Data":{"Projects":[{"Id":"f1afa9ef-1c4d-4b70-9e02-6d3b8a5c7e11","Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","CreatedAt":"2026-06-11T08:42:19Z"}],"Total":1,"Offset":0,"Limit":50}}
+EOF
+exit 0
+;;
+"ixp projects get")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGet","Data":{"Name":"my_invoices-f1afa9ef-ixp","Title":"My_Invoices","Description":"Supplier invoices","CreatedTime":"2026-06-11T08:42:19Z"}}
+EOF
+exit 0
+;;
+"ixp projects list-models")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsListModels","Data":{"Models":[{"Version":12,"ModelName":"gemini_ixp","Pinned":true,"TrainedTime":"2026-07-24T09:12:13.533725+00:00","Description":""}],"Tags":[{"Name":"live","Version":12,"UpdatedAt":"2026-07-24T09:14:08.456568+00:00"}],"MaxPublished":100}}
+EOF
+exit 0
+;;
+"ixp projects get-metrics")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":12,"ValidatedDocuments":40,"ProjectScore":0.77,"ProjectScoreQuality":"good","FieldGroups":[{"FieldGroup":"Invoice Header","F1":0.79,"Precision":0.76,"Recall":0.82,"ErrorRate":0.24,"Documents":40}],"Fields":[{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000001","F1":0.6,"Precision":0.45,"Recall":0.95,"ErrorRate":0.55,"Documents":40,"Annotations":40,"Quality":"average"},{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000002","F1":0.6,"Precision":0.95,"Recall":0.45,"ErrorRate":0.05,"Documents":40,"Annotations":40,"Quality":"average"},{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000003","F1":1,"Precision":1,"Recall":1,"ErrorRate":0,"Documents":40,"Annotations":40,"Quality":"good"},{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000004","F1":0.889,"Precision":0.8,"Recall":1,"ErrorRate":0.2,"Documents":5,"Annotations":5,"Quality":"good"}]}}
+EOF
+exit 0
+;;
+"ixp projects get-taxonomy")
+cat <<'EOF'
+{"Result":"Success","Code":"IxpProjectsGetTaxonomy","Data":{"status":"ok","dataset":{"entity_defs":[{"id":"b3a63e6483adaaba","name":"Exact Text","title":"","inherits_from":[],"trainable":true,"color":2,"instructions":""},{"id":"e5d7402ba91c6f38","name":"Monetary Quantity","title":"","inherits_from":["0000000000000005"],"trainable":true,"color":4,"instructions":""}],"label_groups":[{"name":"Invoice","label_defs":[{"name":"Invoice Header","instructions":"Header fields printed at the top of the invoice.","moon_form":[{"field_id":"aaaa000000000001","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Invoice Number","instructions":"The invoice identifier.","rule_set":null},{"field_id":"aaaa000000000002","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Vendor Address","instructions":"The vendor's postal address.","rule_set":null},{"field_id":"aaaa000000000003","id":"b3a63e6483adaaba","field_type_id":"b3a63e6483adaaba","kind":"Exact Text","name":"Bill-To Name","instructions":"The party being billed.","rule_set":null},{"field_id":"aaaa000000000004","id":"e5d7402ba91c6f38","field_type_id":"e5d7402ba91c6f38","kind":"Monetary Quantity","name":"Freight Charge","instructions":"The freight or shipping charge.","rule_set":null}]}]}]}}}
+EOF
+exit 0
+;;
+esac
+
+# Everything else fails like the base mock: offline, no network call.
+echo "uip (mock): not connected to a tenant in this sandbox; offline smoke mock." >&2
+exit 1

@@ -1,0 +1,75 @@
+task_id: skill-ixp-metrics-full-signal-diagnosis-smoke
+description: >
+  Smoke: the agent diagnoses which fields need an instruction rewrite AND what
+  kind of rewrite each needs, from the full `get-metrics` payload rather than
+  from `F1` alone.
+
+  The fixture gives two fields the SAME F1 (0.60) with mirrored Precision/Recall
+  (0.45/0.95 vs 0.95/0.45), so they need OPPOSITE fixes. F1 alone cannot
+  separate them; the Precision/Recall split can. Two further fields are already
+  at or above target and must not be flagged — one of them scores F1 1.00 while
+  its `Quality` label reads only `good`, trapping an agent that gates on the
+  label instead of the number.
+tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 6
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+    - {type: template_dir, path: ../_shared/mock_template_metrics}
+
+initial_prompt: |
+  In the IXP project `my_invoices-f1afa9ef-ixp`, work out which fields need
+  their extraction instructions improved, and what kind of problem each one
+  has. Target F1 is 0.7.
+
+  Write `diagnosis.json` in the working directory — one key per field that
+  needs work, keyed by its field id, valued with the problem type:
+
+      {"<field_id>": "PRECISION" | "RECALL" | "BOTH"}
+
+  Fields already at or above target must not appear. Do not change any
+  instructions — diagnose only.
+
+  Important:
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: file_matches_regex
+    description: "Read the project's metrics"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+projects\s+get-metrics\s+.*my_invoices-f1afa9ef-ixp)[^\r\n]*$
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The discriminator. Both fields sit at F1 0.60; only the Precision/Recall
+  # split says which way each one is failing. An agent reading F1 alone has to
+  # guess, and guessing both correctly is a coin flip.
+  - type: json_check
+    description: "Diagnosed the two same-F1 fields in opposite directions — low-precision field as PRECISION, low-recall field as RECALL"
+    path: "diagnosis.json"
+    assertions:
+      - expression: '"aaaa000000000001"'
+        operator: equals
+        expected: "PRECISION"
+      - expression: '"aaaa000000000002"'
+        operator: equals
+        expected: "RECALL"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # No over-flagging. aaaa000000000003 is F1 1.00 but Quality "good" — the trap
+  # for gating on the label; aaaa000000000004 is F1 0.889, above the 0.7 target.
+  - type: json_check
+    description: "Did not flag the two fields already at or above target (incl. the F1 1.00 field whose Quality label reads only `good`)"
+    path: "diagnosis.json"
+    assertions:
+      - expression: "length(keys(@))"
+        operator: equals
+        expected: 2
+    weight: 2.0
+    pass_threshold: 1.0
