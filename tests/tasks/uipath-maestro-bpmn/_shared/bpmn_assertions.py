@@ -162,3 +162,65 @@ def assert_package_lifecycle(project_dir: Path, bpmn_name: str, start_id: str) -
         ep.get("filePath") == expected_file_path for ep in entry_points.get("entryPoints", [])
     ):
         fail(f"entry-points.json missing filePath {expected_file_path}")
+
+
+def assert_generated_project_scaffold(
+    project_dir: Path,
+    project_name: str,
+    bpmn_name: str,
+    start_id: str,
+    *,
+    entry_point_id: str | None = None,
+    expected_resource_count: int | None = None,
+) -> None:
+    """Assert the current CLI-owned Process Orchestration metadata contract."""
+
+    project = load_json(project_dir / "project.uiproj")
+    operate = load_json(project_dir / "operate.json")
+    entry_points = load_json(project_dir / "entry-points.json")
+    bindings = load_json(project_dir / "bindings_v2.json")
+    descriptor = load_json(project_dir / "package-descriptor.json")
+
+    if project.get("Name") != project_name:
+        fail(f"project.uiproj Name must be {project_name}")
+    if project.get("ProjectType") != "ProcessOrchestration":
+        fail("project.uiproj ProjectType must be ProcessOrchestration")
+    if "main" in project or "Main" in project:
+        fail("project.uiproj must not own the BPMN main path")
+
+    expected_main = f"/content/{bpmn_name}#{start_id}"
+    if operate.get("main") != expected_main:
+        fail(f"operate.json main must be {expected_main}")
+    if operate.get("contentType") != "ProcessOrchestration":
+        fail("operate.json contentType must be ProcessOrchestration")
+
+    entries = entry_points.get("entryPoints")
+    if not isinstance(entries, list) or len(entries) != 1:
+        fail("entry-points.json must contain exactly one manual entry point")
+    entry = entries[0]
+    if entry.get("filePath") != expected_main:
+        fail(f"entry-points.json filePath must be {expected_main}")
+    if entry.get("type") != "ProcessOrchestration":
+        fail("entry-points.json type must be ProcessOrchestration")
+    if entry_point_id is not None and entry.get("uniqueId") != entry_point_id:
+        fail("entry-points.json uniqueId must match uipath:entryPointId")
+
+    if bindings.get("version") != "2.0":
+        fail('bindings_v2.json version must be "2.0"')
+    resources = bindings.get("resources")
+    if not isinstance(resources, list):
+        fail("bindings_v2.json resources must be a list")
+    if expected_resource_count is not None and len(resources) != expected_resource_count:
+        fail(
+            "bindings_v2.json must contain "
+            f"{expected_resource_count} resources, found {len(resources)}"
+        )
+
+    expected_files = {
+        "operate.json": "operate.json",
+        "entry-points.json": "entry-points.json",
+        "bindings.json": "bindings_v2.json",
+        bpmn_name: bpmn_name,
+    }
+    if descriptor.get("files") != expected_files:
+        fail("package-descriptor.json must preserve the current CLI root files map")
