@@ -1,16 +1,18 @@
 task_id: skill-ixp-deploy-folder-by-name-smoke
 description: >
-  Smoke: the folder is named, not keyed, so the agent has to resolve it with
-  `uip or folders list` before it can deploy.
+  Smoke: the folder is named, not keyed, so the agent resolves it with
+  `uip or folders list` and then deploys with the GUID it read back.
   Trap: `--folder-key` takes a GUID and there is no `--folder-path` form, so a
   folder name or path shaped into the key is wrong — and the CLI does not validate
   the key format client-side, so it fails only server-side and the agent gets no
   local signal.
 
-  Harness is unauthenticated, so the lookup itself fails and no key is obtainable;
-  this grades that the agent went to `or folders list` for the key and invented
-  neither a key nor a flag. The deploy shape with a key in hand is covered by
-  deploy_to_folder.
+  The recorder serves the folder list, which is why this task can assert the
+  RESOLVED key rather than just the lookup: one static `stdout` is enough because
+  only one read has to succeed. It is served for every `uip` verb, so a later
+  `deployments create` also echoes the folder list — harmless here, since grading
+  is on command shape, but the reason a task needing several DIFFERENT reads
+  cannot use recorders this way.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
@@ -19,7 +21,8 @@ run_limits:
 sandbox:
   record_cli:
     - tool: uip
-      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+      exit_code: 0
+      stdout: '{"Result":"Success","Code":"OrFoldersList","Data":[{"Key":"3f0a91c7-1111-2222-3333-444455556666","DisplayName":"Invoices","FullyQualifiedName":"Finance/Invoices"},{"Key":"8c22d4e1-9999-8888-7777-666655554444","DisplayName":"Archive","FullyQualifiedName":"Finance/Archive"}]}'
     - tool: curl
       stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
@@ -29,9 +32,7 @@ initial_prompt: |
   Deploy it there.
 
   Important:
-  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
-    this environment. Commands will fail with auth errors — that is expected.
-    Run each command once and move on. Do NOT retry or attempt to login.
+  - Run each command once and move on. Do NOT retry or attempt to login.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
@@ -41,6 +42,19 @@ success_criteria:
     description: "Went to `uip or folders list` to resolve the folder name to a key"
     verb: "or folders list"
     tool: "uip"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The resolved Archive key, not the Invoices one that shares the served payload:
+  # this fails an agent that grabs the first entry instead of matching the name.
+  - type: cli_called
+    description: "Deployed with `deployments create <Name> --version 13 --folder-key 8c22d4e1-…` (the resolved Archive key)"
+    verb: "ixp deployments create"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      version: "13"
+      folder-key: "8c22d4e1-9999-8888-7777-666655554444"
     weight: 3.0
     pass_threshold: 1.0
 
