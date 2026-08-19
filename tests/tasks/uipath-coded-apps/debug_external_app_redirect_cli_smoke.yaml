@@ -10,32 +10,79 @@ description: >
   e2e only *creates* apps, it never fixes one.
 tags: [uipath-coded-apps, smoke, mode:diagnose]
 
+run_limits:
+  expected_turns: 12
+
 pre_run:
   # Seed a minimal coded-web-app config so the client ID is concrete and the
   # scenario is a real misconfiguration, not a hypothetical.
+  #
+  # External applications are an ORG-level resource, so the org has to be the one
+  # the runner is actually signed into. The old hardcoded `acme` pointed
+  # `uip admin external-apps` at an org that does not exist for this identity,
+  # and the calls came back as an HTML error page ("Unexpected token '<'")
+  # instead of a clean not-found — which reads as a broken environment rather
+  # than a missing app, and sent the agent hunting for a mock server instead of
+  # applying the fix. Tenant and base URL come from the same session because
+  # `uipath.json` needs them for the app's own runtime config.
   - command: |
-      cat > uipath.json <<'JSON'
-      {
-        "clientId": "11111111-1111-1111-1111-111111111111",
-        "scope": "OR.Assets OR.Execution",
-        "orgName": "acme",
-        "tenantName": "DefaultTenant",
-        "baseUrl": "https://api.uipath.com",
-        "redirectUri": "http://localhost:3000"
-      }
-      JSON
-    timeout: 15
+      python3 - <<'PY'
+      import json, subprocess
+      org, tenant, base = "acme", "DefaultTenant", "https://api.uipath.com"
+      try:
+          out = subprocess.run(
+              ["uip", "login", "status", "--output", "json"],
+              capture_output=True, text=True, timeout=60,
+          ).stdout
+          data = json.loads(out).get("Data", {})
+          org = data.get("Organization") or org
+          tenant = data.get("Tenant") or tenant
+          # `login status` reports the portal host; uipath.json wants the API
+          # host (SKILL.md: alpha.uipath.com -> alpha.api.uipath.com).
+          host = (data.get("BaseUrl") or base).rstrip("/").split("://")[-1]
+          if host == "cloud.uipath.com":
+              host = "api.uipath.com"
+          elif host.endswith(".uipath.com") and ".api." not in host:
+              sub = host[: -len(".uipath.com")]
+              host = "api.uipath.com" if sub in ("", "www") else sub + ".api.uipath.com"
+          base = "https://" + host
+      except Exception:
+          pass
+      json.dump(
+          {
+              "clientId": "11111111-1111-1111-1111-111111111111",
+              "scope": "OR.Assets OR.Execution",
+              "orgName": org,
+              "tenantName": tenant,
+              "baseUrl": base,
+              "redirectUri": "http://localhost:3000",
+          },
+          open("uipath.json", "w"),
+          indent=2,
+      )
+      PY
+    timeout: 90
     fail_on_error: true
 
 initial_prompt: |
   A UiPath coded web app fails to log in. The browser lands on an error page
   reading `redirect_uri_mismatch`. The dev server actually serves the app at
-  `http://localhost:5173`, but the External Application (client ID
-  `11111111-1111-1111-1111-111111111111`, org `acme`) only has
+  `http://localhost:5173`, but the External Application recorded in
+  `uipath.json` (client ID `11111111-1111-1111-1111-111111111111`) only has
   `http://localhost:3000` registered as a redirect URI.
 
   Fix the root cause so login works: register the correct dev redirect URI(s)
   on the External Application, and make the local config consistent.
+
+  Use the org and tenant of the current `uip login` session — do not pass
+  `--organization`. If that client ID no longer resolves on this tenant
+  (`external-apps get` returns `not_found`), create a fresh external app for
+  this coded web app with the correct redirect URIs instead — per the skill's
+  create recipe — and point `uipath.json` at its client ID. That is a valid
+  fix, not a dead end.
+
+  Take the CLI command shape from the skill's references; do not spend turns
+  on `--help` for the sub-verbs.
 
   This is a non-interactive automated test — do NOT ask for confirmation or
   pause for input. Before starting, load the uipath-coded-apps skill and follow
