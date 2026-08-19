@@ -84,6 +84,18 @@ Attach a document to a process — **by uploaded bytes (`file`) or by link (`emb
 ```
 
 - `document_title` (**not** `document_name`), `document_description`, `document_type_id` are all required by the schema.
+- **`document_type_id` values are fixed platform-wide** (from `tenant-service` `file.constants.js` — never guess):
+
+  | id | Type | id | Type |
+  |---|---|---|---|
+  | 1 | PDD (Process Definition Document) | 7 | INF (Input Files) |
+  | 2 | SDD (Solution Design Document) | 8 | OUF (Output Files) |
+  | 3 | DSD (Detailed Solution Design) | 9 | MISC (anything else) |
+  | 4 | SOP (Standard Operating Procedure) | 10 | TCD (Task Capture Document) |
+  | 5 | DWI (Detailed Work Instructions) | 11 | ASC (Automation Source Code) |
+  | 6 | PM (Process Map) | | |
+
+  Pick by the document's kind: PDD → `1`, SDD → `2`; when unsure, default to `9` (MISC).
 - Plus **exactly one** of `file` or `embed_link` — an XOR enforced in the handler, not the schema. Sending both, or neither, 400s with `"One and only one of embed_link or file need to be specified."`
 - **`file` — byte upload, the default.** Validated by `EncodedFileValidator`: `file_name`, `mimetype`, `file_content`, `file_encoding` are all required and must be non-empty, and `file_encoding` must be `base64` — the only accepted value. No mimetype allowlist. The JSON body limit is **300mb**, so a PDD-sized `.docx` or `.md` fits with room to spare.
 - **`embed_link`** — use only when the document already lives at a URL and the bytes are not available.
@@ -93,6 +105,12 @@ Returns the created `document_id`. *(Used by the publish flow.)*
 ### POST `/automations/{process_id}/media`  *(not needed for documents)*
 A separate byte-upload route taking the same `EncodedFileValidator` shape. Documents do **not** need it — `/documents` accepts `file` directly.
 
+### GET `/hierarchy`
+The tenant's category tree: `data.levels` (level names) + `data.categories` (each with `category_id`, name, and nested subcategories). **This is how to resolve a valid `OVERVIEW_CATEGORY` id** — it works even on a tenant with zero processes. *(Used by the publish flow.)*
+
+### GET `/users?limit=<n>`
+The Automation Hub users on the tenant (key `users`; entries carry the email, name, and active flag). **This is how to resolve a valid owner/submitter email** — both must be provisioned AH users, and this endpoint is the ground truth. *(Used by the publish flow.)*
+
 ### GET `/automations?search=<text>&limit=<n>&offset=<n>`
 Search/list processes. Returns a paged list (results under a resource key, e.g. `processes`, or a bare array). Use to resolve a name → `process_id`. *(Used by the get flow.)*
 
@@ -100,7 +118,10 @@ Search/list processes. Returns a paged list (results under a resource key, e.g. 
 Fetch one process by numeric id (or slug). Returns the full process record (can be ~300 fields; project to the ones you need for display). *(Used by the get flow.)*
 
 ### GET `/automations/{process_id}/documents`
-List a process's documents (key `documents`); each entry includes the document name, type, and a `FileId` / download reference. *(Used by both flows.)*
+List a process's documents (key `documents`). Each entry carries `document_id`, `document_title`, `document_type_id`, and **either** a `file_id` (file-backed — downloadable) **or** an `embed_link` (link-backed — nothing to download; show the URL). *(Used by both flows.)*
+
+### GET `/download/file/{file_id}`
+Download a file-backed document's **bytes**. `{file_id}` is the `file_id` from the documents list — **not** the `document_id`. The response body is the raw file — save it with `curl -o <path>`; there is no JSON envelope. Link-backed documents (`file_id` absent) cannot be downloaded — present their `embed_link` instead. *(Used by the get flow.)*
 
 ### GET `/automations/{id}/components`  *(optional)*
 Linked components for the process.

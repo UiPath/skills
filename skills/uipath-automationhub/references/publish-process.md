@@ -40,14 +40,23 @@ Parse `data.properties.schema.properties` for the field catalog (Assessment Type
 
 > ⚠️ **Do NOT POST `data.user_inputs` verbatim.** The template ships **example/placeholder values that the API rejects** — e.g. `OVERVIEW_CATEGORY: 1` (→ `Invalid Category Id`), a placeholder `PROCESS_DOCUMENTS` answer-option that triggers a backend `co_question_answer_option_value` crash, and `First.last@example.com` owner/submitter emails. Treat the template as **shape only** and replace every value with a real one (below).
 
-## Step 4: Assemble the process payload
+## Step 4: Collect the inputs, then assemble the payload
 
-Gather the process fields — from the caller's supplied data (e.g. a Process Scribe hand-off object) or by asking the user. Then build `user_inputs` using the template's **structure** but **real values**:
+**Collect every required input BEFORE the first POST** — do not discover gaps one 400 at a time. The caller may have supplied some (e.g. a Process Scribe hand-off object); resolve the rest with the recipes below, and use `AskUserQuestion` for anything only the user can decide. The six required inputs:
+
+| Input | How to resolve when not supplied |
+|---|---|
+| Process **name** | Ask the user. Non-empty; a duplicate name 409s. |
+| **Description** | Ask the user, or derive from the supplied material and confirm. |
+| **Category id** | `GET /hierarchy` → pick from `data.categories[]` (`category_id`, names, nested subcategories). One clear fit → propose it; several plausible → `AskUserQuestion` with the names. **Never send the template's `1`.** (Works on an empty tenant — do not depend on an existing process.) |
+| **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by **label** (e.g. "Standard Operating Procedure") and send that `answer_option` code. Never reuse the template's placeholder code. |
+| **Owner email** | `GET /users` → must be one of these emails; a non-listed address 400s (`Cannot identify owner by email`). Default to the signed-in user — confirm which listed email is theirs. |
+| **Submitter email** | Same recipe as owner; usually the same person. |
+
+Then build `user_inputs` using the template's **structure** but the **collected values**:
 - Place each value in its `AssessmentType > section > question` slot.
 - Follow the template's wrapping per field: most are `{ "value": <v> }`; owner/submitter questions take a **direct string** (no `value` wrapper).
 - Convert enum labels to their `answer_option` codes taken from that field's own `enum` in the schema — **never** reuse the template's placeholder code. Send integers as numbers.
-- **Category** (`OVERVIEW_CATEGORY`) must be a **valid category id on this tenant**, not the template's `1`. Resolve one by reading `categories[].category_id` (and `subcategories`) from an existing process (`GET /automations/{anyId}`), or ask the user.
-- **Owner/submitter emails must be real, provisioned AH users** on this tenant (a bad address 400s).
 
 **Required fields for `idea_flow_id` = Business Process** (verified live — the backend enforces owner + submitter even though the schema's `required` flags do **not** list them):
 
@@ -110,6 +119,7 @@ Build `$DOC_PAYLOAD` per `ProcessDocumentValidator`:
 ```
 
 - `document_title`, `document_description`, `document_type_id` are all required (the field is `document_title`, **not** `document_name`).
+- **`document_type_id` comes from the fixed platform table in [`api-endpoints.md`](api-endpoints.md)** — PDD → `1`, SDD → `2`, otherwise `9` (MISC). Never guess other ids.
 - Supply **exactly one** of `file` or `embed_link` — an XOR enforced in the handler, not the JSON schema. Both, or neither, 400s with `"One and only one of embed_link or file need to be specified."`
 - **`file` (default).** Base64-encode the file and send `file_name`, `mimetype`, `file_content`, `file_encoding`. `file_encoding` must be the literal `base64` — any other value fails with `"Invalid file."`, as does an empty `file_name`, `mimetype`, or `file_content`. Body limit is 300mb.
 - Common mimetypes: `.docx` → `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `.md` → `text/markdown`, `.pdf` → `application/pdf`.
@@ -123,14 +133,23 @@ base64 -i "<FILE_PATH>" | tr -d '\n'   # macOS/Linux; use `base64 -w0 "<FILE_PAT
 
 Record each returned `document_id`. On 400, surface the validation message and continue with the remaining documents.
 
-## Step 7: Report
+## Step 7: Verify, then report
 
-Summarize: the created `process_id`, the attached document ids (and any that failed), and a link to view it:
+**Verify before claiming success** — read the process back and confirm the documents landed:
+
+```bash
+curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "$BASE_URL/$ORG/$TENANT/automationhub_/api/v1/openapi/automations/$PROCESS_ID/documents"
+```
+
+Check every attached `document_id` appears (file-backed entries also carry a `file_id`). If one is missing, report it as failed — never report a document as attached without seeing it in this list.
+
+Then summarize: the created `process_id`, the verified document ids (and any that failed), and a link to view it:
 
 ```
 Published to Automation Hub:
   Process: <name>  (process_id: <id>)
-  Documents: PDD ✓ (doc 12), SDD ✓ (doc 13)
+  Documents: PDD ✓ (doc 12, file 42), SDD ✓ (doc 13, file 43)
   View: {baseUrl}/{org}/{tenant}/automationhub_/process-repository
 ```
 
