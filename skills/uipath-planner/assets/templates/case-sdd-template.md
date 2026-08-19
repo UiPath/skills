@@ -136,13 +136,23 @@ Tenant object starts are still event triggers: a case that starts when a tenant 
 |----|-------------|--------|---------------|
 | T02 | <Manual \| Intsvc.EventTrigger \| Intsvc.TimerTrigger> | <source system, connector, object, or Manual> | <business event, timer cadence, filter intent, or N/A> |
 
+### Trigger Filter
+
+<!-- Render only when >= 1 trigger declares a filter. Nested {op, clauses} groups flatten into this table.
+Operator vocabulary and the Literal guidance live in references/case/render-case-definition.md § 1.3a. -->
+
+| Field | Operator | Value | Literal? |
+|-------|----------|-------|----------|
+| <payload field> | <Equals \| Contains \| GreaterThan \| ...> | <value> | <Yes \| No> |
+
 ### Case Exit Conditions
 
 <!-- WHEN + Marks Case Complete pairing is schema-constrained: Marks Case Complete = Yes normally uses `required-stages-completed`; selected-stage rules are for non-completing exits. -->
 
-| WHEN | IF | THEN | Marks Case Complete | Display Name |
-|------|-----|------|---------------------|--------------|
-| required-stages-completed | — | Case exited | Yes | — |
+| WHEN | IF | THEN | Exit Type | Marks Case Complete | Display Name |
+|------|-----|------|-----------|---------------------|--------------|
+| required-stages-completed | — | Case exited | exit-only | Yes | — |
+| selected-stage-completed("<SECONDARY_STAGE_NAME>") | — | Case closed, not completed | exit-only | No | — |
 
 ### Case Variables
 

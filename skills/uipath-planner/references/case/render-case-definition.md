@@ -82,7 +82,7 @@ event resolution (`connectionId` / `activityTypeId`) → high review item.
 ## 1.3a Trigger Filter (conditional)
 
 Renders only when ≥ 1 trigger declares a filter. AND/OR tree; nested `{op, clauses}` groups flatten in the
-rendered table. Columns: `Field | Operator | Value | Literal?`. Operators (PascalCase, case-sensitive):
+rendered table. Columns are the template's § 1.3a. Operators (PascalCase, case-sensitive):
 `Equals`, `NotEquals`, `Contains`, `NotContains`, `StartsWith`, `EndsWith`, `GreaterThan`,
 `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `In`, `NotIn`, `IsNull`, `IsNotNull`. Avoid
 `Literal: No` for unverified runtime expressions — it forces a lossy fallback; prefer literal values or a
@@ -90,7 +90,7 @@ review item.
 
 ## 1.4 Case Completion Conditions · 1.4a Case Exit Conditions
 
-Columns: `WHEN | IF | Marks Case Complete | Exit Type | Display Name`. §1.4 = `Yes` rows (≥ 1 required);
+Columns are the template's § Case Exit Conditions. §1.4 = `Yes` rows (≥ 1 required);
 §1.4a = `No` rows (alternate dispositions: Withdrawn / Rejected / Cancelled). Legal WHEN per
 [model.md § Lifecycle gates](model.md#lifecycle-gates); exit types per
 [model.md § Exit types](model.md#exit-types).

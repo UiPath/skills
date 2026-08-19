@@ -6,10 +6,10 @@ What each Section 2 block of a case `sdd.md` must contain. Semantics live in [mo
 
 ## Stage headings
 
-- Primary: `### Stage {N}: {Stage Name} (\`{stage_id}\`)` — N is 1-based flow order.
-- Secondary: `### Secondary Stage: {Stage Name} (\`{stage_id}\`)`.
-- The trailing code-formatted `{stage_id}` MUST appear, and every cell that names a stage appends the id in
-  code-formatted parens — cross-references stay greppable.
+Heading format is the template's — see
+[`case-sdd-template.md`](../../assets/templates/case-sdd-template.md) § Section 2. N is 1-based flow
+order; secondary stages use the `Secondary Stage` form. Reference a stage from another cell by its exact
+display name, which is unique per case ([model.md § Naming](model.md)).
 
 ## Stage fields
 
@@ -46,8 +46,9 @@ resolving. Duration, thresholds, recipients, and escalation cells: [slas.md](sla
 
 ## Stage Task Summary
 
-In plan order, ≥ 1 task per stage: `# | Task ID | Task | Type | Owner`. `Task ID` is code-formatted
-(`` `t11` ``); Required-Tasks cells elsewhere use those bare ids. Owner = persona name or `system`.
+In plan order, ≥ 1 task per stage. Columns are the template's — see
+[`case-sdd-template.md`](../../assets/templates/case-sdd-template.md) § Section 2 `#### Tasks`. Owner is a
+persona name or `system`; Required-Tasks cells elsewhere name tasks by their exact display name.
 
 ## Task detail blocks
 
