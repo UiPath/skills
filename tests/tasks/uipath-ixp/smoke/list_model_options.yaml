@@ -82,6 +82,7 @@ success_criteria:
   - type: cli_called
     description: "Agent did NOT mistake the catalog for version listing: no executed `projects list-models`"
     verb: "ixp projects list-models"
+    tool: "uip"
     min_count: 0
     max_count: 0
     weight: 3.0

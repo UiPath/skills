@@ -34,6 +34,7 @@ success_criteria:
   - type: cli_called
     description: "Agent switched to a more capable model via `configure-model --model gemini_2_5_pro`"
     verb: "ixp projects configure-model"
+    tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp"]
     flags:
       model: "gemini_2_5_pro"

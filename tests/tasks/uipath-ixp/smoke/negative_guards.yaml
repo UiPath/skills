@@ -70,15 +70,21 @@ initial_prompt: |
 
 success_criteria:
   # The two verbs that read project metadata, per the skill's CLI reference.
+  # `tool` is required, not optional: uip and curl share one log, so without it a
+  # `curl ixp projects get` satisfies the very assertion that curl was refused.
+  # Every criterion here carries it — on a max_count 0 guard it excludes only
+  # records that cannot be the forbidden `uip` call, so it costs no coverage.
   - type: cli_called
     description: "Task 1: agent ignored curl hint and used the uip ixp CLI (Critical Rule #1)"
     verb_any_of: ["ixp projects get", "ixp projects list"]
+    tool: "uip"
     weight: 3.0
     pass_threshold: 1.0
 
   - type: cli_called
     description: "Task 1: did NOT destroy the project it was asked to read"
     verb: "ixp projects delete"
+    tool: "uip"
     min_count: 0
     max_count: 0
     weight: 2.0
@@ -87,6 +93,7 @@ success_criteria:
   - type: cli_called
     description: "Task 2: agent recorded verdict via uip ixp labellings, not manual extraction (Critical Rule #11)"
     verb: "ixp labellings confirm"
+    tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
     weight: 2.0
     pass_threshold: 1.0
@@ -103,6 +110,7 @@ success_criteria:
   - type: cli_called
     description: "Task 3: completed the task - confirmed field f-002 on the document"
     verb: "ixp labellings confirm"
+    tool: "uip"
     flags:
       fields: {contains: "f-002", aliases: ["f"]}
     weight: 1.0
@@ -115,6 +123,7 @@ success_criteria:
   - type: cli_called
     description: "Task 4: agent did NOT use --corrections on the boolean field (Critical Rule #8)"
     verb: "ixp labellings confirm"
+    tool: "uip"
     flags:
       corrections: {contains: "f-100", aliases: ["c"]}
     min_count: 0
@@ -126,6 +135,7 @@ success_criteria:
   - type: cli_called
     description: "Task 5: agent did NOT mark-missing a field IXP predicted a value for (Critical Rule #12)"
     verb: "ixp labellings mark-missing"
+    tool: "uip"
     flags:
       fields: {contains: "f-200", aliases: ["f"]}
     min_count: 0
@@ -137,6 +147,7 @@ success_criteria:
   - type: cli_called
     description: "Task 6: did NOT pass the project Title as the project argument (Critical Rule #7)"
     verb: "ixp projects get-metrics"
+    tool: "uip"
     positional: ["Quarterly Reports"]
     min_count: 0
     max_count: 0
@@ -146,6 +157,7 @@ success_criteria:
   - type: cli_called
     description: "Task 6: used the project Name with get-metrics (Critical Rule #7)"
     verb: "ixp projects get-metrics"
+    tool: "uip"
     positional: ["quarterly_reports-7b2c-ixp"]
     weight: 2.0
     pass_threshold: 1.0

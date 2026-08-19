@@ -30,6 +30,7 @@ success_criteria:
   - type: cli_called
     description: "Agent renamed field \"Amount\" to \"Total Amount\" via `fields rename` (right group)"
     verb: "ixp fields rename"
+    tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp"]
     flags:
       group: "Invoice Header"
@@ -43,6 +44,7 @@ success_criteria:
   - type: cli_called
     description: "Agent did NOT delete the field (rename must not destroy it)"
     verb: "ixp fields delete"
+    tool: "uip"
     min_count: 0
     max_count: 0
     weight: 1.0
