@@ -4,8 +4,8 @@ description: >
   available uip insights jobs subcommands. The prompt is goal-oriented —
   the agent must discover the full command surface from the skill, not from
   the prompt. Auth errors are expected (no live tenant). Criteria use a
-  broad invocation count (loop-resilient) plus output-based checks that
-  each distinct subcommand was actually called.
+  broad invocation check plus per-subcommand name checks that match both
+  literal commands and for-loop variable lists.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -31,23 +31,23 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent invoked uip insights jobs at least 7 times"
+    description: "Agent invoked uip insights jobs"
     tool_name: "Bash"
     command_pattern: 'uip\s+insights\s+jobs'
-    min_count: 7
+    min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran summary (literal or via help/output)"
+    description: "Agent exercised the summary subcommand"
     tool_name: "Bash"
-    command_pattern: 'summary'
+    command_pattern: '(uip\s+insights\s+jobs\s+summary|[\s,]summary[\s,])'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran completed-timeline (literal or via help/output)"
+    description: "Agent exercised the completed-timeline subcommand"
     tool_name: "Bash"
     command_pattern: 'completed-timeline'
     min_count: 1
@@ -55,7 +55,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran uncompleted-timeline (literal or via help/output)"
+    description: "Agent exercised the uncompleted-timeline subcommand"
     tool_name: "Bash"
     command_pattern: 'uncompleted-timeline'
     min_count: 1
@@ -63,7 +63,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran top-failures (literal or via help/output)"
+    description: "Agent exercised the top-failures subcommand"
     tool_name: "Bash"
     command_pattern: 'top-failures'
     min_count: 1
@@ -71,7 +71,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran failures-by-reason (literal or via help/output)"
+    description: "Agent exercised the failures-by-reason subcommand"
     tool_name: "Bash"
     command_pattern: 'failures-by-reason'
     min_count: 1
@@ -79,7 +79,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran process-details (literal or via help/output)"
+    description: "Agent exercised the process-details subcommand"
     tool_name: "Bash"
     command_pattern: 'process-details'
     min_count: 1
@@ -87,7 +87,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran failure-details (literal or via help/output)"
+    description: "Agent exercised the failure-details subcommand"
     tool_name: "Bash"
     command_pattern: 'failure-details'
     min_count: 1
