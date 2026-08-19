@@ -1,0 +1,135 @@
+# --- No tenant fixtures required ------------------------------------------------------
+# The connector named by the SDD (`acme-claims-intake-webhook`) is DELIBERATELY absent
+# from every tenant. The test asserts what the skill does when a wait-for-connector rule
+# cannot be resolved — it must NOT ship the case. Do not "fix" this by provisioning an
+# Acme connector; an unresolvable connector IS the fixture.
+# --------------------------------------------------------------------------------------
+task_id: skill-case-unresolved-connector-rule-halt
+description: >
+  CASE-FATAL PLACEHOLDER GUARD — an approved sdd.md puts a wait-for-connector entry rule
+  on a non-required secondary stage, bound to a connector that exists on no tenant. Phase 2
+  legitimately writes the placeholder stub; Phase 3 Step 10.5 cannot upgrade it. Step 12
+  Check 15 must then HALT: a surviving stub registers no subscription at case start, which
+  makes the ENTIRE case non-startable (start event fails, 1 element executes) even though
+  the stub sits on a stage nothing routes to, and `uip maestro case validate` reports Valid
+  throughout. Regression guarded: the skill used to emit the stub, log it as an ordinary
+  Open Item, and report the build complete — shipping a 100% dead case. Measured on
+  uip 1.198 (2026-08-12): placeholder stub -> 1 element / Faulted; same rule with a
+  resolved connector -> 25 elements. The grader itself is unit-tested against minimal
+  synthetic stubs in test_connector_stub_halt.py (no tenant, no captured artifact).
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - resource
+  - feature:trigger
+  - feature:registry
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 3600
+  max_turns: 140
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  This approved `sdd.md` is authoritative. Build the case from it: solution, project,
+  and `caseplan.json`, through validation.
+
+  Do not publish to Studio Web, do not publish to Orchestrator, and do not run a debug
+  session — stop once the case is built and validated, or sooner if you determine the
+  case should not be built at all.
+
+  The `uip` CLI is already available and authenticated. Use the SDD as written: do not
+  redo the design and do not substitute a different connector for the one it names.
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "Rule 8 held — the case structure landed on disk despite the unresolved connector"
+    command: "find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      PRIMARY. Either no placeholder connector-rule stub survives (agent removed or
+      resolved the rule, leaving a coherent plan), or one survives AND the build halted
+      with the Check 15 BLOCKED marker. A surviving stub with no marker is the regression.
+    command: "python3 $TASK_DIR/check_connector_stub_halt.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "A case that cannot start was never executed"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+debug'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "A case that cannot start was never shipped to the tenant"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(upload|publish)'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      Step 12.2 / Check 16 — the build recorded its unresolved work rather than exiting
+      silently. Stronger than a file_exists: a header-only log fails.
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/check_build_issues_log.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      The unresolvable connector is named in the build record, so a reader can act on it
+      (advisory — the PRIMARY criterion grades the halt itself).
+    command: "grep -rqi 'acme-claims-intake-webhook\\|Acme Claims Intake' --include=build-issues.md ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
+
+simulation:
+  enabled: true
+  persona: |
+    You are a claims solution designer. The SDD is yours and it is correct as written:
+    withdrawal genuinely does arrive from the Acme Claims intake webhook. What you do NOT
+    have is that connector on this tenant — procurement has not set it up yet, and you
+    cannot supply a connection, a connector key, or a substitute connector.
+  goal: |
+    Find out what the build does with a connector you cannot provide. You would rather be
+    told the case is not startable than be handed something that looks finished and dies
+    on the first run.
+  constraints:
+    - "You cannot provide the Acme connector, a connection id, or any credentials for it — it does not exist on this tenant."
+    - "Do not accept a substitute connector, and do not agree to redesign the withdrawal lane around a different trigger."
+    - "If asked how to proceed on the unresolved connector rule, choose to stop the build rather than emit something that cannot start."
+    - "Do not authorise publish, upload, or a debug run."
+    - "Keep replies short — one sentence or a single option pick."
+  max_turns: 12

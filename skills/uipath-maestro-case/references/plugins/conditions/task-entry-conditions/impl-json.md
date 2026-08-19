@@ -149,6 +149,6 @@ When a *stage* should take the case instead, the rule goes on the stage's `entry
 
 ## Post-Write Verification
 
-Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`), non-empty `displayName` (SDD value or `Entry Rule {N}` default), and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, a resolved rule must have no `"placeholder"` values, use the owning stage's `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. A remaining stub must map to a reported unresolved connector.
+Confirm target task's `entryConditions[]` length equals the number of task-entry T-tasks tasks.md wrote for this task. Each entry carries `id` (prefix `c`), non-empty `displayName` (SDD value or `Entry Rule {N}` default), and `rules` with the expected `rule` value plus any required side field. For `wait-for-connector`, Phase 2 expects the exact stub; after Phase 3, EVERY such rule must have no `"placeholder"` values, use the owning stage's `<stageId>-<ruleId>` on inputs/outputs, and carry root bindings. **A stub surviving Phase 3 is case-fatal, not a reportable open item** — it makes the whole case non-startable and halts the build at [implementation.md § Step 12 Check 15](../../../implementation.md#step-12--end-of-phase-3-validator-pass).
 
 <!-- END: impl-json.md -->

@@ -1,0 +1,123 @@
+task_id: skill-case-context-scale-claim-settlement
+description: >
+  COST FIXTURE for skill-variant A/B comparison (see
+  tests/experiments/skill-comparison-playbook.md). Builds a large auto-insurance
+  claim-settlement case from staged business requirements — the same input as the
+  measured 2026-08-11 baseline run, which produced 9 stages / 33 tasks / 63
+  conditions in 79.9 min, 986k output tokens, and 903.6k peak context.
+
+  The graded outcome is deliberately modest: a case that validates and is at
+  comparable scale. The point is not pass/fail — it is the `total_tokens` and
+  `average_duration` that `variant.json` records alongside it. Smoke-tier case
+  tasks are too small to separate context-management strategies; this one is
+  sized so the difference is measurable.
+
+  check_case_scale.py is the Goodhart guard: without a scale floor, a variant
+  could post a cheap run by building a smaller case. Floors sit below the
+  measured baseline with headroom and pin shapes, not names.
+
+  Offline resources are expected. The eval tenant has no claim connectors,
+  action app, or child case, so <UNRESOLVED> placeholders are correct here and
+  are NOT graded as defects.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:approval-gate, feature:escalation]
+
+# Sized from the measured baseline (79.9 min end-to-end) plus room for one cold
+# restart after an API-limit death, matching the golden_rebuild precedent.
+run_limits:
+  task_timeout: 14400
+  max_turns: 600
+  turn_timeout: 9000
+
+# `Agent` must stay in allowed_tools. The baseline run had it available and
+# never used it — it chained four in-process `Skill` calls instead — and the
+# whole point of the comparison is whether a subagent-scoped variant behaves
+# differently. Removing Agent would make the variant under test unrunnable and
+# silently convert this into a different experiment. Extends the experiment's
+# allowed_tools; keep the base list in sync with experiments/default.yaml.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "AutoClaimSettlement" containing
+  a case project named "AutoClaimSettlementCase", from the business requirements
+  staged as `claim-settlement.md` in this folder.
+
+  The requirements are business prose, not an SDD. Design the case from them and
+  cover every path they describe, including the ones off the happy path.
+
+  Important:
+  - The `uip` CLI is available and already authenticated.
+  - This tenant hosts none of the referenced external systems. Unresolved
+    resource placeholders are expected and acceptable; do not invent identifiers
+    to fill them.
+  - Treat every hard stop after the design as pre-approved — planning approval,
+    build-review preview, and publish gates. Choose the continue / skip-publish
+    path and keep going.
+  - Do NOT call AskUserQuestion; it is not available in this harness. Decide by
+    best assumption and record the assumption in the design document.
+  - Do NOT run `uip maestro case debug` and do NOT publish the solution.
+  - Do NOT ask for approval, confirmation, or feedback, and do NOT pause between
+    planning and implementation.
+  - Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+  Not complete until
+  `uip maestro case validate AutoClaimSettlement/AutoClaimSettlementCase/caseplan.json --output json`
+  passes.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate AutoClaimSettlement/AutoClaimSettlementCase/caseplan.json --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "case is at comparable scale to the measured baseline: stage/task/condition floors, a case SLA, a secondary lane, a return-to-origin exit, and three case exit routes"
+    command: "python3 $TASK_DIR/check_case_scale.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      Step 12.2 / Check 16 — this tenant hosts none of the referenced systems, so the
+      build is expected to be placeholder-heavy. A build carrying unresolved work MUST
+      ship a non-empty tasks/build-issues.md; otherwise the operator receives unwired
+      resources with no record of which ones.
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/check_build_issues_log.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Design document was produced as a reference artifact"
+    path: "sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run case debug or publish (debug executes for real; publish is out of scope)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(debug|publish)\b'
+    weight: 1.5
+    pass_threshold: 1.0
+
+post_run:
+  - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+    timeout: 60

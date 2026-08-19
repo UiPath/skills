@@ -135,9 +135,9 @@ A `wait-for-connector` rule inside a condition (`…conditions[].rules[i][j]`) b
 ### Condition-rule phase contract
 
 - **Phase 2 Step 10:** write every `wait-for-connector` rule with the canonical stub from [§ Placeholder fallback](#placeholder-fallback), even when the connector resolved in planning. The enclosing condition, rule ID, expression, scope, and placement are final at this point. Do not run `case spec`, add connector bindings, or dispatch outputs.
-- **Phase 3 Step 10.5:** for a resolved connector, run the procedure below and replace only `rule.uipath`. Preserve all enclosing Phase 2 state. For an unresolved connector or failed `case spec`, keep the stub, log it, and report it as not runnable.
+- **Phase 3 Step 10.5:** for a resolved connector, run the procedure below and replace only `rule.uipath`. Preserve all enclosing Phase 2 state. For an unresolved connector or failed `case spec`, keep the stub and log it — then **halt at Check 15** (see [§ Placeholder fallback](#placeholder-fallback)); a surviving stub is a build failure, not a reportable open item.
 
-The same stub therefore has two lifetimes: temporary for a resolved connector awaiting Phase 3, permanent for an unresolved connector. Only the permanent case is an unresolved-resource issue.
+The same stub therefore has two lifetimes: temporary for a resolved connector awaiting Phase 3, permanent for an unresolved connector. The permanent case is not merely an unresolved-resource issue — it makes the whole case non-startable, so it is the one unresolved-resource class the skill must NOT ship.
 
 ### Procedure (Phase 3)
 
@@ -197,7 +197,22 @@ Emit a **stub `uipath`**, never a bare rule. The stub is the minimum shape accep
 }
 ```
 
-This stub is a **deliberate mock**. While temporary, it is simply Phase 2 build state. If it remains after Phase 3, Studio Web flags it and the rule **fails at debug/run**. A remaining stub has no real outputs, Connection/Folder bindings, IS-cache entry, or rule-specific `bindings_v2` resource. Stamp unresolved `tasks.md` entries with Rule 8 markers, log them, and list them in the completion report as **"replace the `placeholder` connector values before debug / publish-to-run."** Upgrade later by re-running the [§ Procedure](#procedure-phase-3).
+This stub is a **deliberate mock**, and it is safe ONLY while temporary — as Phase 2 build state awaiting the Phase 3 upgrade.
+
+> **A stub that survives Phase 3 is case-fatal, not rule-local.** Connector-event subscriptions are registered at **case start**, before any stage is entered, so ONE unresolved stub anywhere in the case makes the ENTIRE case non-startable — including stages that never reference it. The failure surfaces as the case's own start event failing (`trigger_1` → `Failed`, `finalStatus: Faulted`, **1 element executed**), which looks nothing like the rule that caused it. `uip maestro case validate` reports `Valid` throughout. Never emit a surviving stub and call the build complete — halt per [implementation.md § Step 12 Check 15](implementation.md#step-12--end-of-phase-3-validator-pass).
+>
+> Measured on `uip 1.198`, same case, one field changed (2026-08-12):
+>
+> | Rule `uipath` state | Start event | Elements executed | `validate` |
+> |---|---|---|---|
+> | `connectorKey`/`operation` = `"placeholder"` | **Failed** | **1** | `Valid` |
+> | resolved connector (spliced `caseShape`) | Completed | 25 | `Valid` |
+>
+> Placeholder **tasks** (`data: {}`, Rule 8) are NOT affected — a case with placeholder tasks starts and runs normally. The fatal shape is specific to connector-bound **condition rules**.
+>
+> **"Must not ship" is not "must not build."** When planning finds the connector unresolvable, still emit this stub and build the whole case — the halt belongs at Check 15, not at discovery. Aborting early yields no `caseplan.json`, no `tasks.md`, and no `build-issues.md`, so the author gets prose instead of a reviewable artifact, and Check 15's remediation (b) — *remove the rule, ship the working remainder* — never gets offered. Build it, then refuse to ship it.
+
+A remaining stub has no real outputs, Connection/Folder bindings, IS-cache entry, or rule-specific `bindings_v2` resource. Stamp unresolved `tasks.md` entries with Rule 8 markers and log them, but do NOT downgrade the finding to a completion-report note — Check 15 halts the build. Upgrade by re-running the [§ Procedure](#procedure-phase-3).
 
 ---
 

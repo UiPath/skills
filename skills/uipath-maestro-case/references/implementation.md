@@ -268,7 +268,7 @@ Read `caseplan.json` and scan all four condition scopes for `wait-for-connector`
 
 For each matched rule whose connector resolved in planning, run the connector-trigger `case spec --type trigger --input-details` procedure, mint its output IDs/element IDs, and gather its root Connection/Folder bindings. Then Edit **only that rule's `uipath` block**. Preserve the enclosing condition array plus the rule's `id`, `rule`, `conditionExpression`, scope, and placement. Apply declared rule-output bindings after the real outputs exist.
 
-If the connector is `<UNRESOLVED>` or `case spec` fails, leave the stub unchanged, log it, and list it in the completion report. After all successful upgrades, populate the IS cache and regenerate `bindings_v2.json` once. Re-scan: every resolved rule must be free of `"placeholder"`; any remaining stub must map to a reported unresolved connector. Full procedure and scope-specific `elementId` rules: [`connector-trigger-impl.md § Target: connector-bound condition rule`](connector-trigger-impl.md#target-connector-bound-condition-rule).
+If the connector is `<UNRESOLVED>` or `case spec` fails, leave the stub unchanged and log it — then let **Check 15** halt the build. Do NOT list it in the completion report and proceed: a surviving stub makes the whole case non-startable ([connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback)). After all successful upgrades, populate the IS cache and regenerate `bindings_v2.json` once. Re-scan: every rule must be free of `"placeholder"`. Full procedure and scope-specific `elementId` rules: [`connector-trigger-impl.md § Target: connector-bound condition rule`](connector-trigger-impl.md#target-connector-bound-condition-rule).
 
 ## Step 11.5 — Resolve in-expression `vars.$xref` markers (whole-file pass)
 
@@ -311,7 +311,23 @@ After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker
 
   **Non-interactive repair:** re-encode in place — `{"a":1}` → `"{\"a\":1}"`, `5` → `"5"`, `true` → `"true"` (lowercase JSON, not Python `True`), `{}` → `"{}"`. Do not drop the value and do not change the variable's `type`. Re-scan once; halt before Phase 4 if any non-string `default` remains.
 
-**Build-with-best policy:** for any user pick of "continue with best-effort emit" on a Check 1, Check 2, Check 4, Check 5, or Check 13 AskUserQuestion, append a `## Open Items for User` entry to `tasks/build-issues.md` and proceed to Phase 4. Check 14 has no best-effort escape — a deleted default is not a partial result. AskUserQuestion is the surface; build-with-best is the escape. The skill conservatively emits what it has; Phase 4 validate stays green (structural validity is intact); runtime concerns are listed for pre-publish review.
+- **Check 15 — No surviving connector-rule placeholder stub (CASE-FATAL, halts)** — Scan every rule across all 4 condition scopes (stage-entry / stage-exit / task-entry, plus case-exit under `metadata.caseExitRules`) for a `wait-for-connector` rule whose `uipath.context` still carries `connectorKey: "placeholder"` / `operation: "placeholder"`. **Every survivor is a build failure**, independent of its registry entry — this check does NOT exempt `selected: null` the way Check 12 does, because an unresolved connector rule is exactly the fatal case.
+
+  **This check is the halt point — do not pre-empt it.** An unresolvable connector found during Phase 1 planning or Phase 3 Step 10.5 does NOT abort the run early. Emit the Rule 8 stub, build the full structure, and arrive here. Bailing at discovery leaves no `caseplan.json`, no `tasks.md`, and no `build-issues.md` — the author gets an explanation instead of an artifact — and it silently removes remediation (b) below, *remove the rule and ship the working remainder*, which is normally the only option that unblocks them without waiting on the connector. Build it, then refuse to ship it.
+
+  **Why it halts rather than degrading.** Connector-event subscriptions register at **case start**, before any stage is entered. One surviving stub anywhere makes the ENTIRE case non-startable — including when it sits on a non-required secondary stage that nothing routes to. The observable failure is the case's own start event failing (`finalStatus: Faulted`, **1 element executed**), which points nowhere near the offending rule. `uip maestro case validate` reports `Valid` at every step, so this check is the ONLY build-time gate. Measured evidence + the one-field control/variant table: [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
+
+  **Remediation — AskUserQuestion, no best-effort option.** Name the stage, condition, and rule, then offer exactly three picks: (a) **resolve the connector now** — supply/choose the connector + connection, re-run Step 10.5 for that rule, re-scan; (b) **remove the rule** — delete it and, when it was the condition's only rule, the condition too (if that leaves a stage with no entry condition, remove the stage and every reference to it, then re-run Checks 8 and 13); (c) **abort the build** — leave `caseplan.json` on disk and stop.
+
+  **On abort (or any exit while a stub survives), `tasks/build-issues.md` MUST carry a literal line of this exact form**, above `## Open Items for User`:
+
+  ```
+  BLOCKED: case is not startable — <N> unresolved wait-for-connector rule(s) still carry the placeholder stub.
+  ```
+
+  Write `rule(s)` literally, regardless of N — the marker is matched mechanically, so do not pluralize it. List each offending `(scope, stage, condition, rule id, connector)` beneath it. This line is the machine-readable halt marker: its presence means "an artifact exists but must not be run or published." The completion report MUST reproduce it verbatim and MUST NOT describe the build as complete, successful, or ready. "Continue with best-effort emit" is NOT offered: unlike Checks 1/2/4/5/13, the artifact is not partially working — it cannot start at all, so emitting it produces a case that is 100% dead while reporting success. **Never enter Phase 4, publish, debug, or report completion while any stub survives.**
+
+**Build-with-best policy:** for any user pick of "continue with best-effort emit" on a Check 1, Check 2, Check 4, Check 5, or Check 13 AskUserQuestion, append a `## Open Items for User` entry to `tasks/build-issues.md` and proceed to Phase 4. **Check 14 and Check 15 have no best-effort escape** — a deleted default is not a partial result, and a case that cannot start is not a partial build. AskUserQuestion is the surface; build-with-best is the escape. The skill conservatively emits what it has; Phase 4 validate stays green (structural validity is intact); runtime concerns are listed for pre-publish review.
 
 **Reporting:** at end of Phase 4, count entries in the `## Open Items for User` section of `tasks/build-issues.md` (read the file after writing). If count > 0, the completion report MUST include a literal line of the form:
 
@@ -339,7 +355,25 @@ The journal has been on disk since the first section boundary; this step does **
 
 If `tasks/build-issues.md` is absent here, the incremental flush was skipped: reconstruct from on-disk artifacts and stamp the `NOTE:` line per [§ Recovery](plugins/logging/impl-json.md). A build carrying `<UNRESOLVED>` markers or placeholder tasks must not reach Phase 5 with no log.
 
-On Phase 4 success → proceed to Phase 5.
+## Step 12.2 — Issue-log completeness gate (Check 16) — PHASE 4 EXIT
+
+Runs immediately after the Step 12.1 summary; gates entry to Phase 5. Unlike Checks 1–15 this cannot live in the Step 12 validator pass — it inspects a file that Step 12.1 is responsible for completing.
+
+**Predicate.** The build **carries unresolved work** when ANY of these hold:
+
+1. `tasks/tasks.md` contains one or more `<UNRESOLVED` markers, OR
+2. any task in `caseplan.json` is a placeholder (`data: {}`), OR
+3. any `wait-for-connector` rule still carries the placeholder stub (Check 15 abort path).
+
+When the build carries unresolved work, `tasks/build-issues.md` MUST exist and MUST contain at least one issue entry — a header-only or empty file fails this gate. When the build carries none, the file is optional.
+
+**Why this gate exists.** Nothing else in the pipeline reads the issue log. Checks 1–15 inspect `caseplan.json` and its sidecars; the Step 12 **Reporting** clause *presumes* the file exists ("read the file after writing"). The journal is flushed at each section boundary and Step 12.1 recovers it from artifacts if that flush was skipped — but neither step refuses to continue, so a build can still reach Phase 5 with no log, or with a header and no entries, while every other gate passes. This check is the one place that refuses.
+
+**Non-interactive repair.** Do not prompt. Step 12.1 § Recovery already defines the reconstruction and its `NOTE:` stamp — re-run that once, then re-scan. Do not invent a second marker here.
+
+Halt before Phase 5 if the file is still absent or entry-less after one repair pass. `uip maestro case validate` success does not satisfy this gate — a case full of unwired placeholders validates clean.
+
+On success → proceed to Phase 5.
 
 ---
 
