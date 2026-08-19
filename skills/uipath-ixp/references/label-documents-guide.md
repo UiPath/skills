@@ -115,7 +115,7 @@ uip ixp labellings confirm <project-name> <document-id> \
 If ALL predicted fields for a document are correct with no corrections needed, you can omit `--fields` to confirm every predicted field on **that one document** in a single call:
 
 ```bash
-uip ixp labellings confirm <project-name> <document-id> --output json
+uip ixp labellings confirm <project-name> <document-id> -m <model_version> --output json
 ```
 
 This per-document form is fine **once you've reviewed the document and every field is correct** (2c). What you must NOT do is run `confirm` **without a `<document-id>`** — that confirms every document in the project at once, bypassing the per-document review loop. Confirming unreviewed predictions bakes wrong values into the labels, and because F1 compares predictions against those labels, **the metric reports 1.00 even when the confirmed values are wrong**. F1 alone is never evidence the values are correct.
@@ -126,6 +126,7 @@ This per-document form is fine **once you've reviewed the document and every fie
 uip ixp labellings confirm <project-name> <document-id> \
   --fields "<confirmed_id>,<corrected_id>,<missing_id_1>,<missing_id_2>" \
   --corrections '[{"field_id":"<corrected_id>","value":"<corrected_value>"}]' \
+  -m <model_version> \
   --output json
 ```
 
