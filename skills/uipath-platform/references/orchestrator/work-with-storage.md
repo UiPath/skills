@@ -166,7 +166,7 @@ uip or bucket-files download <bucket-key> "reports/summary.csv" \
 
 # Delete a file
 uip or bucket-files delete <bucket-key> "reports/summary.csv" \
-  --folder-path "Finance" --output json
+  --folder-path "Finance" --yes --output json
 ```
 
 Without `--destination`, `download` writes content to stdout. Use `-d` as shorthand.
