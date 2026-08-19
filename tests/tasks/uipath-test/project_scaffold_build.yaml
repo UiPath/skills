@@ -1,0 +1,117 @@
+# A build-mode task that owns a whole scratch PROJECT rather than objects inside
+# a shared one. `project create` is the only `uip tm` verb that produces its own
+# collision domain, so this task cannot disturb the CLAIM / HEALTH / BANK fixture
+# state the EVFX- contract protects.
+#
+# The graded surface is `project create` + `project set-default-folder`, which no
+# other task under tests/tasks/uipath-test/ asserts. Both are prerequisites for
+# every `run` verb (SKILL.md Critical Rule 10), so a skill that cannot wire a
+# fresh project produces a project nothing can execute against.
+task_id: skill-test-project-scaffold-build
+description: >
+  Integration test: agent uses the uipath-test skill to stand up a new Test
+  Manager project and wire it so test sets can actually execute. Asserts that
+  the agent (a) checks login status with --output json, (b) creates the project
+  with `project create` carrying both --name and --project-key, (c) discovers a
+  real Orchestrator folder with `uip or folders list` instead of inventing a
+  folder key, and (d) pins that folder as the project default with
+  `project set-default-folder`. The skill — not the prompt — must teach that a
+  freshly created project carries no default folder, that folder keys come from
+  Orchestrator rather than Test Manager, and that every call passes
+  --output json.
+tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 14
+  max_turns: 30
+
+# This task's DELIVERABLE is a project, so its output is scratch, not a fixture.
+# The sweep runs in PRE_run and spares anything stamped with today's date: two
+# models run the nightly concurrently, and a post_run sweep of the whole
+# EVFX-SCAFFOLD- prefix would delete the other run's project while it was still
+# working. Clearing only earlier days bounds growth to a single day's runs
+# without either run touching the other's output — the same reasoning as
+# organize_testcases_into_testsets.
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, datetime
+      PREFIX = "EVFX-SCAFFOLD-"
+      today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      projects = call("tm", "project", "list", "--filter", PREFIX).get("Data") or []
+      removed = 0
+      for p in projects:
+          name = p.get("Name") or ""
+          if not name.startswith(PREFIX) or name.startswith(PREFIX + today):
+              continue
+          key = p.get("ProjectKey") or p.get("Key")
+          if not key:
+              continue
+          call("tm", "project", "delete", "--project-key", key, "--yes")
+          removed += 1
+      print(f"CLEANUP: removed {removed} {PREFIX}* project(s) from earlier days")
+      PYEOF
+    timeout: 180
+
+initial_prompt: |
+  Stand up a brand-new Test Manager project for a payments regression effort,
+  and leave it in a state where I can immediately run test sets against it.
+
+  Name the project `EVFX-SCAFFOLD-<STAMP>-<TAG>`, where <STAMP> is the current
+  UTC date and time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase hex
+  characters you generate once for this session. Use a short uppercase project
+  key of the form `EVSC` followed by 4 uppercase hex characters. The random tag
+  and key suffix matter: another session may start in the very same second, and
+  a timestamp alone would collide.
+
+  Do not reuse or extend any existing project.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with `--output json` (Critical Rules #1 + #3)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the project with both a stamped --name and a --project-key"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--name\s+["\x27]?EVFX-SCAFFOLD-)(?=[\s\S]*--project-key\s+\S)uip\s+tm\s+project\s+create\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered a real Orchestrator folder instead of inventing a folder key (Critical Rules #7 + #8)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pinned the discovered folder as the project default (Critical Rule #10 prerequisite for any later run)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--folder-key\s+\S)uip\s+tm\s+project\s+set-default-folder\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Project-scoped calls carried `--output json` (Critical Rule #3)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--output\s+json)uip\s+tm\s+project\s+(create|set-default-folder|list)\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

@@ -1,0 +1,150 @@
+# Builds a test set by LABEL SELECTOR, not by explicit keys. That distinction is
+# the whole point of the task and is what keeps it disjoint from
+# organize_testcases_into_testsets, which grades the `--test-case-keys` form and
+# `testcases list --filter`. Nothing else under tests/tasks/uipath-test/ asserts
+# `testcases add --labels`.
+#
+# The label form carries a documented trap: `--labels A,B` is read as ONE label
+# named "A,B" and silently matches nothing, so the set comes back empty with a
+# success exit code. Grading the comma form as a forbidden command is the only
+# way to catch a skill that teaches the wrong separator.
+task_id: skill-test-testset-curation-by-label-build
+description: >
+  Integration test: agent uses the uipath-test skill to assemble a regression
+  test set from labelled test cases in the CLAIM project. Asserts that the agent
+  (a) checks login status with --output json, (b) discovers the available labels
+  server-side rather than listing every test case, (c) creates a test set and
+  populates it with `testcases add --test-set-key --labels`, passing BOTH tier
+  labels in one space-separated variadic call, and (d) never uses the
+  comma-joined `--labels A,B` form, which the CLI reads as a single label and
+  which therefore matches nothing. The skill — not the prompt — must teach the
+  label selector, its space-separated shape, and that label matching is OR,
+  exact and case-sensitive.
+tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 35
+
+# Seeds the labelled test cases this task reads, then clears earlier days' output
+# sets. Create-if-absent per the EVFX contract rule 3: the three test cases are
+# permanent fixtures owned by this task, re-labelled idempotently on every run
+# (objectlabel add upserts), so a healthy fixture is left untouched. The
+# deliverable SETS are scratch and swept in pre_run, sparing today's stamp so two
+# concurrent nightly models never delete each other's work.
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, datetime
+      P = "CLAIM"
+      TC_PREFIX, SET_PREFIX = "EVFX-CURATE-TC", "EVFX-CURATE-SET-"
+      TIERS = {"EVFX-CURATE-TC1": "EVFX-CURATE-tier1",
+               "EVFX-CURATE-TC2": "EVFX-CURATE-tier1",
+               "EVFX-CURATE-TC3": "EVFX-CURATE-tier2"}
+      today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def cases():
+          data = call("tm", "testcases", "list", "--project-key", P,
+                      "--filter", TC_PREFIX).get("Data") or []
+          return {c.get("Name"): c for c in data}
+
+      existing = cases()
+      created = 0
+      for name in TIERS:
+          if name not in existing:
+              call("tm", "testcases", "create", "--project-key", P, "--name", name)
+              created += 1
+      if created:
+          existing = cases()
+
+      labelled = 0
+      for name, label in TIERS.items():
+          case = existing.get(name)
+          cid = (case or {}).get("Id")
+          if not cid:
+              continue
+          call("tm", "objectlabel", "add", "--project-key", P,
+               "--object-type", "TestCase", "--object-ids", cid, "--labels", label)
+          labelled += 1
+      print(f"SEED: {created} test case(s) created, {labelled} label assignment(s) applied")
+
+      sets = call("tm", "testsets", "list", "--project-key", P,
+                  "--filter", SET_PREFIX).get("Data") or []
+      removed = 0
+      for t in sets:
+          name = t.get("Name") or ""
+          if not name.startswith(SET_PREFIX) or name.startswith(SET_PREFIX + today):
+              continue
+          call("tm", "testsets", "delete", "--test-set-key", t["TestSetKey"], "--yes")
+          removed += 1
+      print(f"CLEANUP: removed {removed} {SET_PREFIX}* test set(s) from earlier days")
+      PYEOF
+    timeout: 240
+
+initial_prompt: |
+  In the CLAIM project some test cases are tagged with the labels
+  `EVFX-CURATE-tier1` and `EVFX-CURATE-tier2`. Build me one regression test set
+  that contains every test case carrying either of those two labels, and
+  populate it by label rather than by naming individual test cases — new cases
+  get tagged all the time and I do not want to re-list keys each release.
+
+  Name the test set `EVFX-CURATE-SET-<STAMP>-<TAG>`, where <STAMP> is the
+  current UTC date and time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase
+  hex characters you generate once for this session. Earlier sessions left their
+  own sets behind; create your own rather than reusing or extending one, and do
+  not stop to ask which existing set to use.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with `--output json` (Critical Rules #1 + #3)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the labels server-side instead of listing every test case (Critical Rule #9)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--object-type\s+TestCase)(?=[\s\S]*--filter\s+["\x27]?EVFX-CURATE-)uip\s+tm\s+objectlabel\s+list\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a test set to hold the curated cases"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--name\s+["\x27]?EVFX-CURATE-SET-)uip\s+tm\s+testsets?\s+create\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent populated the set with the --labels selector, passing BOTH tier labels in one variadic call"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--labels\b)(?=[\s\S]*EVFX-CURATE-tier1)(?=[\s\S]*EVFX-CURATE-tier2)uip\s+tm\s+testcases?\s+add\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not comma-join --labels — the CLI reads `A,B` as one label and matches nothing"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+add[\s\S]*--labels\s+\S+,'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not fall back to enumerating explicit --test-case-keys, which defeats the label selector the request asked for"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+add[\s\S]*--test-case-keys\b'
+    weight: 1.5
+    pass_threshold: 1.0
