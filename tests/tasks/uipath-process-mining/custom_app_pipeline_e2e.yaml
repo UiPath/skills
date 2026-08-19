@@ -9,12 +9,20 @@ description: >
   Command-construction only — no live tenant. Commands fail with auth
   errors; what matters is that the agent picks uipath.custom for a flat
   log and sequences the pipeline commands with correct namespaces/flags.
+
+  The event log is staged as ./events.csv so the agent has a real file to
+  upload.
 tags: [uipath-process-mining, e2e, mode:build, lifecycle:setup, custom, pipeline]
 
 run_limits:
-  expected_turns: 10
+  expected_turns: 18
   max_turns: 40
   turn_timeout: 600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/custom_app_pipeline_e2e
 
 initial_prompt: |
   I have a flat event-log CSV at ./events.csv (columns: Case_ID, Activity,
