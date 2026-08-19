@@ -169,7 +169,7 @@ uip tasks complete <task-id> --type ExternalTask --folder-id <folder-id> --outpu
 | Update a catalog | `tasks catalogs update <catalog-id> --folder-id <id>` |
 | List task comments | `tasks comments list <task-id> --folder-id <id>` |
 | Add a comment | `tasks comments add <task-id> --text <text> --folder-id <id>` |
-| Set task labels | `tasks labels <task-id> --labels '[{"name":"urgent"}]' --folder-id <id>` |
+| Set task labels | `tasks labels <task-id> --labels '[{"name":"region","displayName":"Region","displayValue":"EMEA"}]' --folder-id <id>` |
 | Edit task metadata | `tasks metadata <task-id> --folder-id <id> [--title --priority --catalog-id]` |
 | Get task data | `tasks data get <task-id> --folder-id <id>` |
 | Save task data | `tasks data save <task-id> --data '{...}' --folder-id <id>` |
