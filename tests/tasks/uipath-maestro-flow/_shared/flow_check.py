@@ -471,6 +471,17 @@ def _declared_input_global_keys(
        :func:`run_debug` resolved, so this needs no per-call-site opt-in;
        ``project_dir`` overrides it for a caller holding a payload from
        elsewhere. Parse failures degrade to signals 1-2 rather than erroring.
+
+    Why not read direction from the payload? The runtime does return a
+    ``variables.globalDefinitions`` map, but it carries only ``name`` and
+    ``type`` — no direction — so it cannot separate an input from an output::
+
+        "globalDefinitions": {"start.output.inputDoc": {"name": "inputDoc", "type": "file"},
+                              "fileName": {"name": "fileName", "type": "string"}}
+
+    Verified against a live debug payload. It is useful only for mapping a
+    trigger-scoped key back to its declared id, which the leaf split below
+    already does.
     """
     variables = _get_ci(payload, "variables", "Variables") or {}
     keys = list((_get_ci(variables, "globals", "Globals") or {}).keys())
@@ -589,7 +600,7 @@ def assert_outputs_contain(
             )
         _fail_with_capture(
             f"Outputs missing {mode} {list(needles)}; present={present}; "
-            f"missing={missing}\nOutputs (inputs excluded): {haystack[:1000]}{detail}"
+            f"missing={missing}\nOutputs: {haystack[:1000]}{detail}"
         )
 
 
