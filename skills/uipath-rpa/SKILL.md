@@ -75,17 +75,30 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
 6. If **any individual count differs by 60–70% or more** → run the discovery flow below
 7. If all counts are within the threshold → context is fresh, proceed with the skill workflow
 
-**If the file does NOT exist** → if a `project.json` exists, run the discovery flow below. **Greenfield (no `project.json`): skip the discovery agent** — nothing to discover. After the build completes, write both context files yourself (step 3 below) from what you just created: structure, dependencies, entry points.
+**If the file does NOT exist** → run the skip gate below; if it does not trip, run the discovery flow.
+
+### Skip gate: nothing to discover yet
+
+Discovery on a project with no authored content returns empty tables and costs a subagent round-trip. **Do NOT spawn the discovery agent** when any row matches:
+
+| Condition | How to check |
+|-----------|--------------|
+| Greenfield — no `project.json` (you are about to create the project) | Step 0 found no `project.json` |
+| Empty project — 0 authored workflow files | Glob `**/*.xaml` + `**/*.cs`, excluding dot-directories and `obj/`, `bin/` → count 0 |
+| Freshly scaffolded — only the untouched entry point | Count 1; file is a scaffold entry point (`Main.xaml` process/template, `NewActivity*.xaml` library, `TestCase.xaml` test, `Main.cs` coded); no authored logic — root `Sequence` empty or only `Comment` activities (XAML) / empty `Execute` body (coded) |
+
+Gate tripped: write no context files now, proceed with the skill workflow. **After the build**, write both context files yourself from what you just created — same paths and `AGENTS.md` marker logic as discovery-flow step 3.
 
 **Discovery flow** (used for both missing and stale context):
 1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at [`agents/uipath-project-discovery-agent.md`](agents/uipath-project-discovery-agent.md). Use whichever spawn mechanism your host supports:
    - **Host registers plugin agents by name** (e.g., Claude Code) → trigger the registered `uipath-project-discovery-agent` agent.
-   - **Host only spawns its own predefined subagents** (e.g., UiPath Autopilot) → spawn a read-only subagent and pass it that file (relative to this skill) as its instructions / custom skill.
-2. The agent returns the generated context document as its response
-3. Write the returned content to **both**:
+   - **Host only spawns its own predefined subagents** (e.g., UiPath Autopilot) → spawn a subagent and pass it that file (relative to this skill) as its instructions / custom skill. Grant it write access so it can produce the context files itself; a read-only subagent still works via step 3.
+2. The agent writes the context files itself and returns a `context-files:` status line followed by the context document. Use the returned document as this session's project context — do NOT re-read the files it just wrote, and do NOT rewrite them.
+3. **Only when the agent reports `context-files: not-written`** (read-only subagent host, or a write error) → write the returned content to **both**:
    - `.claude/rules/project-context.md` (create `.claude/rules/` directory if needed) — auto-loaded by Claude Code in future sessions
    - `AGENTS.md` at project root — the shared cross-agent context convention (read by UiPath Autopilot in Studio Desktop and other AGENTS.md-aware hosts). If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
-4. Then proceed with the skill workflow
+4. If the agent returns `SKIP: <reason>` instead of a document, treat it as a gate trip: no context files now, write them yourself after the build.
+5. Then proceed with the skill workflow
 
 ## Step 0: Resolve PROJECT_DIR
 
