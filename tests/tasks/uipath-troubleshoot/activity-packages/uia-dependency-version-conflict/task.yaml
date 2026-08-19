@@ -44,7 +44,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   My AccountOnboardingBot process won't open cleanly anymore. When I open it

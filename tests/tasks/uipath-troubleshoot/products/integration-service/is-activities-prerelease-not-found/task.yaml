@@ -33,7 +33,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   My UiPath project opened and built fine last week. Today when I open it in

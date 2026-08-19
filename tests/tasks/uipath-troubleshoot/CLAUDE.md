@@ -146,7 +146,8 @@ A single scenario (leaf) under its group folder:
 ```
 tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
 ├── task.yaml                    # tags, mock_path_dirs, llm_judge criteria
-├── RESOLUTION.md                # ground truth for the LLM judge
+├── reference/                   # directory-only reference (coder-eval >=0.11); never shown to the agent
+│   └── RESOLUTION.md            # ground truth for the LLM judge
 ├── data/                        # short dir names keep Windows paths under MAX_PATH (260)
 │   └── m/
 │       └── r/
@@ -318,7 +319,7 @@ Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prom
 
 **What the judge sees** (all three flags MUST be `true`):
 
-- `include_reference: true` — passes `RESOLUTION.md` (the file named under `reference:` at the task root)
+- `include_reference: true` — passes `reference/RESOLUTION.md` (the directory named under `reference:`)
 - `include_dialog: true` — passes the full user<->agent dialog, every turn
 - `include_agent_output: true` — passes the agent's final user-facing response
 

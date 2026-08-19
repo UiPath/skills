@@ -35,7 +35,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   My process runs fine in Studio on my machine, but the last job from folder

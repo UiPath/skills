@@ -36,7 +36,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   My last job in folder Shared just faulted. Job key 1150d469-f4dc-44fc-b39e-c89aaa5db3f9. Why

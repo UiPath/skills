@@ -35,7 +35,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   why did my job e5a6c7d8-5555-4abc-9def-000000000005 from the Shared folder fail?

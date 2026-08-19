@@ -33,7 +33,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   Our unattended InvoiceSync job in the InvoiceOps folder fails on every run at the email step, but when I run the same project from Studio on my machine it works fine. Can you help me figure out what is going on?

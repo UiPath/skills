@@ -39,7 +39,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   My BulkOfferLetters process runs green in Orchestrator (folder "Bulk

@@ -33,7 +33,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   We run several ClaimsIntake jobs in parallel on our high-density robot host

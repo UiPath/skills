@@ -33,7 +33,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   Our NewHireDocs automation runs fine when Priya starts it from Studio, but the scheduled unattended run in the Onboarding folder always fails on the OneDrive step. What's wrong?

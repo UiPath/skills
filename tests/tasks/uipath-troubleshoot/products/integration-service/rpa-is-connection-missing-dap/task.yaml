@@ -32,7 +32,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   I was running one job in my orchestrator in this solution TokenRefreshFailed_DAPRuntime. Can you help me in troubleshooting those error

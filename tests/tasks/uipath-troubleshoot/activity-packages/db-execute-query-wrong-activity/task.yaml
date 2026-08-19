@@ -49,7 +49,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   My StagingCleanup process faults in Orchestrator every night. Can you

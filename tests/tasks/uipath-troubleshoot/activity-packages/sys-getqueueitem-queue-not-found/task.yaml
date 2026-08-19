@@ -42,7 +42,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   Investigate why UiPath Orchestrator job `b7e3d2a4-5f61-48c9-a0d2-4e9b1c7f8a23`

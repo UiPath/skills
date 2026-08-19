@@ -35,7 +35,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   My scheduled job b8f3c1d2-4a67-4e90-9c15-2d7e6f0a3b58 in the Shared folder

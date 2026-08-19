@@ -33,7 +33,7 @@ pre_run:
     fail_on_error: true
 
 reference:
-  file: RESOLUTION.md
+  directory: reference
 
 initial_prompt: |
   This job 0fbda085-5c96-4dab-a4b3-012c1914845a from my personal workspace is stuck running. why?
