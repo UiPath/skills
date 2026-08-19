@@ -43,15 +43,15 @@ success_criteria:
     description: "Agent did NOT scope the confirm with --fields (bulk-confirms all predicted fields)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b.*--fields)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b.*(?:--fields|-f)\b)[^\r\n]*$
     must_match: false
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "confirm pins the reviewed model version (-m/--model-version 7) — Rule 19"
+    description: "the SAME confirm call carries project + document + the reviewed model version (-m/--model-version 7) — Rule 19"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*(?:-m|--model-version)\s+["']?7\b).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123)(?=.*(?:-m|--model-version)\s+["']?7\b).*)[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0

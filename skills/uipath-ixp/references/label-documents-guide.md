@@ -91,7 +91,7 @@ For **NOT CONFIRMED** fields: state the predicted value, the actual value (if vi
 
 Submit confirmed, corrected, and missing fields for this document — all in one `confirm` call.
 
-**Pass the version you reviewed.** Add `-m <model_version>` (the `ModelVersion` from step 2a) to the `confirm` call. If a retrain landed since you read the predictions, the confirm is rejected with `PredictionVersionChangedError` instead of stamping values you never saw — re-run step 2a, re-review this document, then confirm again.
+**Pass the version you reviewed.** Add `-m <model_version>` (the `ModelVersion` from step 2a) to every `confirm` call below — the narrowed `--occurrence`/`--updates` forms included. If a retrain landed since you read the predictions, the confirm is rejected with `PredictionVersionChangedError` instead of stamping values you never saw — re-run step 2a, re-review this document, then confirm again.
 
 **If there are corrections:**
 
@@ -139,11 +139,11 @@ Use `labellings mark-missing <project-name> <document-id> --fields <ids>` to rec
 ```bash
 # All predicted fields in occurrence 0:
 uip ixp labellings confirm <project-name> <document-id> \
-  --group "Line Items" --occurrence 0 --output json
+  --group "Line Items" --occurrence 0 -m <model_version> --output json
 
 # Just Quantity in occurrence 2:
 uip ixp labellings confirm <project-name> <document-id> \
-  --group "Line Items" --occurrence 2 --fields c4e1907a3b8f25d6 --output json
+  --group "Line Items" --occurrence 2 --fields c4e1907a3b8f25d6 -m <model_version> --output json
 ```
 
 Occurrences not targeted carry forward whatever annotation they already had (so wrong predictions in untouched occurrences stay unannotated).
@@ -153,6 +153,7 @@ Occurrences not targeted carry forward whatever annotation they already had (so 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
   --group "Line Items" --updates '[{"occurrence":0},{"occurrence":2,"fields":["c4e1907a3b8f25d6"]}]' \
+  -m <model_version> \
   --output json
 ```
 
