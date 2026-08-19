@@ -15,7 +15,7 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Option shapes** — [StartOpts](#startopts-interface) · [EndOpts](#endopts-interface) · [CatchOpts](#catchopts-interface) · [ThrowOpts](#throwopts-interface) · [BoundaryOpts](#boundaryopts-interface) · [GatewayOpts](#gatewayopts-interface) · [ScriptTaskOpts](#scripttaskopts-interface) · [TaskOpts](#taskopts-interface) · [ConnectorOpts](#connectoropts-interface) · [SubProcessOpts](#subprocessopts-interface) · [FlowOpts](#flowopts-interface) · [VarOpts](#varopts-interface)
 
-**Supporting types** — [BuiltBpmn](#builtbpmn-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [GatewayKind](#gatewaykind-type) · [LoopSpec](#loopspec-interface) · [VarDirection](#vardirection-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface)
+**Supporting types** — [BuiltBpmn](#builtbpmn-interface) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [GatewayKind](#gatewaykind-type) · [LoopSpec](#loopspec-interface) · [VarDirection](#vardirection-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface)
 
 ## bpmn (function)
 
@@ -27,6 +27,11 @@ export declare function bpmn(id: string): BpmnBuilder;
 ## BpmnBuilder (class)
 
 ````ts
+/**
+ * The top-level process builder `bpmn()` returns — every graph method of the
+ * shared scope (events, gateways, tasks, sub-processes, flows, variables) plus
+ * the process's `.name()` and the `.build()` that finishes it.
+ */
 export declare class BpmnBuilder extends ScopeBuilder {
     /** Set the process's display name. */
     name(n: string): this;
@@ -44,10 +49,6 @@ export declare class BpmnBuilder extends ScopeBuilder {
  * builder type (top-level or sub-process).
  */
 declare abstract class ScopeBuilder {
-    protected readonly _defs: DefinitionsRegistry;
-    protected readonly _nodes: BpmnNode[];
-    protected readonly _flows: BpmnFlow[];
-    protected readonly _vars: BpmnVarDecl[];
     /** A start event (authorable definitions: none / message / timer). */
     startEvent(id: string, opts?: StartOpts): this;
     /** An end event (authorable definitions: none / message / error / terminate). */
@@ -74,7 +75,11 @@ declare abstract class ScopeBuilder {
     scriptTask(id: string, opts: ScriptTaskOpts): this;
     /** A plain task that assigns variables (`BPMN.Variables`). */
     task(id: string, opts?: TaskOpts): this;
-    /** Typed form: a generated descriptor supplies the operation and its input types. */
+    /**
+     * An Integration Service **connector** service task (`bpmn:sendTask` +
+     * `uipath:activity` / `Intsvc.ActivityExecution`) — the typed form, where a
+     * generated descriptor supplies the operation and its input types.
+     */
     connector<I extends Record<string, unknown>, O>(id: string, descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: ConnectorOpts & {
             name?: string;
         }): this;
@@ -106,9 +111,16 @@ export declare class SubProcessBuilder extends ScopeBuilder {
 ## StartOpts (interface)
 
 ````ts
+/**
+ * Options for `.startEvent()`. At most one of `message` / `timer` picks the
+ * event definition (`timer` wins if both are set); neither means a plain start.
+ */
 export interface StartOpts {
+    /** Display name the designer shows on the event. */
     name?: string;
+    /** Start when this message arrives — declares/reuses a definitions-level `bpmn:message`. */
     message?: string;
+    /** Start on a timer — an ISO-8601 duration string, or a full `TimerSpec`. */
     timer?: TimerLike;
 }
 ````
@@ -116,10 +128,18 @@ export interface StartOpts {
 ## EndOpts (interface)
 
 ````ts
+/**
+ * Options for `.endEvent()`. `terminate`, `error`, or `message` picks the event
+ * definition, checked in that order; none of them means a plain end.
+ */
 export interface EndOpts {
+    /** Display name the designer shows on the event. */
     name?: string;
+    /** End as a TERMINATE event — abort the whole process instance, not just this path. */
     terminate?: boolean;
+    /** End by throwing this message — declares/reuses a definitions-level `bpmn:message`. */
     message?: string;
+    /** End by throwing this error (a name, or `{ name, code }`) — declares/reuses a definitions-level `bpmn:error`. */
     error?: string | {
             name: string;
             code?: string;
@@ -130,9 +150,16 @@ export interface EndOpts {
 ## CatchOpts (interface)
 
 ````ts
+/**
+ * Options for `.intermediateCatchEvent()`. `message` or `timer` picks what the
+ * event waits for (`timer` wins if both are set).
+ */
 export interface CatchOpts {
+    /** Display name the designer shows on the event. */
     name?: string;
+    /** Wait for this message — declares/reuses a definitions-level `bpmn:message`. */
     message?: string;
+    /** Wait for a timer — an ISO-8601 duration string, or a full `TimerSpec`. */
     timer?: TimerLike;
 }
 ````
@@ -140,8 +167,11 @@ export interface CatchOpts {
 ## ThrowOpts (interface)
 
 ````ts
+/** Options for `.intermediateThrowEvent()` — a `message` to throw, or none. */
 export interface ThrowOpts {
+    /** Display name the designer shows on the event. */
     name?: string;
+    /** The message to throw — declares/reuses a definitions-level `bpmn:message`. */
     message?: string;
 }
 ````
@@ -149,14 +179,24 @@ export interface ThrowOpts {
 ## BoundaryOpts (interface)
 
 ````ts
+/**
+ * Options for `.boundaryEvent()`: the activity it attaches to, whether it
+ * interrupts that activity, and the event definition — exactly one of
+ * `message` / `timer` / `error` (checked in the order error, timer, message;
+ * none at all is refused).
+ */
 export interface BoundaryOpts {
+    /** Display name the designer shows on the event. */
     name?: string;
     /** id of the activity this boundary event is attached to. */
     attachedTo: string;
     /** true (default) = interrupting; false = non-interrupting. */
     cancelActivity?: boolean;
+    /** Catch this message — declares/reuses a definitions-level `bpmn:message`. */
     message?: string;
+    /** Fire on a timer — an ISO-8601 duration string, or a full `TimerSpec`. */
     timer?: TimerLike;
+    /** Catch this error (a name, or `{ name, code }`) — declares/reuses a definitions-level `bpmn:error`. */
     error?: string | {
             name: string;
             code?: string;
@@ -167,7 +207,9 @@ export interface BoundaryOpts {
 ## GatewayOpts (interface)
 
 ````ts
+/** Options for `.exclusiveGateway()` / `.inclusiveGateway()`. */
 export interface GatewayOpts {
+    /** Display name the designer shows on the gateway. */
     name?: string;
     /** Outgoing flow id taken when no condition matches (exclusive/inclusive). */
     default?: string;
@@ -177,10 +219,13 @@ export interface GatewayOpts {
 ## ScriptTaskOpts (interface)
 
 ````ts
+/** Options for `.scriptTask()` — the Jint JavaScript body and its input/output mappings. */
 export interface ScriptTaskOpts {
+    /** Display name the designer shows on the task. */
     name?: string;
     /** The script body (Jint JavaScript). */
     script: string;
+    /** The script language marker. Defaults to `'JavaScript'` (Jint). */
     scriptFormat?: string;
     /** `uipath:input` rows: field name → `=`-expression read into the script. */
     inputs?: Record<string, string>;
@@ -192,7 +237,9 @@ export interface ScriptTaskOpts {
 ## TaskOpts (interface)
 
 ````ts
+/** Options for `.task()` — a display name and the variable assignments the task makes. */
 export interface TaskOpts {
+    /** Display name the designer shows on the task. */
     name?: string;
     /** Variable assignments (`BPMN.Variables`): variable id → `=`-expression/literal. */
     set?: Record<string, string>;
@@ -220,9 +267,13 @@ export interface ConnectorOpts {
 ## SubProcessOpts (interface)
 
 ````ts
+/** Options for `.subProcess()`. */
 export interface SubProcessOpts {
+    /** Display name the designer shows on the sub-process. */
     name?: string;
+    /** Mark an EVENT sub-process — started by an event inside it, not by an incoming flow. */
     triggeredByEvent?: boolean;
+    /** Run the body once per item of a collection — see `LoopSpec`. */
     loop?: LoopSpec;
 }
 ````
@@ -230,9 +281,13 @@ export interface SubProcessOpts {
 ## FlowOpts (interface)
 
 ````ts
+/** Options for `.sequenceFlow()`. */
 export interface FlowOpts {
+    /** The flow's element id. Defaults to `Flow_<source>_<target>`. */
     id?: string;
+    /** Edge label the designer shows. */
     name?: string;
+    /** `=`-expression gating this flow (exclusive/inclusive gateway outgoing). */
     condition?: string;
 }
 ````
@@ -240,9 +295,13 @@ export interface FlowOpts {
 ## VarOpts (interface)
 
 ````ts
+/** Options for `.var()` / `.input()` / `.output()`. */
 export interface VarOpts {
+    /** Display name; defaults to the variable's id. */
     name?: string;
+    /** Optional initial value. */
     default?: unknown;
+    /** When set, the variable is scoped to that element rather than root/global. */
     elementId?: string;
 }
 ````
@@ -258,17 +317,6 @@ export interface BuiltBpmn {
     errors: ErrorDecl[];
     nodes: BpmnNode[];
     flows: BpmnFlow[];
-}
-````
-
-## DefinitionsRegistry (class)
-
-````ts
-declare class DefinitionsRegistry {
-    readonly messages: MessageDecl[];
-    readonly errors: ErrorDecl[];
-    messageRef(name: string): string;
-    errorRef(name: string, code?: string): string;
 }
 ````
 
@@ -353,6 +401,17 @@ export interface BpmnVarDecl {
     direction: VarDirection;
     default?: unknown;
     elementId?: string;
+}
+````
+
+## DefinitionsRegistry (class)
+
+````ts
+declare class DefinitionsRegistry {
+    readonly messages: MessageDecl[];
+    readonly errors: ErrorDecl[];
+    messageRef(name: string): string;
+    errorRef(name: string, code?: string): string;
 }
 ````
 

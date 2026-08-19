@@ -1,6 +1,6 @@
 # Human-in-the-Loop
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`hitl()`](api.md#hitl-function).*
+*Exact signatures, fields, and defaults: [`hitl()`](api.md#hitl-function).*
 
 Pause a Flow for a person using the default inline form, the quick-form node
 type, or a deployed Action App.

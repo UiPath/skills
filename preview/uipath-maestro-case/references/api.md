@@ -228,7 +228,11 @@ declare class TaskBuilder {
             inputs?: ActionField[];
             outputs?: ActionField[];
         }): this;
-    /** Typed form: a generated descriptor supplies the operation and its input types. */
+    /**
+     * An Integration Service connector task — runs a connector activity (e.g. Slack
+     * `send-message-to-channel`) — the typed form, where a generated descriptor
+     * supplies the operation and its input types.
+     */
     connector<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: ConnectorOpts): this;
     /** Stringly form, for a connector with no prepared module. */
     connector(key: string, action: string, inputs?: Record<string, unknown>, opts?: ConnectorOpts): this;

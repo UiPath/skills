@@ -1,6 +1,6 @@
 # Subflow
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`subflow()`](api.md#subflow-function).*
+*Exact signatures, fields, and defaults: [`subflow()`](api.md#subflow-function).*
 
 Subflow packages a child Flow authored in the same source file as one parent
 step.

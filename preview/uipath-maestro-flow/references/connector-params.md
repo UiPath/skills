@@ -1,6 +1,6 @@
 # Integration Service Connectors
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`connector()`](api.md#connector-function).*
+*Exact signatures, fields, and defaults: [`connector()`](api.md#connector-function).*
 
 Call a curated or generic Integration Service operation.
 
