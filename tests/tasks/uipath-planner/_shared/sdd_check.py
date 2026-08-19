@@ -31,6 +31,8 @@ Checks (domain-agnostic):
      interrupted).
   7. PO.Frontend name/SLA parity — stage/task/SLA/escalation names, uniqueness,
      duration bounds, conditional expressions, recipients, and at-risk fields.
+  8. Selected-task selector integrity — no ``selected-tasks-completed`` rule
+     (stage exit or task entry) names an ``adhoc`` task.
 
 Finds ``sdd.md`` under the current working directory.
 """
@@ -316,6 +318,67 @@ def _sdd_frontend_issues(text: str, source: str = "sdd.md") -> list[str]:
     return issues
 
 
+def _task_label(raw: str) -> str:
+    """Normalize a task display name for selector matching."""
+    label = re.sub(r"\s*\([^)]*\)\s*$", "", raw.strip().strip("`"))
+    return label.strip().strip("\"'").strip()
+
+
+def _selected_task_selector_issues(text: str, source: str = "sdd.md") -> list[str]:
+    """Reject ``selected-tasks-completed`` selectors that name an ``adhoc`` task.
+
+    The Case App omits adhoc tasks from the selected-task picker, so a stage-exit
+    or task-entry gate keyed to optional user-launched work never fires and the
+    stage stalls with no error. ``uip maestro case validate`` does not enforce the
+    restriction, so it is graded here.
+    """
+    issues: list[str] = []
+    adhoc_tasks: dict[str, str] = {}            # normalized task label -> owning stage
+    selectors: list[tuple[str, str, int]] = []  # (selected label, owning stage, line)
+    cur_stage = "case"
+    cur_task: str | None = None
+
+    for line_no, line in enumerate(text.splitlines(), 1):
+        s = line.strip()
+        stage = re.match(r"###\s+(?:Stage \d+|Exception Stage|Secondary Stage):\s*(.*)", s)
+        if stage:
+            cur_stage = _task_label(stage.group(1)) or "case"
+            cur_task = None
+            continue
+        task = re.match(r"#####\s+Task\s+S?[\d.]+:\s*(.+)", s)
+        if task:
+            cur_task = _task_label(task.group(1))
+            continue
+        if s.startswith("#"):
+            cur_task = None
+            continue
+        if cur_task and re.match(r"\*\*Activation Mode:\*\*\s*`?adhoc\b", s, re.I):
+            adhoc_tasks.setdefault(cur_task, cur_stage)
+            continue
+        if not s.startswith("|"):
+            continue
+        cells = [c.strip() for c in s.strip().strip("|").split("|")]
+        if not cells:
+            continue
+        if cur_task and _rule_token(cells[0]) == "adhoc":
+            adhoc_tasks.setdefault(cur_task, cur_stage)
+        if "selected-tasks-completed" in cells[0]:
+            for name in re.findall(r"[\"\u201c]([^\"\u201c\u201d]+)[\"\u201d]", cells[0]):
+                selectors.append((_task_label(name), cur_stage, line_no))
+
+    for name, stage, line_no in selectors:
+        owner = adhoc_tasks.get(name)
+        if owner is None:
+            continue
+        issues.append(
+            f"selector: selected-tasks-completed names adhoc task {name!r} at "
+            f"{source}:{line_no} ({stage} rule, task declared in {owner}) — adhoc tasks are "
+            "excluded from the selected-task picker, so the gate never fires; model required "
+            "human work as an action task"
+        )
+    return issues
+
+
 def _colon_issues(text: str, source: str = "sdd.md") -> list[str]:
     """Backward-compatible focused helper used by older checker unit tests."""
     return [issue for issue in _sdd_frontend_issues(text, source) if "contains ':'" in issue]
@@ -389,6 +452,7 @@ def main() -> None:
     issues: list[str] = []
     issues.extend(_sdd_template_shape_issues(text, path))
     issues.extend(_sdd_frontend_issues(text, path))
+    issues.extend(_selected_task_selector_issues(text, path))
 
     # When Phase 1 has already generated tasks.md next to the SDD, validate its
     # SLA and escalation T-entries before JSON emission.

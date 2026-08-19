@@ -56,8 +56,8 @@ the outer rule array is OR, each inner array is AND.
 |---|---|---|
 | Stage entry | — | `case-entered` (first stage only), `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`, `user-selected-stage`, `sla-status-change` |
 | Stage completion | Yes | `required-tasks-completed`, `wait-for-connector` |
-| Stage exit | No | `selected-tasks-completed`, `wait-for-connector` |
-| Task entry | — | `current-stage-entered`, `selected-tasks-completed`, `wait-for-connector`, `sla-status-change`, `adhoc`, `runs-sequentially` |
+| Stage exit | No | `selected-tasks-completed` (note 6), `wait-for-connector` |
+| Task entry | — | `current-stage-entered`, `selected-tasks-completed` (note 6), `wait-for-connector`, `sla-status-change`, `adhoc`, `runs-sequentially` |
 | Case completion | Yes | `required-stages-completed`, `wait-for-connector` |
 | Case exit | No | `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector` |
 
@@ -76,6 +76,11 @@ the outer rule array is OR, each inner array is AND.
 5. **A gate sees case state as of its own event.** The extract of the task that fired the gate has not
    run yet, so an `IF` that reads a case variable that task writes is stale — read the producing output
    instead ([variables.md § Gate on the producer](variables.md#gate-on-the-producer-never-on-the-variable-it-writes)).
+6. **`selected-tasks-completed` selects non-`adhoc` tasks in the SAME stage — at EVERY gate that accepts
+   it, stage exit as well as task entry.** The Case App omits `adhoc` tasks from the selected-task picker,
+   so a gate keyed to optional user-launched work never fires: the stage stalls with no error. When
+   required routing depends on human work, model that work as an `action` task (`Required: Yes`), never as
+   `adhoc`. Validate does not enforce the restriction; a clean `uip maestro case validate` is not evidence.
 
 ### Exit types
 

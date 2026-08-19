@@ -119,6 +119,12 @@ guard. Any failure is blocking; offer `Re-edit` / `Restart` / `Abort`.
    the `IF` references that task's output, not a case variable the task's Outputs row feeds. The gate is
    evaluated before the extract lands, so such a guard is dead on the first pass and the stage stalls with
    no error ([variables.md § Gate on the producer](variables.md#gate-on-the-producer-never-on-the-variable-it-writes)).
+9. **Every `selected-tasks-completed` selector names a non-`adhoc` task in the rule's own stage** —
+   stage-exit rows AND task-entry rows. An `adhoc` selector is a dead gate: the picker never offers the
+   task, so the gate never fires and the stage stalls with no error
+   ([model.md § Lifecycle gates](model.md#lifecycle-gates)). Repair by remodeling the required human work
+   as an `action` task (`Required: Yes`) and keeping the guard — never by deleting the guard or
+   re-pointing it at an unrelated task. Validate does not catch this.
 
 Worked example — a decision-routed return lane (AP Review → SLA Escalation on `requiresEscalation`):
 
@@ -187,7 +193,7 @@ when a contract is already in memory.
     cells agree ([render-case-definition.md](render-case-definition.md)); a `notify-only` row that minted
     a stage or task, or a bare SLA with no row, is blocking.
 11. **File-In-arg caller obligation** — the fixed block above whenever an `In` + `file` row exists.
-12. **Stage-graph connectivity** — the §Logical integrity walk, all seven checks.
+12. **Stage-graph connectivity** — the §Logical integrity walk, all nine checks.
     12a. **Entry producer** — every non-start entry names a concrete producer (source stage, task,
     connector event, paired `wait-for-user` exit, or a declared SLA reference); at-risk rows name the
     escalation, breach rows the SLA alone ([slas.md](slas.md)).

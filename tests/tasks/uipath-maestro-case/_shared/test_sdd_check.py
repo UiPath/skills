@@ -13,6 +13,7 @@ from sdd_check import (  # noqa: E402
     _return_to_origin_pairing_issue,
     _sdd_frontend_issues,
     _sdd_template_shape_issues,
+    _selected_task_selector_issues,
     _tasks_frontend_issues,
 )
 
@@ -307,3 +308,91 @@ def test_tasks_sla_validation_ignores_non_sla_stage_headers():
 - stage-kind: secondary
 '''
     assert _tasks_frontend_issues(tasks, "tasks.md") == []
+
+
+# --------------------------------------------------------------------------
+# selected-tasks-completed selector integrity (adhoc tasks are never selectable)
+# --------------------------------------------------------------------------
+
+def _stage_with_adhoc(exit_when: str, adhoc_mode: str = "adhoc") -> str:
+    """One stage: a required action task, an adhoc task, and a stage-exit rule."""
+    return f"""
+### Stage 1: Review
+
+#### Stage Exit Conditions
+
+| WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+|---|---|---|---|---|
+| {exit_when} | — | exit-only | No | Divert |
+
+##### Task 1.1: Approve invoice
+
+**Type:** action
+**Activation Mode:** parallel
+
+**Entry Condition:**
+
+| WHEN | IF | Display Name |
+|---|---|---|
+| current-stage-entered | — | Entry |
+
+##### Task 1.2: Request more info
+
+**Type:** action
+**Activation Mode:** {adhoc_mode}
+
+**Entry Condition:**
+
+| WHEN | IF | Display Name |
+|---|---|---|
+| {adhoc_mode} | — | Manual |
+"""
+
+
+def test_stage_exit_selecting_an_adhoc_task_is_rejected():
+    issues = _selected_task_selector_issues(
+        _stage_with_adhoc('selected-tasks-completed("Request more info")')
+    )
+    assert len(issues) == 1
+    assert "adhoc task 'Request more info'" in issues[0]
+
+
+def test_stage_exit_selecting_a_non_adhoc_task_is_allowed():
+    assert _selected_task_selector_issues(
+        _stage_with_adhoc('selected-tasks-completed("Approve invoice")')
+    ) == []
+
+
+def test_multi_task_selector_flags_only_the_adhoc_member():
+    issues = _selected_task_selector_issues(
+        _stage_with_adhoc('selected-tasks-completed("Approve invoice", "Request more info")')
+    )
+    assert len(issues) == 1
+    assert "Request more info" in issues[0]
+
+
+def test_adhoc_declared_only_by_its_entry_rule_is_still_rejected():
+    text = _stage_with_adhoc(
+        'selected-tasks-completed("Request more info")', adhoc_mode="adhoc"
+    ).replace("**Activation Mode:** adhoc", "**Activation Mode:** manually triggered")
+    issues = _selected_task_selector_issues(text)
+    assert len(issues) == 1
+    assert "adhoc task 'Request more info'" in issues[0]
+
+
+def test_task_entry_selector_naming_an_adhoc_task_is_rejected():
+    text = _stage_with_adhoc("required-tasks-completed") + """
+##### Task 1.3: Close review
+
+**Type:** action
+**Activation Mode:** fan-in
+
+**Entry Condition:**
+
+| WHEN | IF | Display Name |
+|---|---|---|
+| selected-tasks-completed("Request more info") | — | After info |
+"""
+    issues = _selected_task_selector_issues(text)
+    assert len(issues) == 1
+    assert "adhoc task 'Request more info'" in issues[0]

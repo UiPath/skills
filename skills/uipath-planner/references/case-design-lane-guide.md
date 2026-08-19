@@ -43,7 +43,7 @@ ENTRY, batched with the first document reads; every other mode starts it at the 
 
 ## Modes
 
-Three moves. **Listen** takes in everything offered; **Sketch** builds the complete case model by best assumption, recording every decision; **Confirm** shows the whole case once with the decisions taken and asks a single question. Listen and Sketch loop freely as new context lands; there is no separate Resolve or Approve pass — resolution rides the background chain and surfaces at Confirm.
+Three moves. **Listen** takes in everything offered; **Sketch** builds the complete case model by best assumption, recording every decision; **Confirm** shows the whole case once with the decisions taken and asks a single question. Listen and Sketch loop freely as new context lands; there is no separate Resolve or Approve pass — resolution rides the background chain and surfaces at Confirm. The §Adhoc-dependency audit is the one gate between Sketch and Confirm — it blocks the review, it is not a pass of its own.
 
 ### Listen
 
@@ -109,6 +109,22 @@ Paths Considered**; when the source has no signal at all, spend the one bounded 
 **The one clarifying call (rare).** Ask before the confirmation ONLY when: (a) no case is inferable at all (empty or contentless request), (b) the user's own inputs contradict each other on a shape-changing field, (c) the user asked to be asked, or (d) the mandatory other-path sweep found no source signal at all. Batch everything into ONE AskUserQuestion call (≤ 4 questions). An unclear answer → take the best assumption, disclose it, move on — never re-press. Everything else: assume and inform.
 
 **Red flags — you're about to over-ask.** "I should confirm the trigger type" / "review could be action or agent, better ask" / "the SLA wording is vague" — STOP: the playbook decides all of these; the decision line in the confirmation is the user's chance to correct. The bar for a question is *contradiction or emptiness*, not uncertainty. Equally, there is NO size gate, no "approval before creating files", no lightweight mode — the only stops in this lane are the one clarifying call (when earned), the confirmation itself (with its folded resolution gate), and the explicit-sign-off path.
+
+### Adhoc-dependency audit — before the Case Review
+
+Run over the in-memory model after resolution, before the confirmation. Blocking: never a Review Flags row,
+never a question.
+
+1. List every `selected-tasks-completed` rule in the model — stage-exit rows AND task-entry rows.
+2. Resolve each selected name to a task. It MUST be a task in the SAME stage as the rule's owner, spelled
+   exactly as that task's display name.
+3. Reject any selector that resolves to an `adhoc` task. Required routing cannot depend on optional
+   user-launched work — the picker omits `adhoc` tasks, so the gate never fires
+   ([case/model.md § Lifecycle gates](case/model.md#lifecycle-gates)).
+4. Repair in the model, then re-run the audit: remodel the human work as an `action` task
+   (`Required: Yes`) and keep the guard, or re-key the gate to the non-`adhoc` sibling that actually gates
+   the route. Deleting the guard to clear the audit is forbidden.
+5. Never present the Case Review while any selector is unresolved or names an `adhoc` task.
 
 ### Confirm — the single checkpoint
 
