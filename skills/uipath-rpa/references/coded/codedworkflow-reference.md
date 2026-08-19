@@ -10,7 +10,7 @@ Mandatory for every coded workflow, test case, and source file. Cited as "Rule N
 14. **[Coded] ALWAYS use `[Workflow]` or `[TestCase]` attribute** on the `Execute` method.
 15. **[Coded] Update `project.json` → `entryPoints`** when adding/removing workflow files in **Process** projects. **Tests and Library projects do NOT use `entryPoints`** — skip this step for those project types. For `fileInfoCollection` (required for every test case in every project type — XAML and coded alike), see Common Rule 10 (SKILL.md).
 16. **[Coded] One workflow/test case class per file**, class name must match file name.
-17. **[Coded] Namespace = sanitized project name** from `project.json`. Sanitize: remove spaces, replace hyphens with `_`, ensure valid C# identifier.
+17. **[Coded] Namespace = sanitized project name** from `project.json` → `name`, **not the folder name**. Sanitize: remove spaces (`find all tabs` → `findalltabs`), replace hyphens with `_`, ensure valid C# identifier. **A `.` survives as a namespace separator, and the digit-leading segment it creates takes an `_` prefix** — `TokenOptim_Calc_V3.4_Coded` → `TokenOptim_Calc_V3._4_Coded`, *not* `TokenOptim_Calc_V3_4_Coded`. Dotted or digit-adjacent names: **confirm, don't derive** — read the `namespace` line of the generated `.local/.codedworkflows/ObjectRepository.cs`. A wrong namespace makes the file's own `Descriptors.*` references unresolvable.
 18. **[Coded] Entry method is always named `Execute`**.
 19. **[Coded] Use Coded Source Files** for reusable code — plain `.cs` files without `CodedWorkflow` inheritance, no entry point.
 

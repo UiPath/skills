@@ -97,6 +97,29 @@ Both wrap the result in `{Result, Code, Data}`. **`Data`'s inner shape varies by
 
 > **A completed run passed only when `Data.errors` is empty AND `Data.output` is `"Session ended"`.** The outer `Result` qualifies the CLI invocation, not the workflow — it stays `Success` through unhandled exceptions, compile failures, and a missing entry point, so **never read `Result: "Success"` as a passing run**. Both conditions are required, because `errors` stays empty for a missing entry point and for a debug session suspended on an exception. **DO NOT infer failure from a log entry's `level`** — a clean run that logs at `Error` still returns `errors: []` and `output: "Session ended"`; treating log levels as a verdict flips green runs to "failed" and burns retries. Field-by-field behavior per scenario: [debugging.md § Output Format](debugging.md#output-format).
 
+### Capturing the verdict
+
+**Always pass `--output-filter` on `run` / `debug start`.** It applies a JMESPath expression to `Data` server-side, so one call returns the verdict and the workflow's own `Log Message` output in ~14 lines:
+
+```bash
+uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json \
+  --output-filter "{output: output, errorCount: length(errors), errors: errors, runtimeLog: logEntries[?source=='Debug' && level!='Trace'].message | [-8:]}"
+```
+
+```json
+{ "Result": "Success", "Code": "ToolResult", "Data": {
+    "output": "Session ended", "errorCount": 0, "errors": [],
+    "runtimeLog": ["... execution started", "5 + 5 = 10", "... execution ended in: 00:00:08"] } }
+```
+
+Adjudicate straight off `output` and `errorCount` per the rule above; `runtimeLog` carries the workflow's own messages. The `source=='Debug'` term drops compile-phase noise (`Compiling files`, `Registering activities metadata`, dozens of `Unregistered service requested`); widen the slice past `[-8:]` for a chattier workflow.
+
+**Never `| tail -N` (or `| head`) the unfiltered payload.** `logEntries` runs to hundreds of trace lines, so tailing is the reflex — but `output` and `errors` are emitted *above* it, so tailing keeps the noise and drops the verdict. Recovering them means re-running, which re-drives the application; a workflow that is not re-run-safe behaves differently the second time.
+
+When a failure needs more than the filter shows (compile-phase error, root cause older than the slice), redirect the full payload — `> run.json` — and query the file. `jq` is absent on a standard Windows agent host; use PowerShell: `(Get-Content run.json -Raw | ConvertFrom-Json).Data.logEntries | Where-Object level -ne Trace`.
+
+> **A style diagnostic can fail the verdict.** `Data.errors` carries analyzer/IDE diagnostics, not just runtime faults — `IDE0063` ("'using' statement can be simplified") sets `output` to `"Execution aborted. See attached errors for more information"` though the body ran and logged normally. When `errors` holds a diagnostic ID rather than an exception, fix the code style and re-run; do not hunt for a runtime failure that did not happen.
+
 ---
 
 ## Passing structured inputs
@@ -160,13 +183,17 @@ Rules with scope `Coded Workflow` run as Roslyn analyzers over the project's `.c
 
 Read the project's UI **Object Repository** — the saved hierarchy of applications, screens, and elements (selectors/targets) that UI Automation activities bind to. Two read commands cover the project's own entries and those exposed by referenced libraries; both require an open project.
 
-- **Project Object Repository** — `uip rpa object-repository get` returns the project's *own* Object Repository as a JSON tree of applications → screens → elements. Entries inherited from referenced libraries are **excluded** (use the library command below for those). Takes no arguments beyond the standard `--project-dir`.
+> **Both verbs are top-level and hyphenated.** There is no `uip rpa object-repository` group — it returns `Unknown command: object-repository`, Studio running or not. Distinct from the UIA OR CLI, which writes entries and has no `get`.
+
+- **Project Object Repository** — `uip rpa get-object-repository` returns the project's *own* Object Repository as a JSON tree of applications → screens → elements, each entry carrying `name`, `description`, `type`, and `reference`. Entries inherited from referenced libraries are **excluded** (use the library command below for those). Takes no arguments beyond the standard `--project-dir`.
 
   ```bash
-  uip rpa object-repository get --project-dir "<PROJECT_DIR>" --output json
+  uip rpa get-object-repository --project-dir "<PROJECT_DIR>" --output json
   ```
 
-- **Library Object Repository** — `uip rpa object-repository get-library` reads the Object Repository out of one or more library `.nupkg` files and returns the applications, screens, and elements grouped by library. Pass the absolute path(s) to the library packages; packages without an Object Repository are omitted from the result.
+  The `name` values are **Object Repository names, not C# members** — `Result Display` here is `Result_Display` in `Descriptors.*`. Convert per the coded authoring guide's § Descriptor Naming, routed from `ui-automation-guide.md` § Documentation.
+
+- **Library Object Repository** — `uip rpa get-library-object-repository` reads the Object Repository out of one or more library `.nupkg` files and returns the applications, screens, and elements grouped by library. Pass the absolute path(s) to the library packages; packages without an Object Repository are omitted from the result.
 
   | Parameter | Required | Description |
   |-----------|----------|-------------|
@@ -174,13 +201,13 @@ Read the project's UI **Object Repository** — the saved hierarchy of applicati
 
   ```bash
   # multiple libraries: one --library-paths flag, comma-separated
-  uip rpa object-repository get-library \
+  uip rpa get-library-object-repository \
     --project-dir "<PROJECT_DIR>" \
     --library-paths "C:\libs\Acme.UiLib.1.2.0.nupkg,C:\libs\Other.UiLib.2.0.0.nupkg" \
     --output json
   ```
 
-Read the project repository before authoring UI Automation activities to discover existing screens/elements to reuse instead of re-indicating them; read the library repository to discover targets a referenced UI library already exposes. Confirm the live verb names and flags with `uip rpa object-repository --help`.
+Read the project repository before authoring UI Automation activities to discover existing screens/elements to reuse instead of re-indicating them; read the library repository to discover targets a referenced UI library already exposes. Confirm the live flags with `uip rpa get-object-repository --help` / `uip rpa get-library-object-repository --help`.
 
 ---
 
@@ -497,7 +524,7 @@ Diagnose by error category, apply the recovery, retry **once** — do not loop t
 |--------|-----|
 | **Explore project files** | `Glob` `**/*.xaml` |
 | **Search XAML content** | `Grep` regex across `.xaml` |
-| **Explore Object Repository** | `uip rpa object-repository get` for the project's apps/screens/elements as JSON, `uip rpa object-repository get-library` for a referenced library's (see [object-repository](#object-repository)); or `Glob` `**/*` under `{PROJECT_DIR}/.objects/` + `Read` metadata for raw files |
+| **Explore Object Repository** | `uip rpa get-object-repository` for the project's apps/screens/elements as JSON, `uip rpa get-library-object-repository` for a referenced library's (see [object-repository](#object-repository)); or `Glob` `**/*` under `{PROJECT_DIR}/.objects/` + `Read` metadata for raw files |
 | **Get JIT type definitions** | `Read` `{PROJECT_DIR}/.project/JitCustomTypesSchema.json` |
 | **Activity docs** | See [Installed package activity documentation](#installed-package-activity-documentation) above |
 | **Inspect a NuGet package's API** | `uip rpa packages inspect` — see [coded/codedworkflow-reference.md § Inspect NuGet Package Tool](coded/codedworkflow-reference.md) |
