@@ -481,13 +481,15 @@ Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
 
 - **Add / delete / reconnect a node**: add the element with a stable id and its
   `<bpmn:incoming>`/`<bpmn:outgoing>` refs, add the sequence-flow elements in the
-  owning scope, and add/update its `BPMNShape` and edge waypoints. On delete,
-  remove orphaned flows and DI edges and recheck entry-point variables, output
-  mappings, and binding references.
+  owning scope. On delete, remove orphaned flows and recheck entry-point variables,
+  output mappings, and binding references. Then regenerate the diagram:
+  `uip maestro bpmn format <file.bpmn>`. If CLI unavailable: add/update `BPMNShape`
+  and edge waypoints manually.
 - **Insert a gateway**: split the existing sequence flow into an incoming and an
   outgoing flow, add conditions to the outgoing flows plus one `default`, add a
-  matching join only if branches actually need synchronization, then re-waypoint
-  the diagram (gateway shape + all edges).
+  matching join only if branches actually need synchronization. Then regenerate the
+  diagram: `uip maestro bpmn format <file.bpmn>`. If CLI unavailable: re-waypoint
+  manually (gateway shape + all edges).
 - **Move logic into a subprocess**: move only elements that share a valid scope,
   re-scope their variables, recreate legal subprocess flow boundaries, and add a
   second diagram plane for the subprocess so nested content renders.

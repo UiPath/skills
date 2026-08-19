@@ -41,32 +41,33 @@ Do not derive metadata from stale package files first. Use existing generated fi
 
 1. Edit `.bpmn` first.
 2. Run local validation for XML, diagrams, entry point IDs, variables, mappings, binding references, and package metadata drift.
-3. Before running `pack`, verify the project directory contains the full local
-   metadata set: `project.uiproj`, `operate.json`, `entry-points.json`,
-   `bindings_v2.json`, and `package-descriptor.json`. The pack command
-   consumes these files; it does not synthesize a missing package descriptor.
-4. If generated package JSON is stale, regenerate it:
+3. Regenerate package metadata from the BPMN source:
 
    ```bash
    uip maestro bpmn update-metadata <file.bpmn> --dry-run   # check drift
    uip maestro bpmn update-metadata <file.bpmn>             # regenerate
    ```
 
-   Only fall back to the minimal placeholder-safe shape below when the CLI is
-   unavailable for a local-only synthetic project. For package-shape
-   verification, use the local pack command and request JSON output when
-   parsing command results:
+   If CLI unavailable for a local-only synthetic project, write the minimal
+   placeholder-safe shape (see below) before continuing.
+
+4. Verify the project directory now contains the full metadata set:
+   `project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`,
+   and `package-descriptor.json`. The pack command consumes these files; it does
+   not synthesize a missing package descriptor.
+
+5. For package-shape verification, use the local pack command:
 
    ```bash
    uip maestro bpmn pack <project-path> <OutputDir> --output json
    ```
 
-5. Inspect the package or generated content for:
+6. Inspect the package or generated content for:
    - `entry-points.json` entries matching root start events and schemas.
    - `bindings_v2.json` resources matching root bindings and enriched connector metadata.
    - `operate.json` pointing at the intended BPMN file with `ProcessOrchestration` content type.
    - `package-descriptor.json` entries for the BPMN file and generated JSON under `content/`.
-6. If the installed CLI cannot regenerate a needed file in place, keep the generated file stale only as a known blocker and report the exact unsupported step.
+7. If the installed CLI cannot regenerate a needed file in place, keep the generated file stale only as a known blocker and report the exact unsupported step.
 
 Packaging is local and authoring-safe. Upload, publish, deploy, debug, and run are cloud or runtime actions and still require explicit user consent.
 
