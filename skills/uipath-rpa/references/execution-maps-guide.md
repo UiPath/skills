@@ -25,7 +25,7 @@ A clean `validate` + `build` does NOT prove runtime behavior. Known silent failu
 
 ## Journey: Greenfield XAML (no UIA)
 
-Skip the project-discovery subagent — no project exists (SKILL.md § Precondition). Write `project-context.md` + `AGENTS.md` yourself at T4.
+Skip the project-discovery subagent — nothing to discover yet (SKILL.md § Skip gate: no `project.json` before T1, only the untouched scaffold after it). Write `project-context.md` + `AGENTS.md` yourself at T4.
 
 | Turn | Emit in ONE assistant message |
 |---|---|
@@ -44,7 +44,7 @@ Skip the project-discovery subagent — no project exists (SKILL.md § Precondit
 
 | Turn | Emit in ONE assistant message |
 |---|---|
-| **T1 — Context** | § Precondition context check ∥ `Read` `project.json` + target `.xaml` + cards ∥ ONE `Bash`: `analyzer-rules list --project-dir "<PROJECT_DIR>" --output json` ∥ memory recall ∥ off-card `activities find` fan-out |
+| **T1 — Context** | § Precondition context check — § Skip gate first, then the discovery subagent, which writes `project-context.md` + `AGENTS.md` itself ∥ `Read` `project.json` + target `.xaml` + cards ∥ ONE `Bash`: `analyzer-rules list --project-dir "<PROJECT_DIR>" --output json` ∥ memory recall ∥ off-card `activities find` fan-out |
 | **T2 — Edit** | Batched `Edit`s (anchor each on its own target block — same-file Edits serialize; overlapping anchors fail) ∥ `packages install` `Bash` if new dependencies |
 | **T3 — Gate** | ONE `Bash`: per-file `validate` (relative `--file-path`) `&&` `build` `&&` optional `run` per § Gate ≠ runtime proof |
 | **T4 — Report** | Output check (if T3 ran) + § Completion Output + memory save |
