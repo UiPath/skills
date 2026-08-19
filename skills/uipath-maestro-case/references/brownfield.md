@@ -4,6 +4,8 @@ Targeted changes to an existing `caseplan.json`. Skips the design handoff and th
 
 > **Greenfield (new case from `sdd.md`) uses a different journey.** If `caseplan.json` does not yet exist, or the user wants to (re)build from a spec, see [planning.md](planning.md) → [implementation.md](implementation.md) → [phased-execution.md](phased-execution.md) instead.
 
+> **Editing a file the Studio Web designer has saved?** Read [studio-web-brownfield-gotchas.md](studio-web-brownfield-gotchas.md) FIRST. Round-tripped files use a newer schema shape (plural `selectedStageIds`, populated `edges[]`/`edgeIds`/`layout`) that must be preserved, the compiled `caseplan.json.bpmn` sidecar is the runtime artifact, and hand-added HITL/RPA tasks need subprocess output-propagation entries or their outputs never reach case variables.
+
 ## When this journey applies
 
 `caseplan.json` already exists AND the user wants a targeted edit ("add a stage", "remove task X", "change this condition", "swap the trigger"). No `sdd.md`, no `tasks.md`, no planning phase, no prototyping hard stop. Routing lives in [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
