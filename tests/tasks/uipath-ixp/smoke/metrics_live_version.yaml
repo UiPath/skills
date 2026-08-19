@@ -57,10 +57,12 @@ success_criteria:
     path: "report.json"
     assertions:
       - expression: "version"
-        operator: eq
+        operator: equals
         expected: 9
+      # `gte` not `equals`: only version 9 can reach 0.95+ (latest is 0.91), so
+      # this still fully discriminates, without resting on float equality.
       - expression: "project_score"
-        operator: eq
-        expected: 0.98
+        operator: gte
+        expected: 0.95
     weight: 3.0
     pass_threshold: 1.0
