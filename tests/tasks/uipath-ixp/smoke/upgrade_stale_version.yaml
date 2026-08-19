@@ -1,8 +1,10 @@
 task_id: skill-ixp-upgrade-stale-version-smoke
 description: >
   Smoke: the user asks to move a deployment back to a model version that is no
-  longer deployable. Agent checks `projects list-models`, finds version 9 gone,
-  and reports that instead of firing the doomed upgrade.
+  longer deployable. Agent checks `projects list-models` to establish that
+  version 9 is gone, and neither substitutes another version nor falls back to
+  `create`. Whether it pre-flights or attempts the move and reports the 404 is
+  advisory — a rejected upgrade is a documented no-op.
   Trap: `upgrade` is not a rollback path — versions leave the deployable list as
   a project retrains, so a deployment can be serving a version it can no longer
   be moved back to. The service answers 404 ModelVersionNotFoundError.
@@ -41,20 +43,20 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Version 9 is absent from list-models, so the move is impossible and the
-  # upgrade is wrong to issue. Positive control: the list-models line above,
-  # which the documented check guarantees in a correct run.
+  # Substituting a version the user did not ask for is unambiguously wrong: the
+  # request named version 9, and no other version is an acceptable consolation.
+  # Positive control: the list-models line above.
   - type: file_matches_regex
-    description: "Did NOT fire `deployments upgrade --version 9` at a version that is no longer deployable"
+    description: "Did NOT silently move the deployment to some OTHER version as a substitute"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+deployments\s+upgrade\b.*--version\s+9\b)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+deployments\s+upgrade\b.*--version\s+(?!9\b)\d+\b)[^\r\n]*$
     must_match: false
-    weight: 3.0
+    weight: 1.5
     pass_threshold: 1.0
 
-  # Nor is a rollback a fresh deploy: `create` on a folder that already hosts
-  # the deployment is a 409, and version 9 is unavailable either way.
+  # Nor is a rollback a fresh deploy: `create` on a folder that already hosts the
+  # deployment is a 409, and version 9 is unavailable either way.
   - type: file_matches_regex
     description: "Did NOT fall back to `deployments create` for the unavailable version"
     path: "mocks/calls.log"
@@ -63,3 +65,21 @@ success_criteria:
     must_match: false
     weight: 1.5
     pass_threshold: 1.0
+
+  # ADVISORY (pass_threshold: 0) — records pre-flight convention without docking.
+  # Pre-flighting `list-models` and stopping is the tidier path, but attempting
+  # the move once and reporting the 404 [ModelVersionNotFoundError] reaches the
+  # same outcome: a rejected upgrade is a documented no-op that leaves
+  # ModelVersion and DeployedAt untouched, so the cost is one harmless call and
+  # the agent gets a precise service error to report. Grading this as a hard fail
+  # would encode a preference as a correctness bar — the 2026-08-19 CI run scored
+  # 0.50 on exactly that, having checked list-models FIRST and then attempted the
+  # move anyway.
+  - type: file_matches_regex
+    description: "Advisory: pre-flighted the version check instead of attempting a doomed upgrade"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+deployments\s+upgrade\b.*--version\s+9\b)[^\r\n]*$
+    must_match: false
+    weight: 1.0
+    pass_threshold: 0
