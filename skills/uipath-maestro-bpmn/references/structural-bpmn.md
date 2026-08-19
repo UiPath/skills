@@ -453,7 +453,7 @@ unsupported for generation until current tooling confirms them.
 The registry emits no diagram. Import is **diagram-driven**: the canvas builds
 nodes from `BPMNShape`s and edges from `BPMNEdge`s, not by walking
 `flowElements`. **A node with no shape is invisible; a flow with no edge is
-dropped.** You must generate the full `BPMNDiagram` yourself.
+dropped.** Generate the full `BPMNDiagram` with `uip maestro bpmn format <file.bpmn>`.
 
 - One `<bpmndi:BPMNShape id="S_<nodeId>" bpmnElement="<nodeId>">` per node, with
   `<dc:Bounds x= y= width= height= />`. SubProcess shapes carry `isExpanded`.
@@ -481,13 +481,15 @@ Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
 
 - **Add / delete / reconnect a node**: add the element with a stable id and its
   `<bpmn:incoming>`/`<bpmn:outgoing>` refs, add the sequence-flow elements in the
-  owning scope, and add/update its `BPMNShape` and edge waypoints. On delete,
-  remove orphaned flows and DI edges and recheck entry-point variables, output
-  mappings, and binding references.
+  owning scope. On delete, remove orphaned flows and recheck entry-point variables,
+  output mappings, and binding references. Then regenerate the diagram:
+  `uip maestro bpmn format <file.bpmn>`. If CLI unavailable: add/update `BPMNShape`
+  and edge waypoints manually.
 - **Insert a gateway**: split the existing sequence flow into an incoming and an
   outgoing flow, add conditions to the outgoing flows plus one `default`, add a
-  matching join only if branches actually need synchronization, then re-waypoint
-  the diagram (gateway shape + all edges).
+  matching join only if branches actually need synchronization. Then regenerate the
+  diagram: `uip maestro bpmn format <file.bpmn>`. If CLI unavailable: re-waypoint
+  manually (gateway shape + all edges).
 - **Move logic into a subprocess**: move only elements that share a valid scope,
   re-scope their variables, recreate legal subprocess flow boundaries, and add a
   second diagram plane for the subprocess so nested content renders.
