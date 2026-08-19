@@ -1,45 +1,44 @@
 task_id: skill-ixp-upgrade-deployment-smoke
 description: >
   Smoke: a folder already serves v13 of the project; the agent moves it to v14
-  with `deployments upgrade`, addressing the deployment by the DeploymentName
-  read from `deployments list`.
-  Trap: `create` only ever adds — re-deploying the title on another version is
-  a 409, not a repoint. Second trap: `upgrade` takes the backend-minted
+  with `deployments upgrade`.
+  Trap: `create` only ever adds — re-deploying the title on another version is a
+  409, not a repoint. Second trap: `upgrade` is addressed by the backend-minted
   DeploymentName (`invoices-08963f00-ixp`), not the title (`invoices`) the
-  deployment was created under; the suffix cannot be derived, so the agent has
-  to read it rather than construct it.
+  deployment was created under. The prompt supplies both, so the test is whether
+  the agent puts the NAME in the positional slot, not whether it looks one up.
 
-  Overlays the deployment-serving mock so the read succeeds — see
-  ../_shared/mock_template_deployments/README.md. Grades command shape.
+  Harness is unauthenticated; CLI calls fail offline.
+  Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 6
+  expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
-    - {type: template_dir, path: ../_shared/mock_template_deployments}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   Orchestrator folder `3f0a91c7-1111-2222-3333-444455556666` currently serves
-  model version 13 of IXP project `my_invoices-f1afa9ef-ixp`, deployed under the
-  title `invoices`. Trained version 14 is ready. Make that folder serve version
-  14 instead.
+  model version 13 of IXP project `my_invoices-f1afa9ef-ixp`. That deployment has
+  the title `invoices` and the DeploymentName `invoices-08963f00-ixp`. Trained
+  version 14 is ready — make the folder serve version 14 instead.
 
   Important:
-  - The `uip` CLI in this environment is not connected to a live tenant;
-    some commands fail. Run each command once and move on. Do NOT retry or
-    attempt to login.
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # Per-facet matching is what lets this assert the carried-over NAME: the slug
-  # is the second positional, so a constructed title cannot satisfy it.
+  # Per-facet matching is what lets this assert the NAME: the slug is the second
+  # positional, so the title in that slot cannot satisfy it.
   - type: cli_called
     description: "Moved the deployment with `deployments upgrade <Name> invoices-08963f00-ixp --version 14 --folder-key <key>`"
-    log: "mocks/calls.jsonl"
     verb: "ixp deployments upgrade"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "invoices-08963f00-ixp"]
@@ -49,24 +48,15 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: cli_called
-    description: "Read the DeploymentName from `deployments list` instead of constructing it from the title"
-    log: "mocks/calls.jsonl"
-    verb: "ixp deployments list"
-    tool: "uip"
-    positional: ["my_invoices-f1afa9ef-ixp"]
-    weight: 1.5
-    pass_threshold: 1.0
-
-  # `upgrade` is addressed by DeploymentName. The title in the deployment slot is
-  # a clean 404 — the failure the name/title split exists to prevent. The slot is
-  # matched exactly, so this does NOT fire on `invoices-08963f00-ixp`.
+  # `upgrade` is addressed by DeploymentName; the title there is a clean 404 — the
+  # failure the name/title split exists to prevent. The slot is matched exactly, so
+  # this does NOT fire on `invoices-08963f00-ixp`.
   # `value_flags` is load-bearing: --version / --folder-key are not declared under
   # `flags` here, so without it their values stay non-flag, shift the positional
-  # slots, and argument ordering dodges the guard.
+  # slots, and `upgrade --version 14 --folder-key K <project> invoices` dodges the
+  # guard. Positive control: the upgrade line above.
   - type: cli_called
     description: "Did NOT pass the title `invoices` where the DeploymentName belongs"
-    log: "mocks/calls.jsonl"
     verb: "ixp deployments upgrade"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "invoices"]
@@ -76,12 +66,10 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # The deployment already exists on another version, so `create` is a 409, not
-  # a repoint. Reaching for it is the mis-model the create/upgrade split exists
-  # to prevent. Positive control: the upgrade line above.
+  # The deployment already exists on another version, so `create` is a 409, not a
+  # repoint. Reaching for it is the mis-model the command split exists to prevent.
   - type: cli_called
     description: "Did NOT try to repoint the existing deployment with `deployments create` (409, not a repoint)"
-    log: "mocks/calls.jsonl"
     verb: "ixp deployments create"
     tool: "uip"
     min_count: 0

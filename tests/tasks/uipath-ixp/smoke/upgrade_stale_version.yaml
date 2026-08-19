@@ -9,18 +9,22 @@ description: >
   a project retrains, so a deployment can be serving a version it can no longer
   be moved back to. The service answers 404 ModelVersionNotFoundError.
 
-  Overlays the deployment-serving mock so the version lookup succeeds — see
-  ../_shared/mock_template_deployments/README.md. Grades command shape.
+  Harness is unauthenticated; CLI calls fail offline. Grades that the agent goes
+  to `list-models` to establish deployability rather than firing a write it cannot
+  justify — command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 6
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
-    - {type: template_dir, path: ../_shared/mock_template_deployments}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.
+"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.
+"
 
 initial_prompt: |
   Orchestrator folder `3f0a91c7-1111-2222-3333-444455556666` serves model
@@ -29,15 +33,14 @@ initial_prompt: |
   version 9, and tell me the outcome.
 
   Important:
-  - The `uip` CLI in this environment is not connected to a live tenant;
-    some commands fail. Run each command once and move on. Do NOT retry or
-    attempt to login.
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   - type: cli_called
     description: "Checked which versions are still deployable with `projects list-models`"
-    log: "mocks/calls.jsonl"
     verb: "ixp projects list-models"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp"]
@@ -52,7 +55,6 @@ success_criteria:
   # Positive control: the list-models line above.
   - type: cli_called
     description: "Did NOT silently move the deployment to some OTHER version as a substitute"
-    log: "mocks/calls.jsonl"
     verb: "ixp deployments upgrade"
     tool: "uip"
     flags:
@@ -66,7 +68,6 @@ success_criteria:
   # deployment is a 409, and version 9 is unavailable either way.
   - type: cli_called
     description: "Did NOT fall back to `deployments create` for the unavailable version"
-    log: "mocks/calls.jsonl"
     verb: "ixp deployments create"
     tool: "uip"
     min_count: 0
@@ -85,7 +86,6 @@ success_criteria:
   # move anyway.
   - type: cli_called
     description: "Advisory: pre-flighted the version check instead of attempting a doomed upgrade"
-    log: "mocks/calls.jsonl"
     verb: "ixp deployments upgrade"
     tool: "uip"
     flags:

@@ -88,11 +88,9 @@ itself — no `mock_path_dirs`, no `template_sources`, no `log:` on the criterio
 Prefer that for a new structured task. This template remains the answer whenever
 a recorder is not enough: `file_matches_regex` over the flat `calls.log`, a read
 that must return fixture data (`mock_template_taxonomy`), or per-invocation
-responses, none of which `record_cli` serves. `calls.jsonl` here is the
-structured sink for exactly those tasks: `mock_template_deployments` overlays a
-dispatcher onto this template and its tasks grade `cli_called` against
-`mocks/calls.jsonl`, which is why the overlay writes both sinks in these same
-formats.
+responses, none of which `record_cli` serves. `calls.jsonl` here has no consumer
+today for that reason — it is the structured sink for tasks that need this
+template's other behavior too.
 
 A task whose correct path reads before it writes cannot be graded on this mock
 alone — the read fails, so there is nothing to carry into the graded write, and

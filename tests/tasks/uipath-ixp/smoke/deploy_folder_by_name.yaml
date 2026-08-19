@@ -1,24 +1,27 @@
 task_id: skill-ixp-deploy-folder-by-name-smoke
 description: >
-  Smoke: the folder is named, not keyed. Agent resolves the name to its GUID
-  with `uip or folders list`, then deploys with `--folder-key <guid>`.
-  Trap: `--folder-key` takes a key and there is no `--folder-path` form, so a
-  folder name or path passed as the key is wrong; the CLI does not validate the
-  key format client-side, so an invented or name-shaped value fails only
-  server-side.
+  Smoke: the folder is named, not keyed, so the agent has to resolve it with
+  `uip or folders list` before it can deploy.
+  Trap: `--folder-key` takes a GUID and there is no `--folder-path` form, so a
+  folder name or path shaped into the key is wrong — and the CLI does not validate
+  the key format client-side, so it fails only server-side and the agent gets no
+  local signal.
 
-  Overlays the deployment-serving mock so the folder lookup succeeds — see
-  ../_shared/mock_template_deployments/README.md. Grades command shape.
+  Harness is unauthenticated, so the lookup itself fails and no key is obtainable;
+  this grades that the agent went to `or folders list` for the key and invented
+  neither a key nor a flag. The deploy shape with a key in hand is covered by
+  deploy_to_folder.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 6
+  expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
-    - {type: template_dir, path: ../_shared/mock_template_deployments}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   Trained model version 13 of IXP project `my_invoices-f1afa9ef-ixp` needs to be
@@ -26,39 +29,26 @@ initial_prompt: |
   Deploy it there.
 
   Important:
-  - The `uip` CLI in this environment is not connected to a live tenant;
-    some commands fail. Run each command once and move on. Do NOT retry or
-    attempt to login.
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
+  # The documented source of folder keys, and the positive control for the guards
+  # below: a correct run cannot come by a key any other way.
   - type: cli_called
-    description: "Resolved the folder name to its key with `uip or folders list`"
-    log: "mocks/calls.jsonl"
+    description: "Went to `uip or folders list` to resolve the folder name to a key"
     verb: "or folders list"
     tool: "uip"
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: cli_called
-    description: "Deployed with `deployments create <Name> --version 13 --folder-key 8c22d4e1-…` (the resolved Archive key)"
-    log: "mocks/calls.jsonl"
-    verb: "ixp deployments create"
-    tool: "uip"
-    positional: ["my_invoices-f1afa9ef-ixp"]
-    flags:
-      version: "13"
-      folder-key: "8c22d4e1-9999-8888-7777-666655554444"
     weight: 3.0
     pass_threshold: 1.0
 
   # `--folder-key` takes the GUID. The name or path shaped into that flag is the
-  # mistake key-only addressing invites, and it fails only server-side, so the
-  # agent gets no local signal. Scoped to ONE flag value, which a whole-line
-  # pattern could not do. Positive control: the create line above.
+  # mistake key-only addressing invites. Scoped to ONE flag value, which a
+  # whole-line pattern could not do.
   - type: cli_called
     description: "Did NOT pass the folder name or path as --folder-key"
-    log: "mocks/calls.jsonl"
     verb: "ixp deployments create"
     tool: "uip"
     flags:
@@ -71,7 +61,6 @@ success_criteria:
   # There is no `--folder-path` option on either deployment verb.
   - type: cli_called
     description: "Did NOT invent a `--folder-path` option"
-    log: "mocks/calls.jsonl"
     verb: "ixp deployments create"
     tool: "uip"
     flags:

@@ -240,7 +240,7 @@ Omitting either required option fails locally with exit `3` / `Result: Validatio
 | `409 [DeploymentAlreadyExistsError]` on `create` | The title is already deployed in that folder on a **different** version | Run `upgrade` with the `DeploymentName` from `list` — NOT the title the backend's message quotes |
 | `404 [DeploymentNotFoundError]` on `upgrade` | Name was never deployed, is deployed only in **another** folder, or a *title* was passed where `DeploymentName` belongs | Re-read `DeploymentName` from `list`; verify `--folder-key` |
 | `404 [ModelVersionNotFoundError]` on `upgrade` | `--version` is not deployable (the version is checked before the deployment is looked up) | Pick a version from `projects list-models <project-name> --output json` |
-| `408 Timed out waiting for new model version` on `upgrade` | Upstream IXP timeout. The CLI surfaces it without retrying; the deployment stays on its original version | Run `list` to read the actual current version before retrying — do not assume the move failed |
+| `408 Timed out waiting for new model version` on `upgrade` | Upstream IXP timeout. The CLI surfaces it without retrying, and the outcome is **unknown** — the write may or may not have landed | Run `list` and read the version actually being served before retrying. Do not assume either outcome |
 | `409 [AmbiguousDeploymentError]` | More than one deployment matches in the folder | Disambiguate from `list`; carries the same `create` hint as the conflict above |
 
 **Rejected writes are no-ops** — every `409`/`404` above leaves the deployment on its original version with `DeployedAt` untouched.
