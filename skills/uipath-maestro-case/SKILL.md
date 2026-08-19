@@ -171,6 +171,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Publish to Studio 
 | Plan tasks from sdd.md | [references/planning.md](references/planning.md) |
 | Execute tasks.md into a case | [references/implementation.md](references/implementation.md) |
 | Edit an existing caseplan.json (targeted edits) | [references/brownfield.md](references/brownfield.md) |
+| Prune a solution resource orphaned by a binding repoint or removal | [references/bindings-v2-sync.md § Prune orphaned solution resources](references/bindings-v2-sync.md#prune-orphaned-solution-resources) |
 | Phase 2 → 3 → 4 → 5 → 6 → 7 split + hard stop contracts | [references/phased-execution.md](references/phased-execution.md) |
 | Cross-cutting edit mechanics (IDs, anchoring, batch contract) | [references/case-editing-operations.md](references/case-editing-operations.md) |
 | Case JSON schema | [references/case-schema.md](references/case-schema.md) |

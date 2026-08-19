@@ -1,0 +1,14 @@
+{
+    "version": "2.0",
+    "resources": [
+        {
+            "resource": "process",
+            "key": "Shared/uipath-maestro-case/NameToAgeFixed2.NameToAgeFixed",
+            "value": {
+                "name": { "defaultValue": "NameToAgeFixed" },
+                "folderPath": { "defaultValue": "Shared/uipath-maestro-case/NameToAgeFixed2" }
+            },
+            "metadata": { "subType": "Api" }
+        }
+    ]
+}
