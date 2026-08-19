@@ -132,6 +132,9 @@ jobs:
           case "$NEW_PIN" in
             *[!0-9a-f]*) echo "Unexpected upstream pin: $NEW_PIN"; exit 1 ;;
           esac
+          case "$OLD_PIN" in
+            *[!0-9a-f]*) echo "Unexpected provenance pin: $OLD_PIN"; exit 1 ;;
+          esac
           BRANCH="auto/resync-maestro-sdk-preview-$NEW_PIN-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
 
           git config user.name "github-actions[bot]"
