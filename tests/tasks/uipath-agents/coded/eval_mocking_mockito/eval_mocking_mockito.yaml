@@ -1,11 +1,10 @@
 task_id: skill-agent-coded-eval-mocking-mockito
 description: >
-  Coded-agent (LangGraph) eval lifecycle with the **two documented mocking
-  patterns** (declarative `mockingStrategy: mockito` AND in-code
-  `@mockable`) plus a structured-output evaluator. The agent reads
-  an Orchestrator asset (mocked declaratively per test case) AND
-  looks up a remote label via a helper (mocked in-code via
-  `@mockable` so eval-time substitutes example outputs). Output is
+  Coded-agent (LangGraph) eval lifecycle with the declarative mocking
+  pattern (`mockingStrategy: mockito`) plus a structured-output
+  evaluator. The agent reads an Orchestrator asset AND looks up a
+  remote label via a helper; both external calls are registered with
+  `@mockable` and mocked declaratively per test case. Output is
   structured JSON, eval'd with `JsonSimilarityEvaluator`. The full
   pipeline runs offline. Project files are pre-seeded via `pre_run`
   (fixtures in `_fixtures/`) so the eval grades mocking + evaluator
@@ -36,9 +35,6 @@ initial_prompt: |
   about the shape of `{"masked_key": ..., "label": ...}`. Those
   should be as similar as possible to what we expect.
 
-  I also want to be able (in the future) to have an llm deciding
-  what mocking values should be substituted at runtime.
-  
   Do NOT publish, upload, or deploy. Complete it in a single pass.
 
 success_criteria:
@@ -60,7 +56,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Both mocking patterns wired + JsonSimilarity evaluator + offline eval results"
+    description: "Declarative mockito mocking wired + JsonSimilarity evaluator + offline eval results"
     command: "python3 $TASK_DIR/check_eval_mocking_mockito.py"
     timeout: 30
     expected_exit_code: 0
