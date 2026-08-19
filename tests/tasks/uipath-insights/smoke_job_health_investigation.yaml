@@ -8,9 +8,6 @@ description: >
   Auth errors are expected (no live tenant).
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Our automations seem unhealthy lately. Can you check how our jobs are doing
   over the last 7 days? I want to know:

@@ -16,7 +16,6 @@ description: >
 tags: [uipath-process-mining, integration, mode:diagnose, lifecycle:setup, transformations, custom]
 
 run_limits:
-  expected_turns: 8
   max_turns: 30
   turn_timeout: 600
 

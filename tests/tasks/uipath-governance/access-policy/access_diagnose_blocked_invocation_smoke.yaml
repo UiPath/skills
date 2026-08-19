@@ -12,9 +12,6 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, mode:diagnose, access-policy, evaluate, lifecycle:discover]
 
-run_limits:
-  expected_turns: 7
-
 initial_prompt: |
   An agent is being blocked from invoking an RPA process. Evaluate
   whether the access policies are causing this and identify which

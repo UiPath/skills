@@ -14,9 +14,6 @@ description: >
   a spec-value change would instead require `resources edit`.
 tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Something's wrong with my UiPath solution packaging.
 

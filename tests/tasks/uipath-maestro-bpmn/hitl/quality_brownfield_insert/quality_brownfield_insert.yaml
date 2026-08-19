@@ -7,7 +7,6 @@ description: >
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", "node:hitl", "feature:approval-gate"]
 
 run_limits:
-  expected_turns: 22
   max_turns: 110
 
 sandbox:

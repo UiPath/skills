@@ -25,9 +25,6 @@ sandbox:
   python: {}
   node: {}
 
-run_limits:
-  expected_turns: 10
-
 initial_prompt: |
   Using the UiPath Test Manager Integration Service connector, retrieve the assertions for
   test execution `<FIXTURE_EXECUTION_ID>`. Record result.json with `execution_id` and an

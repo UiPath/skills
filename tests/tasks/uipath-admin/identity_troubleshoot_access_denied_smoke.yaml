@@ -6,9 +6,6 @@ description: >
   tenant, not the command string.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, authz, troubleshoot]
 
-run_limits:
-  expected_turns: 12
-
 initial_prompt: |
   A user in our organization reports they cannot publish automations to a
   folder. Use the effective-access diagnostic to determine what a user can

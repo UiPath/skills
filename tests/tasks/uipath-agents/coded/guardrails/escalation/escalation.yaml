@@ -80,8 +80,7 @@ success_criteria:
 
 run_limits:
   # Escalation is heavier than the block smoke (fetch docs + author guardrail +
-  # app/recipient + bindings.json) — needs a larger turn budget. expected_turns
-  # drives the cap in coder-eval; max_turns kept for parity with recommend/validate.
-  expected_turns: 32
+  # app/recipient + bindings.json), so it needs a larger turn budget. max_turns
+  # kept for parity with recommend/validate.
   max_turns: 40
   turn_timeout: 1200

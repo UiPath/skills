@@ -8,9 +8,6 @@ description: >
   retry or login.
 tags: [uipath-tasks, smoke, assignment]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Use --output json on every uip tasks command. Task IDs and folder IDs
   are numeric (not GUIDs).

@@ -16,7 +16,6 @@ sandbox:
   node: {}
 
 run_limits:
-  expected_turns: 28
   max_turns: 45
 
 pre_run:

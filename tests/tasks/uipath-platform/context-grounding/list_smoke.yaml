@@ -6,9 +6,6 @@ description: >
   skill owns the index-management CLI surface.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, context-grounding]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   Before I wire a knowledge base into one of our agents, I want to see which
   context-grounding indexes already exist in our "Shared" folder. Can you show

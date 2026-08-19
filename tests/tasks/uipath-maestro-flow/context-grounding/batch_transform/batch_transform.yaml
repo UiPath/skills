@@ -10,7 +10,6 @@ description: >
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, node:batch-transform, context-grounding, mode:build]
 
 run_limits:
-  expected_turns: 32
   turn_timeout: 1200
 
 initial_prompt: |

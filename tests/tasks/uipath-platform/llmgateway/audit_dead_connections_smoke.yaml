@@ -6,9 +6,6 @@ description: >
   Verifies the agent reaches for the audit recipe in the Diagnostics section.
 tags: [uipath-platform, smoke, mode:diagnose, mode:troubleshoot, lifecycle:discover]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Audit our tenant's BYO LLM configurations. I want to know which configs are
   pointing at Integration Service connections that are no longer in `Enabled`

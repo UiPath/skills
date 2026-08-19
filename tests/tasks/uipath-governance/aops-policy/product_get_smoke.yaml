@@ -9,9 +9,6 @@ description: >
   command shape.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, catalog]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   I need to check the configuration details for the AITrustLayer
   governance product. First list all available products, then fetch

@@ -107,7 +107,6 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 16
   # Full Phase D SDD authoring runs in one unbroken autonomous turn. Raise BOTH
   # caps like product_selection.yaml: task_timeout for end-to-end wall clock,
   # turn_timeout for the long authoring turn.

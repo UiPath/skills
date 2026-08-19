@@ -10,9 +10,6 @@ description: >
   e2e only *creates* apps, it never fixes one.
 tags: [uipath-coded-apps, smoke, mode:diagnose]
 
-run_limits:
-  expected_turns: 12
-
 pre_run:
   # Seed a minimal coded-web-app config so the client ID is concrete and the
   # scenario is a real misconfiguration, not a hypothetical.

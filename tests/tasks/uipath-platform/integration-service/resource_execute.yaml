@@ -6,9 +6,6 @@ description: >
   complete 6-step workflow and correct `resources run create` syntax with --body.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:setup, integration-service, connector, ipe]
 
-run_limits:
-  expected_turns: 15
-
 sandbox:
   python: {}
   node: {}

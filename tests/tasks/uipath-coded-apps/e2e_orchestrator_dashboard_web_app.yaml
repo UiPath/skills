@@ -11,13 +11,12 @@ description: >
   up. Tests the Web-app lifecycle with deep SDK integration that no smoke
   or integration test covers.
 tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
-# max_turns 85→110, expected_turns 45→90: a clean full-lifecycle run is ~88
-# turns, so the old 85 cap clipped a well-behaved run's last step. 110 = ~88
+# max_turns 85→110: a clean full-lifecycle run is ~88 turns, so the old 85 cap
+# clipped a well-behaved run's last step. 110 = ~88
 # baseline + margin for deploy retries. Turns are not the fix — the spiral is
 # fixed at the skill level (SKILL.md Rule 19 + orchestrator.md folder-scoping).
 # Re-run on Sonnet 5 and right-size from the measured clean count.
 run_limits:
-  expected_turns: 90
   max_turns: 110
   turn_timeout: 1200
 

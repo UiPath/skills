@@ -7,9 +7,6 @@ description: >
   that it filters with --product / --feature when given a specific feature.
 tags: [uipath-platform, smoke, mode:build, lifecycle:discover]
 
-run_limits:
-  expected_turns: 10
-
 initial_prompt: |
   I want to bring my own LLM key for the UiPath agenthub feature
   `agenthub-llm-call`. Before I create anything, I need to know:

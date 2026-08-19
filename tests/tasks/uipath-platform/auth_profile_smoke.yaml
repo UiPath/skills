@@ -5,9 +5,6 @@ description: >
   status and auth-file discovery without falling back to `--file`.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
-run_limits:
-  expected_turns: 4
-
 initial_prompt: |
   I have a UiPath login profile named "dev". Check whether that profile is
   logged in and show me which auth file it uses. Do not switch tenants or

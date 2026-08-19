@@ -23,9 +23,6 @@ tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover]
 # investigate. (Deterministic-by-design creators are cleaned up; this is not
 # one — see the compliance-pack tasks and nonregression_branch_a.)
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   Block ChatGPT for my finance team using Studio.
 

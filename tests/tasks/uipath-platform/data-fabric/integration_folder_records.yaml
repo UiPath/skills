@@ -9,7 +9,6 @@ description: >
   which covers scope-visibility more broadly.
 tags: [uipath-platform, data-fabric, integration, entity-scope, records, mode:operate, lifecycle:setup]
 run_limits:
-  expected_turns: 25
   max_turns: 45
   turn_timeout: 600
 

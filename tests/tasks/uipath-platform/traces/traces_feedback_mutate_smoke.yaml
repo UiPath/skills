@@ -11,9 +11,6 @@ description: >
   outcomes — the graded behavior is command shape.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, feedback]
 
-run_limits:
-  expected_turns: 10
-
 initial_prompt: |
   Two corrections to feedback in folder key
   `2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2`:

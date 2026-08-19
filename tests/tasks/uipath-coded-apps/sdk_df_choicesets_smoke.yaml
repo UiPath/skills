@@ -8,9 +8,6 @@ description: >
   `choiceSets.getById(<csId>)` and translate every read. Code like
   `record.Priority.toLowerCase()` throws or renders "5".
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
-run_limits:
-  expected_turns: 8
-
 # Skill refs defer SDK signatures/scopes to the npm package — preinstall so the agent reads them locally.
 sandbox:
   node:

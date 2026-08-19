@@ -9,9 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, apms, troubleshoot]
 
-run_limits:
-  expected_turns: 10
-
 initial_prompt: |
   Our team in the new office cannot access the UiPath platform. We
   think it might be an IP restriction issue. Run these three diagnostic

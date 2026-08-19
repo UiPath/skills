@@ -8,7 +8,6 @@ description: >
   and the no-body pagination path end-to-end.
 tags: [uipath-platform, data-fabric, integration, records, mode:operate, lifecycle:discover]
 run_limits:
-  expected_turns: 25
   turn_timeout: 600
 
 initial_prompt: |

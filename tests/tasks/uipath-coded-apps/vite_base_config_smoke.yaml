@@ -5,9 +5,6 @@ description: >
   is required (the platform handles URL routing; absolute root paths
   cause 404 after deploy).
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Scaffold `vite.config.ts` at the sandbox root for a UiPath Coded Web App.
   When deployed, the app's URL includes a non-root path prefix (e.g.

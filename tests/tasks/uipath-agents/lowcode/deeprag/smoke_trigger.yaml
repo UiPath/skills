@@ -6,9 +6,6 @@ description: >
   Verifies the skill fires for the low-code + PDF/TXT signal pair.
 tags: [uipath-agents, smoke, mode:build, low-code, lifecycle:discover, context-grounding]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   I'm building a low-code agent in Studio Web Agent Builder. It receives several
   PDF attachments and must produce a single answer with citations drawn from

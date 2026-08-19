@@ -10,7 +10,6 @@ description: >
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:single-node, connector, uipath-salesforce-slack, feature:http, ipe]
 
 run_limits:
-  expected_turns: 32
   task_timeout: 1500
   max_turns: 100
   turn_timeout: 1200

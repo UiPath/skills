@@ -10,9 +10,6 @@ description: >
   command shape with --user-id and --tenant-only flags.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, deployed-policy]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   I need to check which AOps governance policy is in effect for a
   specific user. Query the effective deployed policy for:

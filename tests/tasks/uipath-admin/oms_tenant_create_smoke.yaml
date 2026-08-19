@@ -11,9 +11,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, oms, tenant-lifecycle]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Create a new tenant named "QA-Environment" in our organization.
   Pick an appropriate region.

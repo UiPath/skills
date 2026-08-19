@@ -10,9 +10,6 @@ description: >
   (same scope, same file shape) — identical component coverage, one test,
   and the convention matrix graded side-by-side.
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
-run_limits:
-  expected_turns: 10
-
 # Skill refs defer SDK signatures/scopes to the npm package — preinstall so the agent reads them locally.
 sandbox:
   node:

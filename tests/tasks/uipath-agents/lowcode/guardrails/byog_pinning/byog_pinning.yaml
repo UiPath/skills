@@ -17,9 +17,6 @@ description: >
   flag), and the graded behavior never executes the guardrail.
 tags: [uipath-agents, smoke, mode:build, lifecycle:edit, low-code, guardrail]
 
-run_limits:
-  expected_turns: 12
-
 sandbox:
   mock_path_dirs: [mocks]
   template_sources:

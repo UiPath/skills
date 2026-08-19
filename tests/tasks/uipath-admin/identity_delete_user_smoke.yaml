@@ -16,9 +16,6 @@ post_run:
   - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_delete_user.py''))"'
     timeout: 30
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   Remove the user "ce-identity-delete@example.com" from my UiPath organization.
 

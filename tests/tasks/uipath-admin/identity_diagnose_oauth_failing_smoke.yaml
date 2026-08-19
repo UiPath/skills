@@ -7,9 +7,6 @@ description: >
   command string.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, troubleshoot, identity, external-app]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   Our CI/CD pipeline uses an external app with a client_credentials grant, but
   it's failing with "not allowed to access User scopes". Explain what is causing

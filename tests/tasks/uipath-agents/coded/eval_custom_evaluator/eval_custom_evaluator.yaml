@@ -13,7 +13,6 @@ description: >
 tags: [uipath-agents, smoke, coded, lifecycle:validate, feature:eval]
 
 run_limits:
-  expected_turns: 65
   turn_timeout: 1200
   task_timeout: 1800
   max_turns: 90

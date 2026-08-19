@@ -8,9 +8,6 @@ description: >
   Command-construction only — no live tenant available.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, troubleshoot, authz, permission-denied]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   A user jane.smith@example.com is getting HTTP 403 when trying to
   create a folder in Orchestrator on our production tenant.

@@ -10,7 +10,6 @@ description: >
 tags: [uipath-maestro-bpmn, integration, "mode:diagnose", "lifecycle:discover"]
 
 run_limits:
-  expected_turns: 14
   max_turns: 22
 
 sandbox:

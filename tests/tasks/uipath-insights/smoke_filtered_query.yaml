@@ -6,9 +6,6 @@ description: >
   uses repeatable filter options. Auth errors are expected (no live tenant).
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   I need to check the job health for a specific process called "Invoice_Processing"
   in folder key "a1b2c3d4-e5f6-7890-abcd-ef1234567890" over the last 30 days.

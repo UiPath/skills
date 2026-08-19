@@ -78,5 +78,4 @@ success_criteria:
     pass_threshold: 0
 
 run_limits:
-  expected_turns: 6
   max_turns: 20

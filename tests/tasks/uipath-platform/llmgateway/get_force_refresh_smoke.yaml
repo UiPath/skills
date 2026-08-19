@@ -7,9 +7,6 @@ description: >
   config or trying to re-authenticate.
 tags: [uipath-platform, smoke, mode:diagnose, mode:troubleshoot, lifecycle:discover]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Re-probe my BYO LLM configuration `f7c93a8d-2b14-49e7-a013-08dc7f6e1234` in
   UiPath LLM Gateway to re-resolve whether its underlying Integration Service

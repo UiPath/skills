@@ -13,7 +13,6 @@ skip: true
 # reliable on the run tenant. Re-enable once the inline MCP flow-node path works.
 
 run_limits:
-  expected_turns: 77
   turn_timeout: 1200
 
 initial_prompt: |

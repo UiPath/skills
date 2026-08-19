@@ -6,7 +6,6 @@ description: >
 tags: [uipath-maestro-flow, uipath-human-in-the-loop, smoke, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
 
 run_limits:
-  expected_turns: 24
   max_turns: 105
   # 600s was too tight for this multi-node HITL build on Bedrock: one
   # over-exploring turn hit 604s (commands ~38s; the rest was model latency)

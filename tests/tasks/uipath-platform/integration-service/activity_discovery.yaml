@@ -6,9 +6,6 @@ description: >
   and resources.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service, connector, feature:activities, ipe]
 
-run_limits:
-  expected_turns: 9
-
 initial_prompt: |
   I want to understand what the Salesforce connector can do through UiPath
   Integration Service. Discover its capabilities:

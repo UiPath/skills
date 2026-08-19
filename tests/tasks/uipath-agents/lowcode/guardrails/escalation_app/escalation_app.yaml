@@ -114,10 +114,9 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 41
   # This is the heaviest guardrail task (scaffold solution + agent, discover
   # validators, look up the escalation app, author the escalate guardrail, then
-  # validate). expected_turns is 41, so a 40-turn cap guaranteed
+  # validate). A clean run takes ~41 turns, so a 40-turn cap guaranteed
   # MAX_TURNS_EXHAUSTED before validate could run. Give headroom above the
   # expected length. task_timeout (1800s) is not the bottleneck — runs finish
   # in ~500s; turns are the cap.

@@ -6,9 +6,6 @@ description: >
   fallback strategy when no native connector exists.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service, ipe]
 
-run_limits:
-  expected_turns: 7
-
 initial_prompt: |
   I need to find UiPath Integration Service connectors for "Google" and also
   check if there is a connector for "Apify".

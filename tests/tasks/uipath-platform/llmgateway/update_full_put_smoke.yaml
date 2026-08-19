@@ -6,9 +6,6 @@ description: >
   be supplied on the call, not just the one being changed.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:setup]
 
-run_limits:
-  expected_turns: 12
-
 initial_prompt: |
   Configuration `c1d2e3f4-1111-2222-3333-444455556666` is a multi-mapping BYO
   LLM record for product=uipath-ecs feature=uipath-ecs-batch-transform-web-search.

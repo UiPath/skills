@@ -13,9 +13,6 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, mode:operate, aops-policy, deployed-policy, lifecycle:discover]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   Show me which governance policy is currently deployed on this tenant
   for the AITrustLayer product. Save every command's stdout+stderr to

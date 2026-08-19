@@ -11,9 +11,6 @@ description: >
   check (false pass).
 tags: [uipath-platform, integration, mode:diagnose, lifecycle:generate, context-grounding]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   I set up a knowledge index called "support-kb" in our "Shared" folder from
   our "SupportDocs" storage bucket last week. The setup reported success, but

@@ -233,7 +233,6 @@ success_criteria:
     pass_threshold: 0.75
 
 run_limits:
-  expected_turns: 94
   task_timeout: 1200
   max_turns: 120
   turn_timeout: 1200

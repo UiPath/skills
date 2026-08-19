@@ -12,9 +12,6 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, mode:operate, access-policy, evaluate, lifecycle:discover]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   Evaluate whether the current access policies would allow a Maestro
   flow to invoke an RPA process. Save every command's stdout+stderr to

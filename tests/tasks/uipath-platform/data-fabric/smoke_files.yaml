@@ -4,7 +4,6 @@ description: >
   isolated Data Fabric test record.
 tags: [uipath-platform, data-fabric, smoke, files, mode:build, lifecycle:setup]
 run_limits:
-  expected_turns: 10
   max_turns: 30
 
 initial_prompt: |

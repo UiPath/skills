@@ -7,7 +7,6 @@ description: >
 tags: [uipath-agents, smoke, mode:build, lifecycle:generate, coded, bindings]
 
 run_limits:
-  expected_turns: 15
   max_turns: 60
   turn_timeout: 1200
 

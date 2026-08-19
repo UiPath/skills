@@ -11,7 +11,6 @@ description: >
 tags: [uipath-human-in-the-loop, e2e, green-field, compliance, gdpr]
 
 run_limits:
-  expected_turns: 22
   max_turns: 60
   turn_timeout: 1200
 

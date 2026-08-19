@@ -16,9 +16,6 @@ description: >
   against an unfiltered read and fail.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, status]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   Show me the failed events in this tenant's audit trail from the last 7 days,
   across all event sources (don't narrow to any one source). Save the complete JSON result to ./events.json so I can review it.

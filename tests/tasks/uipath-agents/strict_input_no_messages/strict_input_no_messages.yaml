@@ -9,9 +9,6 @@ description: >
   an OpenAI Agents project or silently falling back to a plain function.
 tags: [uipath-agents, smoke, mode:build, coded, lifecycle:discover, feature:framework-openai-agents]
 
-run_limits:
-  expected_turns: 3
-
 initial_prompt: |
   I want to build a UiPath coded agent that takes an address and breaks it
   down into its parts: street, city, postal code, and country.

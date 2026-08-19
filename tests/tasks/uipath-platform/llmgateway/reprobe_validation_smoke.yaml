@@ -7,9 +7,6 @@ description: >
   isAvailable / isCompatible probe failures.
 tags: [uipath-platform, smoke, mode:diagnose, mode:troubleshoot, lifecycle:setup]
 
-run_limits:
-  expected_turns: 10
-
 initial_prompt: |
   Configuration `e5723bb8-fbc2-4317-c7d7-08de803bc010` is currently registered
   for product=agenthub feature=agenthub-llm-call with model

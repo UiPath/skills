@@ -13,11 +13,6 @@ description: >
 tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code]
 
 run_limits:
-  # 20, not 10: the agent project adds a scaffold step and its solution
-  # registration on top of the probe and `solution init`. Tracks the 2026-08-12
-  # sonnet-5 run (20 turns, 10 commands); codex/gpt-5.6-terra does the same work
-  # in 1 turn and 8 commands, so budget for the chattier harness.
-  expected_turns: 20
   turn_timeout: 600
 
 initial_prompt: |

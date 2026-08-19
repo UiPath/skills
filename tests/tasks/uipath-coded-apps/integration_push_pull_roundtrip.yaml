@@ -10,7 +10,6 @@ description: >
   skill's file-sync reference.
 tags: [uipath-coded-apps, integration, mode:operate, lifecycle:setup]
 run_limits:
-  expected_turns: 18
   max_turns: 90
   turn_timeout: 900
   task_timeout: 900

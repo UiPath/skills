@@ -16,9 +16,6 @@ description: >
   lags the live `events` endpoint by up to ~48h.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, audit, export, scope-org]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   I need all of yesterday's organization-level audit events (things like
   memberships, license changes, and tenant lifecycle) as a single CSV I

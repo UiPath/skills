@@ -12,9 +12,6 @@ description: >
   shape plus a captured CLI response envelope.
 tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, traces, feedback]
 
-run_limits:
-  expected_turns: 12
-
 initial_prompt: |
   Bulk quality sweep across traces, folder key
   `2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2`. I need each feedback record together

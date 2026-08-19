@@ -9,9 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, troubleshoot, login-history]
 
-run_limits:
-  expected_turns: 12
-
 initial_prompt: |
   We suspect bob@contoso.com's account may be compromised — there
   have been multiple failed login attempts. Use `uip admin` commands

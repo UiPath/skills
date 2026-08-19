@@ -61,7 +61,6 @@ run_limits:
   # Offline: scaffold -> init -> run -> pack + packOptions + data fixture.
   # No cloud publish (no headless tenant-feed path until uipath/cli#2778),
   # so this stays deterministic and well under the turn budget.
-  expected_turns: 30
   max_turns: 50
   turn_timeout: 1500
   task_timeout: 1500

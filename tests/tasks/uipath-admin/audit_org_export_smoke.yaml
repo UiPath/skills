@@ -22,9 +22,6 @@ description: >
   empty export is a real outcome; all assertions are structural.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, audit, export, scope-org]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   Can you export yesterday's full organization-level audit trail as
   JSON files for compliance archival? I want the whole day of org-scope

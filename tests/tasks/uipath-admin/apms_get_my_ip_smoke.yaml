@@ -9,9 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, get, apms]
 
-run_limits:
-  expected_turns: 4
-
 initial_prompt: |
   Look up my public IP address as seen by the UiPath admin IP restriction
   service on my UiPath organization.

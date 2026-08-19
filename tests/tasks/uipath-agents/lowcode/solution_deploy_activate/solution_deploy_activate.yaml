@@ -21,14 +21,11 @@ description: >
 tags: [uipath-agents, e2e, mode:operate, lifecycle:setup, low-code]
 
 run_limits:
-  # Tracks two 2026-08-12 sonnet-5 runs of the fixture-seeded task: 37 and 61
-  # assistant turns, both scoring 1.000 in ~200s. The spread is the CLI-probing
-  # detour (`--help` on deploy/activate/uninstall before committing), so budget
-  # for the slower shape rather than the lucky one.
-  expected_turns: 60
-  # ~65% headroom over the observed 61. Deliberately below the 200 that low-code
-  # tasks without an explicit cap inherit from default.yaml: nothing has come
-  # near exhausting this, and the cap earns its keep as a cost stop.
+  # ~65% headroom over the slower of two 2026-08-12 sonnet-5 runs of the
+  # fixture-seeded task (37 and 61 assistant turns, both scoring 1.000 in ~200s;
+  # the spread is the CLI-probing detour). Deliberately below the 200 that
+  # low-code tasks without an explicit cap inherit from default.yaml: nothing has
+  # come near exhausting this, and the cap earns its keep as a cost stop.
   max_turns: 100
   task_timeout: 2700
   # `deploy run` polls for up to 360s per phase and `deploy uninstall` for

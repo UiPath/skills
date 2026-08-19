@@ -5,9 +5,6 @@ description: >
   before walking through the wiring, without mutating project files.
 tags: [uipath-agents, smoke, mode:build, lifecycle:discover, low-code]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   I've got a low-code Agent Builder project and want to wire up one of our
   existing Memory Spaces so the agent can pull few-shot examples at runtime.

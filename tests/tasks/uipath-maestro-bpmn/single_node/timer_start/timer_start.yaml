@@ -9,7 +9,6 @@ description: >
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", "feature:trigger"]
 
 run_limits:
-  expected_turns: 18
   max_turns: 45
 
 sandbox:

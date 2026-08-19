@@ -16,9 +16,6 @@ post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
     timeout: 60
 
-run_limits:
-  expected_turns: 12
-
 initial_prompt: |
   I need to set up a small folder structure on our tenant. `seed.json`
   has a unique prefix (use it in all names so things don't collide) and

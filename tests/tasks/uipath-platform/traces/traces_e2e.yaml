@@ -9,9 +9,6 @@ tags: [uipath-platform, e2e, mode:operate, lifecycle:discover, traces]
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
 
-run_limits:
-  expected_turns: 21
-
 initial_prompt: |
   Start a new job for the published agent at process key `bf544b24-9133-41b5-9361-4f9f75c64467` and wait for it to finish. Then verify the run produced LLM trace spans and save the raw spans output to spans.json.
 

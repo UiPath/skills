@@ -15,7 +15,6 @@ description: >
   widget integration, not just CLI flow.
 tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
 run_limits:
-  expected_turns: 50
   max_turns: 100
   turn_timeout: 1200
 

@@ -17,9 +17,6 @@ post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
     timeout: 60
 
-run_limits:
-  expected_turns: 13
-
 initial_prompt: |
   I want to set up a signed webhook so we get notified when jobs finish.
   Use the unique prefix in `seed.json` for the name.

@@ -8,7 +8,6 @@ description: >
   must learn to surface rather than swallow.
 tags: [uipath-platform, data-fabric, integration, entity-scope, complex-fields, mode:diagnose, lifecycle:setup]
 run_limits:
-  expected_turns: 30
   max_turns: 60
   turn_timeout: 600
 

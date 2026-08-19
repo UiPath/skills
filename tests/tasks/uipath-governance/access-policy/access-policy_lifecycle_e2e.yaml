@@ -25,7 +25,6 @@ description: >
 tags: [uipath-governance, e2e, access-policy, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 21
   max_turns: 40
 
 pre_run:

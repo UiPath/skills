@@ -14,9 +14,6 @@ description: >
   the correct commands with the correct flags.
 tags: [uipath-governance, smoke, mode:build, lifecycle:generate, template, bootstrap]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   I am starting a new AOps governance policy authoring session. Bootstrap
   the templates for every product into `./session/products/`

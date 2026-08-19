@@ -16,9 +16,6 @@ description: >
   rather than that those flag names appeared somewhere in the command.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
   Can you pull the 25 most recent audit events from this tenant's audit trail,
   from the last 24 hours? I want them across all event sources — don't narrow to

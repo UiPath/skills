@@ -11,7 +11,6 @@ description: >
 tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, apms, enforcement]
 
 run_limits:
-  expected_turns: 12
   max_turns: 40
   turn_timeout: 600
 

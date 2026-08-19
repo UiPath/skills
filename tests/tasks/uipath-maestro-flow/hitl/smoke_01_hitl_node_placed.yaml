@@ -6,7 +6,6 @@ description: >
 tags: [uipath-maestro-flow, uipath-human-in-the-loop, smoke, lifecycle:generate, shape:single-node, node:hitl]
 
 run_limits:
-  expected_turns: 21
   max_turns: 80
   turn_timeout: 600
 initial_prompt: |

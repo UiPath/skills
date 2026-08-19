@@ -13,9 +13,6 @@ pre_run:
   - command: "sh $SKILLS_REPO_PATH/tests/tasks/uipath-platform/traces/seed_feedback_notes.sh"
     timeout: 15
 
-run_limits:
-  expected_turns: 12
-
 initial_prompt: |
   Two reviewer write-ups to file as thumbs-down feedback, both in folder key
   `2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2`:

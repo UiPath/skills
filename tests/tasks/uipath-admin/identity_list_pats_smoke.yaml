@@ -5,9 +5,6 @@ description: >
   not the command string.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, identity]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   List all my personal access tokens in UiPath. Save the complete JSON result
   to ./pats.json so it can be reviewed.

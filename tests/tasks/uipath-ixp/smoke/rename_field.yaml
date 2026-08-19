@@ -6,9 +6,6 @@ description: >
   Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
-run_limits:
-  expected_turns: 5
-
 sandbox:
   record_cli:
     - tool: uip

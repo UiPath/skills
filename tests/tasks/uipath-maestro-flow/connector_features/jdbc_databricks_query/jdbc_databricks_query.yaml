@@ -32,7 +32,6 @@ tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:single-no
 skip: false
 
 run_limits:
-  expected_turns: 40
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 900

@@ -9,7 +9,6 @@ description: >
   that component from Indirect to Direct in the coverage report.
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
-  expected_turns: 8
   turn_timeout: 600
 
 initial_prompt: |

@@ -9,9 +9,6 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, oms, service-provisioning]
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Add the Test Manager service to our "Development" tenant. Run these
   steps in order:

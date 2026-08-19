@@ -13,9 +13,6 @@ post_run:
   - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_robot_marker.py''))"'
     timeout: 30
 
-run_limits:
-  expected_turns: 8
-
 initial_prompt: |
   Create a new robot account named "ce-identity-smoke-bot" with display name
   "CE Identity Smoke Bot" in my UiPath organization.

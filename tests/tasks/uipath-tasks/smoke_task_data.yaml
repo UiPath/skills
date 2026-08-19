@@ -8,7 +8,6 @@ description: >
 tags: [uipath-tasks, smoke, mode:operate, lifecycle:setup, data]
 
 run_limits:
-  expected_turns: 6
   max_turns: 12
 
 initial_prompt: |

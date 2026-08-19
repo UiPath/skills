@@ -18,7 +18,6 @@ description: >
 tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:customfield]
 
 run_limits:
-  expected_turns: 22
   max_turns: 55
 
 # Delete the field definitions this task creates BEFORE the run so the agent

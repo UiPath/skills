@@ -6,9 +6,6 @@ description: >
   --no-enabled` as a soft-delete substitute.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:setup]
 
-run_limits:
-  expected_turns: 6
-
 initial_prompt: |
   Permanently remove BYO LLM configuration
   `7afd7d89-a35d-4057-669b-3f3de2233812` from the tenant.

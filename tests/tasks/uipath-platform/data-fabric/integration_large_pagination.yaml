@@ -8,7 +8,6 @@ description: >
   fixture. Bulk-import coverage lives in integration_csv_import.
 tags: [uipath-platform, data-fabric, integration, bulk-pagination, mode:operate, lifecycle:discover]
 run_limits:
-  expected_turns: 35
   max_turns: 60
   turn_timeout: 900
 

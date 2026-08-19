@@ -17,9 +17,6 @@ post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
     timeout: 60
 
-run_limits:
-  expected_turns: 24
-
 initial_prompt: |
   I need a new tenant-level Orchestrator role set up. Name it `e2e-role-`
   followed by the unique prefix from `seed.json`.
