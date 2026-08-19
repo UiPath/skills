@@ -194,6 +194,7 @@ Behavior and worked examples: [delay.md](delay.md).
 ## mock (function)
 
 ````ts
+/** Declare a PLACEHOLDER step — "a real node goes here later". */
 export declare function mock(): ActionSpec;
 ````
 
@@ -275,8 +276,9 @@ Behavior and worked examples: [queue.md](queue.md).
 
 ````ts
 /**
- * Typed form: a generated descriptor supplies the nodeType and statically-checked
- * input types — `connector(CreateIssue, { fields: { summary: '…' } }, { connection })`.
+ * Declare an Integration Service connector action — the typed form, where a
+ * generated descriptor supplies the nodeType and statically-checked input types:
+ * `connector(CreateIssue, { fields: { summary: '…' } }, { connection })`.
  */
 export declare function connector<I extends Record<string, unknown>, O>(descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: ConnectorOpts): ActionSpec;
 
@@ -293,7 +295,8 @@ Behavior and worked examples: [connector-params.md](connector-params.md).
 
 ````ts
 /**
- * Typed form: a generated trigger descriptor identifies the event —
+ * Wait mid-flow until a connector event fires, then continue with its payload —
+ * the typed form, where a generated trigger descriptor identifies the event:
  * `waitForEvent(EmailReceived, { where: { … } })`.
  */
 export declare function waitForEvent<W extends Record<string, string>>(descriptor: TriggerDescriptor<W, unknown>, opts?: TriggerOptions<W>): ActionSpec;
