@@ -277,9 +277,9 @@ Two RAG primitives ship in `uipath-llamaindex`. Pick by workflow shape:
 
 The query engine wraps `ContextGroundingRetriever` + your synthesizer internally — use the retriever directly when the workflow already has its own synthesis step.
 
-> **Always use these primitives — not raw `sdk.context_grounding.search()` / `search_async()`.** They return LlamaIndex `NodeWithScore` objects that plug into synthesizers and tools, and declare `index_name` + `folder_path` at one call site — the exact shape of the `index` binding entry (see [../lifecycle/bindings-reference.md](../lifecycle/bindings-reference.md)). `index` bindings have no virtual fallback: the index must exist in Orchestrator before `uip codedagent push`.
+> **Prefer using these primitives — not raw `sdk.context_grounding.search()` / `search_async()`.** They return LlamaIndex `NodeWithScore` objects that plug into synthesizers and tools, and declare `index_name` + `folder_path` at one call site — the exact shape of the `index` binding entry (see [../lifecycle/bindings-reference.md](../lifecycle/bindings-reference.md)). `index` bindings have no virtual fallback: the index must exist in Orchestrator before `uip codedagent push`.
 
-Both accept `index_name`, `folder_path` (or `folder_key`), and `number_of_results` (default 10). Pass `folder_path` whenever the index is not in the default folder resolved from your auth context. Instantiate both inside a `@step` — never at module level (same lazy-client rule as LLMs, § UiPathOpenAI above).
+Both accept `index_name`, `folder_path` (or `folder_key`), and `number_of_results` (default 10). Always pass `folder_path`, even when the index lives in the execution folder resolved from your auth context — omitting it can leave the `index` binding incorrectly applied. Instantiate both inside a `@step` — never at module level (same lazy-client rule as LLMs, § UiPathOpenAI above).
 
 #### ContextGroundingQueryEngine
 
