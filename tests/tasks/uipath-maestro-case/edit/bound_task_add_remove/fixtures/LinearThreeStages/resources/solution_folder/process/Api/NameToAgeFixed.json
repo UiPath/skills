@@ -1,0 +1,49 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "NameToAgeFixed",
+    "kind": "Process",
+    "type": "Api",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "kind": "Package",
+        "name": "NameToAgeFixed.api.NameToAgeFixed"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Api",
+      "name": "NameToAgeFixed",
+      "package": {
+        "name": "NameToAgeFixed.api.NameToAgeFixed",
+        "key": "NameToAgeFixed.api.NameToAgeFixed:1.0.3"
+      },
+      "packageName": "NameToAgeFixed.api.NameToAgeFixed",
+      "packageVersion": "1.0.3",
+      "entryPointUniqueId": "64342964-6ed0-4eea-b66c-706d500cf2d6",
+      "entryPointName": "content/Workflow.json",
+      "inputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\"\n    }\n  },\n  \"title\": \"Inputs\"\n}",
+      "outputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"EstimatedAge\": {\n      \"type\": \"integer\"\n    }\n  },\n  \"title\": \"Outputs\"\n}",
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "entryPoints": "[{\"UniqueId\":\"64342964-6ed0-4eea-b66c-706d500cf2d6\",\"Path\":\"content/Workflow.json\",\"DisplayName\":null,\"InputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"name\\\": {\\n      \\\"type\\\": \\\"string\\\"\\n    }\\n  },\\n  \\\"title\\\": \\\"Inputs\\\"\\n}\",\"OutputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"EstimatedAge\\\": {\\n      \\\"type\\\": \\\"integer\\\"\\n    }\\n  },\\n  \\\"title\\\": \\\"Outputs\\\"\\n}\",\"Type\":6,\"TargetRuntime\":null,\"ContentRoot\":null,\"DataVariation\":null,\"Id\":973522}]",
+      "tags": []
+    },
+    "locks": [],
+    "key": "504e0339-039c-4e2b-8f0a-39c7d137b394",
+    "files": []
+  }
+}
