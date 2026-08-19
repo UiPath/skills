@@ -11,8 +11,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_assertions import (  # noqa: E402
     BPMN_NS,
     UIPATH_NS,
+    assert_generated_project_scaffold,
     assert_has_shape,
-    assert_package_lifecycle,
     fail,
     load_bpmn,
     mapping_inputs,
@@ -61,7 +61,19 @@ def main() -> None:
 
     assert_has_shape(root, task.attrib["id"])
     start = one_element(root, "startEvent")
-    assert_package_lifecycle(PROJECT, BPMN_NAME, start.attrib["id"])
+    entry_point = start.find(
+        f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}entryPointId"
+    )
+    if entry_point is None or not entry_point.attrib.get("value"):
+        fail("manual start must declare uipath:entryPointId")
+    assert_generated_project_scaffold(
+        PROJECT,
+        "ScriptNormalizer",
+        BPMN_NAME,
+        start.attrib["id"],
+        entry_point_id=entry_point.attrib["value"],
+        expected_resource_count=0,
+    )
     print("OK: scriptTask uses JavaScript/v3 Jint-safe source and package lifecycle files")
 
 
