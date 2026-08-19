@@ -1,7 +1,9 @@
 task_id: skill-ixp-confirm-all-predictions-smoke
 description: >
   Smoke: agent confirms all predictions on a document as ground truth — the
-  no-`--fields` form bulk-confirms every predicted field in that document.
+  no-`--fields` form bulk-confirms every predicted field — and pins the reviewed
+  ModelVersion via `-m/--model-version` so a mid-review retrain can't stamp
+  drifted values (Rule 19).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -17,7 +19,8 @@ sandbox:
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, confirm all predictions on
-  document doc-abc-123 as ground truth.
+  document doc-abc-123 as ground truth. get-predictions reports these
+  predictions are from ModelVersion 7.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
@@ -40,7 +43,15 @@ success_criteria:
     description: "Agent did NOT scope the confirm with --fields (bulk-confirms all predicted fields)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b.*--fields)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b.*(?:--fields|-f)\b)[^\r\n]*$
     must_match: false
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "the SAME confirm call carries project + document + the reviewed model version (-m/--model-version 7) — Rule 19"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123)(?=.*(?:-m|--model-version)\s+["']?7\b).*)[^\r\n]*$
+    weight: 2.0
     pass_threshold: 1.0
