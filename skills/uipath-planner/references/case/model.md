@@ -149,7 +149,10 @@ Task-entry mode is exclusive — one mode, one rule, never combined:
 - Structure mirrors the mode in the stage's 2D `data.tasks`: a strict chain is consecutive single-task
   sets; parallel-after-predecessor siblings share one set. Never duplicate
   `selected-tasks-completed("<previous>")` to express simple order.
-- `selected-tasks-completed` selects only non-`adhoc` tasks in the SAME stage.
+- `selected-tasks-completed` selects tasks in the SAME stage. A **stage-exit** rule selects only
+  non-`adhoc` tasks — an `adhoc` task runs when a person launches it, so a stage exit keyed to one
+  may never fire. A **task-entry** rule may select an `adhoc` task; the gated task then waits for that
+  launch. `uip maestro case validate` accepts both (verified uip 1.199.0) — this is a design check.
 - A task with no entry condition never starts — validate accepts the omission silently.
 - Conditional-branch stages (mutually-exclusive tasks, one per outcome, all `Required: No`): add ONE
   required convergence task whose entry is an OR over every branch — one

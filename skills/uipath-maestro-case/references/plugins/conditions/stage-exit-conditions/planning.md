@@ -55,7 +55,7 @@ Allowed `ruleType` values depend on `marks-stage-complete`:
 | `selected-tasks-completed` | `selectedTasksIds` (comma-separated) |
 | `wait-for-connector` | connector fields (fills `uipath`); `conditionExpression` optional |
 
-Before planning `selected-tasks-completed`, verify the selected tasks are not ad-hoc/manual tasks. The frontend excludes ad-hoc tasks from selected-task dependency rules; if required routing depends on a human activity, model that human work as a regular `action` task instead of an `adhoc` task.
+Before planning `selected-tasks-completed`, verify no selected task is an `adhoc` task. An `adhoc` task runs only when a person launches it from the case app, so a stage exit keyed to one may never fire and the stage stalls with no error. Re-key the gate to a task in the same stage that the flow itself starts. `uip maestro case validate` accepts an adhoc selector (verified uip 1.199.0), so a clean validate is not evidence this holds.
 
 ## Ordering
 

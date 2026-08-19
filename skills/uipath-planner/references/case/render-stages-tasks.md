@@ -75,7 +75,7 @@ Grammar and exclusivity: [model.md § Task activation](model.md#sequencing--acti
 |---|---|
 | `current-stage-entered` | Ungated stage-started task. Never alongside event/adhoc/sequential rules |
 | `runs-sequentially` | The source states order (`then`, `after`, `before`, a dependency) — EVERY task in the ordered run, including the first |
-| `selected-tasks-completed("<Task>")` | True fan-in, branch convergence, condition-result routing, or a non-immediate dependency. Never for simple next-step order; never selects `adhoc` or cross-stage tasks |
+| `selected-tasks-completed("<Task>")` | True fan-in, branch convergence, condition-result routing, or a non-immediate dependency. Never for simple next-step order; never selects cross-stage tasks. May select an `adhoc` task here — the gated task then waits for someone to launch it |
 | `wait-for-connector` | Async connector callback; `IF` gates case state only ([variables.md](variables.md)) |
 | `sla-status-change(...)` | The `start-task` SLA response ([slas.md](slas.md)) — never alongside `current-stage-entered` |
 | `adhoc` | User-launched from the Case App; `Required: No` |
