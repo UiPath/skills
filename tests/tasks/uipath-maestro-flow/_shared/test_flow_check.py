@@ -414,11 +414,14 @@ def test_assert_outputs_contain_fails_when_missing():
 
 @pytest.fixture
 def _no_bound_inputs():
-    """Isolate the run_debug input stash — it is process-global state."""
-    saved = flow_check._LAST_DEBUG_INPUT_IDS
+    """Isolate the run_debug stashes — they are process-global state."""
+    saved_ids = flow_check._LAST_DEBUG_INPUT_IDS
+    saved_dir = flow_check._LAST_DEBUG_PROJECT_DIR
     flow_check._LAST_DEBUG_INPUT_IDS = set()
+    flow_check._LAST_DEBUG_PROJECT_DIR = None
     yield
-    flow_check._LAST_DEBUG_INPUT_IDS = saved
+    flow_check._LAST_DEBUG_INPUT_IDS = saved_ids
+    flow_check._LAST_DEBUG_PROJECT_DIR = saved_dir
 
 
 def _globals_payload(mapping):
@@ -479,11 +482,16 @@ def test_declared_input_echo_does_not_satisfy_match(tmp_path, _no_bound_inputs):
     )
     payload = _globals_payload({"cities": ["Seattle"], "report": "no data"})
 
-    # Without the source signal the echo still slips through...
+    # With no project known at all, key shape and the bind-stash see nothing...
     assert_outputs_contain(payload, "Seattle")
-    # ...with it, the vacuous match is reported.
+    # ...an explicit project_dir reports the vacuous match...
     with pytest.raises(SystemExit, match="INPUT ECHO"):
         assert_outputs_contain(payload, "Seattle", project_dir=str(proj))
+    # ...and so does the project run_debug resolved, with no opt-in at the call
+    # site. This is what closes the defaultValue case suite-wide.
+    flow_check._LAST_DEBUG_PROJECT_DIR = str(proj)
+    with pytest.raises(SystemExit, match="INPUT ECHO"):
+        assert_outputs_contain(payload, "Seattle")
 
 
 def test_real_output_still_passes_when_it_also_appears_in_input(_no_bound_inputs):

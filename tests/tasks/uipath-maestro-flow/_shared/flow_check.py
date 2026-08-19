@@ -61,6 +61,12 @@ _LAST_DEBUG_RAW: str | None = None
 # :func:`assert_outputs_contain`.
 _LAST_DEBUG_INPUT_IDS: set[str] = set()
 
+# Project dir :func:`run_debug` resolved for the most recent run. Stashed so the
+# source-declared `direction:"in"` signal works automatically instead of needing
+# every call site to opt in — and so the lookup is scoped to the project that
+# actually ran, never a bare glob from an arbitrary CWD.
+_LAST_DEBUG_PROJECT_DIR: str | None = None
+
 
 # A `uip maestro flow debug` run can die on a transient server-side error — a
 # gateway timeout / 5xx while polling the debug instance, which the CLI reports
@@ -121,11 +127,13 @@ def run_debug(
         cmd.extend(["--inputs", json.dumps(inputs)])
     for var_id, local_path in (attachments or {}).items():
         cmd.extend(["--attachment", f"{var_id}={local_path}"])
-    global _LAST_DEBUG_RAW, _LAST_DEBUG_INPUT_IDS
-    # Record what we bound as input so output assertions can discount echoes.
+    global _LAST_DEBUG_RAW, _LAST_DEBUG_INPUT_IDS, _LAST_DEBUG_PROJECT_DIR
+    # Record what we bound as input, and where the project lives, so output
+    # assertions can discount echoes of our own inputs.
     _LAST_DEBUG_INPUT_IDS = {str(k) for k in (inputs or {})} | {
         str(k) for k in (attachments or {})
     }
+    _LAST_DEBUG_PROJECT_DIR = project_dir
     for attempt in range(retries):
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         _LAST_DEBUG_RAW = r.stdout
@@ -456,12 +464,13 @@ def _declared_input_global_keys(
        ids it passed via ``--inputs`` / ``--attachment``. Those are inputs by
        construction, and this is exact — no parsing, no guessing. It covers the
        plain (non-trigger) inputs that signal 1 cannot see.
-    3. **Source declaration** (only when ``project_dir`` is given). Reads that
-       project's first ``.flow`` and collects ``variables.globals[].id`` where
-       ``direction == "in"``. Catches inputs the checker never passed — an ``in``
-       global with a ``defaultValue`` still gets a runtime value and still
-       echoes. Opt-in because it needs a known project; parse failures degrade
-       to signals 1-2 rather than erroring.
+    3. **Source declaration.** Reads the project's first ``.flow`` and collects
+       ``variables.globals[].id`` where ``direction == "in"``. Catches inputs the
+       checker never passed — an ``in`` global with a ``defaultValue`` still gets
+       a runtime value and still echoes. The project defaults to the one
+       :func:`run_debug` resolved, so this needs no per-call-site opt-in;
+       ``project_dir`` overrides it for a caller holding a payload from
+       elsewhere. Parse failures degrade to signals 1-2 rather than erroring.
     """
     variables = _get_ci(payload, "variables", "Variables") or {}
     keys = list((_get_ci(variables, "globals", "Globals") or {}).keys())
@@ -476,6 +485,7 @@ def _declared_input_global_keys(
     # Signals 2 and 3 — ids known to be inputs, matched to keys by exact name or
     # by the leaf of a `<trigger>.output.<id>` key.
     declared = {str(i).lower() for i in _LAST_DEBUG_INPUT_IDS}
+    project_dir = project_dir or _LAST_DEBUG_PROJECT_DIR
     if project_dir:
         try:
             flows = sorted(
@@ -546,8 +556,9 @@ def assert_outputs_contain(
     previously passing vacuously and the task needs a real output assertion,
     usually :func:`assert_named_output_contains`.
 
-    ``project_dir`` widens the subtraction to inputs this checker never passed —
-    an ``in`` global with a ``defaultValue`` also echoes. ``allow_input_echo=True``
+    Inputs this checker never passed are covered too — an ``in`` global with a
+    ``defaultValue`` also echoes — by reading the project :func:`run_debug`
+    resolved; ``project_dir`` overrides that. ``allow_input_echo=True``
     restores the old whole-payload behavior for the rare check that legitimately
     grades a round-trip; prefer naming the output variable instead, so the
     subtraction is never a reason to weaken an assertion elsewhere.
