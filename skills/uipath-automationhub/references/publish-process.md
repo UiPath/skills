@@ -150,7 +150,7 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
 
 Check every attached `document_id` appears (file-backed entries also carry a `file_id`). If one is missing, report it as failed — never report a document as attached without seeing it in this list.
 
-Then summarize with **deep links straight to the created process and its documents** — the 201 response's `data.process_slug` is the URL segment (URL-encode it). Emit these links only after the verification read-back above succeeded:
+Then summarize. The report **MUST end with both View deep links** — they are not optional; a publish report without them is incomplete. The URL segment is `process_slug`: take it from the 201's `data.process_slug`, and **if you no longer have it, fetch it** — `GET /automations/{process_id}` returns the record with `process_slug`. URL-encode it. Emit the links only after the verification read-back above succeeded:
 
 ```
 Published to Automation Hub:
