@@ -43,8 +43,12 @@ initial_prompt: |
   I want a draft design document I can review before we commit to anything —
   capture the design and stop there. We'll finalize and build it later, so don't
   polish or validate it yet. Nothing built, no project scaffolding, no tenant
-  lookups. Write the draft out section by section as you go rather than composing
-  the whole document in one pass.
+  lookups.
+
+  Keep it compact: about two tasks per phase, and one short rationale line per
+  stage, task and rule. Create the draft file after the first section, then extend
+  it one section at a time — a separate write per section, not one pass over the
+  whole document.
 
 success_criteria:
   - type: run_command
