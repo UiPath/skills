@@ -5,10 +5,14 @@ The CLI-invocation criteria in the YAML prove the promotion *sequence* was
 typed. This grades what it left behind — locally and on the tenant — which is
 where the silent failure modes live:
 
-  1. **Package naming.** `uip solution pack` emits `<NAME>_<VERSION>.zip`
-     (underscore). It was `<NAME>.<VERSION>.zip` until 2026-08-06 (commit
-     6e585f64f). An agent working from stale guidance builds the right archive
-     but hands `publish` a path that does not exist.
+  1. **The packed archive never became a package.** `uip solution pack` emits
+     `<NAME>_<VERSION>.zip` (underscore) since 2026-08-06 (commit 6e585f64f);
+     an agent working from stale guidance builds the right archive but hands
+     `publish` a dot-separated path that does not exist, so nothing uploads.
+     Graded against the tenant, not the local filesystem: agents legitimately
+     stage the archive outside the workspace (e.g. /tmp), where artifact
+     collection never sees it — publish is the step that consumes the archive,
+     so the tenant-side package record is the proof the handoff worked.
   2. **The promoted agent is not the one that shipped.** The solution arrives
      pre-built; re-scaffolding or rewriting it promotes something the owner did
      not ask for.
@@ -62,35 +66,73 @@ def find_solution_dir(name: str) -> Path:
     fail(f"Could not locate the {name} solution directory under {CWD}")
 
 
-def check_package_naming(name: str, version: str) -> None:
-    """The packed archive exists and uses the underscore convention."""
+def _row_version(row: dict) -> str | None:
+    for key in ("PackageVersion", "Version", "packageVersion", "version"):
+        value = row.get(key)
+        if value:
+            return str(value)
+    return None
+
+
+def _local_zip_hint(name: str, version: str) -> str:
+    """Best-effort diagnostic from whatever archives artifact collection kept.
+
+    Never grades — the archive may legitimately live outside the workspace
+    (e.g. /tmp) and be invisible here. Only sharpens the failure message when a
+    local zip reveals what went wrong.
+    """
     zips = [
         p
         for p in CWD.rglob("*.zip")
         if ".venv" not in p.parts and "node_modules" not in p.parts
     ]
-    if not zips:
-        fail(
-            f"No .zip produced anywhere under {CWD} — `uip solution pack` did not "
-            f"emit an archive"
-        )
-
-    expected = f"{name}_{version}.zip"
-    if any(p.name == expected for p in zips):
-        print(f"OK: packaged archive {expected} uses the canonical <NAME>_<VERSION>.zip naming")
-        return
-
-    # Distinguish the stale dot-separated form from an unrelated archive so the
-    # diagnostic points at the actual mistake.
     dotted = f"{name}.{version}.zip"
+    expected = f"{name}_{version}.zip"
     names = sorted(p.name for p in zips)
     if dotted in names:
-        fail(
-            f"Archive is named {dotted!r} (dot-separated). `uip solution pack` emits "
-            f"{expected!r} since 2026-08-06 — publishing the dotted path fails with a "
-            f"missing-file error."
+        return (
+            f" A dot-separated {dotted!r} exists locally — `uip solution pack` emits "
+            f"{expected!r} since 2026-08-06, and publishing the dotted path fails "
+            f"with a missing-file error."
         )
-    fail(f"Expected a packaged archive named {expected!r}; found {names!r}")
+    if expected in names:
+        return f" The archive {expected!r} exists locally but was never published."
+    return ""
+
+
+def check_package_published(name: str, version: str, deployments: list | None) -> None:
+    """The packed archive was published: the tenant holds a package record.
+
+    Grades the uploaded artifact, not the local filesystem — agents legitimately
+    stage the packed .zip outside the workspace (e.g. /tmp), where artifact
+    collection never sees it. Publish is the step that consumes the archive, so
+    a deployment record referencing the package is proof the pack→publish
+    handoff worked (a stale dot-separated path makes publish fail with a
+    missing-file error and leaves no record). The agent may delete the package
+    after uninstall, so `packages list` is not reliable evidence; the deployment
+    tombstone survives and carries the package name.
+    """
+    if deployments is None:
+        print("SKIP: could not query deployments — published package unverified")
+        return
+
+    ours = [i for i in deployments if i.get("PackageName") == name]
+    if not ours:
+        fail(
+            f"No deployment on the tenant references package {name!r} — the packed "
+            f"archive was never published and deployed.{_local_zip_hint(name, version)}"
+        )
+
+    versions = {v for v in (_row_version(i) for i in ours) if v}
+    if versions and version not in versions:
+        fail(
+            f"Package {name!r} was deployed at version(s) {sorted(versions)!r}, "
+            f"expected {version!r} — the wrong cut was promoted"
+        )
+    if not versions:
+        print(f"NOTE: deployment records carry no version field — {version} unverified")
+
+    print(f"OK: package {name} {version} was published and referenced by a deployment")
 
 
 def check_solution_registers_agent(solution_dir: Path, name: str) -> None:
@@ -189,7 +231,7 @@ def _deploy_list() -> list | None:
     return [i for i in items if isinstance(i, dict)]
 
 
-def check_deployment_landed_and_removed(name: str) -> None:
+def check_deployment_landed_and_removed(name: str, items: list | None) -> None:
     """The package reached the tenant as a deployment, and that deployment is gone.
 
     Grades the *outcome*, not merely that the commands were invoked — `deploy run`
@@ -200,7 +242,6 @@ def check_deployment_landed_and_removed(name: str) -> None:
     `OperationStatus: Successful`), so a tombstone is the expected end state. A
     row in any other state is a deployment still standing on the tenant.
     """
-    items = _deploy_list()
     if items is None:
         return
 
@@ -234,10 +275,11 @@ def check_deployment_landed_and_removed(name: str) -> None:
 def main() -> None:
     name, version = load_seed()
     solution_dir = find_solution_dir(name)
-    check_package_naming(name, version)
+    deployments = _deploy_list()
+    check_package_published(name, version, deployments)
     check_solution_registers_agent(solution_dir, name)
     check_shipped_agent_intact(solution_dir)
-    check_deployment_landed_and_removed(name)
+    check_deployment_landed_and_removed(name, deployments)
     print("PASS: solution promotion outcome verified")
 
 
