@@ -58,6 +58,20 @@ if [ -z "$access_token" ] || [ "$access_token" = "null" ]; then
     exit 1
 fi
 
+# Register the MINTED tokens as masked values. GitHub masks the configured
+# `secrets.*` (CLIENT_SECRET, CE_PASSWORD, ...) automatically, but these two are
+# derived at runtime from the token endpoint, so nothing masks them by default —
+# an accidental echo anywhere downstream (a `set -x`, a tool that dumps its env,
+# a verbose HTTP trace) would print a live bearer token in plaintext. Gated on
+# GITHUB_ACTIONS: outside Actions the ::add-mask:: command is not interpreted, so
+# emitting it would itself print the token.
+if [ -n "${GITHUB_ACTIONS:-}" ]; then
+    echo "::add-mask::${access_token}"
+    if [ -n "$refresh_token" ] && [ "$refresh_token" != "null" ]; then
+        echo "::add-mask::${refresh_token}"
+    fi
+fi
+
 umask 077
 tmp="${AUTH_FILE}.tmp"
 cat > "$tmp" <<EOF
