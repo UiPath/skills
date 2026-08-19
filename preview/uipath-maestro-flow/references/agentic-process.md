@@ -1,6 +1,6 @@
 # Agentic Process
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`agenticProcess()`](api.md#agenticprocess-function).*
+*Exact signatures, fields, and defaults: [`agenticProcess()`](api.md#agenticprocess-function).*
 
 Invoke a deployed Maestro agentic process.
 

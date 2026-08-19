@@ -1,6 +1,6 @@
 # Agent
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`agent()`](api.md#agent-function).*
+*Exact signatures, fields, and defaults: [`agent()`](api.md#agent-function).*
 
 Start a coded or low-code agent and wait for its output. The resource may be
 published in Orchestrator or registered as a sibling project in this solution.
