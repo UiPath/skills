@@ -53,6 +53,14 @@ from typing import Any, Iterable, Sequence
 # checker saw — which is otherwise ephemeral and unrecoverable post-run.
 _LAST_DEBUG_RAW: str | None = None
 
+# Variable ids the most recent :func:`run_debug` bound as INPUTS (via ``--inputs``
+# / ``--attachment``). Stashed because the runtime returns every global — `in` and
+# `out` alike — in one ``variables.globals`` dict with no direction marker, so
+# this is the only exact way to tell a result from an echo of what we just fed
+# in. Consumed by :func:`_declared_input_global_keys`; see the input-echo note on
+# :func:`assert_outputs_contain`.
+_LAST_DEBUG_INPUT_IDS: set[str] = set()
+
 
 # A `uip maestro flow debug` run can die on a transient server-side error — a
 # gateway timeout / 5xx while polling the debug instance, which the CLI reports
@@ -113,7 +121,11 @@ def run_debug(
         cmd.extend(["--inputs", json.dumps(inputs)])
     for var_id, local_path in (attachments or {}).items():
         cmd.extend(["--attachment", f"{var_id}={local_path}"])
-    global _LAST_DEBUG_RAW
+    global _LAST_DEBUG_RAW, _LAST_DEBUG_INPUT_IDS
+    # Record what we bound as input so output assertions can discount echoes.
+    _LAST_DEBUG_INPUT_IDS = {str(k) for k in (inputs or {})} | {
+        str(k) for k in (attachments or {})
+    }
     for attempt in range(retries):
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         _LAST_DEBUG_RAW = r.stdout
@@ -392,18 +404,102 @@ def collect_outputs(payload: dict) -> list[Any]:
     runtime (as a name→value dict). ``variables.globalVariables`` is the
     SDK-typed array shape; in practice the runtime populates the dict form.
     Both are walked to be safe.
+
+    NOTE: ``variables.globals`` holds every global — ``in`` as well as ``out``
+    — so this includes the flow's own INPUT values. That is deliberate for
+    callers doing a "did the run produce anything at all" check, but it makes
+    the set unsafe for grading a needle that is also an input. See
+    :func:`assert_outputs_contain`, which subtracts the declared inputs.
     """
+    return _global_leaves(payload)
+
+
+def _global_leaves(payload: dict, *, skip_keys: Iterable[str] = ()) -> list[Any]:
+    """Flattened global + element-output leaves, optionally skipping globals by
+    key. ``skip_keys`` is how :func:`assert_outputs_contain` drops declared
+    inputs; element outputs are never skipped (they are genuine node results)."""
+    skip = {str(k).lower() for k in skip_keys}
     out: list[Any] = []
     variables = _get_ci(payload, "variables", "Variables") or {}
-    for val in (_get_ci(variables, "globals", "Globals") or {}).values():
+    for key, val in (_get_ci(variables, "globals", "Globals") or {}).items():
+        if str(key).lower() in skip:
+            continue
         out.extend(_leaves(val))
     for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []:
+        name = str(_get_ci(v, "id", "Id", "name", "Name") or "")
+        if name.lower() in skip:
+            continue
         value = _get_ci(v, "value", "Value")
         if value is not None:
             out.extend(_leaves(value))
     for e in _get_ci(variables, "elements", "Elements") or []:
         out.extend(_leaves(_get_ci(e, "outputs", "Outputs") or {}))
     return out
+
+
+def _declared_input_global_keys(
+    payload: dict, *, project_dir: str | None = None
+) -> set[str]:
+    """Return the ``variables.globals`` keys that hold INPUT values, not results.
+
+    Three signals, unioned, because no single one is complete. All are cheap:
+    none of them globs the filesystem, which matters because the module is
+    imported from an arbitrary CWD (at a repo root, ``**/*.flow`` matches
+    hundreds of unrelated flows through a ``plugins/`` symlink loop and would
+    read whichever one sorted first).
+
+    1. **Key shape.** A trigger-scoped input is keyed
+       ``<triggerNodeId>.output.<varId>`` at runtime — e.g.
+       ``start.output.inputDoc``. Outputs are keyed by bare id (``fileName``),
+       so this shape is unambiguously an input.
+    2. **What the checker itself bound.** :func:`run_debug` stashes the variable
+       ids it passed via ``--inputs`` / ``--attachment``. Those are inputs by
+       construction, and this is exact — no parsing, no guessing. It covers the
+       plain (non-trigger) inputs that signal 1 cannot see.
+    3. **Source declaration** (only when ``project_dir`` is given). Reads that
+       project's first ``.flow`` and collects ``variables.globals[].id`` where
+       ``direction == "in"``. Catches inputs the checker never passed — an ``in``
+       global with a ``defaultValue`` still gets a runtime value and still
+       echoes. Opt-in because it needs a known project; parse failures degrade
+       to signals 1-2 rather than erroring.
+    """
+    variables = _get_ci(payload, "variables", "Variables") or {}
+    keys = list((_get_ci(variables, "globals", "Globals") or {}).keys())
+    keys += [
+        str(_get_ci(v, "id", "Id", "name", "Name") or "")
+        for v in _get_ci(variables, "globalVariables", "GlobalVariables") or []
+    ]
+
+    # Signal 1 — trigger-scoped key shape.
+    inputs = {k for k in keys if re.match(r"^[^.]+\.output\.[^.]+$", str(k))}
+
+    # Signals 2 and 3 — ids known to be inputs, matched to keys by exact name or
+    # by the leaf of a `<trigger>.output.<id>` key.
+    declared = {str(i).lower() for i in _LAST_DEBUG_INPUT_IDS}
+    if project_dir:
+        try:
+            flows = sorted(
+                glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True)
+            )
+            if flows:
+                with open(flows[0]) as f:
+                    flow = json.load(f)
+                src = (
+                    flow.get("variables")
+                    or flow.get("workflow", {}).get("variables")
+                    or {}
+                )
+                declared |= {
+                    str(v["id"]).lower()
+                    for v in (src.get("globals") or [])
+                    if v.get("direction") == "in" and v.get("id")
+                }
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+    for k in keys:
+        if str(k).lower() in declared or str(k).rsplit(".", 1)[-1].lower() in declared:
+            inputs.add(k)
+    return inputs
 
 
 def _leaves(v: Any):
@@ -418,24 +514,71 @@ def _leaves(v: Any):
 
 
 def assert_outputs_contain(
-    payload: dict, needles: str | Sequence[str], *, require_all: bool = True
+    payload: dict,
+    needles: str | Sequence[str],
+    *,
+    require_all: bool = True,
+    allow_input_echo: bool = False,
+    project_dir: str | None = None,
 ) -> None:
-    """Assert the stringified outputs contain the given needle(s).
+    """Assert the stringified outputs contain the given needle(s), IGNORING the
+    flow's own input values.
 
     ``require_all=True`` (default): every needle must appear.
     ``require_all=False``: at least one needle must appear.
+
+    Input echoes do not count (MST — see below). ``variables.globals`` carries
+    every global, ``in`` included, and :func:`_leaves` flattens nested objects —
+    so a needle that is also an input is matched by the input's own value and
+    the assertion becomes a tautology, passing regardless of what the flow
+    computed. Observed live on the file-attachment task: binding
+    ``--attachment inputDoc=<random>.txt`` puts the whole attachment object in
+    ``globals``, so ``assert_outputs_contain(payload, "<random>.txt")`` passed a
+    flow whose End node mapped the output to a hardcoded ``"sample-report.txt"``::
+
+        {"start.output.inputDoc": {"ID": ..., "FullName": "evidence-<rand>.txt", ...},
+         "fileName": "sample-report.txt"}
+
+    Declared inputs are therefore subtracted before matching (see
+    :func:`_declared_input_global_keys`). When a needle is absent from the
+    outputs but WOULD have matched an input, the failure says so explicitly
+    rather than reporting a bare "missing" — that case means the check was
+    previously passing vacuously and the task needs a real output assertion,
+    usually :func:`assert_named_output_contains`.
+
+    ``project_dir`` widens the subtraction to inputs this checker never passed —
+    an ``in`` global with a ``defaultValue`` also echoes. ``allow_input_echo=True``
+    restores the old whole-payload behavior for the rare check that legitimately
+    grades a round-trip; prefer naming the output variable instead, so the
+    subtraction is never a reason to weaken an assertion elsewhere.
     """
     if isinstance(needles, str):
         needles = [needles]
-    haystack = _stringify(collect_outputs(payload))
+    all_leaves = _stringify(collect_outputs(payload))
+    if allow_input_echo:
+        haystack = all_leaves
+        input_keys: set[str] = set()
+    else:
+        input_keys = _declared_input_global_keys(payload, project_dir=project_dir)
+        haystack = _stringify(_global_leaves(payload, skip_keys=input_keys))
     present = [n for n in needles if n.lower() in haystack]
     missing = [n for n in needles if n.lower() not in haystack]
     ok = len(missing) == 0 if require_all else len(present) > 0
     if not ok:
         mode = "all of" if require_all else "any of"
+        echo_only = [n for n in missing if n.lower() in all_leaves]
+        detail = ""
+        if echo_only:
+            detail = (
+                f"\nINPUT ECHO: {echo_only} appear ONLY in the flow's input globals "
+                f"{sorted(input_keys)}, not in its outputs. Before this guard existed "
+                f"the match was satisfied by the input itself, so this check passed "
+                f"vacuously. Grade the real output instead — "
+                f"assert_named_output_contains(payload, '<outVarId>', ...)."
+            )
         _fail_with_capture(
             f"Outputs missing {mode} {list(needles)}; present={present}; "
-            f"missing={missing}\nOutputs: {haystack[:1000]}"
+            f"missing={missing}\nOutputs (inputs excluded): {haystack[:1000]}{detail}"
         )
 
 
