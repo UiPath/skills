@@ -144,7 +144,7 @@ export declare function hitl(inputs: HitlInputs): ActionSpec;
 
 Behavior and worked examples: [hitl.md](hitl.md).
 
-Worked example: `example-eval/GallerySubmission.flow.ts`.
+Worked example: `examples/GallerySubmission.flow.ts`.
 
 ## summarize (function)
 
