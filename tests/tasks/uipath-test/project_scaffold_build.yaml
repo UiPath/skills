@@ -1,37 +1,43 @@
-# A build-mode task that owns a whole scratch PROJECT rather than objects inside
-# a shared one. `project create` is the only `uip tm` verb that produces its own
-# collision domain, so this task cannot disturb the CLAIM / HEALTH / BANK fixture
-# state the EVFX- contract protects.
+# Owns a throwaway PROJECT for the whole scenario: the agent creates it, wires
+# it, proves it is execution-ready, then deletes it. Nothing in CLAIM, HEALTH or
+# BANK is read or written, so this task cannot disturb the fixture state the
+# EVFX- contract protects, and it leaves no tenant residue behind.
 #
-# The graded surface is `project create` + `project set-default-folder`, which no
-# other task under tests/tasks/uipath-test/ asserts. Both are prerequisites for
-# every `run` verb (SKILL.md Critical Rule 10), so a skill that cannot wire a
-# fresh project produces a project nothing can execute against.
+# Cleanup is part of the graded scenario rather than a hook because this
+# framework has no post_run — tests/README.md: "There is no post_run. The agent
+# creates and deletes its own ephemeral resources as part of the test scenario."
+# Grading the delete is therefore both the cleanup mechanism AND coverage of
+# `project delete`, which no other task asserts.
+#
+# The graded surface — `project create`, `project set-default-folder`,
+# `project delete` — is asserted by no other task under tests/tasks/uipath-test/.
+# All three gate `run`: SKILL.md Critical Rule 10 makes the default folder a
+# precondition of every execution, so a skill that cannot wire a fresh project
+# produces a project nothing can execute against.
 task_id: skill-test-project-scaffold-build
 description: >
-  Integration test: agent uses the uipath-test skill to stand up a new Test
-  Manager project and wire it so test sets can actually execute. Asserts that
-  the agent (a) checks login status with --output json, (b) creates the project
-  with `project create` carrying both --name and --project-key, (c) discovers a
-  real Orchestrator folder with `uip or folders list` instead of inventing a
-  folder key, and (d) pins that folder as the project default with
-  `project set-default-folder`. The skill — not the prompt — must teach that a
-  freshly created project carries no default folder, that folder keys come from
-  Orchestrator rather than Test Manager, and that every call passes
-  --output json.
+  Integration test: agent uses the uipath-test skill to provision a Test Manager
+  project end-to-end and tear it down again. Asserts that the agent (a) checks
+  login status with --output json, (b) creates the project with `project create`
+  carrying both --name and --project-key, (c) discovers a real Orchestrator
+  folder with `uip or folders list` instead of inventing a folder key,
+  (d) pins that folder as the project default with `project set-default-folder`,
+  and (e) deletes the project with --yes as the final step, under the
+  authorization the prompt grants. The skill — not the prompt — must teach that
+  a freshly created project carries no default folder, that folder keys come
+  from Orchestrator rather than Test Manager, and that delete requires --yes.
 tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:test-case]
 
 run_limits:
-  expected_turns: 14
-  max_turns: 30
+  expected_turns: 16
+  max_turns: 35
 
-# This task's DELIVERABLE is a project, so its output is scratch, not a fixture.
-# The sweep runs in PRE_run and spares anything stamped with today's date: two
-# models run the nightly concurrently, and a post_run sweep of the whole
-# EVFX-SCAFFOLD- prefix would delete the other run's project while it was still
-# working. Clearing only earlier days bounds growth to a single day's runs
-# without either run touching the other's output — the same reasoning as
-# organize_testcases_into_testsets.
+# Belt-and-braces only: the scenario deletes its own project, so this sweep
+# should find nothing. It exists for the run that dies between create and
+# delete, which would otherwise strand a project on the tenant forever. It
+# spares anything stamped with today's date because two models run the nightly
+# concurrently, and a whole-prefix sweep would delete the other run's project
+# while it was still working.
 pre_run:
   - command: |
       python3 - <<'PYEOF'
@@ -58,22 +64,26 @@ pre_run:
               continue
           call("tm", "project", "delete", "--project-key", key, "--yes")
           removed += 1
-      print(f"CLEANUP: removed {removed} {PREFIX}* project(s) from earlier days")
+      print(f"ORPHAN SWEEP: removed {removed} stranded {PREFIX}* project(s) from earlier days")
       PYEOF
     timeout: 180
 
 initial_prompt: |
-  Stand up a brand-new Test Manager project for a payments regression effort,
-  and leave it in a state where I can immediately run test sets against it.
+  I want to dry-run our Test Manager provisioning before I do it for real.
+  Create a throwaway project, get it to the point where I could immediately run
+  test sets against it, confirm it reached that state, and then remove it again
+  so nothing is left behind.
 
-  Name the project `EVFX-SCAFFOLD-<STAMP>-<TAG>`, where <STAMP> is the current
-  UTC date and time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase hex
-  characters you generate once for this session. Use a short uppercase project
-  key of the form `EVSC` followed by 4 uppercase hex characters. The random tag
-  and key suffix matter: another session may start in the very same second, and
-  a timestamp alone would collide.
+  Name it `EVFX-SCAFFOLD-<STAMP>-<TAG>`, where <STAMP> is the current UTC date
+  and time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase hex characters you
+  generate once for this session. Use a project key of `EVSC` followed by 4
+  uppercase hex characters. The random tag and key suffix matter: another
+  session may start in the very same second, and a timestamp alone would
+  collide. Do not reuse or extend any existing project.
 
-  Do not reuse or extend any existing project.
+  I authorize you to delete this project and everything inside it when you are
+  done. Do not ask me to confirm the deletion — you already have my approval for
+  this exact project. Deleting it is the final required step.
 
 success_criteria:
   - type: command_executed
@@ -101,11 +111,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent pinned the discovered folder as the project default (Critical Rule #10 prerequisite for any later run)"
+    description: "Agent pinned the discovered folder as the project default (Critical Rule #10 precondition for any run)"
     tool_name: "Bash"
     command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--folder-key\s+\S)uip\s+tm\s+project\s+set-default-folder\b'
     min_count: 1
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted its throwaway project with --yes, leaving no tenant residue (Critical Rule #6)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*(--yes|-y)\b)uip\s+tm\s+project\s+delete\b'
+    min_count: 1
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed

@@ -1,41 +1,55 @@
 # Designs a MULTI-SCOPE custom field — one definition visible on Requirement,
-# TestCase and TestSet at once, via the variadic `--scope-list`. That form is
-# mutually exclusive with `--object-type` and is asserted by no other task:
-# customfield_definition_crud_smoke grades the single-scope `--object-type`
-# path, and customfield_population_integration grades the per-object label and
-# value ROWS rather than the definition.
+# TestCase and TestSet at once, via the variadic `--scope-list` — inside a
+# throwaway project the agent creates and then deletes. Nothing in CLAIM, HEALTH
+# or BANK is read or written, so these definitions cannot be confused with the
+# "Eval Reviewer"/"Eval Risk" fields the HEALTH tasks own, and no tenant residue
+# survives the run.
+#
+# Cleanup is in-scenario because this framework has no post_run (tests/README.md:
+# "There is no post_run. The agent creates and deletes its own ephemeral
+# resources as part of the test scenario"). Deleting the project removes the
+# definition with it.
+#
+# `--scope-list` is mutually exclusive with `--object-type` and is asserted by no
+# other task: customfield_definition_crud_smoke grades the single-scope
+# `--object-type` create → list → rename → delete lifecycle, and
+# customfield_population_integration grades the per-object label and value ROWS
+# rather than the definition. Project creation is deliberately NOT graded here —
+# that surface belongs to project_scaffold_build.
 #
 # The failure this catches is a skill that only knows the single-scope shape and
-# so creates three separate fields with the same name. That looks correct in the
-# CLI output and is wrong in the product: three unrelated definitions cannot be
-# reported on together, which is the entire reason to scope one field across
+# so creates three separate definitions with the same name. That looks correct in
+# the CLI output and is wrong in the product: three unrelated definitions cannot
+# be reported on together, which is the entire reason to scope one field across
 # three object types.
 task_id: skill-test-customfield-schema-multiscope-build
 description: >
   Integration test: agent uses the uipath-test skill to design one custom field
-  definition scoped across Requirement, TestCase and TestSet in the HEALTH
-  project. Asserts that the agent (a) checks login status with --output json,
-  (b) creates a SINGLE definition using the variadic `--scope-list` rather than
-  three single-scope definitions, (c) supplies --value-hints and --default-value
-  so the field is usable by the people filling it in, and (d) verifies the
-  result with `customfield get`. The skill — not the prompt — must teach that
-  --scope-list and --object-type are mutually exclusive, that --data-type accepts
-  only Text or Label, and that the object-type values are case-sensitive
-  PascalCase.
+  definition scoped across Requirement, TestCase and TestSet, inside a throwaway
+  project it creates and deletes. Asserts that the agent (a) checks login status
+  with --output json, (b) creates a SINGLE definition using the variadic
+  `--scope-list` rather than three single-scope definitions, (c) supplies
+  --value-hints and --default-value so the field is usable by the people filling
+  it in, (d) verifies the result with `customfield get` instead of trusting the
+  create output, and (e) deletes the project with --yes. The skill — not the
+  prompt — must teach that --scope-list and --object-type are mutually
+  exclusive, that --data-type accepts only Text or Label, and that the
+  object-type values are case-sensitive PascalCase.
 tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:test-case]
 
 run_limits:
-  expected_turns: 14
-  max_turns: 30
+  expected_turns: 18
+  max_turns: 38
 
-# The definitions this task creates are its deliverable — scratch, not fixtures,
-# and nothing else reads them. Swept in PRE_run sparing today's stamp so two
-# concurrent nightly models never delete each other's field mid-run.
+# Belt-and-braces only: the scenario deletes its own project. This exists for
+# the run that dies mid-scenario, which would otherwise strand a project.
+# Spares today's stamp so concurrent nightly models never delete each other's
+# work-in-progress.
 pre_run:
   - command: |
       python3 - <<'PYEOF'
       import json, subprocess, datetime
-      P, PREFIX = "HEALTH", "EVFX-SCHEMA-"
+      PREFIX = "EVFX-SCHEMA-"
       today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
 
       def call(*a):
@@ -46,33 +60,40 @@ pre_run:
           except Exception:
               return {}
 
-      fields = call("tm", "customfield", "list", "--project-key", P,
-                    "--filter", PREFIX).get("Data") or []
-      stale = []
-      for f in fields:
-          name = f.get("Name") or ""
+      projects = call("tm", "project", "list", "--filter", PREFIX).get("Data") or []
+      removed = 0
+      for p in projects:
+          name = p.get("Name") or ""
           if not name.startswith(PREFIX) or name.startswith(PREFIX + today):
               continue
-          fid = f.get("Id")
-          if fid:
-              stale.append(fid)
-      if stale:
-          call("tm", "customfield", "delete", "--project-key", P, "--field-ids", *stale)
-      print(f"CLEANUP: removed {len(stale)} {PREFIX}* custom field definition(s) from earlier days")
+          key = p.get("ProjectKey") or p.get("Key")
+          if not key:
+              continue
+          call("tm", "project", "delete", "--project-key", key, "--yes")
+          removed += 1
+      print(f"ORPHAN SWEEP: removed {removed} stranded {PREFIX}* project(s) from earlier days")
       PYEOF
     timeout: 180
 
 initial_prompt: |
-  In the HEALTH project I need one custom field that our auditors can fill in on
+  I want to trial a custom field layout before rolling it out. In a throwaway
+  project of your own, set up one field that our auditors can fill in on
   requirements, on test cases and on test sets — the same field on all three, so
   I can report across them together. It should hold free text, suggest the
   accepted values to whoever is filling it in, and start out with a sensible
-  default.
+  default. Confirm afterwards that the field really exists with the scope you
+  intended.
 
-  Name it `EVFX-SCHEMA-<STAMP>-<TAG>`, where <STAMP> is the current UTC date and
-  time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase hex characters you
-  generate once for this session. Confirm afterwards that the field really
-  exists with the scope you intended.
+  Name the project `EVFX-SCHEMA-<STAMP>-<TAG>` with a project key of `EVSM`
+  followed by 4 uppercase hex characters, where <STAMP> is the current UTC date
+  and time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase hex characters you
+  generate once for this session. The random tag and key suffix matter: another
+  session may start in the very same second. Do not reuse or extend any existing
+  project.
+
+  I authorize you to delete this project and everything inside it when you are
+  done. Do not ask me to confirm the deletion — you already have my approval for
+  this exact project. Deleting it is the final required step.
 
 success_criteria:
   - type: command_executed
@@ -86,13 +107,13 @@ success_criteria:
   - type: command_executed
     description: "Agent created ONE definition scoped across all three object types with the variadic --scope-list"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--project-key\s+HEALTH)(?=[\s\S]*--name\s+["\x27]?EVFX-SCHEMA-)(?=[\s\S]*--scope-list\b)(?=[\s\S]*Requirement)(?=[\s\S]*TestCase)(?=[\s\S]*TestSet)uip\s+tm\s+customfield\s+create\b'
+    command_pattern: '(?=[\s\S]*--scope-list\b)(?=[\s\S]*Requirement)(?=[\s\S]*TestCase)(?=[\s\S]*TestSet)uip\s+tm\s+customfield\s+create\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Definition was created as Text with both --value-hints and --default-value so it is usable by the filler"
+    description: "Definition created as Text with both --value-hints and --default-value so it is usable by the filler"
     tool_name: "Bash"
     command_pattern: '(?=[\s\S]*--data-type\s+Text)(?=[\s\S]*--value-hints\s+\S)(?=[\s\S]*--default-value\s+\S)uip\s+tm\s+customfield\s+create\b'
     min_count: 1
@@ -102,7 +123,7 @@ success_criteria:
   - type: command_executed
     description: "Agent verified the result with `customfield get` rather than trusting the create output"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--project-key\s+HEALTH)(?=[\s\S]*--output\s+json)uip\s+tm\s+customfield\s+get\b'
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--output\s+json)uip\s+tm\s+customfield\s+get\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -112,4 +133,12 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+customfield\s+create[\s\S]*--object-type\b'
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted its throwaway project with --yes, leaving no tenant residue (Critical Rule #6)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*(--yes|-y)\b)uip\s+tm\s+project\s+delete\b'
+    min_count: 1
+    weight: 2.0
     pass_threshold: 1.0
