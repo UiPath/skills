@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-case.md` @ 335134d. Canonical source lives there;
+`typescript/sdk/skill/SKILL-case.md` @ d3e3a10. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This is a snapshot of a generated file. In flow-builder-sdk,
