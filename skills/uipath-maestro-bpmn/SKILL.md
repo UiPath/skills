@@ -134,7 +134,7 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
    expression/error mappings, retry attributes), then run
-   `uip maestro bpmn format <file.bpmn>` to generate the diagram. For local authoring prompts, use the
+   `uip maestro bpmn format <file.bpmn>` to generate the diagram. If `format` reports `unknown command`, update the CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if upgrading is unavailable, use the fallback DI structure in [references/structural-bpmn.md](references/structural-bpmn.md). For local authoring prompts, use the
    plain project layout `<ProjectName>/<ProjectName>.bpmn` with
    `<ProjectName>/project.uiproj`; do not create `*Solution/`, package files, or
    `.uipx` artifacts unless the user explicitly asks to package or operate the
