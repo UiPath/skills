@@ -14,7 +14,7 @@ Use when the coded agent is tightly coupled to one flow and lives as a sibling f
 <!--skill-flavor:agent-solution-registration:end-->
 
 <!--skill-flavor:agent-scaffold-solution-root:start-->
-3. **Scaffold the coded agent as a sibling folder.** From the solution root (`/solution`) — `uip codedagent new` scaffolds into the **current directory**, it does NOT create a subfolder, so create the agent folder first and run everything inside it:
+3. **Scaffold the coded agent as a sibling folder.** From the solution root (`/solution`):
 <!--skill-flavor:agent-scaffold-solution-root:end-->
 
 <!--skill-flavor:agent-scaffold-result-paths:start-->
