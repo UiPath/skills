@@ -17,7 +17,10 @@ description: >
 tags: [uipath-process-mining, e2e, mode:build, lifecycle:setup, custom, pipeline]
 
 run_limits:
-  expected_turns: 10
+  # 18, not 10: with the event log staged the pipeline actually executes, and
+  # both agents land at 14-16 visible turns. The old 10 was calibrated against
+  # a run that gave up early hunting for the missing CSV.
+  expected_turns: 18
   max_turns: 40
   turn_timeout: 600
 
