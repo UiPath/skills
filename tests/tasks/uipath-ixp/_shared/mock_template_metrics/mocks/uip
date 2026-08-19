@@ -7,22 +7,28 @@
 # the correct path reads metrics and carries the numbers into a written
 # diagnosis. A failing read leaves nothing to diagnose.
 #
-# Fixture — project my_invoices-f1afa9ef-ixp, ModelVersion 12, built so that F1
-# ALONE cannot produce the right answer:
+# Fixture — project my_invoices-f1afa9ef-ixp, ModelVersion 12. Every row is
+# derived from an explicit confusion matrix so the numbers are internally
+# consistent, and built so that F1 ALONE cannot produce the right answer:
 #
-#   Invoice Number   F1 0.60  P 0.45  R 0.95   Ann 40   -> PRECISION (over-extracts)
-#   Vendor Address   F1 0.60  P 0.95  R 0.45   Ann 40   -> RECALL    (misses it)
-#   Bill-To Name     F1 1.00  P 1.00  R 1.00   Ann 40   -> no work needed
-#   Freight Charge   F1 0.889 P 0.80  R 1.00   Ann  5   -> above target, tiny sample
+#              TP  FP  FN | F1     P     R     Err   Docs Ann | verdict
+#   Invoice No 30  30  10 | 0.600 0.500 0.750 0.750   40  40 | PRECISION (over-extracts)
+#   Vendor Add 12   4  12 | 0.600 0.750 0.500 0.500   24  24 | RECALL    (misses it)
+#   Bill-To    40   0   0 | 1.000 1.000 1.000 0.000   40  40 | no work needed
+#   Freight     4   0   1 | 0.889 1.000 0.800 0.200    5   5 | above target, tiny sample
 #
 # The first two carry the SAME F1 and need OPPOSITE rewrites. An agent reading
 # only F1 cannot tell them apart and must guess; one reading the
 # Precision/Recall split gets both right. That is the discriminator.
 #
 # Two further traps, both faithful to real API behaviour:
-#   * ErrorRate is exactly 1 - Precision on every row (0.55, 0.05, 0, 0.20).
-#     It is not an independent signal and must not be diagnosed from.
-#   * Bill-To Name has F1 1.00 yet Quality "good", while the project scores 0.77
+#   * ErrorRate is `errors / Annotations`, NOT `1 - Precision`, and a wrong
+#     value counts ONCE rather than as a false positive plus a false miss.
+#     It differs from 1 - Precision on three of the four rows. Freight Charge is
+#     the sharp case: Precision 1.000 (the model emitted nothing wrong) yet
+#     ErrorRate 0.200 (it missed one of five) — a miss is invisible to precision
+#     but is still an error the user has to fix.
+#   * Bill-To Name has F1 1.00 yet Quality "good", while the project scores 0.75
 #     with ProjectScoreQuality "good" too. Field Quality and ProjectScoreQuality
 #     do not share a scale, so an agent gating on the LABEL rather than the
 #     number flags a field that is already perfect.
@@ -58,7 +64,7 @@ exit 0
 ;;
 "ixp projects get-metrics")
 cat <<'EOF'
-{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":12,"ValidatedDocuments":40,"ProjectScore":0.77,"ProjectScoreQuality":"good","FieldGroups":[{"FieldGroup":"Invoice Header","F1":0.79,"Precision":0.76,"Recall":0.82,"ErrorRate":0.24,"Documents":40}],"Fields":[{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000001","F1":0.6,"Precision":0.45,"Recall":0.95,"ErrorRate":0.55,"Documents":40,"Annotations":40,"Quality":"average"},{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000002","F1":0.6,"Precision":0.95,"Recall":0.45,"ErrorRate":0.05,"Documents":40,"Annotations":40,"Quality":"average"},{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000003","F1":1,"Precision":1,"Recall":1,"ErrorRate":0,"Documents":40,"Annotations":40,"Quality":"good"},{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000004","F1":0.889,"Precision":0.8,"Recall":1,"ErrorRate":0.2,"Documents":5,"Annotations":5,"Quality":"good"}]}}
+{"Result":"Success","Code":"IxpProjectsGetMetrics","Data":{"ModelVersion":12,"ValidatedDocuments":40,"ProjectScore":0.75,"ProjectScoreQuality":"good","FieldGroups":[{"FieldGroup":"Invoice Header","F1":0.751,"Precision":0.717,"Recall":0.789,"ErrorRate":0.394,"Documents":40}],"Fields":[{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000001","F1":0.6,"Precision":0.5,"Recall":0.75,"ErrorRate":0.75,"Documents":40,"Annotations":40,"Quality":"average"},{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000002","F1":0.6,"Precision":0.75,"Recall":0.5,"ErrorRate":0.5,"Documents":24,"Annotations":24,"Quality":"average"},{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000003","F1":1,"Precision":1,"Recall":1,"ErrorRate":0,"Documents":40,"Annotations":40,"Quality":"good"},{"FieldGroup":"Invoice Header","FieldId":"aaaa000000000004","F1":0.889,"Precision":1,"Recall":0.8,"ErrorRate":0.2,"Documents":5,"Annotations":5,"Quality":"good"}]}}
 EOF
 exit 0
 ;;

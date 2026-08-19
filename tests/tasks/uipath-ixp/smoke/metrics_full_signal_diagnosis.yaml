@@ -5,11 +5,12 @@ description: >
   from `F1` alone.
 
   The fixture gives two fields the SAME F1 (0.60) with mirrored Precision/Recall
-  (0.45/0.95 vs 0.95/0.45), so they need OPPOSITE fixes. F1 alone cannot
+  (0.50/0.75 vs 0.75/0.50), so they need OPPOSITE fixes. F1 alone cannot
   separate them; the Precision/Recall split can. Two further fields are already
-  at or above target and must not be flagged — one of them scores F1 1.00 while
-  its `Quality` label reads only `good`, trapping an agent that gates on the
-  label instead of the number.
+  at or above target and must not be flagged — one scores F1 1.00 while its
+  `Quality` label reads only `good`, trapping an agent that gates on the label
+  instead of the number; the other has Precision 1.000 yet ErrorRate 0.200,
+  since its errors are misses.
 tags: [uipath-ixp, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -63,7 +64,9 @@ success_criteria:
     pass_threshold: 1.0
 
   # No over-flagging. aaaa000000000003 is F1 1.00 but Quality "good" — the trap
-  # for gating on the label; aaaa000000000004 is F1 0.889, above the 0.7 target.
+  # for gating on the label; aaaa000000000004 is F1 0.889, above the 0.7 target,
+  # and carries ErrorRate 0.200 at Precision 1.000 — the trap for treating
+  # ErrorRate as 1 - Precision, or for flagging on a non-zero ErrorRate alone.
   - type: json_check
     description: "Did not flag the two fields already at or above target (incl. the F1 1.00 field whose Quality label reads only `good`)"
     path: "diagnosis.json"

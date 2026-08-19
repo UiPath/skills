@@ -52,15 +52,16 @@ Do NOT re-read the taxonomy or sample documents between iterations — use what 
 | `ProjectScore` | project | **Decision variable.** Whole-project regression guard across iterations (2f) — catches damage in fields you did not touch. |
 | `ValidatedDocuments` | project | **Decision variable.** Below the document count → unlabelled documents exist; label them before looping (1e). |
 | `ModelVersion` | project | **Decision variable.** Retrain completion ([Waiting for retrain](#waiting-for-retrain)). |
-| `ErrorRate` | field, group | **Report only — carries no independent signal.** It is exactly `1 - Precision` (verified across every field and group of a real project at two model versions). Never treat it as a second opinion on `Precision`, and never threshold on both. |
+| `ErrorRate` | field, group | **Report — independent of `Precision`.** The share of labelled instances the model got wrong: `errors / Annotations` (the product is a whole number in every observed row). A wrong value counts **once**, not as a false positive plus a false miss. It is *not* `1 - Precision` — a field can score `Precision` 1.00 and still carry `ErrorRate` 0.20, because a value the model never emitted cannot lower precision but is still an error the user must fix. Report it as the manual-correction burden; diagnose direction from `Precision`/`Recall`. |
 | `Quality` | field | **Report only — never gate on it.** A coarse label (`average`, `good`, …). It does **not** share a scale with `ProjectScoreQuality`: an `F1` of 1.00 still reads `good` at field level while a `ProjectScore` of 0.91 reads `excellent`. Report it beside the number; make every decision on the number. |
 | `ProjectScoreQuality` | project | **Report only.** IXP's label for `ProjectScore` — different scale from field `Quality` (above). |
 | `FieldGroup`, `FieldId` | field | Identity. `FieldId` needs the taxonomy join for a human-readable name (see 1a). |
 
-Two consequences worth stating outright:
+Three consequences worth stating outright:
 
-1. **`F1` alone is not enough to act on.** A field at `F1` 0.60 with `Precision` 0.45 / `Recall` 0.95 needs the opposite rewrite from one at `F1` 0.60 with `Precision` 0.95 / `Recall` 0.45. Always read the triple.
-2. **`F1` is a ratio over `Annotations`, so small `Annotations` means coarse `F1`.** With 5 annotations the achievable values near the top are 1.00, 0.889, 0.80 — adjacent steps of ~0.11. See [Regression noise floor](#regression-noise-floor) in 2f before rolling anything back on a delta that small.
+1. **`ErrorRate` is not a restatement of `Precision`.** It counts misses, which precision structurally cannot see. On fields where the model emits nothing rather than something wrong, `1 - Precision` reads 0 while `ErrorRate` is the number the user actually feels. Do not substitute one for the other, in either direction.
+2. **`F1` alone is not enough to act on.** A field at `F1` 0.60 with `Precision` 0.45 / `Recall` 0.95 needs the opposite rewrite from one at `F1` 0.60 with `Precision` 0.95 / `Recall` 0.45. Always read the triple.
+3. **`F1` is a ratio over `Annotations`, so small `Annotations` means coarse `F1`.** With 5 annotations the achievable values near the top are 1.00, 0.889, 0.80 — adjacent steps of ~0.11. See [Regression noise floor](#regression-noise-floor) in 2f before rolling anything back on a delta that small.
 
 ## Waiting for retrain
 
@@ -162,7 +163,7 @@ Use the current metrics (baseline on first iteration, post-relabel metrics on su
 
 3. **Record the field's `Annotations` count** next to the diagnosis. It does not change the classification, but it sets how much of the following delta you are entitled to believe (2f), so carry it forward rather than re-fetching it later.
 
-Print a diagnosis summary with one row per field — name, `F1`, `Precision`, `Recall`, `Annotations`, `Documents`, `Quality`, diagnosis — plus the group rows and the project line (`ProjectScore` / `ProjectScoreQuality` / `ValidatedDocuments` / `ModelVersion`). Report `Quality` as the label IXP returned; do not convert it to a threshold or compare it against `ProjectScoreQuality` (different scales — see [What `get-metrics` returns](#what-get-metrics-returns-and-which-values-decide)). Omit `ErrorRate`: it is `1 - Precision` and adds a column of nothing.
+Print a diagnosis summary with one row per field — name, `F1`, `Precision`, `Recall`, `Annotations`, `Documents`, `Quality`, diagnosis — plus the group rows and the project line (`ProjectScore` / `ProjectScoreQuality` / `ValidatedDocuments` / `ModelVersion`). Report `Quality` as the label IXP returned; do not convert it to a threshold or compare it against `ProjectScoreQuality` (different scales — see [What `get-metrics` returns](#what-get-metrics-returns-and-which-values-decide)). Include `ErrorRate`: it is the share of labelled instances the model got wrong, and it does not track `Precision` — a field at `Precision` 1.00 with misses still carries a non-zero `ErrorRate`.
 
 If no fields need REFINE, stop — the project is already at target quality.
 
@@ -327,13 +328,13 @@ After the loop ends, print a summary:
 ```text
 Optimization complete after N iterations. Model version V1 -> V2.
 
-Field           | Base F1 | Final F1 | Change    | Prec  | Rec   | Ann | Quality
-----------------|---------|----------|-----------|-------|-------|-----|--------
-Invoice Number  | 0.450   | 0.820    | +0.370    | 0.850 | 0.790 |  40 | good
-Description     | 0.300   | 0.650    | +0.350    | 0.700 | 0.610 |  38 | average
-Bill-To Name    | 0.900   | 0.900    | unchanged | 0.900 | 0.900 |  40 | good
-Vendor Address  | 0.600   | 0.400    | -0.200 (rolled back) | 0.410 | 0.390 | 40 | average
-Freight Charge  | 1.000   | 0.889    | -0.111 (within noise floor, kept) | 0.800 | 1.000 | 5 | good
+Field           | Base F1 | Final F1 | Change    | Prec  | Rec   | Err   | Ann | Quality
+----------------|---------|----------|-----------|-------|-------|-------|-----|--------
+Invoice Number  | 0.450   | 0.820    | +0.370    | 0.850 | 0.790 | 0.200 |  40 | good
+Description     | 0.300   | 0.650    | +0.350    | 0.700 | 0.610 | 0.395 |  38 | average
+Bill-To Name    | 0.900   | 0.900    | unchanged | 0.900 | 0.900 | 0.100 |  40 | good
+Vendor Address  | 0.600   | 0.400    | -0.200 (rolled back) | 0.410 | 0.390 | 0.600 | 40 | average
+Freight Charge  | 1.000   | 0.889    | -0.111 (within noise floor, kept) | 1.000 | 0.800 | 0.200 | 5 | good
 
 Project score:   X.XX (Quality) -> Y.YY (Quality)   ValidatedDocuments: D
 Iterations: N total, M with rollbacks
@@ -342,6 +343,6 @@ Fields whose Annotations are too few to measure progress (noise floor > 0.1): [l
 Labelling gaps fixed: [list any fields re-labelled in 2a-check]
 ```
 
-Report `Precision`/`Recall` alongside `F1` — they say whether a field that is still short is over-extracting or under-extracting, which is what the user needs to decide the next move. Report `Annotations` so a reader can tell a real plateau from an unmeasurable one. Report `Quality` verbatim as IXP's own label. Do **not** add an `ErrorRate` column (it is `1 - Precision`).
+Report `Precision`/`Recall` alongside `F1` — they say whether a field that is still short is over-extracting or under-extracting, which is what the user needs to decide the next move. Report `ErrorRate` too: it is the share of labelled instances still wrong, i.e. the manual-correction burden the user is left with, and it does not follow from `Precision` (the Freight Charge row above scores `Precision` 1.000 and still carries `ErrorRate` 0.200 — the errors are misses). Report `Annotations` so a reader can tell a real plateau from an unmeasurable one. Report `Quality` verbatim as IXP's own label.
 
 If fields still need work, suggest the user run another round with more iterations. If any field appears in the *too-few-`Annotations`* list, say plainly that more labelled documents — not more prompt rewrites — is what will move it.
