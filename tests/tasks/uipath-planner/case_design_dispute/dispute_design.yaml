@@ -19,10 +19,13 @@ tags:
   - feature:conversational
   - feature:escalation
 
+# A 7-stage design is a long single generation. The first run of this task died
+# at turn_timeout=2400 with 13 reads done and the document still unwritten, so
+# the per-turn budget tracks one section-batched write pass, not the whole SDD.
 run_limits:
-  task_timeout: 3000
+  task_timeout: 7200
   max_turns: 150
-  turn_timeout: 2400
+  turn_timeout: 3600
 
 # Stage the written requirements into the sandbox root.
 sandbox:
@@ -41,7 +44,8 @@ initial_prompt: |
   make a sensible call and note it rather than interviewing me at length.
 
   I want the design document only — save it as `sdd.md` in this folder. Nothing
-  built, no project scaffolding, no tenant lookups.
+  built, no project scaffolding, no tenant lookups. Write it out section by
+  section as you go rather than composing the whole document in one pass.
 
 success_criteria:
   - type: run_command
