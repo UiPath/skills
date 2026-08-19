@@ -301,10 +301,10 @@ Studio Web's variable picker renders `output.ExtractionResult` as opaque and doe
 The `FieldName` values present in `ResultsDocument.Fields[]` depend on the trained IxP model's taxonomy and are NOT exposed through `uip maestro flow registry get` (the registry's `outputDefinition.output.schema` describes the wrapper envelope shape, not the per-model trained fields). Get them from the deployment:
 
 ```bash
-uip ixp deployments get-taxonomy --folder-key <folderKey> "<modelName>" --output json
+uip ixp deployments get-taxonomy "<project-name>" --version <N> --output json
 ```
 
-Both args come from the `registry get` response you already fetched in [Build procedure](#build-procedure--copy-from-registry-get-do-not-construct-from-memory): `--folder-key` ← `Data.Node.inputDefaults.folderKey`; `<modelName>` (positional) ← `Data.Node.inputDefaults.modelName`. No additional discovery step. Requires `uip login`; the command uses the user Bearer to call the same DU-App route that Studio Web's "Schema definition" panel uses.
+The positional is a project name from `uip ixp projects list`, and `--version` is required — get it from `uip ixp projects list-models "<project-name>"`. `Data.Node.inputDefaults.modelName` is frequently NOT a project name; passing it returns 404 `ProjectNotFoundError`, which is an ordinary outcome, not a problem to debug. Requires `uip login`; the command uses the user Bearer to call the same DU-App route that Studio Web's "Schema definition" panel uses.
 
 Response shape:
 
@@ -335,14 +335,14 @@ Agent call sequence:
 
 1. `uip maestro flow registry search "uipath.ixp" --output json` — list IxP nodes.
 2. `uip maestro flow registry get "<node-type>" --output json` — read `Data.Node.inputDefaults.{folderKey, modelName}` (already done as part of [Build procedure](#build-procedure--copy-from-registry-get-do-not-construct-from-memory)).
-3. `uip ixp deployments get-taxonomy --folder-key <folderKey> "<modelName>" --output json` — read `documentTaxonomy.documentTypes[].fields[].fieldName`.
+3. `uip ixp deployments get-taxonomy "<project-name>" --version <N> --output json` — read `documentTaxonomy.documentTypes[].fields[].fieldName`.
 4. Author downstream consumers with `$vars.<id>.output.ExtractionResult.ResultsDocument.Fields.find(f => f.FieldName === '<fieldName from step 3>')?.Values?.[0]`.
 
-If the command fails (login expired, deployment not yet published, transient failure), fall back to defensive `find`-by-`FieldName` patterns with assumed field names and surface the assumptions to the user under **Open Questions**. Do NOT substitute a one-off extraction or IxP-product-UI inspection in the agent loop — `get-taxonomy` is the agent-loop path.
+If the command fails (no matching project, login expired, deployment not yet published, transient failure), fall back to defensive `find`-by-`FieldName` patterns with assumed field names and surface the assumptions to the user under **Open Questions**. **One attempt** — a 404 or validation error will not resolve by reissuing the lookup under another spelling of the name, so do not iterate on name variants. Do NOT substitute a one-off extraction or IxP-product-UI inspection in the agent loop — `get-taxonomy` is the agent-loop path.
 
 ## Landing the node when you cannot fully configure it
 
-**The extraction step must ALWAYS land a node — never drop it because configuration is incomplete.** A greenfield/exploration turn, an unwired upstream, a "you don't need a working flow" instruction, or an unconfirmed model are NOT reasons to skip it. The common failure is landing the steps around extraction while the extraction node itself goes missing.
+**The extraction step must ALWAYS land a node — never drop it because configuration is incomplete.** A greenfield/exploration turn, an unwired upstream, a "you don't need a working flow" instruction, or an unconfirmed model are NOT reasons to skip it. The common failure is landing the steps around extraction while the extraction node itself goes missing. Author it before the trigger and connector nodes — connector configuration branches open-endedly, and this is the node the request is about.
 
 - **Model published** (`registry search "uipath.ixp"` returns entries) → land the real `uipath.ixp.*` node. When you can't finish configuring it this turn, still build the instance from `registry get` (copy `inputs.model` and the fixed `outputs` literal — no user input needed), set `inputs.fileRef` to a placeholder expression, and defer the model choice, `fileRef` source, and taxonomy to **Open Questions**. Do NOT downgrade to `core.logic.mock` — a published model exists, so land the real node.
 - **No model published** (`Data: []`) → land a `core.logic.mock` placeholder per [If the Model Does Not Exist Yet](#if-the-model-does-not-exist-yet).

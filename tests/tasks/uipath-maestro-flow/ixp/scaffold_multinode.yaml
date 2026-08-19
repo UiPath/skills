@@ -16,13 +16,16 @@ description: >
 
   Validate-only: no `uip maestro flow debug`.
 
+  The prompt names the document domain, not a model or bucket: resolving it is
+  the behaviour under test, so do not name either here.
+
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:multi-node, node:ixp]
 initial_prompt: |
   Create a flow called "ReceiptIntake" with a manual trigger, an extractor
   node, and add three script nodes named `postReceipt`, `sendToValidation`,
   and `logError`. Wire all three scripts to consume the extraction result —
-  two off the success output, one off the error output. Document is in the
-  storage bucket named: ReceiptBucket. Model used: Receipt Model. Each of
+  two off the success output, one off the error output. Document: a PDF receipt,
+  supplied to the extractor node as the flow's document input. Each of
   the three script nodes logs OK when it receives its respective extraction
   result.
 
