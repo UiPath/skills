@@ -77,7 +77,7 @@ def main():
     }
     prompts = agent_prompt_text(path, a)
     if not prompts.strip():
-        fail("the agent node carries no systemPrompt/userPrompt")
+        fail("no prompt text found in the inline agent's agent.json messages")
     for name in IN_CONTRACT:
         prompt_ref = any(token in prompts for token in (f"$vars.{name}", f"$vars.start.output.{name}", f"input.{name}"))
         binding_ref = any(references_field(binding, name) for binding in bindings.values())

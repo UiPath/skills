@@ -213,8 +213,6 @@ Resource body shape is identical to the standalone-agent docs — only the folde
   "typeVersion": "1.0",
   "display": { "label": "Autonomous Agent" },
   "inputs": {
-    "systemPrompt": "You are an agentic assistant.",
-    "userPrompt": "What is the current date?",
     "source": "<projectId-uuid>",        // UUID linking to the inline agent directory
     "agentInputVariables": [],
     "agentOutputVariables": [
@@ -240,7 +238,7 @@ Resource body shape is identical to the standalone-agent docs — only the folde
 
 **Critical fields:**
 - `inputs.source` — The inline agent's `projectId` UUID. Must match the subdirectory name and `agent.json.projectId` inside the flow project. The definition still declares `model.source: true`, but flow-core hoists that identity field onto `inputs.source` for the `uipath.agent.autonomous` node instance.
-- `inputs.systemPrompt` / `inputs.userPrompt` — Current flow validation requires non-empty placeholders on the node. The canonical prompts still live in `agent.json.messages[]`.
+- No `inputs.systemPrompt` / `inputs.userPrompt` — canonical prompts live in `agent.json.messages[]`. Node-embedded prompts shadow the sidecar when Studio Web loads the flow; present-but-empty (`""`) values fail `flow validate`, absent passes. `uip agent refresh --inline-in-flow` strips them (shell-ify).
 - `definitions[]` — The `uipath.agent.autonomous` definition copied from the flow registry supplies `model.serviceType: "Orchestrator.StartInlineAgentJob"`, BPMN type, version, and context. Do not copy those fields into the node instance.
 - No node instance `model` block — the inline-agent source lives at `inputs.source`.
 
