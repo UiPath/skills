@@ -149,3 +149,7 @@ First distinguish bridge rejection from background failure:
 - Immediate command failure is a request, flag, or authorization problem; report the exact host result.
 - Immediate success means request accepted. Check Studio Web's Publish history for the terminal packaging and publication status and diagnose from that entry.
 <!--skill-flavor:local-publish-errors:end-->
+
+<!--skill-flavor:outbound-ip-symptom:start-->
+- **Symptom:** An HTTP Request or connector call to a customer/vendor endpoint fails from the deployed workflow — connection refused, or a hang ending in a timeout — while the same URL and payload succeed from other clients.
+<!--skill-flavor:outbound-ip-symptom:end-->
