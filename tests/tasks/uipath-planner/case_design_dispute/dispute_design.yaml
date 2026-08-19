@@ -19,13 +19,10 @@ tags:
   - feature:conversational
   - feature:escalation
 
-# A 7-stage design is a long single generation. The first run of this task died
-# at turn_timeout=2400 with 13 reads done and the document still unwritten, so
-# the per-turn budget tracks one section-batched write pass, not the whole SDD.
 run_limits:
-  task_timeout: 7200
+  task_timeout: 3600
   max_turns: 150
-  turn_timeout: 3600
+  turn_timeout: 2400
 
 # Stage the written requirements into the sandbox root.
 sandbox:
@@ -43,9 +40,11 @@ initial_prompt: |
   agreed process, so don't redesign it. Where the document leaves a detail open,
   make a sensible call and note it rather than interviewing me at length.
 
-  I want the design document only — save it as `sdd.md` in this folder. Nothing
-  built, no project scaffolding, no tenant lookups. Write it out section by
-  section as you go rather than composing the whole document in one pass.
+  I want a draft design document I can review before we commit to anything —
+  capture the design and stop there. We'll finalize and build it later, so don't
+  polish or validate it yet. Nothing built, no project scaffolding, no tenant
+  lookups. Write the draft out section by section as you go rather than composing
+  the whole document in one pass.
 
 success_criteria:
   - type: run_command
@@ -97,14 +96,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "SDD is mechanically sound (variables, per-gate rule legality, task types, conditions)"
-    command: "f=$(ls *sdd*.md 2>/dev/null | head -1); [ -n \"$f\" ] && { [ \"$f\" = sdd.md ] || cp \"$f\" sdd.md; } && python3 $SKILLS_REPO_PATH/tests/tasks/uipath-planner/_shared/sdd_check.py"
-    timeout: 60
-    expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
     description: "stayed at design — did not run ahead into a caseplan build"
     command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
     timeout: 10
@@ -115,12 +106,14 @@ success_criteria:
   - type: llm_judge
     description: "Captured design is coherent for a card transaction dispute process"
     files:
+      - sdd.draft.md
       - sdd.md
     max_file_chars: 150000
     include_agent_output: false
     prompt: |
-      You are reviewing a case-management design document for a CARD TRANSACTION
-      DISPUTE process. The written requirements the designer worked from describe:
+      You are reviewing a case-management design for a CARD TRANSACTION DISPUTE
+      process. The design is in whichever file is attached — `sdd.draft.md` (a
+      pre-finalization draft) or `sdd.md`; grade whichever is present. The written requirements the designer worked from describe:
       three active phases (checking the dispute, analyst review, senior review),
       a refund phase, three terminal wrap-ups (refunded, upheld, dropped), a
       10-business-day case target with per-phase targets, deadline breaches that
@@ -159,13 +152,14 @@ simulation:
     answer you give comes from that document. You are happy for the designer to
     make small calls on anything the document leaves open.
   goal: |
-    Get a complete design document (sdd.md) for the CardTransactionDispute case,
-    designed from the requirements file. Stop once the design document is written —
-    nothing is built.
+    Get a complete design draft (sdd.draft.md) for the CardTransactionDispute case,
+    designed from the requirements file. When the designer has written the draft and
+    asks whether to finalize or proceed, tell them to STOP at the draft — the draft
+    is all you need.
   constraints:
     - "Answer each question concisely and decisively — one short sentence, or pick the recommended / first option in an AskUserQuestion. Never bounce the decision back ('you decide') and never stall."
     - "Ground every answer in the requirements document. For a detail it never specifies, make a sensible, consistent call and say it in one line — do not invent new phases, terminals, personas, or external systems."
-    - "If the designer offers to build, scaffold a project, validate, or move to a next phase, tell it the design document is all you need for now."
-    - "Once the design document is written, you're done — end the conversation; don't open new topics."
+    - "You want a draft to review first. If the designer offers to finalize, validate, build, or move to a next phase, tell it to leave the draft as it is — you'll finalize later. If it wants to keep polishing, say it's good enough for a first review."
+    - "Once the draft captures the design, you're done — end the conversation; don't open new topics."
     - "Keep replies short — one sentence or a single option pick."
   max_turns: 40
