@@ -36,7 +36,7 @@ description: >
   publish, on top of #2438 (--file-format) + #1372 (adds `uip admin
   audit`)). Until then `--output-path` is the exact file path (no generated
   `.csv` inside it) and the verifier reports no generated CSV found.
-tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
+tags: [uipath-admin, e2e, mode:operate, lifecycle:discover, audit, export, real-artifact]
 
 initial_prompt: |
   Can you export the past week's tenant audit events as a single CSV I
