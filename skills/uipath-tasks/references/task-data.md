@@ -2,9 +2,9 @@
 
 Task data is the business/form field payload attached to a task: a JSON object of
 key/value pairs whose keys are the task's schema fields (the values an approver
-reviews). Folder-scoped: pass `--folder-id <id>`, or omit it in an interactive
-terminal to pick a folder (in a non-interactive run you must pass `--folder-id`).
-Task IDs are numeric.
+reviews). Folder-scoped: pass `--folder-id <id>` (or `--folder-path <path>` /
+`--folder-key <guid>`), or omit them in an interactive terminal to pick a folder
+(in a non-interactive run you must pass one). Task IDs are numeric.
 
 ## Get data
 

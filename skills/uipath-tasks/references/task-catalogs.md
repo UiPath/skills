@@ -10,10 +10,13 @@ another, and catalog IDs are numeric. See the
 
 ## Folder scoping
 
-Every catalog command needs a folder. In an interactive terminal you can omit
-`--folder-id` and pick a folder from a list. In a non-interactive run (a coding
-agent or CI, where no picker can be shown) you must pass `--folder-id <id>`
-explicitly, otherwise the command fails.
+Every catalog command needs a folder, given one of three mutually exclusive
+ways: `--folder-id <numeric-id>`, `--folder-path <path>`, or
+`--folder-key <guid>` (path and key are what `uip or folders list` prints). In
+an interactive terminal you can omit all three and pick a folder from a list.
+In a non-interactive run (a coding agent or CI, where no picker can be shown)
+you must pass one explicitly, otherwise the command fails with
+`A folder is required`.
 
 ## List
 
