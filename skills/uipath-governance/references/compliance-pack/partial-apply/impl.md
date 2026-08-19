@@ -156,6 +156,9 @@ Require y. Halt on anything else.
 > **Internal policy naming:** `<packId>-<scopeToken>-<product-kebab>`. The `<packId>` prefix keeps each standard's policies in its own namespace — never hardcode `iso-42001-2023`, or two standards' policies collide on the same tenant.
 > scopeToken per product: `aitl` (AITrustLayer), `dev` (Development), `robot` (Robot), `asst` (Assistant), `stw` (StudioWeb), `is` (IntegrationService). **Any product not in that list** — standards differ in which products they touch — take the `ProductIdentifier` lowercased (`Orchestrator` → `orchestrator`). Never skip the product or invent an abbreviation; an unrecognised product is a naming case, not an error.
 > Per clause subset: the clauseId lowercased with dots and dashes stripped (`A.6.2.8` → `a628`, `A.9.2` → `a92`, `6.1.4` → `614`). Per impact subset: `high`.
+> Per **topic subset** — the category keywords in [`planning.md`](planning.md) (traceability, guardrails/PII, model governance, robot allowlists): use the fixed token for that row — `trace`, `pii`, `models`, `uiauto`. Do NOT coin a new word per request: the policy name is what makes a re-apply update the existing policy instead of creating a second one, so the same topic must always produce the same token.
+>
+> If a scope matches none of the four cases above, fall back to the clause-id form for the clauses actually being applied. Never invent a free-form token.
 6. On `yes` → AOps runs `aops-policy create` → **return the policy UUID to partial apply**.
 7. On failure or skip → log product as `skipped`, continue to next product.
 
