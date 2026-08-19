@@ -32,11 +32,36 @@ Each command sends one server-side call; the server matches by name and writes p
 
 The user may specify a max number of iterations (default: 3). Track:
 
-- **Baseline metrics** — the per-field F1 scores before any changes
-- **Previous iteration metrics** — the per-field F1 scores from the last successful iteration
+- **Baseline metrics** — the **complete** `get-metrics` payload before any changes: the whole `Fields[]` array (all nine values per field, not just `F1`), the whole `FieldGroups[]` array, and the project block (`ProjectScore`, `ProjectScoreQuality`, `ValidatedDocuments`, `ModelVersion`). Store the response verbatim — every field below drives a decision or a report line, and re-fetching a discarded one costs a retrain wait.
+- **Previous iteration metrics** — the same complete payload from the last successful iteration
 - **Previous instructions** — the per-field (field) instructions from the last successful iteration (for rollback)
 
 Do NOT re-read the taxonomy or sample documents between iterations — use what you already have. Only re-read metrics after each instruction update + retrain cycle. This assumes no one modifies the taxonomy or documents externally during the loop. If the user mentions changes were made in the web UI, re-fetch the taxonomy and document list before continuing.
+
+## What `get-metrics` returns, and which values decide
+
+`get-metrics` returns nine values per field, six per group, and four project-level. They are not independent, and they are not interchangeable — using the wrong one silently changes the loop's behaviour.
+
+| Value | Level | Role in this loop |
+|-------|-------|-------------------|
+| `F1` | field, group | **Decision variable.** Targeting (2a), regression (2f), stopping (2f). |
+| `Precision` | field, group | **Decision variable.** Splits a low `F1` into PRECISION vs RECALL (2a) — that split picks which rewrite to attempt. |
+| `Recall` | field, group | **Decision variable.** Same split, plus the `< 0.5` labelling-gap probe (2a-check). |
+| `Annotations` | field | **Decision variable.** Sample size behind that field's `F1` — sets the noise floor for the regression check (2f). |
+| `Documents` | field, group | **Decision variable.** `0` → SKIP (2a): no evidence, so no instruction rewrite can be evaluated. |
+| `ProjectScore` | project | **Decision variable.** Whole-project regression guard across iterations (2f) — catches damage in fields you did not touch. |
+| `ValidatedDocuments` | project | **Decision variable.** Below the document count → unlabelled documents exist; label them before looping (1e). |
+| `ModelVersion` | project | **Decision variable.** Retrain completion ([Waiting for retrain](#waiting-for-retrain)). |
+| `ErrorRate` | field, group | **Report — independent of `Precision`.** The share of labelled instances the model got wrong: `errors / Annotations` (the product is a whole number in every observed row). A wrong value counts **once**, not as a false positive plus a false miss. It is *not* `1 - Precision` — a field can score `Precision` 1.00 and still carry `ErrorRate` 0.20, because a value the model never emitted cannot lower precision but is still an error the user must fix. Report it as the manual-correction burden; diagnose direction from `Precision`/`Recall`. |
+| `Quality` | field | **Report only — never gate on it.** A coarse label (`average`, `good`, …). It does **not** share a scale with `ProjectScoreQuality`: an `F1` of 1.00 still reads `good` at field level while a `ProjectScore` of 0.91 reads `excellent`. Report it beside the number; make every decision on the number. |
+| `ProjectScoreQuality` | project | **Report only.** IXP's label for `ProjectScore` — different scale from field `Quality` (above). |
+| `FieldGroup`, `FieldId` | field | Identity. `FieldId` needs the taxonomy join for a human-readable name (see 1a). |
+
+Three consequences worth stating outright:
+
+1. **`ErrorRate` is not a restatement of `Precision`.** It counts misses, which precision structurally cannot see. On fields where the model emits nothing rather than something wrong, `1 - Precision` reads 0 while `ErrorRate` is the number the user actually feels. Do not substitute one for the other, in either direction.
+2. **`F1` alone is not enough to act on.** A field at `F1` 0.60 with `Precision` 0.45 / `Recall` 0.95 needs the opposite rewrite from one at `F1` 0.60 with `Precision` 0.95 / `Recall` 0.45. Always read the triple.
+3. **`F1` is a ratio over `Annotations`, so small `Annotations` means coarse `F1`.** With 5 annotations the achievable values near the top are 1.00, 0.889, 0.80 — adjacent steps of ~0.11. See [Regression noise floor](#regression-noise-floor) in 2f before rolling anything back on a delta that small.
 
 ## Waiting for retrain
 
@@ -131,12 +156,14 @@ Use the current metrics (baseline on first iteration, post-relabel metrics on su
    - `Documents < 1` → **SKIP**
    - Otherwise → **REFINE**
 
-2. **Diagnose the problem type** (use F1 as primary signal with few documents):
+2. **Diagnose the problem type** from the `Precision`/`Recall` split — `F1` says *how bad*, the split says *what to write*:
    - `Precision < Recall` significantly → **PRECISION** — model extracts wrong values
    - `Recall < Precision` significantly → **RECALL** — model misses the field
    - Otherwise → **BOTH** — rewrite entirely
 
-Print a diagnosis summary showing each field group's score and each field's name, F1, precision/recall, and diagnosis.
+3. **Record the field's `Annotations` count** next to the diagnosis. It does not change the classification, but it sets how much of the following delta you are entitled to believe (2f), so carry it forward rather than re-fetching it later.
+
+Print a diagnosis summary with one row per field — name, `F1`, `Precision`, `Recall`, `Annotations`, `Documents`, `Quality`, diagnosis — plus the group rows and the project line (`ProjectScore` / `ProjectScoreQuality` / `ValidatedDocuments` / `ModelVersion`). Report `Quality` as the label IXP returned; do not convert it to a threshold or compare it against `ProjectScoreQuality` (different scales — see [What `get-metrics` returns](#what-get-metrics-returns-and-which-values-decide)). Include `ErrorRate`: it is the share of labelled instances the model got wrong, and it does not track `Precision` — a field at `Precision` 1.00 with misses still carries a non-zero `ErrorRate`.
 
 If no fields need REFINE, stop — the project is already at target quality.
 
@@ -240,12 +267,32 @@ If `ModelVersion` hasn't advanced since the last check, keep re-reading under th
 
 ### 2f. Compare and decide
 
-Compare the new per-field F1 scores against the **previous iteration** scores.
+Compare the new metrics against the **previous iteration** at both levels — the fields you touched, and the project as a whole.
 
-**Selective regression check:** For each field you updated this iteration, check if F1 dropped by more than 0.1:
+#### Regression noise floor
 
-- **Regressed fields** (F1 dropped >0.1): roll back ONLY those fields' instructions to the previous iteration's version. Keep the improved instructions for fields that gained or held steady.
+`F1` is a ratio over that field's `Annotations`, so it cannot move in arbitrarily small steps. With `Annotations` = 5 the reachable values near the top are 1.00, 0.889, 0.80 — **adjacent steps of ~0.11**. A flat "rolled back if it dropped more than 0.1" therefore fires on the smallest change the metric is capable of expressing: one annotation flipping is indistinguishable from a genuinely worse instruction, and the loop rolls back a change that did nothing measurable.
+
+Set the threshold from the sample size instead:
+
+```text
+noise_floor = 1 / Annotations        # smallest F1 step this field can express
+regression_threshold = max(0.1, 2 x noise_floor)
+```
+
+At `Annotations` = 5 that is 0.4 — a drop must exceed two of the smallest possible steps before it counts as evidence. At `Annotations` = 40 it collapses back to the flat 0.1. Fields whose `Annotations` differ get different thresholds in the same iteration; that is intended, not an inconsistency.
+
+**Below the threshold is not "no change" — it is "not measurable yet".** Do not report a sub-threshold move as an improvement either. If a field keeps drifting sub-threshold across iterations and its `Annotations` is small, the fix is more labelled documents, not more prompt rewrites — say so in the final report.
+
+**Selective regression check:** For each field you updated this iteration, compare its `F1` drop against **that field's** `regression_threshold`:
+
+- **Regressed fields** (drop > their threshold): roll back ONLY those fields' instructions to the previous iteration's version. Keep the improved instructions for fields that gained or held steady.
 - **Improved/unchanged fields**: keep their new instructions.
+
+**Project-level guard (fields you did NOT touch):** per-field checks only cover the fields you edited, but instructions interact — a sharper rule on one field can pull the model off another, and group instructions affect every field under them. So also compare `ProjectScore` against the previous iteration:
+
+- `ProjectScore` dropped **and** no edited field regressed → the damage is in a field you did not edit. Diff the full `Fields[]` array against the previous iteration to find it, then roll back this iteration's edits that could plausibly have caused it (same group first). Do not accept the iteration on the strength of the edited fields alone.
+- `ProjectScore` held or rose while one edited field regressed → roll back that field only, as above; the iteration is otherwise sound.
 
 If any fields regressed, do a selective rollback:
 
@@ -264,13 +311,13 @@ Wait out the retrain ([Waiting for retrain](#waiting-for-retrain)). On the next 
 
 **Rollback caveat:** Rollback restores the previous instructions but the model needs to retrain. Expect only **partial recovery** — prefer small-scope iterations (few fields at a time).
 
-**No regression:** Accept the iteration. Update `previous_metrics` and `previous_instructions` with the new values.
+**No regression:** Accept the iteration. Update `previous_metrics` (the complete payload again, not just F1) and `previous_instructions` with the new values.
 
 **Stopping criteria — stop the loop if:**
 
 - All fields meet the user's target F1 (default: 0.7)
 - Max iterations reached
-- No fields improved in the last 2 consecutive iterations (diminishing returns)
+- No fields improved by more than their own noise floor in the last 2 consecutive iterations (diminishing returns — a run of sub-threshold moves is not progress)
 
 ---
 
@@ -279,19 +326,23 @@ Wait out the retrain ([Waiting for retrain](#waiting-for-retrain)). On the next 
 After the loop ends, print a summary:
 
 ```text
-Optimization complete after N iterations.
+Optimization complete after N iterations. Model version V1 -> V2.
 
-Field               | Baseline F1 | Final F1 | Change
---------------------|-------------|----------|-------
-Invoice Number      | 0.450       | 0.820    | +0.370
-Description         | 0.300       | 0.650    | +0.350
-Bill-To Name        | 0.900       | 0.900    | (unchanged)
-Vendor Address      | 0.600       | 0.400    | -0.200 (rolled back)
+Field           | Base F1 | Final F1 | Change    | Prec  | Rec   | Err   | Ann | Quality
+----------------|---------|----------|-----------|-------|-------|-------|-----|--------
+Invoice Number  | 0.450   | 0.820    | +0.370    | 0.850 | 0.790 | 0.200 |  40 | good
+Description     | 0.300   | 0.650    | +0.350    | 0.700 | 0.610 | 0.395 |  38 | average
+Bill-To Name    | 0.900   | 0.900    | unchanged | 0.900 | 0.900 | 0.100 |  40 | good
+Vendor Address  | 0.600   | 0.400    | -0.200 (rolled back) | 0.410 | 0.390 | 0.600 | 40 | average
+Freight Charge  | 1.000   | 0.889    | -0.111 (within noise floor, kept) | 1.000 | 0.800 | 0.200 | 5 | good
 
-Overall project score: X.XX → Y.YY
+Project score:   X.XX (Quality) -> Y.YY (Quality)   ValidatedDocuments: D
 Iterations: N total, M with rollbacks
 Fields still below target (F1 < 0.7): [list]
+Fields whose Annotations are too few to measure progress (noise floor > 0.1): [list]
 Labelling gaps fixed: [list any fields re-labelled in 2a-check]
 ```
 
-If fields still need work, suggest the user run another round with more iterations.
+Report `Precision`/`Recall` alongside `F1` — they say whether a field that is still short is over-extracting or under-extracting, which is what the user needs to decide the next move. Report `ErrorRate` too: it is the share of labelled instances still wrong, i.e. the manual-correction burden the user is left with, and it does not follow from `Precision` (the Freight Charge row above scores `Precision` 1.000 and still carries `ErrorRate` 0.200 — the errors are misses). Report `Annotations` so a reader can tell a real plateau from an unmeasurable one. Report `Quality` verbatim as IXP's own label.
+
+If fields still need work, suggest the user run another round with more iterations. If any field appears in the *too-few-`Annotations`* list, say plainly that more labelled documents — not more prompt rewrites — is what will move it.
