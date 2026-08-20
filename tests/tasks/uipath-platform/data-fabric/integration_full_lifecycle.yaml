@@ -98,9 +98,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent verified the update with records get"
+    description: "Agent verified the update with records get or query"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+get'
+    command_pattern: 'uip\s+df\s+records\s+(get|query)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

@@ -24,7 +24,9 @@ initial_prompt: |
 
   A UiPath Data Fabric entity called `CE_ProductCatalogue` with these columns:
     - product name
-    - category — one of Electronics, Clothing, or Home
+    - category — a plain text field; each product is one of Electronics,
+      Clothing, or Home (store it as a text value, not a picklist / choice
+      set — don't create a choice set for this)
     - price — dollars with cents
     - in stock — yes/no
     - SKU

@@ -21,6 +21,11 @@
       "type": "STRING",
       "isUnique": true,
       "lengthLimit": 50
+    },
+    {
+      "name": "Attachment",
+      "displayName": "Attachment",
+      "type": "FILE"
     }
   ]
 }
