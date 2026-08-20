@@ -613,6 +613,14 @@ jobs:
             echo "::endgroup::"
           done
 
+      - name: Record preview plugin provenance
+        if: always() && inputs.experiment == 'preview-nightly'
+        run: |
+          source_record="${RUNNER_TEMP}/preview-skills-plugin/.preview-source.json"
+          [ -f "$source_record" ] || { echo '::error::Missing staged preview provenance'; exit 1; }
+          mkdir -p /tmp/runs
+          cp "$source_record" /tmp/runs/preview-plugin-source.json
+
       # Strip heavy task scratch dirs before upload to keep artifact size
       # manageable. Matches smoke-skills.yml.
       - name: Clean up artifacts (remove .venv and node_modules)
@@ -634,6 +642,7 @@ jobs:
             /tmp/runs/experiment.log
             /tmp/runs/run.json
             /tmp/runs/run.md
+            /tmp/runs/preview-plugin-source.json
             /tmp/runs/resume_fingerprint.json
             /tmp/runs/*/variant.html
             /tmp/runs/*/variant.md

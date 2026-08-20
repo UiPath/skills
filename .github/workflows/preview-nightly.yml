@@ -138,6 +138,7 @@ jobs:
             --repository "$PWD" \
             --manifest tests/experiments/preview-nightly-tasks.txt \
             --preview "$preview_json" \
+            --preview-run-id "$GITHUB_RUN_ID" \
             --baselines regular-baselines \
             --harness "$harness" \
             --environment alpha \
@@ -166,6 +167,7 @@ jobs:
           set -euo pipefail
           mkdir -p preview-nightly-archive
           cp preview-result/run.json preview-nightly-archive/run.json
+          cp preview-result/preview-plugin-source.json preview-nightly-archive/preview-plugin-source.json
           cp preview-nightly-comparison.json preview-nightly-archive/comparison.json
           cp preview-nightly-comparison.md preview-nightly-archive/comparison.md
           az storage blob upload-batch \

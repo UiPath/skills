@@ -69,6 +69,7 @@ test('builds per-task deltas and a readable table', () => {
   const comparison = buildComparison({
     preview,
     previewFile: 'preview.json',
+    previewRunId: '32426498347',
     baseline,
     baselineFile: 'baseline.json',
     tasks,
@@ -76,6 +77,7 @@ test('builds per-task deltas and a readable table', () => {
     environment: 'alpha',
   });
   assert.equal(comparison.tasks.length, 9);
+  assert.equal(comparison.preview.run_id, '32426498347');
   assert.ok(Math.abs(comparison.tasks[0].delta.score - 0.1) < 1e-9);
   assert.equal(comparison.aggregate.preview.succeeded, 9);
   assert.match(renderMarkdown(comparison), /task-9/);

@@ -138,7 +138,16 @@ function aggregate(rows, arm) {
   };
 }
 
-export function buildComparison({ preview, previewFile, baseline, baselineFile, tasks, harness, environment }) {
+export function buildComparison({
+  preview,
+  previewFile,
+  previewRunId,
+  baseline,
+  baselineFile,
+  tasks,
+  harness,
+  environment,
+}) {
   const previewRows = taskRows(preview);
   const config = { harness, model: singleModel(previewRows), environment };
   const rows = tasks.map(({ task_id: taskId, task_path: taskPath }) => {
@@ -155,7 +164,7 @@ export function buildComparison({ preview, previewFile, baseline, baselineFile, 
   return {
     generated_at: new Date().toISOString(),
     config,
-    preview: { run_id: preview.run_id ?? null, source: previewFile },
+    preview: { run_id: previewRunId ?? preview.run_id ?? null, source: previewFile },
     baseline: { run_id: baseline.run_id ?? null, source: baselineFile },
     aggregate: { preview: aggregate(rows, 'preview'), live_v1: aggregate(rows, 'live_v1') },
     tasks: rows,
@@ -210,6 +219,7 @@ export function main(argv = process.argv.slice(2)) {
   const comparison = buildComparison({
     preview,
     previewFile: args.preview,
+    previewRunId: args['preview-run-id'],
     baseline: selected.run,
     baselineFile: selected.filePath,
     tasks,
