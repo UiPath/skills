@@ -65,7 +65,7 @@ uip ah documents create $PROCESS_ID \
   --document-type-id <n> --file "<path>" --output json
 ```
 
-- `--document-type-id` from the fixed table in [`api-endpoints.md`](api-endpoints.md): PDD → `1`, SDD → `2`, else `9` (MISC).
+- `--document-type-id` from the fixed platform table in [`api-endpoints.md`](api-endpoints.md) — read it there; do not guess ids.
 - `--file` uploads the bytes (the CLI base64s it; any file type; 200 MB cap). Use `--embed-link <url>` *instead* only when the caller has a URL and no bytes — exactly one of the two, and never invent a URL.
 - Record `Data.Id` (document id) and `Data.FileId` from each response. On a validation error, surface the message and continue with the remaining documents.
 
@@ -81,9 +81,8 @@ When the caller wants the process linked to a Studio Web solution (or supplies o
 }
 ```
 
-- **Resolve the solution**: `uip solution list --name "<pattern>"` → pick the entry (`Id`, `Name`, `Projects[]`); several matches → ask the user. Never invent a solution id.
-- **Build the designer url**: `{baseUrl}/{org}/studio_/designer/{projectId}?solutionId={solutionId}` — `projectId` is the solution's `ProcessOrchestration` project (fall back to its first project).
-- **`hasProcessMap`**: `true` only when that orchestration project contains a `.bpmn` file — this is what makes AH render the Maestro diagram preview; when unknown, omit it rather than guessing.
+- **Resolve the solution from the caller — no CLI discovery exists.** No stable `uip` command lists Studio Web solutions today, so ask the user (`AskUserQuestion`) for the solution's **designer URL** — they can copy it from the browser address bar with the solution open in Studio Web. If they instead supply a solution id + project id, build the URL as `{baseUrl}/{org}/studio_/designer/{projectId}?solutionId={solutionId}` (`projectId` = the solution's ProcessOrchestration project). **Never invent, guess, or search for a solution id or URL.**
+- **`hasProcessMap`**: `true` only when the solution's orchestration project contains a `.bpmn` file — this is what makes AH render the Maestro diagram preview. If the caller doesn't know, omit the field rather than guessing.
 - To **unlink**, set `value` to an empty string.
 
 ## Step 7: Verify, then report

@@ -18,7 +18,9 @@ Run `uip ah --help` once per session:
 
 Never mix the two transports in one run. The domain contract — required fields, wrapping rules, document types — is identical either way and lives in `api-endpoints.md`.
 
-## Authentication (shared — both flows)
+## Authentication (raw-API flows only — skip when using the CLI flows)
+
+> On the CLI path, `uip` handles auth itself (Delegate env-auth or `uip login`) — never touch a token there; see [`references/cli-commands.md`](references/cli-commands.md). The resolution order below applies **only** to the raw-API flows.
 
 Resolve the cloud token + base URL + org + tenant in this **priority order**:
 

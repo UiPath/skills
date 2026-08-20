@@ -37,8 +37,8 @@ Failure: `Result` is `Failure`/`ValidationError` with a `Message` and usually an
 | `uip ah documents list <automation-id>` | verify attachments | entries carry `Id`, `Title`, `FileId` (file-backed) or `EmbedLink` (link-backed) |
 | `uip ah documents download <file-id> --destination <path>` | **download a document's bytes** | takes the `FileId` from `documents list`, **not** the document `Id` |
 | `uip ah automations update <id> --file <answers.json>` | edit assessment answers post-create (e.g. set the Studio Web link) | same `user_inputs` document shape as create |
-| `uip solution list [--name <pattern>]` | discover the caller's Studio Web solutions | entries carry `Id`, `Name`, `Projects[]` — inputs for the SW-link value |
 | `uip ah automations list --search <text> --limit 20` | name → process id | projected records with `Id`, `Name`, `Phase` |
 | `uip ah automations get <id> [--all-fields]` | one process record | default projection has `Id`/`Name`/`Phase`/`Tags`; `--all-fields` for the raw record (needed for `process_slug`) |
+| `uip ah components list --automation-id <id>` | linked components (optional, get flow) | same record shape as the tenant-wide catalogue |
 
-**Version note:** `documents create --file` and `automations create --idea-flow-id` ship from CLI PR #3720 — if either flag is rejected as unknown, the installed `uip` is too old for the full flow; say so and stop (or use the raw-API path).
+**Version note:** the `ah` surface first appears in `uip` **1.201.0** (as of 2026-08-21 no public release ships it — the latest release is 1.199.0; the Step-0 preflight routes older installs to the raw-API flows). `documents create --file` and `automations create --idea-flow-id` additionally come from CLI PR #3720 — if either flag is rejected as unknown, say the installed `uip` predates them and stop (or use the raw-API path).
