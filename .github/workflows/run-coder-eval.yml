@@ -28,6 +28,13 @@ on:
         type: string
         required: false
         default: '4'
+      experiment:
+        description: 'Linux experiment configuration.'
+        type: choice
+        options:
+          - nightly
+          - preview-nightly
+        default: nightly
       confirm_large_run:
         description: 'Allow >50 tasks (cost guardrail).'
         type: boolean
@@ -146,6 +153,7 @@ jobs:
         env:
           INPUT_GLOBS: ${{ inputs.task_globs }}
           CONFIRMED:   ${{ inputs.confirm_large_run }}
+          EXPERIMENT:  ${{ inputs.experiment }}
         run: |
           set -euo pipefail
           if [ -z "$INPUT_GLOBS" ]; then
@@ -179,6 +187,10 @@ jobs:
           fi
           if [ "$TOTAL" -gt 50 ] && [ "$CONFIRMED" != "true" ]; then
             echo "::error::Glob matches $TOTAL tasks (> 50). Tick confirm_large_run to authorize."
+            exit 1
+          fi
+          if [ "$EXPERIMENT" = "preview-nightly" ] && [ "$WCOUNT" -ne 0 ]; then
+            echo "::error::preview-nightly supports Linux tasks only"
             exit 1
           fi
           # Space-separated; downstream jobs word-split on consumption.
@@ -321,6 +333,25 @@ jobs:
             -f coder_eval_uipath/eval_runner/scripts/ci/delegate-overlay.Dockerfile \
             coder_eval_uipath
 
+      - name: Stage Maestro SDK preview plugin
+        if: inputs.experiment == 'preview-nightly'
+        env:
+          PREVIEW_SKILLS_PLUGIN_PATH: ${{ runner.temp }}/preview-skills-plugin
+        run: node scripts/stage-preview-plugin.mjs --output "$PREVIEW_SKILLS_PLUGIN_PATH"
+
+      - name: Overlay preview Flow SDK
+        if: inputs.experiment == 'preview-nightly'
+        env:
+          DOCKER_BUILDKIT: "1"
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+        run: |
+          docker build \
+            --build-arg BASE_IMAGE=skills-image:latest \
+            --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
+            -t skills-image:preview-nightly \
+            -f tests/docker/preview-nightly.Dockerfile \
+            .
+
       # ROPC bot-user auth via this repo's vendored script (mirrors the VM
       # cron's ROPC flow). Required because `uip flow debug` needs a real user
       # `sub` claim — s2s/client_credentials tokens lack one. Writes
@@ -354,6 +385,8 @@ jobs:
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
           TASK_COUNT:               ${{ needs.partition.outputs.linux_count }}
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
+          EXPERIMENT:               ${{ inputs.experiment }}
+          PREVIEW_SKILLS_PLUGIN_PATH: ${{ runner.temp }}/preview-skills-plugin
           AGENT:                    ${{ inputs.agent }}
           AGENT_MODEL:              ${{ inputs.agent_model }}
           # The model when agent_model is blank: one repo variable per harness, named the
@@ -486,9 +519,10 @@ jobs:
             model="${AGENT_MODEL:-${CLAUDE_CODE_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}}"
             agent_flags="--model $model"
           fi
-          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml $agent_flags ${delegate_overrides[*]} -j $j ($TASK_COUNT task files)"
+          experiment="${EXPERIMENT:-nightly}"
+          echo "Running: coder-eval run $TASK_GLOBS -e experiments/$experiment.yaml $agent_flags ${delegate_overrides[*]} -j $j ($TASK_COUNT task files)"
           coder-eval run $TASK_GLOBS \
-            -e experiments/nightly.yaml \
+            -e "experiments/$experiment.yaml" \
             $agent_flags \
             "${delegate_overrides[@]}" \
             -j "$j" -v \

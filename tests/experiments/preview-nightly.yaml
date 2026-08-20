@@ -1,0 +1,62 @@
+experiment_id: preview-nightly
+description: "Nightly Maestro SDK preview arm — regular-nightly limits and tenant, staged preview plugin"
+
+defaults:
+  run_limits:
+    max_turns: 200
+    task_timeout: 1200
+    # Mirrors nightly.yaml; per-task same-ground limits still override these defaults.
+    turn_timeout: 900
+
+  sandbox:
+    driver: docker
+    docker:
+      image: skills-image:preview-nightly
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        - PREVIEW_SKILLS_PLUGIN_PATH
+        - BEDROCK_MODEL
+        - TASK_PARALLELISM
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - E2E_PROCESS_KEY
+        - E2E_LONG_PROCESS_KEY
+        - CODEX_API_KEY
+        - CODEX_BASE_URL
+      extra_mounts:
+        # The staged plugin is auto-mounted from agent.plugins below. This separate
+        # mount keeps task checkers on the real repo after plugin-path decoupling.
+        - ${SKILLS_REPO_PATH}:${SKILLS_REPO_PATH}:ro
+        - ~/.uipath:/.uipath:rw
+
+  agent:
+    # No agent.type / agent.model here: the runner passes both as CLI flags, exactly like nightly.yaml.
+    permission_mode: acceptEdits
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    system_prompt: |
+      You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+    plugins:
+      # Preview content pinned at skills@d2630037b / flow-builder-sdk@ddf9da1.
+      # stage-preview-plugin.mjs records the exact runtime checkout SHA too.
+      - type: "local"
+        path: "$PREVIEW_SKILLS_PLUGIN_PATH"
+    ignore_patterns: []
+
+  pre_run:
+    - command: "bash $SKILLS_REPO_PATH/tests/scripts/stage-preview-sdk-workspace.sh"
+      timeout: 30
+
+  post_run:
+    # Task-specific cleanup runs first; this covers the three contract-frozen
+    # tasks that do not declare their own cleanup and is harmless when repeated.
+    - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+      timeout: 90
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+      timeout: 30
+
+variants:
+  - variant_id: preview
