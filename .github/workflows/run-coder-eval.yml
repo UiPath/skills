@@ -347,6 +347,12 @@ jobs:
           # mirrors coder-eval's own grant_container_access.
           chmod -R o+rwX "$HOME/.uipath"
 
+      # coder-eval 0.11 isolates $TASK_DIR to the leaf task folder, so graders
+      # can no longer import the group-level _shared/ helper by walking up the
+      # tree. Co-locate a copy of each group's _shared into its task dirs first.
+      - name: Stage _shared grader helpers
+        run: bash tests/scripts/stage_shared.sh
+
       # TASK_GLOBS here is the partition-resolved list of *file paths* (not
       # globs). Word-splitting is intentional — do not quote.
       - name: Run coder-eval

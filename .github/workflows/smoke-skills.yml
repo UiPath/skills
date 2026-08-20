@@ -428,6 +428,12 @@ jobs:
           AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
         run: ': "${AGENT_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}"'
 
+      # coder-eval 0.11 isolates $TASK_DIR to the leaf task folder, so graders
+      # can no longer import the group-level _shared/ helper by walking up the
+      # tree. Co-locate a copy of each group's _shared into its task dirs first.
+      - name: Stage _shared grader helpers
+        run: bash tests/scripts/stage_shared.sh
+
       - name: Run smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
