@@ -10,9 +10,20 @@ apps so the agent has existing registrations to inspect, edit, and retire.
   ce-identity-extapp-retired  -> agent deletes the whole app.
 
 Grading an update and a delete on two separate apps avoids the delete-erases-the-
-update-evidence problem (see identity_user_lifecycle_e2e.yaml). Always exits 0.
+update-evidence problem (see identity_user_lifecycle_e2e.yaml).
+
+EXITS NON-ZERO if any required fixture could not be seeded. coder_eval treats a
+failing pre_run as a run ERROR. This matters: an earlier revision always exited 0,
+so a silently failed `generate-secret` left no stale secret, the agent never ran
+delete-secret, and the verify's "stale secret is gone" assertion passed
+vacuously — emitting a success line identical to a real pass.
+
+Writes the seeded ids and secret count to a state file so the verify can assert
+its own preconditions and check id-absence (a rename preserves the id, so
+name-absence alone cannot distinguish delete from rename).
 """
 
+import json
 import logging
 import os
 import sys
@@ -24,11 +35,6 @@ from admin_helpers import run_cli, poll
 logging.basicConfig(level=logging.INFO, format="setup_extapp_maintain: %(message)s")
 logger = logging.getLogger(__name__)
 
-# Records the seeded app's ClientId so verify can prove the rename happened
-# IN PLACE. Without it, an agent that deletes the app and creates a new one with
-# the target name is indistinguishable from one that renamed it.
-STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_extapp_maintain_seed.txt")
-
 APP_ACTIVE = "ce-identity-extapp-active"
 APP_RENAMED = "ce-identity-extapp-consolidated"
 APP_RETIRED = "ce-identity-extapp-retired"
@@ -37,6 +43,14 @@ STALE_SECRET = "ce-extapp-stale-secret"
 # Includes the post-rename name so a re-run starts from a clean slate.
 ALL_APPS = (APP_ACTIVE, APP_RENAMED, APP_RETIRED)
 SEED_SCOPES = "OR.Folders,OR.Jobs,OR.Assets"
+LIST_LIMIT = "200"
+
+STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_extapp_maintain_seed.json")
+
+
+def die(message):
+    logger.error("SEED FAILED: %s", message)
+    sys.exit(1)
 
 
 def _name(app):
@@ -48,7 +62,9 @@ def _cid(app):
 
 
 def apps():
-    data = run_cli(["admin", "external-apps", "list"])
+    # Explicit limit: absence assertions downstream must not be satisfied by
+    # truncation on an org that already carries ~100 registrations.
+    data = run_cli(["admin", "external-apps", "list", "--limit", LIST_LIMIT])
     if not data or data.get("Result") != "Success":
         return None
     return data.get("Data", [])
@@ -64,9 +80,29 @@ def client_id(name):
     return None
 
 
+def secret_count(cid):
+    """Number of secret records currently on the app, or None if unreadable."""
+    got = run_cli(["admin", "external-apps", "get", cid])
+    if not got or got.get("Result") != "Success":
+        return None
+    details = got.get("Data") if "Data" in got else got
+
+    def find(node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if "secret" in k.lower() and isinstance(v, list):
+                    return v
+            for v in node.values():
+                r = find(v)
+                if r is not None:
+                    return r
+        return None
+
+    recs = find(details)
+    return None if recs is None else len(recs)
+
+
 def main():
-    # Clear stale state from a prior run in this container so verify can never
-    # validate against a previous run's ClientId.
     try:
         os.remove(STATE_FILE)
     except OSError:
@@ -74,32 +110,53 @@ def main():
 
     existing = apps()
     if existing is None:
-        logger.warning("Could not list external apps — seed skipped")
-        return
+        die("could not list external apps")
     for a in existing:
         if _name(a) in ALL_APPS and _cid(a):
             run_cli(["admin", "external-apps", "delete", _cid(a)])
 
     res = run_cli(["admin", "external-apps", "create", APP_ACTIVE, "--app-scope", SEED_SCOPES])
-    logger.info("Seeded app '%s' (%s): %s", APP_ACTIVE, SEED_SCOPES, (res or {}).get("Result"))
+    if not res or res.get("Result") != "Success":
+        die(f"could not create '{APP_ACTIVE}': {res}")
+    logger.info("Seeded app '%s' (%s)", APP_ACTIVE, SEED_SCOPES)
 
     res = run_cli(["admin", "external-apps", "create", APP_RETIRED, "--app-scope", "OR.Folders"])
-    logger.info("Seeded app '%s': %s", APP_RETIRED, (res or {}).get("Result"))
+    if not res or res.get("Result") != "Success":
+        die(f"could not create '{APP_RETIRED}': {res}")
+    logger.info("Seeded app '%s'", APP_RETIRED)
 
-    # Add the second, retirable secret to the active app.
-    cid = poll(lambda: client_id(APP_ACTIVE))
-    if not cid:
-        logger.warning("App '%s' not resolvable — stale secret not seeded", APP_ACTIVE)
-        return
+    active_cid = poll(lambda: client_id(APP_ACTIVE))
+    if not active_cid:
+        die(f"'{APP_ACTIVE}' not resolvable after create")
+    retired_cid = poll(lambda: client_id(APP_RETIRED))
+    if not retired_cid:
+        die(f"'{APP_RETIRED}' not resolvable after create")
+
+    # quiet=True: this response carries the once-only client secret value.
+    res = run_cli(["admin", "external-apps", "generate-secret", active_cid,
+                   "--description", STALE_SECRET, "--expiration", "2030-01-01"],
+                  quiet=True)
+    if not res or res.get("Result") != "Success":
+        die(f"could not seed the stale secret on '{APP_ACTIVE}' — without it the "
+            "delete-secret assertion would pass vacuously")
+    logger.info("Seeded stale secret '%s' on '%s'", STALE_SECRET, APP_ACTIVE)
+
+    count = poll(lambda: secret_count(active_cid))
+    if count is None:
+        die(f"could not read the secret collection on '{APP_ACTIVE}' — the verify "
+            "cannot assert an exact post-state without a seed baseline")
+    if count < 2:
+        die(f"expected >=2 secrets on '{APP_ACTIVE}' after seeding (creation secret + "
+            f"stale secret), found {count}")
 
     with open(STATE_FILE, "w") as f:
-        f.write(str(cid))
-    logger.info("Recorded seeded clientId=%s for in-place-rename verification", cid)
-    res = run_cli(["admin", "external-apps", "generate-secret", cid,
-                   "--description", STALE_SECRET, "--expiration", "2030-01-01"])
-    logger.info("Seeded stale secret '%s' on '%s': %s",
-                STALE_SECRET, APP_ACTIVE, (res or {}).get("Result"))
+        json.dump({
+            "active_client_id": str(active_cid),
+            "retired_client_id": str(retired_cid),
+            "secret_count_at_seed": count,
+        }, f)
+    logger.info("Recorded seed state: active=%s retired=%s secrets=%d",
+                active_cid, retired_cid, count)
 
 
 main()
-sys.exit(0)

@@ -11,12 +11,16 @@ description: >
   drops the issuer or audience. The verify reads the credential list back and
   asserts the new subject landed WHILE issuer and audience survived byte-for-byte.
 
-  The seeded audience is deliberately unguessable ("api://ce-fedcred-maintain-…").
-  An earlier revision preserved the canonical https://cloud.uipath.com, which an
-  agent could reproduce from context without reading anything — making the
-  preservation assertion measure nothing. With an arbitrary audience, passing
-  requires an actual `federated-credentials get`/`list` first, which is the
-  behaviour under test.
+  The audience is randomized per run ("api://ce-fedcred-maintain-<random>") and
+  recorded to the seed state file, replacing the canonical
+  https://cloud.uipath.com that an agent could reproduce from context. SCOPE OF
+  THE CLAIM: this asserts the END STATE, not that the credential was read. The
+  agent runs with Bash/Read/Grep in a container where the repo and the state file
+  are both reachable, so no value here is hidden from it. The assertion is still
+  load-bearing for the behaviour under test — a partial-payload update wipes
+  omitted fields regardless of what the agent knows — but "it passed, therefore
+  it read the credential" does not follow, and an earlier revision wrongly
+  claimed it did.
 
   Graded solely by reading tenant state back, following the pattern of
   identity_user_lifecycle_e2e and identity_delete_user_smoke. Deliberately NO

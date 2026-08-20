@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
 """Verify the identity-maintain e2e outcome by reading tenant state back.
 
-Four independent assertions, all outcome-graded (never a command string):
+Assertions, all outcome-graded (never a command string) and all checked against
+the seed baseline in the state file:
 
-  1. groups update  — 'ce-identity-maintain-group-renamed' exists and the
-                      pre-seeded 'ce-identity-maintain-group' name is gone.
-  2. groups delete  — 'ce-identity-maintain-stale-group' is gone.
-  3. robot update   — 'ce-identity-maintain-bot' still exists and its display
-                      name is now 'Maintain Bot Updated' (seeded as
-                      'Maintain Bot'), proving a real update landed.
-  4. robot delete   — 'ce-identity-maintain-retired-bot' is gone.
+  1. groups update  — the SEEDED group id now carries the renamed name, and the
+                      old name is gone. Comparing ids is what proves an in-place
+                      rename rather than a create-a-new-group shortcut.
+  2. groups delete  — the seeded stale group's ID is absent. Name-absence alone
+                      would accept an archive-instead-of-delete, since a rename
+                      preserves the id.
+  3. robot update   — the seeded robot id still exists and its display name is
+                      now 'Maintain Bot Updated' (seeded as 'Maintain Bot').
+  4. robot delete   — the seeded retired robot's ID is absent.
+  5. no collateral  — every non-fixture group present at seed time still exists.
 
-Also asserts at least one BuiltIn group survived (SKILL.md anti-pattern 1:
-built-in groups must never be deleted).
+Any missing or degenerate seed baseline is a hard failure, not a skipped check:
+an absent state file and a valid-but-empty snapshot both used to pass silently,
+which is the vacuous-pass shape this suite exists to avoid.
 """
 
 import json
@@ -32,11 +37,21 @@ GROUP_STALE = "ce-identity-maintain-stale-group"
 BOT_KEPT = "ce-identity-maintain-bot"
 BOT_RETIRED = "ce-identity-maintain-retired-bot"
 EXPECTED_DISPLAY_NAME = "Maintain Bot Updated"
+LIST_LIMIT = "200"
 STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_identity_maintain_seed.json")
+
+SEED_KEYS = ("other_groups", "group_rename_id", "group_stale_id",
+             "bot_update_id", "bot_retire_id")
 
 
 def _name(item):
     return item.get("Name") or item.get("name") or item.get("displayName") or ""
+
+
+def _id_of(item):
+    if not item:
+        return None
+    return item.get("Id") or item.get("id")
 
 
 # `groups list` reports Type as a numeric enum, NOT the string the skill docs
@@ -44,6 +59,8 @@ def _name(item):
 # 1 = custom. SKILL.md anti-pattern 1 describes these as `type: "BuiltIn"`,
 # which never appears in CLI output — comparing against that string silently
 # matched nothing and reported every tenant as having no built-ins left.
+# Reported for information only; the collateral check below is what actually
+# protects built-ins, since they are all present in the seed snapshot.
 BUILTIN_GROUP_TYPE = 0
 
 
@@ -61,20 +78,43 @@ def _is_builtin(group):
 
 
 def groups():
-    data = run_cli(["admin", "groups", "list"])
+    # Explicit limit: an absence assertion must never be satisfied by truncation.
+    data = run_cli(["admin", "groups", "list", "--limit", LIST_LIMIT])
     if not data or data.get("Result") != "Success":
         return None
     return data.get("Data", [])
 
 
 def robots():
-    data = run_cli(["admin", "robot-accounts", "list", "--search", "ce-identity-maintain"])
+    data = run_cli(["admin", "robot-accounts", "list", "--search", "ce-identity-maintain",
+                    "--limit", LIST_LIMIT])
     if not data or data.get("Result") != "Success":
         return None
     return data.get("Data", [])
 
 
+def load_seed():
+    try:
+        with open(STATE_FILE) as f:
+            state = json.load(f)
+    except (OSError, ValueError) as exc:
+        fail(f"seed state file {STATE_FILE} missing or malformed ({exc}) — cannot verify "
+             "preconditions; setup_identity_maintain.py did not complete")
+    for key in SEED_KEYS:
+        if not state.get(key):
+            fail(f"seed state is missing or empty for '{key}' — setup did not record a complete "
+                 "baseline, so the corresponding assertion would be vacuous")
+    return state
+
+
 def main():
+    seed = load_seed()
+    expected_others = seed["other_groups"]
+    rename_id = str(seed["group_rename_id"])
+    stale_id = str(seed["group_stale_id"])
+    bot_update_id = str(seed["bot_update_id"])
+    bot_retire_id = str(seed["bot_retire_id"])
+
     # Poll for the renamed group so eventual consistency does not fail the run.
     def renamed_present():
         gs = groups()
@@ -91,29 +131,26 @@ def main():
         fail(f"group '{GROUP_RENAMED}' not found — rename did not land; markers present: {names}")
 
     group_names = [_name(g) for g in gs]
-    if GROUP_SEEDED in group_names:
-        fail(f"group still named '{GROUP_SEEDED}' — a new group was created instead of renaming the existing one")
-    if GROUP_STALE in group_names:
-        fail(f"group '{GROUP_STALE}' still exists — it was not deleted")
-    if not any(_is_builtin(g) for g in gs):
-        fail("no built-in group left on the tenant — built-in groups must never be deleted")
+    group_ids = {str(_id_of(g)) for g in gs if _id_of(g)}
 
-    # Collateral-deletion check. Without this, an agent that deleted every real
-    # shared custom group (FinanceAdmins, Data Team, Compliance, ...) still passed,
-    # because the fixture assertions above and the built-in check were all
-    # satisfiable while the rest of the org was wiped.
-    try:
-        with open(STATE_FILE) as f:
-            expected_others = json.load(f).get("other_groups") or []
-    except (OSError, ValueError):
-        expected_others = None
-    if expected_others is None:
-        logging.warning("no pre-existing-group snapshot found — collateral-deletion check skipped")
-    else:
-        gone = sorted(set(expected_others) - set(group_names))
-        if gone:
-            fail(f"{len(gone)} non-fixture group(s) were deleted: {gone[:12]} — the agent must only "
-                 "touch the objects it was asked about")
+    if GROUP_SEEDED in group_names:
+        fail(f"group still named '{GROUP_SEEDED}' — a new group was created instead of renaming "
+             "the existing one")
+
+    renamed = next((g for g in gs if _name(g) == GROUP_RENAMED), None)
+    if str(_id_of(renamed)) != rename_id:
+        fail(f"'{GROUP_RENAMED}' has id={_id_of(renamed)} but the seeded group was {rename_id} — a "
+             "new group was created instead of renaming the existing one in place")
+
+    if stale_id in group_ids:
+        surviving = next((_name(g) for g in gs if str(_id_of(g)) == stale_id), "?")
+        fail(f"the stale group (id={stale_id}) still exists as '{surviving}' — it was renamed or "
+             "left in place, not deleted")
+
+    gone = sorted(set(expected_others) - set(group_names))
+    if gone:
+        fail(f"{len(gone)} non-fixture group(s) were deleted: {gone[:12]} — the agent must only "
+             "touch the objects it was asked about")
 
     def bot_updated():
         rs = robots()
@@ -129,16 +166,29 @@ def main():
         fail(f"robot account '{BOT_KEPT}' not found — it should have been updated, not deleted")
     dn = bot.get("DisplayName") or bot.get("displayName") or ""
     if dn != EXPECTED_DISPLAY_NAME:
-        fail(f"robot '{BOT_KEPT}' display name not updated (got {dn!r}, expected {EXPECTED_DISPLAY_NAME!r})")
+        fail(f"robot '{BOT_KEPT}' display name not updated (got {dn!r}, expected "
+             f"{EXPECTED_DISPLAY_NAME!r})")
+    if str(_id_of(bot)) != bot_update_id:
+        fail(f"'{BOT_KEPT}' has id={_id_of(bot)} but the seeded robot was {bot_update_id} — it was "
+             "recreated, not updated in place")
 
     rs = robots()
     if rs is None:
         fail("could not list robot accounts — cannot verify the retired bot is gone")
-    if any(_name(r) == BOT_RETIRED for r in rs):
-        fail(f"robot account '{BOT_RETIRED}' still exists — it was not deleted")
+    robot_ids = {str(_id_of(r)) for r in rs if _id_of(r)}
+    if bot_retire_id in robot_ids:
+        surviving = next((_name(r) for r in rs if str(_id_of(r)) == bot_retire_id), "?")
+        fail(f"the retired robot (id={bot_retire_id}) still exists as '{surviving}' — it was "
+             "renamed or left in place, not deleted")
 
-    ok(f"group renamed to '{GROUP_RENAMED}', '{GROUP_STALE}' deleted, "
-       f"robot '{BOT_KEPT}' display name = {dn!r}, '{BOT_RETIRED}' deleted")
+    builtins_present = sum(1 for g in gs if _is_builtin(g))
+
+    ok(f"seed baseline: {len(expected_others)} non-fixture groups, fixture ids rename={rename_id} "
+       f"stale={stale_id} bot={bot_update_id} retired={bot_retire_id} | group {rename_id} renamed "
+       f"IN PLACE to '{GROUP_RENAMED}' | stale id {stale_id} absent | robot {bot_update_id} "
+       f"display name = {dn!r} | retired id {bot_retire_id} absent | all "
+       f"{len(expected_others)} non-fixture groups intact ({builtins_present} built-in) across "
+       f"{len(gs)} listed groups")
 
 
 main()

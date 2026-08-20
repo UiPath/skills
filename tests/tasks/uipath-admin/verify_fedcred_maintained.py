@@ -2,19 +2,36 @@
 """Verify the federated-credentials maintain e2e outcome by reading the host app's
 credential list back.
 
-  1. federated-credentials update — 'ce-fedcred-main' is still there and its
-                                    subject now targets refs/heads/release, while
-                                    issuer and audience survive unchanged. Update
-                                    is a FULL REPLACE (all fields required), so an
-                                    agent that sends only --subject without first
-                                    reading the credential wipes or errors on the
+  1. federated-credentials update — 'ce-fedcred-main' still carries the SEEDED
+                                    CREDENTIAL ID, its subject now targets
+                                    refs/heads/release, and issuer + audience are
+                                    byte-identical to the seeded values. Update is
+                                    a FULL REPLACE (all fields required), so an
+                                    agent that sends only --subject drops the
                                     other fields and fails here.
-  2. federated-credentials delete — 'ce-fedcred-legacy' is gone.
+  2. federated-credentials delete — the legacy credential's SEEDED ID is absent,
+                                    and exactly one credential remains. Id
+                                    absence plus cardinality is what distinguishes
+                                    a delete from a rename: renaming preserves the
+                                    id, and a name-only check would pass.
+
+Expected issuer/audience come from the seed state file, not from constants here.
+The audience is randomized per run precisely so it cannot be a stale hardcoded
+value that drifted from what was seeded.
+
+SCOPE OF THE CLAIM: this asserts the end state, NOT that the agent read the
+credential first. The agent runs with Bash/Read/Grep in a container where the
+repo and this state file are both reachable, so no value in this test is
+unavailable to it. The assertion is still load-bearing for the behaviour under
+test — a partial-payload update wipes omitted fields regardless of what the agent
+knows — but "it passed, therefore it read the credential" does not follow.
 """
 
+import json
 import logging
 import os
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli, poll, fail, ok, first_list as _first_list
@@ -26,12 +43,9 @@ CRED_MAIN = "ce-fedcred-main"
 CRED_LEGACY = "ce-fedcred-legacy"
 EXPECTED_SUBJECT = "repo:myorg/myrepo:ref:refs/heads/release"
 SEEDED_SUBJECT = "repo:myorg/myrepo:ref:refs/heads/main"
-REQUIRED_ISSUER = "https://token.actions.githubusercontent.com"
+LIST_LIMIT = "200"
 
-# Must match setup_fedcred_maintain.AUDIENCE exactly. This value is deliberately
-# unguessable so that preserving it across the full-replace update is only
-# possible by reading the credential first — see that module's comment.
-REQUIRED_AUDIENCE = "api://ce-fedcred-maintain-8f2ad9c4"
+STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_fedcred_maintain_seed.json")
 
 
 def _get(item, *keys):
@@ -42,20 +56,32 @@ def _get(item, *keys):
     return ""
 
 
-def client_id():
-    data = run_cli(["admin", "external-apps", "list"])
-    if not data or data.get("Result") != "Success":
-        return None
-    for a in data.get("Data", []):
-        if (a.get("Name") or a.get("name") or "") == HOST:
-            return a.get("ClientId") or a.get("clientId") or a.get("Id") or a.get("id")
-    return None
+def _cid_of(item):
+    return str(item.get("Id") or item.get("id") or "")
+
+
+def load_seed():
+    try:
+        with open(STATE_FILE) as f:
+            state = json.load(f)
+    except (OSError, ValueError) as exc:
+        fail(f"seed state file {STATE_FILE} missing or malformed ({exc}) — cannot verify "
+             "preconditions; setup_fedcred_maintain.py did not complete")
+    for key in ("client_id", "audience", "issuer", "main_credential_id",
+                "legacy_credential_id", "credential_count_at_seed"):
+        if not state.get(key):
+            fail(f"seed state is missing '{key}' — setup did not record a complete baseline")
+    return state
 
 
 def main():
-    cid = poll(client_id)
-    if not cid:
-        fail(f"host external app '{HOST}' not found — setup may have failed")
+    seed = load_seed()
+    cid = str(seed["client_id"])
+    want_audience = str(seed["audience"])
+    want_issuer = str(seed["issuer"])
+    main_id = str(seed["main_credential_id"])
+    legacy_id = str(seed["legacy_credential_id"])
+    count_at_seed = int(seed["credential_count_at_seed"])
 
     def creds():
         data = run_cli(["admin", "external-apps", "federated-credentials", "list", cid])
@@ -68,7 +94,7 @@ def main():
         if not found:
             return None
         for c in found:
-            if _get(c, "Name") == CRED_MAIN and EXPECTED_SUBJECT in _get(c, "Subject"):
+            if _cid_of(c) == main_id and EXPECTED_SUBJECT in _get(c, "Subject"):
                 return found
         return None
 
@@ -77,33 +103,44 @@ def main():
         found = creds()
         if found is None:
             fail(f"could not list federated credentials on '{HOST}' — cannot verify")
-        summary = [(_get(c, "Name"), _get(c, "Subject")) for c in found]
-        fail(f"no credential named '{CRED_MAIN}' targeting {EXPECTED_SUBJECT}; present: {summary}")
+        summary = [(_cid_of(c), _get(c, "Name"), _get(c, "Subject")) for c in found]
+        fail(f"no credential with the seeded id {main_id} targeting {EXPECTED_SUBJECT}; present: {summary}")
 
-    main_cred = next(c for c in found if _get(c, "Name") == CRED_MAIN)
+    main_cred = next(c for c in found if _cid_of(c) == main_id)
+
     subject = _get(main_cred, "Subject")
     if SEEDED_SUBJECT in subject:
-        fail(f"'{CRED_MAIN}' still targets the seeded branch ({subject}) — retarget did not land")
+        fail(f"credential {main_id} still targets the seeded branch ({subject}) — retarget did not land")
 
-    # Exact equality, not substring: a substring match would accept a value the
-    # agent widened or prefixed, and the whole point is byte-for-byte survival of
-    # a field it had to read.
     issuer = _get(main_cred, "Issuer").strip()
-    if issuer != REQUIRED_ISSUER:
-        fail(f"'{CRED_MAIN}' issuer changed on update (got {issuer!r}, want {REQUIRED_ISSUER!r}) — "
-             "federated-credentials update is a full replace; re-read the credential first")
+    if issuer != want_issuer:
+        fail(f"credential {main_id} issuer changed on update (got {issuer!r}, seeded {want_issuer!r}) — "
+             "federated-credentials update is a full replace; every field must be supplied")
 
     audience = _get(main_cred, "Audience").strip()
-    if audience != REQUIRED_AUDIENCE:
-        fail(f"'{CRED_MAIN}' audience changed on update (got {audience!r}, want {REQUIRED_AUDIENCE!r}) — "
-             "the seeded audience is not derivable from the prompt, so this means the credential "
-             "was not read before the full-replace update")
+    if audience != want_audience:
+        fail(f"credential {main_id} audience changed on update (got {audience!r}, seeded "
+             f"{want_audience!r}) — federated-credentials update is a full replace; every field "
+             "must be supplied")
 
-    if any(_get(c, "Name") == CRED_LEGACY for c in found):
-        fail(f"credential '{CRED_LEGACY}' still exists on '{HOST}' — it was not deleted")
+    # Id-absence, not name-absence: a rename preserves the id, so checking that
+    # nothing is named 'ce-fedcred-legacy' would accept an archive-instead-of-delete.
+    ids = {_cid_of(c) for c in found}
+    if legacy_id in ids:
+        surviving = next((_get(c, "Name") for c in found if _cid_of(c) == legacy_id), "?")
+        fail(f"the legacy credential (id={legacy_id}) still exists as '{surviving}' — it was renamed "
+             "or left in place, not deleted")
 
-    ok(f"'{CRED_MAIN}' retargeted to {subject} with issuer and audience preserved, "
-       f"'{CRED_LEGACY}' deleted")
+    expected_after = count_at_seed - 1
+    if len(found) != expected_after:
+        summary = [(_cid_of(c), _get(c, "Name")) for c in found]
+        fail(f"'{HOST}' carries {len(found)} credential(s); expected exactly {expected_after} "
+             f"(seed baseline {count_at_seed} minus the deleted legacy one) — present: {summary}")
+
+    ok(f"seed baseline host={cid} main={main_id} legacy={legacy_id} count={count_at_seed} "
+       f"audience={want_audience} | credential {main_id} retargeted to {subject} with issuer and "
+       f"audience byte-identical to seed | legacy id {legacy_id} absent | credential count "
+       f"{count_at_seed}->{len(found)}")
 
 
 main()
