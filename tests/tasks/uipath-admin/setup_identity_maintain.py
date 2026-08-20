@@ -76,7 +76,7 @@ def _name(item):
 
 
 def drop_groups():
-    data = run_cli(["admin", "groups", "list", "--limit", LIST_LIMIT])
+    data = run_cli(["admin", "groups", "list"])
     if not data or data.get("Result") != "Success":
         return
     for g in data.get("Data", []):
@@ -130,7 +130,7 @@ def snapshot_other_groups():
     the expected state. Dies rather than returning empty: an empty snapshot makes
     the collateral check vacuous, and a shared org always has built-in groups.
     """
-    data = run_cli(["admin", "groups", "list", "--limit", LIST_LIMIT])
+    data = run_cli(["admin", "groups", "list"])
     if not data or data.get("Result") != "Success":
         die("could not snapshot pre-existing groups — the collateral-deletion check "
             "would be vacuous without a baseline")
@@ -156,7 +156,7 @@ def robot_id(name):
 
 
 def group_id(name):
-    data = run_cli(["admin", "groups", "list", "--limit", LIST_LIMIT])
+    data = run_cli(["admin", "groups", "list"])
     if not data or data.get("Result") != "Success":
         return None
     for g in data.get("Data", []):

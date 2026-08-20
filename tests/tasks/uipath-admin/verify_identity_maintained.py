@@ -78,8 +78,9 @@ def _is_builtin(group):
 
 
 def groups():
-    # Explicit limit: an absence assertion must never be satisfied by truncation.
-    data = run_cli(["admin", "groups", "list", "--limit", LIST_LIMIT])
+    # `groups list` documents no pagination flags and rejects --limit
+    # (ValidationError/invalid_argument); it returns the full set.
+    data = run_cli(["admin", "groups", "list"])
     if not data or data.get("Result") != "Success":
         return None
     return data.get("Data", [])

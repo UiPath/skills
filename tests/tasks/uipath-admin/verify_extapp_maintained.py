@@ -35,7 +35,6 @@ APP_RENAMED = "ce-identity-extapp-consolidated"
 APP_RETIRED = "ce-identity-extapp-retired"
 STALE_SECRET = "ce-extapp-stale-secret"
 EXPECTED_SCOPES = frozenset({"OR.Folders", "OR.Jobs"})
-LIST_LIMIT = "200"
 
 STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_extapp_maintain_seed.json")
 
@@ -54,7 +53,7 @@ def _cid(app):
 
 
 def apps():
-    data = run_cli(["admin", "external-apps", "list", "--limit", LIST_LIMIT])
+    data = run_cli(["admin", "external-apps", "list"])
     if not data or data.get("Result") != "Success":
         return None
     return data.get("Data", [])

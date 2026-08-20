@@ -43,7 +43,6 @@ CRED_MAIN = "ce-fedcred-main"
 CRED_LEGACY = "ce-fedcred-legacy"
 EXPECTED_SUBJECT = "repo:myorg/myrepo:ref:refs/heads/release"
 SEEDED_SUBJECT = "repo:myorg/myrepo:ref:refs/heads/main"
-LIST_LIMIT = "200"
 
 STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_fedcred_maintain_seed.json")
 

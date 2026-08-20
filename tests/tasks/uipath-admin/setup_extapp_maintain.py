@@ -43,7 +43,6 @@ STALE_SECRET = "ce-extapp-stale-secret"
 # Includes the post-rename name so a re-run starts from a clean slate.
 ALL_APPS = (APP_ACTIVE, APP_RENAMED, APP_RETIRED)
 SEED_SCOPES = "OR.Folders,OR.Jobs,OR.Assets"
-LIST_LIMIT = "200"
 
 STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_extapp_maintain_seed.json")
 
@@ -62,9 +61,9 @@ def _cid(app):
 
 
 def apps():
-    # Explicit limit: absence assertions downstream must not be satisfied by
-    # truncation on an org that already carries ~100 registrations.
-    data = run_cli(["admin", "external-apps", "list", "--limit", LIST_LIMIT])
+    # `external-apps list` documents no pagination flags and rejects --limit
+    # (ValidationError/invalid_argument); it returns the full set.
+    data = run_cli(["admin", "external-apps", "list"])
     if not data or data.get("Result") != "Success":
         return None
     return data.get("Data", [])

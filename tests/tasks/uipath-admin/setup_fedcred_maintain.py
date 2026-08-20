@@ -53,7 +53,6 @@ CRED_MAIN = "ce-fedcred-main"
 CRED_LEGACY = "ce-fedcred-legacy"
 SUBJECT_MAIN = "repo:myorg/myrepo:ref:refs/heads/main"
 SUBJECT_LEGACY = "repo:myorg/legacy-repo:ref:refs/heads/main"
-LIST_LIMIT = "200"
 
 STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_fedcred_maintain_seed.json")
 
@@ -64,7 +63,7 @@ def die(message):
 
 
 def find_host():
-    data = run_cli(["admin", "external-apps", "list", "--limit", LIST_LIMIT])
+    data = run_cli(["admin", "external-apps", "list"])
     if not data or data.get("Result") != "Success":
         return None
     for a in data.get("Data", []):
