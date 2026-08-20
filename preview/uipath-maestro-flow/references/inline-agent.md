@@ -6,7 +6,7 @@ An inline agent is defined inside this Flow project and may be connected to
 tenant context, callable tools, and human escalation resources.
 
 Signature:
-`inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, source?, temperature?, maxTokenPerResponse?, modelMaxTokens?, maxIterations?, context?, tools?, escalation? })`.
+`inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, source?, temperature?, maxTokenPerResponse?, modelMaxTokens?, maxIterations?, mode?, guardrails?, context?, tools?, escalation? })`.
 
 ```ts
 .step('triage', inlineAgent({ model: 'gpt-5.4',
@@ -83,3 +83,19 @@ the evidence for the actual configured model and cloud resources.
 Compile emits the node plus a stable `<source>/agent.json` sidecar. Prompt variables
 use `{{input.<name>}}`; `inputs` binds those names to flow references and `returns`
 declares what the agent hands back.
+
+## Guardrails and harness mode
+
+`guardrails` is Agent Builder's own array, carried on the node and in the
+sidecar. Each rail is `$guardrailType: 'custom'` (with `rules`) or
+`'builtInValidator'` (with `validatorType` + `validatorParameters`), plus
+`id`, `name`, `selector: { scopes: ['Agent'|'Llm'|'Tool'] }`, an `action`
+(`block` with a reason, `filter` over fields, or `log` with a severity), and
+`enabledForEvals`. Custom rules are `$ruleType: 'word' | 'number' | 'boolean'`
+over a field selector, or `'always'`. A rail with no scopes or an empty rules
+array can never fire — `check` rejects both.
+
+`mode: 'standard' | 'advanced'` picks the harness; naming it selects the
+node's 1.3 definition (omitting it keeps 1.2 byte-identically) and lands on
+the sidecar's `settings.mode`. Guardrail/harness behavior is runtime-side:
+offline rungs prove the emitted shape only.
