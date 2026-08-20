@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-case
-description: "Always invoke for UiPath Maestro Case Management: `caseplan.json`, `sdd.md`, or a case with no SDD yet (design-first). `.xaml`→uipath-rpa, `.flow`→uipath-maestro-flow, `.bpmn`→uipath-maestro-bpmn; case SDD/`sdd.draft.md`/PDD→SDD/cross-product→uipath-planner."
+description: "Always invoke for UiPath Maestro Case Management build work: `caseplan.json`, `sdd.md`, or building/creating a case when no SDD exists yet (the case design is produced first, then confirmed in one review). Produces tasks.md and authors or edits caseplan.json directly with Write/Edit. For .xaml→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn. For standalone case SDD design, case `sdd.draft.md` finalization, PDD→SDD, or cross-product planning→uipath-planner."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite, Agent
 ---
 
