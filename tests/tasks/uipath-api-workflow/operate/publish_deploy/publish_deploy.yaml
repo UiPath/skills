@@ -31,15 +31,20 @@ description: >
   Requires a tenant — runs in CI (run-coder-eval.yml) or against a local
   `uip login`, not the tempdir smoke gate.
 
-  TENANT PREREQUISITE: API workflows execute on serverless capacity, and that
-  capacity has to exist at tenant level — typically a machine template named
-  `Default Serverless`. "Serverless" does not mean "nothing to provision"; it
-  means the provisioning is one-off and tenant-wide rather than per-workflow.
-  Confirm with `uip or machines list` before blaming the task. Symptom when it is
-  missing: `uip or jobs start` fails, or the job never leaves `Pending`, which
-  looks nothing like a test defect. Provisioning it is `uipath-platform` territory
-  (`uip or machines`) and a one-time tenant setup — not something this task expects
-  the agent to discover or author.
+  TENANT PREREQUISITES: this task starts a job on the deployed process, which
+  consumes tenant runtime licensing and Orchestrator folder/machine wiring. If
+  `uip or jobs start` fails or the job never leaves `Pending`, treat it as tenant
+  setup rather than a task defect and hand it to `uipath-platform`:
+
+    - runtime license allocation (Robot Units / UNATT) —
+      skills/uipath-platform/references/licensing/tenant-allocations.md
+    - folder, machine and Orchestrator license wiring —
+      skills/uipath-platform/references/orchestrator/setup-environment.md
+    - starting jobs and selecting a runtime —
+      skills/uipath-platform/references/orchestrator/run-jobs.md
+
+  None of this is something the task expects the agent to discover or provision.
+
 tags: [uipath-api-workflow, e2e, mode:operate, lifecycle:setup]
 
 sandbox:
