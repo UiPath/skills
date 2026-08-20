@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ 41938ba. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ 49520ad. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -141,7 +141,9 @@ Choose it when a caller, test, or another process should start each run.
 
 A platform timer starts the flow on a recurring interval.
 
-Signature: `.trigger(scheduled({ every: string }))`.
+Signature: `.trigger(scheduled({ every: string }))`. `every` takes an ISO-8601
+repeating interval, or a Quartz cron expression (e.g. `'0 0 2 * * ?'`), which
+selects the trigger's 1.2 definition automatically.
 
 ```ts
 export default flow('nightly')
@@ -153,6 +155,26 @@ export default flow('nightly')
 Prefer self-contained variables because there may be no caller supplying inputs.
 
 **Reference: [`references/scheduled-trigger.md`](references/scheduled-trigger.md)**
+
+## Form trigger
+
+A person starts the flow by submitting a form (`core.trigger.form`); the
+submitted values ARE the flow's inputs.
+
+Signature: `.trigger(formTrigger())` — no arguments; the form's fields are
+derived from `.input()` (one per input, required unless it has a default).
+
+```ts
+export default flow('expense')
+  .input({ amount: types.number, reason: types.string })
+  .trigger(formTrigger())
+  .step('log', script({ code: 'return $vars.start.output.amount;' }))
+  .build();
+```
+
+Locally `--input` supplies the values; no rung renders a form.
+
+**Reference: [`references/form-trigger.md`](references/form-trigger.md)**
 
 ## Entry points (multiple triggers)
 
@@ -197,16 +219,18 @@ payload can exercise downstream wiring, but it is not a subscription witness.
 Standalone HTTP keeps non-2xx responses on its success output. Managed HTTP routes
 them through its error port. Both expose JSON response bodies as parsed values.
 
-Signature: `http({ method?, url, managed, headers?, query?, body?, contentType?, timeout?, retryCount?, returns? })`.
+Signature: `http({ method?, url, managed, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
 
 ```ts
 .step('getPolicy', http({ method: 'GET', url: policyUrl,
-  managed: true, returns: { limit: 'number' } }))
-.step('limit', script({
-  code: 'return $vars.getPolicy.output.body.limit;' }))
+  managed: true, returns: { limit: 'number' },
+  branches: [{ name: 'throttled', condition: js`$vars.getPolicy.output.statusCode === 429` }] }))
+.stepToList('branch-throttled', (b) => b.return({}))
+.step('limit', script({ code: 'return $vars.getPolicy.output.body.limit;' }))
 ```
 
-Match `managed` to the product node named by the scenario; set retry/timeouts only when requested.
+Match `managed` to the scenario's node. A branch is a `branch-<name>` side exit
+routed with `.stepToList`; the main path continues from the default port.
 
 **Reference: [`references/http.md`](references/http.md)**
 
@@ -262,14 +286,37 @@ Copy identity fields from a freshly pulled tenant registry; never construct them
 
 **Reference: [`references/ixp.md`](references/ixp.md)**
 
+## Document classify and Dynamic Extract
+
+Classify a document (`uipath.document.classify`), or extract fields against an
+INLINE schema (`uipath.ixp.extract-document-builder`) instead of a published
+IxP project's trained fields.
+
+Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
+`dynamicExtract({ fileRef, schema, model: { modelName, folderKey, ... }, pageRange? })`.
+
+```ts
+.step('classify', documentClassify({ fileRef: input('file'), splitPages: true }))
+.step('extract', dynamicExtract({ fileRef: input('file'),
+  schema: { type: 'object', properties: { total: { type: 'string' } } },
+  model: { modelName: 'invoiceixp-cef0d447-ixp', folderKey: '<folder-guid>' } }))
+```
+
+Dynamic Extract still needs a model deployment identity — copy `modelName` and
+`folderKey` from the tenant; never construct them.
+
+**Reference: [`references/document-pipeline.md`](references/document-pipeline.md)**
+
 ## Delay
 
-Pause this path for a duration, then continue.
+Pause this path for a duration — or until an absolute date-time — then continue.
 
-Signature: `delay({ duration: string })`.
+Signature: `delay({ duration: string })` or `delay({ until: string })`
+(exactly one; `until` is an ISO-8601 date-time, e.g. `'2026-09-01T09:00:00Z'`).
 
 ```ts
 .step('cooldown', delay({ duration: 'PT30S' }))
+.step('embargo', delay({ until: '2026-09-01T09:00:00Z' }))
 .step('resumedAt', script({ code: 'return new Date().toISOString();' }))
 ```
 
@@ -312,6 +359,25 @@ Confirm identity and exact argument casing on the tenant; `.onError(...)` is sup
 **Reference: [`references/api-workflow.md`](references/api-workflow.md)**
 
 **Finding the key: [`references/or-processes.md`](references/or-processes.md)**
+
+## Published function
+
+Run a deployed Orchestrator **Function** — a small unit of code published as its
+own resource — as one step.
+
+Signature: `publishedFunction({ key, name, folderPath, inputs?, returns? })`.
+
+```ts
+.step('echo', publishedFunction({ key: functionKey,
+  name: 'acme-echo', folderPath: 'Shared/acme-echo',
+  inputs: { message: input('message') }, returns: { echoed: 'string' } }))
+```
+
+A function is usually deployed into a folder of its OWN name — read `folderPath`
+from the tenant rather than assuming `'Shared'`, since the binding's resourceKey
+is `<folderPath>.<name>`.
+
+**Reference: [`references/published-function.md`](references/published-function.md)**
 
 ## Agentic process
 
@@ -356,18 +422,20 @@ sibling before calling it. Verify resource identity and answer quality live.
 
 Define an autonomous agent inside this Flow project, with optional resources.
 
-Signature: `inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, source?, context?, tools?, escalation?, ... })`.
+Signature: `inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, source?, context?, tools?, escalation?, guardrails?, mode?, ... })`.
 
 ```ts
-.step('triage', inlineAgent({ model: 'gpt-5.4',
-  systemPrompt: 'Return JSON with category.',
+.step('triage', inlineAgent({ model: 'gpt-5.4', systemPrompt: 'Return JSON with category.',
   userPrompt: 'Classify {{input.body}}', inputs: { body: input('body') },
-  returns: { category: 'string' } }))
+  returns: { category: 'string' },
+  guardrails: [{ id: 'no-pii', $guardrailType: 'custom', name: 'Block PII', selector: { scopes: ['Agent'] },
+    enabledForEvals: true, action: { $actionType: 'block', reason: 'PII detected' },
+    rules: [{ $ruleType: 'always', applyTo: 'inputAndOutput' }] }] }))
 ```
 
-Model/tool/escalation decisions and answer quality require live judgment.
+`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds; `memory: { name, id }` attaches an episodic memory; `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
 
-**Reference: [`references/inline-agent.md`](references/inline-agent.md)**
+**Reference: [`references/inline-agent.md`](references/inline-agent.md)** — resource families: [`references/agent-resources.md`](references/agent-resources.md)
 
 ## Queue item
 
@@ -384,6 +452,26 @@ Signature: `queueItem({ queue, folderPath, key, item, priority?, reference?, def
 Check tenant uniqueness/schema settings; wait only when a consumer exists and its result is needed.
 
 **Reference: [`references/queue.md`](references/queue.md)**
+
+## Data Fabric
+
+Read and update Data Fabric entity records (`core.datafabric.read` / `.update`).
+
+Signatures: `dataFabricRead({ entity, filters? })` and
+`dataFabricUpdate({ entity, record, set })` — `record` is exactly one of
+`{ byId }` or `{ fromRead: '<read step name>' }`.
+
+```ts
+.step('lookup', dataFabricRead({ entity: 'Invoices',
+  filters: [{ field: 'InvoiceId', value: input('invoiceId') }] }))
+.step('markPaid', dataFabricUpdate({ entity: 'Invoices',
+  record: { fromRead: 'lookup' }, set: { Status: 'Paid' } }))
+```
+
+Filters default to `operator: '='`; `or: true` joins a row with OR. No local
+rung reads a real entity — offline validate is the acceptance bar.
+
+**Reference: [`references/data-fabric.md`](references/data-fabric.md)**
 
 ## Error handling
 
@@ -506,22 +594,60 @@ Read a child's inputs with `input(...)`: its start node is named `<callerStepId>
 
 ## Human task
 
-Pause for a person using an inline form, quick form, or deployed Action App.
+Pause for a person: an inline form, quick form, deployed Action App, or a
+document-validation station.
 
-Signature: `hitl({ variant?, app?, title?, priority?, fields?, outcomes })`.
+Signature: `hitl({ variant?, app?, document?, title?, priority?, labels?, recipient?, fields?, outcomes, outcomePorts?, exposeError? })`.
 
 ```ts
 .step('review', hitl({ title: 'Review invoice',
-  fields: [{ id: 'comment', type: 'text', direction: 'output' }],
-  outcomes: ['Approve', 'Reject'] }))
-.switch('route', out('review', 'Action'), [
-  { value: 'Approve', body: (b) => b.return({ status: 'approved' }) },
-], (other) => other.return({ status: 'rejected' }))
+  recipient: { assignee: { type: 'user', value: 'reviewer@acme.test' } },
+  fields: [{ id: 'amount', type: 'number', direction: 'inOut', value: input('amount') }],
+  outcomes: ['Approve', 'Reject'], outcomePorts: true }))
+.stepToList('outcome-reject', (b) => b.return({ status: 'rejected' }))
+.step('proceed', script({ code: 'return "approved";' }))
 ```
 
-Choose the variant from the requested human experience and deployed app; offline runs script the human.
+`outcomePorts` routes per outcome (`outcome-<slug>` exits; the FIRST continues the main path); without it, route on `out('review', 'Action')`.
 
 **Reference: [`references/hitl.md`](references/hitl.md)**
+
+## Conversational
+
+Work a live CHAT: wait for the person's message, answer it, post a reply. Every
+step is keyed by a `conversationId` — the conversation trigger publishes it.
+
+Signatures: `.trigger(conversationTrigger())`; `waitForMessage({ conversationId, numExchanges? })`; `conversationalAgent({ model, systemPrompt, settings })`; `sendMessage({ conversationId, exchangeId, content, endExchange? })`; `conversationContext({ conversationId, exchangeLimit? })`.
+
+```ts
+.trigger(conversationTrigger())
+.step('listen', waitForMessage({ conversationId: out('start', 'conversationId') }))
+.step('reply', conversationalAgent({ model: 'gpt-5.4', systemPrompt: 'Answer briefly.',
+  settings: { context: out('listen', 'conversationContext') } }))
+```
+
+`waitForMessage` SUSPENDS the flow (a catch event), it does not poll. Use `sendMessage` when the flow decides what to say, an agent when the model does.
+
+**Reference: [`references/conversational.md`](references/conversational.md)**
+
+## Voice
+
+Talk to someone on a phone call. The call is identified by a `callContext`
+OBJECT — pass the whole thing, never a field inside it.
+
+Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, callContext, voice?, maxIterations? })`.
+
+```ts
+.step('dial', createOutgoingCall({ from: '+15550001111', to: input('phone') }))
+.step('talk', voiceAgent({ systemPrompt: 'Confirm the delivery window.',
+  callContext: out('dial', 'callContext'),
+  voice: { model: 'gemini-3.1-flash-live-preview', persona: 'Kore' } }))
+.step('bye', endCall({ callContext: out('dial', 'callContext') }))
+```
+
+The incoming-call trigger publishes `out('start', 'callContext')`. A persona belongs to its voice model; `maxIterations` is capped at 8.
+
+**Reference: [`references/voice.md`](references/voice.md)**
 
 ## Transform
 
