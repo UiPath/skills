@@ -4,11 +4,24 @@ The normative render contract for a case `sdd.md`: document skeleton, per-cell r
 
 **Template shape is part of the contract.** A valid in-memory model is not enough: the rendered `sdd.md` preserves the full template structure. A prose summary is never an SDD; the compact confirmation is never an SDD substitute.
 
-**The validator** mechanizes the deterministic checks: run `python3 "<this skill's folder>/scripts/audit_sdd.py" <sdd path> [--draft <draft path>]` — RUN it and act on findings; never open the script source. It parses the canonical tables in the layers guide (task types, lifecycle gates) and this file (naming rules), so those tables are load-bearing.
+**The validator** mechanizes the deterministic checks: run `python3 "<this skill's folder>/scripts/audit_sdd.py" <sdd path> [--draft <draft path>]` — RUN it and act on findings; never open the script source. It parses the canonical tables in the layers guide (task types, lifecycle gates — per gate slot) and this file (naming rules), so those tables are load-bearing.
+
+What it enforces (prose elsewhere defers to this list instead of restating it):
+
+1. Document skeleton — the § Template conformance gate: scaffold order + `planner-handoff:v1` marker, section/stage/task headings and numbering, per-block markers, per-type detail blocks, summary-only sections, literal `\n`, plain-text `<UNRESOLVED>`, the Case Variables header.
+2. Closed enums and pairing — task-type enum; WHEN legality per gate slot (stage entry, task entry); WHEN × Marks-Complete pairing inside exit tables; Exit Type × Marks-Complete legality; `return-to-origin` banned from case exits.
+3. Names — § Naming rules charset on stage/task names; stage-label and task-name uniqueness case-wide.
+4. SLA references — `sla-status-change` arity (2 = breach, 3 = at-risk), target is `root` or an exact stage name, title matches an SLA declared on that target.
+5. Data closure — consumed `=vars.X` declared + produced (lineage); `Out` rows carry a Default or a producing Outputs row; Buttons `Maps To` identifiers that occur nowhere else are flagged as dead routes.
+6. Cells — `Recipient` typed prefixes; empty task Entry Condition tables; forbidden skill-internal vocabulary.
+7. Structure — ≥ 1 `Marks Case Complete: Yes` row; `wait-for-user` ↔ `user-selected-stage` pairing both ways.
+8. Draft parity (`--draft`) — ordered stage/task inventory preserved; every draft `=js:` expression present; comparator thresholds encoded executably, not prose-only.
+
+If `python3` is unavailable, verify this list manually — every item must hold before the `ready` flip.
 
 ## Template conformance gate
 
-The exact rendered SDD text must pass this gate before it leaves the lane — in every mode against the **on-disk file assembled by the write-early cadence, before the `Status: ready` flip** (one structural Read is the check). This is a render check, not a second design review. Do not use the read to redesign the case.
+The exact rendered SDD text must pass this gate before it leaves the lane — in every mode against the **on-disk file assembled by the write-early cadence, before the `Status: ready` flip**. The gate is mechanized end-to-end by the validator — run it instead of eyeballing; one structural Read is allowed to repair findings. This is a render check, not a second design review. Do not use the read to redesign the case.
 
 Required shape:
 
@@ -198,7 +211,7 @@ Which WHEN to write per described timing: [layers § Sequencing & activation](ca
 | Priority · Task Title · Labels | `Low/Medium/High/Critical` · one-line user-visible instruction (required — Action Center displays it) · CSV or `—` |
 | Run Only Once · Required | Explicit `Yes`/`No` each |
 | Input / Output Schema | Tables `Field | Type | Binding (| Required)`. Declared fields MUST be a subset of the resolved app's schema; a field the app lacks → Ask (task-specific app / drop / placeholder), never silently author |
-| Buttons | Only when `is_decision: Yes` — then ≥ 2 rows, each `Maps To` referencing a declared §1.5 `Name` or `taskOutcome`, never an undeclared identifier |
+| Buttons | Only when `is_decision: Yes` — then ≥ 2 rows, each `Maps To` LHS a declared §1.5 `Name`, `taskOutcome`, or the task's own output (read downstream via a direct producer reference); never an identifier that occurs nowhere else |
 
 Reusing ONE deployed app across several `action` tasks is sanctioned when each task carries a distinct `actionType` dispatch value AND its declared fields ⊆ the app schema (the code-switched app); without a distinct `actionType`, or with non-bindable fields, it is the substitute-app defect (§ Architect's lens).
 
@@ -322,14 +335,14 @@ Emit medium review items when these fire; the noted high variants gate like any 
 
 Run ONCE against the in-memory model before presenting the review. Checks 16 and 19 need resolved I/O contracts, which design-time resolution does not pull — they are enforced at build; run them here only when a contract is already in memory.
 
-1. **Schema** — every task type is one of the nine ([layers § Task types](case-design-layers-guide.md#task-types)); every WHEN ↔ Marks-Complete pair is legal ([layers § Lifecycle gates](case-design-layers-guide.md#lifecycle-gates)).
+1. **Schema** — every task type is one of the nine ([layers § Task types](case-design-layers-guide.md#task-types)); every WHEN ↔ Marks-Complete pair and gate-slot rule is legal ([layers § Lifecycle gates](case-design-layers-guide.md#lifecycle-gates)). `[audit]`
 2. **Render contract** — every required cell concrete (§ Section 1 / § Section 2 above); no banned `—`/`<UNRESOLVED>` (§ Markers).
-   2a. **Template shape** — the rendered text passes § Template conformance gate on disk, before the `Status: ready` flip.
-   2b. **Safe display names** — § Naming rules charset + repair on every generated or carried display field.
-3. **Decision buttons** — `is_decision: Yes` ⟹ ≥ 2 buttons; every `Maps To` LHS is a §1.5 `Name` or `taskOutcome`.
-4. **Recipient encoding** — typed prefixes only.
+   2a. **Template shape** — § Template conformance gate on disk, before the `Status: ready` flip. `[audit]`
+   2b. **Safe display names** — § Naming rules charset + repair on every generated or carried display field. `[audit]`
+3. **Decision buttons** — `is_decision: Yes` ⟹ ≥ 2 buttons; every `Maps To` LHS is a §1.5 `Name`, `taskOutcome`, or the task's own output. `[audit: dead routes]`
+4. **Recipient encoding** — typed prefixes only. `[audit]`
 5. **Connector ids** — every connector task has `Connection ID` + `Activity Type ID`; every `wait-for-connector` rule (any scope) resolves connector key + event operation (+ connection when not tenant-default). Missing → paired high review item.
-6. **Variable lineage** — every consumer closes ([layers § Lineage closure](case-design-layers-guide.md#lineage-closure)).
+6. **Variable lineage** — every consumer closes ([layers § Lineage closure](case-design-layers-guide.md#lineage-closure)). `[audit]`
 7. **Override conflict** — no compliance trigger phrase paired with a non-`action` type without explicit user reconciliation ([layers § Task-type override priority](case-design-layers-guide.md#task-type-override-priority)).
 8. **Alt-disposition coverage** — ≥ 1 secondary stage ⟹ §1.4a non-empty OR an open high item.
 9. **High-severity acknowledgment** — open high items force the `Build despite N flagged items` pick.

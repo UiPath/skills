@@ -17,6 +17,8 @@ import sys
 from pathlib import Path
 
 REQUIRED_HEADINGS = [
+    "## Document History",
+    "## Planner Handoff",
     "## Table of Contents",
     "## Section 1: Case Definition",
     "### Case Metadata",
@@ -255,10 +257,19 @@ def load_model_facts() -> dict:
     facts["task_types"] = set(re.findall(r"^\|\s*`([a-z][a-z-]+)`\s*\|", section("Task types"), re.M))
     yes_when: set[str] = set()
     no_when: set[str] = set()
-    for row in re.finditer(r"^\|([^|]+)\|\s*(Yes|No)\s*\|([^|]+)\|", section("Lifecycle gates"), re.M):
+    gate_rules: dict[str, set[str]] = {}
+    for row in re.finditer(r"^\|([^|]+)\|([^|]+)\|([^|]+)\|", section("Lifecycle gates"), re.M):
+        gate, marks = row.group(1).strip(), row.group(2).strip()
         rules = set(re.findall(r"`([a-z][a-z-]+)`", row.group(3)))
-        (yes_when if row.group(2) == "Yes" else no_when).update(rules)
+        if not rules:
+            continue
+        gate_rules[gate] = rules
+        if marks == "Yes":
+            yes_when.update(rules)
+        elif marks == "No":
+            no_when.update(rules)
     facts["yes_when"], facts["no_when"] = yes_when, no_when
+    facts["gate_rules"] = gate_rules
     pattern = re.search(r"```\s*(\^[^\n`]+\$)\s*```", section("Naming rules", spec_text))
     facts["name_pattern"] = re.compile(pattern.group(1)) if pattern else None
     if not facts["task_types"] or not yes_when:
@@ -281,15 +292,25 @@ def model_findings(text: str) -> list[str]:
                 + ", ".join(sorted(facts["task_types"]))
             )
 
+    # WHEN x Marks-Complete pairing applies only inside tables whose header carries a
+    # 'Marks ... Complete' column — entry tables put Yes/No in their Interrupting column,
+    # and reading that cell as Marks-Complete false-flags legal entry rows.
     known_rules = facts["yes_when"] | facts["no_when"]
-    for line_no, line in enumerate(text.splitlines(), 1):
-        if not line.lstrip().startswith("|"):
+    lines = text.splitlines()
+    marks_col: int | None = None
+    for line_no, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            marks_col = None
             continue
-        cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) < 4:
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if any(re.fullmatch(r"Marks (Stage|Case) Complete", c) for c in cells):
+            marks_col = next(i for i, c in enumerate(cells) if c.startswith("Marks "))
+            continue
+        if marks_col is None or len(cells) <= marks_col or set(cells[0]) <= {"-", ":", " "}:
             continue
         when = re.match(r"`?([a-z][a-z-]+)", cells[0])
-        marks = next((c for c in cells if c in ("Yes", "No")), None)
+        marks = cells[marks_col] if cells[marks_col] in ("Yes", "No") else None
         if not when or marks is None or when.group(1) not in known_rules:
             continue
         legal = facts["yes_when"] if marks == "Yes" else facts["no_when"]
@@ -308,6 +329,193 @@ def model_findings(text: str) -> list[str]:
             candidate = strip_id_suffix(match.group(1)).strip()
             if not name_pattern.fullmatch(candidate):
                 findings.append(f"task name {candidate!r} breaks case-sdd-spec.md § Naming rules")
+    return findings
+
+
+
+EXIT_TYPES_YES = {"exit-only", "return-to-origin", "wait-for-user"}
+EXIT_TYPES_NO = {"exit-only", "wait-for-user"}
+RECIPIENT_PREFIX = re.compile(r"^(Role|User|UserGroup|Email|Expression):")
+FORBIDDEN_VOCAB = ["groupOperator", "savedFilterTrees", "io-binding", "auto-mint", "originalVar", "inputOutputs["]
+
+
+def section_slice(text: str, heading: str) -> str:
+    """Body of a `### {heading}` section up to the next heading of any level."""
+    match = re.search(rf"^### {re.escape(heading)}\s*$(.*?)(?=^#{{1,5}} |\Z)", text, re.M | re.S)
+    return match.group(1) if match else ""
+
+
+def table_rows(chunk: str) -> list[tuple[int, list[str]]]:
+    """(offset line index, cells) for pipe-table body rows in a chunk (header + ruler skipped)."""
+    rows = []
+    for i, line in enumerate(chunk.splitlines()):
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if not cells or set(cells[0]) <= {"-", ":", " "} or cells[0] in ("WHEN", "Name", "Button", "Threshold", "SLA"):
+            continue
+        rows.append((i, cells))
+    return rows
+
+
+def rule_name(cell: str) -> str | None:
+    match = re.match(r"`?([a-z][a-z-]+)", cell.strip())
+    return match.group(1) if match else None
+
+
+def declared_sla_titles(text: str) -> dict[str, set[str]]:
+    """SLA titles per target: 'root' from the §1.1 metadata row; each stage from its
+    `**SLA Title:**` lines. Casefolded keys and titles."""
+    titles: dict[str, set[str]] = {}
+    meta = section_slice(text, "Case Metadata")
+    row = re.search(r"^\|\s*SLA Title\s*\|\s*([^|]+?)\s*\|", meta, re.M)
+    if row and row.group(1).strip() not in ("—", ""):
+        titles["root"] = {row.group(1).strip()}
+    for _, stage_name, block in stage_blocks(text):
+        found = {m.group(1).strip() for m in re.finditer(r"^\*\*SLA Title:\*\*\s*([^\n<]+)", block, re.M)}
+        if found:
+            titles[stage_name.casefold()] = found
+    return titles
+
+
+def contract_findings(text: str, facts: dict) -> list[str]:
+    """Deterministic contract checks beyond template shape: gate-slot WHEN legality,
+    exit-type pairing, SLA title closure, uniqueness, recipients, buttons, Out producers,
+    completion row, wait-for-user pairing, markers, vocabulary."""
+    findings: list[str] = []
+    lines = text.splitlines()
+
+    if "<!-- planner-handoff:v1 -->" not in text:
+        findings.append("missing '<!-- planner-handoff:v1 -->' marker (Planner Handoff scaffold)")
+    if "`<UNRESOLVED>`" in text:
+        findings.append("backtick-wrapped `<UNRESOLVED>` — the marker renders as plain text, exactly <UNRESOLVED>")
+    for token in FORBIDDEN_VOCAB:
+        if token in text:
+            findings.append(f"forbidden skill-internal term {token!r} in the SDD body (case-sdd-spec.md § Markers & vocabulary)")
+
+    has_wfu_exit = re.search(r"\bwait-for-user\b", text) is not None
+    has_uss_entry = re.search(r"\buser-selected-stage\b", text) is not None
+    if has_wfu_exit and not has_uss_entry:
+        findings.append("wait-for-user exit with no user-selected-stage entry anywhere — validate fails with 'no possible stage options'")
+    if has_uss_entry and not has_wfu_exit:
+        findings.append("user-selected-stage entry with no wait-for-user exit anywhere — validate fails with 'will never be met'")
+
+    # Case Exit Conditions: >= 1 completing row
+    case_exit = section_slice(text, "Case Exit Conditions")
+    if case_exit and not any("Yes" in cells for _, cells in table_rows(case_exit)):
+        findings.append("Case Exit Conditions has no 'Marks Case Complete: Yes' row — the case can never complete")
+    if "return-to-origin" in case_exit:
+        findings.append("return-to-origin in Case Exit Conditions — it is a stage-completion exit type only")
+
+    # Case Variables: Out rows need a producer or Default
+    produced = set(re.findall(r"->\s*([A-Za-z]\w*)", text)) | set(re.findall(r"\b([A-Za-z]\w*)\s*=\s*(?!=)", text))
+    for name, cat, _, default in VARIABLE_ROW.findall(text):
+        if cat == "Out" and not default and name not in produced:
+            findings.append(f"Out variable {name!r} has no Default and no producing Outputs row (`-> {name}` / `{name} = ...`)")
+
+    # Uniqueness: stage labels and task display names, case-wide
+    seen_stages: set[str] = set()
+    seen_tasks: dict[str, str] = {}
+    for _, stage_name, block in stage_blocks(text):
+        key = stage_name.strip()
+        if key in seen_stages:
+            findings.append(f"duplicate stage label {key!r} — stage labels are unique across the case")
+        seen_stages.add(key)
+        for task in TASK_HEADING.finditer(block):
+            task_name = strip_id_suffix(task.group(3)).strip()
+            if task_name in seen_tasks and seen_tasks[task_name] != stage_name + task.group(0):
+                findings.append(f"duplicate task display name {task_name!r} — task names are unique across the whole case")
+            seen_tasks.setdefault(task_name, stage_name + task.group(0))
+
+    gate_rules = facts.get("gate_rules", {})
+    stage_entry_legal = gate_rules.get("Stage entry", set())
+    task_entry_legal = gate_rules.get("Task entry", set())
+    sla_titles = declared_sla_titles(text)
+
+    for kind, stage_name, block in stage_blocks(text):
+        # Stage entry WHEN legality
+        entry = re.search(r"^#### Stage Entry Conditions\s*$(.*?)(?=^#{1,5} |\*\*Task envelope\*\*|\Z)", block, re.M | re.S)
+        if entry and stage_entry_legal:
+            for _, cells in table_rows(entry.group(1)):
+                rule = rule_name(cells[0])
+                if rule and rule not in stage_entry_legal and (rule in facts["yes_when"] | facts["no_when"] | task_entry_legal | {"case-entered", "adhoc", "runs-sequentially", "current-stage-entered"}):
+                    findings.append(f"stage {stage_name!r}: entry WHEN {rule!r} is not a legal stage-entry rule (case-design-layers-guide.md § Lifecycle gates)")
+        # Stage exit rows: Exit Type x Marks Stage Complete legality
+        exit_sec = re.search(r"^#### Stage Exit Conditions\s*$(.*?)(?=^#{1,5} |\Z)", block, re.M | re.S)
+        if exit_sec:
+            for _, cells in table_rows(exit_sec.group(1)):
+                bare = [c.strip("`") for c in cells]
+                etype = next((c for c in bare if c in EXIT_TYPES_YES), None)
+                marks = next((c for c in bare if c in ("Yes", "No")), None)
+                if etype and marks:
+                    legal = EXIT_TYPES_YES if marks == "Yes" else EXIT_TYPES_NO
+                    if etype not in legal:
+                        findings.append(
+                            f"stage {stage_name!r}: exit type {etype!r} with Marks Stage Complete {marks!r} is illegal — "
+                            f"legal for {marks}: {', '.join(sorted(legal))}"
+                        )
+        # Task entry WHEN legality + Buttons Maps To
+        tasks = list(TASK_HEADING.finditer(block))
+        for index, task in enumerate(tasks):
+            end = tasks[index + 1].start() if index + 1 < len(tasks) else len(block)
+            task_block = block[task.start():end]
+            task_name = strip_id_suffix(task.group(3))
+            entry_tbl = re.search(r"\*\*Entry Condition:\*\*(.*?)(?=\*\*Task envelope\*\*|\Z)", task_block, re.S)
+            if entry_tbl and not table_rows(entry_tbl.group(1)):
+                findings.append(
+                    f"task {task_name!r}: Entry Condition has no table rows — an executable gate collapsed "
+                    "into prose drops out of the planning handoff (and a task with no entry never starts)"
+                )
+            if entry_tbl and task_entry_legal:
+                for _, cells in table_rows(entry_tbl.group(1)):
+                    rule = rule_name(cells[0])
+                    if rule and rule not in task_entry_legal and (rule in facts["yes_when"] | facts["no_when"] | stage_entry_legal):
+                        findings.append(f"task {task_name!r}: entry WHEN {rule!r} is not a legal task-entry rule (case-design-layers-guide.md § Lifecycle gates)")
+            recipient = re.search(r"^\*\*Recipient:\*\*\s*([^\n]+)", task_block, re.M)
+            if recipient:
+                value = recipient.group(1).strip().strip("`")
+                if value not in ("—", "<UNRESOLVED>") and not RECIPIENT_PREFIX.match(value) and not value.startswith("="):
+                    findings.append(f"task {task_name!r}: Recipient {value!r} lacks a typed prefix (Role:/User:/UserGroup:/Email:/Expression:)")
+
+    # Buttons Maps To LHS: a §1.5 name, taskOutcome, or the task's own output
+    # (read downstream via a direct producer reference). Flag only true orphans —
+    # an identifier that never occurs outside Buttons tables is a typo or dead route.
+    declared_vars = {name for name, _, _, _ in VARIABLE_ROW.findall(text)} | {"taskOutcome"}
+    button_spans = [m.span(1) for m in re.finditer(r"^\|\s*Button\s*\|\s*Maps To\s*\|[^\n]*$(.*?)(?=^[^|]|\Z)", text, re.M | re.S)]
+    outside = "".join(
+        text[(button_spans[i - 1][1] if i else 0):start] for i, (start, _) in enumerate(button_spans)
+    ) + (text[button_spans[-1][1]:] if button_spans else text)
+    for start, end in button_spans:
+        for _, cells in table_rows(text[start:end]):
+            if len(cells) < 2:
+                continue
+            target = re.match(r"`?([A-Za-z]\w*)", cells[1])
+            if not target:
+                continue
+            lhs = target.group(1)
+            if lhs in declared_vars:
+                continue
+            if not re.search(rf"\b{re.escape(lhs)}\b", outside):
+                findings.append(
+                    f"button {cells[0]!r} maps to {lhs!r}, which is never declared, extracted, or read anywhere else — "
+                    "a typo or a dead decision route"
+                )
+
+    # sla-status-change SLA-title closure (target validity is checked in audit())
+    if sla_titles:
+        for line_no, line in enumerate(lines, 1):
+            for call in re.finditer(r"sla-status-change\s*\(([^)]*)\)", line, re.I):
+                args = re.findall(r"[\"\u201c\u2018']([^\"\u201d\u2019']+)[\"\u201d\u2019']", call.group(1))
+                if len(args) < 2:
+                    continue
+                target = args[0].strip().casefold()
+                declared = sla_titles.get(target)
+                if declared is not None and args[1].strip().casefold() not in {t.casefold() for t in declared}:
+                    findings.append(
+                        f"line {line_no}: sla-status-change references SLA title {args[1]!r} but target {args[0]!r} declares: "
+                        + ", ".join(sorted(declared))
+                    )
     return findings
 
 
@@ -394,6 +602,7 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
 
     findings.extend(lineage_findings(text))
     findings.extend(model_findings(text))
+    findings.extend(contract_findings(text, load_model_facts() or {"gate_rules": {}, "yes_when": set(), "no_when": set()}))
 
     draft_findings: list[str] = []
     if draft_path is not None:
