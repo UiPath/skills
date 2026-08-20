@@ -598,8 +598,14 @@ The validator enforces (manual fallback when python3 is unavailable — every it
  5. Data closure: consumed =vars.X declared + produced; Out rows have Default or producer; orphan
     Buttons Maps To identifiers.
  6. Cells: Recipient typed prefixes; non-empty task Entry Condition tables; forbidden vocabulary.
- 7. Structure: ≥1 Marks Case Complete: Yes row; wait-for-user ↔ user-selected-stage both ways.
- 8. Draft parity (--draft): stage/task inventory preserved; every draft =js: expression present;
+ 7. Structure: ≥1 Marks Case Complete: Yes row; ≥1 trigger row; a case-entered entry exists;
+    no empty stage entry/exit or task Entry Condition tables; wait-for-user ↔ user-selected-stage
+    both ways; no duplicate case-exit rows.
+ 8. Precedence & liveness: no stage entry identical to a case-exit row (unreachable stage); no
+    unguarded exit sharing its WHEN with a guarded completion; no self-referencing stage entry;
+    required-* rules never vacuous (a Required: Yes stage / task exists); SLA minute counts
+    15–1000 and no stage SLA exceeding the case SLA.
+ 9. Draft parity (--draft): stage/task inventory preserved; every draft =js: expression present;
     comparator thresholds encoded executably, not prose-only.
 ===================================================================================== -->
 

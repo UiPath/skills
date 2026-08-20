@@ -491,6 +491,144 @@ def contract_findings(text: str, facts: dict) -> list[str]:
                     "a typo or a dead decision route"
                 )
 
+    # FE-parity structural rules (PO.Frontend validation, design-expressible subset)
+    entry_rows_all: list[tuple[str, str, list[str]]] = []  # (stage, WHEN cell, cells)
+    for kind, stage_name, block in stage_blocks(text):
+        entry = re.search(r"^#### Stage Entry Conditions\s*$(.*?)(?=^#{1,5} |\Z)", block, re.M | re.S)
+        if entry:
+            for _, cells in table_rows(entry.group(1)):
+                entry_rows_all.append((stage_name, cells[0], cells))
+                # self-reference: an entry selecting its own stage never fires
+                for arg in re.findall(r"selected-stage-(?:completed|exited)\s*\(\s*[\"\u201c\u2018']([^\"\u201d\u2019']+)", cells[0]):
+                    if strip_id_suffix(arg).strip() == stage_name:
+                        findings.append(f"stage {stage_name!r}: entry condition references its own stage — it can never fire")
+    if stage_blocks_exist := bool(list(stage_blocks(text))):
+        if not any("case-entered" in when for _, when, _ in entry_rows_all):
+            findings.append("no stage carries a `case-entered` entry row — the case has no start (first stage requires one)")
+
+    # >=1 trigger row (FE: NO_TRIGGER_NODE)
+    if not table_rows(section_slice(text, "Case Triggers")):
+        findings.append("Case Triggers has no rows — a case needs at least one trigger (T02)")
+
+    # SLA bounds + case-vs-stage duration (FE: SLA_BELOW_MIN/ABOVE_MAX_MINUTES, ROOT_SLA_LESS_THAN_NODES)
+    UNIT_MIN = {"min": 1, "h": 60, "d": 1440, "w": 10080, "m": 43200}
+
+    def sla_minutes(count: str, unit: str) -> int | None:
+        try:
+            return int(float(count)) * UNIT_MIN[unit.strip().strip("`")]
+        except (ValueError, KeyError):
+            return None
+
+    case_minutes = None
+    meta = section_slice(text, "Case Metadata")
+    case_sla = re.search(r"^\|\s*Case-Level SLA\s*\|\s*(\d+(?:\.\d+)?)\s*(min|h|d|w|m)\b", meta, re.M)
+    if case_sla:
+        case_minutes = sla_minutes(case_sla.group(1), case_sla.group(2))
+        if case_sla.group(2) == "min" and case_minutes is not None and not 15 <= case_minutes <= 1000:
+            findings.append(f"Case-Level SLA {case_minutes} min is out of bounds — minute counts are bounded 15–1000")
+    for kind, stage_name, block in stage_blocks(text):
+        sla_sec = re.search(r"^#### Stage SLA\s*$(.*?)(?=^#{1,5} |\Z)", block, re.M | re.S)
+        if not sla_sec:
+            continue
+        for _, cells in table_rows(sla_sec.group(1)):
+            if len(cells) < 2:
+                continue
+            minutes = sla_minutes(cells[0], cells[1])
+            if minutes is None:
+                continue
+            if cells[1].strip("`") == "min" and not 15 <= minutes <= 1000:
+                findings.append(f"stage {stage_name!r}: SLA {cells[0]} min out of bounds — minute counts are bounded 15–1000")
+            if case_minutes is not None and minutes > case_minutes:
+                findings.append(
+                    f"stage {stage_name!r}: stage SLA ({cells[0]} {cells[1].strip('`')}) exceeds the case-level SLA — "
+                    "the case would breach before the stage"
+                )
+            break
+
+    # vacuous required-* (FE + validate: 'no required stage(s)/task(s) selected')
+    required_stage = re.search(r"^\*\*Required for Case Completion:\*\*\s*Yes\b", text, re.M)
+    if "required-stages-completed" in text and list(stage_blocks(text)) and not required_stage:
+        findings.append(
+            "required-stages-completed is used but no stage declares '**Required for Case Completion:** Yes' — "
+            "validate fails with 'no required stage(s) selected'"
+        )
+    for kind, stage_name, block in stage_blocks(text):
+        exit_sec = re.search(r"^#### Stage Exit Conditions\s*$(.*?)(?=^#{1,5} |\Z)", block, re.M | re.S)
+        if not exit_sec or "required-tasks-completed" not in exit_sec.group(1):
+            continue
+        has_required_task = False
+        for env in re.finditer(r"\*\*Task envelope\*\*(.*?)(?=^#{1,6} |\*\*Entry Condition:\*\*|\Z)", block, re.M | re.S):
+            for _, cells in table_rows(env.group(1)):
+                if cells and cells[0].strip("`") == "Yes":
+                    has_required_task = True
+        if not has_required_task and TASK_HEADING.search(block):
+            findings.append(
+                f"stage {stage_name!r}: required-tasks-completed completion but no task envelope declares Required: Yes — "
+                "validate fails with 'no task(s) marked as required'"
+            )
+
+    # empty stage condition tables (FE: ENTRY/EXIT_CONDITION_MISSING) — an entry-less stage is unreachable
+    for kind, stage_name, block in stage_blocks(text):
+        entry_sec = re.search(r"^#### Stage Entry Conditions\s*$(.*?)(?=^#{1,5} |\Z)", block, re.M | re.S)
+        if entry_sec and not table_rows(entry_sec.group(1)):
+            findings.append(f"stage {stage_name!r}: Stage Entry Conditions has no rows — the stage can never activate")
+        exit_sec = re.search(r"^#### Stage Exit Conditions\s*$(.*?)(?=^#{1,5} |\Z)", block, re.M | re.S)
+        if exit_sec and not table_rows(exit_sec.group(1)):
+            findings.append(f"stage {stage_name!r}: Stage Exit Conditions has no rows — the stage can never complete or exit")
+
+    # entry-vs-case-exit overlap: case exit/completion evaluates BEFORE stage entry, so a stage
+    # entry identical to a case-exit row leaves the stage permanently unreachable
+    def norm_if(cell: str) -> str:
+        cell = cell.strip().strip("`")
+        return "" if cell in ("—", "-", "") else re.sub(r"\s+", "", cell)
+
+    case_exit_rows = []
+    for _, cells in table_rows(section_slice(text, "Case Exit Conditions")):
+        sel = re.search(r"selected-stage-(completed|exited)\s*\(\s*[\"\u201c\u2018']([^\"\u201d\u2019']+)", cells[0])
+        if sel and len(cells) >= 2:
+            case_exit_rows.append((sel.group(1), strip_id_suffix(sel.group(2)).strip(), norm_if(cells[1])))
+    if case_exit_rows:
+        for stage_name, when, cells in entry_rows_all:
+            sel = re.search(r"selected-stage-(completed|exited)\s*\(\s*[\"\u201c\u2018']([^\"\u201d\u2019']+)", when)
+            if not sel or len(cells) < 2:
+                continue
+            key = (sel.group(1), strip_id_suffix(sel.group(2)).strip(), norm_if(cells[1]))
+            if key in case_exit_rows:
+                findings.append(
+                    f"stage {stage_name!r}: entry condition matches a case-exit row (same rule, selector, IF) — "
+                    "case exit takes precedence, leaving the stage permanently unreachable; differentiate the IF guards"
+                )
+
+    # exit-overrides-completion: within one stage, a guarded completion (Yes + IF) sharing its WHEN
+    # with an unguarded exit (No, IF empty) never fires — exit evaluates first
+    for kind, stage_name, block in stage_blocks(text):
+        exit_sec = re.search(r"^#### Stage Exit Conditions\s*$(.*?)(?=^#{1,5} |\Z)", block, re.M | re.S)
+        if not exit_sec:
+            continue
+        rows = []
+        for _, cells in table_rows(exit_sec.group(1)):
+            bare = [c.strip("`") for c in cells]
+            marks = next((c for c in bare if c in ("Yes", "No")), None)
+            if marks and len(cells) >= 2:
+                rows.append((rule_name(cells[0]) or "", norm_if(cells[1]), marks))
+        for when_y, if_y, marks_y in rows:
+            if marks_y != "Yes" or not if_y:
+                continue
+            for when_n, if_n, marks_n in rows:
+                if marks_n == "No" and when_n == when_y and not if_n:
+                    findings.append(
+                        f"stage {stage_name!r}: unguarded exit row shares WHEN {when_y!r} with a guarded completion — "
+                        "the exit always fires first and the stage never completes; give the exit the inverse IF"
+                    )
+
+    # duplicate case-exit rows (FE: condition too similar)
+    seen_exit_rows: set[tuple] = set()
+    for _, cells in table_rows(section_slice(text, "Case Exit Conditions")):
+        key = tuple(norm_if(c) if i == 1 else c.strip("`") for i, c in enumerate(cells[:4]))
+        if key in seen_exit_rows:
+            findings.append(f"duplicate case-exit row {cells[0]!r} — identical rules are ambiguous; differentiate or drop one")
+        seen_exit_rows.add(key)
+
     # Selector existence: stage selectors name declared stages, task selectors declared tasks
     stage_names = {n.strip() for _, n, _ in stage_blocks(text)}
     task_names = {strip_id_suffix(m.group(3)).strip() for m in TASK_HEADING.finditer(text)}
