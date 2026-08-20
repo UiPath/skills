@@ -220,7 +220,7 @@ def test_fedcred_happy_path_passes(tmp_path, monkeypatch):
      "was renamed or left in place, not deleted"),
     ("subject never retargeted",
      [{**GOOD_CREDS[0], "Subject": "repo:myorg/myrepo:ref:refs/heads/main"}],
-     "targeting"),
+     "retarget did not land"),
 ])
 def test_fedcred_negative(label, creds, expect, tmp_path, monkeypatch):
     rc, out = _load_verify("verify_fedcred_maintained", fed_state(creds),

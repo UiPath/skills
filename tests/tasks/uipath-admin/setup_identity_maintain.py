@@ -63,6 +63,9 @@ ALL_GROUPS = (GROUP_RENAME, GROUP_RENAMED, GROUP_STALE)
 ALL_BOTS = (BOT_UPDATE, BOT_RETIRE)
 
 # Snapshot of non-fixture groups, so verify can prove no collateral deletion.
+# Groups created by any admin test share this prefix and are excluded — see
+# snapshot_other_groups().
+FIXTURE_PREFIX = "ce-"
 LIST_LIMIT = "200"
 STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_identity_maintain_seed.json")
 
@@ -134,9 +137,19 @@ def snapshot_other_groups():
     if not data or data.get("Result") != "Success":
         die("could not snapshot pre-existing groups — the collateral-deletion check "
             "would be vacuous without a baseline")
+    # Exclude every test-fixture group, not just this task's. Sibling admin tasks
+    # create and tear down their own `ce-*` groups (e.g. setup_group.py creates
+    # ce-identity-smoke-group, cleanup_group_marker.py deletes it), and the nightly
+    # runs with TASK_PARALLELISM. Snapshotting those names meant a sibling's
+    # teardown mid-run produced
+    #   "FAIL: 1 non-fixture group(s) were deleted: ['ce-identity-smoke-group']"
+    # blaming the agent for another task's cleanup. Real shared groups
+    # (FinanceAdmins, Data Team, Compliance, built-ins) do not use the prefix, so
+    # they are still protected.
     others = sorted(
         _name(g) for g in data.get("Data", [])
         if _name(g) and _name(g) not in ALL_GROUPS
+        and not _name(g).startswith(FIXTURE_PREFIX)
     )
     if not others:
         die("snapshot of non-fixture groups is empty — a shared org always has built-in "

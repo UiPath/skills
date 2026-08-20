@@ -39,6 +39,7 @@ import logging
 import os
 import sys
 import tempfile
+import time
 import uuid
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
@@ -132,7 +133,18 @@ def main():
     seed_cred(cid, CRED_MAIN, SUBJECT_MAIN, audience)
     seed_cred(cid, CRED_LEGACY, SUBJECT_LEGACY, audience)
 
-    seeded = creds(cid)
+    # Retry until BOTH credentials are visible: a single lagging read returning one
+    # credential is truthy, so poll() would accept it and die() on the count check
+    # below even though the environment is fine.
+    seeded = None
+    for attempt in range(4):
+        seeded = creds(cid)
+        if seeded is not None and len(seeded) >= 2:
+            break
+        if attempt < 3:
+            logger.info("credential read-back has %s entries (<2) — retrying in 5s",
+                        "None" if seeded is None else len(seeded))
+            time.sleep(5)
     if seeded is None:
         die("could not read the credential list back after seeding")
     by_name = {}

@@ -27,6 +27,9 @@ BOTS = (
 )
 MEMBER_EMAIL = "ce-identity-maintain-member@example.com"
 MEMBER_SEARCH = "ce-identity-maintain-member"
+# robot-accounts/users list default to 20; without this, leaked fixtures past
+# page 1 are never cleaned up.
+LIST_LIMIT = "200"
 
 
 def _id(item):
@@ -47,7 +50,8 @@ def main():
     else:
         logger.warning("Could not list groups — skipping group cleanup")
 
-    data = run_cli(["admin", "robot-accounts", "list", "--search", "ce-identity-maintain"])
+    data = run_cli(["admin", "robot-accounts", "list", "--search", "ce-identity-maintain",
+                   "--limit", LIST_LIMIT])
     if data and data.get("Result") == "Success":
         for r in data.get("Data", []):
             if _name(r) in BOTS and _id(r):
@@ -58,7 +62,7 @@ def main():
 
     # The dedicated fixture member invited by setup. Exact email match — this must
     # never touch a real org user.
-    data = run_cli(["admin", "users", "list", "--search", MEMBER_SEARCH])
+    data = run_cli(["admin", "users", "list", "--search", MEMBER_SEARCH, "--limit", LIST_LIMIT])
     if data and data.get("Result") == "Success":
         for u in data.get("Data", []):
             email = (u.get("Email") or u.get("email") or "").lower()

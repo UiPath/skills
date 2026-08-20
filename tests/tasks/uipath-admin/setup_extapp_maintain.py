@@ -28,6 +28,7 @@ import logging
 import os
 import sys
 import tempfile
+import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli, poll
@@ -140,13 +141,24 @@ def main():
             "delete-secret assertion would pass vacuously")
     logger.info("Seeded stale secret '%s' on '%s'", STALE_SECRET, APP_ACTIVE)
 
-    count = poll(lambda: secret_count(active_cid))
+    # NOT poll(): admin_helpers.poll returns the first TRUTHY result, so a single
+    # eventually-consistent read of 1 would satisfy it and skip the retry entirely —
+    # then die() below on a correct environment. Retry until the count is
+    # SUFFICIENT, not merely non-zero.
+    count = None
+    for attempt in range(4):
+        count = secret_count(active_cid)
+        if count is not None and count >= 2:
+            break
+        if attempt < 3:
+            logger.info("secret count=%s (<2) — retrying in 5s", count)
+            time.sleep(5)
     if count is None:
         die(f"could not read the secret collection on '{APP_ACTIVE}' — the verify "
             "cannot assert an exact post-state without a seed baseline")
     if count < 2:
         die(f"expected >=2 secrets on '{APP_ACTIVE}' after seeding (creation secret + "
-            f"stale secret), found {count}")
+            f"stale secret), found {count} after retries")
 
     with open(STATE_FILE, "w") as f:
         json.dump({

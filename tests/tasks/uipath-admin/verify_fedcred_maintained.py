@@ -42,7 +42,6 @@ HOST = "ce-identity-fedcred-maintain-host"
 CRED_MAIN = "ce-fedcred-main"
 CRED_LEGACY = "ce-fedcred-legacy"
 EXPECTED_SUBJECT = "repo:myorg/myrepo:ref:refs/heads/release"
-SEEDED_SUBJECT = "repo:myorg/myrepo:ref:refs/heads/main"
 
 STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_fedcred_maintain_seed.json")
 
@@ -92,8 +91,12 @@ def main():
         found = creds()
         if not found:
             return None
+        # Match on the seeded ID only. Requiring the new subject here made the
+        # dedicated "still targets the seeded branch" check below unreachable —
+        # a non-retargeted credential failed with the generic not-found message
+        # instead of the specific diagnosis.
         for c in found:
-            if _cid_of(c) == main_id and EXPECTED_SUBJECT in _get(c, "Subject"):
+            if _cid_of(c) == main_id:
                 return found
         return None
 
@@ -103,13 +106,14 @@ def main():
         if found is None:
             fail(f"could not list federated credentials on '{HOST}' — cannot verify")
         summary = [(_cid_of(c), _get(c, "Name"), _get(c, "Subject")) for c in found]
-        fail(f"no credential with the seeded id {main_id} targeting {EXPECTED_SUBJECT}; present: {summary}")
+        fail(f"no credential with the seeded id {main_id} on '{HOST}'; present: {summary}")
 
     main_cred = next(c for c in found if _cid_of(c) == main_id)
 
     subject = _get(main_cred, "Subject")
-    if SEEDED_SUBJECT in subject:
-        fail(f"credential {main_id} still targets the seeded branch ({subject}) — retarget did not land")
+    if EXPECTED_SUBJECT not in subject:
+        fail(f"credential {main_id} does not target {EXPECTED_SUBJECT} (subject={subject!r}) — "
+             "retarget did not land")
 
     issuer = _get(main_cred, "Issuer").strip()
     if issuer != want_issuer:

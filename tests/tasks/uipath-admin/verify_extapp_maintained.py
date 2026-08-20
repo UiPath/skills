@@ -41,6 +41,8 @@ STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_extapp_maintain_seed.json")
 # "user" so delegated scopes cannot be counted toward the app-scope assertion.
 APP_SCOPE_KEYS = ("appscope", "applicationscope", "scope")
 USER_SCOPE_MARKERS = ("user", "delegat")
+# Observed on every real application scope (run 32341565081 artifacts).
+APP_SCOPE_TYPE = 1
 
 
 def _name(app):
@@ -91,6 +93,14 @@ def app_scope_names(node):
                         continue  # delegated scopes are not application scopes
                     for entry in value:
                         if isinstance(entry, dict):
+                            # Every application scope observed in real payloads
+                            # carries Type: 1. Key-name exclusion alone is
+                            # defeated when a delegated scope sits in the SAME
+                            # Scopes list with a different Type, so filter on it
+                            # when present.
+                            etype = entry.get("Type", entry.get("type"))
+                            if isinstance(etype, int) and etype != APP_SCOPE_TYPE:
+                                continue
                             name = entry.get("Name") or entry.get("name") or entry.get("Value")
                             if name:
                                 out.append(str(name))
