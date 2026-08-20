@@ -14,32 +14,10 @@ package_dir="$sdk_root/node_modules/@uipath/flow-sdk"
   exit 1
 }
 
-# coder-eval defines TASK_DIR from the host checkout path. The preview arm
-# deliberately mounts that checkout at SKILLS_REPO_PATH instead, so recreate
-# the host path as a container-local symlink for frozen criteria that execute
-# `python3 $TASK_DIR/check_*.py`.
-case "${TASK_DIR:-}" in
-  */tests/tasks/*) task_repo_path="${TASK_DIR%%/tests/tasks/*}" ;;
-  *)
-    echo "stage-preview-sdk-workspace: TASK_DIR must be an absolute tests/tasks path" >&2
-    exit 1
-    ;;
-esac
 [ -d "${SKILLS_REPO_PATH:?SKILLS_REPO_PATH is required}/tests/tasks" ] || {
   echo "stage-preview-sdk-workspace: $SKILLS_REPO_PATH is not the checker repo" >&2
   exit 1
 }
-if [ "$task_repo_path" != "$SKILLS_REPO_PATH" ]; then
-  mkdir -p "$(dirname "$task_repo_path")"
-  if [ -e "$task_repo_path" ] || [ -L "$task_repo_path" ]; then
-    [ "$(realpath "$task_repo_path")" = "$(realpath "$SKILLS_REPO_PATH")" ] || {
-      echo "stage-preview-sdk-workspace: $task_repo_path already exists and is not $SKILLS_REPO_PATH" >&2
-      exit 1
-    }
-  else
-    ln -s "$SKILLS_REPO_PATH" "$task_repo_path"
-  fi
-fi
 
 library_json="${FLOW_SDK_LIBRARY_JSON:?FLOW_SDK_LIBRARY_JSON is required}"
 [ -f "$library_json/index.json" ] || {
