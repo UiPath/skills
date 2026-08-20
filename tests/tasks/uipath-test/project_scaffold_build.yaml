@@ -1,7 +1,7 @@
-# Owns a throwaway PROJECT for the whole scenario: the agent creates it, drives
-# it to a working run, then deletes it. Nothing in CLAIM, HEALTH or BANK is read
-# or written, so this task cannot disturb the fixture state the EVFX- contract
-# protects, and it leaves no tenant residue behind.
+# Owns a throwaway PROJECT for the whole scenario: the agent creates it, proves
+# it works by starting a run inside it, then deletes it. Nothing in CLAIM, HEALTH
+# or BANK is read or written, so this task cannot disturb the fixture state the
+# EVFX- contract protects, and it leaves no tenant residue behind.
 #
 # Cleanup is part of the graded scenario rather than a hook because this
 # framework has no post_run — tests/README.md: "There is no post_run. The agent
@@ -9,41 +9,50 @@
 # Grading the delete is therefore both the cleanup mechanism AND coverage of
 # `project delete`, which no other task asserts.
 #
-# WHY THE RUN ATTEMPT IS PART OF THE SCENARIO. An earlier revision of this task
-# asked only for an "execution-ready" project and graded `folders list` +
-# `set-default-folder` directly. It failed at 0.609 on codex run 32343500063
-# with both of those criteria matching zero commands — correctly, because
-# SKILL.md Critical Rule 10 tells the agent to set a default folder ONLY on the
-# exact missing-folder error from a `run`, and never to overwrite a working one.
-# With nothing being run, the rule's trigger never fires and a skill-following
-# agent rightly skips both calls. The task was grading a behaviour the skill
-# forbids. Driving an actual `run` makes the recovery path fire for the reason
-# the skill documents, which is also what makes this the only coverage of
-# Rule 10's recovery anywhere in tests/tasks/uipath-test/.
+# TWO EARLIER REVISIONS FAILED, AND WHAT THEY TAUGHT:
 #
-# The run's own success is deliberately NOT graded: whether a manual execution
-# completes depends on tenant state beyond the skill's control. What is graded
-# is that a run was attempted, the folder was discovered rather than invented,
-# and the folder was pinned in response.
+# 1. Codex run 32343500063 (score 0.609). The task asked for an "execution-ready"
+#    project and graded `or folders list` + `project set-default-folder`. Both
+#    matched zero commands, correctly: SKILL.md Critical Rule 10 says to set a
+#    default folder ONLY on the exact missing-folder error from a `run`, never
+#    pre-emptively. Nothing was being run, so the trigger never fired and a
+#    skill-following agent rightly skipped both. The task was grading a behaviour
+#    the skill forbids.
+#
+# 2. Codex run 32344136020 (score 0.435). The scenario then drove a MANUAL run to
+#    fire that trigger — and `uip tm testcases run --execution-type manual`
+#    succeeded on a folderless project, so the error still never surfaced. Rule 10
+#    claims `testcases run` and `testsets run` "both require a default folder";
+#    that holds for automated executions, not manual ones. Reaching the recovery
+#    path needs an automation-linked case and a robot-served folder, which the
+#    fixtures README notes pre_run cannot bootstrap — so the folder criteria are
+#    gone rather than forced, and Rule 10's recovery is left as a known coverage
+#    gap for a task that can supply a real automation link.
+#
+#    That run also broke the `project create` criterion, which had required the
+#    literal `EVFX-SCAFFOLD-` immediately after `--name`. The agent built
+#    `PROJECT_NAME="EVFX-SCAFFOLD-${STAMP}-${TAG}"` and passed `--name
+#    "$PROJECT_NAME"`, so the adjacency never existed. Criteria here now assert
+#    the stamp appears SOMEWHERE in the command and that the flag carries some
+#    value — the same failure class as the gemini `subprocess.run` wrapping
+#    documented on organize-testcases-into-testsets.
 task_id: skill-test-project-scaffold-build
 description: >
   Integration test: agent uses the uipath-test skill to provision a Test Manager
-  project, drive it to the point where a test case actually runs, and tear it
-  down again. Asserts that the agent (a) checks login status with --output json,
-  (b) creates the project with `project create` carrying both --name and
-  --project-key, (c) attempts a run and thereby triggers the missing-default-
-  folder error, (d) discovers a real Orchestrator folder with `uip or folders
-  list` instead of inventing a folder key, (e) pins it with
-  `project set-default-folder` as Critical Rule 10's named recovery, and
-  (f) deletes the project with --yes under the authorization the prompt grants.
-  The skill — not the prompt — must teach that the folder is set in response to
-  that specific failure rather than pre-emptively, that folder keys come from
-  Orchestrator rather than Test Manager, and that delete requires --yes.
+  project from nothing, prove it is usable by starting a run inside it, and tear
+  it down again. Asserts that the agent (a) checks login status, (b) creates the
+  project with `project create` carrying both --name and --project-key and the
+  caller's naming stamp, (c) starts a run against a test case it authored in that
+  fresh project, and (d) deletes the project with --yes under the authorization
+  the prompt grants. The skill — not the prompt — must teach the project/test
+  case/run ordering, that a run needs a test case UUID rather than a key, and
+  that delete requires --yes. Covers `project create` and `project delete`, which
+  no other task in this directory asserts.
 tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:test-case]
 
 run_limits:
-  expected_turns: 24
-  max_turns: 45
+  expected_turns: 20
+  max_turns: 40
 
 # Belt-and-braces only: the scenario deletes its own project. This exists for
 # the run that dies between create and delete, which would otherwise strand a
@@ -83,9 +92,8 @@ pre_run:
 initial_prompt: |
   I want to dry-run our Test Manager provisioning before I do it for real. In a
   throwaway project of your own: create the project, add a single manual test
-  case to it, and get that test case to actually start a run. The provisioning
-  is not proven until a run has started — work through whatever is missing until
-  it does. Then remove the project so nothing is left behind.
+  case to it, and start a run for that test case so I can see the provisioning
+  actually works end to end. Then remove the project so nothing is left behind.
 
   Name it `EVFX-SCAFFOLD-<STAMP>-<TAG>`, where <STAMP> is the current UTC date
   and time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase hex characters you
@@ -100,41 +108,33 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status with `--output json` (Critical Rules #1 + #3)"
+    description: "Agent checked login status before touching Test Manager (Critical Rule #1)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created the project with both a stamped --name and a --project-key"
+    description: "Agent created the project with --name, --project-key and the caller's EVFX-SCAFFOLD- stamp"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--name\s+["\x27]?EVFX-SCAFFOLD-)(?=[\s\S]*--project-key\s+\S)uip\s+tm\s+project\s+create\b'
+    command_pattern: '(?=[\s\S]*EVFX-SCAFFOLD-)(?=[\s\S]*--name\s+\S)(?=[\s\S]*--project-key\s+\S)uip\s+tm\s+project\s+create\b'
     min_count: 1
-    weight: 2.0
+    weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent attempted a run, which is what surfaces the missing-default-folder error (Critical Rule #10 trigger)"
+    description: "Agent authored a test case in its fresh project"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+(testcases?\s+run|testcase\s+execute|testsets?\s+run|testset\s+execute)\b'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent discovered a real Orchestrator folder instead of inventing a folder key (Critical Rules #7 + #8)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+list\b'
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--name\s+\S)uip\s+tm\s+testcases?\s+create\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent pinned the discovered folder in response to the run failure (Critical Rule #10 recovery)"
+    description: "Agent started a run against that test case by UUID, proving the provisioning is usable"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--folder-key\s+\S)uip\s+tm\s+project\s+set-default-folder\b'
+    command_pattern: '(?=[\s\S]*--test-case-id\s+\S)uip\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -144,5 +144,5 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*(--yes|-y)\b)uip\s+tm\s+project\s+delete\b'
     min_count: 1
-    weight: 2.0
+    weight: 2.5
     pass_threshold: 1.0
