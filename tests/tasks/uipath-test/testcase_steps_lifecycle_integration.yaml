@@ -57,7 +57,8 @@ initial_prompt: |
 
   List the steps once more so I can confirm the final order. Drop the test case
   key into testcase-key.txt so we can find it, and delete the case when you're
-  done so we don't leave junk behind. Just run it through — no need to check in.
+  done so we don't leave junk behind — you have my confirmation to delete it, so
+  go ahead without asking again. Just run it through — no need to check in.
 
   This isn't done until all three review tweaks are applied (expected result
   fixed, step reordered, "Submit the payment" removed), testcase-key.txt
