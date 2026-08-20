@@ -532,6 +532,16 @@ jobs:
         if: always()
         run: sudo chown -R $(id -u):$(id -g) /tmp/runs && sudo chmod -R 755 /tmp/runs 2>/dev/null || true
 
+      - name: Print eval failure diagnostics
+        if: failure() && steps.eval.outcome == 'failure'
+        run: |
+          for log in /tmp/runs/experiment.log /tmp/runs/*/experiment.log; do
+            [ -f "$log" ] || continue
+            echo "::group::$log (last 300 lines)"
+            tail -n 300 "$log"
+            echo "::endgroup::"
+          done
+
       # Strip heavy task scratch dirs before upload to keep artifact size
       # manageable. Matches smoke-skills.yml.
       - name: Clean up artifacts (remove .venv and node_modules)
@@ -547,6 +557,10 @@ jobs:
           # ** so the pattern matches the replicate-index segment that
           # coder_eval adds to per-task run dirs (/tmp/runs/<ts>/<variant>/<task>/<NN>/).
           path: |
+            /tmp/runs/experiment.html
+            /tmp/runs/experiment.md
+            /tmp/runs/experiment.json
+            /tmp/runs/experiment.log
             /tmp/runs/*/experiment.html
             /tmp/runs/*/experiment.md
             /tmp/runs/*/experiment.json
@@ -565,8 +579,8 @@ jobs:
         if: always()
         run: |
           set -uo pipefail
-          run_dir=$(ls -td /tmp/runs/*/ 2>/dev/null | head -n 1 || true)
-          if [ -z "$run_dir" ]; then
+          run_dir=/tmp/runs
+          if [ ! -d "$run_dir" ]; then
             echo "FAIL — no run directory produced" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
