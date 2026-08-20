@@ -374,7 +374,8 @@ jobs:
       # globs). Word-splitting is intentional — do not quote.
       - name: Run coder-eval
         env:
-          SKILLS_REPO_PATH:         ${{ github.workspace }}
+          SKILLS_REPO_HOST_PATH:    ${{ github.workspace }}
+          SKILLS_REPO_PATH:         ${{ inputs.experiment == 'preview-nightly' && '/skills-repo' || github.workspace }}
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ secrets.AWS_REGION }}
@@ -535,6 +536,11 @@ jobs:
       - name: Print eval failure diagnostics
         if: failure() && steps.eval.outcome == 'failure'
         run: |
+          if [ -f /tmp/runs/run.json ]; then
+            echo "::group::/tmp/runs/run.json errors"
+            jq -r '.task_results[] | select(.status != "SUCCESS") | "\(.task_id): \(.status): \(.error_message // "no error message")"' /tmp/runs/run.json
+            echo "::endgroup::"
+          fi
           for log in /tmp/runs/experiment.log /tmp/runs/*/experiment.log; do
             [ -f "$log" ] || continue
             echo "::group::$log (last 300 lines)"
@@ -561,6 +567,12 @@ jobs:
             /tmp/runs/experiment.md
             /tmp/runs/experiment.json
             /tmp/runs/experiment.log
+            /tmp/runs/run.json
+            /tmp/runs/run.md
+            /tmp/runs/resume_fingerprint.json
+            /tmp/runs/*/variant.html
+            /tmp/runs/*/variant.md
+            /tmp/runs/*/variant.json
             /tmp/runs/*/experiment.html
             /tmp/runs/*/experiment.md
             /tmp/runs/*/experiment.json
@@ -586,10 +598,14 @@ jobs:
           fi
           python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json, pathlib, sys
-          rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
+          root = pathlib.Path(sys.argv[1])
+          rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(root.rglob('task.json'))]
+          if not rows and (root / 'run.json').is_file():
+              rows = json.loads((root / 'run.json').read_text(encoding='utf-8')).get('task_results', [])
           for r in rows:
-              print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
-          ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
+              status = r.get('final_status', r.get('status', '?'))
+              print(f"{r.get('task_id','?')}: {status}")
+          ok = sum(1 for r in rows if r.get('final_status', r.get('status')) == 'SUCCESS')
           print(f"\n{ok}/{len(rows)} PASS (linux)")
           sys.exit(0 if rows and ok == len(rows) else 1)
           PY

@@ -30,7 +30,7 @@ defaults:
       extra_mounts:
         # The staged plugin is auto-mounted from agent.plugins below. This separate
         # mount keeps task checkers on the real repo after plugin-path decoupling.
-        - ${SKILLS_REPO_PATH}:${SKILLS_REPO_PATH}:ro
+        - ${SKILLS_REPO_HOST_PATH}:/skills-repo:ro
         - ~/.uipath:/.uipath:rw
 
   agent:
