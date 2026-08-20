@@ -164,7 +164,11 @@ template, but the runtime contract is fixed:
   with `type="json"` and `target="bodyField"`, and maps each field by variable
   id (`=vars.Var_Amount`). Include `<uipath:input name="args" type="json"
   target="bodyField"><![CDATA[{}]]></uipath:input>` even when there are no
-  inputs; this is part of the `BPMN.ScriptTask` registry template.
+  inputs; this is part of the `BPMN.ScriptTask` registry template. This rule
+  applies to nodes you author and to mappings an edit explicitly targets;
+  never retrofit these attributes onto an untouched node's mapping — a
+  pre-existing `<uipath:input name="args">` outside the edit's target stays
+  byte-identical.
 - Map the returned object's property back through `source="=result.response"`
   (the conventional scalar property) or `source="=result.response.<field>"`
   (another object field); `var` points at a declared variable id (do not put the

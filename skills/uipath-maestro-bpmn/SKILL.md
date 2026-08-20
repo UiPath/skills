@@ -49,7 +49,10 @@ tags, imported Integration Service payloads, and stable element IDs. Do not
 regenerate the whole file or drop extension data the skill does not recognize —
 preserve-only structures (see the blocklist in
 [references/structural-bpmn.md](references/structural-bpmn.md)) round-trip
-untouched.
+untouched. Never normalize existing nodes to this skill's canonical templates:
+do not add missing attributes (e.g. `type="json" target="bodyField"` on an
+existing `uipath:input`) to elements the edit does not target — on untouched
+neighbors only wiring (`bpmn:incoming`/`bpmn:outgoing`) may change.
 
 For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 `uipath-rpa`; for Python agents use `uipath-agents`; for Case plans use
