@@ -20,7 +20,7 @@ description: >
   LTS lag note: the export reads the long-term store, which trails the live
   `events` endpoint by up to ~48h, so the export leg can legitimately be empty
   even when the events leg returns rows. The export assertion is structural.
-tags: [uipath-admin, e2e, mode:operate, audit, export]
+tags: [uipath-admin, e2e, mode:operate, lifecycle:discover, audit, export]
 max_iterations: 2
 
 initial_prompt: |

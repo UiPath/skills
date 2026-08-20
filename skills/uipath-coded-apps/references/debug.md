@@ -497,6 +497,22 @@ Check the browser console for the error. Common causes: missing `@uipath/coded-a
 
 After fixing, rebuild (`npm run build`) and re-deploy (`uip codedapp deploy`). If 404 persists, check that `deploy` returned a valid `appUrl` in `.uipath/app.config.json`.
 
+### `publish` / `deploy` Fails Under a Client-Credentials Login
+
+These are **CLI session** scope failures — distinct from the app's own runtime scopes in `uipath.json` (see [`invalid_scope` Error in Auth URL](#invalid_scope-error-in-auth-url) for that). The session scope comes from `--scope` on `uip login`; the fix is always to re-login requesting `OR.Default` (Orchestrator) **and** `Apps.Read Apps.Write` (Apps service) together:
+
+```bash
+uip login --client-id <id> --client-secret <secret> \
+  --organization <org> --tenant <tenant> \
+  --scope "OR.Default Apps.Read Apps.Write"
+```
+
+| Symptom | Cause |
+|---------|-------|
+| Package upload succeeds, then `publish`'s "Registering coded app" step fails with `401` | Session scope is missing `Apps.Read Apps.Write` — registration hits the Apps service, not Orchestrator |
+| `uip or folders list` returns zero rows with `Result: Success`, and `deploy` then rejects a correct `--folder-key` as *"not found among folders accessible to your account"* | Session scope is missing `OR.Default`. Granular Orchestrator scopes (`OR.Folders`/`OR.Execution`/`OR.Administration`) authenticate and publish, but do not cover the folder lookup `deploy` validates against — so the misleading error is about the token, not the GUID |
+| `uip login` itself fails with `invalid_scope` | A requested name is not granted on the External Application. Matching is exact, not hierarchical — requesting `OR.Folders` against an `OR.Folders.Read` grant is rejected. `OR.Default` is auto-granted, so the app itself needs only `Apps.Read` + `Apps.Write` |
+
 ---
 
 ## External Application Setup

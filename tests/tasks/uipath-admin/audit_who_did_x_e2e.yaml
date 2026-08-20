@@ -23,7 +23,7 @@ description: >
   agent's filter cannot be reproduced by the harness, an empty result passes
   without a live comparison (AUDIT_CORROBORATE_EMPTY=0) and the llm_judge carries
   the gating signal for the answer itself.
-tags: [uipath-admin, e2e, mode:diagnose, audit, investigation]
+tags: [uipath-admin, e2e, mode:diagnose, lifecycle:discover, audit, investigation]
 max_iterations: 2
 
 initial_prompt: |

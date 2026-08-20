@@ -4,7 +4,7 @@ description: >
   group, discovers users, adds members, verifies membership, then
   removes a member. Tests full group lifecycle and the critical rule
   about using user IDs (not usernames) for membership operations.
-tags: [uipath-admin, e2e, mode:build, lifecycle:generate, lifecycle:edit]
+tags: [uipath-admin, e2e, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 12
@@ -54,13 +54,29 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Outcome gate: read the group's final membership back from the tenant and
+  # require exactly one member — the task's stated goal ("confirm only one
+  # remains") after add-two / revoke-one. Replaces the old `members list` >=2
+  # command-count check, which graded how many times the agent TYPED the verify
+  # command rather than whether the end state was correct.
+  - type: run_command
+    description: "Group ends with exactly one member (first user retained, second revoked), read back from the tenant"
+    command: 'GROUP_NAME="Invoice Processing Team" EXPECT_MEMBERS=1 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_group_member.py''))"'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory (pass_threshold 0): report that the agent self-verified via
+  # `members list`, without gating on how many times it was typed — the outcome
+  # gate above is the real verification.
   - type: command_executed
-    description: "Agent verified membership via members list (at least twice: after add and after revoke)"
+    description: "Agent self-verified membership via members list (advisory, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+groups\s+members\s+list'
-    min_count: 2
-    weight: 2.0
-    pass_threshold: 1.0
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
 
 post_run:
   - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_group.py''))"'

@@ -255,27 +255,30 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 <!--skill-flavor:flow-project-creation:end-->
 
 <!--skill-flavor:agent-scaffold-solution-root:start-->
-3. **Scaffold the coded agent as a sibling folder.** From the solution root (still inside `<SolutionName>/`):
+3. **Scaffold the coded agent as a sibling folder.** From the solution root (still inside `<SolutionName>/`) — `uip codedagent new` scaffolds into the **current directory**, it does NOT create a subfolder, so create the agent folder first and run everything inside it:
 <!--skill-flavor:agent-scaffold-solution-root:end-->
 
    ```bash
+   mkdir "<AgentName>"
+   cd "<AgentName>"
    uv venv --python 3.13
    source .venv/bin/activate        # .venv\Scripts\activate on Windows
-   uv add <framework-package>       # e.g. uipath-langchain for LangGraph
-   uv add uipath-dev --dev
-   uv sync
+   uv pip install <framework-package>   # e.g. uipath-langchain for LangGraph
    uip codedagent setup --force
    uip codedagent new "<AgentName>"
+   uv add uipath-dev --dev
+   uv sync
    ```
+
+   `uv add` requires the `pyproject.toml` that `codedagent new` generates — run it only after `new`, never at the solution root.
 
 <!--skill-flavor:agent-scaffold-result-paths:start-->
    Result: `<SolutionName>/<AgentName>/` sibling to `<SolutionName>/<FlowName>/`.
 <!--skill-flavor:agent-scaffold-result-paths:end-->
 
-4. **Implement the agent's `main.py`** with lazy LLM initialization (LLM clients inside graph nodes only — never at module top level), then regenerate entry-points / bindings:
+4. **Implement the agent's `main.py`** with lazy LLM initialization (LLM clients inside graph nodes only — never at module top level), then regenerate entry-points / bindings (still inside `<AgentName>/`):
 
    ```bash
-   cd "<AgentName>"
    uip codedagent init
    ```
 

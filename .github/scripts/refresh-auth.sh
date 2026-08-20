@@ -25,7 +25,9 @@ set -euo pipefail
 : "${CE_USERNAME:?CE_USERNAME not set}"
 : "${CE_PASSWORD:?CE_PASSWORD not set}"
 
-AUTH_FILE="${HOME}/.uipath/.auth"
+# Output path is overridable: the Windows delegate-sdk path mints to a separate
+# file so the uip CLI's own browser-OAuth login in ~/.uipath/.auth stays intact.
+: "${AUTH_FILE:=${HOME}/.uipath/.auth}"
 mkdir -p "$(dirname "$AUTH_FILE")"
 
 SCOPES="openid profile email offline_access Orchestrator OrchestratorApiUserAccess StudioWebBackend StudioWebTypeCacheService ProcessMining ConnectionService ConnectionServiceUser DataService DataServiceApiUserAccess DocumentUnderstanding Du.AiProxy Du.Classification.Api Du.DataDeletion.Api Du.Digitization.Api Du.Extraction.Api Du.Metering Du.Storage.PresignedUrl Du.Training.Service Du.Validation.Api EnterpriseContextService Directory IdentityServerApi JamJamApi LLMGateway LLMOps OMS RCS.FolderAuthorization RCS.TagsManagement Insights Insights.Integrations Insights.RealTimeData Audit.Read AITL.Audit.Export AutomationSolutions AutopilotForEveryone Academy AiFabric ASPortalBackend.Client BusinessUserPortalProxyApi ConversationalAgents CustomerPortal GlobalClientManagement.Internal ManageLicense PIMS PerfService ReferenceToken Reinfer Relay.Service Robot.Local SCP.Jobs.Read SCP.Runtimes SCP.Runtimes.Read SRS.Events SRS.Recommendations TaskMining TestmanagerApiUserAccess TM.Attachments TM.CustomFieldDefinitions TM.CustomFieldValues TM.ObjectLabels TM.PerformanceScenarioExecutions TM.PerformanceScenarios TM.Projects TM.Requirements TM.TestCases TM.TestExecutions TM.TestSets Traces.Api AT.TrackOperations Docs.Service Docs.GPT.Search"
@@ -54,6 +56,20 @@ refresh_token=$(echo "$response" | jq -r '.refresh_token')
 if [ -z "$access_token" ] || [ "$access_token" = "null" ]; then
     echo "Token response did not contain an access_token" >&2
     exit 1
+fi
+
+# Register the MINTED tokens as masked values. GitHub masks the configured
+# `secrets.*` (CLIENT_SECRET, CE_PASSWORD, ...) automatically, but these two are
+# derived at runtime from the token endpoint, so nothing masks them by default —
+# an accidental echo anywhere downstream (a `set -x`, a tool that dumps its env,
+# a verbose HTTP trace) would print a live bearer token in plaintext. Gated on
+# GITHUB_ACTIONS: outside Actions the ::add-mask:: command is not interpreted, so
+# emitting it would itself print the token.
+if [ -n "${GITHUB_ACTIONS:-}" ]; then
+    echo "::add-mask::${access_token}"
+    if [ -n "$refresh_token" ] && [ "$refresh_token" != "null" ]; then
+        echo "::add-mask::${refresh_token}"
+    fi
 fi
 
 umask 077

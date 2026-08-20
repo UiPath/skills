@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Eval-lifecycle check: both documented mocking patterns + JsonSimilarity.
+"""Eval-lifecycle check: declarative mockito mocking + JsonSimilarity.
 
-The agent must pin BOTH mocking patterns (the skill documents two of
-them, and a real agent will reach for one or the other depending on
-the call shape):
+The agent must wire the declarative mocking pattern the skill
+documents for deterministic offline evals:
 
-  - Declarative `mockingStrategy: mockito` on at least one test case,
-    mocking the UiPath SDK asset retrieval helper.
-  - In-code `@mockable(example_calls=[...])` on at least one function
-    in `main.py`, paired with the `ExampleCall` import from
-    `uipath.eval.mocks`. This is what makes the `requests.get`-style
-    helper substitutable at eval time without a real network call.
+  - Register external-call helpers in `main.py` with `@mockable`
+    from `uipath.eval.mocks` — mockito binds only to registered
+    functions. Bare `@mockable()` is correct here; `example_calls`
+    matter only for LLM-driven mocking, which is out of scope for
+    this task.
+  - Supply mock values via `mockingStrategy.type == "mockito"` on
+    at least one test case, with a non-empty return behavior.
 
 Output evaluator: `JsonSimilarityEvaluator`
 (`evaluatorTypeId == "uipath-json-similarity"`). The agent's output
@@ -19,8 +19,8 @@ exercises a separate evaluator type from `eval_exact_match`.
 
 Checks:
   1. `asset-retriever/pyproject.toml` exists with no `[build-system]`.
-  2. `asset-retriever/main.py` imports `mockable` and `ExampleCall` from
-     `uipath.eval.mocks` AND has at least one `@mockable(...)`
+  2. `asset-retriever/main.py` imports `mockable` from
+     `uipath.eval.mocks` AND has at least one `@mockable`
      decorator.
   3. `asset-retriever/evaluations/evaluators/*.json` contains an
      evaluator with `evaluatorTypeId == "uipath-json-similarity"`.
@@ -77,36 +77,31 @@ def check_pyproject() -> None:
     print("OK: pyproject.toml has no [build-system]")
 
 
-def check_in_code_mocking() -> None:
-    """Pattern 2: in-code `@mockable` paired with `ExampleCall`."""
+def check_mockable_registration() -> None:
+    """`@mockable` registration: mockito binds only to decorated functions."""
     main = _read_text(ROOT / "main.py")
     if "from uipath.eval.mocks" not in main:
         sys.exit(
-            "FAIL: main.py does not import from `uipath.eval.mocks`. The "
-            "`@mockable`/`ExampleCall` pair is documented as the in-code "
-            "mocking pattern; one of the two external calls should use it."
+            "FAIL: main.py does not import from `uipath.eval.mocks`. "
+            "External-call helpers must be registered with `@mockable` for "
+            "declarative mockito mocks to bind."
         )
     if "mockable" not in main:
         sys.exit(
             "FAIL: main.py imports from `uipath.eval.mocks` but never uses "
             "`mockable`. The decorator must wrap at least one helper."
         )
-    if "ExampleCall" not in main:
-        sys.exit(
-            "FAIL: main.py does not reference `ExampleCall`. `@mockable` "
-            "needs `example_calls=[ExampleCall(...)]` to supply mock outputs."
-        )
     if "@mockable" not in main:
         sys.exit(
             "FAIL: main.py imports `mockable` but no function is decorated "
-            "with `@mockable(...)`. The decoration is what makes the "
-            "function substitutable at eval time."
+            "with `@mockable`. The decoration is what makes the function "
+            "substitutable at eval time."
         )
-    print("OK: main.py wires the in-code @mockable pattern with ExampleCall")
+    print("OK: main.py registers external-call helpers with @mockable")
 
 
 def check_json_similarity_evaluator() -> str:
-    """Pattern 1 of two: structured-output evaluator."""
+    """Structured-output evaluator."""
     evals_dir = ROOT / "evaluations" / "evaluators"
     if not evals_dir.is_dir():
         sys.exit(f"FAIL: {evals_dir} does not exist")
@@ -139,7 +134,7 @@ def _has_mockito_with_return(case: dict) -> bool:
 
 
 def check_eval_set() -> int:
-    """Pattern 1 of mocking: declarative mockito for the asset call."""
+    """Declarative mockito mocks with return behaviors."""
     path = find_single_json(ROOT / "evaluations" / "eval-sets")
     doc = _load_json(path)
     if doc.get("version") != "1.0":
@@ -218,7 +213,7 @@ def main() -> None:
     if not ROOT.is_dir():
         sys.exit(f"FAIL: project directory {ROOT} does not exist")
     check_pyproject()
-    check_in_code_mocking()
+    check_mockable_registration()
     check_json_similarity_evaluator()
     case_count = check_eval_set()
     check_results(case_count)
