@@ -66,6 +66,13 @@ ALL_BOTS = (BOT_UPDATE, BOT_RETIRE)
 # Groups created by any admin test share this prefix and are excluded — see
 # snapshot_other_groups().
 FIXTURE_PREFIX = "ce-"
+
+# Groups created and destroyed by OTHER admin tasks that do NOT use the fixture
+# prefix. group_membership_management_e2e creates "Invoice Processing Team" and
+# instructs the agent to delete it first, so snapshotting that name made a
+# sibling's normal operation fail this task under -j4. Round 4 fixed the
+# ce-prefixed instance of this and missed the unprefixed one.
+SIBLING_FIXTURE_GROUPS = ("Invoice Processing Team",)
 LIST_LIMIT = "200"
 STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_identity_maintain_seed.json")
 
@@ -76,6 +83,23 @@ def _id(item):
 
 def _name(item):
     return item.get("Name") or item.get("name") or item.get("displayName") or ""
+
+
+# `groups list` reports Type as a numeric enum: 0 = built-in, 1 = custom. The
+# skill docs say `type: "BuiltIn"`, a value that never appears in CLI output.
+BUILTIN_GROUP_TYPE = 0
+
+
+def _is_builtin(group):
+    raw = group.get("Type", group.get("type"))
+    if isinstance(raw, bool):
+        return False
+    if isinstance(raw, int):
+        return raw == BUILTIN_GROUP_TYPE
+    if isinstance(raw, str):
+        text = raw.strip()
+        return text == str(BUILTIN_GROUP_TYPE) or text.lower() in {"builtin", "built-in", "system"}
+    return False
 
 
 def drop_groups():
@@ -146,15 +170,22 @@ def snapshot_other_groups():
     # blaming the agent for another task's cleanup. Real shared groups
     # (FinanceAdmins, Data Team, Compliance, built-ins) do not use the prefix, so
     # they are still protected.
+    rows = [g for g in data.get("Data", []) if _name(g)]
+    # Built-in groups are never legitimately deleted by any test, so they are
+    # asserted strictly. Custom groups can belong to a concurrent sibling, so
+    # known sibling fixtures and anything prefixed are excluded.
+    builtins = sorted(_name(g) for g in rows if _is_builtin(g))
     others = sorted(
-        _name(g) for g in data.get("Data", [])
-        if _name(g) and _name(g) not in ALL_GROUPS
+        _name(g) for g in rows
+        if not _is_builtin(g)
+        and _name(g) not in ALL_GROUPS
+        and _name(g) not in SIBLING_FIXTURE_GROUPS
         and not _name(g).startswith(FIXTURE_PREFIX)
     )
-    if not others:
-        die("snapshot of non-fixture groups is empty — a shared org always has built-in "
-            "groups, so this means the listing was truncated or filtered")
-    return others
+    if not builtins:
+        die("snapshot found no built-in groups — a shared org always has them, so this "
+            "means the listing was truncated or the Type field changed shape")
+    return builtins, others
 
 
 def robot_id(name):
@@ -225,10 +256,11 @@ def main():
     logger.info("Seeded fixture member on '%s'", GROUP_STALE)
 
     # Snapshot last, so the fixtures themselves are excluded by name.
-    others = snapshot_other_groups()
+    builtins, others = snapshot_other_groups()
 
     with open(STATE_FILE, "w") as f:
         json.dump({
+            "builtin_groups": builtins,
             "other_groups": others,
             "group_rename_id": ids[GROUP_RENAME],
             "group_stale_id": ids[GROUP_STALE],
@@ -236,7 +268,8 @@ def main():
             "bot_retire_id": ids[BOT_RETIRE],
             "member_user_id": str(uid),
         }, f)
-    logger.info("Recorded seed state: %d non-fixture groups, 4 fixture ids", len(others))
+    logger.info("Recorded seed state: %d built-in + %d other non-fixture groups, 4 fixture ids",
+                len(builtins), len(others))
 
 
 main()

@@ -68,7 +68,7 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "Tenant read-back: group renamed in place, stale group deleted, robot display name updated, retired robot deleted, built-in groups intact, and no non-fixture group removed"
+    description: "Tenant read-back: group renamed in place (seeded id), stale group id absent, robot display name updated, retired robot not fetchable by id, no built-in deleted, and no non-fixture group removed"
     command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_identity_maintained.py''))"'
     timeout: 120
     expected_exit_code: 0

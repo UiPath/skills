@@ -91,12 +91,15 @@ def main():
         found = creds()
         if not found:
             return None
-        # Match on the seeded ID only. Requiring the new subject here made the
-        # dedicated "still targets the seeded branch" check below unreachable —
-        # a non-retargeted credential failed with the generic not-found message
-        # instead of the specific diagnosis.
+        # Poll on the POST-state (the new subject), not merely on the seeded id.
+        # The id exists from seed time, so matching on it alone made poll return on
+        # attempt 1 unconditionally and every downstream assertion — issuer,
+        # audience, legacy absence, cardinality — ran against a single unretried
+        # read, one eventual-consistency lag from failing a correct agent. The
+        # specific "not retargeted" diagnosis is preserved below by re-reading
+        # after the poll is exhausted.
         for c in found:
-            if _cid_of(c) == main_id:
+            if _cid_of(c) == main_id and EXPECTED_SUBJECT in _get(c, "Subject"):
                 return found
         return None
 
@@ -105,15 +108,16 @@ def main():
         found = creds()
         if found is None:
             fail(f"could not list federated credentials on '{HOST}' — cannot verify")
-        summary = [(_cid_of(c), _get(c, "Name"), _get(c, "Subject")) for c in found]
-        fail(f"no credential with the seeded id {main_id} on '{HOST}'; present: {summary}")
+        mine = next((c for c in found if _cid_of(c) == main_id), None)
+        if mine is None:
+            summary = [(_cid_of(c), _get(c, "Name")) for c in found]
+            fail(f"no credential with the seeded id {main_id} on '{HOST}'; present: {summary}")
+        fail(f"credential {main_id} does not target {EXPECTED_SUBJECT} "
+             f"(subject={_get(mine, 'Subject')!r}) — retarget did not land")
 
     main_cred = next(c for c in found if _cid_of(c) == main_id)
 
     subject = _get(main_cred, "Subject")
-    if EXPECTED_SUBJECT not in subject:
-        fail(f"credential {main_id} does not target {EXPECTED_SUBJECT} (subject={subject!r}) — "
-             "retarget did not land")
 
     issuer = _get(main_cred, "Issuer").strip()
     if issuer != want_issuer:

@@ -16,7 +16,7 @@ description: >
   `external-apps update`); its scope set is EXACTLY OR.Folders + OR.Jobs (set
   equality, not "required present" — a superset would let an agent widen the app
   to OR.Robots/OR.Users while nominally satisfying the request); the stale secret
-  is gone while at least one secret survives; and the retired app is deleted.
+  is gone and exactly one fewer secret remains than at seed time; and the retired app is deleted.
 
   Deliberately NO command_executed criteria — see the note in
   identity_maintain_lifecycle_e2e.yaml. Patterns using `[\s\S]*` matched across
@@ -58,7 +58,7 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "Tenant read-back: app renamed in place (same ClientId) with scopes exactly Folders+Jobs, stale secret revoked while another survives, retired app deleted"
+    description: "Tenant read-back: app renamed in place (same ClientId) with application scopes exactly Folders+Jobs, stale secret revoked leaving exactly one fewer than at seed, retired app id absent"
     command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_extapp_maintained.py''))"'
     timeout: 120
     expected_exit_code: 0

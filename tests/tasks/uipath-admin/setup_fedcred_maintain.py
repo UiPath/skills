@@ -63,14 +63,30 @@ def die(message):
     sys.exit(1)
 
 
-def find_host():
+def find_host(strict=False):
+    """Resolve the durable host by exact name.
+
+    With strict=True, refuses to proceed when MORE THAN ONE app carries the host
+    name. A duplicate is reachable: one transient `external-apps list` failure
+    makes this return None and the caller creates a second permanent host. After
+    that the prompt — which names the app, not its id — is ambiguous, and an
+    agent that picks the other copy mutates the wrong app and fails. Duplicates
+    must be removed by hand, so fail loudly rather than picking arbitrarily.
+    """
     data = run_cli(["admin", "external-apps", "list"])
     if not data or data.get("Result") != "Success":
         return None
-    for a in data.get("Data", []):
-        if (a.get("Name") or a.get("name") or "") == HOST:
-            return a.get("ClientId") or a.get("clientId") or a.get("Id") or a.get("id")
-    return None
+    matches = [a for a in data.get("Data", [])
+               if (a.get("Name") or a.get("name") or "") == HOST]
+    if strict and len(matches) > 1:
+        ids = sorted(str(a.get("ClientId") or a.get("clientId") or a.get("Id") or a.get("id"))
+                     for a in matches)
+        die(f"{len(matches)} external apps are named '{HOST}' ({ids}) — the prompt identifies the "
+            "host by name, so this run would be ambiguous. Delete the duplicates before rerunning.")
+    if not matches:
+        return None
+    a = matches[0]
+    return a.get("ClientId") or a.get("clientId") or a.get("Id") or a.get("id")
 
 
 def creds(cid):
@@ -114,11 +130,13 @@ def main():
     except OSError:
         pass
 
-    cid = find_host()
+    cid = find_host(strict=True)
     if not cid:
         # Create the durable host once. --no-secret: see module docstring.
+        # quiet=True defensively: create returns a client secret once, and
+        # --no-secret suppresses it only on the happy path.
         res = run_cli(["admin", "external-apps", "create", HOST,
-                       "--app-scope", "OR.Folders,OR.Jobs", "--no-secret"])
+                       "--app-scope", "OR.Folders,OR.Jobs", "--no-secret"], quiet=True)
         if not res or res.get("Result") != "Success":
             die(f"could not create the durable host '{HOST}': {res}")
         logger.info("Created persistent fed-cred host '%s' (--no-secret)", HOST)

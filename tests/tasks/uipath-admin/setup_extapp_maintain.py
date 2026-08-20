@@ -115,12 +115,15 @@ def main():
         if _name(a) in ALL_APPS and _cid(a):
             run_cli(["admin", "external-apps", "delete", _cid(a)])
 
-    res = run_cli(["admin", "external-apps", "create", APP_ACTIVE, "--app-scope", SEED_SCOPES])
+    # quiet=True: `external-apps create` returns the client secret once.
+    res = run_cli(["admin", "external-apps", "create", APP_ACTIVE, "--app-scope", SEED_SCOPES],
+                  quiet=True)
     if not res or res.get("Result") != "Success":
         die(f"could not create '{APP_ACTIVE}': {res}")
     logger.info("Seeded app '%s' (%s)", APP_ACTIVE, SEED_SCOPES)
 
-    res = run_cli(["admin", "external-apps", "create", APP_RETIRED, "--app-scope", "OR.Folders"])
+    res = run_cli(["admin", "external-apps", "create", APP_RETIRED, "--app-scope", "OR.Folders"],
+                  quiet=True)
     if not res or res.get("Result") != "Success":
         die(f"could not create '{APP_RETIRED}': {res}")
     logger.info("Seeded app '%s'", APP_RETIRED)

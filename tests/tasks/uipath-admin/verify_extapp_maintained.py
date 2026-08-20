@@ -41,8 +41,6 @@ STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_extapp_maintain_seed.json")
 # "user" so delegated scopes cannot be counted toward the app-scope assertion.
 APP_SCOPE_KEYS = ("appscope", "applicationscope", "scope")
 USER_SCOPE_MARKERS = ("user", "delegat")
-# Observed on every real application scope (run 32341565081 artifacts).
-APP_SCOPE_TYPE = 1
 
 
 def _name(app):
@@ -93,14 +91,15 @@ def app_scope_names(node):
                         continue  # delegated scopes are not application scopes
                     for entry in value:
                         if isinstance(entry, dict):
-                            # Every application scope observed in real payloads
-                            # carries Type: 1. Key-name exclusion alone is
-                            # defeated when a delegated scope sits in the SAME
-                            # Scopes list with a different Type, so filter on it
-                            # when present.
-                            etype = entry.get("Type", entry.get("type"))
-                            if isinstance(etype, int) and etype != APP_SCOPE_TYPE:
-                                continue
+                            # NO Type filter. An earlier revision dropped
+                            # entries whose Type != 1, inferred from payloads
+                            # where EVERY scope was Type 1 — evidence that cannot
+                            # distinguish "app scopes are Type 1" from
+                            # "everything is Type 1". The artifact census shows
+                            # Type is contextual (1 under external-apps get,
+                            # 2 in the `scopes list` catalog), so it does not mark
+                            # app-vs-user at all, and filtering on it silently
+                            # dropped legitimate scopes — failing a correct agent.
                             name = entry.get("Name") or entry.get("name") or entry.get("Value")
                             if name:
                                 out.append(str(name))

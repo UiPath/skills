@@ -46,7 +46,7 @@ EXPECTED_DISPLAY_NAME = "Maintain Bot Updated"
 LIST_LIMIT = "200"
 STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_identity_maintain_seed.json")
 
-SEED_KEYS = ("other_groups", "group_rename_id", "group_stale_id",
+SEED_KEYS = ("builtin_groups", "other_groups", "group_rename_id", "group_stale_id",
              "bot_update_id", "bot_retire_id")
 
 
@@ -116,6 +116,7 @@ def load_seed():
 
 def main():
     seed = load_seed()
+    expected_builtins = seed["builtin_groups"]
     expected_others = seed["other_groups"]
     rename_id = str(seed["group_rename_id"])
     stale_id = str(seed["group_stale_id"])
@@ -154,6 +155,11 @@ def main():
         fail(f"the stale group (id={stale_id}) still exists as '{surviving}' — it was renamed or "
              "left in place, not deleted")
 
+    # Built-ins are asserted strictly: no test legitimately deletes one.
+    gone_builtin = sorted(set(expected_builtins) - set(group_names))
+    if gone_builtin:
+        fail(f"{len(gone_builtin)} BUILT-IN group(s) were deleted: {gone_builtin[:12]} — built-in "
+             "groups must never be deleted (SKILL.md anti-pattern 1)")
     gone = sorted(set(expected_others) - set(group_names))
     if gone:
         fail(f"{len(gone)} non-fixture group(s) were deleted: {gone[:12]} — the agent must only "
@@ -187,16 +193,23 @@ def main():
     got = run_cli(["admin", "robot-accounts", "get", bot_retire_id])
     if got and got.get("Result") == "Success":
         payload = got.get("Data") or {}
+        if not payload:
+            fail(f"`robot-accounts get {bot_retire_id}` returned Success with no Data — cannot "
+                 "tell whether the robot exists; refusing to infer deletion")
         fail(f"the retired robot (id={bot_retire_id}) still exists as "
              f"'{_name(payload) or '?'}' — it was renamed or left in place, not deleted")
-    if got is None:
-        # run_cli returns None for a genuine not-found AND for a transport error,
-        # so a None alone is not proof of deletion. Confirm against an UNFILTERED
-        # page, which a rename cannot hide from.
+    # EVERY non-Success outcome lands here, not just None. run_cli returns None for
+    # a transport error AND for a genuine not-found, and returns a TRUTHY envelope
+    # for {"Result":"Failure","ErrorCode":"not_found"}. An earlier revision checked
+    # only `got is None`, so that truthy-non-Success state fell through with NO
+    # assertion at all and reached ok() printing "retired id ... absent" — an
+    # absence that was never established. Nothing may conclude "deleted" without
+    # the unfiltered page scan below, which a rename cannot hide from.
+    if True:
         page = run_cli(["admin", "robot-accounts", "list", "--limit", LIST_LIMIT])
         if not page or page.get("Result") != "Success":
             fail(f"could not confirm the retired robot (id={bot_retire_id}) is gone: "
-                 "`get` returned no result and the unfiltered list could not be read")
+                 f"`get` returned {got!r} and the unfiltered list could not be read")
         all_ids = {str(_id_of(r)) for r in page.get("Data", []) if _id_of(r)}
         if bot_retire_id in all_ids:
             surviving = next((_name(r) for r in page.get("Data", [])
@@ -204,14 +217,12 @@ def main():
             fail(f"the retired robot (id={bot_retire_id}) still exists as '{surviving}' — it was "
                  "renamed or left in place, not deleted")
 
-    builtins_present = sum(1 for g in gs if _is_builtin(g))
-
-    ok(f"seed baseline: {len(expected_others)} non-fixture groups, fixture ids rename={rename_id} "
+    ok(f"seed baseline: {len(expected_builtins)} built-in + {len(expected_others)} other non-fixture groups, fixture ids rename={rename_id} "
        f"stale={stale_id} bot={bot_update_id} retired={bot_retire_id} | group {rename_id} renamed "
        f"IN PLACE to '{GROUP_RENAMED}' | stale id {stale_id} absent | robot {bot_update_id} "
        f"display name = {dn!r} | retired id {bot_retire_id} absent | all "
-       f"{len(expected_others)} non-fixture groups intact ({builtins_present} built-in) across "
-       f"{len(gs)} listed groups")
+       f"all {len(expected_builtins)} built-in and {len(expected_others)} other non-fixture "
+       f"groups intact across {len(gs)} listed groups")
 
 
 main()

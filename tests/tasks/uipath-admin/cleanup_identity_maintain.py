@@ -6,9 +6,11 @@ Exact-name matching (not substring) so a parallel run (-jN) cannot sweep a
 sibling test's fixtures. Always exits 0 — failures here never affect pass/fail.
 """
 
+import json
 import logging
 import os
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli
@@ -38,6 +40,32 @@ def _id(item):
 
 def _name(item):
     return item.get("Name") or item.get("name") or item.get("displayName") or ""
+
+
+STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_identity_maintain_seed.json")
+
+
+def sweep_seeded_ids():
+    """Delete seeded groups/robots BY ID, which a rename cannot hide.
+
+    Same rationale as cleanup_extapp_maintain.sweep_seeded_ids: exact-name
+    cleanup misses an object renamed instead of deleted, orphaning it on a shared
+    org.
+    """
+    try:
+        with open(STATE_FILE) as f:
+            state = json.load(f)
+    except (OSError, ValueError):
+        return
+    for key, kind in (("group_rename_id", "groups"), ("group_stale_id", "groups"),
+                      ("bot_update_id", "robot-accounts"), ("bot_retire_id", "robot-accounts")):
+        oid = state.get(key)
+        if not oid:
+            continue
+        got = run_cli(["admin", kind, "get", str(oid)])
+        if got and got.get("Result") == "Success":
+            logger.info("Deleting seeded %s by id %s (survived name-based cleanup)", kind, oid)
+            run_cli(["admin", kind, "delete", str(oid)])
 
 
 def main():
@@ -74,4 +102,5 @@ def main():
 
 
 main()
+sweep_seeded_ids()
 sys.exit(0)

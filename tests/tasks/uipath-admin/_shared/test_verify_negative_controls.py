@@ -93,7 +93,8 @@ def envelope(data):
 # --------------------------------------------------------------------------
 
 IDENT_SEED = {
-    "other_groups": ["Everyone", "Administrators", "FinanceAdmins"],
+    "builtin_groups": ["Everyone", "Administrators"],
+    "other_groups": ["FinanceAdmins"],
     "group_rename_id": "g-rename",
     "group_stale_id": "g-stale",
     "bot_update_id": "b-keep",
@@ -101,7 +102,7 @@ IDENT_SEED = {
 }
 
 
-def ident_state(groups, robots):
+def ident_state(groups, robots, get_missing="none"):
     """Stub that HONOURS --search, because the real CLI does.
 
     `robot-accounts list --search <term>` filters by name (identity-commands.md
@@ -118,7 +119,19 @@ def ident_state(groups, robots):
             if args[2] == "get":
                 target = str(args[3])
                 match = [r for r in robots if str(r.get("Id") or r.get("id")) == target]
-                return envelope(match[0]) if match else None
+                if match:
+                    return envelope(match[0])
+                # THIRD run_cli STATE. A missing id does not always surface as
+                # None: run_cli returns a TRUTHY envelope when the CLI exits 0
+                # with {"Result":"Failure","ErrorCode":"not_found"}. Modelling
+                # only Success/None meant the harness could not detect a verify
+                # that handled just those two and fell through with no assertion
+                # — which is exactly the blocker that shipped. `get_missing`
+                # selects which of the two not-found shapes to return.
+                return None if get_missing == "none" else {
+                    "Result": "Failure", "ErrorCode": "not_found",
+                    "Message": f"Robot account {target} was not found",
+                }
             rows = robots
             for flag in ("--search", "-s"):
                 if flag in args:
@@ -164,6 +177,9 @@ def test_identity_happy_path_passes(tmp_path, monkeypatch):
     ("collateral deletion of a real shared group",
      [g for g in GOOD_GROUPS if g["Name"] != "FinanceAdmins"],
      GOOD_ROBOTS, "non-fixture group(s) were deleted"),
+    ("a BUILT-IN group was deleted",
+     [g for g in GOOD_GROUPS if g["Name"] != "Administrators"],
+     GOOD_ROBOTS, "BUILT-IN group(s) were deleted"),
     ("display name never updated",
      GOOD_GROUPS,
      [{"Id": "b-keep", "Name": "ce-identity-maintain-bot", "DisplayName": "Maintain Bot"}],
@@ -181,10 +197,26 @@ def test_identity_negative(label, groups, robots, expect, tmp_path, monkeypatch)
     assert expect in out, f"{label}: wrong diagnosis. out={out}"
 
 
+def test_identity_get_returning_failure_envelope_is_not_proof(tmp_path, monkeypatch):
+    """The third run_cli state must never be read as 'deleted'.
+
+    The retired robot is present under a new name AND `get` returns a truthy
+    {"Result":"Failure"} envelope rather than None. A verify that branches only on
+    Success and None falls through here with no assertion and reaches ok().
+    """
+    robots = GOOD_ROBOTS + [{"Id": "b-retire", "Name": "zz-archived-bot"}]
+    rc, out = _load_verify("verify_identity_maintained",
+                           ident_state(GOOD_GROUPS, robots, get_missing="failure"),
+                           IDENT_SEED, tmp_path, monkeypatch)
+    assert rc == 1, f"third run_cli state treated as proof of deletion. out={out}"
+    assert "not deleted" in out or "could not confirm" in out, out
+
+
 @pytest.mark.parametrize("label,state", [
     ("missing state file", None),
-    ("empty snapshot", {**IDENT_SEED, "other_groups": []}),
+    ("empty snapshot", {**IDENT_SEED, "other_groups": [], "builtin_groups": []}),
     ("missing fixture id", {k: v for k, v in IDENT_SEED.items() if k != "group_stale_id"}),
+    ("missing builtin snapshot", {k: v for k, v in IDENT_SEED.items() if k != "builtin_groups"}),
 ])
 def test_identity_degenerate_seed_fails_loudly(label, state, tmp_path, monkeypatch):
     """A seed that did not complete must FAIL, never silently skip the check."""

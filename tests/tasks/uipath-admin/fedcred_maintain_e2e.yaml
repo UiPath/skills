@@ -63,7 +63,7 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "Tenant read-back: ce-fedcred-main now targets refs/heads/release with issuer and audience preserved exactly (proves the credential was read before the full-replace update), ce-fedcred-legacy deleted"
+    description: "Tenant read-back: ce-fedcred-main (seeded id) now targets refs/heads/release with issuer and audience byte-identical to seed, legacy credential id absent, exactly one credential remaining"
     command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_fedcred_maintained.py''))"'
     timeout: 120
     expected_exit_code: 0
