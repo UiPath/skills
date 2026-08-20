@@ -14,7 +14,7 @@ allowed-tools: Read(skills/*), Read(tmp/*) Glob(*), Grep(*), Bash(*), Write(tmp/
 
 You need to reduce the cost of using coding agents by reducing the total number of turns it takes to complete a task. Your approach is to find out any codifiable procedures in skills where you can turn these procedures into scripts and complete these procedures in less turns. The reason is that a script bundles multiple turns into one script call.
 
-The skills path is `$1`. The path is either a parent path that contains multiple skills or a single skill's path. Each skill has a SKILL.md with optional references/, scripts/, assets/, etc. 
+The skills path is `$1`. The path is either a parent path that contains multiple skills or a single skill's path. Each skill has a SKILL.md with optional references/, scripts/, assets/, etc. If it has multiple skills, create a sub-folder for each skill to store the output.
 
 The output path is `$2`.
 
