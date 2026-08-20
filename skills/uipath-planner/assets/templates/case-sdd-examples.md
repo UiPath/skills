@@ -515,4 +515,17 @@ Full marker semantics: the build skill's `bindings-and-expressions.md` § In-exp
 
 No checklist lives here. Variable and output row consistency is normative in
 [layers § Layer 3](../../references/case-design-layers-guide.md#layer-3--data-variables--expressions); the pre-confirmation gate is
-[`case-sdd-spec.md § Finalization checklist`](../../references/case-sdd-spec.md#finalization-checklist).
+[layers § Layer closure](../../references/case-design-layers-guide.md#layer-closure--the-design-checklist).
+
+## Decision-routed return lane (divert + inverse guards)
+
+AP Review exits to an SLA Escalation lane on `requiresEscalation`, else completes ([layers § Secondary-lane entry shapes](../../references/case-design-layers-guide.md#secondary-lane-entry-shapes)):
+
+| Stage | Condition | WHEN | IF | Exit Type | Marks Complete |
+|---|---|---|---|---|---|
+| AP Review | exit (complete) | `required-tasks-completed` | `=js:(vars.requiresEscalation !== true)` | `exit-only` | Yes |
+| AP Review | exit (divert) | `selected-tasks-completed("AP ownership review")` | `=js:(vars.requiresEscalation === true)` | `exit-only` (exit target → SLA Escalation) | No |
+| SLA Escalation | entry (`Interrupting: Yes`) | `selected-stage-exited("AP Review")` | `=js:(vars.requiresEscalation === true)` | — | — |
+| SLA Escalation | exit | `required-tasks-completed` | — | `return-to-origin` | Yes |
+
+On escalate the divert fires (completion's inverse `IF` is false), the lane runs, `return-to-origin` re-activates AP Review; on non-escalate the completion fires and the next stage enters via its own `selected-stage-completed("AP Review")`. The decision is read directly from the producing action's output — never relayed through a §1.5 variable.

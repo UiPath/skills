@@ -1,6 +1,6 @@
 # Case Design in Layers
 
-Everything a case design must respect about the Case Management platform, ordered the way a design is actually made. A case is a versioned JSON document of **stages**, **tasks**, and **conditions** that compiles into a deterministic rule plan evaluated on every case event. Identity is by **display name** at runtime — names are load-bearing, not labels (charset + uniqueness: [case-sdd-spec.md § Naming rules](case-sdd-spec.md#naming-rules)). This skill designs the document (`sdd.md`); the build skill (`uipath-maestro-case`) emits and validates `caseplan.json` from it.
+Everything a case design must respect about the Case Management platform, ordered the way a design is actually made. A case is a versioned JSON document of **stages**, **tasks**, and **conditions** that compiles into a deterministic rule plan evaluated on every case event. Identity is by **display name** at runtime — names are load-bearing, not labels (§ Naming rules below). This skill designs the document (`sdd.md`); the build skill (`uipath-maestro-case`) emits and validates `caseplan.json` from it.
 
 Design in four layers, each settled before the next refines it:
 
@@ -9,7 +9,7 @@ Design in four layers, each settled before the next refines it:
 3. **Data** — variables, outputs, expressions. *What each piece reads and writes.*
 4. **Time** — SLAs and escalations. *What happens when work runs late.*
 
-Close with the [ten buildability musts](#layer-closure--the-ten-buildability-musts) — the cross-layer checklist where designs silently become unbuildable.
+Close with [§ Layer closure](#layer-closure--the-design-checklist) — the single cross-layer checklist run at Sketch and re-walked at Confirm.
 
 ---
 
@@ -66,7 +66,7 @@ Apply in order:
 3. **Tenant evidence** — the registry cache resolves a deployed Action App / process / agent / api-workflow / RPA that fits → prefer that resource's type and surface the match.
 4. **Connector availability** — an Integration Service connector matches → `execute-connector-activity` over `api-workflow`.
 5. **Verb signal** — fall through to the assumption playbook.
-6. **Fallback** — keep the user's stated value if any; otherwise a placeholder plus a `high` review item ([case-sdd-spec.md § Review items](case-sdd-spec.md#review-items)).
+6. **Fallback** — keep the user's stated value if any; otherwise a placeholder plus a `high` review item ([case-design-lane-guide.md § Review items](case-design-lane-guide.md#review-items)).
 
 **Compliance-trigger scan.** Scan the whole conversation for tier-2 phrases BEFORE recording any non-`action` type. A phrase surfacing after a non-`action` type was provisionally recorded → re-ask before continuing. No tier-2 phrase in the transcript (e.g. jurisdiction-dependent underwriting) → keep the stated type, disclose the compliance caveat as a decision line.
 
@@ -226,7 +226,7 @@ Declare a row ONLY when one of these holds:
 3. Case-level state read by a condition (`IF`) or by ≥ 2 consumers.
 4. The value needs a rename or a custom `Default` / `Type` / `Description`.
 
-A row that relays one task's output to one consumer is the relay anti-pattern — flagged as `rev_relay_var` ([case-sdd-spec.md § Architect's lens](case-sdd-spec.md#architects-lens--advisory-pass)). Declaring a row does not make the value readable earlier — see next.
+A row that relays one task's output to one consumer is the relay anti-pattern — flagged as `rev_relay_var` (§ Layer closure, advisory lens). Declaring a row does not make the value readable earlier — see next.
 
 ### Gate on the producer, never on the variable it writes
 
@@ -269,7 +269,7 @@ Validation never reads trigger-node outputs (verified on uip 1.198.0-preview.102
 
 ### Lineage closure
 
-Every consumer of `vars.X` needs a producer that fires earlier — stage order first, then task order within the stage: a trigger extraction, a task Outputs row, an action button's `Maps To`, `Category: In`, or a non-empty `Default`. Checked before the confirmation ([case-sdd-spec.md § Finalization checklist](case-sdd-spec.md#finalization-checklist)).
+Every consumer of `vars.X` needs a producer that fires earlier — stage order first, then task order within the stage: a trigger extraction, a task Outputs row, an action button's `Maps To`, `Category: In`, or a non-empty `Default`. Checked at [§ Layer closure](#layer-closure--the-design-checklist) and by the validator.
 
 ### Expressions
 
@@ -363,17 +363,59 @@ Never author `start-task` as a stage-entry row on the breached stage: it validat
 
 ---
 
-## Layer closure — the ten buildability musts
+### Naming rules
 
-Settle all ten by assumption and surface each in the confirmation; they are where designs silently become unbuildable:
+Safe display characters for stage labels, task display names, and condition/SLA/escalation titles:
 
-1. **Other-path trigger source** — gate decision → `selected-stage-completed/-exited` + IF; person → `user-selected-stage` only with an upstream `wait-for-user` exit; external/global event → one `wait-for-connector` entry on the secondary stage; SLA at-risk/breach that requires case work → one `sla-status-change` entry whose target and SLA title — plus an at-risk escalation title for an at-risk row only — are declared in the SDD, while warning-only escalation stays a notification; interrupting flags on stage + entry rows; terminal `exit-only` vs `return-to-origin`; never duplicate global-event exits/tasks across primary stages.
-2. **Every decision outcome routes somewhere** — no dead-end status values, and an outcome that targets a lane keys that lane's entry.
-3. **Every configure/decide task's output lands** in a variable or direct reference.
-4. **Every send/connector/agent's required inputs map** to variables/literals/upstream outputs as far as knowable without schemas — the rest resolves at build.
-5. **Conditional roles/steps become guarded rules + personas**, not prose, with the actor and threshold visible together in the draft/SDD.
-6. **A critical-path connector failure gets a modeled other path** when the user described failure handling — otherwise note it as an architect advisory.
-7. **Manual-surface classification** per the playbook: human-performed required work is `action`, optional user-launched work is `adhoc`.
-8. **Intended resource names concrete**, identities per the lane's tenant grounding.
-9. **Every stage/task/SLA has durable rationale** in the model, including why an ordered run is sequential, independent work is parallel, or parallel-after-predecessor siblings share one task set.
-10. **Every non-start entry rule has a concrete producer/reference.**
+```
+^[A-Za-z0-9 _-]+$
+```
+
+Never `:` — case-execution events are colon-delimited; a colon in a name breaks routing. The charset governs names being MINTED or first carried into a design: repair mechanically — replace disallowed runs with one space, collapse, trim; on empty result or collision add a safe qualifier and disclose. A name read from an existing draft/SDD during finalization is preserved verbatim, punctuation included — except `:` (structural ban): surface and ask, never silently keep or repair.
+
+| Name | Unique across |
+|---|---|
+| Task display name | The whole case — every stage, one pool |
+| Stage label | All node labels; never the reserved Case Manager stage label |
+| SLA rule title | Its target (root or that stage) |
+| Escalation title | All SLAs on the element |
+
+Comparison exact — case-sensitive, untrimmed. Never normalize external lookup names (Action App titles, process/connector names — matching keys); keep a separate safe display name. Never silently clamp a numeric violation (e.g. out-of-range SLA duration) — surface and ask.
+
+---
+
+## Layer closure — the design checklist
+
+ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — `scripts/audit_sdd.py` owns them (enforcement list: template § Validation); run it on the written file.
+
+**Blocking — the design is unbuildable or unreviewable until fixed:**
+
+1. **Other-path trigger source** — gate decision → `selected-stage-completed/-exited` + IF; person → `user-selected-stage` only with an upstream `wait-for-user` exit; external/global event → ONE `wait-for-connector` entry on the lane; SLA response needing case work → ONE `sla-status-change` entry (declared target + titles); warning-only escalation stays a notification; interrupting flags on stage + entry rows; terminal `exit-only` vs `return-to-origin`; never duplicate global-event exits/tasks across primary stages.
+2. **Reachability walk** — every stage reachable from a trigger or SLA source (walk entries forward); every primary stage's completion is consumed downstream, referenced by another entry, or feeds a lane; ≥ 1 primary stage `Required: Yes`. A decision-reachable lane carries `selected-stage-exited(origin)` + `IF` matching the origin's diverting exit (inverse `IF` on its completion — § Secondary-lane entry shapes); two lanes with identical entries = ambiguous routing (differentiate — validate does not reject, as of uip 1.198.0-preview.102); `adhoc` is never a stage entry.
+3. **Entry producer** — every non-start entry names its concrete producer (source stage/task, connector event, paired `wait-for-user` exit, declared SLA reference); at-risk rows name the escalation, breach rows the SLA alone.
+4. **Decision-routing closure** — every decision outcome routes somewhere: no dead-end status values; an outcome targeting a lane keys that lane's entry; every routing button's variable+value is consumed downstream or a declared terminal; a fully-orphaned decision variable on a decision task is blocking.
+5. **Gate reads the producer** — no condition whose WHEN names a task reads a case variable that task writes (§ Gate on the producer).
+6. **Data closure** — every configure/decide output lands in a variable or direct reference; every send/connector/agent required input maps to variables/literals/upstream outputs as far as knowable without schemas (rest resolves at build); thresholded policy in executable cells (§ Expressions).
+7. **Task-surface classification** — human-performed required work `action`, optional user-launched `adhoc`; no compliance trigger phrase paired with a non-`action` type without explicit user reconciliation (§ Task-type override priority).
+8. **Required-task presence** — a `required-tasks-completed` completion over a stage with zero `Required: Yes` tasks fails validate: `Stage exit rule '<name>' has no task(s) marked as required` (verified uip 1.198.0-preview.102); offer marking the terminal task required.
+9. **Resources** — intended names concrete everywhere (`Resolved Resource`, Action App title, `Child Case` — never `<UNRESOLVED>`); identities per the lane's tenant grounding, unresolved only with a paired high review item; when a live contract is in memory: required inputs bound, extract fields exist verbatim, declared action-app fields ⊆ app schema.
+10. **Durable rationale** — every stage (kind + routing), task (type + activation, incl. why sequential/parallel/shared-set), and configured SLA (thresholds, recipients, response) carries Design Rationale; provenance on every non-user-stated value ([lane § Authoring policy](case-design-lane-guide.md#authoring-policy)).
+11. **Alt dispositions & obligations** — ≥ 1 secondary stage ⟹ non-completing case-exit rows exist (or an open high item); `In` + `file` row ⟹ the Caller-obligation block; SLA Response Map closes both ways with agreeing Interrupting cells (template § SLA Response Map); re-entry loops classified (§ Sequencing & activation).
+12. **Domain fidelity** — verbatim-captured entities render exactly; drift → re-edit with the phrase pre-filled.
+
+**Advisory — architect's lens** (emit medium review items; HIGH variants gate like any high item):
+
+| Check | Trigger | Review item |
+|---|---|---|
+| Single-recipient bottleneck | `action` recipient is one `User:`/`Email:` AND the stage runs on every case AND no documented volume limit | `rev_bottleneck_<task>`: confirm volume or use UserGroup/Role |
+| No escalation on SLA | Stage SLA set, escalation absent | `rev_escalation_<stage>`: no one is paged on breach |
+| Escalation loops to the breacher | Escalation recipient = the stage's primary recipient | `rev_escalation_loop_<stage>`: pick a tier-up recipient |
+| Sync child case in the critical path | `Wait for Completion: Yes` + parent SLA + no timeout cover | `rev_childcase_<task>`: consider async + completion event, or an exception path |
+| All-human stage | 100% `action` tasks, > 2 tasks | `rev_human_only_<stage>`: consider agent/process pre-screening |
+| No happy path on the first stage | Only `No` exits, no `required-tasks-completed` completion | `rev_no_happy_path_<stage>` |
+| Decision outcome unread | Decision task writes a variable no downstream rule reads | `rev_orphan_decision_<task>`: consume it or drop decision status |
+| Connector failure uncovered | Connector task in a primary stage, no failure lane (HIGH when ≥ 2 connector tasks share a critical path, zero cover) | `rev_no_failure_path_<task>` |
+| Substitute app (HIGH) | One Action App on ≥ 2 tasks WITHOUT a distinct `actionType` each, or declared fields outside the app schema (code-switched reuse exempt) | `rev_substitute_app_<app>`: code-switch or deploy task-specific apps |
+| Parallel bottleneck fan-in | ≥ 2 bottleneck stages fan into one downstream stage | `rev_multi_bottleneck_<stages>` |
+| Relay variable | A §1.5 `Variable` with one producing task output and one consuming binding (§ When to declare) | `rev_relay_var_<name>`: reference the output directly, drop the row |
+| Aliased output | An Outputs `->` row whose `Field` leaf has no matching §1.5 row and lands in a differently-named variable | `rev_aliased_output_<task>`: declare a dedicated variable or confirm the reuse |

@@ -222,35 +222,24 @@ def lineage_findings(text: str) -> list[str]:
     return findings
 
 
-_REFS = Path(__file__).resolve().parent.parent / "references"
-LAYERS_MD = _REFS / "case-design-layers-guide.md"
-SPEC_MD = _REFS / "case-sdd-spec.md"
+LAYERS_MD = Path(__file__).resolve().parent.parent / "references" / "case-design-layers-guide.md"
 
 
 def load_model_facts() -> dict:
     """Parse the canonical tables in the case reference files (stdlib only).
 
-    Reads the `### Task types` table (column 1 literals) and the `### Lifecycle
-    gates` table (legal WHEN rules per Marks-complete value) from
-    case-design-layers-guide.md, and the `### Naming rules` fenced regex from
-    case-sdd-spec.md. Returns {} when the layers guide is absent so the shape
-    audit still runs.
+    Reads the `### Task types` table (column 1 literals), the `### Lifecycle
+    gates` table (legal WHEN rules per gate slot), and the `### Naming rules`
+    fenced regex — all from case-design-layers-guide.md. Returns {} when the
+    layers guide is absent so the shape audit still runs.
     """
     try:
         text = LAYERS_MD.read_text(encoding="utf-8")
     except OSError:
         return {}
-    try:
-        spec_text = SPEC_MD.read_text(encoding="utf-8")
-    except OSError:
-        spec_text = ""
 
-    def section(heading: str, source: str = None) -> str:
-        match = re.search(
-            rf"^### {re.escape(heading)}\s*$(.*?)(?=^#|\Z)",
-            source if source is not None else text,
-            re.M | re.S,
-        )
+    def section(heading: str) -> str:
+        match = re.search(rf"^### {re.escape(heading)}\s*$(.*?)(?=^#|\Z)", text, re.M | re.S)
         return match.group(1) if match else ""
 
     facts: dict = {}
@@ -270,7 +259,7 @@ def load_model_facts() -> dict:
             no_when.update(rules)
     facts["yes_when"], facts["no_when"] = yes_when, no_when
     facts["gate_rules"] = gate_rules
-    pattern = re.search(r"```\s*(\^[^\n`]+\$)\s*```", section("Naming rules", spec_text))
+    pattern = re.search(r"```\s*(\^[^\n`]+\$)\s*```", section("Naming rules"))
     facts["name_pattern"] = re.compile(pattern.group(1)) if pattern else None
     if not facts["task_types"] or not yes_when:
         return {}
@@ -324,11 +313,11 @@ def model_findings(text: str) -> list[str]:
     if name_pattern:
         for kind, name, _ in stage_blocks(text):
             if not name_pattern.fullmatch(name.strip()):
-                findings.append(f"{kind.lower()} name {name!r} breaks case-sdd-spec.md § Naming rules")
+                findings.append(f"{kind.lower()} name {name!r} breaks case-design-layers-guide.md § Naming rules")
         for match in re.finditer(r"^#{5} Task [S\d.]+: ([^\n]+)$", text, re.M):
             candidate = strip_id_suffix(match.group(1)).strip()
             if not name_pattern.fullmatch(candidate):
-                findings.append(f"task name {candidate!r} breaks case-sdd-spec.md § Naming rules")
+                findings.append(f"task name {candidate!r} breaks case-design-layers-guide.md § Naming rules")
     return findings
 
 
@@ -392,7 +381,7 @@ def contract_findings(text: str, facts: dict) -> list[str]:
         findings.append("backtick-wrapped `<UNRESOLVED>` — the marker renders as plain text, exactly <UNRESOLVED>")
     for token in FORBIDDEN_VOCAB:
         if token in text:
-            findings.append(f"forbidden skill-internal term {token!r} in the SDD body (case-sdd-spec.md § Markers & vocabulary)")
+            findings.append(f"forbidden skill-internal term {token!r} in the SDD body (case-sdd-template.md § Validation footer)")
 
     has_wfu_exit = re.search(r"\bwait-for-user\b", text) is not None
     has_uss_entry = re.search(r"\buser-selected-stage\b", text) is not None
@@ -501,6 +490,20 @@ def contract_findings(text: str, facts: dict) -> list[str]:
                     f"button {cells[0]!r} maps to {lhs!r}, which is never declared, extracted, or read anywhere else — "
                     "a typo or a dead decision route"
                 )
+
+    # Selector existence: stage selectors name declared stages, task selectors declared tasks
+    stage_names = {n.strip() for _, n, _ in stage_blocks(text)}
+    task_names = {strip_id_suffix(m.group(3)).strip() for m in TASK_HEADING.finditer(text)}
+    if stage_names:
+        for line_no, line in enumerate(lines, 1):
+            for call in re.finditer(r"selected-stage-(?:completed|exited)\s*\(([^)]*)\)", line):
+                for arg in re.findall(r"[\"\u201c\u2018']([^\"\u201d\u2019']+)[\"\u201d\u2019']", call.group(1)):
+                    if strip_id_suffix(arg).strip() not in stage_names:
+                        findings.append(f"line {line_no}: stage selector references {arg!r} — no stage with that display name exists")
+            for call in re.finditer(r"selected-tasks-completed\s*\(([^)]*)\)", line):
+                for arg in re.findall(r"[\"\u201c\u2018']([^\"\u201d\u2019']+)[\"\u201d\u2019']", call.group(1)):
+                    if task_names and strip_id_suffix(arg).strip() not in task_names:
+                        findings.append(f"line {line_no}: task selector references {arg!r} — no task with that display name exists")
 
     # sla-status-change SLA-title closure (target validity is checked in audit())
     if sla_titles:

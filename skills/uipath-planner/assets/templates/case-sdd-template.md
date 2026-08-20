@@ -96,6 +96,12 @@ Skip entirely when no review items are open. Blocking = yes keeps Planner Handof
 
 ### Case Metadata
 
+<!-- Required cells never render `—`: Case Name (PascalCase — missing → block, Ask), Identifier prefix
+(missing → derive mechanically from the name + provenance). Case SLA `—` when none — then OMIT the SLA
+Title row entirely. SLA Type: platform persists condition-based whenever ≥1 SLA rule carries a non-empty
+expression; condition-based requires the Variable SLA Rules table. Defaults recorded with provenance:
+Case App Disabled, Task-output passing Direct, SLA Type time-based, SLA Title `SLA Rule 1`. -->
+
 | Property | Value |
 |----------|-------|
 | Case Name | <PascalCase name> |
@@ -118,6 +124,26 @@ Skip entirely when no review items are open. Blocking = yes keeps Planner Handof
 | At-Risk | <percentage>% of SLA duration | Notify: <recipient or group> | <non-empty root-unique escalation title, no `:`> |
 | Breached | 100% of SLA duration | Notify: <recipient or group> | <non-empty root-unique escalation title, no `:`> |
 
+<!-- Required when Case SLA is set; both rows concrete, no `—`. Breached recipient = one tier up
+(leadership; Compliance for regulation-driven cases). Display Name defaults to `Escalation Rule {N}` only
+when no sla-status-change row references it; defaulted recipients get provenance `default applied`. -->
+
+### SLA Response Map
+
+<!-- Required whenever ANY SLA is configured (case, stage, or action task); omit the section only in a
+case with no SLA anywhere. One row per (Scope, SLA, Status). CLOSURE BOTH WAYS (blocking): every
+non-notify-only row has its matching rule elsewhere in this SDD (sla-status-change task-entry row for
+start-task, a stage-entry row for enter-stage, a stage-exit / case-exit row), and every sla-status-change
+row in the SDD has a row here. Interrupting: `—` for notify-only AND every start-task (a task entry
+interrupts nothing — never Yes/No); otherwise Yes/No matching the produced stage-entry row. Breach cells
+that enter a lane read `enter-stage: <Secondary Stage Name>`, never `Notify: <role>`. Default when the
+source states no response: both statuses notify-only, Target and Interrupting `—` — never invent a stage,
+task, or routing change for a notification. -->
+
+| Scope | SLA | Status | Response | Target | Interrupting | Rationale |
+|-------|-----|--------|----------|--------|--------------|-----------|
+| <case \| stage: <StageName> \| task: <TaskName>> | <that target's SLA Title> | <At-Risk \| Breached> | <notify-only \| start-task \| enter-stage \| exit-stage \| exit-case> | <— for notify-only; task name; stage name; produced exit row> | <— \| Yes \| No> | <why this response fits the source> |
+
 ### Variable SLA Rules
 
 <!-- Include this table only if SLA Type is condition-based. Omit the section body or write `> None.` when not used. -->
@@ -130,15 +156,33 @@ Skip entirely when no review items are open. Blocking = yes keeps Planner Handof
 
 <!-- Trigger mapping into variables is declared in Case Variables with sourceTriggers/sourceFields, not here. T01 is reserved for the case file; number runtime triggers from T02.
 `Manual` is author shorthand — a manual trigger has no serviceType in the generated JSON (the on-disk serviceType enum is `None` / `Intsvc.EventTrigger` / `timer`; the SDD's `Intsvc.TimerTrigger` maps to on-disk `timer`; never write `serviceType: "Manual"`).
-Tenant object starts are still event triggers: a case that starts when a tenant case-entity / data-object record is created authors `Intsvc.EventTrigger` with that object name as Source — never downgrade to `Manual` because the object is not provisioned; unresolved event triggers survive as placeholders. -->
+Tenant object starts are still event triggers: a case that starts when a tenant case-entity / data-object record is created authors `Intsvc.EventTrigger` with that object name as Source — never downgrade to `Manual` because the object is not provisioned; unresolved event triggers survive as placeholders (connectionId/activityTypeId → high review item).
+Configuration cell = user intent in business terms (`Record created`, `Email received in Inbox; filter: subject contains "URGENT"`, `daily at 09:00 UTC`, `N/A`); an event trigger MUST carry a concrete operation phrase. Forbidden here (build-time detail): CLI enum values (`CALENDAR_CREATED`), delivery modes (`polling`/`webhook`), meta notes, activity slugs, HTTP methods. -->
 
 | T# | Trigger Type | Source | Configuration |
 |----|-------------|--------|---------------|
 | T02 | <Manual \| Intsvc.EventTrigger \| Intsvc.TimerTrigger> | <source system, connector, object, or Manual> | <business event, timer cadence, filter intent, or N/A> |
 
+### Trigger Filter
+
+<!-- Only when ≥1 trigger declares a filter; omit otherwise. AND/OR tree; nested {op, clauses} groups
+flatten into rows. Operators PascalCase, case-sensitive: Equals, NotEquals, Contains, NotContains,
+StartsWith, EndsWith, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, In, NotIn, IsNull,
+IsNotNull. Avoid `Literal: No` for unverified runtime expressions — lossy fallback; prefer literal values
+or a review item. -->
+
+| Field | Operator | Value | Literal? |
+|-------|----------|-------|----------|
+| <payload field> | <operator> | <value> | <Yes \| No> |
+
 ### Case Exit Conditions
 
-<!-- WHEN + Marks Case Complete pairing is schema-constrained: Marks Case Complete = Yes normally uses `required-stages-completed`; selected-stage rules are for non-completing exits. -->
+<!-- WHEN + Marks Case Complete pairing is schema-constrained: Yes normally uses `required-stages-completed`;
+selected-stage rules are for non-completing exits (alternate dispositions: Withdrawn / Rejected /
+Cancelled — required when the case has ≥1 secondary stage, else high review item `Alt-disposition exits
+missing`). ≥1 Yes row always. Display Name defaulting (every condition table in this SDD): carry the
+author's value verbatim; blank → `Entry Rule {N}` / `Complete Rule {N}` / `Exit Rule {N}` by table kind,
+N 1-based per label kind — never invent a label otherwise. -->
 
 | WHEN | IF | THEN | Marks Case Complete | Display Name |
 |------|-----|------|---------------------|--------------|
@@ -149,7 +193,9 @@ Tenant object starts are still event triggers: a case that starts when a tenant 
 <!--
 Only include In/Out arguments, trigger-payload Variables, and true case-level state read by conditions or reused by multiple consumers.
 Do not mint relay variables for one upstream task output consumed once downstream; bind those directly with `<- "Stage"."Task".out` or `vars.$xref('Stage','Task','out')`.
-Every row must have Category.
+Every row must have Category. Name camelCase, no role suffix.
+sourceTriggers/sourceFields grammar — In: optional single T<N> (blank = primary trigger, never CSV), sourceFields always empty (an In-arg selects a trigger, extracts nothing). Variable: single T<N> or CSV; one trigger → bare payload path (`response.subject`); CSV → keyed `T<N>: <path>; T<M>: <path>`, one entry per listed T-number; dot-paths only, no array indexing. Out: both empty; every Out row needs a Default OR a producing task Outputs row.
+Config-as-In: runtime business rules (priority bands, thresholds, taxonomies) ride ONE In variable — string with a JSON Default for opaque rule-sets; jsonSchema + body when downstream picks sub-fields. `json` is not a Type. file = JobAttachment record; a file In-arg triggers the Caller-obligation block in the confirmation.
 -->
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
@@ -170,10 +216,9 @@ Every row must have Category.
 
 **Purpose:** The case plan. Every stage has entry/exit conditions, optional SLA, and complete task detail blocks. Case has no BPMN-style edges; transitions are expressed by stage entry/exit conditions.
 
-**Authoring rules** (owned by the reference files — block shape and cell grammar:
-[case-sdd-spec.md § Section 2](../../references/case-sdd-spec.md#section-2-cell-contracts); type enum, gates, sequencing:
-[case-design-layers-guide.md](../../references/case-design-layers-guide.md); task-level SLA surface: [case-design-layers-guide.md § Layer 4](../../references/case-design-layers-guide.md#layer-4--time-slas--escalations)).
-During draft finalization, do NOT open these links — the draft is the settled design and this template is
+**Authoring rules** — this template IS the render contract: cell rules live inline at each cell. Design
+semantics (type enum, gates, sequencing, SLA surface): [case-design-layers-guide.md](../../references/case-design-layers-guide.md).
+During draft finalization, do NOT open that link — the draft is the settled design and this template is
 the complete normalization contract; finalization preserves existing display names verbatim.
 Template-local rules:
 - Every stage and task carries a concrete `Design Rationale` and prose `Description`.
@@ -188,7 +233,13 @@ Template-local rules:
 
 ---
 
-### Stage <N>: <STAGE_NAME>
+### Stage <N>: <STAGE_NAME> (`<stage_id>`)
+
+<!-- The trailing code-formatted stage id MUST appear on every stage heading, and every cell that names a
+stage appends it in code-formatted parens — cross-references stay greppable. Required for Case Completion
+is explicit Yes/No (design default: primary Yes, secondary No). Design Rationale is concrete: a
+global-event lane names the event and states that one interrupting entry replaces per-stage duplication;
+an SLA lane names the SLA, the response, and why it interrupts or not. -->
 
 **Type:** Stage
 **Stage Kind:** <primary \| secondary>
@@ -213,7 +264,7 @@ Template-local rules:
 
 **Design Rationale:** <Why this duration, threshold, recipients, and breach behavior fit.>
 **SLA Type:** <time-based \| condition-based>
-**SLA Title:** <non-empty stage-unique SLA rule title, no `:` — this exact title is what a `sla-status-change("<Stage>","<SLA Title>")` entry row references>
+**SLA Title:** <non-empty stage-unique SLA rule title, no `:` — this exact title is what a `sla-status-change("<Stage>","<SLA Title>")` entry row references. Unnamed defaults: `<Stage Name> SLA`, at-risk display `<Stage Name> SLA at risk`, breach `<Stage Name> SLA breached`. Keep SLA Type and SLA Title as two separate lines — a collapsed line hides the title from line-start tooling>
 
 | SLA | Unit | At-Risk | At-Risk Action | At-Risk Escalation Display Name | Breach Action | Breach Escalation Display Name |
 |-----|------|---------|----------------|----------------------------------|---------------|---------------------------------|
@@ -228,6 +279,11 @@ Template-local rules:
 | <conditionExpression evaluated against case variables> | <count> | <min \| h \| d \| w \| m> | <stage-unique title without `:`> |
 
 #### Tasks
+
+<!-- In plan order, ≥1 task per stage; Persona = persona name or `system`. Stage tables above: ≥1 entry
+row per stage; ≥1 completion (Yes) exit row per primary stage. Call forms with complete args appear ONLY
+in table rows; prose uses bare rule names. sla-status-change target is the literal `root` (case scope) or
+the exact stage display name — never the case name. -->
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
@@ -258,7 +314,7 @@ Template-local rules:
 **Action App ID:** <actionAppId or <UNRESOLVED>>
 **Deployment Folder:** <folder path or <UNRESOLVED>>
 **actionType:** <dispatch code or —>
-**Recipient:** <Role:name \| User:uuid \| UserGroup:uuid \| Email:addr \| Expression:=vars.id>
+**Recipient:** <Role:name \| User:uuid \| UserGroup:uuid \| Email:addr \| Expression:=vars.id — typed prefix only; none known → drop the cell + high review item>
 **Priority:** <Low \| Medium \| High \| Critical> · **Task Title:** <one-line Action Center prompt> · **Labels:** <csv or —>
 
 **Input Schema:**
@@ -280,6 +336,13 @@ Template-local rules:
 |--------|---------|----------|
 | <button label> | <variable = value> | <Complete task \| Complete task and set variables> |
 
+<!-- Buttons only on a decision task — then ≥2 rows; Maps To LHS = a §1.5 Name, taskOutcome, or this
+task's own output (read downstream via a direct producer reference) — never an identifier occurring
+nowhere else. Input/Output Schema fields MUST be ⊆ the resolved app's schema — a field the app lacks →
+Ask (task-specific app / drop / placeholder), never silently author. Reusing ONE deployed app across
+several action tasks is sanctioned only when each task carries a distinct actionType dispatch value AND
+its fields ⊆ the app schema (code-switched app); otherwise it is the substitute-app defect. -->
+
 ###### Connector Task Detail (type: `wait-for-connector` or `execute-connector-activity`)
 
 **Connector:** <connector name> · **Connector Key:** <connectorKey>
@@ -289,6 +352,9 @@ Template-local rules:
 **Account / Endpoint:** <explicit endpoint or —>
 **Operation:** <display/operation name>
 **Trigger / Event:** <trigger display name for wait-for-connector, or —>
+
+<!-- Missing Connection ID / Activity Type ID → high review item. Inputs `Field` verbatim to the IS
+activity schema. Operation Configuration carries through as =jsonString: only here. -->
 
 **Inputs:**
 
@@ -305,12 +371,14 @@ Template-local rules:
 
 ###### Timer Task Detail (type: `wait-for-timer`)
 
-**Timer:** <timeDuration \| timeDate \| timeCycle>
-**Value:** <ISO 8601 expression, date expression, or variable expression>
+**Timer:** <timeDuration (relative) \| timeDate (absolute) \| timeCycle>
+**Value:** <ISO 8601 expression, date expression, or variable expression — NEVER <UNRESOLVED>: a timer cannot fire without it; block approval>
+**Business Calendar:** <calendar name or —>
 
 ###### Child Case Task Detail (type: `case-management`)
 
-**Child Case:** <concrete intended child-case resource name; never <UNRESOLVED>>
+**Child Case:** <concrete intended child-case resource name; never <UNRESOLVED>, never the parent task's display name>
+**Child Case Identifier Prefix:** <2-4 char UPPER prefix>
 **Folder Path:** <folder path or <UNRESOLVED>>
 **Resource Identity:** <entityKey or <UNRESOLVED>>
 **Data Passed (parent -> child):**
@@ -321,7 +389,7 @@ Template-local rules:
 
 **Wait for Completion:** <Yes \| No>
 
-**Data Returned (child -> parent):**
+**Data Returned (child -> parent):** <!-- only when Wait for Completion: Yes -->
 
 | Child Variable | Parent Variable |
 |----------------|----------------|
@@ -332,8 +400,16 @@ Template-local rules:
 **Resolved Resource:** <concrete intended resource name; never <UNRESOLVED>>
 **Folder Path:** <resolved exact folder path or <UNRESOLVED>>
 **Resource Identity:** <apiWorkflowId / agentId / processOrchestrationId (+version) or <UNRESOLVED>>
-**Binding Sub-Type:** <Api \| Agent \| ProcessOrchestration \| —>
-**Dispatch / Operation:** <selector and value for shared facades, or —>
+**Binding Sub-Type:** <Api (api-workflow) \| Agent (agent) \| ProcessOrchestration (process) \| — (rpa) — omitting it makes Studio Web report the resource as not found>
+**Dispatch / Operation:** <selector and value for shared facades (`requestSource = "RegisterCaseShell"`) — also an Inputs row; — for single-purpose resources>
+
+<!-- Folder Path = the exact resource folder (never a parent), or <UNRESOLVED> when identity is
+unresolved. When a task resolves to a live resource: every REQUIRED declared input has a non-empty
+Binding (any form incl. a direct upstream-output reference — needs no §1.5 row) or <UNRESOLVED> + high
+review item; every Outputs -> Field exists verbatim in the resolved output contract (phantom field → high
+review item). Unresolved-identity tasks have no contract — skipped; portable names stay concrete. Bare
+field-name input lists are forbidden — table form only. No task-level SLA on any non-action type. Deep
+runtime metadata (agent prompts, package versions, endpoints) stays out of the SDD. -->
 
 **Inputs:**
 
@@ -350,7 +426,7 @@ Template-local rules:
 
 ---
 
-### Secondary Stage: <SECONDARY_STAGE_NAME>
+### Secondary Stage: <SECONDARY_STAGE_NAME> (`<stage_id>`)
 
 **Type:** Stage
 **Stage Kind:** secondary
@@ -495,5 +571,36 @@ The planner detects the `## Planner Handoff` header, parses Section 2: Stages & 
 Implementation tasks **do not live in this SDD** — they live in the planner's output.
 
 ---
+
+<!-- ============================ VALIDATION (do not render) ============================
+Markers: <UNRESOLVED> renders as plain text — never backtick-wrapped, never annotated in-cell; allowed
+ONLY on registry identity ids (taskTypeId, connectionId, actionAppId, agentId, processOrchestrationId,
+entityKey), each paired with a review item. `—` allowed only where a cell above says so (optional cells
+the build defaults safely). Narrative cells never carry skill-internal vocabulary (Pattern C, bridge,
+companion, inputOutputs[], groupOperator, essentialConfiguration-as-prose, savedFilterTrees, dispatcher,
+io-binding, aliased into/from, reassign, originalVar, auto-mint).
+
+Gate: run  python3 "<skill folder>/scripts/audit_sdd.py" <sdd path> [--draft <draft path>]  on the
+on-disk file BEFORE the Status: ready flip — in every mode. Repair findings with Edit, re-run to AUDIT OK
+(max 3 rounds, then stop and present findings). Never ship a summary SDD (top-level headings like
+## Source / ## Case Objective / ## Stages / ## Task Plan, or build-mode/path narration) even if a later
+caseplan.json would validate — rewrite from the model and this template.
+
+The validator enforces (manual fallback when python3 is unavailable — every item must hold):
+ 1. Document skeleton: scaffold order + planner-handoff:v1 marker, section/stage/task headings and
+    numbering (Task S{K}.{M}, no letter prefixes), per-block markers, per-type detail blocks,
+    summary-only sections, literal \n, plain <UNRESOLVED>, the Case Variables header.
+ 2. Closed enums + pairing: task-type enum; WHEN legality per gate slot; WHEN x Marks-Complete inside
+    exit tables; Exit Type x Marks-Complete; return-to-origin banned from case exits.
+ 3. Names: charset + case-wide stage/task uniqueness (rules: layers guide § Naming rules).
+ 4. References: sla-status-change arity (2 breach / 3 at-risk), target root-or-exact-stage, title
+    declared on that target; stage/task selectors name declared stages/tasks.
+ 5. Data closure: consumed =vars.X declared + produced; Out rows have Default or producer; orphan
+    Buttons Maps To identifiers.
+ 6. Cells: Recipient typed prefixes; non-empty task Entry Condition tables; forbidden vocabulary.
+ 7. Structure: ≥1 Marks Case Complete: Yes row; wait-for-user ↔ user-selected-stage both ways.
+ 8. Draft parity (--draft): stage/task inventory preserved; every draft =js: expression present;
+    comparator thresholds encoded executably, not prose-only.
+===================================================================================== -->
 
 **End of Case Definition Blueprint.**
