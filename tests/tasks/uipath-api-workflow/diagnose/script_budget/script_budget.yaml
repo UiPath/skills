@@ -1,0 +1,89 @@
+task_id: skill-api-workflow-diagnose-script-budget
+description: >
+  Diagnose (script execution budget): the workflow PASSES `validate` and then dies at
+  run time with `Script execution failed timed out`. Its JavaScript activity busy-waits
+  ~15s "to let the upstream settle", exceeding the executor's per-script budget — a flat
+  10s in the shipped executor 12.10.2 (`evaluateScript(code, taskName, 10000)`).
+
+  Covers the script-budget entry this PR adds to references/troubleshooting.md, which had
+  no test. The fix the reference teaches is the graded one: a `Wait` activity is not
+  charged against the script budget, and a busy-wait loop inside a script never belongs
+  there. The second criterion checks the spin loop is actually gone rather than merely
+  shortened — reducing 15s to 5s makes the symptom disappear while leaving the
+  anti-pattern in place.
+tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
+
+sandbox:
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/script_budget/seed_broken.py"
+    timeout: 30
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+
+initial_prompt: |
+  The API workflow in ./Workflow.json should take a numeric `numbers` array and return
+  its sum as `total`. It passes validation, but every run fails.
+
+  Diagnose why and fix it, keeping the intent: total = sum of numbers.
+
+  Do NOT ask for approval or confirmation.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json still present — repaired in place, not replaced wholesale"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used the local diagnose loop (not gated — a fix reached by
+      reading the file is equally valid, and agents legitimately do that)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+(validate|run)'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Repaired workflow validates"
+    command: >-
+      uip api-workflow validate ./Workflow.json --output json | grep -q '"Status": "Valid"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The busy-wait spin loop is gone, not merely shortened"
+    command: >-
+      python3 -c "import json,sys,re; t=json.dumps(json.load(open('Workflow.json')));
+      sys.exit('busy-wait still present' if re.search(r'while\\s*\\(\\s*Date\\.now', t) else 0)"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+
+  - type: run_command
+    description: "Behavioral: repaired workflow returns the correct sum"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"numbers":[10,20,30]}'
+      --output json | grep -qiE '"total":[ ]*60'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral: still correct on a different input — not hardcoded"
+    command: >-
+      uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"numbers":[5,5]}'
+      --output json | grep -qiE '"total":[ ]*10'
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

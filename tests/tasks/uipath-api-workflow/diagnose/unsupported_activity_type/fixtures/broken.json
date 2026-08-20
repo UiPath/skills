@@ -1,0 +1,129 @@
+{
+  "document": {
+    "dsl": "1.0.0",
+    "name": "Workflow",
+    "version": "0.0.1",
+    "namespace": "default",
+    "metadata": {
+      "variables": {
+        "schema": {
+          "format": "json",
+          "document": {
+            "type": "object",
+            "properties": {
+              "seen": {
+                "type": "number",
+                "default": 0
+              }
+            },
+            "title": "Variables"
+          }
+        }
+      }
+    }
+  },
+  "input": {
+    "schema": {
+      "format": "json",
+      "document": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  },
+  "do": [
+    {
+      "Sequence_1": {
+        "do": [
+          {
+            "WorkflowStart": {
+              "set": "${Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}) }",
+              "output": {
+                "as": "${$input}"
+              },
+              "export": {
+                "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+              },
+              "metadata": {
+                "activityType": "Assign",
+                "displayName": "Workflow start",
+                "fullName": "Assign",
+                "isTransparent": true
+              }
+            }
+          },
+          {
+            "While_1": {
+              "for": {
+                "in": "${ [1] }"
+              },
+              "while": "${$context.variables.seen < $workflow.input.count}",
+              "limit": 50,
+              "do": [
+                {
+                  "While_1#Body": {
+                    "do": [
+                      {
+                        "Assign_1": {
+                          "set": {
+                            "seen": "${$context.variables.seen + 1}"
+                          },
+                          "export": {
+                            "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                          },
+                          "metadata": {
+                            "activityType": "Assign",
+                            "displayName": "Count one",
+                            "fullName": "Assign"
+                          }
+                        }
+                      }
+                    ],
+                    "export": {
+                      "as": "{ ...$context, outputs: { ...$context?.outputs, \"While_1\": { ...$context?.outputs?.While_1, results: [ ...($context?.outputs?.While_1?.results ?? []), ...([$output] ?? []) ] } } }"
+                    }
+                  }
+                }
+              ],
+              "output": {
+                "as": "${$context.outputs.While_1}"
+              },
+              "metadata": {
+                "activityType": "While",
+                "displayName": "While",
+                "fullName": "While"
+              }
+            }
+          },
+          {
+            "Response_1": {
+              "response": {
+                "seen": "${$context.variables.seen}"
+              },
+              "markJobAsFailed": false,
+              "then": "end",
+              "metadata": {
+                "activityType": "Response",
+                "displayName": "Response",
+                "fullName": "Response"
+              }
+            }
+          }
+        ],
+        "metadata": {
+          "activityType": "Sequence",
+          "displayName": "Sequence",
+          "fullName": "Sequence"
+        }
+      }
+    }
+  ],
+  "evaluate": {
+    "mode": "strict",
+    "language": "javascript"
+  }
+}
