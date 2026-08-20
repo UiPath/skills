@@ -26,8 +26,12 @@ CRED_MAIN = "ce-fedcred-main"
 CRED_LEGACY = "ce-fedcred-legacy"
 EXPECTED_SUBJECT = "repo:myorg/myrepo:ref:refs/heads/release"
 SEEDED_SUBJECT = "repo:myorg/myrepo:ref:refs/heads/main"
-REQUIRED_ISSUER = "token.actions.githubusercontent.com"
-REQUIRED_AUDIENCE = "https://cloud.uipath.com"
+REQUIRED_ISSUER = "https://token.actions.githubusercontent.com"
+
+# Must match setup_fedcred_maintain.AUDIENCE exactly. This value is deliberately
+# unguessable so that preserving it across the full-replace update is only
+# possible by reading the credential first — see that module's comment.
+REQUIRED_AUDIENCE = "api://ce-fedcred-maintain-8f2ad9c4"
 
 
 def _get(item, *keys):
@@ -81,15 +85,19 @@ def main():
     if SEEDED_SUBJECT in subject:
         fail(f"'{CRED_MAIN}' still targets the seeded branch ({subject}) — retarget did not land")
 
-    issuer = _get(main_cred, "Issuer")
-    if REQUIRED_ISSUER not in issuer:
-        fail(f"'{CRED_MAIN}' lost its issuer on update (got {issuer!r}) — "
+    # Exact equality, not substring: a substring match would accept a value the
+    # agent widened or prefixed, and the whole point is byte-for-byte survival of
+    # a field it had to read.
+    issuer = _get(main_cred, "Issuer").strip()
+    if issuer != REQUIRED_ISSUER:
+        fail(f"'{CRED_MAIN}' issuer changed on update (got {issuer!r}, want {REQUIRED_ISSUER!r}) — "
              "federated-credentials update is a full replace; re-read the credential first")
 
-    audience = _get(main_cred, "Audience")
-    if REQUIRED_AUDIENCE not in audience:
-        fail(f"'{CRED_MAIN}' lost its audience on update (got {audience!r}) — "
-             "federated-credentials update is a full replace; re-read the credential first")
+    audience = _get(main_cred, "Audience").strip()
+    if audience != REQUIRED_AUDIENCE:
+        fail(f"'{CRED_MAIN}' audience changed on update (got {audience!r}, want {REQUIRED_AUDIENCE!r}) — "
+             "the seeded audience is not derivable from the prompt, so this means the credential "
+             "was not read before the full-replace update")
 
     if any(_get(c, "Name") == CRED_LEGACY for c in found):
         fail(f"credential '{CRED_LEGACY}' still exists on '{HOST}' — it was not deleted")

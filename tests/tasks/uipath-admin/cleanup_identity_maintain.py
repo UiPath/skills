@@ -25,6 +25,8 @@ BOTS = (
     "ce-identity-maintain-bot",
     "ce-identity-maintain-retired-bot",
 )
+MEMBER_EMAIL = "ce-identity-maintain-member@example.com"
+MEMBER_SEARCH = "ce-identity-maintain-member"
 
 
 def _id(item):
@@ -53,6 +55,18 @@ def main():
                 run_cli(["admin", "robot-accounts", "delete", _id(r)])
     else:
         logger.warning("Could not list robot accounts — skipping robot cleanup")
+
+    # The dedicated fixture member invited by setup. Exact email match — this must
+    # never touch a real org user.
+    data = run_cli(["admin", "users", "list", "--search", MEMBER_SEARCH])
+    if data and data.get("Result") == "Success":
+        for u in data.get("Data", []):
+            email = (u.get("Email") or u.get("email") or "").lower()
+            if email == MEMBER_EMAIL and _id(u):
+                logger.info("Deleting fixture member user '%s' (id=%s)", email, _id(u))
+                run_cli(["admin", "users", "delete", _id(u)])
+    else:
+        logger.warning("Could not list users — skipping fixture-member cleanup")
 
 
 main()

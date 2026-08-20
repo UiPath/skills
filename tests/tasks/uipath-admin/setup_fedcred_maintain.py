@@ -31,7 +31,15 @@ logger = logging.getLogger(__name__)
 
 HOST = "ce-identity-fedcred-maintain-host"
 ISSUER = "https://token.actions.githubusercontent.com"
-AUDIENCE = "https://cloud.uipath.com"
+
+# DELIBERATELY UNGUESSABLE. `federated-credentials update` is a full replace, so
+# the point of this test is that the agent must READ the credential before
+# updating it. With a canonical audience (e.g. https://cloud.uipath.com) an agent
+# that never read anything could reproduce the field from context and still pass
+# the preservation check — the assertion would be measuring nothing. This value
+# cannot be derived from the prompt or from UiPath convention, so preserving it
+# is only possible via `federated-credentials get`/`list`.
+AUDIENCE = "api://ce-fedcred-maintain-8f2ad9c4"
 CRED_MAIN = "ce-fedcred-main"
 CRED_LEGACY = "ce-fedcred-legacy"
 SUBJECT_MAIN = "repo:myorg/myrepo:ref:refs/heads/main"

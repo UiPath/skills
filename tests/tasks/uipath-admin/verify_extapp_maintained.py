@@ -19,7 +19,9 @@ cannot mask a failed narrowing.
 import json
 import logging
 import os
+import re
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli, poll, fail, ok
@@ -30,8 +32,13 @@ APP_SEEDED = "ce-identity-extapp-active"
 APP_RENAMED = "ce-identity-extapp-consolidated"
 APP_RETIRED = "ce-identity-extapp-retired"
 STALE_SECRET = "ce-extapp-stale-secret"
-REQUIRED_SCOPES = ("OR.Folders", "OR.Jobs")
-DROPPED_SCOPE = "OR.Assets"
+
+# The prompt asks for the app to reach Orchestrator folders and jobs ONLY, so the
+# assertion is set EQUALITY, not "required present and Assets absent". A superset
+# check would pass an agent that widened the app to OR.Robots/OR.Users while
+# nominally satisfying the request — the opposite of least privilege.
+EXPECTED_SCOPES = frozenset({"OR.Folders", "OR.Jobs"})
+STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_extapp_maintain_seed.txt")
 
 
 def _name(app):
@@ -106,30 +113,56 @@ def main():
         fail(f"app '{APP_RETIRED}' still exists — it was not deleted")
 
     cid = _cid(app)
+
+    # The rename must have happened IN PLACE. Comparing names only would accept
+    # delete-the-app-and-create-a-new-one, which is a different (and destructive)
+    # operation than `external-apps update`.
+    try:
+        with open(STATE_FILE) as f:
+            seeded_cid = f.read().strip()
+    except OSError:
+        fail(f"seed state file {STATE_FILE} missing — cannot prove the rename was in place; "
+             "setup_extapp_maintain.py did not record the seeded clientId")
+    if not seeded_cid:
+        fail("seed state file is empty — cannot prove the rename was in place")
+    if str(cid) != seeded_cid:
+        fail(f"'{APP_RENAMED}' has clientId={cid} but the seeded app was {seeded_cid} — the app was "
+             "replaced (delete + create), not renamed in place via `external-apps update`")
+
     got = run_cli(["admin", "external-apps", "get", cid])
     if not got or got.get("Result") != "Success":
         fail(f"external-apps get failed for '{APP_RENAMED}' (clientId={cid}) — cannot verify scopes or secrets")
     details = got.get("Data") if isinstance(got, dict) and "Data" in got else got
 
-    scopes = " ".join(collect(details, "scope"))
-    missing = [s for s in REQUIRED_SCOPES if s not in scopes]
-    if missing:
-        fail(f"app '{APP_RENAMED}' is missing requested scopes {missing}; scopes={scopes[:400]}")
-    if DROPPED_SCOPE in scopes:
-        fail(f"app '{APP_RENAMED}' still carries {DROPPED_SCOPE} — scopes are replaced, not merged; scopes={scopes[:400]}")
+    scope_text = " ".join(collect(details, "scope"))
+    actual_scopes = frozenset(re.findall(r"\bOR\.[A-Za-z]+\b", scope_text))
+    if not actual_scopes:
+        fail(f"could not read any OR.* scope off '{APP_RENAMED}' — cannot verify the narrowing; "
+             f"scope fields={scope_text[:300]!r}")
+    if actual_scopes != EXPECTED_SCOPES:
+        extra = sorted(actual_scopes - EXPECTED_SCOPES)
+        missing = sorted(EXPECTED_SCOPES - actual_scopes)
+        fail(f"app '{APP_RENAMED}' scopes are {sorted(actual_scopes)}, expected exactly "
+             f"{sorted(EXPECTED_SCOPES)} (extra={extra}, missing={missing}) — scopes are replaced, "
+             "not merged, and the request was folders and jobs ONLY")
 
     blob = json.dumps(details)
     if STALE_SECRET in blob:
         fail(f"secret described '{STALE_SECRET}' still present on '{APP_RENAMED}' — delete-secret did not land")
 
+    # Non-vacuous: if the secret collection cannot be read at all we cannot tell
+    # "one secret survived" from "every secret was deleted", so fail rather than
+    # warn. Previously this path only logged, letting the assertion pass silently.
     secrets = secret_records(details)
     if secrets is None:
-        logging.warning("app details expose no secret collection — cannot assert a secret survived")
-    elif len(secrets) < 1:
+        fail(f"could not read a secret collection off '{APP_RENAMED}' — cannot assert that the "
+             "non-stale secret survived; `external-apps get` shape may have changed")
+    if len(secrets) < 1:
         fail(f"app '{APP_RENAMED}' has no secrets left — the surviving secret was deleted too")
 
-    ok(f"app renamed to '{APP_RENAMED}' with scopes narrowed to {list(REQUIRED_SCOPES)}, "
-       f"'{STALE_SECRET}' deleted, '{APP_RETIRED}' deleted")
+    ok(f"app {seeded_cid} renamed in place to '{APP_RENAMED}' with scopes exactly "
+       f"{sorted(EXPECTED_SCOPES)}, '{STALE_SECRET}' deleted ({len(secrets)} secret(s) remain), "
+       f"'{APP_RETIRED}' deleted")
 
 
 main()

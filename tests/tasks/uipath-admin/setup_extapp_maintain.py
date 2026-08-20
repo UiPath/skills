@@ -16,12 +16,18 @@ update-evidence problem (see identity_user_lifecycle_e2e.yaml). Always exits 0.
 import logging
 import os
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
 from admin_helpers import run_cli, poll
 
 logging.basicConfig(level=logging.INFO, format="setup_extapp_maintain: %(message)s")
 logger = logging.getLogger(__name__)
+
+# Records the seeded app's ClientId so verify can prove the rename happened
+# IN PLACE. Without it, an agent that deletes the app and creates a new one with
+# the target name is indistinguishable from one that renamed it.
+STATE_FILE = os.path.join(tempfile.gettempdir(), "ce_extapp_maintain_seed.txt")
 
 APP_ACTIVE = "ce-identity-extapp-active"
 APP_RENAMED = "ce-identity-extapp-consolidated"
@@ -59,6 +65,13 @@ def client_id(name):
 
 
 def main():
+    # Clear stale state from a prior run in this container so verify can never
+    # validate against a previous run's ClientId.
+    try:
+        os.remove(STATE_FILE)
+    except OSError:
+        pass
+
     existing = apps()
     if existing is None:
         logger.warning("Could not list external apps — seed skipped")
@@ -78,6 +91,10 @@ def main():
     if not cid:
         logger.warning("App '%s' not resolvable — stale secret not seeded", APP_ACTIVE)
         return
+
+    with open(STATE_FILE, "w") as f:
+        f.write(str(cid))
+    logger.info("Recorded seeded clientId=%s for in-place-rename verification", cid)
     res = run_cli(["admin", "external-apps", "generate-secret", cid,
                    "--description", STALE_SECRET, "--expiration", "2030-01-01"])
     logger.info("Seeded stale secret '%s' on '%s': %s",
