@@ -128,7 +128,9 @@ jobs:
       # deps). Windows RPA tasks run under the tempdir driver, so no agent image.
       - name: Install coder-eval
         shell: bash
-        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
+        # coder-eval 0.10.2 still imports `httpx`, while its current dependency
+        # graph installs only the successor `httpx2` distribution.
+        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}" "httpx==0.28.1"
 
       - name: Configure NuGet feed for Helm packages
         shell: bash
