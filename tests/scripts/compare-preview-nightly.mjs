@@ -146,10 +146,16 @@ export function buildComparison({
   baselineFile,
   tasks,
   harness,
-  environment,
+  previewEnvironment,
+  baselineEnvironment,
 }) {
   const previewRows = taskRows(preview);
-  const config = { harness, model: singleModel(previewRows), environment };
+  const config = {
+    harness,
+    model: singleModel(previewRows),
+    preview_environment: previewEnvironment,
+    live_v1_environment: baselineEnvironment,
+  };
   const rows = tasks.map(({ task_id: taskId, task_path: taskPath }) => {
     const previewMetrics = metrics(oneTask(previewRows, taskId, 'Preview run'));
     const liveMetrics = metrics(oneTask(taskRows(baseline), taskId, 'Regular nightly'));
@@ -180,7 +186,7 @@ export function renderMarkdown(comparison) {
   const lines = [
     '# Maestro preview nightly comparison',
     '',
-    `Config: \`${config.harness}\` / \`${config.model}\` / \`${config.environment}\``,
+    `Config: \`${config.harness}\` / \`${config.model}\` · preview \`${config.preview_environment}\`, live v1 \`${config.live_v1_environment}\``,
     '',
     `Preview: \`${comparison.preview.run_id ?? 'unknown'}\` · regular nightly: \`${comparison.baseline.run_id ?? 'unknown'}\``,
     '',
@@ -209,12 +215,26 @@ function baselineFiles(directory) {
 
 export function main(argv = process.argv.slice(2)) {
   const args = parseArgs(argv);
-  for (const required of ['repository', 'manifest', 'preview', 'baselines', 'harness', 'environment', 'output-json', 'output-md']) {
+  for (const required of [
+    'repository',
+    'manifest',
+    'preview',
+    'baselines',
+    'harness',
+    'preview-environment',
+    'baseline-environment',
+    'output-json',
+    'output-md',
+  ]) {
     if (!args[required]) throw new Error(`--${required} is required`);
   }
   const tasks = loadTaskManifest(args.repository, args.manifest);
   const preview = readJson(args.preview);
-  const config = { harness: args.harness, model: singleModel(taskRows(preview)), environment: args.environment };
+  const config = {
+    harness: args.harness,
+    model: singleModel(taskRows(preview)),
+    environment: args['baseline-environment'],
+  };
   const selected = selectBaseline(baselineFiles(args.baselines), config, tasks);
   const comparison = buildComparison({
     preview,
@@ -224,7 +244,8 @@ export function main(argv = process.argv.slice(2)) {
     baselineFile: selected.filePath,
     tasks,
     harness: args.harness,
-    environment: args.environment,
+    previewEnvironment: args['preview-environment'],
+    baselineEnvironment: args['baseline-environment'],
   });
   fs.writeFileSync(args['output-json'], `${JSON.stringify(comparison, null, 2)}\n`);
   const markdown = renderMarkdown(comparison);

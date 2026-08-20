@@ -20,9 +20,9 @@ on:
         type: string
         default: ''
       cli_version:
-        description: '@uipath/cli channel; scheduled runs mirror the regular nightly alpha channel.'
+        description: '@uipath/cli channel; the preview Maestro authoring loop currently requires dev.'
         type: string
-        default: alpha
+        default: dev
 
 permissions:
   contents: read
@@ -63,7 +63,7 @@ jobs:
       task_globs: ${{ needs.tasks.outputs.task_globs }}
       parallelism: '4'
       experiment: preview-nightly
-      cli_version: ${{ inputs.cli_version || 'alpha' }}
+      cli_version: ${{ inputs.cli_version || 'dev' }}
       agent: ${{ inputs.agent || 'claude' }}
       agent_model: ${{ inputs.agent_model || '' }}
     secrets: inherit
@@ -124,6 +124,7 @@ jobs:
       - name: Join preview and live v1 by task id
         env:
           REQUESTED_AGENT: ${{ inputs.agent || 'claude' }}
+          PREVIEW_ENVIRONMENT: ${{ inputs.cli_version || 'dev' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -141,7 +142,8 @@ jobs:
             --preview-run-id "$GITHUB_RUN_ID" \
             --baselines regular-baselines \
             --harness "$harness" \
-            --environment alpha \
+            --preview-environment "$PREVIEW_ENVIRONMENT" \
+            --baseline-environment alpha \
             --output-json preview-nightly-comparison.json \
             --output-md preview-nightly-comparison.md
           cat preview-nightly-comparison.md >> "$GITHUB_STEP_SUMMARY"

@@ -198,7 +198,9 @@ replaced by their `preview/` counterparts while keeping `SKILLS_REPO_PATH` on
 the real checkout for frozen task checkers. The workflow selects the nine
 neutralized tasks only through `preview-nightly-tasks.txt`, never by tag. Its
 comparison artifact joins those preview rows to the newest regular-nightly
-`run.json` with the same harness, model, and environment; durable records live
+`run.json` with the same harness and model. It records the intentional channel
+delta (preview `dev`, where the SDK authoring loop is published; live v1
+`alpha`) rather than treating it as a model mismatch. Durable records live
 under `runs/preview-nightly/<github-run-id>/` in the existing eval blob
 container.
 
