@@ -335,9 +335,23 @@ jobs:
 
       - name: Stage Maestro SDK preview plugin
         if: inputs.experiment == 'preview-nightly'
+        id: preview_stage
         env:
           PREVIEW_SKILLS_PLUGIN_PATH: ${{ runner.temp }}/preview-skills-plugin
-        run: node scripts/stage-preview-plugin.mjs --output "$PREVIEW_SKILLS_PLUGIN_PATH"
+        run: |
+          node scripts/stage-preview-plugin.mjs --output "$PREVIEW_SKILLS_PLUGIN_PATH"
+          pin="$(jq -r .preview_upstream_commit "$PREVIEW_SKILLS_PLUGIN_PATH/.preview-source.json")"
+          [ -n "$pin" ] && [ "$pin" != null ]
+          echo "flow_builder_sdk_ref=$pin" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        if: inputs.experiment == 'preview-nightly'
+        with:
+          repository: UiPath/flow-builder-sdk
+          ref: ${{ steps.preview_stage.outputs.flow_builder_sdk_ref }}
+          token: ${{ secrets.GH_PAT }}
+          path: preview-flow-builder-sdk
+          persist-credentials: false
 
       - name: Overlay preview Flow SDK
         if: inputs.experiment == 'preview-nightly'
@@ -345,8 +359,11 @@ jobs:
           DOCKER_BUILDKIT: "1"
           NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
         run: |
+          flow_builder_sdk_sha="$(git -C preview-flow-builder-sdk rev-parse HEAD)"
           docker build \
             --build-arg BASE_IMAGE=skills-image:latest \
+            --build-arg FLOW_BUILDER_SDK_SHA="$flow_builder_sdk_sha" \
+            --build-context flow_builder_sdk=preview-flow-builder-sdk \
             --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
             -t skills-image:preview-nightly \
             -f tests/docker/preview-nightly.Dockerfile \

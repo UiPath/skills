@@ -3,7 +3,12 @@ ARG BASE_IMAGE=skills-image:latest
 FROM ${BASE_IMAGE}
 
 ARG FLOW_SDK_VERSION=latest
+ARG FLOW_BUILDER_SDK_SHA
 ENV PREVIEW_FLOW_SDK_ROOT=/opt/preview-flow-sdk
+ENV PREVIEW_FLOW_SDK_ASSETS_ROOT=/opt/preview-flow-sdk-assets
+
+RUN apt-get update && apt-get install -y --no-install-recommends unzip \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN --mount=type=secret,id=npm_auth_token \
     set -euo pipefail && \
@@ -22,3 +27,28 @@ RUN --mount=type=secret,id=npm_auth_token \
     rm -f "$npmrc" && \
     node -e "const p=require('./node_modules/@uipath/flow-sdk/package.json'); console.log('Installed', p.name+'@'+p.version)" && \
     test -x node_modules/.bin/flow-sdk
+
+# Reuse the connector-authoring layer from the SDK campaign image. The named
+# build context is checked out at the preview snapshot's provenance pin by the
+# workflow, so skill content, connector catalog, and prepare-connector stay on
+# one upstream revision.
+COPY --from=flow_builder_sdk typescript/sdk/lib/ ${PREVIEW_FLOW_SDK_ASSETS_ROOT}/typescript/sdk/lib/
+COPY --from=flow_builder_sdk integrations/ ${PREVIEW_FLOW_SDK_ASSETS_ROOT}/integrations/
+
+RUN FLOW_SDK_ROOT=${PREVIEW_FLOW_SDK_ASSETS_ROOT} \
+      bash ${PREVIEW_FLOW_SDK_ASSETS_ROOT}/typescript/sdk/lib/scripts/unpack-library.sh && \
+    python3 ${PREVIEW_FLOW_SDK_ASSETS_ROOT}/integrations/scripts/generate_connectors_ts.py \
+      --library ${PREVIEW_FLOW_SDK_ASSETS_ROOT}/typescript/sdk/lib/library-json \
+      --output ${PREVIEW_FLOW_SDK_ASSETS_ROOT}/connectors \
+      --import @uipath/flow-sdk && \
+    chmod +x ${PREVIEW_FLOW_SDK_ASSETS_ROOT}/integrations/scripts/prepare_connector.py && \
+    printf '#!/bin/sh\nexec python3 %s/integrations/scripts/prepare_connector.py "$@" --import @uipath/flow-sdk\n' \
+      "${PREVIEW_FLOW_SDK_ASSETS_ROOT}" > /usr/local/bin/prepare-connector && \
+    chmod +x /usr/local/bin/prepare-connector && \
+    prepare-connector --help >/dev/null && \
+    printf '%s\n' "${FLOW_BUILDER_SDK_SHA:?FLOW_BUILDER_SDK_SHA is required}" \
+      > ${PREVIEW_FLOW_SDK_ASSETS_ROOT}/flow-builder-sdk.sha
+
+ENV FLOW_SDK_LIBRARY_JSON=${PREVIEW_FLOW_SDK_ASSETS_ROOT}/typescript/sdk/lib/library-json \
+    FLOW_SDK_LIBRARY_MD=${PREVIEW_FLOW_SDK_ASSETS_ROOT}/typescript/sdk/lib/library-md \
+    FLOW_SDK_CONNECTORS_DIR=${PREVIEW_FLOW_SDK_ASSETS_ROOT}/connectors
