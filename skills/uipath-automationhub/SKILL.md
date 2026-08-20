@@ -54,7 +54,14 @@ Classify what the user wants, then follow the matching reference. All flows shar
 | Shared **command / endpoint catalog** | [`references/cli-commands.md`](references/cli-commands.md) | [`references/api-endpoints.md`](references/api-endpoints.md) |
 | _(future AH Open API operation — add a row here)_ <!-- uip-check-skip --> | _add `references/<operation>.md` and route to it_ |
 
-To add a new capability (e.g. a future AH `uip` CLI surface or another Open API operation), keep this skill's product shape: add one `references/<operation>.md`, add a row above, and reuse this shared Authentication section — do not create a new per-operation skill.
+**Extending this skill** (new AH operation, new field, new integration like the Studio Web link) — keep the shape, and put each kind of change in exactly one home:
+
+- **A new domain fact** (a field's format, a required rule, an id table): document it once in [`references/api-endpoints.md`](references/api-endpoints.md) — the transport-independent contract — and have the flow steps *reference* it rather than restate it. Never fork a fact across the CLI and API files.
+- **A new operation / user intent**: add a `references/<operation>-cli.md` flow (and, only while the raw-API fallback still exists, an API twin), plus one row in the routing table above and, if new commands are involved, rows in `cli-commands.md`. Do not create a new per-operation skill.
+- **A new optional capability inside an existing flow** (like Step 6b, Studio Web): add it as an optional step in that flow, with its discovery recipe and a never-invent rule.
+- **When the raw-API fallback retires** (once an `ah`-capable `uip` release is ubiquitous): delete the API flow files and the preflight's fallback arm in one commit — the CLI files are self-contained by design.
+
+Every addition keeps the skill's three invariants: collect inputs before the first write, verify before reporting success, and never invent a value the tenant didn't provide.
 
 ## Notes
 
