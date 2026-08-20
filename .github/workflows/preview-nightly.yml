@@ -1,0 +1,178 @@
+name: Maestro Preview Nightly
+
+on:
+  schedule:
+    # The regular staging-tenant nightly starts at 04:00 UTC and has an
+    # eight-hour cap. Start preview after that window, never alongside it.
+    - cron: '15 13 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: 'Agent harness; scheduled runs use Claude.'
+        type: choice
+        options:
+          - claude
+          - codex
+          - antigravity
+        default: claude
+      agent_model:
+        description: 'Model override; blank uses the same repository variable as regular eval dispatches.'
+        type: string
+        default: ''
+      cli_version:
+        description: '@uipath/cli channel; scheduled runs mirror the regular nightly alpha channel.'
+        type: string
+        default: alpha
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: maestro-preview-nightly-staging-tenant
+  cancel-in-progress: false
+
+jobs:
+  tasks:
+    runs-on: uipath-ubuntu-latest
+    outputs:
+      task_globs: ${{ steps.manifest.outputs.task_globs }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - name: Resolve the frozen nine-task manifest
+        id: manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest=tests/experiments/preview-nightly-tasks.txt
+          mapfile -t tasks < <(sed '/^[[:space:]]*\($\|#\)/d' "$manifest")
+          if [ "${#tasks[@]}" -ne 9 ]; then
+            echo "::error::$manifest must contain exactly 9 task paths"
+            exit 1
+          fi
+          for task in "${tasks[@]}"; do
+            [ -f "tests/$task" ] || { echo "::error::Missing tests/$task"; exit 1; }
+          done
+          printf 'task_globs=%s\n' "${tasks[*]}" >> "$GITHUB_OUTPUT"
+
+  eval:
+    needs: tasks
+    uses: ./.github/workflows/run-coder-eval.yml
+    with:
+      task_globs: ${{ needs.tasks.outputs.task_globs }}
+      parallelism: '4'
+      experiment: preview-nightly
+      cli_version: ${{ inputs.cli_version || 'alpha' }}
+      agent: ${{ inputs.agent || 'claude' }}
+      agent_model: ${{ inputs.agent_model || '' }}
+    secrets: inherit
+
+  compare:
+    needs:
+      - tasks
+      - eval
+    if: always() && github.ref == 'refs/heads/main' && needs.eval.result != 'cancelled'
+    runs-on: uipath-ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - name: Download preview result
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          pattern: coder-eval-linux-${{ github.run_id }}
+          path: preview-result
+          merge-multiple: true
+
+      - name: Azure login for regular-nightly baseline
+        uses: azure/login@8216e11d8cd9b42fe925c852af8e76311ff067ac  # v2.3.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Download recent regular-nightly summaries
+        env:
+          AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
+          AZURE_BLOB_CONTAINER: ${{ vars.AZURE_BLOB_CONTAINER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p regular-baselines
+          az storage blob list \
+            --account-name "$AZURE_STORAGE_ACCOUNT" \
+            --container-name "$AZURE_BLOB_CONTAINER" \
+            --auth-mode login \
+            --query "[?ends_with(name, '/run.json')].name" \
+            --output tsv > regular-run-json-blobs.txt
+          awk -F/ 'NF == 2' regular-run-json-blobs.txt | sort -r | sed -n '1,60p' > regular-baseline-candidates.txt
+          if [ ! -s regular-baseline-candidates.txt ]; then
+            echo '::error::No top-level regular-nightly run.json blobs found'
+            exit 1
+          fi
+          while IFS= read -r blob; do
+            run_id=${blob%%/*}
+            az storage blob download \
+              --account-name "$AZURE_STORAGE_ACCOUNT" \
+              --container-name "$AZURE_BLOB_CONTAINER" \
+              --auth-mode login \
+              --name "$blob" \
+              --file "regular-baselines/$run_id.json" \
+              --no-progress >/dev/null
+          done < regular-baseline-candidates.txt
+
+      - name: Join preview and live v1 by task id
+        env:
+          REQUESTED_AGENT: ${{ inputs.agent || 'claude' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$REQUESTED_AGENT" in
+            claude) harness=claude-code ;;
+            codex|antigravity) harness=$REQUESTED_AGENT ;;
+            *) echo "::error::Unsupported comparison harness: $REQUESTED_AGENT"; exit 1 ;;
+          esac
+          preview_json=preview-result/run.json
+          [ -f "$preview_json" ] || { echo '::error::Preview artifact has no root run.json'; exit 1; }
+          node tests/scripts/compare-preview-nightly.mjs \
+            --repository "$PWD" \
+            --manifest tests/experiments/preview-nightly-tasks.txt \
+            --preview "$preview_json" \
+            --baselines regular-baselines \
+            --harness "$harness" \
+            --environment alpha \
+            --output-json preview-nightly-comparison.json \
+            --output-md preview-nightly-comparison.md
+          cat preview-nightly-comparison.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload comparison artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: preview-nightly-comparison-${{ github.run_id }}
+          path: |
+            preview-nightly-comparison.json
+            preview-nightly-comparison.md
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Archive preview result and comparison
+        if: success()
+        env:
+          AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
+          AZURE_BLOB_CONTAINER: ${{ vars.AZURE_BLOB_CONTAINER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p preview-nightly-archive
+          cp preview-result/run.json preview-nightly-archive/run.json
+          cp preview-nightly-comparison.json preview-nightly-archive/comparison.json
+          cp preview-nightly-comparison.md preview-nightly-archive/comparison.md
+          az storage blob upload-batch \
+            --account-name "$AZURE_STORAGE_ACCOUNT" \
+            --auth-mode login \
+            --destination "$AZURE_BLOB_CONTAINER" \
+            --destination-path "preview-nightly/${GITHUB_RUN_ID}" \
+            --source preview-nightly-archive \
+            --overwrite \
+            --no-progress >/dev/null
