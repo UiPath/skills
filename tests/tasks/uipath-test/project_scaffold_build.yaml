@@ -1,41 +1,3 @@
-# Owns a throwaway PROJECT for the whole scenario: the agent creates it, proves
-# it works by starting a run inside it, then deletes it. Nothing in CLAIM, HEALTH
-# or BANK is read or written, so this task cannot disturb the fixture state the
-# EVFX- contract protects, and it leaves no tenant residue behind.
-#
-# Cleanup is part of the graded scenario rather than a hook because this
-# framework has no post_run — tests/README.md: "There is no post_run. The agent
-# creates and deletes its own ephemeral resources as part of the test scenario."
-# Grading the delete is therefore both the cleanup mechanism AND coverage of
-# `project delete`, which no other task asserts.
-#
-# TWO EARLIER REVISIONS FAILED, AND WHAT THEY TAUGHT:
-#
-# 1. Codex run 32343500063 (score 0.609). The task asked for an "execution-ready"
-#    project and graded `or folders list` + `project set-default-folder`. Both
-#    matched zero commands, correctly: SKILL.md Critical Rule 10 says to set a
-#    default folder ONLY on the exact missing-folder error from a `run`, never
-#    pre-emptively. Nothing was being run, so the trigger never fired and a
-#    skill-following agent rightly skipped both. The task was grading a behaviour
-#    the skill forbids.
-#
-# 2. Codex run 32344136020 (score 0.435). The scenario then drove a MANUAL run to
-#    fire that trigger — and `uip tm testcases run --execution-type manual`
-#    succeeded on a folderless project, so the error still never surfaced. Rule 10
-#    claims `testcases run` and `testsets run` "both require a default folder";
-#    that holds for automated executions, not manual ones. Reaching the recovery
-#    path needs an automation-linked case and a robot-served folder, which the
-#    fixtures README notes pre_run cannot bootstrap — so the folder criteria are
-#    gone rather than forced, and Rule 10's recovery is left as a known coverage
-#    gap for a task that can supply a real automation link.
-#
-#    That run also broke the `project create` criterion, which had required the
-#    literal `EVFX-SCAFFOLD-` immediately after `--name`. The agent built
-#    `PROJECT_NAME="EVFX-SCAFFOLD-${STAMP}-${TAG}"` and passed `--name
-#    "$PROJECT_NAME"`, so the adjacency never existed. Criteria here now assert
-#    the stamp appears SOMEWHERE in the command and that the flag carries some
-#    value — the same failure class as the gemini `subprocess.run` wrapping
-#    documented on organize-testcases-into-testsets.
 task_id: skill-test-project-scaffold-build
 description: >
   Integration test: agent uses the uipath-test skill to provision a Test Manager
@@ -54,11 +16,6 @@ run_limits:
   expected_turns: 20
   max_turns: 40
 
-# Belt-and-braces only: the scenario deletes its own project. This exists for
-# the run that dies between create and delete, which would otherwise strand a
-# project on the tenant forever. It spares anything stamped with today's date
-# because two models run the nightly concurrently, and a whole-prefix sweep
-# would delete the other run's project while it was still working.
 pre_run:
   - command: |
       python3 - <<'PYEOF'

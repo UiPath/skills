@@ -1,24 +1,3 @@
-# Builds a test set by LABEL SELECTOR inside a throwaway project the agent
-# creates and then deletes. Nothing in CLAIM, HEALTH or BANK is read or written,
-# so the labelled cases this task needs cannot be mistaken for — or collide with
-# — another task's fixtures, and no tenant residue survives the run.
-#
-# Cleanup is in-scenario because this framework has no post_run (tests/README.md:
-# "There is no post_run. The agent creates and deletes its own ephemeral
-# resources as part of the test scenario"). Deleting the project removes the
-# cases, labels and set inside it in one call.
-#
-# The label selector is what keeps this disjoint from
-# organize_testcases_into_testsets, which grades the `--test-case-keys` form and
-# `testcases list --filter`. Nothing else under tests/tasks/uipath-test/ asserts
-# `testcases add --labels`. Project creation is deliberately NOT graded here —
-# that surface belongs to project_scaffold_build, and grading it twice would
-# make the two tasks overlap.
-#
-# The label form carries a documented trap: `--labels A,B` is read as ONE label
-# named "A,B" and matches nothing, so the set comes back empty with a zero exit
-# code. Grading the comma form as forbidden is the only way to catch a skill
-# that teaches the wrong separator, because the CLI itself does not complain.
 task_id: skill-test-testset-curation-by-label-build
 description: >
   Integration test: agent uses the uipath-test skill to assemble a regression
@@ -38,10 +17,6 @@ run_limits:
   expected_turns: 28
   max_turns: 50
 
-# Belt-and-braces only: the scenario deletes its own project. This exists for
-# the run that dies mid-scenario, which would otherwise strand a project.
-# Spares today's stamp so concurrent nightly models never delete each other's
-# work-in-progress.
 pre_run:
   - command: |
       python3 - <<'PYEOF'

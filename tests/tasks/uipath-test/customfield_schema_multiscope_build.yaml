@@ -1,27 +1,3 @@
-# Designs a MULTI-SCOPE custom field — one definition visible on Requirement,
-# TestCase and TestSet at once, via the variadic `--scope-list` — inside a
-# throwaway project the agent creates and then deletes. Nothing in CLAIM, HEALTH
-# or BANK is read or written, so these definitions cannot be confused with the
-# "Eval Reviewer"/"Eval Risk" fields the HEALTH tasks own, and no tenant residue
-# survives the run.
-#
-# Cleanup is in-scenario because this framework has no post_run (tests/README.md:
-# "There is no post_run. The agent creates and deletes its own ephemeral
-# resources as part of the test scenario"). Deleting the project removes the
-# definition with it.
-#
-# `--scope-list` is mutually exclusive with `--object-type` and is asserted by no
-# other task: customfield_definition_crud_smoke grades the single-scope
-# `--object-type` create → list → rename → delete lifecycle, and
-# customfield_population_integration grades the per-object label and value ROWS
-# rather than the definition. Project creation is deliberately NOT graded here —
-# that surface belongs to project_scaffold_build.
-#
-# The failure this catches is a skill that only knows the single-scope shape and
-# so creates three separate definitions with the same name. That looks correct in
-# the CLI output and is wrong in the product: three unrelated definitions cannot
-# be reported on together, which is the entire reason to scope one field across
-# three object types.
 task_id: skill-test-customfield-schema-multiscope-build
 description: >
   Integration test: agent uses the uipath-test skill to design one custom field
@@ -41,10 +17,6 @@ run_limits:
   expected_turns: 18
   max_turns: 38
 
-# Belt-and-braces only: the scenario deletes its own project. This exists for
-# the run that dies mid-scenario, which would otherwise strand a project.
-# Spares today's stamp so concurrent nightly models never delete each other's
-# work-in-progress.
 pre_run:
   - command: |
       python3 - <<'PYEOF'
