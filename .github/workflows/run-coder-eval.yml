@@ -338,11 +338,17 @@ jobs:
         id: preview_stage
         env:
           PREVIEW_SKILLS_PLUGIN_PATH: ${{ runner.temp }}/preview-skills-plugin
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           node scripts/stage-preview-plugin.mjs --output "$PREVIEW_SKILLS_PLUGIN_PATH"
           pin="$(jq -r .preview_upstream_commit "$PREVIEW_SKILLS_PLUGIN_PATH/.preview-source.json")"
           [ -n "$pin" ] && [ "$pin" != null ]
-          echo "flow_builder_sdk_ref=$pin" >> "$GITHUB_OUTPUT"
+          full_sha="$(gh api "repos/UiPath/flow-builder-sdk/commits/$pin" --jq .sha)"
+          case "$full_sha" in
+            "$pin"*) ;;
+            *) echo "resolved commit $full_sha does not match preview pin $pin" >&2; exit 1 ;;
+          esac
+          echo "flow_builder_sdk_ref=$full_sha" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         if: inputs.experiment == 'preview-nightly'
