@@ -1,6 +1,6 @@
 # Agent
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`agent()`](api.md#agent-function).*
+*Exact signatures, fields, and defaults: [`agent()`](api.md#agent-function).*
 
 Start a coded or low-code agent and wait for its output. The resource may be
 published in Orchestrator or registered as a sibling project in this solution.
@@ -37,7 +37,7 @@ The shortest complete path is:
 2. Scaffold and implement the coded agent as a sibling directory. Run one local
    input through it; an evaluation suite is optional unless the request asks for
    one.
-3. Register the sibling with `uip solution project add`.
+3. Register the sibling with `uip solution projects add`.
 4. Read the generated resource file, then author the Flow with `agent({
    location: 'in-solution', ... })`.
 5. Compile directly into the nested Flow project, validate, refresh resources,
@@ -58,7 +58,7 @@ mkdir <SolutionName>/<AgentProject>
 #   uip codedagent run <entry-point> '<one representative JSON input>'
 
 ( cd <SolutionName> && \
-  uip solution project add <AgentProject> <SolutionName>.uipx --output json )
+  uip solution projects add <AgentProject> <SolutionName>.uipx --output json )
 ```
 
 Read both identifiers from

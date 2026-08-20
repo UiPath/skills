@@ -1,0 +1,181 @@
+name: Re-sync Maestro SDK preview
+
+on:
+  schedule:
+    - cron: '15 5 * * *' # daily at 05:15 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: sync-maestro-sdk-preview
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: uipath-ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          fetch-depth: 0
+          path: skills
+
+      - name: Check for an existing sync PR
+        id: check
+        working-directory: skills
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          EXISTING=$(gh pr list \
+            --state open \
+            --json number,url,headRefName \
+            --jq '[.[] | select(.headRefName | startswith("auto/resync-maestro-sdk-preview-"))] | .[0] // empty')
+
+          if [ -n "$EXISTING" ]; then
+            URL=$(echo "$EXISTING" | jq -r '.url')
+            NUMBER=$(echo "$EXISTING" | jq -r '.number')
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Existing Maestro preview sync PR still open: #$NUMBER — $URL"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        if: steps.check.outputs.exists != 'true'
+        with:
+          repository: UiPath/flow-builder-sdk
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+          path: flow-builder-sdk
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        if: steps.check.outputs.exists != 'true'
+        with:
+          node-version: '20'
+
+      - name: Three-way merge upstream drift
+        if: steps.check.outputs.exists != 'true'
+        id: sync
+        working-directory: skills
+        run: >-
+          node scripts/sync-maestro-sdk-preview.mjs
+          --upstream ../flow-builder-sdk
+
+      - name: Run snapshot gates
+        if: steps.check.outputs.exists != 'true'
+        working-directory: skills
+        run: |
+          set -euo pipefail
+          git diff --check
+
+          for skill in flow case bpmn; do
+            findings="$RUNNER_TEMP/maestro-$skill-verbs.ndjson"
+            python3 scripts/check-skill-verbs.py \
+              --json "preview/uipath-maestro-$skill" > "$findings"
+            blocking=$(jq -c \
+              'select(.severity=="Stale" and .matched_prefix == null)' \
+              "$findings" | wc -l | tr -d ' ')
+            soft=$(jq -c \
+              'select(.severity=="Stale" and .matched_prefix != null)' \
+              "$findings" | wc -l | tr -d ' ')
+            uncertain=$(jq -c \
+              'select(.severity=="Uncertain")' \
+              "$findings" | wc -l | tr -d ' ')
+            echo "$skill: $blocking blocking, $soft soft-stale, $uncertain uncertain"
+            if [ "$blocking" -gt 0 ]; then
+              jq -r \
+                'select(.severity=="Stale" and .matched_prefix == null)' \
+                "$findings"
+              exit 1
+            fi
+          done
+
+      - name: Check for snapshot diff
+        if: steps.check.outputs.exists != 'true'
+        id: diff
+        working-directory: skills
+        env:
+          SCRIPT_CHANGED: ${{ steps.sync.outputs.changed }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- \
+            preview/uipath-maestro-flow \
+            preview/uipath-maestro-case \
+            preview/uipath-maestro-bpmn; then
+            changed=false
+          else
+            changed=true
+            git diff --stat -- \
+              preview/uipath-maestro-flow \
+              preview/uipath-maestro-case \
+              preview/uipath-maestro-bpmn
+          fi
+          if [ "$changed" != "$SCRIPT_CHANGED" ]; then
+            echo "Sync script reported changed=$SCRIPT_CHANGED but git reported changed=$changed."
+            exit 1
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+
+      - name: Open re-sync PR
+        if: steps.check.outputs.exists != 'true' && steps.diff.outputs.changed == 'true'
+        working-directory: skills
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          OLD_PIN: ${{ steps.sync.outputs.old_pin }}
+          NEW_PIN: ${{ steps.sync.outputs.new_pin }}
+        run: |
+          set -euo pipefail
+          case "$NEW_PIN" in
+            *[!0-9a-f]*) echo "Unexpected upstream pin: $NEW_PIN"; exit 1 ;;
+          esac
+          case "$OLD_PIN" in
+            *[!0-9a-f]*) echo "Unexpected provenance pin: $OLD_PIN"; exit 1 ;;
+          esac
+          BRANCH="auto/resync-maestro-sdk-preview-$NEW_PIN-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add \
+            preview/uipath-maestro-flow \
+            preview/uipath-maestro-case \
+            preview/uipath-maestro-bpmn
+          git commit \
+            -m "chore(preview): re-sync Maestro SDK skills to flow-builder-sdk@$NEW_PIN" \
+            -m "🤖 Generated with Claude Code
+          Co-Authored-By: [Claude](mailto:noreply@anthropic.com)"
+          git push -u origin "$BRANCH"
+
+          PR_CREATED=false
+          cleanup_branch() {
+            if [ "$PR_CREATED" != "true" ]; then
+              echo "::warning::PR creation failed — deleting pushed branch $BRANCH"
+              git push origin --delete "$BRANCH" || true
+            fi
+          }
+          trap cleanup_branch EXIT
+
+          gh label create automated \
+            --color cccccc \
+            --description "Bot-generated automated PR" \
+            --force \
+            || echo "::warning::Could not create or refresh the automated label"
+
+          gh pr create \
+            --base main \
+            --title "chore(preview): re-sync Maestro SDK skills to flow-builder-sdk@$NEW_PIN" \
+            --label automated \
+            --body "Automated three-way re-sync from provenance pin \`$OLD_PIN\` to current \`UiPath/flow-builder-sdk@main\` (\`$NEW_PIN\`).
+
+          The job merged each snapshot file against its recorded upstream base, reapplied only the D1–D6 path/provenance adaptations, and passed the inventory, byte-exception, dead-link, frontmatter, router, conflict-marker, diff, and CLI verb gates.
+
+          Part of UiPath/flow-builder-sdk#405. This PR is intentionally **not** auto-merged; snapshot drift remains human-reviewed until the post-promotion C→B cutover.
+
+          🤖 Generated with Claude Code
+          Co-Authored-By: [Claude](mailto:noreply@anthropic.com)"
+
+          PR_CREATED=true

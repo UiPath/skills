@@ -1,6 +1,6 @@
 # Integration Service Connectors
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`connector()`](api.md#connector-function).*
+*Exact signatures, fields, and defaults: [`connector()`](api.md#connector-function).*
 
 Call a curated or generic Integration Service operation.
 
@@ -17,7 +17,13 @@ Signatures:
 
 ## Discovering operations and fields
 
-Search the bundled library for static contracts:
+`$FLOW_SDK_LIBRARY_MD` (markdown, for reading) and `$FLOW_SDK_LIBRARY_JSON`
+(machine-readable, for compiling) point at a **separately staged** connector
+library. It is not part of the npm package and there is no default: if the
+variables are unset, the library is not on this machine, so search the paths
+your environment provides and pass `--library <dir>` explicitly.
+
+Search that library for static contracts:
 
 ```bash
 jq '.entries[] | select(.label | test("send email"; "i")) | {label,nodeType,path}' \
@@ -26,7 +32,10 @@ sed -n '1,220p' "$FLOW_SDK_LIBRARY_MD/<path-from-index>"
 ```
 
 When a connection-specific field is absent, materialize the live schema rather
-than guessing or hand-editing the emitted Flow:
+than guessing or hand-editing the emitted Flow. `prepare-connector` is an
+authoring tool **provided by the environment**, not by the npm package — it
+needs a live Integration Service connection. If it is not on `PATH`, this route
+is unavailable; fall back to the curated operation in the markdown library.
 
 ```bash
 prepare-connector <connector-key> <action> \
@@ -90,8 +99,15 @@ records while only the declared reference collection is the action's contract.
 
 ```bash
 uip is resources run list <connector-key> <object-name> \
-  --connection-id <connection-id> --output json
+  --connection-id <connection-id> \
+  --output-filter '{items:items[].{Id:Id,Name:Name},page:Pagination.{HasMore:HasMore,NextPageToken:NextPageToken}}' \
+  --output json
 ```
+
+`--output-filter` selects from `Data`; list responses place both `items` and
+`Pagination` there. Replace `Id` and `Name` with the exact id/display fields in
+the prepared reference contract. Keep the page fields in the same projection
+so a match read does not need a second `cat`/`jq` pass.
 
 When `Data.Pagination.HasMore` is `"true"`, keep the operation and connection
 unchanged and pass `Data.Pagination.NextPageToken` as `nextPage` on the next
@@ -100,7 +116,9 @@ call:
 ```bash
 uip is resources run list <connector-key> <object-name> \
   --connection-id <connection-id> \
-  --query "nextPage=<value-from-NextPageToken>" --output json
+  --query "nextPage=<value-from-NextPageToken>" \
+  --output-filter '{items:items[].{Id:Id,Name:Name},page:Pagination.{HasMore:HasMore,NextPageToken:NextPageToken}}' \
+  --output json
 ```
 
 Stop early when the target record appears. Otherwise continue until

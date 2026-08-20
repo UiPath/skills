@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL-bpmn.md` @ f4973f6. Canonical source lives there;
+`typescript/sdk/skill/SKILL-bpmn.md` @ 41938ba. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 -->
 
@@ -51,6 +51,8 @@ export default bpmn('expense-approval')
   .startEvent('Start', { name: 'Expense submitted', message: 'ExpenseSubmitted' })
 
   // Script a decision: read a variable in, map a result field back out.
+  // 1000 is the capitalization boundary — a different axis from the 100
+  // auto-approval limit on the gateway below.
   .scriptTask('Classify', {
     script: 'return { category: amount > 1000 ? "capital" : "operating" };',
     inputs:  { amount: '=vars.Var_Amount' },          // read into the script as top-level `amount`
@@ -64,16 +66,21 @@ export default bpmn('expense-approval')
   .task('AutoApprove', { name: 'Auto-approve', set: { Var_Approved: '=true' } })
 
   // ── manager branch: post to Slack (a connector service task), then wait for a reply ──
-  .connector('AskManager', 'uipath-salesforce-slack', 'send-message-to-a-channel',
+  .connector('AskManager', 'uipath-salesforce-slack', 'send-message-to-channel',
     { channel: '#approvals',
       messageToSend: '=vars.Var_Employee + " needs approval for a " + vars.Var_Category + " expense of $" + vars.Var_Amount' },
     { connection: 'slack', folder: 'shared', name: 'Ping approvers' })
   .intermediateCatchEvent('Decision', { name: 'Await manager', message: 'ManagerDecision' })
 
+  // Both branches must leave `Var_Approved` set — `Notify` below reads it on
+  // either path. (A catch event carries no payload binding, so this example
+  // treats the awaited reply as the approval; a real process would branch on it.)
+  .task('RecordDecision', { name: 'Record decision', set: { Var_Approved: '=true' } })
+
   // Merge the two branches. A joining gateway names its lone outgoing as `default`
   // so it needs no condition (the static check requires one or the other).
   .exclusiveGateway('Join', { name: 'Merge', default: 'Flow_Notify' })
-  .connector('Notify', 'uipath-salesforce-slack', 'send-message-to-a-channel',
+  .connector('Notify', 'uipath-salesforce-slack', 'send-message-to-channel',
     { channel: '#expenses',
       messageToSend: '=vars.Var_Employee + " expense approved: " + vars.Var_Approved' },
     { connection: 'slack', folder: 'shared', name: 'Notify employee' })
@@ -85,7 +92,8 @@ export default bpmn('expense-approval')
   .sequenceFlow('Triage', 'AskManager', { id: 'Flow_Manager' })  // the gateway default (no condition)
   .sequenceFlow('AutoApprove', 'Join')
   .sequenceFlow('AskManager', 'Decision')
-  .sequenceFlow('Decision', 'Join')
+  .sequenceFlow('Decision', 'RecordDecision')
+  .sequenceFlow('RecordDecision', 'Join')
   .sequenceFlow('Join', 'Notify', { id: 'Flow_Notify' })         // the merge default (no condition)
   .sequenceFlow('Notify', 'Done')
 
@@ -148,7 +156,7 @@ import { bpmn } from '@uipath/flow-sdk/bpmn';
 export default bpmn('notify')
   .name('Notify')
   .startEvent('start')
-  .connector('post', 'uipath-salesforce-slack', 'send-message-to-a-channel',
+  .connector('post', 'uipath-salesforce-slack', 'send-message-to-channel',
     { channel: '#general', messageToSend: 'BPMN says hi' },
     { connection: 'slack', folder: 'shared', name: 'Post to Slack' })
   .endEvent('done')

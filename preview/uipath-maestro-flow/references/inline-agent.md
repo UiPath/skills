@@ -1,6 +1,6 @@
 # Inline Agent
 
-*Behavior and worked examples. Exact signatures, fields, and defaults: [`inlineAgent()`](api.md#inlineagent-function).*
+*Exact signatures, fields, and defaults: [`inlineAgent()`](api.md#inlineagent-function).*
 
 An inline agent is defined inside this Flow project and may be connected to
 tenant context, callable tools, and human escalation resources.
@@ -31,6 +31,24 @@ Resolve the index name and id together from the tenant registry. Local execution
 has no semantic retrieval service, so an inline-agent answer is ungrounded even
 when the resource wiring is present. Platform evidence must establish that the
 intended index was used and that its retrieved knowledge influenced the answer.
+
+The `uip context-grounding` bridge runs in the project's Python environment.
+Activate the existing environment and run setup once before list/search; setup
+is the command itself, not a `setup --help` probe:
+
+```bash
+source .venv/bin/activate
+uip context-grounding setup
+uip context-grounding list --folder-path "<folder-path>" --format json
+uip context-grounding search \
+  --index-name "<index-name>" --query "<one bounded evidence query>" \
+  --folder-path "<folder-path>" --limit 5 --format json
+```
+
+Use `--folder-key` instead of `--folder-path` when that is the known identity.
+The delegated command uses `--format json`; it does not use the outer CLI's
+`--output json` spelling. One search that answers the stated grounding claim is
+enough; do not repeat paraphrases solely for confidence.
 
 ## Tools
 
