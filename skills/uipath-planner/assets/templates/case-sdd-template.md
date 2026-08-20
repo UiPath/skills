@@ -594,7 +594,8 @@ The validator enforces (manual fallback when python3 is unavailable — every it
     exit tables; Exit Type x Marks-Complete; return-to-origin banned from case exits.
  3. Names: charset + case-wide stage/task uniqueness (rules: layers guide § Naming rules).
  4. References: sla-status-change arity (2 breach / 3 at-risk), target root-or-exact-stage, title
-    declared on that target; stage/task selectors name declared stages/tasks.
+    declared on that target; stage/task selectors name declared stages/tasks;
+    selected-tasks-completed selects only non-adhoc tasks in the SAME stage.
  5. Data closure: consumed =vars.X declared + produced; Out rows have Default or producer; orphan
     Buttons Maps To identifiers.
  6. Cells: Recipient typed prefixes; non-empty task Entry Condition tables; forbidden vocabulary.

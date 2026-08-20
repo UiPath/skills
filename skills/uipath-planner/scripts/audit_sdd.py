@@ -643,6 +643,24 @@ def contract_findings(text: str, facts: dict) -> list[str]:
                     if task_names and strip_id_suffix(arg).strip() not in task_names:
                         findings.append(f"line {line_no}: task selector references {arg!r} — no task with that display name exists")
 
+    # selected-tasks-completed scope: only non-adhoc tasks in the SAME stage (layers § Sequencing)
+    for kind, stage_name, block in stage_blocks(text):
+        own_tasks = {strip_id_suffix(m.group(3)).strip() for m in TASK_HEADING.finditer(block)}
+        adhoc_tasks = set()
+        tasks_in_block = list(TASK_HEADING.finditer(block))
+        for index, task in enumerate(tasks_in_block):
+            end = tasks_in_block[index + 1].start() if index + 1 < len(tasks_in_block) else len(block)
+            tb = block[task.start():end]
+            if re.search(r"^\*\*Activation Mode:\*\*\s*`?adhoc\b", tb, re.M):
+                adhoc_tasks.add(strip_id_suffix(task.group(3)).strip())
+        for call in re.finditer(r"selected-tasks-completed\s*\(([^)]*)\)", block):
+            for arg in re.findall(r"[\"\u201c\u2018']([^\"\u201d\u2019']+)[\"\u201d\u2019']", call.group(1)):
+                name = strip_id_suffix(arg).strip()
+                if name in adhoc_tasks:
+                    findings.append(f"stage {stage_name!r}: selected-tasks-completed selects adhoc task {name!r} — it selects only non-adhoc tasks")
+                elif task_names and name in task_names and name not in own_tasks:
+                    findings.append(f"stage {stage_name!r}: selected-tasks-completed selects {name!r} from another stage — it selects only tasks in the SAME stage")
+
     # sla-status-change SLA-title closure (target validity is checked in audit())
     if sla_titles:
         for line_no, line in enumerate(lines, 1):
