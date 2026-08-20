@@ -21,7 +21,6 @@ equality check while the app could not actually reach jobs under its own identit
 import json
 import logging
 import os
-import re
 import sys
 import tempfile
 
@@ -59,20 +58,51 @@ def apps():
     return data.get("Data", [])
 
 
-def app_scope_values(node, key_hint=""):
-    """Collect scope strings from APP-scope-bearing keys only."""
+def app_scope_names(node):
+    """Collect application scope names from the real ExternalClientDetails shape.
+
+    Verified against run 32339130747 artifacts, the payload nests scopes two
+    levels deep as OBJECTS, not strings:
+
+        {"Resources": [{"Name": "OAuth Api Access",
+                        "Scopes": [{"Name": "OR.Folders", "Description": ...,
+                                    "Type": 1}, ...]}]}
+
+    An earlier revision walked the tree carrying a "key hint" and collected any
+    leaf under a scope-named key. That silently returned NOTHING here, because
+    descending into each scope OBJECT replaced the hint with the object's own
+    keys ("Name"/"Description"/"Type"), none of which look scope-ish. The verify
+    then failed a correctly-narrowed app with "could not read any OR.* scope".
+
+    Containers whose key marks them delegated/user scopes are skipped, so a
+    `--user-scope` grant cannot be counted toward the application scope set.
+    NOTE: no observed payload has yet contained user scopes, so their exact
+    representation is unconfirmed; this exclusion is defensive.
+    """
     out = []
-    if isinstance(node, dict):
-        for k, v in node.items():
-            lk = k.lower()
-            if any(m in lk for m in USER_SCOPE_MARKERS):
-                continue  # never fold delegated scopes into the app-scope set
-            out.extend(app_scope_values(v, lk))
-    elif isinstance(node, list):
-        for v in node:
-            out.extend(app_scope_values(v, key_hint))
-    elif node is not None and any(s in key_hint for s in APP_SCOPE_KEYS):
-        out.append(str(node))
+
+    def walk(node, in_user_container=False):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                lk = key.lower()
+                user_ctx = in_user_container or any(m in lk for m in USER_SCOPE_MARKERS)
+                if any(s in lk for s in APP_SCOPE_KEYS) and isinstance(value, list):
+                    if user_ctx:
+                        continue  # delegated scopes are not application scopes
+                    for entry in value:
+                        if isinstance(entry, dict):
+                            name = entry.get("Name") or entry.get("name") or entry.get("Value")
+                            if name:
+                                out.append(str(name))
+                        elif entry is not None:
+                            out.append(str(entry))  # tolerate a bare string list
+                    continue
+                walk(value, user_ctx)
+        elif isinstance(node, list):
+            for entry in node:
+                walk(entry, in_user_container)
+
+    walk(node)
     return out
 
 
@@ -148,11 +178,11 @@ def main():
         fail(f"external-apps get failed for '{APP_RENAMED}' (clientId={cid}) — cannot verify scopes or secrets")
     details = got.get("Data") if isinstance(got, dict) and "Data" in got else got
 
-    scope_text = " ".join(app_scope_values(details))
-    actual_scopes = frozenset(re.findall(r"\bOR\.[A-Za-z]+\b", scope_text))
+    scope_names = app_scope_names(details)
+    actual_scopes = frozenset(n for n in scope_names if n.startswith("OR."))
     if not actual_scopes:
         fail(f"could not read any OR.* application scope off '{APP_RENAMED}' — cannot verify the "
-             f"narrowing; app-scope fields={scope_text[:300]!r}")
+             f"narrowing; application scope names read={scope_names[:20]!r}")
     if actual_scopes != EXPECTED_SCOPES:
         extra = sorted(actual_scopes - EXPECTED_SCOPES)
         missing = sorted(EXPECTED_SCOPES - actual_scopes)

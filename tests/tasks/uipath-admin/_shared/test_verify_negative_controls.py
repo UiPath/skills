@@ -58,6 +58,12 @@ def _load_verify(module_name, responder, state, tmp_path, monkeypatch):
         state_file.write_text(json.dumps(state), encoding="utf-8")
 
     ns = {"__name__": "verify_under_test", "__file__": str(target)}
+    anchor = 'STATE_FILE = os.path.join(tempfile.gettempdir(),'
+    assert anchor in src, (
+        f"{module_name}: STATE_FILE anchor not found — the source-rewrite below would "
+        "silently no-op and these tests would read the REAL /tmp state file, passing for "
+        "the wrong reason. Update the anchor to match the module."
+    )
     code = src.replace(
         'STATE_FILE = os.path.join(tempfile.gettempdir(),',
         f'STATE_FILE = {str(state_file)!r} or os.path.join(tempfile.gettempdir(),',
@@ -265,12 +271,29 @@ def ext_state(app_list, details):
 
 
 GOOD_LIST = [{"ClientId": "app-active", "Name": "ce-identity-extapp-consolidated"}]
-GOOD_DETAILS = {
-    "ClientId": "app-active",
-    "Name": "ce-identity-extapp-consolidated",
-    "AppScopes": ["OR.Folders", "OR.Jobs"],
-    "Secrets": [{"Id": 1, "Description": "creation"}],
-}
+def details(scope_names, secrets=None, client_id="app-active", user_scopes=None):
+    """Build an ExternalClientDetails payload in the REAL observed shape.
+
+    Verified against run 32339130747: scopes are OBJECTS nested two levels deep
+    under Resources[].Scopes[], not a flat list of strings. The first version of
+    this harness invented a flat `AppScopes: [...]` list, so it green-lit a
+    parser that read NOTHING from the real payload — the harness was testing a
+    fiction. Keep this shape aligned with artifacts, not with intuition.
+    """
+    resource = {"Name": "OAuth Api Access",
+                "Scopes": [{"Name": n, "Description": f"{n} in Orchestrator", "Type": 1}
+                           for n in scope_names]}
+    if user_scopes is not None:
+        resource["UserScopes"] = [{"Name": n, "Type": 2} for n in user_scopes]
+    return {
+        "ClientId": client_id,
+        "Name": "ce-identity-extapp-consolidated",
+        "Resources": [resource],
+        "Secrets": secrets if secrets is not None else [{"Id": 1, "Description": "creation"}],
+    }
+
+
+GOOD_DETAILS = details(["OR.Folders", "OR.Jobs"])
 
 
 def test_extapp_happy_path_passes(tmp_path, monkeypatch):
@@ -280,38 +303,36 @@ def test_extapp_happy_path_passes(tmp_path, monkeypatch):
     assert "OK:" in out
 
 
-@pytest.mark.parametrize("label,app_list,details,expect", [
+@pytest.mark.parametrize("label,app_list,detail,expect", [
     ("retired app RENAMED not deleted",
      GOOD_LIST + [{"ClientId": "app-retired", "Name": "zz-archived-app"}],
      GOOD_DETAILS, "renamed or left in place, not deleted"),
     ("app replaced rather than renamed in place",
      [{"ClientId": "app-brand-new", "Name": "ce-identity-extapp-consolidated"}],
-     {**GOOD_DETAILS, "ClientId": "app-brand-new"}, "renamed in place"),
+     details(["OR.Folders", "OR.Jobs"], client_id="app-brand-new"), "renamed in place"),
     ("scopes WIDENED, not narrowed",
-     GOOD_LIST,
-     {**GOOD_DETAILS, "AppScopes": ["OR.Folders", "OR.Jobs", "OR.Robots"]},
-     "expected exactly"),
+     GOOD_LIST, details(["OR.Folders", "OR.Jobs", "OR.Robots"]), "expected exactly"),
     ("Assets never dropped",
-     GOOD_LIST,
-     {**GOOD_DETAILS, "AppScopes": ["OR.Folders", "OR.Jobs", "OR.Assets"]},
-     "expected exactly"),
+     GOOD_LIST, details(["OR.Folders", "OR.Jobs", "OR.Assets"]), "expected exactly"),
     ("stale secret never deleted",
-     GOOD_LIST,
-     {**GOOD_DETAILS, "Secrets": [{"Id": 1, "Description": "creation"},
-                                  {"Id": 2, "Description": "ce-extapp-stale-secret"}]},
+     GOOD_LIST, details(["OR.Folders", "OR.Jobs"],
+                        secrets=[{"Id": 1, "Description": "creation"},
+                                 {"Id": 2, "Description": "ce-extapp-stale-secret"}]),
      "delete-secret did not land"),
     ("delegated scope smuggled in to satisfy the app-scope set",
-     GOOD_LIST,
-     {**GOOD_DETAILS, "AppScopes": ["OR.Folders"], "UserScopes": ["OR.Jobs"]},
-     "expected exactly"),
+     GOOD_LIST, details(["OR.Folders"], user_scopes=["OR.Jobs"]), "expected exactly"),
     ("an extra secret was generated",
-     GOOD_LIST,
-     {**GOOD_DETAILS, "Secrets": [{"Id": 1, "Description": "creation"},
-                                  {"Id": 3, "Description": "replacement"}]},
+     GOOD_LIST, details(["OR.Folders", "OR.Jobs"],
+                        secrets=[{"Id": 1, "Description": "creation"},
+                                 {"Id": 3, "Description": "replacement"}]),
      "expected exactly"),
+    ("scopes unreadable -> must fail loudly, never pass",
+     GOOD_LIST, {"ClientId": "app-active", "Name": "ce-identity-extapp-consolidated",
+                 "Secrets": [{"Id": 1, "Description": "creation"}]},
+     "could not read any OR.*"),
 ])
-def test_extapp_negative(label, app_list, details, expect, tmp_path, monkeypatch):
-    rc, out = _load_verify("verify_extapp_maintained", ext_state(app_list, details),
+def test_extapp_negative(label, app_list, detail, expect, tmp_path, monkeypatch):
+    rc, out = _load_verify("verify_extapp_maintained", ext_state(app_list, detail),
                            EXT_SEED, tmp_path, monkeypatch)
     assert rc == 1, f"{label}: expected failure, got pass. out={out}"
     assert expect in out, f"{label}: wrong diagnosis. out={out}"
