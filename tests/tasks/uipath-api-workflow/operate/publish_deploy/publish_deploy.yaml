@@ -1,0 +1,146 @@
+task_id: skill-api-workflow-operate-publish-deploy
+description: >
+  E2E (operate): take a finished API workflow solution live on the tenant, prove
+  the deployed copy runs, then take it back down — pack, publish, deploy into a
+  provisioned folder, start a job on the deployed process, capture its status,
+  uninstall.
+
+  This is the only task that crosses the publish boundary. `package_solution`
+  stops at `pack`, and `operate/run_execute` runs the workflow LOCALLY; neither
+  proves a deployed API workflow exists or executes. Covers the post-publish
+  surface documented in the skill's operating-published-workflows.md —
+  `uip solution publish`/`deploy`, `uip or processes list`, `uip or jobs start` —
+  which had no coverage at any point before this task.
+
+  Teardown is part of the graded task, not just post_run housekeeping (same shape
+  as uipath-agents/lowcode/solution_deploy_activate). Two reasons. It is a real
+  operate skill — releases get rolled back. And it is the only reliable way to
+  leave the tenant clean here: a deployment is only uninstallable for a few
+  minutes after it goes live (ActivationStatus decays "Active" -> "None", after
+  which `deploy uninstall` returns HTTP 400 / errorCode 4007), and post_run runs
+  well past that window. See cleanup_deploy.py for the full finding.
+
+  Because teardown removes the folder, job evidence must be captured DURING the
+  run into ./job_status.json — the grader cannot query jobs on a folder that no
+  longer exists. Same pattern as operate/run_execute's run_85.json.
+
+  The project is seeded (scaffolded via `uip solution init` + `uip api-workflow
+  init`, so it carries the real Studio Web shape) because authoring is not the
+  graded behavior here — the build-mode tasks own that.
+
+  Requires a tenant — runs in CI (run-coder-eval.yml) or against a local
+  `uip login`, not the tempdir smoke gate.
+
+  TENANT PREREQUISITES: this task starts a job on the deployed process, which
+  consumes tenant runtime licensing and Orchestrator folder/machine wiring. If
+  `uip or jobs start` fails or the job never leaves `Pending`, treat it as tenant
+  setup rather than a task defect and hand it to `uipath-platform`:
+
+    - runtime license allocation (Robot Units / UNATT) —
+      skills/uipath-platform/references/licensing/tenant-allocations.md
+    - folder, machine and Orchestrator license wiring —
+      skills/uipath-platform/references/orchestrator/setup-environment.md
+    - starting jobs and selecting a runtime —
+      skills/uipath-platform/references/orchestrator/run-jobs.md
+
+  None of this is something the task expects the agent to discover or provision.
+
+tags: [uipath-api-workflow, e2e, mode:operate, lifecycle:setup]
+
+sandbox:
+  python: {}
+
+pre_run:
+  # uuid8 + parent_folder_path, and ensures the parent folder exists on the tenant.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 60
+  # The ready-to-ship solution + API workflow project (offline; validates itself).
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/operate/publish_deploy/seed_api_workflow_project.py"
+    timeout: 180
+
+post_run:
+  # Backstop only — the agent is asked to uninstall and is graded on it. This
+  # covers the runs that end without a clean tenant (agent never got there, its
+  # uninstall failed, max_turns, timeout) and deletes the published package,
+  # which the task itself does not ask for.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/operate/publish_deploy/cleanup_deploy.py"
+    timeout: 240
+
+run_limits:
+  # Observed 21 / 27 turns across live runs before teardown was added; the agent
+  # spends several turns discovering the provisioned folder and the process key
+  # before it can start a job. Set above that so the warning flags a real
+  # regression, not the norm.
+  expected_turns: 32
+  turn_timeout: 600
+
+initial_prompt: |
+  The API workflow solution in ./ApiWfSolution is finished and already valid —
+  do NOT rewrite it. I want a release rehearsal: get it live on the tenant,
+  prove the deployed copy actually runs, then take it back down. Nothing should
+  be left standing when you are done.
+
+  `seed.json` has a unique `uuid8` and `parent_folder_path`. Use these names so
+  parallel runs don't collide, and so I can follow what happened:
+
+  - package `apiwf-pkg-<uuid8>`, version 1.0.0
+  - deployment `apiwf-deploy-<uuid8>`
+  - its folder `apiwf-deploy-folder-<uuid8>`, under `parent_folder_path`
+
+  Before you tear anything down, save the deployed job's status output to
+  ./job_status.json — once the deployment is gone that evidence is
+  unrecoverable, and it is the only proof the deployed copy ran.
+
+  Not complete until the job reached a successful state AND the deployment is
+  uninstalled.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent packaged the solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+pack\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent published the package to the tenant"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+publish\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deployed the published solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+run\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started a job on the deployed process (the operate action)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+jobs\s+start\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uninstalled its deployment, leaving the tenant clean"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+uninstall\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Tenant: deployment existed, its job succeeded (captured), and its folder is gone"
+    command: "python3 $TASK_DIR/check_publish_deploy_job.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

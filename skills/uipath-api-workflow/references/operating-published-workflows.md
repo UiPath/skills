@@ -54,15 +54,26 @@ uip api-workflow validate ./Workflow.json --output json   # static: schema + sem
 uip api-workflow run ./Workflow.json --no-auth --output json  # runtime: expression / logic
 ```
 
-Faults that only surface in cloud (auth, connection state, real vendor responses, trigger wiring) are diagnosed from the deployed job:
+Faults that only surface in cloud (auth, connection state, real vendor responses, trigger wiring) are diagnosed from the deployed job. **`uip or jobs get` is the only surface that carries the fault** — verified end-to-end against a deliberately-faulting deployed API workflow (alpha, uip 1.200.0):
 
 ```bash
-uip or jobs get <jobId> --output json                  # status + fault summary
-uip or jobs logs <jobId> --output json                 # execution logs for the run
-uip traces spans get --job-key <jobKey> --output json  # span-level execution trace (also accepts a <trace-id> positional)
+uip or jobs get <jobId> --output json   # THE diagnostic: Data.State + Data.Info
 ```
 
-> `uip or jobs traces` is documented Agent-type-process-only — for an API-workflow job use `uip traces spans get --job-key <jobKey>` instead.
+`Data.State` is `Faulted`; `Data.Info` carries the runtime message, e.g.
+`"Worker operation failed: <the error your JavaScript or connector activity raised>"`.
+Read `Info` first — for an API workflow it is usually the whole answer.
+
+Two surfaces that look useful and are NOT, for API-workflow jobs:
+
+| Command | What it actually returns |
+|---------|--------------------------|
+| `uip or jobs logs <jobId>` | Lifecycle lines only — `"Workflow started"` / `"Workflow completed"`, both at level `Info`. It reports **`Workflow completed` even for a Faulted job** and never carries the error. Do not diagnose from it, and never read "completed" as success. |
+| `uip traces spans get --job-key <jobKey>` | Fails with `"Error retrieving trace ID for job"`. API-workflow jobs have no span/trace surface. |
+
+> **Diagnose before you tear down.** Uninstalling the deployment destroys its job records — `uip or jobs get <jobId>` then returns `Result: Failure` with an empty `State`. Capture what you need while the deployment still stands.
+
+> For per-activity detail the local loop is stronger than anything in cloud: reproduce with `uip api-workflow run <Workflow.json> --no-auth --output json`, which names the failing activity. Cloud gives you the fault message; local gives you its position.
 
 Map the surfaced error back to a fix using the category catalog in [troubleshooting.md](troubleshooting.md) (Structure > Expression > Activity Config > Logic). For deep, multi-signal root-cause investigations (what changed, cross-run comparison, incident correlation), hand off to **uipath-troubleshoot**.
 
@@ -72,5 +83,5 @@ Map the surfaced error back to a fix using the category catalog in [troubleshoot
 |------|--------------------------|-------------------------|
 | **Build** | `init`, edit, `validate`, `registry resolve`/`stub`, `pack` | — |
 | **Operate** | `run` (local execution) | `uip or jobs start <process-key>`/`list`/`stop`, `uip or triggers` (need `--folder-path`/`--folder-key`), `uip is connections` |
-| **Diagnose** | `validate` → `run --no-auth` loop, `uip is connections ping` | `uip or jobs logs`/`get`, `uip traces spans get --job-key`, uipath-troubleshoot |
+| **Diagnose** | `validate` → `run --no-auth` loop, `uip is connections ping` | `uip or jobs get` — `Data.Info` carries the fault; `jobs logs` and `traces spans get` do NOT work for API-workflow jobs. Then uipath-troubleshoot |
 <!--skill-flavor:published-operations:end-->
