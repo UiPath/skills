@@ -173,14 +173,14 @@ Logical operators between siblings:
       "groupOperator": 1, "index": 1,
       "filters": [
         { "id": "OwnerId", "operator": "Equals",
-          "value": { "value": "${me.id}", "rawString": "\"${me.id}\"", "isLiteral": false } },
+          "value": { "value": "=js:$vars.getUser1.output.id", "rawString": "\"=js:$vars.getUser1.output.id\"", "isLiteral": false } },
         { "id": "OwnerId", "operator": "IsNull" }
       ]
     }
   ]
 }
 ```
-→ CEQL: `Subject Contains 'urgent' AND (OwnerId = '{var_<hash>}' OR OwnerId Is Null)`, with `filterVariables: {"var_<hash>": "=js:…"}` alongside.
+→ CEQL: `Subject Contains 'urgent' AND (OwnerId = '{var_<hash>}' OR OwnerId Is Null)`, with `filterVariables: {"var_<hash>": "=js:$vars.getUser1.output.id"}` alongside.
 
 ### How to build a CEQL filter tree
 
