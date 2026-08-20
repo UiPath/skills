@@ -69,6 +69,23 @@ uip ah documents create $PROCESS_ID \
 - `--file` uploads the bytes (the CLI base64s it; any file type; 200 MB cap). Use `--embed-link <url>` *instead* only when the caller has a URL and no bytes — exactly one of the two, and never invent a URL.
 - Record `Data.Id` (document id) and `Data.FileId` from each response. On a validation error, surface the message and continue with the remaining documents.
 
+## Step 6b (optional): Link a Studio Web solution
+
+When the caller wants the process linked to a Studio Web solution (or supplies one), set the `OVR-OVERVIEW_STUDIO_WEB_LINK` question — at create time inside `user_inputs`, or afterwards via `uip ah automations update $PROCESS_ID --file <answers.json>`.
+
+**The answer's `value` is a JSON *string*** (not an object) with a required `url`:
+
+```json
+"OVR-OVERVIEW_STUDIO_WEB_LINK": {
+  "value": "{\"url\":\"<designer url>\",\"name\":\"<solution name>\",\"hasProcessMap\":true}"
+}
+```
+
+- **Resolve the solution**: `uip solution list --name "<pattern>"` → pick the entry (`Id`, `Name`, `Projects[]`); several matches → ask the user. Never invent a solution id.
+- **Build the designer url**: `{baseUrl}/{org}/studio_/designer/{projectId}?solutionId={solutionId}` — `projectId` is the solution's `ProcessOrchestration` project (fall back to its first project).
+- **`hasProcessMap`**: `true` only when that orchestration project contains a `.bpmn` file — this is what makes AH render the Maestro diagram preview; when unknown, omit it rather than guessing.
+- To **unlink**, set `value` to an empty string.
+
 ## Step 7: Verify, then report
 
 ```bash

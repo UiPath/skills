@@ -36,6 +36,8 @@ Failure: `Result` is `Failure`/`ValidationError` with a `Message` and usually an
 | `uip ah documents create <automation-id> --title <t> --description <d> --document-type-id <n> --file <path>` | **upload a document's bytes** | `Data.Id` (document id) + `Data.FileId`; use `--embed-link <url>` *instead of* `--file` for link-only docs (exactly one of the two) |
 | `uip ah documents list <automation-id>` | verify attachments | entries carry `Id`, `Title`, `FileId` (file-backed) or `EmbedLink` (link-backed) |
 | `uip ah documents download <file-id> --destination <path>` | **download a document's bytes** | takes the `FileId` from `documents list`, **not** the document `Id` |
+| `uip ah automations update <id> --file <answers.json>` | edit assessment answers post-create (e.g. set the Studio Web link) | same `user_inputs` document shape as create |
+| `uip solution list [--name <pattern>]` | discover the caller's Studio Web solutions | entries carry `Id`, `Name`, `Projects[]` — inputs for the SW-link value |
 | `uip ah automations list --search <text> --limit 20` | name → process id | projected records with `Id`, `Name`, `Phase` |
 | `uip ah automations get <id> [--all-fields]` | one process record | default projection has `Id`/`Name`/`Phase`/`Tags`; `--all-fields` for the raw record (needed for `process_slug`) |
 
