@@ -1,25 +1,19 @@
 task_id: skill-ixp-upgrade-deployment-smoke
 description: >
   Smoke: a folder already serves v13 of the project; the agent moves it to v14
-  with `deployments upgrade`.
-  Trap: `create` only ever adds — re-deploying the title on another version is a
-  409, not a repoint. Second trap: `upgrade` is addressed by the backend-minted
-  DeploymentName (`invoices-08963f00-ixp`), not the title (`invoices`) the
-  deployment was created under. The prompt supplies both, so the test is whether
-  the agent puts the NAME in the positional slot, not whether it looks one up.
-
-  Harness is unauthenticated; CLI calls fail offline.
-  Grades command shape, not wire effect.
+  with `deployments upgrade`. Traps: `create` only ever adds, so re-deploying
+  the title on another version is a 409, not a repoint; and `upgrade` is
+  addressed by the backend-minted DeploymentName (`invoices-08963f00-ixp`), not
+  the title (`invoices`). The prompt supplies both, so the test is whether the
+  agent puts the NAME in the positional slot, not whether it looks one up.
+  Harness is unauthenticated; grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 5
 
-# TODO: mock the specific verb once coder_eval's RecordedCli supports per-verb
-# responses. The DeploymentName is stated in the prompt because `deployments list`
-# cannot be served per-verb here; that keeps the name/title trap gradeable but does
-# not prove the agent went and looked the slug up. Serve `deployments list` and the
-# lookup itself becomes assertable.
+# TODO: assert the lookup itself once coder_eval's RecordedCli can mock a specific
+# verb — `deployments list` cannot be served per-verb, hence the name in the prompt.
 sandbox:
   record_cli:
     - tool: uip
@@ -40,8 +34,6 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # Per-facet matching is what lets this assert the NAME: the slug is the second
-  # positional, so the title in that slot cannot satisfy it.
   - type: cli_called
     description: "Moved the deployment with `deployments upgrade <Name> invoices-08963f00-ixp --version 14 --folder-key <key>`"
     verb: "ixp deployments upgrade"
@@ -53,15 +45,12 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # `upgrade` is addressed by DeploymentName; the title there is a clean 404 — the
-  # failure the name/title split exists to prevent. The slot is matched exactly, so
-  # this does NOT fire on `invoices-08963f00-ixp`.
-  # `value_flags` is load-bearing: --version / --folder-key are not declared under
+  # `value_flags` is load-bearing: --version/--folder-key are not declared under
   # `flags` here, so without it their values stay non-flag, shift the positional
   # slots, and `upgrade --version 14 --folder-key K <project> invoices` dodges the
-  # guard. Positive control: the upgrade line above.
+  # guard.
   - type: cli_called
-    description: "Did NOT pass the title `invoices` where the DeploymentName belongs"
+    description: "Did NOT pass the title `invoices` where the DeploymentName belongs (a clean 404)"
     verb: "ixp deployments upgrade"
     tool: "uip"
     positional: ["my_invoices-f1afa9ef-ixp", "invoices"]
@@ -71,8 +60,6 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # The deployment already exists on another version, so `create` is a 409, not a
-  # repoint. Reaching for it is the mis-model the command split exists to prevent.
   - type: cli_called
     description: "Did NOT try to repoint the existing deployment with `deployments create` (409, not a repoint)"
     verb: "ixp deployments create"
