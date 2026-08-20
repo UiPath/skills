@@ -171,8 +171,8 @@ Every row must have Category.
 **Purpose:** The case plan. Every stage has entry/exit conditions, optional SLA, and complete task detail blocks. Case has no BPMN-style edges; transitions are expressed by stage entry/exit conditions.
 
 **Authoring rules** (owned by the reference files — block shape and cell grammar:
-[render-stages-tasks.md](../../references/case/render-stages-tasks.md); type enum, gates, sequencing:
-[model.md](../../references/case/model.md); task-level SLA surface: [slas.md](../../references/case/slas.md)).
+[case-sdd-spec.md § Section 2](../../references/case-sdd-spec.md#section-2-cell-contracts); type enum, gates, sequencing:
+[case-design-layers-guide.md](../../references/case-design-layers-guide.md); task-level SLA surface: [case-design-layers-guide.md § Layer 4](../../references/case-design-layers-guide.md#layer-4--time-slas--escalations)).
 During draft finalization, do NOT open these links — the draft is the settled design and this template is
 the complete normalization contract; finalization preserves existing display names verbatim.
 Template-local rules:

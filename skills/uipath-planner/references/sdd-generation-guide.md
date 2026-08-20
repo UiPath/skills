@@ -301,7 +301,7 @@ The architectural core sections differ per template. For each product, generate 
 - §3 Personas & App Views
 - §4 Integrations (resource roll-up for connectors, API workflows, agents, processes/RPA, child cases, external agents, IXP models, coded functions)
 - Case section headings render in the template's long form (`## Section 1: Case Definition`, …) — the heading TEXT is load-bearing downstream (`uipath-maestro-case` parses it verbatim); `§N` is the reference notation in planner docs only. Do not emit the legacy planner-only `§3 Stages` / `§4 Tasks Grid` / `§13 Task Type Registry` format.
-- Case body content obeys [references/case/](case/) — the model ([case/model.md](case/model.md)), authoring method ([case/authoring.md](case/authoring.md)), render contracts, and the finalization gate ([case/review.md](case/review.md)); tenant grounding runs per [case/grounding.md](case/grounding.md). For conversational (non-PDD) case requests, delegated case design, and case draft finalization, the whole flow is the Case Design Lane — [case-design-lane-guide.md](case-design-lane-guide.md) — not the generic 3-phase model in this guide.
+- Case body content obeys [case-design-layers-guide.md](case-design-layers-guide.md) (model, authoring method) and [case-sdd-spec.md](case-sdd-spec.md) (render contracts, finalization gate); tenant grounding runs per the lane's §Tenant grounding. For conversational (non-PDD) case requests, delegated case design, and case draft finalization, the whole flow is the Case Design Lane — [case-design-lane-guide.md](case-design-lane-guide.md) — not the generic 3-phase model in this guide.
 
 **Agents:**
 - §2 Agent Framework (LangGraph / LlamaIndex / OpenAI Agents / Simple Function)

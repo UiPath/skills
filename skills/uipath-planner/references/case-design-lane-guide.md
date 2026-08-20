@@ -2,13 +2,13 @@
 
 Product-specific conversational design lane for **Case Management**. This lane makes `uipath-planner` the **sole author of case SDDs**: it designs the case in the session's **in-memory model**, confirms it in ONE user checkpoint, resolves tenant resources at design time, and then writes the SDD. It replaces the interview the build skill (`uipath-maestro-case`) used to run itself; that skill hands design requests off to this lane at runtime — in the SAME conversation — and resumes the build on the Case Review's Build answer. The lane is product-agnostic in shape (Listen / Sketch / one confirmation) — BPMN and Flow can plug in later; today it is wired for Case Management.
 
-> **Authoritative for the conversation path only.** Entry modes, Listen/Sketch flow, terminal step, resumption, output contract. Everything else lives in [references/case/](case/): the case model ([model.md](case/model.md), [variables.md](case/variables.md), [slas.md](case/slas.md)), authoring method ([authoring.md](case/authoring.md), [principles.md](case/principles.md)), render contracts ([render-case-definition.md](case/render-case-definition.md), [render-stages-tasks.md](case/render-stages-tasks.md)), tenant grounding ([grounding.md](case/grounding.md)), and the confirmation gate ([review.md](case/review.md)). The render shape is [`case-sdd-template.md`](../assets/templates/case-sdd-template.md) with worked patterns in [`case-sdd-examples.md`](../assets/templates/case-sdd-examples.md). Everything after the SDD (tasks.md, caseplan.json, validate, publish) is owned by `uipath-maestro-case`.
+> **Authoritative for the interview: conversation path, tenant grounding, authoring policy, and the confirmation.** Case knowledge lives in exactly four files: this one (interview flow); [case-design-layers-guide.md](case-design-layers-guide.md) (the case in design layers — skeleton, gates, data, SLAs, buildability musts); [`case-sdd-template.md`](../assets/templates/case-sdd-template.md) (the render shape, worked patterns in [`case-sdd-examples.md`](../assets/templates/case-sdd-examples.md)); and [case-sdd-spec.md](case-sdd-spec.md) (the normative SDD cell contract + every gate/check, mechanized by `scripts/audit_sdd.py`). Everything after the SDD (tasks.md, caseplan.json, validate, publish) is owned by `uipath-maestro-case`.
 
 ## Read budget
 
-Read this file, [case/model.md](case/model.md) (the case model the assumptions rely on), and [`case-sdd-template.md`](../assets/templates/case-sdd-template.md) to begin — in parallel, each **at most once per session**. Open the other [case/](case/) files when their activity starts: shaping and typing → [authoring.md](case/authoring.md); data wiring → [variables.md](case/variables.md); SLAs → [slas.md](case/slas.md); rendering Section 1 / Section 2 → the two render contracts; the confirmation → [review.md](case/review.md). Do NOT read the generic Phase D references (pdd-analysis, product-selection levels beyond the Constraint Gate) for a conversational case request — scope is already decided. Reference paths resolve relative to this skill's base directory (given at invocation) — never hunt for them with `find` / global `ls`.
+Read this file, [case-design-layers-guide.md](case-design-layers-guide.md) (the case model the assumptions rely on), and [`case-sdd-template.md`](../assets/templates/case-sdd-template.md) to begin — in parallel, each **at most once per session**. Open [case-sdd-spec.md](case-sdd-spec.md) when rendering or gating starts (Section 1 / Section 2 cells, the conformance gate, the finalization checklist). Do NOT read the generic Phase D references (pdd-analysis, product-selection levels beyond the Constraint Gate) for a conversational case request — scope is already decided. Reference paths resolve relative to this skill's base directory (given at invocation) — never hunt for them with `find` / global `ls`.
 
-**Draft finalization budget (hard):** read this file's finalize sections (§Resumption, §Terminal step, §Template conformance gate) plus `sdd.draft.md` and the template — once each; work from those reads. Scripts are RUN, never read: invoke `audit_sdd.py` directly and act on its findings — opening the script source is a budget violation. The normalization contract (numeric `Task S{K}.{M}` headings, `**Task envelope**` markers, plain `<UNRESOLVED>` markers) lives in those sections — skipping them ships the draft's defects into the final SDD. Do NOT open the [case/](case/) content files or `case-sdd-examples.md`: finalization normalizes structure, it does not redesign. No subagents, no background tasks, no tenant discovery unless identities are needed and a session exists. Write via the §Terminal step write-early cadence.
+**Draft finalization budget (hard):** read this file's finalize sections (§Resumption, §Terminal step) plus [case-sdd-spec.md § Template conformance gate](case-sdd-spec.md#template-conformance-gate), `sdd.draft.md`, and the template — once each; work from those reads. Scripts are RUN, never read: invoke `audit_sdd.py` directly and act on its findings — opening the script source is a budget violation. The normalization contract (numeric `Task S{K}.{M}` headings, `**Task envelope**` markers, plain `<UNRESOLVED>` markers) lives in those sections — skipping them ships the draft's defects into the final SDD. Do NOT open [case-design-layers-guide.md](case-design-layers-guide.md) or `case-sdd-examples.md`: finalization normalizes structure, it does not redesign. No subagents, no background tasks, no tenant discovery unless identities are needed and a session exists. Write via the §Terminal step write-early cadence.
 
 ## Entry modes — who called, who writes
 
@@ -18,7 +18,7 @@ Read this file, [case/model.md](case/model.md) (the case model the assumptions r
 | **Direct design** | User (or Delegate) asks to design / generate a case SDD, greenfield, no PDD | Write `<CASE_NAME_KEBAB>-sdd.md` (user-specified output path wins), Planner Handoff `Status: ready`, report the path, STOP. Task derivation / build continue on a later turn (Lane A or `uipath-maestro-case`). |
 | **Draft request** | User explicitly asks for a reviewable draft and to stop there | Write `sdd.draft.md` (or `<name>-sdd.draft.md` when the request names the file), report, STOP. Never promote. |
 | **Draft finalization** | A case `sdd.draft.md` exists and the user asks to finalize it | §Resumption: read the draft as the settled design, normalize to the template, run the conformance gate, write the final SDD, STOP. Final basename derives from the draft's: `sdd.draft.md` → `sdd.md`; `<name>-sdd.draft.md` → `<name>-sdd.md`; a user-specified output path wins. |
-| **PDD-driven case** | A PDD routed to Phase D and scope selection picked Case Management | Standard Phase D flow ([sdd-generation-guide.md](sdd-generation-guide.md)) — but the case body obeys [references/case/](case/) and grounding runs per [case/grounding.md](case/grounding.md). |
+| **PDD-driven case** | A PDD routed to Phase D and scope selection picked Case Management | Standard Phase D flow ([sdd-generation-guide.md](sdd-generation-guide.md)) — but the case body obeys [case-design-layers-guide.md](case-design-layers-guide.md) + [case-sdd-spec.md](case-sdd-spec.md), and grounding runs per §Tenant grounding below. |
 
 **One output contract.** The design engine exists once; this skill ALWAYS executes the Write. The filename follows the consumer: a build handoff writes `sdd.md` at the working root (the build skill's contract); standalone direct design writes `<CASE_NAME_KEBAB>-sdd.md`. Never write `sdd.md` AND `<case>-sdd.md` for the same design, and NEVER overwrite an existing `sdd.md` at the working root — if one appears mid-run, abort the write and surface it.
 
@@ -36,10 +36,55 @@ Design the case as an in-memory model shaped by the template, confirm it in ONE 
 
 ## Tenant grounding — full resolution at design time
 
-Owned by [case/grounding.md](case/grounding.md) — principles, the 5-step contract, result bucketing,
-the cache-file map, the ONE batched resolution gate, the per-lookup resolution record, and the no-session
-behavior. What stays here: kickoff TIMING is mode-bound — Build handoff starts the login+pull chain AT LANE
-ENTRY, batched with the first document reads; every other mode starts it at the first tenant-bound signal.
+Full identity resolution at design time — registry pull, per-resource cache lookups, connection checks, one batched gate — so a confirmed design carries resolved identities and the build's planning pass verifies instead of re-discovering.
+
+**Principles:** (1) Tenant work never blocks entry — nothing about the tenant is a prerequisite for designing. (2) Schema discovery is build work (`tasks describe` / `case spec`) — design resolves identities only. (3) One pull per session; a pull that succeeded this session is reused by the build. Never delay the confirmation waiting for a pull. (4) Registry data is evidence, not requirements — never add or rename business work to match tenant inventory; never dump catalogs into chat.
+
+**The contract:**
+
+1. **Intake batch.** Read every supplied document in parallel; extract named systems, resources, likely tasks, roles. Named systems seed grounding.
+2. **Chain kickoff — background.** One background command: `uip login status --output json && uip maestro case registry pull`. Kickoff TIMING is mode-bound: Build handoff starts the chain AT LANE ENTRY, batched with the first document reads; every other mode starts it at the first tenant-bound signal (a named system/resource/connector, or an inferred runnable/connector/action task); a case with no tenant-bound items never pulls. Best-effort — never block on it, never surface its output unprompted.
+3. **Resolution pass — join, never wait.** When the sketch is complete and the pull succeeded, resolve every named or inferred resource in ONE parallel batch of cache lookups; for each connector also check enabled connections.
+
+   | Bucket | Definition | Action |
+   |---|---|---|
+   | Single confident match | 1 exact-name match across all folders, ≥ 1 shared name token; connectors: exactly 1 enabled connection | Adopt: identity + exact folder into SDD cells + a resolution record; disclose as a decision line. The only silent pick |
+   | Ambiguous | Multiple matches; cross-folder same name; no token overlap; > 1 enabled connection | Queue for the gate. A name deployed in ≥ 2 folders is always ambiguous — never pick a folder silently |
+   | Empty | 0 matches / 0 enabled connections AFTER a successful pull | Queue for the gate |
+
+   Cache files (`~/.uip/case-resources/`): agents `agent-index.json` · API workflows `api-index.json` · RPA processes `process-index.json` · orchestration processes `processOrchestration-index.json` · child cases `caseManagement-index.json` · Action Apps `action-apps-index.json` · connector activities/triggers `typecache-activities-index.json` / `typecache-triggers-index.json`.
+
+4. **The ONE batched gate — at review time.** Queued items ride the §Confirm turn as one AskUserQuestion (≤ 4 questions; overflow carries into the confirmation's follow-up), grouped by `(name, type)` with usages listed. Options per group: **Pick a match** (candidates with folder FQNs); **Resolve at build** (identity stays `<UNRESOLVED>` + a paired review item; the build emits a placeholder); **Create during build** (ONLY for empty `agent` / `api-workflow` lookups — records the decision, the build executes it; the lane never scaffolds). Never pre-judge by name heuristics — the user's call. Pull unfinished when the review is ready → present with resolve-at-build on pending items; never wait.
+5. **Visibility.** Every adopted identity, connection, gate decision, and deferral appears in the Case Review (Resources and Integrations + Decisions I Made) and lands in SDD Section 2 cells and the Section 4 roll-up. The per-lookup resolution record ([case-sdd-spec.md § Resolution record](case-sdd-spec.md#resolution-record)) is machine-only — never user-facing.
+
+**No session / failures:**
+
+| Situation | Action |
+|---|---|
+| Not logged in, CLI absent, pull fails | One plain-language line the moment it happens: "I can't reach your UiPath tenant right now — I'll design with the names you give me and wire resources during the build." Keep concrete intended names; mark identities resolve-at-build (`<UNRESOLVED>` in the file) with paired review items; continue |
+| Design-only / draft / plan-only runs | Skip grounding entirely — intended names stay concrete, identities resolve-at-build, report that resource wiring defers to the build run |
+| Connector with zero enabled connections | A gate item — never a reason to change the task type |
+
+## Authoring policy
+
+**Content authority hierarchy.** When signals conflict, the highest tier wins: (1) **Platform schema constraints** — schema-invalid values never ship, regardless of source (a task `type` outside the closed enum, an illegal WHEN ↔ Marks-Complete pair). (2) **Regulatory / compliance constraint** stated or implied (ECOA, NCQA, GDPR, HIPAA, SOC 2, FCRA, FINRA, …) — forces task types ([case-design-layers-guide.md § Task-type override priority](case-design-layers-guide.md#task-type-override-priority)). (3) **Tenant evidence** — a deployed resource in the registry cache matching described work; prefer its type and identity; never add stages/tasks or rename business work to match tenant inventory. (4) **User-stated preference** in chat. (5) **Doc-extracted values** from user-shared documents. (6) **Inferred defaults** per the assumption playbook (§Sketch). (7) **General-practice fallback.** Apply a higher-tier override AND surface it in the confirmation's `Decisions I Made` table with provenance `(source: <tier>-override)`.
+
+**Domain fidelity.** Transcribe business terms; never paraphrase. Preserve verbatim (no synonym swaps): customer-named roles (`CFO`, `Underwriter II`, `Triage Nurse` — never `Approver`/`Reviewer`/`Manager`), domain nouns (`Vendor`, `Claim` — never `Record`/`Item`), stage labels (user's casing and word choice), decision outcomes (`Approve` / `Decline` / `Needs Info` — not synonyms), integration shortnames (`Workday`, never "the HR system"). Allowed mechanical normalization (ledger reason `mechanical:<derivation>`): PascalCase Case Name from a spaced phrase, 2–4 char UPPER identifier prefix, camelCase variable names. When the user said `the senior underwriter signs off`, write exactly that — synonyms are a fidelity defect, not polish. A term the user wrote once is captured with provenance `verbatim:"<quote>"`; the confirmation's tables render it exactly, and that display is the spelling check.
+
+**Source ledger (provenance).** Two surfaces: inline italic attribution in `sdd.md` (`Manual _(source: user-stated)_`; omit for `user-stated`) and the confirmation's `Decisions I Made` table. Rationale is durable, not chat-only: provenance says where a value came from; rationale says why the choice fits — persist rationale in each stage/task `Design Rationale` field and each SLA rationale field (the build copies it into its plan entries).
+
+| Kind | When |
+|---|---|
+| `user-stated` | User wrote the value in chat (no annotation needed). Paraphrase acceptable. |
+| `verbatim:"<quote>"` | Rendered cell is exactly the user's phrase — strongest signal; preferred for customer-named entities. Truncate the quote at 40 chars in the ledger. |
+| `user-doc:<filename>` | Lifted from a user-shared document |
+| `mechanical:<derivation>` | One-step derivation (`mechanical:PascalCase→prefix`) |
+| `compliance-override:<rule>` | Regulatory constraint forced the value (`compliance-override:ECOA→action`) |
+| `tenant-registry:<resource-name>` | Resolved from the registry cache |
+| `connector-priority:<connector>` | Tier 3/tenant evidence selected `execute-connector-activity` over `api-workflow` |
+| `inferred-default:<reason>` | Defaulted with no matching source (use sparingly) |
+
+A non-`user-stated`, non-`verbatim` field without provenance blocks the confirmation until annotated.
 
 ## Modes
 
@@ -63,7 +108,7 @@ Listen asks nothing beyond the opener. Gaps are filled by assumption in Sketch, 
 
 #### Domain-vocabulary capture (during Listen)
 
-Capture verbatim into the model: **roles** (exact casing — `CFO`, `Triage Nurse`), **domain nouns** (`Vendor` vs `Supplier` — never homogenize), **stage labels**, **decision outcomes** (`Approve` / `Decline` / `Needs Info`, not synonyms), **integration shortnames** (`Workday`, never "the HR system"). Provenance `verbatim:"<quote>"` per [case/principles.md § Source ledger](case/principles.md#source-ledger-provenance). Synonym drift is a fidelity defect ([case/principles.md § Domain fidelity](case/principles.md#domain-fidelity)).
+Capture verbatim into the model: **roles** (exact casing — `CFO`, `Triage Nurse`), **domain nouns** (`Vendor` vs `Supplier` — never homogenize), **stage labels**, **decision outcomes** (`Approve` / `Decline` / `Needs Info`, not synonyms), **integration shortnames** (`Workday`, never "the HR system"). Provenance `verbatim:"<quote>"` per §Authoring policy. Synonym drift is a fidelity defect (§Authoring policy — Domain fidelity).
 
 #### File / attachment / document detection (during Listen)
 
@@ -77,34 +122,34 @@ When the user mentions `file`, `attachment`, `PDF`, `upload`, `evidence`, `recei
 
 ### Sketch — best assumption, every field
 
-Fill the complete SDD shape against [`case-sdd-template.md`](../assets/templates/case-sdd-template.md) from what Listen captured, deciding every open field by best assumption. Authority order per [case/principles.md § Content authority hierarchy](case/principles.md#content-authority-hierarchy) — platform schema and compliance constraints override user phrasing (apply the override silently; it becomes a decision line). Every non-verbatim value gets a source-ledger entry AND a line in the confirmation's `Decisions` block. Every stage, task, and configured SLA also gets a durable `Design Rationale` in the model explaining the kind/type, activation/sequencing, and routing/threshold choice. The model lives in memory — **no draft file, no checkpoint writes**.
+Fill the complete SDD shape against [`case-sdd-template.md`](../assets/templates/case-sdd-template.md) from what Listen captured, deciding every open field by best assumption. Authority order per §Authoring policy — platform schema and compliance constraints override user phrasing (apply the override silently; it becomes a decision line). Every non-verbatim value gets a source-ledger entry AND a line in the confirmation's `Decisions` block. Every stage, task, and configured SLA also gets a durable `Design Rationale` in the model explaining the kind/type, activation/sequencing, and routing/threshold choice. The model lives in memory — **no draft file, no checkpoint writes**.
 
 **Assumption playbook** (decided and disclosed, never asked):
 
 | Field | Best assumption |
 |---|---|
 | Trigger type | External system / portal / form / inbound event / record-created mentioned → **Connector Event** with that source (unprovisioned tenant object stays an event trigger — never downgrade to Manual); schedule/recurring → **Timer**; otherwise → **Manual**. |
-| Task type on ambiguous verbs (`review`, `approve`, `validate`, `decide`, …) | Named human role or judgment implied → `action`; framed as automated/AI → `agent`; truly even → `action` (keeps a human in the loop; the user can flip it in one correction). Compliance trigger phrase (HIPAA, ECOA, FINRA, "licensed X", …) → `action`, always ([case/authoring.md § Override priority](case/authoring.md#task-type-override-priority)). |
+| Task type on ambiguous verbs (`review`, `approve`, `validate`, `decide`, …) | Named human role or judgment implied → `action`; framed as automated/AI → `agent`; truly even → `action` (keeps a human in the loop; the user can flip it in one correction). Compliance trigger phrase (HIPAA, ECOA, FINRA, "licensed X", …) → `action`, always ([case-design-layers-guide.md § Task-type override priority](case-design-layers-guide.md#task-type-override-priority)). |
 | "Manual" in-case work | Starts a new case → Manual trigger; optional worker-launched task → `adhoc` + `Required: No`; worker-chosen exception/rework lane → secondary stage with `user-selected-stage`. Pick by context; disclose. |
 | Case exit | Last primary stage completes (`required-stages-completed`, `Marks Case Complete: Yes`) unless the user described another close-out; alternate outcomes → non-completing case-exit rules. |
 | Stage exit ↔ Marks Complete pairing | Derive mechanically per the WHEN ↔ Marks-Complete pairing rule — never author an illegal pair. |
-| SLA | Only when the user mentioned timing; take their words literally ("about a day" → 1 day). No timing mentioned → `—`. For every SLA, decide scope, status, and response separately ([case/slas.md § Response model](case/slas.md#choosing-the-response)). No stated response → `notify-only` for both statuses; never invent a stage or task for a notification. |
+| SLA | Only when the user mentioned timing; take their words literally ("about a day" → 1 day). No timing mentioned → `—`. For every SLA, decide scope, status, and response separately ([case-design-layers-guide.md § Choosing the response](case-design-layers-guide.md#choosing-the-response)). No stated response → `notify-only` for both statuses; never invent a stage or task for a notification. |
 | Case name / prefix | PascalCase from the domain noun; prefix = 2–4 letter mechanical derivation. |
 | Personas | Named roles verbatim; none mentioned → single `Process Owner`. |
 | Optional fields untouched by the user | `—`. Never a question. |
 | Resources / connections | §Tenant grounding: single confident match adopted; ambiguous/empty → resolution gate at review time; no session → `resolve at build`. |
 
-**Structure rules while sketching:** reference upstream task outputs directly; declare Case Variables only for arguments, trigger payloads, and multi-consumer or condition-read state ([case/variables.md](case/variables.md)). Required fields (case name, prefix, ≥1 trigger, ≥1 stage, ≥1 task per stage with type, ≥1 case exit) must all be settled — by user input or by playbook assumption.
+**Structure rules while sketching:** reference upstream task outputs directly; declare Case Variables only for arguments, trigger payloads, and multi-consumer or condition-read state ([case-design-layers-guide.md § Layer 3](case-design-layers-guide.md#layer-3--data-variables--expressions)). Required fields (case name, prefix, ≥1 trigger, ≥1 stage, ≥1 task per stage with type, ≥1 case exit) must all be settled — by user input or by playbook assumption.
 
 **Bounded no-build design — plan-only requests.** When the request explicitly stops before `caseplan.json` (design + implementation plan only, tenant work forbidden), prefer progress over exhaustive internal auditing: once the model covers the stated stages, tasks, global interrupts, SLAs, variables, resources, and rationales — write. **Bounded means concise CONTENT, exact SHAPE.** The template's heading skeleton (`# SDD — {Case Name}`, `## Table of Contents`, `## Section 1: Case Definition` … `## Section 4: Integrations`), the per-stage Entry/Exit Conditions TABLES (rule syntax included — e.g. named-args `sla-status-change(...)` rows), the per-task detail blocks with `**Task envelope**`, and the Planner Handoff header are NEVER relaxed — a freeform outline (`## 1. Case Metadata…`, `## Decisions I Made` as body sections) is a blocking render failure even in this mode. Conciseness lives ONLY in prose depth: one short rationale sentence per stage/task/SLA/exception choice; do not expand optional examples, provenance prose, or registry audit detail. Do NOT run the full Finalization checklist — the gate for this mode is exactly four checks: the template conformance gate; the schema-pairing check; a reachability spot-check; and **SLA reference closure** — every `sla-status-change` entry row appears in its stage's Entry Conditions TABLE (never only in prose) using the named-args form `sla-status-change("<target>","<SLA Title>")` (at-risk rows add the escalation title), each title matching an SLA declared on that exact target; the case-level target is the literal `root` — never `Case` or the case name — and stage-level targets use the exact stage display name. A bare `sla-status-change` row cannot resolve to a `slaId` at build time and leaves the lane unreachable. In PROSE (rationales, descriptions), reference the rule as bare `sla-status-change` — NEVER a partial call form with placeholder args like `sla-status-change("root", ...)`; build-side checkers scan every call-form occurrence in the document and reject wrong arity wherever it appears. The full-template requirement still applies in this mode: every task's `**Entry Condition:**` is followed by the template's `| WHEN | IF | Display Name |` table — do not collapse an executable task gate into inline prose on the heading line; doing so drops the condition from the later planning handoff. A source rule that depends on a business attribute or threshold (for example, department- or seniority-gated eligibility) must be represented in an executable condition, output mapping, or guarded recipient/assignment expression, not only in a Design Rationale. When the prompt says every primary phase/stage has an SLA target, every named primary stage renders its own `#### Stage SLA` block with a concrete line-start `**SLA Title:**` (prefer `<Stage Name> SLA`; render `**SLA Type:**` and `**SLA Title:**` as two separate lines — a collapsed single line hides the title from line-start tooling) and concrete at-risk/breach display names; every `sla-status-change` reference uses those exact titles. Keep per-stage SLA tables consistent with the SLA Response Map: the breach cell reads `enter-stage: <Secondary Stage Name>` (the `sla-status-change`-entered interrupting stage), never `Notify: <role>`; notify-only cells are for at-risk warnings. Do not iterate for polish; the later build run re-validates everything. This bound applies on top of the seed-first cadence (§Terminal step): AFTER the accept answer, a fresh design writes early and per-section. Before the accept answer the model stays in memory (no draft file, no checkpoint writes).
 
 **Conditional role / step gates must be inspectable.** When the source states a thresholded actor or step (for example, "Credit Analyst only over $5M; otherwise Underwriter"), model it as a guarded rule, task, recipient, or computed owner field AND preserve the business phrase close to the threshold in the draft/SDD text. A reviewer and a mechanical grep should be able to see both the actor name and threshold in one rule/task/rationale line, e.g. `Credit Analyst route when loanAmount > 5000000` or `Credit Analyst for loans >$5M; Underwriter otherwise`. Do not leave the gate only in a persona table or detached prose.
 
-**Other-path sweep — mandatory before confirmation.** Owned by [case/authoring.md § Other-path sweep](case/authoring.md#other-path-sweep--mandatory-before-confirmation):
+**Other-path sweep — mandatory before confirmation.** Owned by [case-design-layers-guide.md § Other-path sweep](case-design-layers-guide.md#other-path-sweep--mandatory-before-confirmation):
 sweep the standard scenarios, pick the smallest faithful model per path, disclose everything in **Other
 Paths Considered**; when the source has no signal at all, spend the one bounded question.
 
-**Buildability musts** — settle all ten by assumption and surface each in the confirmation; they are where designs silently become unbuildable: (1) other-path trigger source (gate decision → `selected-stage-completed/-exited` + IF; person → `user-selected-stage` only with an upstream `wait-for-user` exit; external/global event → one `wait-for-connector` entry on the secondary stage; SLA at-risk/breach that requires case work → one `sla-status-change` entry whose target and SLA title — plus an at-risk escalation title for an at-risk row only — are declared in the SDD, while warning-only escalation stays a notification; interrupting flags on stage + entry rows; terminal `exit-only` vs `return-to-origin`; never duplicate global-event exits/tasks across primary stages); (2) every decision outcome routes somewhere — no dead-end status values, and an outcome that targets a lane keys that lane's entry; (3) every configure/decide task's output lands in a variable or direct reference; (4) every send/connector/agent's required inputs map to variables/literals/upstream outputs as far as knowable without schemas — the rest resolves at build; (5) conditional roles/steps become guarded rules + personas, not prose, with the actor and threshold visible together in the draft/SDD; (6) a critical-path connector failure gets a modeled other path when the user described failure handling — otherwise note it as an architect advisory; (7) manual-surface classification per the playbook: human-performed required work is `action`, optional user-launched work is `adhoc`; (8) intended resource names concrete, identities per §Tenant grounding; (9) every stage/task/SLA has durable rationale in the model, including why an ordered run is sequential, independent work is parallel, or parallel-after-predecessor siblings share one task set; (10) every non-start entry rule has a concrete producer/reference.
+**Buildability musts.** Settle all ten of [case-design-layers-guide.md § Layer closure](case-design-layers-guide.md#layer-closure--the-ten-buildability-musts) by assumption and surface each in the confirmation — they are where designs silently become unbuildable.
 
 **The one clarifying call (rare).** Ask before the confirmation ONLY when: (a) no case is inferable at all (empty or contentless request), (b) the user's own inputs contradict each other on a shape-changing field, (c) the user asked to be asked, or (d) the mandatory other-path sweep found no source signal at all. Batch everything into ONE AskUserQuestion call (≤ 4 questions). An unclear answer → take the best assumption, disclose it, move on — never re-press. Everything else: assume and inform.
 
@@ -112,35 +157,51 @@ Paths Considered**; when the source has no signal at all, spend the one bounded 
 
 ### Confirm — the single checkpoint
 
-The whole checkpoint contract — the eight exact sections and their column shapes, the Caller-obligation
-block, product vocabulary, completeness gate, the mode-specific confirmation options (including
-`Build despite N flagged items`), corrections re-showing only changed sections, and explicit-sign-off
-handling — is owned by [case/review.md](case/review.md). Run its finalization checklist against the
-in-memory model FIRST (fix failures silently; unfixable items become Review Flags rows), then present the
-review. The §Tenant grounding resolution gate (when it has items) rides this same turn. The confirmation IS
-the plan-first approval surface — never substitute a generic build plan, and never create files on a "Yes"
-to one.
+Run the [case-sdd-spec.md § Finalization checklist](case-sdd-spec.md#finalization-checklist) against the in-memory model FIRST — fix failures silently (they are authoring defects, not user decisions); anything unfixable becomes a Review Flags row. Then present the Case Review. The §Tenant grounding resolution gate (when it has items) rides this same turn. The confirmation IS the plan-first approval surface — never substitute a generic build plan, and never create files on a "Yes" to one.
+
+**The Case Review — eight sections, one question.** A decision-first business approval surface, complete enough to approve the case behavior without opening any SDD file — never a generic build plan and never a compressed SDD copy. Coverage: SDD §1 → sections 1/4/5; §2 → sections 2/3/4/5; §3 → sections 1/6; §4 → section 6. The review intentionally omits the data contract, variables, and task inputs/outputs — those stay complete in the SDD. Anything carrying a high review item also appears in Review Flags.
+
+Start with `## Case Review: <Case name>`, then exactly this order:
+
+1. **Case Snapshot** — `Item | Proposed design`. Rows: `Objective`, `Starts when`, `Primary personas`, `Successful completion`, `Other terminal outcomes`, `SLA coverage`. Mark assumed values `(assumed)`. No case ID prefix unless it affects a user decision.
+2. **Primary Journey** — `# | Stage | Purpose | Tasks | Starts when | Completes or exits when | Required? | SLA`. Every primary stage once, in flow order. The `Tasks` cell names every task in execution order with type, required/optional status, and activation/grouping — e.g. `Sequential: Capture request (Human action, required) → Validate request (RPA workflow, required)`; `After both: Make decision (Human action, required)`. Event-triggered and manually triggered tasks are shown explicitly.
+3. **Other Paths Considered** — `Scenario | Trigger or condition | Modeled as | Tasks | Interrupts active work? | Return or case outcome | Rationale`. Every modeled exception, secondary stage, optional path, and alternate terminal — AND standard paths intentionally left unmodeled when that omission is a decision. Path tasks carry type, required/optional, activation/grouping.
+4. **SLA and Escalations** — `Scope | SLA | Time target or condition | Status or threshold | Response | Response target | Interrupts active work? | Rationale`. One row per meaningful `(scope, SLA, status)`, separate at-risk and breached rows when both exist. Responses from the closed set ([case-design-layers-guide.md § Choosing the response](case-design-layers-guide.md#choosing-the-response)). Interrupting cell: `N/A` for `notify-only`; `—` for `start-task` (a task entry interrupts nothing — never `Yes`/`No`); otherwise `Yes`/`No` matching the produced entry row. Never assume every breach creates an escalation stage. `None` when the case has no SLA.
+5. **Rules and Outcomes** — `Scope | Element | Rule | When | If | Then`. Business-significant routing, completion, and terminal rules only. Omit generated sequencing already visible in `Tasks`; do not repeat SLA rows unless needed to understand routing. Business conditions in `If`; no data column.
+6. **Resources and Integrations** — `Task | Intended resource or system | Resolution`. Action apps, agents, RPA/processes, API workflows, child cases, connectors, named external systems. `Resolution` = the design-time outcome: `resolved (<folder>)`, a gate decision (`create during build`, `resolve at build`), or a candidate pick. A missing row is not acceptable.
+7. **Decisions I Made** — `Decision | Why | Provenance`. Every assumption, override, resource decision, task-type decision, activation/sequence decision, and intentionally omitted path, in plain language (`you said "then"`, `compliance wording`, `no SLA mentioned`). Group only decisions sharing rationale AND provenance. Flagged items carry ⚠.
+8. **Review Flags** — `Item to review | Why it matters | Default if accepted`. `None` when empty. Unfixable findings, missing connections, unresolved high-impact choices.
+
+After Review Flags, when any §1.5 row is `Category: In` + `Type: file`, show this fixed block (omit otherwise — a conditional build obligation, not a ninth section):
+
+```
+Caller obligation (file In-arg detected):
+  File In-args:  <comma-separated names>
+  Programmatic callers must pre-create each JobAttachment via POST /odata/Attachments,
+  PUT bytes to the returned blob URI, then pass {ID,FullName,MimeType,Metadata} as the
+  In-arg value AND include the attachment ID in StartProcessDto.Attachments[].
+  Maestro Studio Web's "Start case" dialog does this automatically.
+```
+
+**Product vocabulary.** User-visible activation labels: `Sequential`, `Parallel`, `Parallel after predecessor`, `Event-triggered`, `Manually triggered`, `Fan-in`, `Conditional gate` (`adhoc` → `Manually triggered`). Prefer product task labels — `Human action`, `Agent`, `RPA workflow`, `API workflow`, `Child case` — over schema enum names.
+
+**No duplicated review surfaces.** Each business decision appears once. No Data Contract section, variable rows, task I/O rows, second stages list, or per-stage detail cards — technical detail stays in the SDD.
+
+**Completeness gate.** Incomplete unless: all eight sections shown, every stage and task named, every modeled and intentionally omitted path covered, every meaningful SLA response/status row present, Caller obligation when relevant. No approval question before every section has been shown — even sections reading `None`. Never substitute a list of build steps, artifacts, folders, or validation commands, or a summary that points at the SDD for a missing business decision.
+
+**Confirmation question (one AskUserQuestion)** — options by mode:
+
+| Mode | Options |
+|---|---|
+| Build handoff | `Build it — straight through` / `Build it — pause at the build preview` / `Change something`. The Build answer is the consent AND the build-review preference, captured once, never re-asked mid-build. With ⚠ flags: first option reads `Build despite N flagged items — straight through` |
+| Direct design-only | `Save the design` / `Change something` (⚠ → `Save despite N flagged items`) |
+| Draft request | `Save as draft` / `Change something`. A prompt that already says save-a-draft-and-stop counts as the answer: write immediately, no extra prompt |
+
+Corrections (`Change something` or free text) update the model, re-run the affected Finalization checks, and re-show ONLY the changed sections or rows, then one `Suggested next steps` line before the next prompt. A correction never restarts the walk. **Explicit sign-off requests** ("only after I approve") add exactly one approval prompt after acceptance, before any file is created — nothing else changes.
 
 ### Template conformance gate — before `sdd.md` is written
 
-The exact rendered SDD text must pass this gate before it leaves the lane — in every mode against the **on-disk file assembled by the write-early cadence, before the `Status: ready` flip** (one structural Read is the check). This is a render check, not a second design review. Do not use the read to redesign the case.
-
-Required shape:
-
-- First heading: `# SDD — {Case Name}`.
-- `## Document History`, then the `## Planner Handoff` header + `<!-- planner-handoff:v1 -->` marker, then `## Table of Contents` — the universal planner scaffold (Rule 5); the case body follows.
-- Exact section headings: `## Section 1: Case Definition`, `## Section 2: Stages & Tasks`, `## Section 3: Personas & App Views`, `## Section 4: Integrations`.
-- Section 1 contains `### Case Metadata`, `### Case Triggers`, `### Case Exit Conditions`, and `### Case Variables`.
-- Every modeled primary stage has `### Stage {N}: {Stage Name}`; every modeled secondary stage has `### Secondary Stage: {Stage Name}`.
-- Every stage block contains `**Type:**`, `**Design Rationale:**`, `#### Stage Entry Conditions`, `#### Stage Exit Conditions`, and `#### Tasks`.
-- Every modeled primary-stage task has `##### Task {N}.{M}: {Task Name}`; every modeled secondary-stage task has numeric secondary numbering `##### Task S{K}.{M}: {Task Name}` where `K` is the secondary-stage order. Do not preserve letter prefixes such as `R.1`, `W.1`, `CC.1`, or `ESC.1`. Each task block contains `**Type:**`, `**Activation Mode:**`, `**Design Rationale:**`, `**Entry Condition:**`, exact marker `**Task envelope**` (no colon), and the matching type-specific detail block.
-- Every `<UNRESOLVED>` marker renders as plain text, exactly `<UNRESOLVED>` — never backtick-wrapped, never annotated inside the cell (build-phase checkers and Phase 1 discovery match the plain marker).
-- Section 3 contains `### Personas` and `### Process App Views`.
-- Section 4 contains the integration/resource family headings needed by the modeled task types, or an explicit `> None.` for empty families.
-
-Forbidden summary-only replacement sections at top level: `## Source`, `## Case Objective`, `## Actors And Systems`, `## Case Trigger`, `## Stages`, `## Business Rules`, `## Task Plan`, `## Resource Resolution`, `## Acceptance Scenarios`. Their presence as the main document structure means the SDD is a summary, not a template render. Also forbid source/build-mode/path narration such as `Source: /...`, `Build mode`, `output folder`, validation-command checklists, or "generated from requirements file" prose in the SDD body.
-
-If the gate fails, rewrite from the model and template before shipping. Do not write a summary SDD, even if a later `caseplan.json` would validate.
+Owned by [case-sdd-spec.md § Template conformance gate](case-sdd-spec.md#template-conformance-gate) — the required document skeleton, the per-block markers, and the forbidden summary-only sections. The exact rendered SDD text must pass it before it leaves the lane — in every mode against the **on-disk file assembled by the write-early cadence, before the `Status: ready` flip** (one structural Read is the check). This is a render check, not a second design review; if it fails, rewrite from the model and template before shipping — never a summary SDD, even if a later `caseplan.json` would validate.
 
 ### Terminal step — who writes what
 
@@ -165,7 +226,7 @@ Never compose the whole SDD in-head and Write once at the end: a long silent com
 ## Resolution ledger
 
 The per-lookup record shape, `gateDecision` semantics, and cache-state rules are owned by
-[case/grounding.md § Resolution record](case/grounding.md#the-resolution-record). Kept in-memory; the SDD cells
+[case-sdd-spec.md § Resolution record](case-sdd-spec.md#resolution-record). Kept in-memory; the SDD cells
 carry identities for cross-session use; when the build runs later in the SAME session, its planning pass
 persists these records verbatim as `tasks/registry-resolved.json` and verifies instead of re-resolving.
 **Machine data — never user-facing** (Resources and Integrations carries every user-relevant outcome).
