@@ -26,10 +26,17 @@ resource families, queue items, the AI patterns, document steps, conversational
 and voice steps, and connector event subscriptions. A recovered agent keeps its
 `source` uuid, so its `agent.json` sidecar still resolves.
 
-A `mock() /* TODO: unsupported node type … */` therefore means the node is one
-the SDK does not author at all — a hand-written node, a newer platform family,
-or a UI-only one such as a sticky note. Leave it untouched unless the task
-specifically asks you to replace it; merge restores the original node.
+A node type the SDK has no factory for still round-trips: it comes back as
+`rawNode({ nodeType, version, manifest, inputs })`, carrying the definition the
+file supplied, so the node keeps its type, its version and its inputs. Leave it
+alone unless the task asks you to change it — and if you do, edit its `inputs`,
+not the hoisted `…Definition` const, which is the platform's own manifest.
+
+`mock()` in decompiled source therefore means the flow really contains a
+placeholder node (`core.logic.mock`). The one case that still degrades is a node
+whose definition is MISSING from the file — nothing can carry it, so it lowers
+to `mock() /* TODO: unsupported node type … */`; leave that node untouched and
+merge restores the original.
 
 Validate `Deployed.merged.flow`, not the intermediate edited compile. The
 decompiler also emits `Deployed.pipeline.mjs`, which chains the same four

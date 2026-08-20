@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!--
 Provenance: snapshot of UiPath/flow-builder-sdk
-`typescript/sdk/skill/SKILL.md` @ 49520ad. Canonical source lives there;
+`typescript/sdk/skill/SKILL.md` @ ddf9da1. Canonical source lives there;
 edit upstream and re-sync (see UiPath/flow-builder-sdk#405).
 
 This file is deliberately a router. Node-specific detail belongs in
@@ -521,6 +521,25 @@ Signature: `mock()`.
 Use a script for stand-in data; use a placeholder only to expose a capability gap.
 
 **Reference: [`references/placeholder.md`](references/placeholder.md)**
+
+## Unknown node type
+
+Place a node this SDK has no factory for, carrying its definition verbatim.
+
+Signature: `rawNode({ nodeType, version, manifest, inputs?, outputs? })`.
+
+```ts
+.step('exotic', rawNode({ nodeType: 'uipath.exotic.thing', version: '2.1',
+  manifest: exoticManifest,       // exactly what `registry get` returned
+  inputs: { where: input('scope') } }))
+```
+
+`manifest` must be a real definition, copied from the registry — not one you
+wrote. Prefer a typed factory when one exists: it carries the family's checks,
+defaults and output contract. `decompile` emits this for a node type it cannot
+name, so an unknown node keeps its type and version through a round trip.
+
+**Reference: [`references/placeholder.md`](references/placeholder.md#unknown-node-types)**
 
 ## Branch
 
