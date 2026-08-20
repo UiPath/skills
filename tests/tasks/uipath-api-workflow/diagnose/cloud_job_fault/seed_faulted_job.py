@@ -162,6 +162,13 @@ res = uip(
 if res.get("Result") != "Success":
     die(f"deploy failed: {res.get('Message')!r}")
 
+# The scaffold has served its purpose — it is now deployed. Remove it before the
+# agent starts: fixtures/faulting-workflow.json carries the fault sentinel the
+# checker requires the agent to find in the job's Data.Info, and leaving a copy in
+# the working directory would let the agent read it off disk instead. That would
+# contradict the prompt ("that is everything we have") and hollow out the test.
+shutil.rmtree(SOLUTION_DIR, ignore_errors=True)
+
 # Teardown coordinates for post_run + phase 2, kept out of the agent's handover.
 Path(".fault_fixture.json").write_text(json.dumps({
     "uuid8": uuid8,

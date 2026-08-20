@@ -30,6 +30,16 @@ description: >
 
   Requires a tenant — runs in CI (run-coder-eval.yml) or against a local
   `uip login`, not the tempdir smoke gate.
+
+  TENANT PREREQUISITE: API workflows execute on serverless capacity, and that
+  capacity has to exist at tenant level — typically a machine template named
+  `Default Serverless`. "Serverless" does not mean "nothing to provision"; it
+  means the provisioning is one-off and tenant-wide rather than per-workflow.
+  Confirm with `uip or machines list` before blaming the task. Symptom when it is
+  missing: `uip or jobs start` fails, or the job never leaves `Pending`, which
+  looks nothing like a test defect. Provisioning it is `uipath-platform` territory
+  (`uip or machines`) and a one-time tenant setup — not something this task expects
+  the agent to discover or author.
 tags: [uipath-api-workflow, e2e, mode:operate, lifecycle:setup]
 
 sandbox:
@@ -101,7 +111,7 @@ success_criteria:
   - type: command_executed
     description: "Agent deployed the published solution"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+deploy\b(?!\s+(?:list|--help|-h)\b)'
+    command_pattern: 'uip\s+solution\s+deploy\s+run\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

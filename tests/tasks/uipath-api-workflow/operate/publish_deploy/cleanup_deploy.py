@@ -7,30 +7,16 @@ without a clean tenant: the agent never reached teardown, its uninstall failed,
 the run hit max_turns, or the task timed out. It also deletes the published
 package, which the task itself does not ask for.
 
-WHY TEARDOWN IS THE AGENT'S JOB AND NOT THIS SCRIPT'S (verified on alpha
-2026-08-18, uip 1.200.0): a deployment can only be uninstalled while its
-ActivationStatus reads "Active", and that value decays back to "None" within
-minutes of deploying. Once it reads "None", `deploy uninstall` returns HTTP 400 /
-errorCode 4007 and the deployment is unremovable via CLI. post_run runs after the
-agent has spent minutes starting and polling a job, so it is usually too late.
-Reproduced three ways:
+Reading the deploy list correctly matters here. `solution deploy list` keeps
+uninstalled deployments as history rows, and the fields that identify one are
+`Operation` (`Uninstall`) plus `OperationStatus` (`Successful`). Do NOT use
+`ActivationStatus` for this: it reads `None` both before activation and after a
+successful uninstall, so it cannot tell the two apart.
 
-  * one-step `deploy run`      -> list showed "None"   -> uninstall 4007
-  * one-step `deploy run`      -> list showed "Active" -> decayed to "None"
-                                  ~20 min later        -> uninstall 4007
-  * `--skip-activate` + `activate`, uninstalled seconds later
-                               -> list showed "Active" -> uninstall SUCCEEDED
-
-Mitigating detail: an unremovable row is cosmetic, not a live resource. A failed
-uninstall still leaves the provisioned FOLDER de-provisioned in practice, so
-nothing keeps running. What lingers is the history row (and, without this script,
-the package on the tenant feed).
-
-`deploy list` keeps tombstones — a successfully uninstalled deployment stays
-listed. `Operation` + `OperationStatus` are the fields that would identify one,
-but `Operation` returns null on this CLI version, so a removed deployment and a
-never-removed one look identical. Do not infer teardown success from the list;
-trust the uninstall call's own Result.
+Re-attempting an uninstall on an already-uninstalled deployment returns HTTP 400 /
+errorCode 4007 ("cannot be uninstalled"). That error means ALREADY GONE, not
+"stuck" — hence the `already_uninstalled` guard before every call, which keeps the
+log honest and avoids a scary warning on a clean run.
 
 Best-effort: post_run results are informational, so this always exits 0.
 """
@@ -77,23 +63,8 @@ def deployments() -> list[dict]:
 
 
 def already_uninstalled(item: dict) -> bool:
-    # Correct when the CLI populates Operation; a no-op while it returns null.
+    """True when this row is the tombstone of a completed uninstall."""
     return item.get("Operation") == "Uninstall" and item.get("OperationStatus") == "Successful"
-
-
-def folder_gone(folder_path: str) -> bool:
-    """True when the deploy's provisioned folder no longer exists.
-
-    Stands in for the tombstone check while `Operation` returns null: if the
-    folder is gone, the deployment was already de-provisioned, so there is
-    nothing for this backstop to do. Without this, a fully successful run — where
-    the AGENT did the teardown, as the task asks — still produced a scary
-    "could not uninstall (4007)" warning in post_run, because the decay window
-    had closed on an already-removed deployment. A warning on every green run is
-    a warning nobody reads.
-    """
-    code, env = uip("or", "folders", "get", folder_path, timeout=60)
-    return not (code == 0 and env.get("Result") == "Success")
 
 
 def main() -> int:
@@ -107,16 +78,14 @@ def main() -> int:
         return 0
 
     package_name = f"apiwf-pkg-{uuid8}"
-    parent = json.loads(Path("seed.json").read_text()).get("parent_folder_path") or "Shared"
-    folder_path = f"{parent}/apiwf-deploy-folder-{uuid8}"
 
     removed = failed = already = 0
     for item in deployments():
         name = str(item.get("Name") or "")
         if uuid8 not in name.lower():
             continue
-        if already_uninstalled(item) or folder_gone(folder_path):
-            logger.info("deployment %s is already de-provisioned; nothing to undo", name)
+        if already_uninstalled(item):
+            logger.info("deployment %s already uninstalled; nothing to undo", name)
             already += 1
             continue
         # --timeout caps the CLI's own uninstall polling (default 360s), which
@@ -129,10 +98,8 @@ def main() -> int:
         else:
             failed += 1
             logger.warning(
-                "could not uninstall %s: %s — likely the activation-decay window has "
-                "closed (errorCode 4007). The folder is de-provisioned either way; the "
-                "history row is cosmetic and needs the Orchestrator UI (Tenant > "
-                "Solutions) if you want it gone.",
+                "could not uninstall %s: %s — if this is errorCode 4007 the deployment "
+                "was already removed (check Operation on its deploy-list row).",
                 name, (env.get("Message") or "unknown error")[:200],
             )
 

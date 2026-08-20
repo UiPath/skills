@@ -26,7 +26,9 @@ initial_prompt: |
   The API workflow in ./Workflow.json should set a `status` variable to "ready"
   and return { "status": "ready" }. It currently fails validation.
 
-  Fix it so it validates and returns that payload.
+  Run `uip api-workflow validate` on it, read the error it reports, and fix the
+  activity the error names. Then re-validate, and confirm a run returns that
+  payload — a workflow that validates but returns "(no output)" is not fixed.
 
   Do NOT ask for approval or confirmation.
 
@@ -66,7 +68,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Behavioral: still correct on a second, different input — not hardcoded"
+    description: "Behavioral: repeated run still correct (this workflow takes no input to vary)"
     command: >-
       uip api-workflow run ./Workflow.json --no-auth --input-arguments '{}'
       --output json | grep -qiE '"status":[ ]*"ready"'

@@ -3,15 +3,23 @@ description: >
   Build: author a workflow-level `httpRetryConfig` with exponential backoff. The
   156-line references/http-retry-config.md had zero coverage.
 
-  The graded detail is the constraint the reference calls out and the validator
-  enforces: `backoff.multiplier` is REQUIRED when strategy is "exponential" and
-  must be ABSENT otherwise. An agent that copies the constant-backoff example and
-  swaps the strategy string produces an invalid workflow, so `validate` passing is
-  a real signal here rather than a formality.
+  The graded detail is the constraint the reference documents: `backoff.multiplier`
+  is REQUIRED when strategy is "exponential". **`validate` does NOT enforce it** —
+  measured on uip 1.199.0, exponential-without-multiplier, constant-WITH-multiplier
+  and even `"strategy": "banana"` all return Status: Valid. The `json`-shape check
+  below is therefore the only gate that grades the rule; the validate criterion is
+  kept at low weight as a syntax sanity check and proves nothing about the retry
+  config.
 
   Local-only: no HTTP call is made, only the retry declaration is authored. Retry
   behaviour itself is not observable offline (it needs a failing GET against a live
   endpoint), which is why this grades the declaration and not a retry count.
+
+  The prompt names `Workflow.json` and forbids hand-written retry code on purpose:
+  an earlier revision said only "give the workflow a retry policy", and an agent
+  read that as an instruction to implement retrying, producing a Python module with
+  urllib and a backoff loop while never touching the workflow file or running the
+  CLI.
 tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature:http]
 
 sandbox:
@@ -22,12 +30,14 @@ run_limits:
   max_turns: 30
 
 initial_prompt: |
-  Create an API workflow project `FlakyFetch` that returns { "ok": true }, and give
-  the workflow a retry policy for its HTTP calls: up to 4 retries, starting at 2
-  seconds, backing off exponentially, capped at 60 seconds, retrying on 429 and 503
-  and on network errors, and honouring Retry-After.
+  Create an API workflow project `FlakyFetch` returning { "ok": true }, and declare
+  the workflow's HTTP retry policy in `Workflow.json` itself — a top-level setting,
+  not retry code you write.
 
-  Validate it. Do not run it.
+  Policy: 4 retries, 2s initial delay, exponential backoff, 60s cap, retry on 429
+  and 503 and on network errors, honour Retry-After.
+
+  Validate. Do not run.
 
 success_criteria:
   - type: run_command
@@ -60,13 +70,13 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Workflow validates with the retry config in place"
+    description: "Workflow still validates (syntax only — validate accepts invalid retry configs)"
     command: >-
       WF=$(find . -name Workflow.json -not -path './Workflow.json' | head -1);
       uip api-workflow validate "$WF" --output json | grep -q '"Status": "Valid"'
     timeout: 60
     expected_exit_code: 0
-    weight: 2.0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed

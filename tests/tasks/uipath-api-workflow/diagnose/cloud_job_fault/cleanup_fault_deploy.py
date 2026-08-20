@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
 """post_run: tear down the faulted-job fixture this task deployed.
 
-Unlike operate/publish_deploy, teardown CANNOT be the agent's job here — the
+Unlike operate/publish_deploy, teardown cannot be the agent's job here — the
 agent's task is to diagnose, and uninstalling destroys the job records it is
-diagnosing. So this backstop owns it, and inherits the known limitation:
+diagnosing (`uip or jobs get` then returns Result: Failure with an empty State).
 
-A deployment is only uninstallable while its ActivationStatus reads "Active", and
-that value decays to "None" within minutes (verified alpha 2026-08-18, uip
-1.200.0); after that `deploy uninstall` returns HTTP 400 / errorCode 4007
-permanently. The seed deploys, faults a job, then the agent spends several turns
-diagnosing — so this often runs past the window and the deployment row survives.
-
-Consequence to accept: this task may leave one history row per run. The package
-is always removed. If the row bothers you, Orchestrator UI > Tenant > Solutions.
-Fixing this properly needs the decay bug fixed upstream, not a smarter script.
+`solution deploy list` keeps uninstalled deployments as history rows; `Operation`
+= `Uninstall` with `OperationStatus` = `Successful` identifies one. A 4007
+"cannot be uninstalled" on a retry means the deployment is already gone, not that
+it is stuck.
 
 Reads .fault_fixture.json (written by the seed) rather than reconstructing names.
 Always exits 0 — post_run must not fail a task over cleanup.
@@ -60,21 +55,13 @@ def main() -> int:
     package_name = fx.get("package_name") or ""
     folder_path = fx.get("folder_path") or ""
 
-    if folder_path:
-        code, env = uip("or", "folders", "get", folder_path, timeout=60)
-        if not (code == 0 and env.get("Result") == "Success"):
-            logger.info("folder %s already gone; deployment de-provisioned", folder_path)
-            deploy_name = ""
-
     if deploy_name:
         code, env = uip("solution", "deploy", "uninstall", deploy_name, "--timeout", "100", "--yes")
         if code == 0 and env.get("Result") == "Success":
             logger.info("uninstalled deployment %s", deploy_name)
         else:
             logger.warning(
-                "could not uninstall %s: %s — expected when the activation-decay window has "
-                "closed (errorCode 4007). Leaves a cosmetic history row; Orchestrator UI > "
-                "Tenant > Solutions removes it.",
+                "could not uninstall %s: %s — a 4007 here means it was already removed.",
                 deploy_name, (env.get("Message") or "unknown error")[:200],
             )
 

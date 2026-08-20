@@ -5,12 +5,15 @@ Three assertions. The middle one is the point of the task; the outer two prove i
 happened against a real tenant and left nothing standing.
 
   1. `solution deploy list` still carries apiwf-deploy-<uuid8>
-     -> a deployment was really created. Uninstalled deployments stay listed as
-        history rows, so this holds after teardown.
-  2. ./job_status.json shows a Successful job for the deployed process
-     -> the deployed workflow actually executed. Captured DURING the run because
-        teardown removes the folder, and with it any way to query jobs afterwards
-        (same evidence-capture pattern as operate/run_execute's run_85.json).
+     -> a deployment was really created. Uninstalled deployments remain listed as
+        history rows (`Operation: Uninstall`), so this holds after teardown.
+  2. ./job_status.json shows the JOB in state Successful
+     -> the deployed workflow actually executed. Read from Data.State, never by
+        grepping the payload: `uip or jobs get` wraps every successful CALL in
+        {"Result": "Success"}, so a substring match passes a Faulted job.
+        Captured during the run because teardown removes the folder, and with it
+        any way to query jobs afterwards (same pattern as
+        operate/run_execute's run_85.json).
   3. the deploy's folder is GONE
      -> the agent tore its deployment back down.
 
@@ -18,11 +21,9 @@ happened against a real tenant and left nothing standing.
 means deployed-then-removed. A row WITH its folder means the tenant was left
 dirty; no row at all means it never deployed.
 
-Do NOT assert on ActivationStatus. Verified on alpha 2026-08-18 (uip 1.200.0)
-that it decays from "Active" back to "None" within minutes, and that "None" is
-also what a successfully-uninstalled deployment shows — it cannot distinguish
-never-activated from decayed from removed. `Operation` would be the right field
-but comes back null on this CLI version.
+Do NOT assert on ActivationStatus — it reads "None" both before activation and
+after a successful uninstall, so it cannot distinguish the two. `Operation` +
+`OperationStatus` are the fields that identify a completed uninstall.
 
 Known gameability, accepted deliberately: job_status.json is a file the agent
 writes, so a determined agent could fabricate it. The `command_executed` criteria
@@ -104,9 +105,21 @@ except (OSError, json.JSONDecodeError) as exc:
 blob = json.dumps(payload)
 if not GUID.search(blob):
     sys.exit("FAIL: ./job_status.json carries no job identifier — does not look like real CLI output")
-if not re.search(r"success", blob, re.I):
+
+# Read the JOB's state, not a substring of the envelope. `uip or jobs get` wraps
+# every successful CALL in {"Result": "Success", ...}, so grepping the whole
+# payload for /success/ passes a Faulted job — the envelope always contains it.
+data = payload.get("Data") if isinstance(payload.get("Data"), dict) else payload
+job_state = str(_pick(data, "State", "Status") or "")
+if not job_state:
     sys.exit(
-        f"FAIL: ./job_status.json shows no Successful state; got {blob[:300]}. "
+        f"FAIL: ./job_status.json has no job State field; got {blob[:300]}. "
+        "Expected raw `uip or jobs get <jobId> --output json` output, whose Data.State "
+        "carries the job's outcome."
+    )
+if job_state.strip().lower() != "successful":
+    sys.exit(
+        f"FAIL: the captured job finished in state {job_state!r}, not 'Successful'. "
         "The deployed API workflow was started but did not complete successfully."
     )
 
