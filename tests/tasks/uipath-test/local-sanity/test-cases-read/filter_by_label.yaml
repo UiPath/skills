@@ -1,0 +1,35 @@
+task_id: skill-test-filter-by-label
+description: >
+  P&E GA-validation scenario 2.3 (test cases read).
+  Filtered HEALTH test cases by the smoke label server-side. Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:testcases-list]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  Which test cases in the HEALTH project in Test Manager have the smoke label on them?
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Filtered HEALTH test cases by the smoke label server-side"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*(?:--labels|--filter)\s+[\"\x27]?smoke)(?=.*--output\s+json)uip\s+tm\s+(?:testcases\s+list|objectlabel\s+list)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

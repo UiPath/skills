@@ -1,0 +1,35 @@
+task_id: skill-test-read-open-by-severity
+description: >
+  P&E GA-validation scenario 7.2 (defects).
+  Listed the HEALTH cases flagged as open defects (objectlabel list --filter defect). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:discover, feature:objectlabel-list]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  In Test Manager, which test cases in the HEALTH project are currently flagged as open bugs? I care about the high-priority ones.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed HEALTH cases flagged as defects (objectlabel list --filter defect)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

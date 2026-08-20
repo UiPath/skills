@@ -1,0 +1,35 @@
+task_id: skill-test-list-robots
+description: >
+  P&E GA-validation scenario 12.1 (orchestrator integration).
+  Listed available machines (uip or machines list). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:or-machines-list]
+
+skip: true
+
+run_limits:
+  expected_turns: 16
+  max_turns: 50
+
+initial_prompt: |
+  Before I kick off a Test Manager run, what robots do we have available right now? I want to know what's there first.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed available machines (uip or machines list)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--output\s+json)uip\s+or\s+(?:machines\s+list|sessions(?:\s+(?:attended|unattended))?\s+list)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

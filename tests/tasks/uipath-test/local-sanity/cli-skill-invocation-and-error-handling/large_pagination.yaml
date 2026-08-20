@@ -1,0 +1,35 @@
+task_id: skill-test-large-pagination
+description: >
+  P&E GA-validation scenario 15.5 (cli skill invocation and error handling).
+  Transparent pagination across a large HEALTH result set. Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:discover, feature:testcases-list]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  I need the full list of test cases from the HEALTH project in Test Manager, not just the first page. There's a lot of them, so make sure none slip through, and tell me the total count at the end.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Transparent pagination across a large HEALTH result set"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+testcases\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

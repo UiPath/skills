@@ -1,0 +1,35 @@
+task_id: skill-test-bulk-label
+description: >
+  P&E GA-validation scenario 8.2 (labels and tags).
+  Bulk-added the stale label across HEALTH cases (objectlabel add). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:objectlabel-add]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  In Test Manager I've got a handful of cases in the HEALTH project nobody's touched in ages. Mark all of them 'stale' in one go.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Bulk-added the stale label across HEALTH cases (objectlabel add)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--labels)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir
