@@ -9,9 +9,9 @@ Exact `@uipath/flow-sdk` authoring signatures and option shapes, from the public
 declarations. Signatures, fields, optionality, and declaration comments are
 generated from the built types; longer tutorials stay in the node references.
 
-**Flow construction** — [SCHEDULE_PRESETS](#schedulepresets-const) · [manual](#manual-function) · [onEvent](#onevent-function) · [scheduled](#scheduled-function) · [formTrigger](#formtrigger-function) · [flow](#flow-function) · [subflow](#subflow-function)
+**Flow construction** — [SCHEDULE_PRESETS](#schedulepresets-const) · [manual](#manual-function) · [onEvent](#onevent-function) · [scheduled](#scheduled-function) · [formTrigger](#formtrigger-function) · [conversationTrigger](#conversationtrigger-function) · [voiceTrigger](#voicetrigger-function) · [flow](#flow-function) · [subflow](#subflow-function)
 
-**Actions** — [DELAY_PRESETS](#delaypresets-const) · [http](#http-function) · [script](#script-function) · [transform](#transform-function) · [hitl](#hitl-function) · [summarize](#summarize-function) · [batchTransform](#batchtransform-function) · [ixpExtract](#ixpextract-function) · [delay](#delay-function) · [mock](#mock-function) · [rpaWorkflow](#rpaworkflow-function) · [apiWorkflow](#apiworkflow-function) · [agenticProcess](#agenticprocess-function) · [agent](#agent-function) · [inlineAgent](#inlineagent-function) · [documentClassify](#documentclassify-function) · [dynamicExtract](#dynamicextract-function) · [dataFabricRead](#datafabricread-function) · [dataFabricUpdate](#datafabricupdate-function) · [queueItem](#queueitem-function) · [connector](#connector-function) · [waitForEvent](#waitforevent-function)
+**Actions** — [DELAY_PRESETS](#delaypresets-const) · [http](#http-function) · [script](#script-function) · [transform](#transform-function) · [hitl](#hitl-function) · [summarize](#summarize-function) · [batchTransform](#batchtransform-function) · [ixpExtract](#ixpextract-function) · [delay](#delay-function) · [mock](#mock-function) · [rpaWorkflow](#rpaworkflow-function) · [apiWorkflow](#apiworkflow-function) · [publishedFunction](#publishedfunction-function) · [sendMessage](#sendmessage-function) · [waitForMessage](#waitformessage-function) · [conversationContext](#conversationcontext-function) · [createOutgoingCall](#createoutgoingcall-function) · [endCall](#endcall-function) · [voiceAgent](#voiceagent-function) · [conversationalAgent](#conversationalagent-function) · [agenticProcess](#agenticprocess-function) · [agent](#agent-function) · [inlineAgent](#inlineagent-function) · [documentClassify](#documentclassify-function) · [dynamicExtract](#dynamicextract-function) · [dataFabricRead](#datafabricread-function) · [dataFabricUpdate](#datafabricupdate-function) · [queueItem](#queueitem-function) · [connector](#connector-function) · [waitForEvent](#waitforevent-function)
 
 **Expressions and types** — [lit](#lit-function) · [v](#v-function) · [DEFAULT_TRIGGER_ID](#defaulttriggerid-const) · [input](#input-function) · [entryInput](#entryinput-function) · [out](#out-function) · [ran](#ran-function) · [err](#err-function) · [js](#js-function) · [tmpl](#tmpl-function) · [types](#types-const)
 
@@ -19,9 +19,9 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Builders** — [FlowBuilder](#flowbuilder-class) · [StepList](#steplist-class) · [ArmBuilder](#armbuilder-class)
 
-**Option shapes** — [TriggerOptions](#triggeroptions-interface) · [EventSubscription](#eventsubscription-interface) · [ScheduledInputs](#scheduledinputs-interface) · [HttpInputs](#httpinputs-type) · [ScriptInputs](#scriptinputs-interface) · [TransformInputs](#transforminputs-interface) · [HitlInputs](#hitlinputs-interface) · [SummarizeInputs](#summarizeinputs-interface) · [BatchTransformInputs](#batchtransforminputs-interface) · [IxpExtractInputs](#ixpextractinputs-interface) · [DelayInputs](#delayinputs-type) · [RpaWorkflowInputs](#rpaworkflowinputs-interface) · [ApiWorkflowInputs](#apiworkflowinputs-interface) · [AgenticProcessInputs](#agenticprocessinputs-type) · [AgentInputs](#agentinputs-interface) · [InlineAgentInputs](#inlineagentinputs-interface) · [DocumentClassifyInputs](#documentclassifyinputs-interface) · [DynamicExtractInputs](#dynamicextractinputs-interface) · [DataFabricReadInputs](#datafabricreadinputs-interface) · [DataFabricUpdateInputs](#datafabricupdateinputs-interface) · [QueueItemInputs](#queueiteminputs-interface) · [ConnectorOpts](#connectoropts-interface) · [NodeOptions](#nodeoptions-interface) · [HttpInputsBase](#httpinputsbase-interface) · [DocValidationInputs](#docvalidationinputs-interface) · [AgenticProcessInputsBase](#agenticprocessinputsbase-interface) · [LoopOptions](#loopoptions-interface) · [DoWhileOptions](#dowhileoptions-interface)
+**Option shapes** — [TriggerOptions](#triggeroptions-interface) · [EventSubscription](#eventsubscription-interface) · [ScheduledInputs](#scheduledinputs-interface) · [HttpInputs](#httpinputs-type) · [ScriptInputs](#scriptinputs-interface) · [TransformInputs](#transforminputs-interface) · [HitlInputs](#hitlinputs-interface) · [SummarizeInputs](#summarizeinputs-interface) · [BatchTransformInputs](#batchtransforminputs-interface) · [IxpExtractInputs](#ixpextractinputs-interface) · [DelayInputs](#delayinputs-type) · [RpaWorkflowInputs](#rpaworkflowinputs-interface) · [ApiWorkflowInputs](#apiworkflowinputs-interface) · [PublishedFunctionInputs](#publishedfunctioninputs-interface) · [SendMessageInputs](#sendmessageinputs-interface) · [WaitForMessageInputs](#waitformessageinputs-interface) · [ConversationContextInputs](#conversationcontextinputs-interface) · [CreateOutgoingCallInputs](#createoutgoingcallinputs-interface) · [EndCallInputs](#endcallinputs-interface) · [VoiceAgentInputs](#voiceagentinputs-interface) · [ConversationalAgentInputs](#conversationalagentinputs-interface) · [AgenticProcessInputs](#agenticprocessinputs-type) · [AgentInputs](#agentinputs-interface) · [InlineAgentInputs](#inlineagentinputs-interface) · [DocumentClassifyInputs](#documentclassifyinputs-interface) · [DynamicExtractInputs](#dynamicextractinputs-interface) · [DataFabricReadInputs](#datafabricreadinputs-interface) · [DataFabricUpdateInputs](#datafabricupdateinputs-interface) · [QueueItemInputs](#queueiteminputs-interface) · [ConnectorOpts](#connectoropts-interface) · [NodeOptions](#nodeoptions-interface) · [HttpInputsBase](#httpinputsbase-interface) · [DocValidationInputs](#docvalidationinputs-interface) · [AgenticProcessInputsBase](#agenticprocessinputsbase-interface) · [LoopOptions](#loopoptions-interface) · [DoWhileOptions](#dowhileoptions-interface)
 
-**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [TriggerSpec](#triggerspec-type) · [TriggerDescriptor](#triggerdescriptor-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ConnectorDescriptor](#connectordescriptor-type) · [ConnectorMeta](#connectormeta-interface) · [TriggerMeta](#triggermeta-interface) · [EventFilter](#eventfilter-interface) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [HitlRecipient](#hitlrecipient-interface) · [OutputColumn](#outputcolumn-interface) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [AgentGuardrail](#agentguardrail-type) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [DataFabricFilter](#datafabricfilter-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [HttpBranch](#httpbranch-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [InOutField](#inoutfield-interface) · [HitlChannel](#hitlchannel-type) · [HitlAssigneeType](#hitlassigneetype-type) · [HitlConnection](#hitlconnection-interface) · [CustomGuardrail](#customguardrail-interface) · [BuiltInValidatorGuardrail](#builtinvalidatorguardrail-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [GuardrailSelector](#guardrailselector-interface) · [GuardrailAction](#guardrailaction-type) · [GuardrailRule](#guardrailrule-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type) · [GuardrailScope](#guardrailscope-type) · [GuardrailFieldReference](#guardrailfieldreference-interface) · [GuardrailFieldSelector](#guardrailfieldselector-type)
+**Supporting types** — [ContributionDiagnostic](#contributiondiagnostic-interface) · [DefinitionReference](#definitionreference-type) · [ContributionContext](#contributioncontext-interface) · [BindingContribution](#bindingcontribution-interface) · [NodeContribution](#nodecontribution-interface) · [FlowNode](#flownode-class) · [FlowAction](#flowaction-class) · [FlowTrigger](#flowtrigger-class) · [FlowResource](#flowresource-class) · [rawNode](#rawnode-function) · [TriggerSpec](#triggerspec-type) · [TriggerDescriptor](#triggerdescriptor-type) · [ChildFlow](#childflow-type) · [Expr](#expr-class) · [SubflowSpec](#subflowspec-interface) · [ActionSpec](#actionspec-type) · [ConnectorDescriptor](#connectordescriptor-type) · [ConnectorMeta](#connectormeta-interface) · [TriggerMeta](#triggermeta-interface) · [EventFilter](#eventfilter-interface) · [ScheduleEvery](#scheduleevery-type) · [FlowLayout](#flowlayout-interface) · [TypeDesc](#typedesc-type) · [VarSpec](#varspec-interface) · [BuiltFlow](#builtflow-interface) · [ScriptReturns](#scriptreturns-type) · [TransformVariant](#transformvariant-type) · [TransformOperation](#transformoperation-type) · [HitlVariant](#hitlvariant-type) · [AppRef](#appref-interface) · [FormField](#formfield-type) · [Outcome](#outcome-type) · [HitlRecipient](#hitlrecipient-interface) · [OutputColumn](#outputcolumn-interface) · [VoiceSettings](#voicesettings-interface) · [ConversationalAgentSettings](#conversationalagentsettings-interface) · [AgentGuardrail](#agentguardrail-type) · [AgenticProcessCompletion](#agenticprocesscompletion-type) · [AgentLocation](#agentlocation-type) · [AgentFlavour](#agentflavour-type) · [InlineAgentFieldType](#inlineagentfieldtype-type) · [AgentMemoryRef](#agentmemoryref-interface) · [ContextIndexRef](#contextindexref-interface) · [ToolRef](#toolref-type) · [EscalationRef](#escalationref-interface) · [DataFabricFilter](#datafabricfilter-interface) · [QueuePriority](#queuepriority-type) · [SchedulePreset](#schedulepreset-type) · [Step](#step-type) · [FlowActionSpec](#flowactionspec-type) · [CaseValue](#casevalue-type) · [NodeLayout](#nodelayout-interface) · [EdgeRoute](#edgeroute-interface) · [VarDecl](#vardecl-interface) · [BuiltEntryPoint](#builtentrypoint-interface) · [HttpBranch](#httpbranch-interface) · [ScriptReturnType](#scriptreturntype-type) · [FilterRule](#filterrule-interface) · [FilterMatch](#filtermatch-type) · [FieldMapping](#fieldmapping-interface) · [Aggregation](#aggregation-interface) · [ShownField](#shownfield-interface) · [AskedField](#askedfield-interface) · [InOutField](#inoutfield-interface) · [HitlChannel](#hitlchannel-type) · [HitlAssigneeType](#hitlassigneetype-type) · [HitlConnection](#hitlconnection-interface) · [CustomGuardrail](#customguardrail-interface) · [BuiltInValidatorGuardrail](#builtinvalidatorguardrail-interface) · [BuiltinToolRef](#builtintoolref-interface) · [ConnectorToolRef](#connectortoolref-interface) · [ProcessToolRef](#processtoolref-interface) · [IxpToolRef](#ixptoolref-interface) · [McpToolRef](#mcptoolref-interface) · [RemoteA2aToolRef](#remotea2atoolref-interface) · [ClientSideToolRef](#clientsidetoolref-interface) · [HttpRequestToolRef](#httprequesttoolref-interface) · [SwitchArm](#switcharm-interface) · [FilterCondition](#filtercondition-type) · [Transformation](#transformation-type) · [AggregationOperation](#aggregationoperation-type) · [FormFieldType](#formfieldtype-type) · [GuardrailSelector](#guardrailselector-interface) · [GuardrailAction](#guardrailaction-type) · [GuardrailRule](#guardrailrule-type) · [BuiltinToolName](#builtintoolname-type) · [ProcessToolKind](#processtoolkind-type) · [GuardrailScope](#guardrailscope-type) · [GuardrailFieldReference](#guardrailfieldreference-interface) · [GuardrailFieldSelector](#guardrailfieldselector-type)
 
 ## SCHEDULE_PRESETS (const)
 
@@ -82,6 +82,23 @@ Behavior and worked examples: [scheduled-trigger.md](scheduled-trigger.md).
  * flow's inputs.
  */
 export declare function formTrigger(): TriggerSpec;
+````
+
+## conversationTrigger (function)
+
+````ts
+/**
+ * Start the flow when a new CONVERSATION is created
+ * (`core.trigger.conversation`) — the entry point for a chat-driven process.
+ */
+export declare function conversationTrigger(): TriggerSpec;
+````
+
+## voiceTrigger (function)
+
+````ts
+/** Start the flow when a phone call comes IN (`core.trigger.voice`). */
+export declare function voiceTrigger(): TriggerSpec;
 ````
 
 ## flow (function)
@@ -234,6 +251,90 @@ export declare function apiWorkflow(inputs: ApiWorkflowInputs): ActionSpec;
 ````
 
 Behavior and worked examples: [api-workflow.md](api-workflow.md).
+
+## publishedFunction (function)
+
+````ts
+/**
+ * Invoke a published Orchestrator **Function** — a deployed unit of code run as
+ * one step (`uipath.core.function.<key>`, dispatched as
+ * `Orchestrator.ExecuteFunctionAsync`).
+ */
+export declare function publishedFunction(inputs: PublishedFunctionInputs): ActionSpec;
+````
+
+## sendMessage (function)
+
+````ts
+/**
+ * Post an assistant message into a live conversation
+ * (`uipath.conversational.send-message`).
+ */
+export declare function sendMessage(inputs: SendMessageInputs): ActionSpec;
+````
+
+## waitForMessage (function)
+
+````ts
+/**
+ * PAUSE until the person sends their next message
+ * (`uipath.conversational.wait-for-message`) — a catch event, like
+ * `waitForEvent`, so the flow suspends rather than polling.
+ */
+export declare function waitForMessage(inputs: WaitForMessageInputs): ActionSpec;
+````
+
+## conversationContext (function)
+
+````ts
+/**
+ * READ a conversation's transcript so far without waiting
+ * (`uipath.conversational.get-conversation-context`) — the shape a
+ * conversational agent takes as its turn context.
+ */
+export declare function conversationContext(inputs: ConversationContextInputs): ActionSpec;
+````
+
+## createOutgoingCall (function)
+
+````ts
+/**
+ * Place an outgoing phone call
+ * (`uipath.conversational.voice.create-outgoing-call`) and get back the
+ * `callContext` every other voice step is keyed by.
+ */
+export declare function createOutgoingCall(inputs: CreateOutgoingCallInputs): ActionSpec;
+````
+
+## endCall (function)
+
+````ts
+/**
+ * Hang up (`uipath.conversational.voice.end-call`). Reads
+ * `out('<step>', 'ended')`.
+ */
+export declare function endCall(inputs: EndCallInputs): ActionSpec;
+````
+
+## voiceAgent (function)
+
+````ts
+/**
+ * Put a VOICE agent on a live call (`uipath.agent.voice`) — it speaks and
+ * listens for one turn, then the flow continues.
+ */
+export declare function voiceAgent(inputs: VoiceAgentInputs): ActionSpec;
+````
+
+## conversationalAgent (function)
+
+````ts
+/**
+ * A CONVERSATIONAL agent (`uipath.agent.conversational`) — it answers one turn
+ * of a live chat, reading the transcript rather than flow arguments.
+ */
+export declare function conversationalAgent(inputs: ConversationalAgentInputs): ActionSpec;
+````
 
 ## agenticProcess (function)
 
@@ -996,6 +1097,199 @@ export interface ApiWorkflowInputs {
 }
 ````
 
+## PublishedFunctionInputs (interface)
+
+````ts
+/**
+ * A published Orchestrator **Function** — a small, single-purpose unit of code
+ * deployed as its own resource and invoked as one step
+ * (`Orchestrator.ExecuteFunctionAsync`). Same published-resource shape as
+ * `ApiWorkflowInputs`; what differs is the family and the folder.
+ */
+export interface PublishedFunctionInputs {
+    /**
+     * The function's key (a GUID) — it becomes part of the node's type,
+     * `uipath.core.function.<key>`. Find it with
+     * `uip maestro flow registry search "uipath.core.function"` (after
+     * `registry pull --force`) or the Orchestrator process listing.
+     */
+    key: string;
+    /** The function's name in Orchestrator, e.g. `'acme-echo'`. */
+    name: string;
+    /**
+     * The Orchestrator folder holding it. A function is usually deployed into a
+     * folder of its OWN name (e.g. `'Shared/acme-echo'`), and the binding's
+     * `resourceKey` is `<folderPath>.<name>` — copy the folder from the tenant
+     * rather than assuming `'Shared'`.
+     */
+    folderPath: string;
+    /** The function's own input arguments, by its own names. */
+    inputs?: Record<string, unknown>;
+    /**
+     * The function's OUTPUT arguments — the fields it returns, and their types.
+     * Required if anything reads the step's output: the schema lives on the
+     * tenant and authoring is offline, so an undeclared read is rejected.
+     *
+     * @enforcedBy FUNCTION_READ_WITHOUT_RETURNS Reading a field off the result requires
+     *   declaring it here.
+     */
+    returns?: Record<string, 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'>;
+}
+````
+
+## SendMessageInputs (interface)
+
+````ts
+export interface SendMessageInputs {
+    /**
+     * The conversation to post into — from the conversation trigger
+     * (`out('start', 'conversationId')`) or a context read. Required.
+     */
+    conversationId: string | Expr;
+    /**
+     * The exchange (one user turn plus its answers) the message belongs to —
+     * `out('<waitStep>', 'conversationContext.latestExchangeId')`, or the
+     * trigger's exchange for the first answer. Required by the node's schema.
+     */
+    exchangeId: string | Expr;
+    /** What to say. Markdown — the node's only supported `mimeType`. Required. */
+    content: string | Expr;
+    /**
+     * Whether this message CLOSES the exchange. The platform's legacy default is
+     * to end it; pass `false` to keep the exchange open for another message.
+     */
+    endExchange?: boolean;
+}
+````
+
+## WaitForMessageInputs (interface)
+
+````ts
+export interface WaitForMessageInputs {
+    /** The conversation to wait on. Required. */
+    conversationId: string | Expr;
+    /**
+     * How many past exchanges the returned context carries. 1–40 in the
+     * designer; the platform default is 20.
+     */
+    numExchanges?: number;
+}
+````
+
+## ConversationContextInputs (interface)
+
+````ts
+export interface ConversationContextInputs {
+    /** The conversation to read. Required. */
+    conversationId: string | Expr;
+    /** How many exchanges to return, 1–40. The platform default is 20. */
+    exchangeLimit?: number;
+}
+````
+
+## CreateOutgoingCallInputs (interface)
+
+````ts
+export interface CreateOutgoingCallInputs {
+    /**
+     * The number to call FROM — a provisioned number on the tenant's telephony
+     * provider, in E.164 (`'+15551234567'`). Required.
+     */
+    from: string | Expr;
+    /** The number to call, in E.164. Required. */
+    to: string | Expr;
+}
+````
+
+## EndCallInputs (interface)
+
+````ts
+export interface EndCallInputs {
+    /**
+     * The call to hang up — bind the `callContext` published by the incoming-call
+     * trigger (`out('start', 'callContext')`) or by `createOutgoingCall`
+     * (`out('<step>', 'callContext')`). Required.
+     */
+    callContext: Expr | string;
+}
+````
+
+## VoiceAgentInputs (interface)
+
+````ts
+export interface VoiceAgentInputs {
+    /**
+     * The agent's standing instructions — who it is on the call and what it must
+     * do. Written as plain text; a voice agent has no `{{input.…}}` templating,
+     * because its turn comes from the live call rather than from flow arguments.
+     */
+    systemPrompt: string;
+    /**
+     * The call to attach the agent to — the `callContext` from the incoming-call
+     * trigger or `createOutgoingCall`. Required: without it the agent has no
+     * audio channel to join.
+     */
+    callContext: Expr | string;
+    /** How the agent sounds. Omit for the platform default voice. */
+    voice?: VoiceSettings;
+    /**
+     * How many tool-calling rounds the agent may take in one turn. The node's
+     * schema allows **1–8** — a tighter ceiling than a text agent's, because a
+     * caller is waiting.
+     */
+    maxIterations?: number;
+    /**
+     * The agent's own directory name (a UUID) — the node carries it as `source`
+     * and the compiler writes `<source>/agent.json` beside the flow. Omit and one
+     * is derived from the flow id + step name, so a recompile is not a diff.
+     */
+    source?: string;
+}
+````
+
+## ConversationalAgentInputs (interface)
+
+````ts
+export interface ConversationalAgentInputs {
+    /**
+     * The agent's standing instructions for the conversation. Plain text — a
+     * conversational agent's turn comes from the transcript, not from flow
+     * arguments, so there is no `{{input.…}}` templating.
+     */
+    systemPrompt: string;
+    /** The MODEL to run, e.g. `'gpt-5.4'`. Required by the node's definition. */
+    model: string;
+    /**
+     * How the agent gets its turn. The common case is
+     * `{ context: out('<waitStep>', 'conversationContext') }` — one binding the
+     * platform reads conversation id, exchange id, history and user settings out
+     * of. See `ConversationalAgentSettings`.
+     */
+    settings: ConversationalAgentSettings;
+    /**
+     * Whether the agent's reply CLOSES the exchange. The platform's legacy
+     * default is to end it; pass `false` to keep it open for another turn.
+     */
+    endExchange?: boolean;
+    /** Sampling temperature, 0–1. */
+    temperature?: number;
+    /** Max tokens in one response. */
+    maxTokenPerResponse?: number;
+    /** The model's own context ceiling — informational. */
+    modelMaxTokens?: number;
+    /** How many tool-calling rounds one turn may take, 1–100. */
+    maxIterations?: number;
+    /** Safety rails, the same array `inlineAgent` takes. */
+    guardrails?: AgentGuardrail[];
+    /**
+     * The agent's own directory name (a UUID) — the node carries it as `source`
+     * and the compiler writes `<source>/agent.json` beside the flow. Derived from
+     * the flow id + step name when omitted.
+     */
+    source?: string;
+}
+````
+
 ## AgenticProcessInputs (type)
 
 ````ts
@@ -1127,6 +1421,12 @@ export interface InlineAgentInputs {
      * (its 1.2 definition already declares the input) and in the `agent.json`.
      */
     guardrails?: AgentGuardrail[];
+    /**
+     * Attach an episodic memory so the agent learns from past runs — one
+     * `AgentMemoryRef`, wired to the agent's `memory` handle (its 1.4
+     * definition; naming one selects it).
+     */
+    memory?: AgentMemoryRef;
     /**
      * GROUND the agent on tenant knowledge — one or more Context Grounding
      * (semantic) indexes, wired to the agent's own `context` handle.
@@ -1647,6 +1947,23 @@ export declare abstract class FlowResource extends FlowNode<never> {
 }
 ````
 
+## rawNode (function)
+
+````ts
+export declare function rawNode(spec: {
+    /** The definition's `nodeType`, verbatim. */
+    nodeType: string;
+    /** The exact definition version; also becomes the node's `typeVersion`. */
+    version: string;
+    /** The complete node manifest, exactly as the platform serves it. */
+    manifest: unknown;
+    /** The node's `inputs`. `Expr` values render through the usual pipeline. */
+    inputs?: Record<string, unknown>;
+    /** Overrides for the node's `outputs`; rarely needed. */
+    outputs?: Record<string, unknown>;
+}): FlowAction;
+````
+
 ## TriggerSpec (type)
 
 ````ts
@@ -1660,6 +1977,10 @@ export type TriggerSpec = {
     subscription: EventSubscription;
 } | {
     kind: 'form';
+} | {
+    kind: 'conversation';
+} | {
+    kind: 'voice';
 };
 ````
 
@@ -1728,6 +2049,30 @@ export type ActionSpec = {
 } | {
     kind: 'apiWorkflow';
     inputs: ApiWorkflowInputs;
+} | {
+    kind: 'publishedFunction';
+    inputs: PublishedFunctionInputs;
+} | {
+    kind: 'sendMessage';
+    inputs: SendMessageInputs;
+} | {
+    kind: 'waitForMessage';
+    inputs: WaitForMessageInputs;
+} | {
+    kind: 'conversationContext';
+    inputs: ConversationContextInputs;
+} | {
+    kind: 'createOutgoingCall';
+    inputs: CreateOutgoingCallInputs;
+} | {
+    kind: 'endCall';
+    inputs: EndCallInputs;
+} | {
+    kind: 'voiceAgent';
+    inputs: VoiceAgentInputs;
+} | {
+    kind: 'conversationalAgent';
+    inputs: ConversationalAgentInputs;
 } | {
     kind: 'agenticProcess';
     inputs: AgenticProcessInputs;
@@ -1963,6 +2308,37 @@ export interface OutputColumn {
 }
 ````
 
+## VoiceSettings (interface)
+
+````ts
+export interface VoiceSettings {
+    model?: string;
+    persona?: string;
+    temperature?: number;
+    maxTokens?: number;
+    modelMaxTokens?: number;
+}
+````
+
+## ConversationalAgentSettings (interface)
+
+````ts
+export interface ConversationalAgentSettings {
+    mode?: 'simple' | 'custom';
+    context?: Expr | string;
+    conversationId?: Expr | string;
+    exchangeId?: Expr | string;
+    messages?: Expr | string;
+    userSettings?: Expr | string;
+}
+````
+
+## AgentGuardrail (type)
+
+````ts
+export type AgentGuardrail = CustomGuardrail | BuiltInValidatorGuardrail;
+````
+
 ## AgenticProcessCompletion (type)
 
 ````ts
@@ -2019,10 +2395,19 @@ export type AgentFlavour = 'coded' | 'lowcode';
 export type InlineAgentFieldType = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array';
 ````
 
-## AgentGuardrail (type)
+## AgentMemoryRef (interface)
 
 ````ts
-export type AgentGuardrail = CustomGuardrail | BuiltInValidatorGuardrail;
+export interface AgentMemoryRef {
+    name: string;
+    id: string;
+    description?: string;
+    folderKey?: string;
+    dynamicFewShotLearning?: boolean;
+    semanticSimilarity?: number;
+    kValue?: number;
+    searchMode?: 'hybrid' | 'semantic';
+}
 ````
 
 ## ContextIndexRef (interface)
@@ -2044,7 +2429,7 @@ export interface ContextIndexRef {
 ## ToolRef (type)
 
 ````ts
-export type ToolRef = BuiltinToolRef | ConnectorToolRef | ProcessToolRef | IxpToolRef;
+export type ToolRef = BuiltinToolRef | ConnectorToolRef | ProcessToolRef | IxpToolRef | McpToolRef | RemoteA2aToolRef | ClientSideToolRef | HttpRequestToolRef;
 ````
 
 ## EscalationRef (interface)
@@ -2053,7 +2438,9 @@ export type ToolRef = BuiltinToolRef | ConnectorToolRef | ProcessToolRef | IxpTo
 export interface EscalationRef {
     name: string;
     description?: string;
-    app: {
+    variant?: 'quick-form';
+    fields?: FormField[];
+    app?: {
             /** The app's key (a GUID) — from the app's URL or `uip` app listings. */
             key: string;
             /** The app's name, e.g. `'ContentReviewApp'`. */
@@ -2502,6 +2889,74 @@ export interface IxpToolRef {
 }
 ````
 
+## McpToolRef (interface)
+
+````ts
+export interface McpToolRef {
+    kind: 'mcp';
+    name: string;
+    key: string;
+    description?: string;
+    folderPath?: string;
+    folderKey?: string;
+    mcpType?: string;
+    serviceName?: string;
+    slug?: string;
+    selectedTools?: unknown[];
+}
+````
+
+## RemoteA2aToolRef (interface)
+
+````ts
+export interface RemoteA2aToolRef {
+    kind: 'a2a';
+    name: string;
+    key: string;
+    slug: string;
+    description?: string;
+    cachedAgentCard?: Record<string, unknown> | null;
+    resourceType?: string | null;
+    folderPath?: string;
+    folderKey?: string;
+    resourceFolderPath?: string;
+}
+````
+
+## ClientSideToolRef (interface)
+
+````ts
+export interface ClientSideToolRef {
+    kind: 'clientside';
+    name: string;
+    description?: string;
+    inputs?: Record<string, InlineAgentFieldType>;
+    returns?: Record<string, InlineAgentFieldType>;
+}
+````
+
+## HttpRequestToolRef (interface)
+
+````ts
+export interface HttpRequestToolRef {
+    kind: 'httpRequest';
+    name?: string;
+    description?: string;
+    url?: string;
+    method?: string;
+    headers?: Array<{
+            name: string;
+            value: string;
+        }>;
+    params?: Array<{
+            name: string;
+            value: string;
+        }>;
+    body?: string;
+    timeout?: number;
+}
+````
+
 ## SwitchArm (interface)
 
 ````ts
@@ -2593,7 +3048,7 @@ export type BuiltinToolName = 'analyzefiles' | 'summarize' | 'batchtransform';
 ## ProcessToolKind (type)
 
 ````ts
-export type ProcessToolKind = 'process' | 'agent' | 'api' | 'flow' | 'maestro';
+export type ProcessToolKind = 'process' | 'agent' | 'api' | 'flow' | 'maestro' | 'function';
 ````
 
 ## GuardrailScope (type)
