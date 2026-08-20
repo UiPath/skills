@@ -102,11 +102,31 @@ IDENT_SEED = {
 
 
 def ident_state(groups, robots):
+    """Stub that HONOURS --search, because the real CLI does.
+
+    `robot-accounts list --search <term>` filters by name (identity-commands.md
+    :256). A stub that ignores it hands back robots the CLI would never have
+    returned, which certified an ID check that could not actually detect a
+    renamed-instead-of-deleted robot. Same class as the flat-AppScopes fiction
+    from round 4: model the payload the CLI produces, not the one that is
+    convenient.
+    """
     def responder(args, timeout=30, quiet=False):
         if args[1] == "groups":
             return envelope(groups)
         if args[1] == "robot-accounts":
-            return envelope(robots)
+            if args[2] == "get":
+                target = str(args[3])
+                match = [r for r in robots if str(r.get("Id") or r.get("id")) == target]
+                return envelope(match[0]) if match else None
+            rows = robots
+            for flag in ("--search", "-s"):
+                if flag in args:
+                    term = args[args.index(flag) + 1].lower()
+                    rows = [r for r in rows
+                            if term in str(r.get("Name") or r.get("name") or "").lower()]
+                    break
+            return envelope(rows)
         return None
     return responder
 

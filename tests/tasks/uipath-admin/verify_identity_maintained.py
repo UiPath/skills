@@ -12,8 +12,14 @@ the seed baseline in the state file:
                       preserves the id.
   3. robot update   — the seeded robot id still exists and its display name is
                       now 'Maintain Bot Updated' (seeded as 'Maintain Bot').
-  4. robot delete   — the seeded retired robot's ID is absent.
+  4. robot delete   — the seeded retired robot's ID cannot be fetched. Proved
+                      by a direct `robot-accounts get <ID>`, not by absence
+                      from a name-filtered list (a rename would hide it).
   5. no collateral  — every non-fixture group present at seed time still exists.
+                      This is also what protects built-in groups: they are in
+                      the snapshot and never carry the fixture prefix. There is
+                      deliberately NO separate built-in assertion — it would add
+                      no coverage and could false-fail on a Type field rename.
 
 Any missing or degenerate seed baseline is a hard failure, not a skipped check:
 an absent state file and a valid-but-empty snapshot both used to pass silently,
@@ -173,14 +179,30 @@ def main():
         fail(f"'{BOT_KEPT}' has id={_id_of(bot)} but the seeded robot was {bot_update_id} — it was "
              "recreated, not updated in place")
 
-    rs = robots()
-    if rs is None:
-        fail("could not list robot accounts — cannot verify the retired bot is gone")
-    robot_ids = {str(_id_of(r)) for r in rs if _id_of(r)}
-    if bot_retire_id in robot_ids:
-        surviving = next((_name(r) for r in rs if str(_id_of(r)) == bot_retire_id), "?")
-        fail(f"the retired robot (id={bot_retire_id}) still exists as '{surviving}' — it was "
-             "renamed or left in place, not deleted")
+    # Prove the delete by fetching the id DIRECTLY. robots() filters with
+    # `--search ce-identity-maintain`, which matches on NAME, so a robot renamed
+    # out of that window (zz-archived-bot, decommissioned-2026-08) is simply
+    # absent from the result set and an id-membership test on it passes — the
+    # exact archive-instead-of-delete hole this assertion exists to close.
+    got = run_cli(["admin", "robot-accounts", "get", bot_retire_id])
+    if got and got.get("Result") == "Success":
+        payload = got.get("Data") or {}
+        fail(f"the retired robot (id={bot_retire_id}) still exists as "
+             f"'{_name(payload) or '?'}' — it was renamed or left in place, not deleted")
+    if got is None:
+        # run_cli returns None for a genuine not-found AND for a transport error,
+        # so a None alone is not proof of deletion. Confirm against an UNFILTERED
+        # page, which a rename cannot hide from.
+        page = run_cli(["admin", "robot-accounts", "list", "--limit", LIST_LIMIT])
+        if not page or page.get("Result") != "Success":
+            fail(f"could not confirm the retired robot (id={bot_retire_id}) is gone: "
+                 "`get` returned no result and the unfiltered list could not be read")
+        all_ids = {str(_id_of(r)) for r in page.get("Data", []) if _id_of(r)}
+        if bot_retire_id in all_ids:
+            surviving = next((_name(r) for r in page.get("Data", [])
+                              if str(_id_of(r)) == bot_retire_id), "?")
+            fail(f"the retired robot (id={bot_retire_id}) still exists as '{surviving}' — it was "
+                 "renamed or left in place, not deleted")
 
     builtins_present = sum(1 for g in gs if _is_builtin(g))
 

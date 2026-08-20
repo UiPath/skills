@@ -15,9 +15,11 @@ description: >
   identity_user_lifecycle_e2e and identity_delete_user_smoke. The verify asserts:
   the renamed group exists under its new name and NOT the old one (so creating a
   new group instead of renaming fails), the stale group is gone, the kept robot
-  carries its new display name, the retired robot is gone, at least one built-in
-  group survived, and every non-fixture group snapshotted at seed time still
-  exists.
+  carries its new display name, the retired robot cannot be fetched by id, and
+  every non-fixture group snapshotted at seed time still exists. Built-in groups
+  are protected by that last check — they are all in the snapshot and none carry
+  the fixture prefix — so there is no separate built-in assertion; the count is
+  reported in the pass line for information only.
 
   Deliberately NO command_executed criteria. An earlier revision graded CLI
   command shapes and had to be walked back twice: the patterns matched across
