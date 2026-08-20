@@ -148,7 +148,9 @@ success_criteria:
     description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
-    include_reference: true
+    include_reference: false
+    files:
+      - $REFERENCE_DIR/RESOLUTION.md
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
