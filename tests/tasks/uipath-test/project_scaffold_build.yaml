@@ -1,7 +1,7 @@
-# Owns a throwaway PROJECT for the whole scenario: the agent creates it, wires
-# it, proves it is execution-ready, then deletes it. Nothing in CLAIM, HEALTH or
-# BANK is read or written, so this task cannot disturb the fixture state the
-# EVFX- contract protects, and it leaves no tenant residue behind.
+# Owns a throwaway PROJECT for the whole scenario: the agent creates it, drives
+# it to a working run, then deletes it. Nothing in CLAIM, HEALTH or BANK is read
+# or written, so this task cannot disturb the fixture state the EVFX- contract
+# protects, and it leaves no tenant residue behind.
 #
 # Cleanup is part of the graded scenario rather than a hook because this
 # framework has no post_run — tests/README.md: "There is no post_run. The agent
@@ -9,35 +9,47 @@
 # Grading the delete is therefore both the cleanup mechanism AND coverage of
 # `project delete`, which no other task asserts.
 #
-# The graded surface — `project create`, `project set-default-folder`,
-# `project delete` — is asserted by no other task under tests/tasks/uipath-test/.
-# All three gate `run`: SKILL.md Critical Rule 10 makes the default folder a
-# precondition of every execution, so a skill that cannot wire a fresh project
-# produces a project nothing can execute against.
+# WHY THE RUN ATTEMPT IS PART OF THE SCENARIO. An earlier revision of this task
+# asked only for an "execution-ready" project and graded `folders list` +
+# `set-default-folder` directly. It failed at 0.609 on codex run 32343500063
+# with both of those criteria matching zero commands — correctly, because
+# SKILL.md Critical Rule 10 tells the agent to set a default folder ONLY on the
+# exact missing-folder error from a `run`, and never to overwrite a working one.
+# With nothing being run, the rule's trigger never fires and a skill-following
+# agent rightly skips both calls. The task was grading a behaviour the skill
+# forbids. Driving an actual `run` makes the recovery path fire for the reason
+# the skill documents, which is also what makes this the only coverage of
+# Rule 10's recovery anywhere in tests/tasks/uipath-test/.
+#
+# The run's own success is deliberately NOT graded: whether a manual execution
+# completes depends on tenant state beyond the skill's control. What is graded
+# is that a run was attempted, the folder was discovered rather than invented,
+# and the folder was pinned in response.
 task_id: skill-test-project-scaffold-build
 description: >
   Integration test: agent uses the uipath-test skill to provision a Test Manager
-  project end-to-end and tear it down again. Asserts that the agent (a) checks
-  login status with --output json, (b) creates the project with `project create`
-  carrying both --name and --project-key, (c) discovers a real Orchestrator
-  folder with `uip or folders list` instead of inventing a folder key,
-  (d) pins that folder as the project default with `project set-default-folder`,
-  and (e) deletes the project with --yes as the final step, under the
-  authorization the prompt grants. The skill — not the prompt — must teach that
-  a freshly created project carries no default folder, that folder keys come
-  from Orchestrator rather than Test Manager, and that delete requires --yes.
+  project, drive it to the point where a test case actually runs, and tear it
+  down again. Asserts that the agent (a) checks login status with --output json,
+  (b) creates the project with `project create` carrying both --name and
+  --project-key, (c) attempts a run and thereby triggers the missing-default-
+  folder error, (d) discovers a real Orchestrator folder with `uip or folders
+  list` instead of inventing a folder key, (e) pins it with
+  `project set-default-folder` as Critical Rule 10's named recovery, and
+  (f) deletes the project with --yes under the authorization the prompt grants.
+  The skill — not the prompt — must teach that the folder is set in response to
+  that specific failure rather than pre-emptively, that folder keys come from
+  Orchestrator rather than Test Manager, and that delete requires --yes.
 tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:test-case]
 
 run_limits:
-  expected_turns: 16
-  max_turns: 35
+  expected_turns: 24
+  max_turns: 45
 
-# Belt-and-braces only: the scenario deletes its own project, so this sweep
-# should find nothing. It exists for the run that dies between create and
-# delete, which would otherwise strand a project on the tenant forever. It
-# spares anything stamped with today's date because two models run the nightly
-# concurrently, and a whole-prefix sweep would delete the other run's project
-# while it was still working.
+# Belt-and-braces only: the scenario deletes its own project. This exists for
+# the run that dies between create and delete, which would otherwise strand a
+# project on the tenant forever. It spares anything stamped with today's date
+# because two models run the nightly concurrently, and a whole-prefix sweep
+# would delete the other run's project while it was still working.
 pre_run:
   - command: |
       python3 - <<'PYEOF'
@@ -69,10 +81,11 @@ pre_run:
     timeout: 180
 
 initial_prompt: |
-  I want to dry-run our Test Manager provisioning before I do it for real.
-  Create a throwaway project, get it to the point where I could immediately run
-  test sets against it, confirm it reached that state, and then remove it again
-  so nothing is left behind.
+  I want to dry-run our Test Manager provisioning before I do it for real. In a
+  throwaway project of your own: create the project, add a single manual test
+  case to it, and get that test case to actually start a run. The provisioning
+  is not proven until a run has started — work through whatever is missing until
+  it does. Then remove the project so nothing is left behind.
 
   Name it `EVFX-SCAFFOLD-<STAMP>-<TAG>`, where <STAMP> is the current UTC date
   and time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase hex characters you
@@ -99,7 +112,15 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(?=[\s\S]*--name\s+["\x27]?EVFX-SCAFFOLD-)(?=[\s\S]*--project-key\s+\S)uip\s+tm\s+project\s+create\b'
     min_count: 1
-    weight: 3.0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted a run, which is what surfaces the missing-default-folder error (Critical Rule #10 trigger)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+(testcases?\s+run|testcase\s+execute|testsets?\s+run|testset\s+execute)\b'
+    min_count: 1
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -111,7 +132,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent pinned the discovered folder as the project default (Critical Rule #10 precondition for any run)"
+    description: "Agent pinned the discovered folder in response to the run failure (Critical Rule #10 recovery)"
     tool_name: "Bash"
     command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--folder-key\s+\S)uip\s+tm\s+project\s+set-default-folder\b'
     min_count: 1
@@ -124,12 +145,4 @@ success_criteria:
     command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*(--yes|-y)\b)uip\s+tm\s+project\s+delete\b'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Project-scoped calls carried `--output json` (Critical Rule #3)"
-    tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--output\s+json)uip\s+tm\s+project\s+(create|set-default-folder|list)\b'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0
