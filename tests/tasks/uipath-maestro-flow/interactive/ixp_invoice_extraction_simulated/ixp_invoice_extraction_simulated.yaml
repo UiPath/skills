@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-ixp-invoice-extraction-simulated
 description: >
   Invoice-processing flow (SharePoint trigger → IxP extraction → HTTP POST to
@@ -72,12 +76,11 @@ simulation:
   n_trials: 1
 
 success_criteria:
-  # Name-agnostic: any .flow the agent built must validate. The exact project
-  # name is scored separately below so a working-but-misnamed flow still earns
-  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  # Name-agnostic: any unambiguous generated .flow must validate. The exact
+  # project name is scored separately below.
   - type: run_command
     description: "uip flow validate passes (any .flow)"
-    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -88,7 +91,7 @@ success_criteria:
   # node, and a $vars. reference consuming the extraction output downstream.
   - type: run_command
     description: "Flow has IxP extraction + SharePoint + HTTP nodes and a $vars downstream reference"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file'; txt=open(flows[0]).read(); low=txt.lower(); f=json.loads(txt); types=[str(n.get('type','')).lower() for n in f.get('nodes',[])]; assert 'uipath.ixp' in low or 'core.logic.mock' in low,'no IxP extraction node (or mock fallback)'; assert 'sharepoint' in low,'no SharePoint trigger/connector'; assert any('http' in t for t in types),'no HTTP action node'; assert (chr(36)+'vars.') in txt,'no vars downstream reference to extraction output'; print('OK')\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '$vars.' --regex '(?i)(uipath\\.ixp|core\\.logic\\.mock)' --regex '(?i)sharepoint' --regex '(?i)\"type\"\\s*:\\s*\"[^\"]*http'"
     timeout: 15
     expected_exit_code: 0
     weight: 6.0
@@ -101,7 +104,7 @@ success_criteria:
   # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named InvoiceProcessing (elicited from the user)"
-    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/InvoiceProcessing.flow',recursive=True) else 'expected a flow named InvoiceProcessing.flow')\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceProcessing"
     timeout: 15
     expected_exit_code: 0
     weight: 1.0
