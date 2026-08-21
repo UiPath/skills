@@ -67,13 +67,18 @@ Exit 0 on success; non-zero with stderr message on failure.
 
 from __future__ import annotations
 
+from collections import Counter
 import glob
 import hashlib
 import json
 import os
 import sys
-from collections import Counter
+from pathlib import Path
 from typing import Any, NoReturn
+
+SHARED_DIR = Path(__file__).resolve().parents[1] / "_shared"
+sys.path.insert(0, str(SHARED_DIR))
+from flow_check import find_flow_files  # noqa: E402
 
 
 def _fail(message: str) -> NoReturn:
@@ -109,7 +114,10 @@ def _dedupe_aliases(paths: list[str]) -> list[str]:
 
 
 def _load_one(pattern: str) -> tuple[str, dict[str, Any]]:
-    matches = _dedupe_aliases(glob.glob(pattern, recursive=True))
+    if pattern.startswith("**/") and pattern.endswith(".flow"):
+        matches = find_flow_files(flow_glob=os.path.basename(pattern))
+    else:
+        matches = _dedupe_aliases(glob.glob(pattern, recursive=True))
     if not matches:
         _fail(f"No file found for {pattern!r}")
     if len(matches) > 1:
