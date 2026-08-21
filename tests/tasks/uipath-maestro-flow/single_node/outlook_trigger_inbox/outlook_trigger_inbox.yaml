@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-outlook-trigger-inbox
 description: >
   Regression test for PR #348: verifies the agent freshly resolves the
@@ -67,16 +71,11 @@ success_criteria:
     weight: 0
     pass_threshold: 0
 
-  - type: command_executed
-    description: "Agent resolved MailFolder against the current --connection-id (PR #348 regression)"
-    tool_name: "Bash"
-    # `[\s\S]` matches across newlines — agents often split `uip` commands with
-    # backslash line-continuation, which `.*` would miss.
-    # Verb alternation tolerates both the post-rename verb ("run", current)
-    # and the legacy "execute" verb that older CLIs in the sandbox PATH may
-    # still expose (MST-9674).
-    command_pattern: 'uip\s+is\s+resources\s+(?:run|execute)\s+list[\s\S]+?MailFolder[\s\S]+?--connection-id'
-    min_count: 1
+  - type: run_command
+    description: "Flow carries a MailFolder reference on its bound Outlook connection"
+    command: "python3 $TASK_DIR/check_outlook_trigger_inbox.py check_folder_binding"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
