@@ -34,11 +34,14 @@ trigger and carries a valid recurring schedule:
        - zero `definitions[]` entries with `nodeType == "core.trigger.manual"`.
 """
 
-import glob
 import json
 import re
 import sys
+from pathlib import Path
 from typing import NoReturn
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 SCHEDULED = "core.trigger.scheduled"
 MANUAL = "core.trigger.manual"
@@ -60,10 +63,7 @@ def _fail(msg: str) -> NoReturn:
 
 
 def _read_flow() -> dict:
-    flows = glob.glob("**/ScheduledReport*.flow", recursive=True)
-    if not flows:
-        _fail("no ScheduledReport*.flow found under cwd")
-    with open(flows[0]) as f:
+    with open(find_flow_file(flow_glob="ScheduledReport*.flow")) as f:
         return json.load(f)
 
 
