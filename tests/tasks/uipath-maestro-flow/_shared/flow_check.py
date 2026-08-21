@@ -34,6 +34,7 @@ Two distinct sources with two casings:
 from __future__ import annotations
 
 import glob
+import hashlib
 import json
 import math
 import os
@@ -524,8 +525,7 @@ def assert_loop_body_nodes_parented(
     loop's ID. Without ``parentId``, the runtime executes the node outside the
     loop context — per-iteration variables like ``currentItem`` are
     inaccessible and outputs come back null."""
-    project_dir = _find_project(project_glob)
-    for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
+    for path in find_flow_files(project_glob):
         with open(path) as f:
             flow = json.load(f)
         nodes_by_id = {n["id"]: n for n in flow.get("nodes") or []}
@@ -1332,12 +1332,10 @@ def node_output_leaves(payload: dict, node_ids) -> set:
 
 
 def _load_flow(project_glob: str) -> dict:
-    """Load the single .flow next to the matched project.uiproj."""
-    proj = _find_project(project_glob)
-    flows = glob.glob(os.path.join(proj, "*.flow"))
-    if not flows:
-        _fail(f"no .flow file under {proj}")
-    return json.loads(open(flows[0], encoding="utf-8").read())
+    """Load the single discovered flow artifact."""
+    path = find_flow_file(project_glob)
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
 
 
 def assert_decision_branches_reach(
@@ -1520,6 +1518,64 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
     return _find_project(pattern)
 
 
+def find_flow_files(
+    project_pattern: str = "**/project.uiproj", *, flow_glob: str = "*.flow"
+) -> list[str]:
+    """Return flow artifacts from the selected solution, or one root emit.
+
+    A Flow solution project wins whenever one exists. This keeps a root-level
+    SDK scratch file from competing with the linked solution copy.
+    When no project exists, validate and source-structure checks may consume a
+    root-level SDK emit. Multiple genuinely distinct root emits are ambiguous
+    and fail with their paths rather than selecting one by glob order.
+
+    Debug callers intentionally do not use this helper: ``uip maestro flow
+    debug`` is project-scoped and must continue through :func:`find_project_dir`.
+    """
+    project_candidates = sorted(glob.glob(project_pattern, recursive=True))
+    if any(_is_flow_project(path) for path in project_candidates):
+        project_dir = _find_project(project_pattern)
+        matches = sorted(
+            glob.glob(
+                os.path.join(project_dir, "**", os.path.basename(flow_glob)),
+                recursive=True,
+            )
+        )
+        if not matches:
+            _fail(
+                f"No .flow file matching {flow_glob!r} under selected Flow "
+                f"project {project_dir}"
+            )
+        return matches
+
+    root_matches = _dedupe_flow_candidates(
+        sorted(glob.glob(os.path.basename(flow_glob)))
+    )
+    if not root_matches:
+        _fail(
+            f"No Flow project found matching {project_pattern!r}, and no "
+            f"root-level .flow file matching {os.path.basename(flow_glob)!r}"
+        )
+    if len(root_matches) > 1:
+        joined = "\n  - ".join(root_matches)
+        _fail(
+            "Multiple distinct root-level .flow files found — refusing to "
+            f"guess:\n  - {joined}"
+        )
+    return root_matches
+
+
+def find_flow_file(
+    project_pattern: str = "**/project.uiproj", *, flow_glob: str = "*.flow"
+) -> str:
+    """Return one unambiguous flow artifact using :func:`find_flow_files`."""
+    matches = find_flow_files(project_pattern, flow_glob=flow_glob)
+    if len(matches) > 1:
+        joined = "\n  - ".join(matches)
+        _fail(f"Multiple .flow files match {flow_glob!r}:\n  - {joined}")
+    return matches[0]
+
+
 # ── Internals ───────────────────────────────────────────────────────────────
 
 
@@ -1561,8 +1617,7 @@ def _get_ci(mapping: Any, *candidate_keys: str, default: Any = None) -> Any:
 
 
 def _iter_flow_nodes(project_glob: str):
-    project_dir = _find_project(project_glob)
-    for path in glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True):
+    for path in find_flow_files(project_glob):
         with open(path) as f:
             flow = json.load(f)
         yield from flow.get("nodes") or []
@@ -1577,6 +1632,23 @@ def _non_empty_binding_value(value: Any) -> bool:
 # A project whose ``.flow`` declares at most this many nodes is an abandoned
 # `flow init` scaffold, not a build: init seeds a single trigger node.
 _HUSK_MAX_NODES = 1
+
+
+def _dedupe_flow_candidates(paths: list[str]) -> list[str]:
+    """Collapse aliases and byte-identical copies before ambiguity checks."""
+    by_realpath: dict[str, str] = {}
+    for path in paths:
+        by_realpath.setdefault(os.path.realpath(path), path)
+
+    by_content: dict[str, str] = {}
+    for path in by_realpath.values():
+        try:
+            with open(path, "rb") as f:
+                key = hashlib.sha256(f.read()).hexdigest()
+        except OSError:
+            key = f"unreadable:{path}"
+        by_content.setdefault(key, path)
+    return sorted(by_content.values())
 
 
 def _find_project(pattern: str) -> str:
