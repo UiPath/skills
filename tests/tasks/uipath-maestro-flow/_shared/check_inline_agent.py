@@ -3,12 +3,13 @@
 to a production bar, not left on the toy scaffold defaults.
 
 Usage (from a task's run_command, cwd = sandbox root):
-    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_inline_agent.py <glob>
+    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_inline_agent.py [--check <scope>] [<glob>]
 
   <glob>  Shell-style glob for the inline agent.json. The inline agent dir is a
           UUID, so the path is not statically knowable — pass e.g.
           "EmailTriage/EmailTriage/*/agent.json". Defaults to
           "**/agent.json" if omitted.
+  <scope> One of ``exists``, ``model``, or ``quality`` (the default).
 
 Asserts, on the first matching agent.json (excluding generated .agent-builder/):
   1. settings.model is set and is NOT the stale scaffold default gpt-4o-2024-11-20.
@@ -54,8 +55,23 @@ EXCLUDED_PARTS = {
 }
 
 
+def _parse_args() -> tuple[str, str]:
+    args = sys.argv[1:]
+    scope = "quality"
+    if args[:1] == ["--check"]:
+        if len(args) < 2 or args[1] not in {"exists", "model", "quality"}:
+            print("FAIL: --check must be one of exists, model, or quality")
+            raise SystemExit(1)
+        scope = args[1]
+        args = args[2:]
+    if len(args) > 1:
+        print("FAIL: expected at most one agent.json glob")
+        raise SystemExit(1)
+    return scope, args[0] if args else "**/agent.json"
+
+
 def main() -> int:
-    pattern = sys.argv[1] if len(sys.argv) > 1 else "**/agent.json"
+    scope, pattern = _parse_args()
     paths = [
         path
         for path in glob.glob(pattern, recursive=True)
@@ -66,6 +82,10 @@ def main() -> int:
         return 1
 
     path = min(paths)
+    if scope == "exists":
+        print(f"OK ({path}): inline agent sidecar exists")
+        return 0
+
     try:
         with open(path) as source:
             agent = json.load(source)
@@ -80,6 +100,13 @@ def main() -> int:
         errs.append("settings.model is empty")
     elif model == SCAFFOLD_MODEL:
         errs.append(f"settings.model not overridden ({model})")
+
+    if scope == "model":
+        if errs:
+            print(f"FAIL ({path}): " + "; ".join(errs))
+            return 1
+        print(f"OK ({path}): model={model}")
+        return 0
 
     sys_msgs = [m.get("content", "") for m in agent.get("messages", []) if m.get("role") == "system"]
     prompt = (sys_msgs[0] if sys_msgs else "").strip()

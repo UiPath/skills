@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-transform-filter
 description: >
   Create a UiPath Flow that uses a dedicated `core.action.transform.filter`
@@ -34,14 +38,13 @@ initial_prompt: |
       templates. Use the exact condition name `greater_equal`.
     - Wire the node `outputs.output.source` to `=result.response` and
       `outputs.error.source` to `=Error`.
-    - Set `typeVersion` from the node registry for
-      `core.action.transform.filter` — do not hardcode a guessed value.
+    - Set `typeVersion` from the authoritative definition for
+      `core.action.transform.filter`.
 
-  Do NOT run flow debug — just validate the flow.
+  Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build the complete flow end-to-end in a single
-  pass. Before starting, follow the documented workflow steps exactly — in particular the transform plugin's filter
-  node shape (`operations[].type == "filter"` with `config.filters`).
+  pass.
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
