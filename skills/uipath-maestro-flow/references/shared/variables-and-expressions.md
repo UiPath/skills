@@ -262,18 +262,38 @@ Variable updates assign new values to `inout` (state) variables at specific node
 
 ### Schema
 
+`expression` is an **object**, not a `=js:` string. This is the one expression site in the file format that is strictly typed — `nodes[].inputs`, `nodes[].outputs[].source`, and edge conditions still accept legacy `=js:` strings, but `variableUpdates` does not.
+
 ```typescript
 {
   "variableUpdates": {
     "{nodeId}": [
       {
-        "variableId": string,    // ID of the inout variable to update
-        "expression": string     // =js: expression to evaluate and assign
+        "variableId": string,          // ID of the inout variable to update
+        "expression": {
+          "type": "jsExpression",      // or "literal" for a static value
+          "expression": string,        // BARE JS body — NO "=js:" prefix
+          "fieldType": "number"        // the target variable's declared type
+        }
       }
     ]
   }
 }
 ```
+
+| Field | Value |
+| --- | --- |
+| `type` | `"jsExpression"` for an evaluated expression, `"literal"` for a static value |
+| `expression` | The JS body **without** the `=js:` prefix. For object-form expressions the prefix is *not* stripped, so `"=js:$vars.x"` here leaves `=js:` in the evaluated body. |
+| `fieldType` | Set it to the target variable's `type` from `variables.globals`, mapped `integer` → `number`. One of `array`, `boolean`, `null`, `number`, `object`, `string`. |
+
+> **The three keys are structurally required, but their *values* are not cross-checked.** `flow validate` rejects a missing or extra key (the object is strict), and rejects the legacy string form outright — but it accepts a `fieldType` that disagrees with the target variable, and accepts a stray `=js:` inside `expression`. Get these right by construction; validation will not tell you.
+
+> **Symptom of the legacy string form:** `uip maestro flow validate` fails with
+> `[MIGRATION] Workflow migration failed at 1.9→1.10 … Offending field(s): variables.variableUpdates.<nodeId>.0.expression`
+> and `"Retry": "RetryWillNotFix"`. The string form was dropped in file-format version 1.3; `uip maestro flow init` scaffolds 1.9.
+
+> **`uip maestro flow variable-update add` still writes the legacy string form** and produces a file that `flow validate` rejects. Use `Edit` against the `.flow` file to write the object form directly.
 
 ### Example
 
@@ -298,11 +318,19 @@ Variable updates assign new values to `inout` (state) variables at specific node
       "processItem": [
         {
           "variableId": "counter",
-          "expression": "=js:$vars.counter + 1"
+          "expression": {
+            "type": "jsExpression",
+            "expression": "$vars.counter + 1",
+            "fieldType": "number"
+          }
         },
         {
           "variableId": "lastStatus",
-          "expression": "=js:$vars.processItem.output.status"
+          "expression": {
+            "type": "jsExpression",
+            "expression": "$vars.processItem.output.status",
+            "fieldType": "string"
+          }
         }
       ]
     }
@@ -312,13 +340,15 @@ Variable updates assign new values to `inout` (state) variables at specific node
 
 > **Only `inout` variables can be updated.** Updating an `in` or `out` variable is invalid.
 
-> **Inside loops:** variableUpdate expressions cannot access loop iteration variables like `$vars.<loopId>.currentItem`. Those are only available inside the body node's script. The variableUpdate must reference the body node's output (e.g., `=js:$vars.bodyNode.output`).
+> **Inside loops:** variableUpdate expressions cannot access loop iteration variables like `$vars.<loopId>.currentItem`. Those are only available inside the body node's script. The variableUpdate must reference the body node's output (e.g., `$vars.bodyNode.output` as the object's `expression`).
 
 ---
 
 ## Output Mapping on End Nodes
 
 Workflow output variables (`direction: "out"`) must be mapped on End nodes. The End node's `outputs` object maps each output variable ID to a source expression.
+
+`inout` variables are mapped the same way — an unmapped `inout` global raises a `MISSING_OUTPUT_MAPPING` warning on every End node, so map accumulators alongside the `out` variables.
 
 ### Structure
 
@@ -400,7 +430,7 @@ These variables are available in all expression contexts:
 | `$vars` | All workflow and node variables | `$vars.{variableId}` or `$vars.{nodeId}.{outputId}` |
 | `$metadata` | Workflow metadata (instanceId, executionId) | `$metadata.instanceId` |
 | `$self` | Current node's output (HTTP branch conditions only) | `$self.output.statusCode` |
-| `$vars.<loopId>.*` | Loop iteration context (inside loops only) | `$vars.loop1.currentItem`, `$vars.loop1.currentIndex` |
+| `$vars.<loopId>.*` | Loop iteration context (inside loops only) | `$vars.loop1.currentItem`, `$vars.loop1.currentIteration` |
 
 ### `$vars` Access Patterns
 
@@ -487,11 +517,11 @@ $self.output.statusCode >= 200 && $self.output.statusCode < 300
 
 ### Variable Update Expressions
 
-Evaluate to the new value for the target variable.
+Evaluate to the new value for the target variable. **Not a `=js:` string** — this is the one expression site that takes an object. The JS body goes in `expression` without the prefix, and `fieldType` is the target variable's declared type. See [Variable Updates](#variable-updates-variableupdates).
 
-```
-=js:$vars.counter + 1
-=js:$vars.items.concat([$vars.newItem.output])
+```json
+{ "type": "jsExpression", "expression": "$vars.counter + 1", "fieldType": "number" }
+{ "type": "jsExpression", "expression": "$vars.items.concat([$vars.newItem.output])", "fieldType": "array" }
 ```
 
 ### Loop Collection Expression
@@ -503,7 +533,7 @@ The `inputs.collection` field on a Loop node resolves to an array to iterate ove
 =js:$vars.inputArray.filter(x => x.active)
 ```
 
-Inside the loop body, use `$vars.<loopId>.currentItem` and `$vars.<loopId>.currentIndex` (e.g., `$vars.loop1.currentItem`).
+Inside the loop body, use `$vars.<loopId>.currentItem` and `$vars.<loopId>.currentIteration` (e.g., `$vars.loop1.currentItem`).
 
 ---
 
@@ -551,14 +581,14 @@ A node's output (`$vars.{nodeId}.output`) is available to **all downstream nodes
 Inside a loop body, you have access to:
 - All parent-scope `$vars` (read-only from loop's perspective)
 - `$vars.<loopId>.currentItem` — current array element
-- `$vars.<loopId>.currentIndex` — zero-based index
+- `$vars.<loopId>.currentIteration` — 1-based iteration number
 - `$vars.<loopId>.collection` — the original array
 
 Where `<loopId>` is the loop node's `id` (e.g., `$vars.loop1.currentItem`).
 
 > **Important:** Loop body nodes must have `"parentId": "<loopId>"` set in their JSON. Without this, the runtime does not know the node is inside the loop and `$vars.<loopId>.currentItem` will be undefined.
 
-After loop completion, `$vars.<loopId>.output` contains aggregated results from all iterations.
+After loop completion, `$vars.<loopId>.output` holds one entry per iteration — **each entry keyed by body node id, with that node's outputs nested underneath**, NOT the body node's bare return value. See [loop/impl.md § Aggregated loop output](../author/references/plugins/loop/impl.md#aggregated-loop-output-varsloopidoutput).
 
 ### Subflow Scope
 
@@ -649,7 +679,11 @@ A flow with input, state, and output variables:
       "transform1": [
         {
           "variableId": "processedCount",
-          "expression": "=js:$vars.processedCount + $vars.transform1.output.count"
+          "expression": {
+            "type": "jsExpression",
+            "expression": "$vars.processedCount + $vars.transform1.output.count",
+            "fieldType": "number"
+          }
         }
       ]
     }

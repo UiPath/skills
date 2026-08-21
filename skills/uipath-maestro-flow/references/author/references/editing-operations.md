@@ -84,7 +84,7 @@ These apply regardless of which strategy you use.
 
 - `targetPort` is required on every edge — validate rejects edges without it
 - See [file-format.md — Standard ports](../../shared/file-format.md) for port names by node type
-- Dynamic ports: decision (`true`/`false`), switch (`case-{id}`/`default`), HTTP (`branch-{id}`/`default`), loop (`output`/`success`/`loopBack`)
+- Dynamic ports: decision (`true`/`false`), switch (`case-{id}`/`default`), HTTP (`branch-{id}`/`default`), loop (`start`/`continue`/`break` inner, `success`/`error` outer)
 
 ### Validation
 
