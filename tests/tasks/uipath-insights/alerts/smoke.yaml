@@ -1,0 +1,133 @@
+task_id: skill-insights-smoke-alerts-reads
+description: >
+  Smoke test: agent uses the uipath-insights skill to inspect existing
+  real-time alert definitions read-only. Given a prompt asking what alerts
+  exist and whether alerting is available, the agent should run the alert
+  definition and entitlement reads without attempting any write, and should
+  treat an empty result as bounded evidence rather than proof that no alert
+  exists. The CLI is authenticated; the tenant may or may not be entitled to
+  real-time alerting and may or may not hold alert definitions, and all of
+  those are valid outcomes.
+
+  Covers 2 of the 3 alert definition reads. `alerts get` is left out on
+  purpose: it needs an ID that does not exist on an empty tenant, so gating
+  it would trade tenant-agnosticism for surface coverage. It belongs in an
+  integration-tier task against a seeded tenant.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  Give me a read-only picture of real-time alerting on this tenant. Tell me
+  which alert definitions exist and whether this tenant is entitled to
+  real-time alerting at all. If a category comes back empty, say so plainly
+  and say what that does and does not prove. If the output says more rows
+  exist, page through them before you summarize. Run each command at most
+  once per page; do not retry failures.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Flag-bearing patterns below use (?:(?!uip\s)[^&;|])* to keep the flag in the
+  # same invocation as the verb. A character class excluding \n does NOT do this:
+  # the grader matches against both the raw string and a shlex-normalized form,
+  # and normalization collapses embedded newlines to spaces
+  # (coder_eval/criteria/command_executed.py, _normalize_shell + _match_haystacks),
+  # so a newline-batched pair bleeds across the boundary on the normalized
+  # haystack. A negative lookahead for the next `uip ` survives normalization.
+  - type: command_executed
+    description: "Agent ran alerts list to enumerate alert definitions"
+    tool_name: "Bash"
+    # (?!\s+--help) inline rather than exclude_pattern: an exclusion is evaluated
+    # against the whole Bash invocation, so a batched `alerts --help` followed by
+    # a real read would drop the real read's credit too.
+    command_pattern: 'uip\s+insights\s+alerts\s+list\b(?!\s+--help)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The prompt asks the entitlement question directly, which the guide names as its
+  # own reason to run this check, so requiring it does not conflict with the rule
+  # against running it to decorate a list that already answered.
+  - type: command_executed
+    description: "Agent ran alerts check-entitlement to qualify the result"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alerts\s+check-entitlement\b(?!\s+--help)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # command_executed only greps the command string, so the criteria above pass
+  # even when the verbs don't exist in the installed CLI. This gate re-runs one
+  # alert read at grading time and requires exit 0, so the task can only pass
+  # against a CLI that actually ships the alerts group. check-entitlement is the
+  # tenant-agnostic choice: it returns 200 with true or false on any
+  # authenticated tenant, entitled or not, and both map to exit 0.
+  - type: run_command
+    description: "CLI path is real: alerts check-entitlement exits 0 against the live tenant"
+    command: "uip insights alerts check-entitlement --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Covers the whole alert mutation surface, not just the alerts group: the
+  # backend also exposes DefaultDelivery writes, so re-targeting a delivery is
+  # a write the read-only rule forbids.
+  - type: command_not_executed
+    description: "Agent did not attempt any alert or delivery write via the CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+(alerts|alert-history|alert-deliveries)\s+(create|update|edit|set|delete|remove|snooze|unsnooze|pause|resume)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The CLI ships no alert write, so the cheapest way around the read-only rule
+  # is to bypass the CLI. Catches raw HTTP and SDK calls at the RTM routes.
+  - type: command_not_executed
+    description: "Agent did not bypass the CLI to reach an alert route"
+    tool_name: "Bash"
+    command_pattern: '(curl|wget|axios|insights-sdk)(?:(?!uip\s)[^&;|])*(AlertDefinitions|DefaultDelivery|alertDefinitions|getDefaultDelivery)'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids substitution and shell variables in a uip
+  # invocation. Flag values and the by-ID `get` argument are the spots most
+  # likely to tempt it. Anchored on a flag value or a `get` argument so an
+  # unrelated `$VAR` in a batched neighbour command cannot false-fail this.
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in a uip insights command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights(?:(?!uip\s)[^&;|])*--[a-z][a-z-]*[\s=]+"?(\$\(|`|\$[A-Za-z_])|uip\s+insights\s+\S+\s+get\s+"?(\$\(|`|\$[A-Za-z_])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # A local rejection, so this needs no tenant state: --process-key without
+  # --agentic is rejected before any request is built (commands/alerts.ts).
+  - type: command_not_executed
+    description: "Agent did not pass --process-key without --agentic"
+    tool_name: "Bash"
+    # The --agentic lookahead spans the whole invocation, not just the span before
+    # --process-key, so the legal `--process-key ... --agentic` order is not caught.
+    command_pattern: 'uip\s+insights\s+alerts\s+list(?!(?:(?!uip\s)[^&;|])*--agentic)(?:(?!uip\s)[^&;|])*--process-key\b'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Same (?!uip\s) barrier as the criteria above, for the same reason: without it a
+  # batched neighbour's --output json would be credited to a call that lacked one.
+  - type: command_executed
+    description: "Advisory: agent used --output json on alert reads"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alerts\s+\S+(?:(?!uip\s)[^&;|])*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 0
