@@ -41,13 +41,12 @@ module's discovery so both criteria address the same file.
 
 from __future__ import annotations
 
-import glob
 import os
 import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from flow_check import find_project_dir  # noqa: E402
+from flow_check import find_flow_files  # noqa: E402
 
 
 def _parse(argv: list[str]):
@@ -75,11 +74,11 @@ def _parse(argv: list[str]):
 def main(argv: list[str]) -> int:
     substrings, regexes, absent, flow_name = _parse(argv)
 
-    project_dir = find_project_dir()
-    flows = sorted(glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True))
-    if not flows:
-        print(f"FAIL: No .flow file found under {project_dir}", file=sys.stderr)
-        return 1
+    try:
+        flows = find_flow_files()
+    except SystemExit as exc:
+        print(str(exc), file=sys.stderr)
+        return exc.code if isinstance(exc.code, int) else 1
     print(f"Found {len(flows)} .flow file(s): {', '.join(flows)}")
 
     if flow_name is not None:
