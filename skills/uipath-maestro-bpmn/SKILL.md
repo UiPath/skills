@@ -173,9 +173,13 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#minimal-local-metadata-shape)
    when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
    synthetic local project.
-4. **Validate.** Run the CLI validator — it runs the full PO.Frontend canvas
-   rule set (structural rules plus variable, method-call, input-type, and
-   event-object checks) offline, plus deploy-readiness checks:
+4. **Complete layout, then validate.** For file-based authoring, complete
+   coherent BPMN DI before the first final CLI validation; see
+   [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation)
+   for the required node and flow coverage. Then run the CLI validator — it
+   runs the full PO.Frontend canvas rule set (structural rules plus variable,
+   method-call, input-type, and event-object checks) offline, plus
+   deploy-readiness checks:
 
    ```bash
    uip maestro bpmn validate <file.bpmn> --output json
@@ -186,8 +190,7 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    once; fix only error-severity findings. Do not re-validate in a loop chasing
    warnings. If `validate` reports "unknown command" or clearly skips the
    structural rules, the installed CLI predates them — update it (see
-   [references/cli-conventions.md](references/cli-conventions.md)). See
-   [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
+   [references/cli-conventions.md](references/cli-conventions.md)).
 
 ## Operate and diagnose
 
