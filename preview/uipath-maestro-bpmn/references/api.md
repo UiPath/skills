@@ -13,9 +13,9 @@ generated from the built types; longer tutorials stay in the node references.
 
 **Builders** — [BpmnBuilder](#bpmnbuilder-class) · [ScopeBuilder](#scopebuilder-class) · [SubProcessBuilder](#subprocessbuilder-class)
 
-**Option shapes** — [StartOpts](#startopts-interface) · [EndOpts](#endopts-interface) · [CatchOpts](#catchopts-interface) · [ThrowOpts](#throwopts-interface) · [BoundaryOpts](#boundaryopts-interface) · [GatewayOpts](#gatewayopts-interface) · [ScriptTaskOpts](#scripttaskopts-interface) · [TaskOpts](#taskopts-interface) · [ConnectorOpts](#connectoropts-interface) · [SubProcessOpts](#subprocessopts-interface) · [FlowOpts](#flowopts-interface) · [VarOpts](#varopts-interface)
+**Option shapes** — [BindingOpts](#bindingopts-interface) · [StartOpts](#startopts-interface) · [EndOpts](#endopts-interface) · [CatchOpts](#catchopts-interface) · [ThrowOpts](#throwopts-interface) · [BoundaryOpts](#boundaryopts-interface) · [GatewayOpts](#gatewayopts-interface) · [ScriptTaskOpts](#scripttaskopts-interface) · [TaskOpts](#taskopts-interface) · [BpmnConnectorOpts](#bpmnconnectoropts-type) · [SubProcessOpts](#subprocessopts-interface) · [FlowOpts](#flowopts-interface) · [VarOpts](#varopts-interface) · [ActivityOpts](#activityopts-interface) · [ConnectorOpts](#connectoropts-interface)
 
-**Supporting types** — [BuiltBpmn](#builtbpmn-interface) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [GatewayKind](#gatewaykind-type) · [LoopSpec](#loopspec-interface) · [VarDirection](#vardirection-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface)
+**Supporting types** — [BuiltBpmn](#builtbpmn-interface) · [BpmnNode](#bpmnnode-type) · [BpmnFlow](#bpmnflow-interface) · [BpmnVarDecl](#bpmnvardecl-interface) · [DefinitionsRegistry](#definitionsregistry-class) · [ConnectorDescriptor](#connectordescriptor-type) · [TypeDesc](#typedesc-type) · [MessageDecl](#messagedecl-interface) · [ErrorDecl](#errordecl-interface) · [BindingDecl](#bindingdecl-interface) · [EventKind](#eventkind-type) · [EventDef](#eventdef-type) · [GatewayKind](#gatewaykind-type) · [ActivityNodeFields](#activitynodefields-interface) · [VarDirection](#vardirection-type) · [TimerLike](#timerlike-type) · [ConnectorMeta](#connectormeta-interface) · [TimerSpec](#timerspec-interface) · [RetrySpec](#retryspec-interface) · [LoopSpec](#loopspec-interface)
 
 ## bpmn (function)
 
@@ -35,6 +35,12 @@ export declare function bpmn(id: string): BpmnBuilder;
 export declare class BpmnBuilder extends ScopeBuilder {
     /** Set the process's display name. */
     name(n: string): this;
+    /**
+     * Declare an external identifier the process needs supplied — a base URL, a
+     * folder path, a process name (`uipath:binding`). Expressions read it as
+     * `=bindings.<id>`, and an offline run resolves it to `value`.
+     */
+    binding(id: string, opts?: BindingOpts): this;
     /** Finish the process and return the graph the serializer turns into XML. */
     build(): BuiltBpmn;
 }
@@ -80,13 +86,9 @@ declare abstract class ScopeBuilder {
      * `uipath:activity` / `Intsvc.ActivityExecution`) — the typed form, where a
      * generated descriptor supplies the operation and its input types.
      */
-    connector<I extends Record<string, unknown>, O>(id: string, descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: ConnectorOpts & {
-            name?: string;
-        }): this;
+    connector<I extends Record<string, unknown>, O>(id: string, descriptor: ConnectorDescriptor<I, O>, inputs: I, opts?: BpmnConnectorOpts): this;
     /** Stringly form, for a connector with no prepared module. */
-    connector(id: string, key: string, action: string, inputs?: Record<string, unknown>, opts?: ConnectorOpts & {
-            name?: string;
-        }): this;
+    connector(id: string, key: string, action: string, inputs?: Record<string, unknown>, opts?: BpmnConnectorOpts): this;
     /** A sub-process — a scope of its own, with its own elements and flows (`bpmn:subProcess`). */
     subProcess(id: string, fn: (sp: SubProcessBuilder) => void, opts?: SubProcessOpts): this;
     /** A sequence flow from `source` to `target` (1-1 with `bpmn:sequenceFlow`). */
@@ -105,6 +107,32 @@ declare abstract class ScopeBuilder {
 ````ts
 /** A sub-process body: the same graph methods, plus an internal node builder. */
 export declare class SubProcessBuilder extends ScopeBuilder {
+}
+````
+
+## BindingOpts (interface)
+
+````ts
+/** Options for `.binding()`. */
+export interface BindingOpts {
+    /** Display name the designer shows. Defaults to the binding's id. */
+    name?: string;
+    /**
+     * The value the binding resolves to when nothing overrides it — which is what
+     * an offline run reads, so it is the one field a local run needs.
+     */
+    value?: string;
+    /**
+     * The kind of resource this identifies. Defaults to `'custom'`, which is the
+     * right answer for a plain configurable value; use the registry's resource name
+     * (`'Connection'`, `'process'`, `'queue'`, `'businessRule'`) when the binding
+     * addresses one of those.
+     */
+    resource?: string;
+    /** Which property of that resource is wanted. Defaults to `'value'`. */
+    propertyAttribute?: string;
+    /** The resource's key, when it differs from `BindingOpts.value`. */
+    resourceKey?: string;
 }
 ````
 
@@ -220,7 +248,7 @@ export interface GatewayOpts {
 
 ````ts
 /** Options for `.scriptTask()` — the Jint JavaScript body and its input/output mappings. */
-export interface ScriptTaskOpts {
+export interface ScriptTaskOpts extends ActivityOpts {
     /** Display name the designer shows on the task. */
     name?: string;
     /** The script body (Jint JavaScript). */
@@ -238,43 +266,53 @@ export interface ScriptTaskOpts {
 
 ````ts
 /** Options for `.task()` — a display name and the variable assignments the task makes. */
-export interface TaskOpts {
+export interface TaskOpts extends ActivityOpts {
     /** Display name the designer shows on the task. */
     name?: string;
-    /** Variable assignments (`BPMN.Variables`): variable id → `=`-expression/literal. */
+    /** Variable assignments (`BPMN.Variables`): variable id → the value to assign. */
     set?: Record<string, string>;
 }
 ````
 
-## ConnectorOpts (interface)
+## BpmnConnectorOpts (type)
 
 ````ts
-export interface ConnectorOpts {
-    /** Connector action version (defaults to the library's newest match). */
-    version?: string;
-    /** Symbolic connection name declared in bindings.json (→ ConnectionId). */
-    connection?: string;
-    /** Symbolic folder name declared in bindings.json (→ connectionFolderKey). */
-    folder?: string;
+/**
+ * `.connector()` options: the shared connector options, plus the BPMN-only
+ * display `name` and output-variable override.
+ */
+export type BpmnConnectorOpts = ConnectorOpts & ActivityOpts & {
+    /** Display name the designer shows on the task. */
+    name?: string;
     /**
-     * Which OBJECT a **generic** operation addresses — e.g. ServiceNow's "List All
-     * Records" on `'acr_user'`, NetSuite's "Get Record" on `'AccountingPeriod'`.
+     * `=`-expression that skips this activity when it evaluates truthy — the step
+     * is recorded as not executed and the flow carries on
+     * (`uipath:activity/@skipCondition`).
+     *
+     * Only connectors (and other `uipath:activity` nodes) can carry it: a script or
+     * variable task serializes a `uipath:mapping`, which has no such attribute, so
+     * a skip authored there would be dropped and the step would run regardless.
      */
-    object?: string;
-}
+    skipCondition?: string;
+    /**
+     * Variable the connector's response lands in. Defaults to `<id>_response`,
+     * which is what makes two connectors in one process independent — a shared
+     * name would have the second clobber the first. The standard error payload
+     * always lands in `<id>_Error`.
+     */
+    outputVar?: string;
+};
 ````
 
 ## SubProcessOpts (interface)
 
 ````ts
 /** Options for `.subProcess()`. */
-export interface SubProcessOpts {
+export interface SubProcessOpts extends ActivityOpts {
     /** Display name the designer shows on the sub-process. */
     name?: string;
     /** Mark an EVENT sub-process — started by an event inside it, not by an incoming flow. */
     triggeredByEvent?: boolean;
-    /** Run the body once per item of a collection — see `LoopSpec`. */
-    loop?: LoopSpec;
 }
 ````
 
@@ -306,6 +344,39 @@ export interface VarOpts {
 }
 ````
 
+## ActivityOpts (interface)
+
+````ts
+/**
+ * What every ACTIVITY accepts, on top of its own options — a script task, a
+ * variable task, a connector task, a sub-process.
+ */
+export interface ActivityOpts {
+    /** Retry the activity when it fails — see `RetrySpec`. */
+    retry?: RetrySpec;
+    /** Run it once per item of a collection — see `LoopSpec`. */
+    loop?: LoopSpec;
+}
+````
+
+## ConnectorOpts (interface)
+
+````ts
+export interface ConnectorOpts {
+    /** Connector action version (defaults to the library's newest match). */
+    version?: string;
+    /** Symbolic connection name declared in bindings.json (→ ConnectionId). */
+    connection?: string;
+    /** Symbolic folder name declared in bindings.json (→ connectionFolderKey). */
+    folder?: string;
+    /**
+     * Which OBJECT a **generic** operation addresses — e.g. ServiceNow's "List All
+     * Records" on `'acr_user'`, NetSuite's "Get Record" on `'AccountingPeriod'`.
+     */
+    object?: string;
+}
+````
+
 ## BuiltBpmn (interface)
 
 ````ts
@@ -315,6 +386,7 @@ export interface BuiltBpmn {
     variables: BpmnVarDecl[];
     messages: MessageDecl[];
     errors: ErrorDecl[];
+    bindings: BindingDecl[];
     nodes: BpmnNode[];
     flows: BpmnFlow[];
 }
@@ -340,7 +412,7 @@ export type BpmnNode = {
     id: string;
     name?: string;
     default?: string;
-} | {
+} | (ActivityNodeFields & {
     kind: 'scriptTask';
     id: string;
     name?: string;
@@ -348,12 +420,12 @@ export type BpmnNode = {
     scriptFormat: string;
     inputs: Record<string, string>;
     outputs: Record<string, string>;
-} | {
+}) | (ActivityNodeFields & {
     kind: 'task';
     id: string;
     name?: string;
     set: Record<string, string>;
-} | {
+}) | (ActivityNodeFields & {
     kind: 'connector';
     id: string;
     name?: string;
@@ -367,16 +439,19 @@ export type BpmnNode = {
     /** Which OBJECT a generic operation addresses — see `ConnectorOpts.object`. */
     object?: string;
     inputs: Record<string, unknown>;
-} | {
+    /** Variable the response lands in; defaults to `<id>_response`. */
+    outputVar?: string;
+    /** `=`-expression that, when true, skips this activity (`uipath:activity/@skipCondition`). */
+    skipCondition?: string;
+}) | (ActivityNodeFields & {
     kind: 'subProcess';
     id: string;
     name?: string;
     triggeredByEvent?: boolean;
-    loop?: LoopSpec;
     nodes: BpmnNode[];
     flows: BpmnFlow[];
     variables: BpmnVarDecl[];
-};
+});
 ````
 
 ## BpmnFlow (interface)
@@ -449,6 +524,19 @@ export interface ErrorDecl {
 }
 ````
 
+## BindingDecl (interface)
+
+````ts
+export interface BindingDecl {
+    id: string;
+    name: string;
+    resource: string;
+    propertyAttribute: string;
+    default?: string;
+    resourceKey?: string;
+}
+````
+
 ## EventKind (type)
 
 ````ts
@@ -478,14 +566,12 @@ export type EventDef = {
 export type GatewayKind = 'exclusiveGateway' | 'parallelGateway' | 'inclusiveGateway' | 'eventBasedGateway';
 ````
 
-## LoopSpec (interface)
+## ActivityNodeFields (interface)
 
 ````ts
-export interface LoopSpec {
-    collection: string;
-    itemVar: string;
-    sequential?: boolean;
-    completion?: string;
+export interface ActivityNodeFields {
+    retry?: RetrySpec;
+    loop?: LoopSpec;
 }
 ````
 
@@ -520,5 +606,29 @@ export interface TimerSpec {
     duration?: string;
     date?: string;
     cycle?: string;
+}
+````
+
+## RetrySpec (interface)
+
+````ts
+export interface RetrySpec {
+    maxRetries: number;
+    backoff?: string;
+    backoffType?: 'static' | 'exponential';
+    exponentialBase?: number;
+    allErrors?: boolean;
+    maxDuration?: string;
+}
+````
+
+## LoopSpec (interface)
+
+````ts
+export interface LoopSpec {
+    collection: string;
+    itemVar: string;
+    sequential?: boolean;
+    completion?: string;
 }
 ````

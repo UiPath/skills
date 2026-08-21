@@ -97,7 +97,7 @@ export declare function casePlan(id: string): CaseBuilder;
 declare class CaseBuilder {
     /** Set the case plan's display name. */
     name(n: string): this;
-    /** Set the case plan's version. */
+    /** Set the case plan's schema version during the compatibility window. */
     version(v: string): this;
     /** Describe the case plan. */
     description(text: string): this;
@@ -328,7 +328,8 @@ export interface EscalationOpts {
     notify: EscalationRecipient[];
     /**
      * For an `at-risk` trigger, the percentage of the SLA elapsed when it fires
-     * (e.g. `80` = at 80% of the deadline). Ignored for `sla-breached`.
+     * (e.g. `80` = at 80% of the deadline). Defaults to `100` when omitted and
+     * is ignored for `sla-breached`.
      */
     atRiskPercentage?: number;
     displayName?: string;
@@ -552,7 +553,7 @@ export type TypeDesc = (typeof types)[keyof typeof types];
 export interface BuiltCase {
     id: string;
     name: string;
-    version: string;
+    readonly version: string;
     description?: string;
     identifier: string;
     identifierType: 'constant' | 'external';
