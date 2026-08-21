@@ -1,0 +1,57 @@
+task_id: skill-agent-coded-datafabric-combined
+description: >
+  Coded-agent Data Fabric integration combining both paths: a
+  create_datafabric_tool for NL-to-SQL exploration and a @tool-wrapped
+  SDK call for deterministic writes. Verifies the agent uses the right
+  path for each concern, forwards system prompt consistently, and
+  emits correct bindings.
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:datafabric-combined]
+
+run_limits:
+  expected_turns: 65
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a LangGraph UiPath coded agent named `order-manager` that
+  manages customer orders stored in a Data Fabric entity named
+  `Orders` (entity ID `1312e893-8295-f111-9b33-0022482a9eea`,
+  folder key `379fec63-62b1-41ec-b2fc-718f8f7dda3c`).
+
+  The agent needs two tools:
+
+  1. An NL-to-SQL exploration tool using `create_datafabric_tool` from
+     `uipath_langchain.agent.tools` — named `query_orders`, for
+     answering freeform questions about order data. Pass the same
+     system prompt to both create_agent and create_datafabric_tool via
+     `base_system_prompt`.
+
+  2. A deterministic write tool using the Python SDK (`sdk.entities`)
+     — a @tool-decorated async function named `close_order` that
+     accepts an order_id and calls `sdk.entities.update_record_async`
+     to set Status to "Closed". Instantiate `UiPath()` inside the
+     function body.
+
+  Use `UiPathChat` for the LLM. The system prompt should instruct the
+  agent to use query_orders for data questions and close_order when
+  asked to close a specific order.
+
+  Take the agent through scaffold → init — make sure bindings are
+  in sync before running init. Do NOT run, publish, upload, or
+  deploy. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both integration paths present, correct imports, lazy init, bindings"
+    command: "python3 $TASK_DIR/check_datafabric_combined.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

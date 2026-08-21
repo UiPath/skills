@@ -1,0 +1,51 @@
+task_id: skill-agent-coded-datafabric-nl-tool
+description: >
+  Coded-agent Data Fabric integration via create_datafabric_tool.
+  Verifies the agent imports `create_datafabric_tool` from
+  `uipath_langchain.agent.tools`, configures it with
+  `DataFabricEntityItem` references, passes the same system prompt to
+  both create_agent and create_datafabric_tool, and emits the
+  `datafabricentityset` binding.
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:datafabric-nl]
+
+run_limits:
+  expected_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a LangGraph UiPath coded agent named `product-explorer` that
+  answers freeform natural-language questions about products stored in
+  a Data Fabric entity named `Products` (entity ID
+  `a1b2c3d4-5678-90ab-cdef-1234567890ab`, folder key
+  `379fec63-62b1-41ec-b2fc-718f8f7dda3c`).
+
+  Use `create_datafabric_tool` from `uipath_langchain.agent.tools` to
+  create an NL-to-SQL tool. The tool should be named `query_products`
+  with a description that explains it queries product data.
+
+  Important: pass the same system prompt to both `create_agent` and
+  `create_datafabric_tool` via the `base_system_prompt` parameter.
+
+  Use `DataFabricEntityItem` from `uipath.platform.entities` for
+  entity references. Use `UiPathChat` for the LLM.
+
+  Take the agent through scaffold → init — make sure bindings are
+  in sync before running init. Do NOT run, publish, upload, or
+  deploy. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "create_datafabric_tool import, entity config, prompt forwarding, binding"
+    command: "python3 $TASK_DIR/check_datafabric_nl_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
