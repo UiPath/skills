@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-multi-city-weather
 description: >
   Loop over 3 cities, fetch weather from open-meteo for each, classify warm/cold
@@ -10,6 +14,8 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
+  Build the flow inside a solution of the same name.
+
   Create a flow called "MultiCityWeather". Loop over Seattle, Phoenix, and New York — for each city, fetch the current temperature from open-meteo (fahrenheit) and classify it as 'warm' (> 60F) or 'cold'. Output an array with all 3 results, each having the city name, temperature, and verdict.
   Use a Managed HTTP Request node (core.action.http.v2) to call the open-meteo API directly — do not use an Integration Service connector.
 
