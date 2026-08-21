@@ -166,6 +166,55 @@ Both XAML workflows (via typed arguments) and coded workflows (via direct refere
 
 ---
 
+## Converting an Existing Workflow Between Coded and XAML
+
+**Rule — `Open` vs. `Attach` when migrating from XAML:** decide from the
+Use Application/Browser card's (`NApplicationCard`) `OpenMode` and carry its
+value over — never from what you assume the app's runtime state will be. The
+app may be opened by a different workflow or an external script, so the
+`OpenMode` already set in the XAML is the only reliable signal:
+
+| Card `OpenMode` | Coded call | Why |
+|---|---|---|
+| `Always` | use `.Open(..., openMode: NAppOpenMode.Always)` | `Attach` does not launch the app |
+| `IfNotOpen` (also the implicit default when the attribute is absent) | use `.Open(...)` | `Open`'s default `openMode` is already `IfNotOpen` |
+| `Never` | use `.Attach(...)` | no need to open the app — attach to the running instance |
+
+**Rule — carry `CloseMode` over too:** XAML defaults to
+`IfOpenedByAppBrowser`, coded to `Always` (applied when the returned
+`UiTargetApp` is disposed). A card with no explicit `CloseMode` needs
+`CloseMode = NAppCloseMode.IfOpenedByAppBrowser` in the coded call, or the
+migrated workflow closes apps the original left running. Similarly, a custom
+`TargetAppOptions` passed to `.Attach(...)` defaults `OpenMode` to
+`IfNotOpen` — set `OpenMode = NAppOpenMode.Never` to keep attach-only
+semantics.
+
+**Beware of `AttachMode`:** XAML's `NApplicationCard` also has an
+`AttachMode` property (`NAppAttachMode`, default `ByInstance`) that only
+controls which windows inner activities search for targets — unrelated to
+whether the app gets launched. A card with `AttachMode="ByInstance"` and no
+explicit `OpenMode` is still an `.Open(...)` call in coded — the presence of
+`AttachMode` is not evidence for `.Attach(...)`. Full signatures:
+`coded-api.md` § `Attach` / § `Open`.
+
+When writing a coded workflow **from scratch** (no XAML source), there is no
+`OpenMode` to inherit — choose per the app-state guidance in `coded-api.md`:
+`Open` for the first screen or whenever the app may need launching, `Attach`
+only when the flow itself guarantees the app is already running.
+
+**Checklist for any coded ↔ XAML conversion:**
+1. Read the source file's activities/API calls in full before writing the
+   target mode — do not translate line-by-line from a partial read.
+2. For each XAML activity being converted, read its `<Activity>.md` (Rule 21)
+   and identify which property governs the behavior you are translating —
+   don't rely on a property name that merely *sounds* related.
+3. Preserve control flow, logging, and verification steps 1:1 unless the
+   user asked for changes — a conversion task is not a rewrite.
+4. Validate the converted file (`uip rpa validate` / `get-errors`) — a clean
+   validate only proves the syntax compiles, not that behavior is preserved.
+
+---
+
 ## Anti-Patterns
 
 1. **50+ lines of C# in InvokeCode.** Extract to a Coded Source File or Coded Workflow.

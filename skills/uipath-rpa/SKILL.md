@@ -301,6 +301,7 @@ On Windows PowerShell, `&` doesn't background — use `Start-Process powershell.
 | **Plan the build's turn structure** | Both | [execution-maps-guide.md](references/execution-maps-guide.md) — read first for any build/edit journey |
 | **Choose coded vs XAML** | Both | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) |
 | **Work in a hybrid project** | Hybrid | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) → [environment-setup.md § Designing Project Structure](references/environment-setup.md#designing-project-structure) |
+| **Convert an existing workflow between XAML and coded** | Both | [coded-vs-xaml-guide.md § Converting an Existing Workflow Between Coded and XAML](references/coded-vs-xaml-guide.md) |
 | **Create a new project** | Both | [environment-setup.md](references/environment-setup.md) |
 | **Add/edit a coded workflow** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) — includes § Coding Guidelines |
 | **Add a coded test case** | Coded | [coded/operations-guide.md](references/coded/operations-guide.md) — remember: register in `fileInfoCollection` (Common Rule 10) |
