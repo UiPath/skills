@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-expense-approval-simulated
 description: >
   Expense-approval flow with an inline HITL review step (trigger → script →
@@ -69,12 +73,11 @@ simulation:
   n_trials: 1
 
 success_criteria:
-  # Name-agnostic: any .flow the agent built must validate. The exact project
-  # name is scored separately below so a working-but-misnamed flow still earns
-  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  # Name-agnostic: any unambiguous generated .flow must validate. The exact
+  # project name is scored separately below.
   - type: run_command
     description: "uip flow validate passes (any .flow)"
-    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -87,7 +90,7 @@ success_criteria:
   # $vars.<hitl>.output.
   - type: run_command
     description: "Flow has a correct inline HITL schema, decision capture, completed wiring, and downstream .output access"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/*.flow',recursive=True); assert flows,'No flow file'; f=json.load(open(flows[0])); nodes=f['nodes']; edges=f.get('edges',[]); hitl=[n for n in nodes if str(n.get('type','')).startswith('uipath.human-in-the-loop')]; assert len(hitl)==1,'need exactly 1 HITL node'; h=hitl[0]; hid=h.get('id'); schema=h.get('inputs',{}).get('schema',{}); fields=schema.get('fields',[]); outcomes=schema.get('outcomes',[]) or []; assert fields,'HITL needs fields'; ft=lambda fl,k:(fl.get(k) or '').lower() if isinstance(fl.get(k),str) else ''; assert any((ft(x,'id')=='amount' or 'amount' in ft(x,'label')) and x.get('type')=='number' for x in fields),'amount must be a number field'; dec=[x for x in fields if x.get('direction') in ('output','inOut') and any(k in ft(x,'id') for k in ('approval','approved','decision'))]; onames={str(o.get('name') or o.get('id') or '').lower() for o in outcomes}; okdec=any(x.get('type')=='boolean' for x in dec) or (any('approve' in o for o in onames) and any('reject' in o for o in onames)); assert okdec,'need boolean decision field or approve/reject outcomes'; rk=('reason','comment','explanation','justification','note'); assert any(x.get('direction') in ('output','inOut') and x.get('type') in ('text','string','textarea') and any(k in ft(x,'id') or k in ft(x,'label') for k in rk) for x in fields),'need a text reason output field'; assert any(e.get('sourceNodeId')==hid and e.get('sourcePort') in ('completed','outcome-completed') for e in edges),'HITL completed handle must be wired'; scripts=[str(n.get('inputs',{}).get('script','')) for n in nodes if n.get('type')=='core.action.script']; assert any((chr(36)+'vars.'+str(hid)+'.output') in s for s in scripts),'downstream script must read HITL output via vars.<hitl>.output'; print('OK')\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py expense"
     timeout: 15
     expected_exit_code: 0
     weight: 6.0
@@ -100,7 +103,7 @@ success_criteria:
   # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named ExpenseApproval (elicited from the user)"
-    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/ExpenseApproval.flow',recursive=True) else 'expected a flow named ExpenseApproval.flow')\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ExpenseApproval"
     timeout: 15
     expected_exit_code: 0
     weight: 1.0
