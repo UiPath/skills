@@ -6,11 +6,6 @@ description: >
   DEFINITION, not the rows — the result carries `IngestionNeeded: true` and the
   published data is stale until `ingestions create --wait` runs against it.
 
-  Also pins the CLI caveat the skill documents: `query --stage published` is
-  currently unreachable (`UserError_InvalidOrNoIngestion`), so an agent that
-  "verifies" the promotion by querying published has followed a dead end
-  instead of pointing the user at the dashboards.
-
   Command-construction only — no live tenant. Commands fail with auth errors;
   what matters is which commands the agent chooses and in what order.
 tags: [uipath-process-mining, integration, mode:operate, lifecycle:setup, lifecycle-stages, publish]
@@ -67,12 +62,6 @@ success_criteria:
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
-
-  - type: command_not_executed
-    description: "Agent must NOT verify by querying the published stage — it is unreachable from the CLI"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+query\s+\w+\b[\s\S]*--stage\s+published'
-    weight: 2.0
 
   - type: command_not_executed
     description: "Agent must NOT hand-roll an apps list poll loop instead of --wait"

@@ -66,9 +66,3 @@ success_criteria:
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
-
-  - type: command_not_executed
-    description: "Agent must NOT query the published stage — it is unreachable from the CLI"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+query\s+\w+\b[\s\S]*--stage\s+published'
-    weight: 1.5

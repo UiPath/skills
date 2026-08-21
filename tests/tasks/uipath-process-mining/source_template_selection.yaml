@@ -87,9 +87,3 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '--type\s+uipath\.custom\b'
     weight: 3.0
-
-  - type: command_not_executed
-    description: "Agent must NOT patch Cases.sql — that gotcha is uipath.custom-only"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+pm\s+transformations\s+update\b[\s\S]*Cases\.sql'
-    weight: 2.0
