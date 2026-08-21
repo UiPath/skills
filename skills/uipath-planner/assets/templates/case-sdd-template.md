@@ -581,7 +581,9 @@ companion, inputOutputs[], groupOperator, essentialConfiguration-as-prose, saved
 io-binding, aliased into/from, reassign, originalVar, auto-mint).
 
 Gate: run  python3 "<skill folder>/scripts/audit_sdd.py" <sdd path> [--draft <draft path>]  on the
-on-disk file BEFORE the Status: ready flip — in every mode. Repair findings with Edit, re-run to AUDIT OK
+on-disk file BEFORE the Status: ready flip — in every mode. RUN it, never open the script source —
+its findings are the interface. Minting charset applies to names THIS run minted; names carried from
+a draft are preserved verbatim and exempt (pass --draft so the validator knows), ':' banned always. Repair findings with Edit, re-run to AUDIT OK
 (max 3 rounds, then stop and present findings). Never ship a summary SDD (top-level headings like
 ## Source / ## Case Objective / ## Stages / ## Task Plan, or build-mode/path narration) even if a later
 caseplan.json would validate — rewrite from the model and this template.

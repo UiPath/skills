@@ -266,9 +266,11 @@ def load_model_facts() -> dict:
     return facts
 
 
-def model_findings(text: str) -> list[str]:
+def model_findings(text: str, carried_names: frozenset[str] = frozenset()) -> list[str]:
     """Checks driven by the canonical model tables: task-type enum, WHEN/Marks-Complete
-    pairing legality, and display-name character rules."""
+    pairing legality, and display-name character rules. ``carried_names`` — stage/task
+    display names present in the draft — are exempt from the minting charset (the naming
+    contract preserves them verbatim); the ':' ban stays structural."""
     facts = load_model_facts()
     if not facts:
         return []
@@ -311,13 +313,24 @@ def model_findings(text: str) -> list[str]:
 
     name_pattern = facts.get("name_pattern")
     if name_pattern:
+        def name_finding(kind: str, name: str) -> str | None:
+            name = name.strip()
+            if ":" in name:
+                return f"{kind} name {name!r} contains ':' — the structural ban; case-execution events are colon-delimited"
+            if name in carried_names:
+                return None  # read from the draft: preserved verbatim, minting charset does not apply
+            if not name_pattern.fullmatch(name):
+                return f"{kind} name {name!r} breaks case-design-layers-guide.md § Naming rules (minted names only; draft-carried names are exempt)"
+            return None
+
         for kind, name, _ in stage_blocks(text):
-            if not name_pattern.fullmatch(name.strip()):
-                findings.append(f"{kind.lower()} name {name!r} breaks case-design-layers-guide.md § Naming rules")
+            finding = name_finding(kind.lower(), name)
+            if finding:
+                findings.append(finding)
         for match in re.finditer(r"^#{5} Task [S\d.]+: ([^\n]+)$", text, re.M):
-            candidate = strip_id_suffix(match.group(1)).strip()
-            if not name_pattern.fullmatch(candidate):
-                findings.append(f"task name {candidate!r} breaks case-design-layers-guide.md § Naming rules")
+            finding = name_finding("task", strip_id_suffix(match.group(1)))
+            if finding:
+                findings.append(finding)
     return findings
 
 
@@ -773,8 +786,16 @@ def audit(sdd_path: Path, draft_path: Path | None) -> list[str]:
                     f"nor a stage declared in this SDD — never the case name or a synonym"
                 )
 
+    carried: frozenset[str] = frozenset()
+    if draft_path is not None and draft_path.is_file():
+        draft_text = draft_path.read_text(encoding="utf-8")
+        # Draft headings are pre-normalization — letter prefixes (Task R.2:) included.
+        carried = frozenset(
+            {name.strip() for _, name, _ in stage_blocks(draft_text)}
+            | {strip_id_suffix(m.group(1)).strip() for m in re.finditer(r"^#{5} Task [A-Za-z0-9.]+: ([^\n]+)$", draft_text, re.M)}
+        )
     findings.extend(lineage_findings(text))
-    findings.extend(model_findings(text))
+    findings.extend(model_findings(text, carried))
     findings.extend(contract_findings(text, load_model_facts() or {"gate_rules": {}, "yes_when": set(), "no_when": set()}))
 
     draft_findings: list[str] = []
