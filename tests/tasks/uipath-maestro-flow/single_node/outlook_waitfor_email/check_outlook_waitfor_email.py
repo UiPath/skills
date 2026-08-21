@@ -24,9 +24,12 @@ source:
      MST-8802) cannot satisfy the check on its own.
 """
 
-import glob
 import json
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.flow_check import find_flow_file  # noqa: E402
 
 EVENT_MARKERS = (
     "uipath.connector.event",
@@ -71,10 +74,7 @@ def _filter_trees(detail: dict):
 
 
 def _read_flow() -> dict:
-    flows = glob.glob("**/OutlookWaitForEmail*.flow", recursive=True)
-    if not flows:
-        _fail("no OutlookWaitForEmail*.flow found under cwd")
-    with open(flows[0]) as f:
+    with open(find_flow_file(flow_glob="OutlookWaitForEmail*.flow")) as f:
         return json.load(f)
 
 
