@@ -190,7 +190,7 @@ Logical operators between siblings:
 4. For each leaf, pick an operator from the field's `searchableOperators` list (when present). Date-time fields take ISO-8601 strings; enums take the literal enum value.
 5. Use the field's `name` as the leaf `id`. The CLI rewrites it to `searchableNames[0]` when emitting CEQL if the connector declares one — you don't need to use the alias yourself.
 6. Build one leaf per condition; place multiple conditions under the same `groupOperator` (0 for AND, 1 for OR). Use nested `groups` for mixed AND/OR.
-7. Wrap values in a `WorkflowValue` object with `value`, `rawString`, `isLiteral`. Strings, numbers, booleans, dates, and arrays are all valid `value` types. A dynamic operand (`isLiteral: false`) is supported only via `uip maestro flow node configure`, which rewrites it to a `{var_<hash>}` literal and stores the expression in `inputs.detail.filterVariables` (MST-13005). The operand value must be a non-empty expression string — an array or number fails with `FilterNotSupportedError`.
+7. Wrap values in a `WorkflowValue` object with `value`, `rawString`, `isLiteral`. Strings, numbers, booleans, dates, and arrays are all valid `value` types. A dynamic operand (`isLiteral: false`) is supported only via `uip maestro flow node configure`, which rewrites it to a `{var_<hash>}` literal and stores the expression in `inputs.detail.filterVariables`. The operand value must be a non-empty expression string — an array or number fails with `FilterNotSupportedError`.
 
 ### What NOT to generate
 

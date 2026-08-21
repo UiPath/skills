@@ -239,7 +239,7 @@ For every match:
 - That parameter's `name` is the connector-specific filter input — most commonly `where`, sometimes `q` (Salesforce), sometimes another name. Do not assume `where`. The CLI compiles the tree into the first FilterBuilder parameter only.
 - **`flow validate` grammar-checks only `queryParameters.where` and `queryParameters.queryExpression`** on non-event connector nodes. A CEQL string under any other parameter name, or under `bodyParameters`, gets no check — author those through `--detail.filter`.
 - **Pass a structured filter tree under `--detail.filter`** — the CLI compiles it into both halves of the contract: the runtime CEQL string at `inputs.detail.queryParameters.<name>` *and* the design-time tree at `inputs.detail.configuration.essentialConfiguration.savedFilterTrees.<name>`. Studio Web reads the latter to render the FilterBuilder UI; only `--detail.filter` populates that side.
-- **Do not pass a raw CEQL string under `queryParameters.<name>` for a FilterBuilder parameter.** `node configure` rejects a bare CEQL string. It accepts one raw form — a whole-value `=js:` string (MST-13005) — but that populates only the runtime half: debug runs succeed and the FilterBuilder UI shows `undefined` when the activity is reopened in Studio Web. Only a `filter` tree writes both halves.
+- **Do not pass a raw CEQL string under `queryParameters.<name>` for a FilterBuilder parameter.** `node configure` rejects a bare CEQL string. It accepts one raw form — a whole-value `=js:` string — but that populates only the runtime half: debug runs succeed and the FilterBuilder UI shows `undefined` when the activity is reopened in Studio Web. Only a `filter` tree writes both halves.
 - **A dynamic operand in the tree works**: `"value": {"value": "=js:$vars...", "isLiteral": false}` — the CLI compiles it to a `{var_…}` placeholder plus `inputs.detail.filterVariables` the runtime resolves.
 - **When a CEQL string is authored anyway** (e.g. a `queryExpression` written directly into the `.flow`): field names bare, values single-quoted — `` `accountNumber = '${$vars...}'` ``, never `'accountNumber' = '...'`. `=js:` must prefix the whole field value. Inside it, use a template literal or a `+` concatenation. A plain string containing `${…}` is never resolved — the query silently matches nothing. Copy-paste template, operator aliases, and the error→fix table → [Hand-authored CEQL strings](#hand-authored-ceql-strings) below.
 - **Verify every `$vars.<nodeId>` root in the expression** matches an `id` in `nodes[]`, and that an edge path reaches this node from it. `flow validate` does not check node ids inside connector inputs — a wrong id faults at runtime with `[400300]`.
@@ -254,7 +254,7 @@ If the operation has no FilterBuilder parameter, server-side filtering is not su
 Preference order. Do not skip step 1.
 
 1. **`node configure` with a `filter` tree in `--detail`** — pass a structured tree. The CLI compiles the CEQL for you. Use this for every literal filter. It does not report a leaf whose field id the entity schema does not match — it drops that leaf (see Step 6a).
-2. **Hand-authored `=js:` string** — a runtime value does not force hand-authoring. Pass the operand as `{"value": {"value": "=js:$vars…", "isLiteral": false}}` and the CLI compiles it to a `{var_…}` placeholder plus `detail.filterVariables`. Hand-author only for a filter shape a tree cannot express — pass the whole value as one `=js:` string under `queryParameters.<filterParam>`, the only raw form `node configure` accepts (MST-13005).
+2. **Hand-authored `=js:` string** — a runtime value does not force hand-authoring. Pass the operand as `{"value": {"value": "=js:$vars…", "isLiteral": false}}` and the CLI compiles it to a `{var_…}` placeholder plus `detail.filterVariables`. Hand-author only for a filter shape a tree cannot express — pass the whole value as one `=js:` string under `queryParameters.<filterParam>`, the only raw form `node configure` accepts.
 
 Run `uip maestro flow validate <file> --strict-bindings --output json` after writing any CEQL string. The grammar rules (quoted-field, double-quoted-value, operator-alias) warn by default; `--strict-bindings` promotes them to errors.
 
@@ -279,7 +279,7 @@ Never nest `=js:` inside the interpolation (`${=js:…}`) — it ships as litera
 | `'accountNumber' = 'ACC123'` — field name quoted | `Expected a field name expression but got 'StringValue'` | `accountNumber = 'ACC123'` |
 | `` =js:"accountNumber = \"" + String(v) + "\"" `` — value double-quoted | `Unsupported value expression 'Column' on field 'accountNumber'` | `` =js:"accountNumber = '" + String(v) + "'" `` |
 | `accountNumber eq 'ACC123'` — OData alias | `[102003] Integration Services bad request` | `accountNumber = 'ACC123'` |
-| `"queryParameters": {"$where": "…"}` — OData-style `$` prefix on the key | `flow validate` error (MST-9265) | `"queryParameters": {"where": "…"}` — CEQL takes no leading `$` |
+| `"queryParameters": {"$where": "…"}` — OData-style `$` prefix on the key | `flow validate` error | `"queryParameters": {"where": "…"}` — CEQL takes no leading `$` |
 
 CEQL rejects OData and SQL-style aliases. Map them:
 
