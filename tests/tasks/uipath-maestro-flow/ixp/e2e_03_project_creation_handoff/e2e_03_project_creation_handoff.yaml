@@ -1,0 +1,141 @@
+task_id: skill-flow-ixp-e2e-project-creation-handoff
+description: >
+  E2E (Flow → IXP design-time handoff, RE-12982): the user is in a Flow context,
+  has documents in hand, and asks for a flow that extracts fields from them —
+  without knowing that a separate IXP design-time project must be built first.
+  The agent must recognise the gap, hand off to the `uipath-ixp` skill, create a
+  project from the supplied documents, deploy a trained version to an Orchestrator
+  folder (`uip ixp deployments create` — what publishes it into the Maestro flow
+  registry, unlike `projects publish`, which only deploys to project), then resume
+  the flow build and wire the resulting node.
+
+  The prompt never says "IXP", "project", "publish" or "deploy": recognising the
+  prerequisite is the behaviour under test. Grading is scoped to this run's
+  artifacts. Design rationale for the tenant-diff mechanism lives in
+  ixp_projects.py; read check_handoff.py before treating a failure as a skill
+  regression, and teardown.py for the un-deletable deployment residue.
+
+  Fast and label-free: a trained version appears shortly after `projects create`,
+  so no confirm/retrain loop is needed. `projects publish` is deliberately NOT
+  asserted — a trained-but-unpinned version folder-deploys fine (verified
+  2026-08-21), so gating on it would fail a correct create-then-deploy run. The
+  version number also moves while training completes, so the number passed to
+  `deployments create` must come from a post-training `list-models` read.
+
+  Validate-only: no `uip maestro flow debug`. Unlike the sibling IxP tasks, this
+  one ends by creating a live deployment, so an outcome-graded extraction is
+  reachable and would be a genuine strengthening — left out because it needs a
+  `fileRef` bound to a real document source and a larger runtime budget.
+  `check_handoff.py` instead cross-checks the authored node against live tenant
+  state, catching a schema-valid flow wired to the wrong extractor.
+
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:setup, shape:multi-node, node:ixp, path-to-ga]
+
+# driver: docker (NOT tempdir) is required. `uip ixp` ships as the separate
+# @uipath/ixp-tool plugin, pre-baked only into skills-image:latest (see
+# tests/docker/Dockerfile). Under tempdir every `uip ixp` is "unknown command",
+# so the handoff cannot happen and the run thrashes to MAX_TURNS.
+#
+# `uip ixp deployments create` landed in the CLI on 2026-08-19 (UiPath/cli#3575)
+# and rides the `dev` tool dist-tag, which is what the image installs by default.
+sandbox:
+  driver: docker
+  template_sources:
+    # template_dir copies directory CONTENTS into mount_point (default: sandbox
+    # root), so the mount_point is what puts the invoices under ./documents/.
+    # The shared dir also carries a taxonomy.json; it rides along harmlessly —
+    # `projects create` skips unsupported extensions, and an agent that imports
+    # it instead still creates and deploys the project.
+    - type: template_dir
+      path: ../../../uipath-ixp/_shared/fixtures
+      mount_point: documents
+
+run_limits:
+  max_turns: 100
+  turn_timeout: 900
+  task_timeout: 2100
+
+# Both hooks and the check_handoff criterion must exceed
+# ixp_projects.UIP_TIMEOUT_SECONDS (120), or the harness kills the wrapper
+# mid-`uip` call and the failure reads as a skill defect.
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/seed.py"
+    timeout: 180
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/ixp/e2e_03_project_creation_handoff/teardown.py"
+    timeout: 300
+
+initial_prompt: |
+  I've got a batch of scanned vendor invoices in ./documents/ — have a look at
+  them. Build me a UiPath Maestro Flow that reads invoices like these and pulls
+  out the vendor name, invoice number, invoice date and total amount, then logs
+  the total.
+
+  Trigger it manually. The task is not complete until `uip maestro flow validate`
+  passes on the flow.
+
+  - The `uip` CLI is already available and the runner is logged in.
+  - Use `--output json` on all uip commands.
+  - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
+  - Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+    planning and implementation. Build it end-to-end in a single pass.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-maestro-flow Skill"
+    skill_name: "uipath-maestro-flow"
+    expected_skill: "uipath-maestro-flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The redirect itself — the one behaviour RE-12982 is about, and the only part
+  # of the chain that leaves no trace in the artifact or on the tenant. An agent
+  # can improvise `uip ixp` from its own knowledge without ever loading the
+  # skill; that would satisfy check_handoff.py while failing the thing the
+  # ticket asks for, so this is asserted separately.
+  - type: skill_triggered
+    description: "Agent handed off to the uipath-ixp Skill to build the missing project"
+    skill_name: "uipath-ixp"
+    expected_skill: "uipath-ixp"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory (pass_threshold 0), NOT gates: check_handoff.py already proves both
+  # of these happened — a new project cannot exist without `projects create`, and
+  # a deployment cannot exist without `deployments create`. They are kept only to
+  # separate "never attempted" from "attempted and errored" when the outcome
+  # check fails, which is the difference between a skill-routing defect and a
+  # CLI/tenant problem. Weight 1.0 keeps them from moving the score.
+  - type: command_executed
+    description: "advisory: agent ran `uip ixp projects create`"
+    tool_name: "Bash"
+    command_pattern: '(?i)(uip|\$UIP)\s+ixp\s+projects\s+create'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "advisory: agent ran `uip ixp deployments create --folder-key`"
+    tool_name: "Bash"
+    command_pattern: '(?i)(uip|\$UIP)\s+ixp\s+deployments\s+create\b[^\n]*--folder-key'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  # Primary gate: project created + folder-deployed + wired, all this run.
+  - type: run_command
+    description: "The .flow wires an IxP node for a deployment created during THIS run"
+    command: "python3 $TASK_DIR/check_handoff.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip maestro flow validate passes on the generated flow"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
