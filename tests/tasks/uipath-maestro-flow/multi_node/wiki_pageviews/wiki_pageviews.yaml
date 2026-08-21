@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-wiki-pageviews
 description: >
   Create a UiPath Flow that fetches a range of Wikipedia pageviews, keeps
@@ -13,6 +17,8 @@ run_limits:
   task_timeout: 3000  # 1620s grading + a turn; inherited 1200 could not fit grading
 
 initial_prompt: |
+  Build the flow inside a solution of the same name.
+
   Create a UiPath Flow project named "WikiPageviews" that takes `article`
   (string) and `date1`, `date2` (strings in `YYYYMMDD` format) as inputs.
   Fetch the daily view counts in the range from the Wikimedia pageviews API
