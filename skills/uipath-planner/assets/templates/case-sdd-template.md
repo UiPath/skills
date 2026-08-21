@@ -231,7 +231,7 @@ Template-local rules:
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
+| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <sequential group, stage enters, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
 
 ##### Task <N>.<M>: <TASK_NAME>
 
@@ -242,9 +242,21 @@ Template-local rules:
 
 **Entry Condition:**
 
+> **`Activation Mode` decides `WHEN` — pick from the mode, not from the list order.**
+> `sequential` or `parallel-after-predecessor` → **`runs-sequentially`**, on *every* task in the
+> run **including the first one**. The rule already means "stage entered" on the first task set and
+> "previous task set completed" after it, so the first task does **not** take `current-stage-entered`
+> and a follower does **not** take `selected-tasks-completed("<previous task>")`.
+> `parallel` → `current-stage-entered`. `event-triggered` → its event rule.
+> `selected-tasks-completed(...)` is for **fan-in, branch convergence, condition-result routing, or a
+> non-immediate dependency** — never for "runs after the task above it".
+> Getting this wrong is not cosmetic: every task in the stage then renders as "Runs out of sequence",
+> and a non-sequential task's completion is **not** reset when its stage is re-entered, so a
+> re-entered stage cannot re-run it.
+
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| <current-stage-entered \| selected-tasks-completed("TaskA", "TaskB") \| wait-for-connector \| adhoc \| runs-sequentially> | <conditionExpression or —> | <label or —> |
+| <runs-sequentially \| current-stage-entered \| selected-tasks-completed("TaskA", "TaskB") \| wait-for-connector \| adhoc> | <conditionExpression or —> | <label or —> |
 
 **Task envelope**
 
