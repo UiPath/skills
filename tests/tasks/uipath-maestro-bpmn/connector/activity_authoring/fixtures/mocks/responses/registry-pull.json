@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "RegistryPullSuccess",
+  "Data": {
+    "ExtensionTypeCount": 29,
+    "ConnectorCount": 1,
+    "ProcessCount": 0,
+    "FromCache": false,
+    "CacheWritten": true
+  }
+}
