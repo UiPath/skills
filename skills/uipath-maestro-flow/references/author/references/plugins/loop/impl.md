@@ -266,7 +266,7 @@ A flow that iterates over a collection, accumulates a result in an `inout` varia
   ],
   "variables": {
     "globals": [
-      { "id": "inputItems", "direction": "in", "type": "array", "defaultValue": [] },
+      { "id": "inputItems", "direction": "in", "type": "array", "defaultValue": [], "triggerNodeId": "start" },
       { "id": "accumulator", "direction": "inout", "type": "number", "defaultValue": 0 },
       { "id": "result", "direction": "out", "type": "number" }
     ],

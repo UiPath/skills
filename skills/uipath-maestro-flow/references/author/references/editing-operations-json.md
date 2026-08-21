@@ -448,7 +448,7 @@ Use `Edit` to modify the start node in-place (no delete/re-add needed):
          "edges": [ ... ],
          "variables": {
            "globals": [
-             { "id": "<IN_VAR>", "direction": "in", "type": "..." },
+             { "id": "<IN_VAR>", "direction": "in", "type": "...", "triggerNodeId": "sfStart" },
              { "id": "<OUT_VAR>", "direction": "out", "type": "..." }
            ],
            "nodes": []

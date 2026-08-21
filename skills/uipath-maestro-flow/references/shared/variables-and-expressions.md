@@ -81,7 +81,12 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
 }
 ```
 
-> **An `in` global without `triggerNodeId` is dropped from the packed entry point.** Packaging resolves the input contract from the trigger manifest's output schema if it declares one, and otherwise keeps only globals where `direction === "in"` and `triggerNodeId` matches the start node's `id`. Core triggers declare no output schema, so the second branch is the live one: omit the field and `flow pack` emits an empty `input.properties` — with `flow validate` and `flow format` both green, so nothing warns you. Set it to the id of the trigger that supplies the value (`"start"` for a single-trigger flow). `uip maestro flow variable add --direction in` sets it for you.
+> **Set `triggerNodeId` on every `in` global** — omit it and the input is silently dropped from the packed entry point.
+>
+> - **What to set** — the `id` of the trigger that supplies the value; `"start"` in a single-trigger flow.
+> - **Why** — packaging reads the input contract from the trigger manifest's output schema when it declares one, and otherwise keeps only globals where `direction === "in"` and `triggerNodeId` matches the start node's `id`. Core triggers declare no output schema, so that second branch is the live one.
+> - **Failure mode** — `flow pack` emits an empty `input.properties` while `flow validate` and `flow format` both stay green, so nothing warns you.
+> - **Via CLI** — `uip maestro flow variable add --direction in` sets it for you.
 
 ### Examples
 
@@ -92,7 +97,8 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
   "direction": "in",
   "type": "string",
   "defaultValue": "Unknown",
-  "description": "Name of the customer to process"
+  "description": "Name of the customer to process",
+  "triggerNodeId": "start"
 }
 ```
 
@@ -134,7 +140,8 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
       }
     },
     "additionalProperties": false
-  }
+  },
+  "triggerNodeId": "start"
 }
 ```
 
@@ -145,7 +152,8 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
   "direction": "in",
   "type": "array",
   "subType": "string",
-  "defaultValue": ["admin@example.com"]
+  "defaultValue": ["admin@example.com"],
+  "triggerNodeId": "start"
 }
 ```
 
@@ -667,7 +675,8 @@ A flow with input, state, and output variables:
         "type": "array",
         "subType": "object",
         "defaultValue": [],
-        "description": "Items to process"
+        "description": "Items to process",
+        "triggerNodeId": "start"
       },
       {
         "id": "processedCount",
