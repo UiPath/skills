@@ -410,7 +410,8 @@ jobs:
       - name: Run coder-eval
         env:
           SKILLS_REPO_HOST_PATH:    ${{ github.workspace }}
-          SKILLS_REPO_PATH:         ${{ github.workspace }}
+          SKILLS_REPO_PATH:         ${{ inputs.experiment == 'maestro-flow-sdk' && '/skills-repo' || github.workspace }}
+          PYTHONPATH:               ${{ inputs.experiment == 'maestro-flow-sdk' && '/skills-repo/tests/tasks/uipath-maestro-flow' || '' }}
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ secrets.AWS_REGION }}

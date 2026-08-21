@@ -18,6 +18,10 @@ package_dir="$sdk_root/node_modules/@uipath/flow-sdk"
   echo "stage-preview-sdk-workspace: $SKILLS_REPO_PATH is not the checker repo" >&2
   exit 1
 }
+python3 -c 'import _shared.flow_check' || {
+  echo "stage-preview-sdk-workspace: PYTHONPATH cannot resolve the frozen checker _shared package" >&2
+  exit 1
+}
 
 library_json="${FLOW_SDK_LIBRARY_JSON:?FLOW_SDK_LIBRARY_JSON is required}"
 [ -f "$library_json/index.json" ] || {
