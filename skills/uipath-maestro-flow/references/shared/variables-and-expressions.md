@@ -340,7 +340,7 @@ Variable updates assign new values to `inout` (state) variables at specific node
 
 > **Only `inout` variables can be updated.** Updating an `in` or `out` variable is invalid.
 
-> **Inside loops:** variableUpdate expressions cannot access loop iteration variables like `$vars.<loopId>.currentItem`. Those are only available inside the body node's script. The variableUpdate must reference the body node's output (e.g., `=js:$vars.bodyNode.output`).
+> **Inside loops:** variableUpdate expressions cannot access loop iteration variables like `$vars.<loopId>.currentItem`. Those are only available inside the body node's script. The variableUpdate must reference the body node's output (e.g., `$vars.bodyNode.output` as the object's `expression`).
 
 ---
 
@@ -517,11 +517,11 @@ $self.output.statusCode >= 200 && $self.output.statusCode < 300
 
 ### Variable Update Expressions
 
-Evaluate to the new value for the target variable.
+Evaluate to the new value for the target variable. **Not a `=js:` string** — this is the one expression site that takes an object. The JS body goes in `expression` without the prefix, and `fieldType` is the target variable's declared type. See [Variable Updates](#variable-updates-variableupdates).
 
-```
-=js:$vars.counter + 1
-=js:$vars.items.concat([$vars.newItem.output])
+```json
+{ "type": "jsExpression", "expression": "$vars.counter + 1", "fieldType": "number" }
+{ "type": "jsExpression", "expression": "$vars.items.concat([$vars.newItem.output])", "fieldType": "array" }
 ```
 
 ### Loop Collection Expression
