@@ -1,18 +1,19 @@
 task_id: skill-insights-smoke-alerts-reads
 description: >
   Smoke test: agent uses the uipath-insights skill to inspect existing
-  real-time alert definitions read-only. Given a prompt asking what alerts
-  exist and whether alerting is available, the agent should run the alert
-  definition and entitlement reads without attempting any write, and should
-  treat an empty result as bounded evidence rather than proof that no alert
-  exists. The CLI is authenticated; the tenant may or may not be entitled to
+  real-time alerts read-only. Given a prompt asking what alerts exist,
+  whether any fired recently, how trigger counts trend, and whether alerting
+  is available, the agent should run the alert definition, history, metrics,
+  and entitlement reads without attempting any write, and should treat an
+  empty result as bounded evidence rather than proof that no alert exists.
+  The CLI is authenticated; the tenant may or may not be entitled to
   real-time alerting and may or may not hold alert definitions, and all of
   those are valid outcomes.
 
-  Covers 2 of the 3 alert definition reads. `alerts get` is left out on
-  purpose: it needs an ID that does not exist on an empty tenant, so gating
-  it would trade tenant-agnosticism for surface coverage. It belongs in an
-  integration-tier task against a seeded tenant.
+  Covers 4 of the 6 alert read commands. `alerts get` and `alert-deliveries
+  get` are left out on purpose: both need an ID that does not exist on an
+  empty tenant, so gating them would trade tenant-agnosticism for surface
+  coverage. They belong in an integration-tier task against a seeded tenant.
 tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -20,11 +21,12 @@ run_limits:
 
 initial_prompt: |
   Give me a read-only picture of real-time alerting on this tenant. Tell me
-  which alert definitions exist and whether this tenant is entitled to
-  real-time alerting at all. If a category comes back empty, say so plainly
-  and say what that does and does not prove. If the output says more rows
-  exist, page through them before you summarize. Run each command at most
-  once per page; do not retry failures.
+  which alert definitions exist, whether any of them fired in the last day,
+  how the daily trigger counts look over the last month, and whether this
+  tenant is entitled to real-time alerting at all. If a category comes back
+  empty, say so plainly and say what that does and does not prove. If the
+  output says more rows exist, page through them before you summarize. Run
+  each command at most once per page; do not retry failures.
 
 success_criteria:
   - type: skill_triggered
@@ -48,6 +50,26 @@ success_criteria:
     # against the whole Bash invocation, so a batched `alerts --help` followed by
     # a real read would drop the real read's credit too.
     command_pattern: 'uip\s+insights\s+alerts\s+list\b(?!\s+--help)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Requires the time flag the description claims, not just the verb: alert-history
+  # list cannot succeed without one, so a bare call is a real failure. Either bound
+  # is legal alone, so --until counts (utils/validate.ts, validateTimeSelection).
+  - type: command_executed
+    description: "Agent ran alert-history list with a time selection"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+list(?:(?!uip\s)[^&;|])*--(time-range|since|until)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # [\s=]+"? accepts --time-grouping Day, --time-grouping=Day, and the quoted form.
+  - type: command_executed
+    description: "Agent ran alert-history get-metrics with a mandatory --time-grouping"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+alert-history\s+get-metrics(?:(?!uip\s)[^&;|])*--time-grouping[\s=]+"?(FifteenMinutes|Hour|Day)\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -99,28 +121,39 @@ success_criteria:
     pass_threshold: 1.0
 
   # SKILL.md Critical Rule 2 forbids substitution and shell variables in a uip
-  # invocation. Flag values and the by-ID `get` argument are the spots most
-  # likely to tempt it. The flag branch names only the flags these commands
-  # accept, because the (?!uip\s) barrier crosses newline-batched neighbours
-  # (deliberately, to catch backslash-continuation), so a generic --flag
-  # would match a neighbour's `curl --data $BODY`. A neighbour reusing one
-  # of these exact flag names with a variable value can still false-fail.
+  # invocation. The epoch-seconds bounds and the two by-ID reads are the spots
+  # most likely to tempt it. Anchored on a flag value or a `get` argument so an
+  # unrelated `$VAR` in a `&&`-, `;`-, or `|`-batched neighbour cannot false-fail
+  # this. A newline-batched neighbour's own `--flag $VAR` can still match; that
+  # shape is rare enough to accept.
   - type: command_not_executed
     description: "Agent did not use command substitution or a shell variable in a uip insights command"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights(?:(?!uip\s)[^&;|])*--(limit|offset|process-key|output)[\s=]+"?(\$\(|`|\$[A-Za-z_])|uip\s+insights\s+\S+\s+get\s+"?(\$\(|`|\$[A-Za-z_])'
+    command_pattern: 'uip\s+insights(?:(?!uip\s)[^&;|])*--[a-z][a-z-]*[\s=]+"?(\$\(|`|\$[A-Za-z_])|uip\s+insights\s+\S+\s+get\s+"?(\$\(|`|\$[A-Za-z_])'
     max_count: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  # A local rejection, so this needs no tenant state: --process-key without
-  # --agentic is rejected before any request is built (commands/alerts.ts).
   - type: command_not_executed
-    description: "Agent did not pass --process-key without --agentic"
+    description: "Agent did not combine --time-range with --since/--until on alert-history"
+    tool_name: "Bash"
+    # (?:(?!uip\s)[^&;|])* keeps both flags inside one invocation. Excluding \n
+    # is not enough: the grader also matches a shlex-normalized haystack in which
+    # embedded newlines have become spaces, so a newline-batched pair of two
+    # individually valid calls would otherwise trip this cap.
+    command_pattern: 'uip\s+insights\s+alert-history\s+\S+(?:(?!uip\s)[^&;|])*(--time-range(?:(?!uip\s)[^&;|])*--(since|until)|--(since|until)(?:(?!uip\s)[^&;|])*--time-range)'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Local rejections, so these need no tenant state: --process-key without
+  # --agentic (commands/alerts.ts) and paging flags on the aggregate read.
+  - type: command_not_executed
+    description: "Agent did not pass --process-key without --agentic, or page a non-paging command"
     tool_name: "Bash"
     # The --agentic lookahead spans the whole invocation, not just the span before
     # --process-key, so the legal `--process-key ... --agentic` order is not caught.
-    command_pattern: 'uip\s+insights\s+alerts\s+list(?!(?:(?!uip\s)[^&;|])*--agentic)(?:(?!uip\s)[^&;|])*--process-key\b'
+    command_pattern: 'uip\s+insights\s+alerts\s+list(?!(?:(?!uip\s)[^&;|])*--agentic)(?:(?!uip\s)[^&;|])*--process-key\b|uip\s+insights\s+alert-history\s+get-metrics(?:(?!uip\s)[^&;|])*--(limit|offset)\b'
     max_count: 0
     weight: 1.0
     pass_threshold: 1.0
@@ -130,7 +163,7 @@ success_criteria:
   - type: command_executed
     description: "Advisory: agent used --output json on alert reads"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+alerts\s+\S+(?:(?!uip\s)[^&;|])*--output[\s=]+json'
+    command_pattern: 'uip\s+insights\s+(alerts|alert-history)\s+\S+(?:(?!uip\s)[^&;|])*--output\s+json'
     min_count: 2
     weight: 1.0
     pass_threshold: 0

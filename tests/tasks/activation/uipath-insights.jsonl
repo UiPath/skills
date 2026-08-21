@@ -29,3 +29,5 @@
 {"id": "uipath-insights-029", "prompt": "Show me which queues have been active recently.", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-030", "prompt": "Which Insights alerts are set up on this tenant?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-031", "prompt": "Is this tenant entitled to Insights real-time alerting?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-032", "prompt": "Did any Insights alert fire in the last 24 hours?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-033", "prompt": "Which delivery is attached to my Insights alert?", "expected_skill": "uipath-insights"}
