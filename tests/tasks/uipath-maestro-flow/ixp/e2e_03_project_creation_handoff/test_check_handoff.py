@@ -71,6 +71,10 @@ elif argv[:4] == ["ixp", "deployments", "create", "--help"]:
         print("error: unknown command", file=sys.stderr)
         sys.exit(3)
     print("Usage: uip ixp deployments create <project-name> --version --folder-key")
+elif argv[:4] == ["maestro", "flow", "registry", "pull"]:
+    print(json.dumps({"Data": {"NodesCount": 1}}))
+elif argv[:4] == ["maestro", "flow", "registry", "search"]:
+    print(json.dumps({"Data": payload.get("registry_nodes", [])}))
 elif argv[:3] == ["ixp", "deployments", "list"]:
     # Mirrors the real 404 once the project is gone, so the read-before-delete
     # ordering in teardown.py is actually exercised.
@@ -549,3 +553,39 @@ def test_explicit_null_model_name_is_not_the_string_none(
 
     completed = run_script("check_handoff.py", sandbox, env)
     assert completed.returncode == 1
+
+
+def test_seed_fails_when_the_fixture_domain_is_already_covered(
+    sandbox: pathlib.Path,
+) -> None:
+    """A matching published extractor makes reuse correct, so the test can't measure."""
+    env = install_fake_uip(
+        sandbox,
+        registry_nodes=[
+            {
+                "NodeType": "uipath.ixp.vehicle-registration-abc123-ixp.g-f",
+                "DisplayName": "vehicle-registration-abc123-ixp",
+            }
+        ],
+    )
+
+    completed = run_script("seed.py", sandbox, env)
+    assert completed.returncode != 0
+    assert "already covered" in completed.stderr
+    assert not (sandbox / SNAPSHOT).exists()
+
+
+def test_seed_accepts_an_uncovered_fixture_domain(sandbox: pathlib.Path) -> None:
+    env = install_fake_uip(
+        sandbox,
+        registry_nodes=[
+            {
+                "NodeType": "uipath.ixp.idp-benchmark-invoices-c735405a-ixp.g-f",
+                "DisplayName": "idp-benchmark---invoices-c735405a-ixp",
+            }
+        ],
+    )
+
+    completed = run_script("seed.py", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "do not cover" in completed.stdout or "cover the fixture domain" in completed.stdout

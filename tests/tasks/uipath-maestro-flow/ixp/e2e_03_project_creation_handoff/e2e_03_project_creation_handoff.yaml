@@ -15,6 +15,12 @@ description: >
   ixp_projects.py; read check_handoff.py before treating a failure as a skill
   regression, and teardown.py for the un-deletable deployment residue.
 
+  Fixture domain matters: vehicle registration is used because no extractor
+  published on the target tenant covers it. An earlier invoice-based revision
+  could not measure the redirect at all — the tenant publishes five invoice
+  extractors, so reusing one was the correct action and the handoff never needed
+  to fire (GH run 32484423417). seed.py now asserts the domain is still uncovered.
+
   Fast and label-free: a trained version appears shortly after `projects create`,
   so no confirm/retrain loop is needed. `projects publish` is deliberately NOT
   asserted — a trained-but-unpinned version folder-deploys fine (verified
@@ -41,13 +47,11 @@ tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:setup, shape:multi-node, 
 sandbox:
   driver: docker
   template_sources:
-    # template_dir copies directory CONTENTS into mount_point (default: sandbox
-    # root), so the mount_point is what puts the invoices under ./documents/.
-    # The shared dir also carries a taxonomy.json; it rides along harmlessly —
-    # `projects create` skips unsupported extensions, and an agent that imports
-    # it instead still creates and deploys the project.
+    # Task-local fixtures, not the uipath-ixp shared set: the domain has to be
+    # one no published extractor covers (see documents/README.md), and keeping
+    # them here also drops a cross-skill dependency on another team's _shared.
     - type: template_dir
-      path: ../../../uipath-ixp/_shared/fixtures
+      path: documents
       mount_point: documents
 
 run_limits:
@@ -67,10 +71,10 @@ post_run:
     timeout: 300
 
 initial_prompt: |
-  I've got a batch of scanned vendor invoices in ./documents/ — have a look at
-  them. Build me a UiPath Maestro Flow that reads invoices like these and pulls
-  out the vendor name, invoice number, invoice date and total amount, then logs
-  the total.
+  I've got a batch of scanned vehicle registration certificates in ./documents/ —
+  have a look at them. Build me a UiPath Maestro Flow that reads certificates like
+  these and pulls out the registration plate, VIN, make, model and the date it's
+  valid until, then logs the plate and expiry.
 
   Trigger it manually. The task is not complete until `uip maestro flow validate`
   passes on the flow.

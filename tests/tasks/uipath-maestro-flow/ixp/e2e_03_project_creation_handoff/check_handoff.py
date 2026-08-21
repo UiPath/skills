@@ -131,9 +131,24 @@ def candidate_names() -> list[str]:
     return names
 
 
+def describe_all() -> None:
+    """Print what was actually built, whatever the verdict.
+
+    Emitted on EVERY failure, including a link-1 failure, because "no project was
+    created" alone cannot distinguish the two very different causes: the agent
+    fell back to `core.logic.mock` (a routing gap), or it wired a pre-existing
+    published extractor (a correct decision on a tenant that already covers this
+    document domain — i.e. the scenario's precondition does not hold). Without
+    this line the two read identically in CI.
+    """
+    for flow_path in flow_files():
+        print(f"  built: {describe(flow_path, load_flow(flow_path))}", file=sys.stderr)
+
+
 def main() -> int:
     names = candidate_names()
     if not names:
+        describe_all()
         return 1
 
     flows = flow_files()

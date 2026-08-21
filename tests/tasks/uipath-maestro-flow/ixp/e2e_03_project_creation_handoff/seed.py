@@ -22,7 +22,18 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ixp_projects import SNAPSHOT, list_project_names, run_uip, write_snapshot  # noqa: E402
+from ixp_projects import (  # noqa: E402
+    SNAPSHOT,
+    list_project_names,
+    run_uip,
+    run_uip_json,
+    write_snapshot,
+)
+
+# Substrings that would mean a published extractor already covers the fixture
+# domain (see documents/README.md). Matched case-insensitively against every
+# registry node's display name and type.
+DOMAIN_MARKERS = ("vehicle", "registration-cert", "registration_cert", "v5c", "keeper", "vrc-")
 
 
 def require_deployments_create() -> None:
@@ -43,8 +54,42 @@ def require_deployments_create() -> None:
     print("OK: `uip ixp deployments create` is available")
 
 
+def require_domain_uncovered() -> None:
+    """Fail if a published extractor already covers the fixture domain.
+
+    The scenario only measures the redirect when nothing on the tenant matches
+    the supplied documents. If something does, reusing it is the correct agent
+    action and the handoff never fires — the test would go red for a reason that
+    has nothing to do with the behaviour under test. That happened once already
+    with invoice fixtures (GH run 32484423417), so it is asserted rather than
+    assumed.
+    """
+    run_uip(["maestro", "flow", "registry", "pull", "--force"])
+    payload = run_uip_json(
+        ["maestro", "flow", "registry", "search", "uipath.ixp", "--output", "json"]
+    )
+    nodes = payload["Data"]
+    covered = [
+        node["NodeType"]
+        for node in nodes
+        if any(
+            marker in f"{node.get('DisplayName', '')} {node['NodeType']}".lower()
+            for marker in DOMAIN_MARKERS
+        )
+    ]
+    if covered:
+        raise RuntimeError(
+            "the fixture domain is already covered by published extractor(s) "
+            f"{covered} — the agent can correctly reuse one, so this task cannot "
+            "measure the handoff. Change the fixture domain (documents/README.md) "
+            "or point the run at a tenant without it."
+        )
+    print(f"OK: none of the {len(nodes)} published IxP node(s) cover the fixture domain")
+
+
 def main() -> int:
     require_deployments_create()
+    require_domain_uncovered()
     project_names = list_project_names()
     write_snapshot(project_names)
     print(f"Snapshotted {len(project_names)} pre-existing IXP project(s) to {SNAPSHOT}")
