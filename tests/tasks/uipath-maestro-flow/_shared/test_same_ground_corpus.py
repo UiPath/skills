@@ -38,9 +38,6 @@ V1_AUTHORING_ALLOWLIST = {
     "ixp/routing_listing.yaml",
     "ixp/scaffold_minimal.yaml",
     "ixp/scaffold_multinode.yaml",
-    "smoke/init_validate.yaml",
-    "smoke/inline_agent_robust.yaml",
-    "smoke/registry_discovery.yaml",
 }
 
 SKILL_TELEMETRY_ALLOWLIST = {
@@ -64,13 +61,6 @@ FORBIDDEN_PROMPT_ALLOWLIST = {
     "ixp/routing_negative.yaml",
     "ixp/scaffold_minimal.yaml",
     "ixp/scaffold_multinode.yaml",
-    "single_node/delay/delay.yaml",
-    "single_node/outlook_waitfor_email/outlook_waitfor_email.yaml",
-    "single_node/transform_filter/transform_filter.yaml",
-    "single_node/transform_group_by/transform_group_by.yaml",
-    "single_node/transform_map/transform_map.yaml",
-    "smoke/merge_parallel_sync.yaml",
-    "smoke/scheduled_trigger.yaml",
 }
 
 # These born-neutral escalation tasks are outside the recipe-edit sweep. Their
@@ -101,26 +91,6 @@ DEBUG_SOLUTION_ALLOWLIST = {
     "interactive/cli_dice_roller_simulated/cli_dice_roller_simulated.yaml",
     "interactive/customer_escalation_triage/customer_escalation_triage.yaml",
     "interactive/slack_channel_description_simulated/slack_channel_description_simulated.yaml",
-    "multi_node/bellevue_weather/bellevue_weather.yaml",
-    "multi_node/calculator/calculator.yaml",
-    "multi_node/customer_escalation/customer_escalation.yaml",
-    "multi_node/dice_roller/dice_roller.yaml",
-    "multi_node/feet_inches/feet_inches.yaml",
-    "multi_node/loop_multiply/loop_multiply.yaml",
-    "multi_node/multi_city_weather/multi_city_weather.yaml",
-    "multi_node/reading_list/reading_list.yaml",
-    "multi_node/slack_channel_description/slack_channel_description.yaml",
-    "multi_node/slack_weather_pipeline/slack_weather_pipeline.yaml",
-    "multi_node/wiki_pageviews/wiki_pageviews.yaml",
-    "single_node/api_workflow/api_workflow.yaml",
-    "single_node/decision/decision.yaml",
-    "single_node/file_attachment/file_attachment.yaml",
-    "single_node/lowcode_agent/lowcode_agent.yaml",
-    "single_node/openmeteo_weather/openmeteo_weather.yaml",
-    "single_node/rpa/rpa.yaml",
-    "single_node/subflow/subflow.yaml",
-    "single_node/switch/switch.yaml",
-    "single_node/terminate/terminate.yaml",
     "connector_features/jdbc_databricks_query/jdbc_databricks_query.yaml",
 }
 
@@ -178,7 +148,10 @@ def _is_debug_graded(task_path: Path, text: str) -> bool:
     for criterion_type, criterion in _criterion_blocks(text):
         if criterion_type == "command_not_executed":
             continue
-        normalized = criterion.lower().replace("\\\\", "\\")
+        executable = "\n".join(
+            line for line in criterion.splitlines() if not line.lstrip().startswith("#")
+        )
+        normalized = executable.lower().replace("\\\\", "\\")
         if "flow\\s+debug" in normalized or "flow debug" in normalized:
             return True
         if criterion_type != "run_command":
@@ -221,9 +194,12 @@ def test_v1_only_authoring_commands_match_the_temporary_allowlist() -> None:
     offenders = set()
     for relative, _, text in _tagged_tasks():
         for criterion_type, criterion in _criterion_blocks(text):
-            if criterion_type == "command_executed" and _has_v1_authoring_grammar(
+            if criterion_type != "command_executed" or not _has_v1_authoring_grammar(
                 criterion
             ):
+                continue
+            threshold = re.search(r"(?m)^\s+pass_threshold:\s*([0-9.]+)", criterion)
+            if threshold is None or float(threshold.group(1)) > 0:
                 offenders.add(relative)
     assert offenders == V1_AUTHORING_ALLOWLIST
 
