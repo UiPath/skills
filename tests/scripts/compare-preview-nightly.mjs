@@ -59,19 +59,20 @@ function baselineMatches(run, config, expectedIds) {
   if (run.environment_info?.preview_nightly) return false;
   const rows = taskRows(run);
   if (!expectedIds.every((taskId) => rows.some((row) => row.task_id === taskId))) return false;
+  const models = new Set(
+    rows.filter((row) => expectedIds.includes(row.task_id)).map((row) => row.model_used).filter(Boolean),
+  );
+  const taskModelMatches = models.size === 1 && models.has(config.model);
   const recorded = run.environment_info?.run_config;
   if (recorded) {
     return (
       recorded.harness === config.harness &&
-      recorded.model === config.model &&
-      recorded.environment === config.environment
+      recorded.environment === config.environment &&
+      (recorded.model === config.model || taskModelMatches)
     );
   }
   if (config.harness !== 'claude-code' || config.environment !== 'alpha') return false;
-  const models = new Set(
-    rows.filter((row) => expectedIds.includes(row.task_id)).map((row) => row.model_used).filter(Boolean),
-  );
-  return models.size === 1 && models.has(config.model);
+  return taskModelMatches;
 }
 
 function runTimestamp(run, filePath) {

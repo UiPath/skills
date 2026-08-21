@@ -21,12 +21,12 @@ function rows(score, model = 'claude-sonnet-5') {
   }));
 }
 
-function run(run_id, score, runConfig) {
+function run(run_id, score, runConfig, rowModel) {
   return {
     run_id,
     end_time: `${run_id}T05:00:00Z`,
     environment_info: runConfig ? { run_config: runConfig } : {},
-    task_results: rows(score),
+    task_results: rows(score, rowModel),
   };
 }
 
@@ -44,7 +44,7 @@ test('selects the newest baseline with the exact run config and all nine tasks',
   const wrongModel = writeJson(
     directory,
     'wrong-model.json',
-    run('2026-08-20', 0.9, { ...config, model: 'claude-opus-5' }),
+    run('2026-08-20', 0.9, { ...config, model: 'claude-opus-5' }, 'claude-opus-5'),
   );
   const selected = selectBaseline([older, wrongModel, newest], config, tasks);
   assert.equal(selected.filePath, newest);
@@ -61,6 +61,25 @@ test('rejects a baseline from a different harness', () => {
     () => selectBaseline([file], { harness: 'claude-code', model: 'claude-sonnet-5', environment: 'alpha' }, tasks),
     /No regular-nightly baseline matches/,
   );
+});
+
+test('matches a VM baseline whose route-qualified model has the same task model identity', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'preview-compare-'));
+  const file = writeJson(
+    directory,
+    'vm.json',
+    run('2026-08-20', 0.9, {
+      harness: 'claude-code',
+      model: 'eu.anthropic.claude-sonnet-5',
+      environment: 'alpha',
+    }),
+  );
+  const selected = selectBaseline(
+    [file],
+    { harness: 'claude-code', model: 'claude-sonnet-5', environment: 'alpha' },
+    tasks,
+  );
+  assert.equal(selected.filePath, file);
 });
 
 test('builds per-task deltas and a readable table', () => {
