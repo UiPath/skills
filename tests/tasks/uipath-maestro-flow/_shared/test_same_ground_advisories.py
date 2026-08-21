@@ -183,6 +183,27 @@ def test_bindings_checker_accepts_v2_symbolic_key_with_real_values(tmp_path: Pat
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_bindings_checker_prefers_solution_flow_over_root_scratch(tmp_path: Path) -> None:
+    checker = FLOW_TASKS / "bindings" / "check_bindings.py"
+    project = tmp_path / "BindingsMulti" / "BindingsMulti"
+    project.mkdir(parents=True)
+    (project / "project.uiproj").write_text(json.dumps({"ProjectType": "Flow"}))
+    good = {"nodes": [], "bindings": []}
+    (project / "BindingsMulti.flow").write_text(json.dumps(good))
+    (tmp_path / "BindingsMulti.flow").write_text(json.dumps({"nodes": []}))
+
+    result = subprocess.run(
+        [sys.executable, str(checker), "structure", "**/BindingsMulti*.flow"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert str(project.relative_to(tmp_path)) in result.stdout
+
+
 def test_inline_agent_ignores_staging_trees(tmp_path: Path) -> None:
     valid = {
         "settings": {"model": "gpt-4.1"},
