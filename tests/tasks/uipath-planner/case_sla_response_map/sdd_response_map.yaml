@@ -13,9 +13,9 @@ tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-
 max_iterations: 1
 
 run_limits:
-  task_timeout: 3000
+  task_timeout: 4200
   max_turns: 90
-  turn_timeout: 2400
+  turn_timeout: 3600
 
 initial_prompt: |
   Design an "OrderExceptionReview" Maestro case and write the design document to `sdd.md`.
