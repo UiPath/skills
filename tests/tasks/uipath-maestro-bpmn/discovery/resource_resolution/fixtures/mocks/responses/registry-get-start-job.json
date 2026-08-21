@@ -1,0 +1,24 @@
+{
+  "Result": "Success",
+  "Data": {
+    "ExtensionType": {
+      "ExtensionType": "Orchestrator.StartJob",
+      "RequiresDiscovery": true,
+      "BindingPattern": "process",
+      "BindingInfo": {
+        "Resource": "process",
+        "ContextField": "releaseKey",
+        "PropertyAttribute": "Key"
+      },
+      "ContextFields": [
+        {
+          "Name": "releaseKey",
+          "BindingInfo": {
+            "Resource": "process",
+            "PropertyAttribute": "Key"
+          }
+        }
+      ]
+    }
+  }
+}
