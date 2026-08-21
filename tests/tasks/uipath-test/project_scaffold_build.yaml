@@ -1,0 +1,105 @@
+task_id: skill-test-project-scaffold-build
+description: >
+  Integration test: agent uses the uipath-test skill to provision a Test Manager
+  project from nothing, prove it is usable by starting a run inside it, and tear
+  it down again. Asserts that the agent (a) checks login status, (b) creates the
+  project with `project create` carrying both --name and --project-key and the
+  caller's naming stamp, (c) starts a run against a test case it authored in that
+  fresh project, and (d) deletes the project with --yes under the authorization
+  the prompt grants. The skill — not the prompt — must teach the project/test
+  case/run ordering, that a run needs a test case UUID rather than a key, and
+  that delete requires --yes. Covers `project create` and `project delete`, which
+  no other task in this directory asserts.
+tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 40
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, datetime
+      PREFIX = "EVFX-SCAFFOLD-"
+      today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      projects = call("tm", "project", "list", "--filter", PREFIX).get("Data") or []
+      removed = 0
+      for p in projects:
+          name = p.get("Name") or ""
+          if not name.startswith(PREFIX) or name.startswith(PREFIX + today):
+              continue
+          key = p.get("ProjectKey") or p.get("Key")
+          if not key:
+              continue
+          call("tm", "project", "delete", "--project-key", key, "--yes")
+          removed += 1
+      print(f"ORPHAN SWEEP: removed {removed} stranded {PREFIX}* project(s) from earlier days")
+      PYEOF
+    timeout: 180
+
+initial_prompt: |
+  I want to dry-run our Test Manager provisioning before I do it for real. In a
+  throwaway project of your own: create the project, add a single manual test
+  case to it, and start a run for that test case so I can see the provisioning
+  actually works end to end. Then remove the project so nothing is left behind.
+
+  Name it `EVFX-SCAFFOLD-<STAMP>-<TAG>`, where <STAMP> is the current UTC date
+  and time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase hex characters you
+  generate once for this session. Use a project key of `EVSC` followed by 4
+  uppercase hex characters. The random tag and key suffix matter: another
+  session may start in the very same second, and a timestamp alone would
+  collide. Do not reuse or extend any existing project.
+
+  I authorize you to delete this project and everything inside it when you are
+  done. Do not ask me to confirm the deletion — you already have my approval for
+  this exact project. Deleting it is the final required step.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status before touching Test Manager (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the project with --name, --project-key and the caller's EVFX-SCAFFOLD- stamp"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*EVFX-SCAFFOLD-)(?=[\s\S]*--name\s+\S)(?=[\s\S]*--project-key\s+\S)uip\s+tm\s+project\s+create\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent authored a test case in its fresh project"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--name\s+\S)uip\s+tm\s+testcases?\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started a run against that test case by UUID, proving the provisioning is usable"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--test-case-id\s+\S)uip\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted its throwaway project with --yes, leaving no tenant residue (Critical Rule #6)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*(--yes|-y)\b)uip\s+tm\s+project\s+delete\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0

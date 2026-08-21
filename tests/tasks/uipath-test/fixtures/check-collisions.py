@@ -31,6 +31,9 @@ OWNERS = {
     "ORG": "organize_testcases_into_testsets.yaml",
     "READY": "integration_release_readiness_qa_lead.yaml",
     "JUNIT": "test_report_junit_export.yaml",
+    "SCAFFOLD": "project_scaffold_build.yaml",
+    "CURATE": "testset_curation_by_label_build.yaml",
+    "SCHEMA": "customfield_schema_multiscope_build.yaml",
 }
 
 

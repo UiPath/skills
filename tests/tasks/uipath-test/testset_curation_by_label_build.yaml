@@ -1,0 +1,117 @@
+task_id: skill-test-testset-curation-by-label-build
+description: >
+  Integration test: agent uses the uipath-test skill to assemble a regression
+  test set from labelled test cases, inside a throwaway project it creates and
+  deletes. Asserts that the agent (a) checks login status with --output json,
+  (b) applies the tier labels with `objectlabel add`, (c) populates the set with
+  `testcases add --test-set-key --labels`, passing BOTH tier labels in one
+  space-separated variadic call, (d) never uses the comma-joined `--labels A,B`
+  form, which the CLI reads as a single label and which therefore matches
+  nothing, (e) does not fall back to enumerating `--test-case-keys`, which
+  defeats the selector the request asks for, and (f) deletes the project with
+  --yes. The skill — not the prompt — must teach the label selector, its
+  space-separated shape, and that label matching is OR, exact and case-sensitive.
+tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 28
+  max_turns: 50
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, datetime
+      PREFIX = "EVFX-CURATE-"
+      today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      projects = call("tm", "project", "list", "--filter", PREFIX).get("Data") or []
+      removed = 0
+      for p in projects:
+          name = p.get("Name") or ""
+          if not name.startswith(PREFIX) or name.startswith(PREFIX + today):
+              continue
+          key = p.get("ProjectKey") or p.get("Key")
+          if not key:
+              continue
+          call("tm", "project", "delete", "--project-key", key, "--yes")
+          removed += 1
+      print(f"ORPHAN SWEEP: removed {removed} stranded {PREFIX}* project(s) from earlier days")
+      PYEOF
+    timeout: 180
+
+initial_prompt: |
+  I want to see how our release-tier tagging would work before I apply it to a
+  real project. In a throwaway project of your own:
+
+  Set up three test cases. Tag two of them as tier 1 and the third as tier 2,
+  using the label names `EVFX-CURATE-tier1` and `EVFX-CURATE-tier2`. Then build
+  me one regression test set holding every test case that carries either of
+  those two labels — populate it by label, not by naming individual test cases,
+  because in the real project new cases get tagged all the time and I do not
+  want to re-list keys every release.
+
+  Name the project `EVFX-CURATE-<STAMP>-<TAG>` with a project key of `EVCU`
+  followed by 4 uppercase hex characters, where <STAMP> is the current UTC date
+  and time as YYYYMMDD-HHMMSS and <TAG> is 6 random lowercase hex characters you
+  generate once for this session. The random tag and key suffix matter: another
+  session may start in the very same second. Do not reuse or extend any existing
+  project.
+
+  I authorize you to delete this project and everything inside it when you are
+  done. Do not ask me to confirm the deletion — you already have my approval for
+  this exact project. Deleting it is the final required step.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with `--output json` (Critical Rules #1 + #3)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied the tier labels to its test cases with `objectlabel add`"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--object-type\s+TestCase)(?=[\s\S]*--object-ids\s+\S)(?=[\s\S]*--labels\s+\S)(?=[\s\S]*EVFX-CURATE-tier)uip\s+tm\s+objectlabel\s+add\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent populated the set with the --labels selector, passing BOTH tier labels in one variadic call"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--labels\b)(?=[\s\S]*EVFX-CURATE-tier1)(?=[\s\S]*EVFX-CURATE-tier2)uip\s+tm\s+testcases?\s+add\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not comma-join --labels — the CLI reads `A,B` as one label and silently matches nothing"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+add[\s\S]*--labels\s+\S+,'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not fall back to enumerating explicit --test-case-keys, which defeats the label selector the request asked for"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases?\s+add[\s\S]*--test-case-keys\b'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted its throwaway project with --yes, leaving no tenant residue (Critical Rule #6)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*(--yes|-y)\b)uip\s+tm\s+project\s+delete\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

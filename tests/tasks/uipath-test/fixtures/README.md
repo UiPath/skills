@@ -24,6 +24,9 @@ and therefore exact for this scheme.
 | `release_signoff_wait_report_e2e` | CLAIM | `EVFX-SIGNOFF-SET`, `EVFX-SIGNOFF-TC{1,2}` | No execution; both cases automation-linked |
 | `organize_testcases_into_testsets` | CLAIM | the `EVFX-ORG-*` namespace | Nothing pre-created; the task creates `EVFX-ORG-<YYYYMMDD-HHMMSS>-*` and `pre_run` clears earlier days |
 | `integration_release_readiness_qa_lead` | BANK | the existing regression suite (no `EVFX-` names) | 1 Finished execution mixing `Passed`/`Failed`/`Restricted`/`None` |
+| `project_scaffold_build` | its own throwaway project | the `EVFX-SCAFFOLD-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
@@ -85,6 +88,40 @@ them wrote to it. `execution_rerun` consumed the failures that
 the suite converged on 3-pass/0-fail — so both tasks failed for reasons that
 had nothing to do with the skill under test. Scores moved every night while
 the code under test never changed.
+
+## Self-contained build tasks
+
+The three `mode:build` tasks — `project_scaffold_build`,
+`testset_curation_by_label_build`, `customfield_schema_multiscope_build` — sit
+outside the seeded-fixture model entirely. Each one **creates its own throwaway
+project, does all its work inside it, and deletes it as the final graded step.**
+They read and write nothing in CLAIM, HEALTH or BANK.
+
+This is the pattern tests/README.md prescribes: *"There is no `post_run`. The
+agent creates and deletes its own ephemeral resources as part of the test
+scenario."* Deleting the project removes the test cases, labels, test sets and
+custom field definitions inside it in one call, so cleanup is a single command
+rather than a per-object sweep.
+
+Consequences worth knowing before you edit one:
+
+1. **The delete is graded, not a hook.** It is both the cleanup mechanism and the
+   only coverage of `project delete` in this directory. Removing that criterion
+   silently turns the task into a tenant-litterer.
+2. **The prompt must pre-authorize the delete.** SKILL.md Critical Rule 6 tells
+   the agent to confirm before any delete, and the eval agent is
+   non-interactive — nobody can answer, so an unauthorized delete is a
+   guaranteed fail. This is the exact failure mode that took
+   `testcase-steps-lifecycle-integration` down on the 2026-08-19 nightly. Each
+   prompt therefore grants approval for that specific project in as many words.
+3. **`pre_run` seeds nothing.** It is an orphan sweep for the run that dies
+   between create and delete, which would otherwise strand a project forever. It
+   spares today's stamp, because two models run the nightly concurrently and a
+   whole-prefix sweep would delete the other run's project mid-run.
+4. **Names still carry the `EVFX-` prefix** even though nothing persists. A run
+   that dies leaves a project behind, and the prefix is what makes that residue
+   identifiable and sweepable. The namespaces are registered in
+   `check-collisions.py` like any other.
 
 ## Automation-linked fixtures
 
