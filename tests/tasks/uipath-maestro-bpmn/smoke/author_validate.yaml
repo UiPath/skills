@@ -47,7 +47,7 @@ success_criteria:
   - type: command_executed
     description: "Agent ran an explicit validation command on the authored BPMN"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+validate\s+InvoiceApprovalSolution/InvoiceApproval/InvoiceApproval\.bpmn'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+validate\s+["'']?(\./)?(InvoiceApprovalSolution/)?(InvoiceApproval/)?InvoiceApproval\.bpmn["'']?'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
