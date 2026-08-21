@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-slack-channel-description-simulated
 description: >
   Single-connector Slack flow (read a channel's description and output it),
@@ -37,11 +41,11 @@ simulation:
     you: the channel is #office-bellevue in Slack, you want that channel's
     description text as the result, and it has to work on its own without you
     supplying the channel every time it runs. Say that it has to be built as a
-    UiPath Maestro Flow — not an API workflow, not a standalone script — and
-    that you want it validated before you sign off. Do not name files or paths
-    and do not use technical wording. Close by inviting the agent to ask you
-    anything it needs before it starts building. Keep the withheld items below
-    to yourself until it asks.
+    UiPath Maestro Flow — not an API workflow, not a standalone script — inside
+    a solution of the same name, and that you want it validated before you sign
+    off. Do not name files or paths and do not use technical wording. Close by
+    inviting the agent to ask you anything it needs before it starts building.
+    Keep the withheld items below to yourself until it asks.
 
     WITHHELD — reveal each of these ONLY if the agent asks about it:
       - The project name should be "SlackChannelDescription".
@@ -62,12 +66,11 @@ simulation:
   n_trials: 1
 
 success_criteria:
-  # Name-agnostic: any .flow the agent built must validate. The exact project
-  # name is scored separately below so a working-but-misnamed flow still earns
-  # most of the credit. (`**` skips dot-dirs, so .uipath/.skills flows are ignored.)
+  # Name-agnostic: any unambiguous generated .flow must validate. The exact
+  # project name is scored separately below.
   - type: run_command
     description: "uip flow validate passes (any .flow)"
-    command: "python3 -c \"import glob,subprocess,sys; flows=glob.glob('**/*.flow',recursive=True); sys.exit('no .flow file found') if not flows else sys.exit(subprocess.run(['uip','maestro','flow','validate',flows[0],'--output','json']).returncode)\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -81,7 +84,7 @@ success_criteria:
   # unresolved channel fails here regardless of what the static check below reports.
   - type: run_command
     description: "Flow debug runs; Slack connector executed and output has the channel description"
-    command: "python3 $TASK_DIR/check_channel_description.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/interactive/slack_channel_description_simulated/check_channel_description.py"
     timeout: 300
     expected_exit_code: 0
     weight: 5.0
@@ -107,7 +110,7 @@ success_criteria:
   # hard-fail the whole task — see the block comment; scored for signal only.
   - type: run_command
     description: "Flow targets the #office-bellevue channel (elicited from the user)"
-    command: "python3 -c \"import glob,re,sys; flows=glob.glob('**/*.flow',recursive=True); t=(open(flows[0]).read() if flows else ''); sys.exit('no .flow file found') if not flows else sys.exit(0 if ('office-bellevue' in t.lower() or re.search(r'conversationsInfoId[^A-Za-z0-9]+C[A-Z0-9]{6,}', t)) else 'flow neither names #office-bellevue nor hardwires a resolved Slack channel ID')\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --regex '(?i)(office-bellevue|conversationsInfoId[^A-Za-z0-9]+C[A-Z0-9]{6,})'"
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
@@ -120,7 +123,7 @@ success_criteria:
   # keeps it from dominating the score.
   - type: run_command
     description: "Project/flow is named SlackChannelDescription (elicited from the user)"
-    command: "python3 -c \"import glob,sys; sys.exit(0 if glob.glob('**/SlackChannelDescription.flow',recursive=True) else 'expected a flow named SlackChannelDescription.flow')\""
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SlackChannelDescription"
     timeout: 15
     expected_exit_code: 0
     weight: 1.0
