@@ -1,86 +1,48 @@
 # Guardrail Review — LLM-as-judge (audit + recommend)
 
-The read-only **review** counterpart of the `uipath-agents` guardrail recommend/validate capability. It powers
-the guardrail judgment rules in [`../agents-lowcode-rules.md`](../agents-lowcode-rules.md) §GuardrailsChecker.
-Run it during a low-code agent review (SKILL.md Step 2.5b) **after** `uip agent review` (Step 2.5a). Two modes:
+The read-only **review** counterpart of the `uipath-agents` guardrail recommend/validate capability. It powers [`../agents-lowcode-rules.md`](../agents-lowcode-rules.md) §GuardrailsChecker and runs during low-code agent review (SKILL.md Step 2.5b), **after** `uip agent review` (Step 2.5a).
 
-- **Audit Mode** — the agent already has guardrails → are they *effective and appropriate*? (emits **defects**)
-- **Recommend Mode** — the agent is missing guardrails for use cases it matches → which should it add? (emits
-  **Info recommendations**)
+Modes:
+- **Audit Mode:** existing guardrails → effective and appropriate? Emit **defects**.
+- **Recommend Mode:** missing guardrails for matching use cases → emit **Info recommendations**.
 
-This is **review only** — never write, fix, or `uip agent validate`. The reviewer emits findings; the user
-(or the `uipath-agents` skill) applies them.
+Review only: never write, fix, or `uip agent validate`; emit findings for the user or `uipath-agents` skill to apply.
 
-> **Boundary with `uip agent review` — do not double-flag.** The review CLI owns every FORMAT / SCHEMA /
-> SET-MEMBERSHIP guardrail check and emits them as `GUARDRAIL_*` / `GUARDRAIL_CUSTOM_*` / `LOWCODE_*GUARDRAIL*`
-> rule IDs (unknown validator, scope-not-allowed, missing/unknown/type-mismatch/value-invalid parameters,
-> custom-rule discriminators/operator/value/scope, tool-ref existence, missing name/description). The rules here
-> fire **only on guardrails the CLI found format-valid**, and judge only what code cannot decide: whether a valid
-> action actually protects at its scope, whether a valid guardrail belongs on this agent at all, and whether a
-> guardrail the agent should have is missing. A format-invalid guardrail is skipped here until it is fixed — do
-> not re-describe its format problem.
+> **Boundary with `uip agent review` — do not double-flag.** The CLI owns FORMAT / SCHEMA / SET-MEMBERSHIP checks and emits `GUARDRAIL_*` / `GUARDRAIL_CUSTOM_*` / `LOWCODE_*GUARDRAIL*` IDs for unknown validator, scope-not-allowed, missing/unknown/type-mismatch/value-invalid parameters, custom-rule discriminators/operator/value/scope, tool-ref existence, and missing name/description. These rules apply only to CLI-format-valid guardrails and judge only what code cannot: whether a valid action protects at its scope, whether a valid guardrail belongs on the agent, and whether a required guardrail is missing. Skip format-invalid guardrails until fixed; do not restate their format problems.
 
-Like the recommend capability, this is **live-catalog driven** — the catalog's authored fields (`when_to_use`,
-`use_cases`, `security_risk_addressed`, `when_not_to_use`, `security_category`, `examples[].config`) drive every
-decision. Do not hardcode which guardrail fits which agent.
+Decisions are **live-catalog driven**. Use catalog `when_to_use`, `use_cases`, `security_risk_addressed`, `when_not_to_use`, `security_category`, and `examples[].config`; never hardcode validator-to-agent fit.
 
 ## Conclusive existing-guardrail fast path — completed report checkpoint
 
-When a format-valid existing guardrail and the source it selects conclusively match a catalog
-`when_not_to_use` clause, use this bounded sequence **before** general manual review:
+When a format-valid guardrail and its selected source conclusively match a catalog `when_not_to_use` clause:
 
-1. run `uip agent review` and retain its deterministic findings and `Data.Grade`;
-2. read the existing guardrail's exact source path, `id`, `name`, `validatorType`, action, scopes, and
-   `matchNames`, plus only the source or resource selected by that guardrail;
-3. fetch the catalog and tenant validator list once, as specified in Step 0;
-4. compare the configured action and scope with the catalog's exact `when_not_to_use` clause and relevant
-   `examples[].config`; and
-5. when the clause directly matches the selected source, establish `LC_GUARDRAIL_ACTION_INEFFECTIVE` and
-   immediately save the requested report.
+1. Run `uip agent review` and retain deterministic findings and `Data.Grade`.
+2. Read the guardrail's exact source path, `id`, `name`, `validatorType`, action, scopes, and `matchNames`, plus only its selected source or resource.
+3. Fetch the catalog and tenant validator list once, as specified in Step 0.
+4. Compare configured action and scope with the exact `when_not_to_use` clause and relevant `examples[].config`.
+5. If the clause directly matches the selected source, establish `LC_GUARDRAIL_ACTION_INEFFECTIVE` and immediately save the requested report.
 
-The saved report is a completed checkpoint, not working notes. It must include the retained CLI findings, the
-letter-grade derivation, and the Audit Mode finding with the exact guardrail source path and identifiers, selected
-resource path and identifiers, matched catalog clause, configured scope/action, and catalog-supported fix. If the
-user explicitly requested additional exhaustive review, save this checkpoint first and update the same report
-after that work completes. Otherwise, return the report and end the current review turn. Do not delay the checkpoint
-for solution packing, eval inspection, repeated validation or catalog calls, general architecture analysis, or
-unrelated project introspection.
+The completed checkpoint must include retained CLI findings, letter-grade derivation, and the Audit Mode finding with exact guardrail source path and identifiers, selected resource path and identifiers, matched catalog clause, configured scope/action, and catalog-supported fix. If the user explicitly requests additional exhaustive review, save this checkpoint first and update the same report afterward; otherwise return it and end the review turn. Do not delay it for solution packing, eval inspection, repeated validation or catalog calls, general architecture analysis, or unrelated project introspection.
 
-This fast path requires a direct source-to-catalog contradiction, not a plausible concern. Canonical example:
-`pii_detection` uses `Block` or `Filter` at `Tool` scope, `matchNames` selects `SendCustomerEmail`, and that tool's
-input schema requires `recipient_email`; the catalog says that action breaks a tool that requires PII to function.
-If the selected input is optional or the catalog clause does not directly match, continue normal Audit Mode instead.
+Require a direct source-to-catalog contradiction, not a plausible concern. For example, `pii_detection` with `Block` or `Filter` at `Tool` scope selecting `SendCustomerEmail`, whose input schema requires `recipient_email`, directly matches a catalog clause saying that action breaks a tool requiring PII. If the input is optional or the clause does not directly match, continue normal Audit Mode.
 
 ## Missing-guardrail fast path — completed deliverable
 
-When the source clearly matches a missing-guardrail use case and `guardrails[]` is absent or lacks the matching
-validator, use this bounded sequence:
+When the source clearly matches a missing-guardrail use case and `guardrails[]` is absent or lacks the matching validator:
 
-1. run `uip agent review` and retain its deterministic findings and `Data.Grade`;
-2. read the system prompt, schema property names, tool/resource names, and existing `guardrails[]` from the target
-   agent source;
-3. fetch the catalog and tenant validator list once, as specified in Step 0;
-4. establish the `LC_GUARDRAIL_RECOMMENDED` finding using R2–R5; and
-5. immediately save the requested report with the rule ID exactly
-   `LC_GUARDRAIL_RECOMMENDED`, the exact source-evidence clause, and the R5 scope/action, then return it.
+1. Run `uip agent review` and retain deterministic findings and `Data.Grade`.
+2. Read the system prompt, schema property names, tool/resource names, and existing `guardrails[]` from the target agent source.
+3. Fetch the catalog and tenant validator list once, as specified in Step 0.
+4. Establish `LC_GUARDRAIL_RECOMMENDED` using R2–R5.
+5. Immediately save the requested report with rule ID exactly `LC_GUARDRAIL_RECOMMENDED`, the exact source-evidence clause, and the R5 scope/action, then return it.
 
-The saved report is the completed deliverable for this guardrail path. After saving it, **end the current review
-turn**. Do not delay delivery for solution packing, eval inspection, repeated catalog/list calls, general
-architecture analysis, or unrelated project introspection. Continue beyond it only when the user's initial request
-explicitly asks for an exhaustive review or names additional non-guardrail checks.
+This saved report is the completed deliverable. After saving it, **end the current review turn** unless the initial request explicitly asks for exhaustive review or additional non-guardrail checks. Do not delay delivery for solution packing, eval inspection, repeated catalog/list calls, general architecture analysis, or unrelated project introspection.
 
-`LC_GUARDRAIL_PII_MISSING`, `LC_GUARDRAIL_MISSING`, and other descriptive variants are not valid rule IDs — never
-invent a new one. This is about invented IDs only: if the catalog fetch itself fails, do **not** fall back to
-rule-ID-less prose for a missing-guardrail finding — `LC_GUARDRAIL_RECOMMENDED` stays the correct, valid rule ID
-per [Step 0 — If the catalog is unavailable](#if-the-catalog-is-unavailable): use generic scope/action wording and
-note "catalog-limited" in the message, but still cite `LC_GUARDRAIL_RECOMMENDED`.
-
----
+Never invent `LC_GUARDRAIL_PII_MISSING`, `LC_GUARDRAIL_MISSING`, or other descriptive IDs. If the catalog fetch fails, still use `LC_GUARDRAIL_RECOMMENDED` per [Step 0 — If the catalog is unavailable](#if-the-catalog-is-unavailable): use generic scope/action wording and note `catalog-limited`.
 
 ## Step 0 — Fetch Catalog and Available Validators
 
-Run this once when the low-code `agent.json` has a non-empty `guardrails[]` **or** the agent matches any catalog
-use case (so Recommend Mode can run). Same fetch the `uipath-agents` guardrail modes use.
+Run this once when low-code `agent.json` has a non-empty `guardrails[]` or the agent matches any catalog use case.
 
 ### Catalog (cacheable — 30-minute TTL)
 
@@ -95,167 +57,98 @@ else:
 "
 ```
 
-- **CACHE_HIT**: read `.guardrails-catalog-cache.json` directly.
-- **CACHE_MISS**: fetch and save: `uip agent guardrails catalog --output json > .guardrails-catalog-cache.json`
-  (the CLI writes both success and error JSON to stdout — do not add `2>&1`).
-
-**Never invoke `uip agent guardrails catalog` a second time in the same review.** Every later read — a quick
-look, a `python3`/`jq` parse, a re-check — goes through `.guardrails-catalog-cache.json`, not a fresh CLI call.
+- On **CACHE_HIT**, read `.guardrails-catalog-cache.json` directly.
+- On **CACHE_MISS**, run `uip agent guardrails catalog --output json > .guardrails-catalog-cache.json` and save its output. The CLI writes success and error JSON to stdout; do not add `2>&1`.
+- Never invoke `uip agent guardrails catalog` a second time in the same review. Read `.guardrails-catalog-cache.json` for every later look, parse, or re-check.
 
 ### Guardrails List (NEVER cached — tenant-specific)
+
+Run:
 
 ```bash
 uip agent guardrails list --output json
 ```
 
-Build a `{ validatorId: status }` lookup from the `Data` array (use only `Status == "Available"`).
+Build `{ validatorId: status }` from the `Data` array, using only `Status == "Available"`.
 
-> **`Validator` is not unique — key on `(Validator, IsByo)`, not `Validator` alone.** A tenant with a bring-your-own (BYOG) configuration for a validator has two entries sharing the same `Validator` name — one built-in, one BYO (`IsByo: true`). Collapsing them can point Audit Mode's Correctness/Actionability comparison at the wrong entry's `Parameters`/`AllowedScopes`. When the reviewed guardrail JSON carries `byoValidatorName`, match it against that entry's `ByoValidatorName`, not `Validator` alone. See [uipath-agents guardrails.md § BYO (bring-your-own) guardrails](/uipath:uipath-agents).
+`Validator` is not unique: key on `(Validator, IsByo)`, not `Validator` alone. A BYOG tenant can have two entries with the same `Validator`, one built-in and one BYO (`IsByo: true`); collapsing them can use the wrong `Parameters`/`AllowedScopes`. When reviewed guardrail JSON has `byoValidatorName`, match it to `ByoValidatorName`, not only `Validator`. See [uipath-agents guardrails.md § BYO (bring-your-own) guardrails](/uipath:uipath-agents).
 
 ### If the catalog is unavailable
 
-If the catalog output contains `"Code": "GuardrailCatalogUnavailable"` (or the CLI is unavailable), **do not
-guess**:
+If output contains `"Code": "GuardrailCatalogUnavailable"` or the CLI is unavailable, do not guess:
 
-- **Audit Mode** (`LC_GUARDRAIL_ACTION_INEFFECTIVE`, `LC_GUARDRAIL_MISAPPLIED`) depends on the catalog → record
-  these rules under the report's "Rules Skipped" subsection with reason `"guardrails catalog unavailable"`
-  (SKILL.md Critical Rule 11). Do not emit catalog-grounded effectiveness/relevance verdicts without it.
-- **Recommend Mode** (`LC_GUARDRAIL_RECOMMENDED`) can still detect a missing guardrail from `agent.json` alone
-  (schema/prompt/tool inference); when the catalog is absent, phrase the recommended scope/action generically
-  and note "catalog-limited" in the message.
+- **Audit Mode:** put catalog-dependent `LC_GUARDRAIL_ACTION_INEFFECTIVE` and `LC_GUARDRAIL_MISAPPLIED` under the report's **Rules Skipped** subsection with reason `"guardrails catalog unavailable"` (SKILL.md Critical Rule 11). Emit no catalog-grounded effectiveness/relevance verdict.
+- **Recommend Mode:** continue `agent.json`-only schema/prompt/tool inference; use generic scope/action wording and note `catalog-limited`.
 
----
+## Audit Mode — existing guardrails (defects)
 
-## Audit Mode — existing guardrails (findings are defects)
+For each `agent.json` `guardrails[]` entry not flagged format-invalid by the CLI, read `validator`, `selector.scopes`, and action `$actionType`, then run both checks.
 
-For each guardrail in `agent.json`'s `guardrails[]` that the review CLI did **not** flag format-invalid, read
-its `validator`, `selector.scopes`, and action `$actionType`, then run two checks.
-
-> **A BYO-backed guardrail's tenant entry showing `Status: "Disabled"` is a configuration switch, not a format problem.** It means the tenant admin turned that specific BYOG configuration off (Admin → AI Trust Layer → Guardrails Configurations) — don't re-diagnose it as a schema/discriminator issue. If the agent's guardrail targets that disabled configuration (via `byoValidatorName`), it functions the same as targeting an `Unauthorised` validator — treat it as unable to protect and note it in the report.
+A BYO-backed entry with tenant `Status: "Disabled"` is a configuration switch, not a format problem. For a guardrail targeting that configuration through `byoValidatorName`, treat it like an `Unauthorised` validator: unable to protect, and report that condition.
 
 ### Actionability Check → `LC_GUARDRAIL_ACTION_INEFFECTIVE`
 
-A format-valid guardrail's **action** can be ineffective or counterproductive for its **scope**. Compare the
-configured action against the catalog entry's `when_not_to_use` and its representative `examples[].config`
-action for the chosen scope. Emit when the action is in that scope's invalid set. Canonical cases:
+Compare the action with the catalog entry's `when_not_to_use` and representative `examples[].config` action for the chosen scope. Emit when the action is in that scope's invalid set. Include the catalog-recommended action for that scope. Severity is `judgment`: Critical when the guardrail breaks the agent or leaves a security gap; otherwise Warning/Info.
 
-- A **security-critical** guardrail (`security_category` `adversarial_input` / `content_safety`) set to `log`
-  where the catalog example uses `block` — it looks protected but isn't (recommend capability Step 5: *never
-  silently downgrade block → log*).
-- `pii_detection` with `Block` / `Filter` at **Tool** scope on a tool that legitimately needs the PII — the
-  catalog's `when_not_to_use` says *"Do not use at Tool scope with Block or Filter action if the tool requires
-  PII to function (e.g., a SendEmail tool needs the recipient email address)"*; blocking breaks the tool.
-- `pii_detection` with `Log` at **Agent** / **Llm** scope — Log there does **not** prevent PII from entering or
-  reaching the LLM (recommend the blocking action the catalog example uses).
-
-In the description, name the catalog-recommended action for that scope. Severity is `judgment` — a guardrail
-that breaks the agent or leaves a security gap can be Critical; a milder ineffectiveness is Warning/Info.
+Relevant catalog-driven cases include:
+- A security-critical guardrail (`security_category` `adversarial_input` / `content_safety`) using `log` where the catalog example uses `block`.
+- `pii_detection` using `Block` / `Filter` at `Tool` scope for a tool that legitimately requires PII; match the catalog's `when_not_to_use` clause.
+- `pii_detection` using `Log` at `Agent` / `Llm` scope, which does not prevent PII entering or reaching the LLM.
 
 ### Relevance Check → `LC_GUARDRAIL_MISAPPLIED`
 
-Establish the agent's real context (system prompt, `inputSchema`, `outputSchema`, tool resources). Read the
-catalog entry's `when_not_to_use` / `NOT_recommended_for`. Emit when the agent matches a disqualifying condition
-— the guardrail doesn't belong on this agent. Example: a generate-only agent with no user input carrying a PII
-guardrail (PII `pattern_a`: the agent's PII output is the intended product; the guardrail adds no protection and
-may block legitimate output). Cite the matched `when_not_to_use` clause in the description.
+Read system prompt, `inputSchema`, `outputSchema`, and tool resources to establish real context. Read catalog `when_not_to_use` / `NOT_recommended_for`. Emit when the agent matches a disqualifying condition, such as a generate-only agent with no user input carrying a PII guardrail when PII output is the intended product. Cite the matched catalog clause.
 
----
+## Recommend Mode — missing guardrails (Info recommendations)
 
-## Recommend Mode — missing guardrails (findings are Info recommendations)
-
-Reuse the recommend capability's reasoning, but emit findings instead of writing config. **All missing-guardrail
-recommendations use one rule_id — `LC_GUARDRAIL_RECOMMENDED` (Info)** — emitted **once per missing guardrail**,
-with the specifics in the **message**.
+Reuse recommend reasoning but emit findings instead of writing configuration. Emit exactly one rule ID, `LC_GUARDRAIL_RECOMMENDED` (Info), once per missing guardrail.
 
 ### R1 — Read agent context
 
-From `agent.json`: system prompt text, `inputSchema` / `outputSchema` property names + descriptions, tool
-resource names + descriptions (`resources/`), and the existing `guardrails[]` (to avoid recommending what's
-already there).
+Read from `agent.json`: system prompt; `inputSchema` / `outputSchema` property names and descriptions; tool resource names and descriptions (`resources/`); and existing `guardrails[]`.
 
 ### R2 — Catalog-driven analysis
 
-For each catalog entry, read `when_to_use`, `use_cases`, `description`, `security_risk_addressed`, and reason:
-does the agent's purpose / data / threat model match? Read `when_not_to_use` and skip the entry if the agent
-matches a disqualifying condition. Cross-reference the Step 0 status lookup — only recommend `Available`
-validators (mention `Unauthorised` ones so the user can ask their admin; skip ones absent from the list).
+For each catalog entry, read `when_to_use`, `use_cases`, `description`, `security_risk_addressed`, `when_not_to_use`, and `security_category`. Match purpose, data, and threat model; skip disqualifying entries. Cross-reference the Step 0 status lookup: recommend only `Available` validators, mention `Unauthorised` validators so the user can ask an admin, and skip validators absent from the list.
 
 ### R3 — De-duplicate by `security_category`
 
-Group matched candidates by `security_category` + scope + stage. For a group with more than one candidate, drop
-catalog-deprecated entries, keep the single best fit, and mention the alternative in the message. Derive grouping
-and deprecation from the catalog's own fields — do not hardcode validator names.
+Group matches by `security_category` + scope + stage. If a group has multiple candidates, use catalog fields to identify deprecated entries, keep the single best fit, and mention the alternative.
 
 ### R4 — Recommended scope (block as early as possible)
 
-Recommend the outermost PRE scope the validator's `AllowedScopes` permits for input protection (**Agent** > Llm
-> Tool), Agent · POST for output protection, Tool scope only for a genuinely tool-specific concern.
+Recommend the outermost PRE scope allowed by the validator's `AllowedScopes` for input protection (**Agent** > Llm > Tool), Agent · POST for output protection, and Tool scope only for a genuinely tool-specific concern.
 
-### R5 — Recommended action (the protection-vs-audit signal)
+### R5 — Recommended action (protection vs audit)
 
-Default to the catalog example's `action_type`, and state which of the two the recommendation is:
-
-- **block / escalate — protection really needed:** security-critical use cases (PII that must not enter,
-  prompt-injection / jailbreak on free-text input, harmful content / IP on generated output). Recommend a
-  blocking/escalating guardrail; say so plainly.
-- **log — audit only:** a tool legitimately handles sensitive data, or the user wants observe-first. Recommend a
-  Tool-scope **log** guardrail for an audit trail — **not** a block that would break the tool.
+Default to catalog `examples[].config` `action_type` and state the signal:
+- **block / escalate — protection really needed:** security-critical PII that must not enter, prompt-injection / jailbreak on free-text input, or harmful content / IP on generated output.
+- **log — audit only:** a tool legitimately handles sensitive data or the user wants observe-first; recommend Tool-scope **log**, not block, so the tool works.
 
 ### Emit the finding
 
-One `LC_GUARDRAIL_RECOMMENDED` (Info) per missing guardrail. The message must carry: which guardrail /
-`security_category`, why (the matched `when_to_use` / `use_cases` item or the data flow), the recommended scope,
-and the recommended action with the protection-vs-audit signal. It must also carry a source-evidence clause in
-the form `<source path>: <exact matching identifier(s)>`. Copy schema property names, tool names, resource names,
-and other matched identifiers verbatim from the source; never replace them with display-friendly prose. For a
-schema match, cite the property path and names, for example
-`agent.json inputSchema.properties: customer_email, full_name, ssn`. Cite the catalog's `examples[].config` in
-the fix. Examples:
+Each message must include the guardrail / `security_category`, reason from the matching `when_to_use` / `use_cases` item or data flow, recommended scope, recommended action, protection-vs-audit signal, and a source-evidence clause exactly in the form `<source path>: <exact matching identifier(s)>`. Copy schema property paths/names, tool names, resource names, and other identifiers verbatim. Cite catalog `examples[].config` in the fix. For schema matches, cite the property path and names, for example `agent.json inputSchema.properties: customer_email, full_name, ssn`.
 
-- *"Recommend a PII-detection guardrail at Agent scope with a **block** action — the input schema carries
-  `customer_email` / `ssn` (data_privacy); blocking at Agent · PRE stops unexpected PII before the LLM.
-  Protection needed: block."*
-- *"Recommend a Tool-scope **log** guardrail on `SendCustomerEmail` for an audit trail — the tool legitimately
-  handles the recipient email; use log (not block) so the tool keeps working. Audit only."*
-
-**Validator-name caution (carry over from the catalog/registry note):** do NOT name a platform-documented
-validator (`harmful_content`, `intellectual_property`, `user_prompt_attacks`) unless it is already present in the
-project's config — phrase generically (e.g. "an appropriate content-safety guardrail supported by this agent
-layout"). `pii_detection` and `prompt_injection` are SDK-confirmed and may be named.
-
----
+Do not name platform-documented validators (`harmful_content`, `intellectual_property`, `user_prompt_attacks`) unless already present in project config; use generic wording such as “an appropriate content-safety guardrail supported by this agent layout.” `pii_detection` and `prompt_injection` are SDK-confirmed and may be named.
 
 ## Report
 
 Merge findings into the Step 5 Critical / Warning / Info findings tables (SKILL.md Step 2.5b), one row per finding:
 
-```
+```text
 | <id> | `<rule_id>` | `<file>`: <message>. <suggested_fix>. |
 ```
 
-- Recommendations (`LC_GUARDRAIL_RECOMMENDED`) → **`I-D-` (Info)** — the lowest grade; they are improvements, not
-  failures. The action signal (block/escalate vs log) lives in the message, not the severity.
-- Defects (`LC_GUARDRAIL_ACTION_INEFFECTIVE`, `LC_GUARDRAIL_MISAPPLIED`) → the `judgment` band; pick
-  Critical/Warning/Info by impact and show the reasoning.
-- `file` = `agent.json` (or the normalized JSON); `element` = the guardrail name (defects) or the
-  `security_category` (recommendations).
-
----
+- `LC_GUARDRAIL_RECOMMENDED` → **`I-D-` (Info)**, the lowest grade; recommendations are improvements, not failures. Put block/escalate versus log in the message, not severity.
+- `LC_GUARDRAIL_ACTION_INEFFECTIVE` and `LC_GUARDRAIL_MISAPPLIED` → `judgment` band; choose Critical/Warning/Info by impact and show reasoning.
+- `file` = `agent.json` (or normalized JSON); `element` = guardrail name for defects or `security_category` for recommendations.
 
 ## Critical Rules
 
-1. **Run after `uip agent review` (Step 2.5a)** and only on format-valid guardrails — never double-flag a
-   `GUARDRAIL_*` format finding.
-2. **Catalog-driven, not hardcoded** — every audit verdict and recommendation cites a catalog field
-   (`when_not_to_use`, `when_to_use` / `use_cases`, `examples[].config.action_type`).
-3. **Catalog unavailable → defer Audit Mode** (Rules Skipped), keep Recommend Mode's `agent.json`-only detection
-   with generic wording. Never guess effectiveness/relevance without the catalog.
-4. **Recommendations are one Info rule** (`LC_GUARDRAIL_RECOMMENDED`), one finding per missing guardrail. The
-   message preserves the exact source path and matched identifiers verbatim, then signals **block/escalate**
-   (protection) vs **log** (audit).
-5. **Never silently downgrade block → log** — a security-critical guardrail at `log` is a defect
-   (`LC_GUARDRAIL_ACTION_INEFFECTIVE`), not an acceptable choice, unless the catalog/agent shows a stated reason.
-6. **Do not name platform-documented validators** (`harmful_content` / `intellectual_property` /
-   `user_prompt_attacks`) unless already present — phrase generically. `pii_detection` / `prompt_injection` may
-   be named.
-7. **Review only** — emit findings; never write guardrails, fix `agent.json`, or run `uip agent validate`.
+1. **Run after `uip agent review` (Step 2.5a)** and only on format-valid guardrails; never double-flag a `GUARDRAIL_*` format finding.
+2. **Catalog-driven, not hardcoded:** cite catalog `when_not_to_use`, `when_to_use` / `use_cases`, or `examples[].config.action_type` for every audit verdict and recommendation.
+3. **Catalog unavailable → defer Audit Mode** to Rules Skipped; retain Recommend Mode's `agent.json`-only detection with generic wording. Never guess effectiveness/relevance.
+4. Recommendations use one Info rule, `LC_GUARDRAIL_RECOMMENDED`, once per missing guardrail; preserve exact source path and identifiers and signal **block/escalate** versus **log**.
+5. **Never silently downgrade block → log:** a security-critical guardrail at `log` is `LC_GUARDRAIL_ACTION_INEFFECTIVE`, unless the catalog/agent shows a stated reason.
+6. Do not name `harmful_content` / `intellectual_property` / `user_prompt_attacks` unless already present; phrase generically. `pii_detection` / `prompt_injection` may be named.
+7. **Review only:** emit findings; never write guardrails, fix `agent.json`, or run `uip agent validate`.

@@ -1,57 +1,41 @@
 # Rule Catalog — Workflow (SKILL.md Step 2.5)
 
-Step 2.5 of the review workflow. Runs **after** Step 2 (`uip agent refresh` then `uip agent validate` for low-code agents, plus related CLI validation) and **before** Step 3 (manual checklist review). Adds rule-ID-level findings to the report from two sources, in order:
-
-1. **The review CLI** (`uip agent review` / `uip codedagent review`) — all deterministic static checks.
-2. **The judgment catalog** (`agents-*-rules.md`) — checks that require the agent to read source and reason.
+Step 2.5 runs after Step 2 (`uip agent refresh` then `uip agent validate` for low-code agents, plus related CLI validation) and before Step 3 (manual checklist review). It adds rule-ID findings from the review CLI, then the judgment catalog.
 
 ## Procedure
 
 ### 2.5a — Run the review CLI first
 
-Mandatory even when the skill loads after another review pass already produced findings (SKILL.md Critical Rule 9).
-
-Run the review command for the agent type, once, capturing JSON:
+Run the applicable review command once, even if another review pass already produced findings (SKILL.md Critical Rule 9), and capture JSON:
 
 | Agent type | Command |
 |---|---|
 | Low-code (`agent.json`) | `uip agent review "<PROJECT_DIR>" --output json` |
 | Coded (`main.py` + framework config) | `uip codedagent review "<PROJECT_DIR>" --output json` |
 
-Parse the JSON. Findings live under `Data.Issues[]`; each issue is:
+Parse `Data.Issues[]`. Carry every issue verbatim into the report as `<File>: <Description>. <SuggestedFix>.`; do not re-derive, rename, or re-rank it. Each issue contains `RuleId`, `Category`, `Severity`, `Description`, `File`, and `SuggestedFix`. CLI-emitted `RuleId`s are authoritative and are not duplicated in the skill catalog.
 
-```json
-{
-  "RuleId": "LOWCODE_ENTRY_POINTS_MISSING",
-  "Category": "schema",
-  "Severity": "error",
-  "Description": "...",
-  "File": "entry-points.json",
-  "SuggestedFix": "..."
-}
-```
+Use `Data.Grade` as **G_det**, the deterministic half of the Step 4.5 agent letter grade; read it here and never recompute it (see [agents/agent-grading-rubric.md](agents/agent-grading-rubric.md)). `Data.Verdict` is `PASS`/`FAIL`; `Data.Score`, `Data.Grade`, and `Data.Stats` may also be reported.
 
-The response also carries `Data.Verdict` (PASS/FAIL), `Data.Score`, `Data.Grade`, and `Data.Stats` — report the verdict/score if useful, but the `Issues[]` are the findings. `Data.Grade` is also consumed as **G_det**, the deterministic half of the Step 4.5 agent letter grade (read it from here, never recompute) — see [agents/agent-grading-rubric.md](agents/agent-grading-rubric.md). Carry each issue into the report **verbatim** as `<File>: <Description>. <SuggestedFix>.`; do not re-derive, rename, or re-rank. These `RuleId`s are authoritative as the CLI emits them and are **not** duplicated in the skill catalog.
-
-If the review command is unavailable (CLI not installed, or a version without `agent review` / `codedagent review`), record one line in the report's "Rules Skipped" subsection with `reason: "uip agent review / codedagent review CLI not available"`, then continue with 2.5b.
+If the CLI is unavailable (not installed or lacking `agent review` / `codedagent review`), record one line in the report's "Rules Skipped" subsection with `reason: "uip agent review / codedagent review CLI not available"`, then continue with 2.5b.
 
 ### 2.5b — Apply the judgment catalog
 
-1. **Identify which catalog files apply.** Use the detection table below.
-2. **Read each catalog file in full.**
-3. **Apply each rule's `detection_method`** (always the judgment form): read the named source material, reason about it, emit a finding when the criteria hold. Log the reasoning in the finding's `description`.
-4. **Track skipped rules.** If a rule was intended but could not be applied (`status: deferred`, review CLI unavailable, guardrail catalog unavailable, required source unreadable), record `rule_id` + reason for the report's "Rules Skipped" subsection. **Never silently skip.** A rule with an empty subject set is not skipped — see SKILL.md Critical Rule 11.
-5. **Merge findings into the Step 5 report** — into the Critical / Warning / Info findings tables, one row per finding:
+1. Use the detection table to identify applicable catalog files.
+2. Read every applicable catalog file in full.
+3. Apply each rule's `detection_method` in its judgment form: read the named source, reason about it, and emit a finding when criteria hold. Log the reasoning in the finding's `description`.
+4. Track every intended rule that cannot be applied (`status: deferred`, review CLI unavailable, guardrail catalog unavailable, or required source unreadable) in the report's "Rules Skipped" subsection with `rule_id` and reason. Never silently skip. An empty subject set is not a skip (SKILL.md Critical Rule 11).
+5. Merge findings into the Step 5 report's Critical / Warning / Info tables, one row per finding:
 
    ```
    | <id> | `<rule_id>` | `<file>`: <issue>. <fix>. |
    ```
 
-   where prefix is `C-D-` (Critical), `W-D-` (Warning), or `I-D-` (Info) per the severity mapping in [`rule-format.md`](rule-format.md).
+   Use `C-D-` (Critical), `W-D-` (Warning), or `I-D-` (Info), per [`rule-format.md`](rule-format.md).
 
 ## Detection table
 
-Maps project signals to the judgment catalog files that must be loaded. Extend this table when adding new artifact types — do not edit SKILL.md.
+Load only catalogs matched by these project signals. Extend this table for new artifact types; do not edit SKILL.md.
 
 | Signals present | Project type | Catalog files |
 |---|---|---|
@@ -61,31 +45,27 @@ Maps project signals to the judgment catalog files that must be loaded. Extend t
 | `project.json` + `.xaml` / `.cs` | RPA | *(phase 2 — catalog not yet authored)* |
 | `*.flow` + `project.uiproj` with `ProjectType: "Flow"` | Flow | *(phase 2)* |
 | `.uipath/` or `app.config.json` | Coded App | *(phase 2)* |
-| None of the above with no agent signal | unknown | Skip Step 2.5; flag in the report's "Notes" section that no catalog matched. |
+| None of the above with no agent signal | unknown | Skip Step 2.5; note in the report's "Notes" section that no catalog matched. |
 
-## Why the split
-
-Deterministic checks (file presence, schema walks, counts, set-membership, regex, run-artifact analysis) are faster and byte-reproducible in code, so they live in the review CLI — the agent does not re-implement them. The catalog carries only what code cannot decide reliably: prompt quality, tool-selection ambiguity, framework fit, semantic schema/eval mismatches, whole-program dataflow. Running the CLI first means the catalog never re-litigates a deterministic finding.
+The review CLI owns deterministic checks—file presence, schema walks, counts, set-membership, regex, and run-artifact analysis. The catalog owns judgment the CLI cannot reliably perform, including prompt quality, tool-selection ambiguity, framework fit, semantic schema/eval mismatches, and whole-program dataflow. Run the CLI first so the catalog does not re-litigate deterministic findings.
 
 ## Coexistence with manual checklists (Step 3)
 
-- The CLI + judgment catalog cover what can be checked mechanically or with focused judgment. The checklists in `references/<type>/<type>-review-checklist.md` cover broader semantic / contextual checks (PDD alignment, business-logic correctness, architectural fit).
-- Checklist rows that overlap with a rule are tagged like `*(rule: \`RULE_ID\`)*` — when reviewing, that rule (CLI or judgment) already covered it; do not re-flag.
-- Findings from the CLI, the judgment catalog, and manual review all go in the same Critical / Warning / Info findings tables, keeping their own ID prefixes (`-D-` for rule-driven, no infix for manual — see [`rule-format.md`](rule-format.md)). A finding appears in exactly one table, once.
+- The CLI and judgment catalog cover mechanical and focused-judgment checks. `references/<type>/<type>-review-checklist.md` covers broader semantic/contextual checks, including PDD alignment, business-logic correctness, and architectural fit.
+- Tag checklist rows overlapping a rule with `*(rule: \`RULE_ID\`)*`; do not re-flag them when the CLI or catalog already covered them.
+- Put CLI, catalog, and manual findings in the same Critical / Warning / Info tables. Keep `-D-` prefixes for rule-driven findings and no infix for manual findings (see [`rule-format.md`](rule-format.md)). A finding appears exactly once in one table.
 
 ## Determinism contract
 
-Two consecutive runs over the same project produce identical findings *for the review-CLI checks*. Judgment-catalog rules are best-effort identical — the agent should reason from the same evidence in the same order, but minor wording variation in `description` is acceptable.
+Two consecutive runs on the same project must produce identical findings for review-CLI checks. Judgment findings should be best-effort identical when evidence and order are unchanged; minor `description` wording variation is acceptable.
 
-- Sort findings by (severity, category, rule_id, file, line) — never by discovery order.
-- Do not include timestamps in finding text.
-- Use relative paths from project root in finding `file` values; absolute paths in project metadata only.
+Sort findings by `(severity, category, rule_id, file, line)`, never discovery order. Do not include timestamps in finding text. Use paths relative to the project root in finding `file` values; use absolute paths only in project metadata.
 
 ## Anti-patterns
 
-1. **Do not invent rule IDs.** If you observe a real, critical issue covered by neither the review CLI nor the judgment catalog, surface it under Critical Findings as a normal finding — do not promote it to a `rule_id`. Only critical issues qualify (SKILL.md Critical Rule 12).
-2. **Do not re-rank severities.** The CLI's `Severity` and the catalog's `severity` are authoritative for `error` / `warning` / `info`. For `judgment` rows, log the reasoning when picking the report band.
-3. **Do not silently skip rules.** Every skip belongs in the report's "Rules Skipped" subsection with a reason.
-4. **Do not run the catalog before the CLI.** Run `uip agent review` / `uip codedagent review` first (2.5a); for low-code agents, `uip agent refresh` and `uip agent validate` are assumed already completed in that order (Step 2) — so the judgment catalog focuses only on reasoning the CLI cannot do.
-5. **Do not load catalog files outside the detection table.** Loading low-code rules against a non-agent project produces false positives.
-6. **Do not re-implement deterministic checks inline.** Counts, regex, schema-presence, and set-membership are the review CLI's job. The skill itself ships no executable code.
+1. Do not invent rule IDs. If a real critical issue is covered by neither the CLI nor catalog, report it under Critical Findings as a normal finding, not with a `rule_id`; only critical issues qualify (SKILL.md Critical Rule 12).
+2. Do not re-rank severities. CLI `Severity` and catalog `severity` are authoritative for `error` / `warning` / `info`. For `judgment` rows, log the reasoning used to select the report band.
+3. Do not silently skip rules. Record every skip in "Rules Skipped" with its reason.
+4. Do not run the catalog before the CLI. Run `uip agent review` / `uip codedagent review` first (2.5a). For low-code agents, run `uip agent refresh` then `uip agent validate` during Step 2; the catalog handles only reasoning the CLI cannot perform.
+5. Do not load catalog files outside the detection table. Loading low-code rules for a non-agent project creates false positives.
+6. Do not re-implement deterministic checks inline. Counts, regex, schema-presence, and set-membership belong to the review CLI; the skill ships no executable code.

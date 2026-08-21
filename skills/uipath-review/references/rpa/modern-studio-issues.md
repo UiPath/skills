@@ -1,86 +1,86 @@
 # Modern Studio / 2024.10+ Specific Issues
 
-Antipatterns specific to UiPath Studio 2024.10+ (Modern design experience, coded workflows, Object Repository, Data Manager, Healing Agent).
+Antipatterns for UiPath Studio 2024.10+ Modern design experience, coded workflows, Object Repository, Data Manager, and Healing Agent.
 
 ## Modern Excel + Classic Excel Mixing
 
-**Symptom:** Same project contains both `UseExcelFile` (Modern — uses ClosedXML, no Excel needed) and `ExcelApplicationScope` (Classic — requires Excel installed, uses COM), OR `WriteRangeWorkbook` / `ReadRangeWorkbook` (Workbook activities) nested inside a `UseExcelFile` scope.
+**Symptom:** A project contains both `UseExcelFile` (Modern; ClosedXML; no Excel required) and `ExcelApplicationScope` (Classic; requires Excel; COM), or contains `WriteRangeWorkbook` / `ReadRangeWorkbook` inside `UseExcelFile`.
 
-**Impact:** COM object conflicts. Workbook activities and `Use Excel File` fight for the same file handle. Intermittent file lock errors, data corruption, Excel processes left behind in memory.
+**Impact:** COM conflicts, file locks, corruption, and orphaned Excel processes.
 
-**Detection:** Grep `.xaml` for both `ExcelApplicationScope` and `ExcelApplicationCard` (UseExcelFile) in the same project. Grep for `WriteRangeWorkbook` / `ReadRangeWorkbook` activities appearing as children of `ExcelApplicationCard`.
+**Detection:** Grep `.xaml` for both `ExcelApplicationScope` and `ExcelApplicationCard`. Grep for `WriteRangeWorkbook` / `ReadRangeWorkbook` as children of `ExcelApplicationCard`.
 
-**Fix:** Pick one approach per project. For new work, use Modern (`Use Excel File`) for workflows that don't need macros/pivots. Use Classic `Excel Application Scope` when you need Excel-specific features (macros, pivots, charts).
+**Fix:** Choose one approach per project. Use Modern `Use Excel File` for new workflows that do not need macros or pivots; use Classic `Excel Application Scope` for macros, pivots, or charts.
 
 **Severity:** Warning
 
 ## Multiple Single Excel Process Scope Activities
 
-**Symptom:** Project contains more than one `Single Excel Process Scope` activity across its workflows.
+**Symptom:** More than one `Single Excel Process Scope` exists across project workflows.
 
-**Impact:** COM object error at runtime. This activity manages a single Excel COM instance — multiple scopes conflict.
+**Impact:** Multiple scopes conflict over the single Excel COM instance and cause runtime COM errors.
 
-**Detection:** Grep all `.xaml` files for `SingleExcelProcessScope`. Flag if count > 1 across the project.
+**Detection:** Grep all `.xaml` files for `SingleExcelProcessScope`; flag counts above one across the project.
 
-**Fix:** Consolidate to one `Single Excel Process Scope` per project. If multiple isolated Excel sessions are genuinely required, use separate workflows invoked sequentially.
+**Fix:** Use one `Single Excel Process Scope` per project. If isolated Excel sessions are genuinely required, use separate workflows invoked sequentially.
 
 **Severity:** Critical
 
 ## Modern Excel Read Range Performance Cliff
 
-**Symptom:** Using Modern `Use Excel File` + `Read Range` for large datasets (>10K rows) without mitigation.
+**Symptom:** Modern `Use Excel File` + `Read Range` reads datasets over 10K rows without mitigation.
 
-**Impact:** Orders of magnitude slower than Classic `Excel Application Scope` + `Read Range` on large sheets — community reports range from minutes to tens of minutes for 10K+ rows. Affects SAP-exported data with special characters / images especially badly.
+**Impact:** Large reads can be orders of magnitude slower than Classic `Excel Application Scope` + `Read Range`, with reports ranging from minutes to tens of minutes for 10K+ rows. SAP-exported data with special characters or images can be especially affected.
 
-**Detection:** Project uses Modern design + `Use Excel File` + `Read Range` on datasets known to exceed 10K rows. `ReadOnly` property not set.
+**Detection:** Confirm Modern design, `Use Excel File`, `Read Range`, a dataset known to exceed 10K rows, and an unset `ReadOnly` property.
 
-**Fix:** For large read-only reads, use Classic `Excel Application Scope`. If staying on Modern, set `ReadOnly = True` and read specific ranges rather than whole sheets. For very large data, consider DataTable operations with CSV intermediate storage.
+**Fix:** For large read-only reads, use Classic `Excel Application Scope`. If remaining on Modern, set `ReadOnly = True` and read specific ranges instead of whole sheets. For very large data, consider DataTable operations with CSV intermediate storage.
 
 **Severity:** Warning
 
 ## Wrong Project Compatibility for Target Runtime
 
-**Symptom:** Project's `targetFramework` in `project.json` does not match the deployment target — e.g., `Windows` targeting Linux serverless robots, or `Portable` (cross-platform) project using UI Automation activities.
+**Symptom:** `project.json` `targetFramework` does not match deployment, such as `Windows` for Linux/container-based serverless robots or `Portable` for projects using UI Automation activities.
 
-**Impact:** Windows projects fail immediately on Linux with unclear errors. Cross-platform projects lack entire activity categories (UI Automation, Excel interop). The compatibility choice is set at creation and cannot be changed — only recreated.
+**Impact:** Windows projects fail on Linux; cross-platform projects lack UI Automation and Excel COM activity categories. Compatibility is set at creation and cannot be changed; the project must be recreated.
 
-**Detection:** Read `project.json` `targetFramework`. Cross-check against deployment target: if `Windows` and any deployment target is Linux/container-based, flag. If `Portable` and project contains UI Automation or Excel COM activities, flag.
+**Detection:** Read `project.json` `targetFramework` and compare it with deployment. Flag `Windows` for Linux/container-based deployment and `Portable` when UI Automation or Excel COM activities are present.
 
-**Fix:** Recreate the project with correct compatibility for the deployment target. Migrate source files manually (no automated converter between Windows and Cross-platform).
+**Fix:** Recreate the project with the correct compatibility and migrate source files manually; no automated converter exists between Windows and Cross-platform.
 
 **Severity:** Critical
 
 ## Project Rename Breaks Coded Workflow Assembly References
 
-**Symptom:** Project renamed after `.cs` coded workflows or Coded Source Files have been created.
+**Symptom:** A project is renamed after `.cs` coded workflows or Coded Source Files are created.
 
-**Impact:** Assembly references in XAML files become stale. Coded types unresolvable. Compiles locally (cached) but fails during clean build, publishing, or cross-project invocation.
+**Impact:** XAML assembly references become stale and coded types become unresolvable. Cached local builds may succeed while clean builds, publishing, or cross-project invocation fails.
 
-**Detection:** Grep XAML for `AssemblyQualifiedName` or `clr-namespace=...;assembly=` references. Compare the assembly name to `project.json` `name` field.
+**Detection:** Grep XAML for `AssemblyQualifiedName` or `clr-namespace=...;assembly=` and compare the assembly name with `project.json` `name`.
 
-**Fix:** Do not rename projects with coded workflows. If rename is required: clean the project, remove all `.cs.json` metadata, rebuild, and fix XAML references manually. Simpler: recreate the project and migrate source.
+**Fix:** Do not rename projects containing coded workflows. If required, clean the project, remove all `.cs.json` metadata, rebuild, and fix XAML references manually. Prefer recreating the project and migrating source.
 
 **Severity:** Critical
 
 ## Coded Workflow Arguments Without Parameterless Constructor
 
-**Symptom:** Custom data types used as coded workflow (`[Workflow]`) arguments without a public parameterless constructor.
+**Symptom:** A custom data type used as a coded workflow (`[Workflow]`) argument lacks a public parameterless constructor.
 
-**Impact:** Studio cannot serialize/deserialize arguments. Surfaces as Studio validation errors, inability to invoke the workflow, or runtime failures during argument marshaling.
+**Impact:** Studio cannot serialize or deserialize the argument, causing validation, invocation, or runtime argument-marshaling failures.
 
-**Detection:** Grep `.cs` files for classes used as workflow arguments. Check each for a `public ClassName()` constructor (no parameters).
+**Detection:** Grep `.cs` files for classes used as workflow arguments and check for `public ClassName()` constructors with no parameters.
 
-**Fix:** Add a public parameterless constructor to every class used as a workflow argument, or use built-in serializable types (primitives, DataTable, JObject).
+**Fix:** Add a public parameterless constructor to every such class, or use built-in serializable types such as primitives, `DataTable`, or `JObject`.
 
 **Severity:** Warning
 
 ## Coded / XAML Nested Class Argument Interop Failure
 
-**Symptom:** Hybrid project (both `.cs` and `.xaml`) passing arguments whose types are nested C# classes between coded and XAML workflows.
+**Symptom:** A hybrid `.cs`/`.xaml` project passes nested C# class types between coded and XAML workflows, including through `InvokeWorkflowFile` when the invoked workflow is a `.cs` file.
 
-**Impact:** XAML engine cannot resolve types from nested classes. Compiles locally but fails at runtime with `"Value cannot be null (Parameter 'type')"` or similar type-resolution errors. Documented Studio 2024.10+ limitation.
+**Impact:** The XAML engine cannot resolve nested-class types. Local compilation may succeed, but runtime fails with `Value cannot be null (Parameter 'type')` or similar type-resolution errors. This is a documented Studio 2024.10+ limitation.
 
-**Detection:** In hybrid projects, check `InvokeWorkflowFile` arguments where the invoked workflow is a `.cs` file. Verify argument types are not nested class definitions.
+**Detection:** In hybrid projects, inspect `InvokeWorkflowFile` arguments for invoked `.cs` workflows and verify that argument types are not nested class definitions.
 
 **Fix:** Flatten nested class hierarchies used as arguments. Use top-level public classes or Pydantic-style DTOs.
 
@@ -88,48 +88,48 @@ Antipatterns specific to UiPath Studio 2024.10+ (Modern design experience, coded
 
 ## Object Repository Flat Structure (No Application/Screen Hierarchy)
 
-**Symptom:** All UI descriptors dumped into `.objects/` without organizing into the Application → Screen → Element hierarchy. Duplicate descriptors for the same UI element created by different developers.
+**Symptom:** UI descriptors are dumped directly into `.objects/` without an Application → Screen → Element hierarchy, and different developers create duplicates for the same element.
 
-**Impact:** Unmaintainable descriptor soup. When target UI changes, no way to scope updates to one screen. Duplicate descriptors cause "which is authoritative?" confusion. Descriptor count grows linearly with team size.
+**Impact:** The repository becomes unmaintainable; UI changes cannot be scoped to a screen, authoritative descriptors are unclear, and descriptor count grows with team size.
 
-**Detection:** Inspect `.objects/` folder structure. Flat list of descriptors (no Application/Screen subfolders) = antipattern. Search for descriptors with overlapping selectors targeting the same UI element.
+**Detection:** Inspect `.objects/`. A flat descriptor list without Application/Screen subfolders is an antipattern. Search for overlapping selectors targeting the same UI element.
 
-**Fix:** Restructure using Application → Screen → Element hierarchy. Deduplicate — each distinct UI element gets one authoritative descriptor. Promote org-wide descriptors into a published UI Library.
+**Fix:** Organize descriptors as Application → Screen → Element. Deduplicate so each distinct UI element has one authoritative descriptor. Promote organization-wide descriptors into a published UI Library.
 
 **Severity:** Warning
 
 ## Data Manager Global Variable Naming Conflicts
 
-**Symptom:** Global variables created via Data Manager share names with arguments or local variables in sub-workflows.
+**Symptom:** A Data Manager global variable shares a name with an argument or local variable in a sub-workflow.
 
-**Impact:** Variables and arguments with the same name = variable takes precedence silently. Workflow uses the wrong value. Especially dangerous when globals are not supported in libraries / isolated invocations.
+**Impact:** The variable silently takes precedence, so the workflow may use the wrong value. This is especially dangerous when globals are unsupported in libraries or isolated invocations.
 
-**Detection:** Parse all XAML for variables scoped at Global. Check if any global name matches an argument name in any workflow.
+**Detection:** Parse all XAML for variables scoped at Global and compare global names with argument names in every workflow.
 
-**Fix:** Use distinct naming conventions for globals (e.g., `g_ConfigValue` prefix) vs arguments (`in_`, `out_`, `io_`). Rename to eliminate collisions.
+**Fix:** Use distinct conventions, such as `g_ConfigValue` for globals and `in_`, `out_`, or `io_` for arguments; rename collisions.
 
 **Severity:** Warning
 
 ## Healing Agent Noise Logs on Classic Activities
 
-**Symptom:** Project uses Classic UI activities (`Attach Window`, classic `FindElement`, classic `GetAttribute`) and Healing Agent is not explicitly disabled.
+**Symptom:** A project uses Classic UI activities (`Attach Window`, classic `FindElement`, classic `GetAttribute`, etc.) without explicitly disabling Healing Agent.
 
-**Impact:** Classic activities trigger Healing Agent telemetry logging ("Healing agent configuration") even when healing is not enabled. No suppression mechanism exists. Log noise clutters monitoring and masks real issues, especially at scale.
+**Impact:** Classic activities generate Healing Agent telemetry such as `Healing agent configuration` even when healing is not enabled. No suppression mechanism exists; noise can obscure real issues at scale.
 
-**Detection:** Grep XAML for Classic UI activity types (`AttachWindow`, classic `FindElement`, etc.). Check governance policy for Healing Agent disable setting.
+**Detection:** Grep XAML for Classic UI activity types such as `AttachWindow` and classic `FindElement`, then check governance policy for a Healing Agent disable setting.
 
-**Fix:** Either migrate Classic activities to Modern (which uses Healing Agent cleanly), OR explicitly disable Healing Agent for projects using Classic activities via governance policy.
+**Fix:** Migrate Classic activities to Modern, or explicitly disable Healing Agent through governance policy for projects using Classic activities.
 
 **Severity:** Info
 
 ## Object Repository in Project When UI Library Needed
 
-**Symptom:** Multiple projects in the org automate the same target application (e.g., SAP, Salesforce), each with its own local `.objects/` Object Repository for that app.
+**Symptom:** Multiple projects automate the same target application, each maintaining a local `.objects/` repository.
 
-**Impact:** UI changes require updating every project's local copy. Selector fixes don't propagate. Teams end up with divergent descriptors — "works on my project, fails on theirs." Healing Agent healing one project's copy doesn't help the others.
+**Impact:** UI changes require updates in every project, selector fixes do not propagate, and repositories diverge. Healing one project's copy does not help others.
 
-**Detection:** Find all projects referencing the same application in `.objects/`. Check `project.json` dependencies for a shared UI Library. Absence = antipattern.
+**Detection:** Find projects referencing the same application in `.objects/`. Check `project.json` dependencies for a shared UI Library; absence is an antipattern.
 
-**Fix:** Extract the shared Object Repository into a published UI Library. Consumers reference it via `project.json` dependencies with pinned versions.
+**Fix:** Extract the shared Object Repository into a published UI Library. Reference it from consumers through `project.json` dependencies with pinned versions.
 
 **Severity:** Warning
