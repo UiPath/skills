@@ -153,3 +153,23 @@ First distinguish bridge rejection from background failure:
 <!--skill-flavor:outbound-ip-symptom:start-->
 - **Symptom:** An HTTP Request or connector call to a customer/vendor endpoint fails from the deployed workflow — connection refused, or a hang ending in a timeout — while the same URL and payload succeed from other clients.
 <!--skill-flavor:outbound-ip-symptom:end-->
+
+<!--skill-flavor:outbound-ip-heading:start-->
+### Outbound call to a third-party API is refused or times out from the deployed workflow
+<!--skill-flavor:outbound-ip-heading:end-->
+
+<!--skill-flavor:outbound-ip-cause-open:start-->
+- **Cause:** The deployed workflow egresses from UiPath infrastructure, not from any address the endpoint owner is likely to have allowlisted, and **which** addresses depends on how the call is made.
+<!--skill-flavor:outbound-ip-cause-open:end-->
+
+<!--skill-flavor:script-budget-cause:start-->
+- **Cause:** the Script activity exceeded the host's execution budget. UiPath documents the cap as *"JavaScript code execution has a timeout of 30 seconds"* — [Script activity, Known limitations](https://docs.uipath.com/studio-web/automation-cloud/latest/user-guide/script). Treat 30s as the ceiling for a single Script activity, and remember a script that finishes quickly on sample data can exceed it on production volumes.
+<!--skill-flavor:script-budget-cause:end-->
+
+<!--skill-flavor:allowlist-versioning:start-->
+- **Cause:** the authorable set is closed and mirrors the Studio Web palette. It also changes between releases, so **read the valid list out of the error message itself — that is the authoritative set for the host you are on.**
+<!--skill-flavor:allowlist-versioning:end-->
+
+<!--skill-flavor:allowlist-run-proof:start-->
+  Some task types the runtime can execute are still not authorable, so **an activity that appears to work is not proof it can be published.** The validator is the gate.
+<!--skill-flavor:allowlist-run-proof:end-->

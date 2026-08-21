@@ -311,7 +311,13 @@ The body MUST update the condition variable, otherwise the loop runs forever.
 
 Exits a loop early. Only valid inside `For_Each_N#Body` or `Do_While_N#Body`.
 
-**Required fields:** `break: "true"` (string!), `then: "exit"`, `set: "${$input}"`, `metadata`
+**Required fields:** `break: "true"` (string!), `then: "exit"`, `metadata`
+
+> **Do NOT add `set` to a Break.** The schema rejects it: the shipped
+> `nested-control-flow-example.json` carried `set: "${$input}"` and failed `validate`
+> with **7797 errors**; removing that one key makes it Valid. Runtime behaviour is
+> identical either way (same `Completed`/`Failed` output), so the "required for
+> context propagation" claim this reference used to make was simply wrong.
 
 **Minimal JSON:**
 ```json
@@ -330,7 +336,7 @@ Typically wrapped in an `If` inside the body — break only when a condition is 
 **Common mistakes:**
 - Boolean `true` instead of string `"true"` (must be a JSON string)
 - Placing Break outside a loop `#Body`
-- Missing `set: "${$input}"` (required for context propagation)
+- Adding `set` to the Break (schema rejects it — see the note above; this reference previously prescribed it in error)
 
 **Scoping:**
 - Break exits **only the innermost enclosing loop**. To exit an outer loop from inside a nested loop, set a flag variable (Assign) before Break, then check the flag in the outer loop's `doWhile` (or in an `If` after the inner loop) and Break again.

@@ -90,7 +90,7 @@
                 }
               ],
               "output": {
-                "as": "${$context.outputs.While_1}"
+                "as": "${$context?.outputs?.While_1 ?? { results: [] }}"
               },
               "metadata": {
                 "activityType": "While",

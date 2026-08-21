@@ -14,6 +14,13 @@ description: >
   rename of `while` to `doWhile` validates and passes the non-zero cases, but returns
   `seen: 1` for zero because DoWhile always executes once — verified against exactly that
   variant.
+
+  The fixture's only fault is the allowlist: it runs and returns the right `seen` for
+  every graded input, `count: 0` included, so the sole reason to change it is that it
+  cannot ship. Reaching that required guarding the loop's `output.as` with optional
+  chaining — with a zero-iteration body `$context.outputs` is undefined as a whole, so a
+  bare `$context.outputs.While_1` throws. Reference fix (DoWhile + `If`/`#Else` `Break`)
+  verified `Valid` and returning `seen` 0 / 3 / 5 on the three graded inputs.
 tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
 
 sandbox:

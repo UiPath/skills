@@ -3,8 +3,15 @@
 
 The fixture is static JSON under fixtures/broken.json rather than generated, so a
 reviewer can read exactly what the agent is handed and diff it when the DSL moves.
-Each fixture is verified to fail in ONE specific way (see the task description); a
-second, accidental fault would make the grading ambiguous.
+
+The fixture has exactly ONE fault: `validate` rejects `activityType: "While"`. It
+RUNS correctly on every graded input, `count: 0` included. A second, accidental
+fault would make the grading ambiguous, so if you edit the fixture, re-check that
+it still runs clean at `count: 0`. That case is load-bearing: when a loop body
+never executes, `$context.outputs` is undefined as a whole, so the loop's own
+`output.as` must reach it with optional chaining
+(`$context?.outputs?.While_1 ?? { results: [] }`) — a bare
+`$context.outputs.While_1` throws before any `??` fallback can apply.
 
 Kept per-task rather than in diagnose/_shared/ on purpose: PR #2653 adds a helper
 at that shared path, and duplicating it here would collide on merge.

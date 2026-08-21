@@ -11,12 +11,30 @@
           "document": {
             "type": "object",
             "properties": {
-              "completed": { "type": "number", "default": 0 },
-              "failed": { "type": "number", "default": 0 },
-              "attempts": { "type": "number", "default": 0 },
-              "success": { "type": "boolean", "default": false },
-              "lastError": { "type": "string", "default": "" },
-              "result": { "type": "number", "default": 0 }
+              "completed": {
+                "type": "number",
+                "default": 0
+              },
+              "failed": {
+                "type": "number",
+                "default": 0
+              },
+              "attempts": {
+                "type": "number",
+                "default": 0
+              },
+              "success": {
+                "type": "boolean",
+                "default": false
+              },
+              "lastError": {
+                "type": "string",
+                "default": ""
+              },
+              "result": {
+                "type": "number",
+                "default": 0
+              }
             },
             "title": "Variables"
           }
@@ -30,7 +48,9 @@
       "document": {
         "type": "object",
         "properties": {
-          "tasks": { "type": "array" }
+          "tasks": {
+            "type": "array"
+          }
         },
         "title": "Inputs"
       }
@@ -42,8 +62,12 @@
       "document": {
         "type": "object",
         "properties": {
-          "completed": { "type": "number" },
-          "failed": { "type": "number" }
+          "completed": {
+            "type": "number"
+          },
+          "failed": {
+            "type": "number"
+          }
         },
         "title": "Outputs"
       }
@@ -56,9 +80,18 @@
           {
             "WorkflowStart": {
               "set": "${Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}) }",
-              "output": { "as": "${$input}" },
-              "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-              "metadata": { "activityType": "Assign", "displayName": "Workflow start", "fullName": "Assign", "isTransparent": true }
+              "output": {
+                "as": "${$input}"
+              },
+              "export": {
+                "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+              },
+              "metadata": {
+                "activityType": "Assign",
+                "displayName": "Workflow start",
+                "fullName": "Assign",
+                "isTransparent": true
+              }
             }
           },
           {
@@ -74,35 +107,73 @@
                     "do": [
                       {
                         "Assign_ResetAttempts": {
-                          "set": { "attempts": 0 },
-                          "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-                          "metadata": { "activityType": "Assign", "displayName": "Reset Attempts", "fullName": "Assign", "isTransparent": false }
+                          "set": {
+                            "attempts": 0
+                          },
+                          "export": {
+                            "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                          },
+                          "metadata": {
+                            "activityType": "Assign",
+                            "displayName": "Reset Attempts",
+                            "fullName": "Assign",
+                            "isTransparent": false
+                          }
                         }
                       },
                       {
                         "Assign_ResetSuccess": {
-                          "set": { "success": false },
-                          "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-                          "metadata": { "activityType": "Assign", "displayName": "Reset Success", "fullName": "Assign", "isTransparent": false }
+                          "set": {
+                            "success": false
+                          },
+                          "export": {
+                            "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                          },
+                          "metadata": {
+                            "activityType": "Assign",
+                            "displayName": "Reset Success",
+                            "fullName": "Assign",
+                            "isTransparent": false
+                          }
                         }
                       },
                       {
                         "Assign_ResetLastError": {
-                          "set": { "lastError": "${''}" },
-                          "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-                          "metadata": { "activityType": "Assign", "displayName": "Reset Last Error", "fullName": "Assign", "isTransparent": false }
+                          "set": {
+                            "lastError": "${''}"
+                          },
+                          "export": {
+                            "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                          },
+                          "metadata": {
+                            "activityType": "Assign",
+                            "displayName": "Reset Last Error",
+                            "fullName": "Assign",
+                            "isTransparent": false
+                          }
                         }
                       },
                       {
                         "Assign_ResetResult": {
-                          "set": { "result": 0 },
-                          "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-                          "metadata": { "activityType": "Assign", "displayName": "Reset Result", "fullName": "Assign", "isTransparent": false }
+                          "set": {
+                            "result": 0
+                          },
+                          "export": {
+                            "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                          },
+                          "metadata": {
+                            "activityType": "Assign",
+                            "displayName": "Reset Result",
+                            "fullName": "Assign",
+                            "isTransparent": false
+                          }
                         }
                       },
                       {
                         "Do_While_1": {
-                          "for": { "in": "${ [1] }" },
+                          "for": {
+                            "in": "${ [1] }"
+                          },
                           "doWhile": "${!$context.variables.success && $context.variables.attempts < $currentTask.maxRetries}",
                           "do": [
                             {
@@ -120,29 +191,62 @@
                                                 "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
                                               }
                                             },
-                                            "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Javascript_1\": $output } }" },
-                                            "metadata": { "activityType": "JsInvoke", "displayName": "Attempt Operation", "fullName": "JsInvoke" }
+                                            "export": {
+                                              "as": "{ ...$context, outputs: { ...$context?.outputs, \"Javascript_1\": $output } }"
+                                            },
+                                            "metadata": {
+                                              "activityType": "JsInvoke",
+                                              "displayName": "Attempt Operation",
+                                              "fullName": "JsInvoke"
+                                            }
                                           }
                                         },
                                         {
                                           "Assign_MarkSuccess": {
-                                            "set": { "success": true },
-                                            "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-                                            "metadata": { "activityType": "Assign", "displayName": "Mark Success", "fullName": "Assign", "isTransparent": false }
+                                            "set": {
+                                              "success": true
+                                            },
+                                            "export": {
+                                              "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                                            },
+                                            "metadata": {
+                                              "activityType": "Assign",
+                                              "displayName": "Mark Success",
+                                              "fullName": "Assign",
+                                              "isTransparent": false
+                                            }
                                           }
                                         },
                                         {
                                           "Assign_StoreResult": {
-                                            "set": { "result": "${$context.outputs.Javascript_1}" },
-                                            "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-                                            "metadata": { "activityType": "Assign", "displayName": "Store Result", "fullName": "Assign", "isTransparent": false }
+                                            "set": {
+                                              "result": "${$context.outputs.Javascript_1}"
+                                            },
+                                            "export": {
+                                              "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                                            },
+                                            "metadata": {
+                                              "activityType": "Assign",
+                                              "displayName": "Store Result",
+                                              "fullName": "Assign",
+                                              "isTransparent": false
+                                            }
                                           }
                                         },
                                         {
                                           "Assign_BumpAttemptsOk": {
-                                            "set": { "attempts": "${$context.variables.attempts + 1}" },
-                                            "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-                                            "metadata": { "activityType": "Assign", "displayName": "Bump Attempts (success)", "fullName": "Assign", "isTransparent": false }
+                                            "set": {
+                                              "attempts": "${$context.variables.attempts + 1}"
+                                            },
+                                            "export": {
+                                              "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                                            },
+                                            "metadata": {
+                                              "activityType": "Assign",
+                                              "displayName": "Bump Attempts (success)",
+                                              "fullName": "Assign",
+                                              "isTransparent": false
+                                            }
                                           }
                                         }
                                       ],
@@ -151,16 +255,34 @@
                                         "do": [
                                           {
                                             "Assign_BumpAttemptsErr": {
-                                              "set": { "attempts": "${$context.variables.attempts + 1}" },
-                                              "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-                                              "metadata": { "activityType": "Assign", "displayName": "Bump Attempts (failure)", "fullName": "Assign", "isTransparent": false }
+                                              "set": {
+                                                "attempts": "${$context.variables.attempts + 1}"
+                                              },
+                                              "export": {
+                                                "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                                              },
+                                              "metadata": {
+                                                "activityType": "Assign",
+                                                "displayName": "Bump Attempts (failure)",
+                                                "fullName": "Assign",
+                                                "isTransparent": false
+                                              }
                                             }
                                           },
                                           {
                                             "Assign_RecordError": {
-                                              "set": { "lastError": "${$error.title}" },
-                                              "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-                                              "metadata": { "activityType": "Assign", "displayName": "Record Error", "fullName": "Assign", "isTransparent": false }
+                                              "set": {
+                                                "lastError": "${$error.title}"
+                                              },
+                                              "export": {
+                                                "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                                              },
+                                              "metadata": {
+                                                "activityType": "Assign",
+                                                "displayName": "Record Error",
+                                                "fullName": "Assign",
+                                                "isTransparent": false
+                                              }
                                             }
                                           },
                                           {
@@ -169,10 +291,21 @@
                                                 {
                                                   "If_1": {
                                                     "switch": [
-                                                      { "case": { "when": "${$context.variables.attempts >= $currentTask.maxRetries}", "then": "If_1#Then" } },
-                                                      { "default": { "then": "If_1#Else" } }
+                                                      {
+                                                        "case": {
+                                                          "when": "${$context.variables.attempts >= $currentTask.maxRetries}",
+                                                          "then": "If_1#Then"
+                                                        }
+                                                      },
+                                                      {
+                                                        "default": {
+                                                          "then": "If_1#Else"
+                                                        }
+                                                      }
                                                     ],
-                                                    "metadata": { "displayName": "If" }
+                                                    "metadata": {
+                                                      "displayName": "If"
+                                                    }
                                                   }
                                                 },
                                                 {
@@ -182,8 +315,11 @@
                                                         "Break_1": {
                                                           "break": "true",
                                                           "then": "exit",
-                                                          "set": "${$input}",
-                                                          "metadata": { "activityType": "Break", "displayName": "Out Of Retries", "fullName": "Break" }
+                                                          "metadata": {
+                                                            "activityType": "Break",
+                                                            "displayName": "Out Of Retries",
+                                                            "fullName": "Break"
+                                                          }
                                                         }
                                                       }
                                                     ],
@@ -197,14 +333,26 @@
                                                   }
                                                 }
                                               ],
-                                              "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"If_1\": $output } }" },
-                                              "metadata": { "activityType": "If", "displayName": "If", "fullName": "If" }
+                                              "export": {
+                                                "as": "{ ...$context, outputs: { ...$context?.outputs, \"If_1\": $output } }"
+                                              },
+                                              "metadata": {
+                                                "activityType": "If",
+                                                "displayName": "If",
+                                                "fullName": "If"
+                                              }
                                             }
                                           }
                                         ]
                                       },
-                                      "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Try_Catch_1\": $output } }" },
-                                      "metadata": { "activityType": "TryCatch", "displayName": "Try Operation", "fullName": "TryCatch" }
+                                      "export": {
+                                        "as": "{ ...$context, outputs: { ...$context?.outputs, \"Try_Catch_1\": $output } }"
+                                      },
+                                      "metadata": {
+                                        "activityType": "TryCatch",
+                                        "displayName": "Try Operation",
+                                        "fullName": "TryCatch"
+                                      }
                                     }
                                   }
                                 ],
@@ -214,8 +362,14 @@
                               }
                             }
                           ],
-                          "output": { "as": "${$context.outputs.Do_While_1}" },
-                          "metadata": { "activityType": "DoWhile", "displayName": "Retry Loop", "fullName": "DoWhile" }
+                          "output": {
+                            "as": "${$context.outputs.Do_While_1}"
+                          },
+                          "metadata": {
+                            "activityType": "DoWhile",
+                            "displayName": "Retry Loop",
+                            "fullName": "DoWhile"
+                          }
                         }
                       },
                       {
@@ -224,10 +378,21 @@
                             {
                               "If_2": {
                                 "switch": [
-                                  { "case": { "when": "${$context.variables.success}", "then": "If_2#Then" } },
-                                  { "default": { "then": "If_2#Else" } }
+                                  {
+                                    "case": {
+                                      "when": "${$context.variables.success}",
+                                      "then": "If_2#Then"
+                                    }
+                                  },
+                                  {
+                                    "default": {
+                                      "then": "If_2#Else"
+                                    }
+                                  }
                                 ],
-                                "metadata": { "displayName": "If" }
+                                "metadata": {
+                                  "displayName": "If"
+                                }
                               }
                             },
                             {
@@ -235,9 +400,18 @@
                                 "do": [
                                   {
                                     "Assign_IncCompleted": {
-                                      "set": { "completed": "${$context.variables.completed + 1}" },
-                                      "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-                                      "metadata": { "activityType": "Assign", "displayName": "Increment Completed", "fullName": "Assign", "isTransparent": false }
+                                      "set": {
+                                        "completed": "${$context.variables.completed + 1}"
+                                      },
+                                      "export": {
+                                        "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                                      },
+                                      "metadata": {
+                                        "activityType": "Assign",
+                                        "displayName": "Increment Completed",
+                                        "fullName": "Assign",
+                                        "isTransparent": false
+                                      }
                                     }
                                   }
                                 ],
@@ -249,9 +423,18 @@
                                 "do": [
                                   {
                                     "Assign_IncFailed": {
-                                      "set": { "failed": "${$context.variables.failed + 1}" },
-                                      "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
-                                      "metadata": { "activityType": "Assign", "displayName": "Increment Failed", "fullName": "Assign", "isTransparent": false }
+                                      "set": {
+                                        "failed": "${$context.variables.failed + 1}"
+                                      },
+                                      "export": {
+                                        "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+                                      },
+                                      "metadata": {
+                                        "activityType": "Assign",
+                                        "displayName": "Increment Failed",
+                                        "fullName": "Assign",
+                                        "isTransparent": false
+                                      }
                                     }
                                   }
                                 ],
@@ -259,8 +442,14 @@
                               }
                             }
                           ],
-                          "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"If_2\": $output } }" },
-                          "metadata": { "activityType": "If", "displayName": "If", "fullName": "If" }
+                          "export": {
+                            "as": "{ ...$context, outputs: { ...$context?.outputs, \"If_2\": $output } }"
+                          },
+                          "metadata": {
+                            "activityType": "If",
+                            "displayName": "If",
+                            "fullName": "If"
+                          }
                         }
                       }
                     ],
@@ -270,8 +459,14 @@
                   }
                 }
               ],
-              "output": { "as": "${$context.outputs.For_Each_1}" },
-              "metadata": { "activityType": "ForEach", "displayName": "Process Each Task", "fullName": "ForEach" }
+              "output": {
+                "as": "${$context.outputs.For_Each_1}"
+              },
+              "metadata": {
+                "activityType": "ForEach",
+                "displayName": "Process Each Task",
+                "fullName": "ForEach"
+              }
             }
           },
           {
@@ -279,14 +474,27 @@
               "response": "${{ completed: $context.variables.completed, failed: $context.variables.failed }}",
               "markJobAsFailed": false,
               "then": "end",
-              "export": { "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_1\": $output } }" },
-              "metadata": { "activityType": "Response", "displayName": "Response", "fullName": "Response" }
+              "export": {
+                "as": "{ ...$context, outputs: { ...$context?.outputs, \"Response_1\": $output } }"
+              },
+              "metadata": {
+                "activityType": "Response",
+                "displayName": "Response",
+                "fullName": "Response"
+              }
             }
           }
         ],
-        "metadata": { "activityType": "Sequence", "displayName": "Sequence", "fullName": "Sequence" }
+        "metadata": {
+          "activityType": "Sequence",
+          "displayName": "Sequence",
+          "fullName": "Sequence"
+        }
       }
     }
   ],
-  "evaluate": { "mode": "strict", "language": "javascript" }
+  "evaluate": {
+    "mode": "strict",
+    "language": "javascript"
+  }
 }
