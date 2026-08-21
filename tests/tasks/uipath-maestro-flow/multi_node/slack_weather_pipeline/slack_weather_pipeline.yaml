@@ -1,3 +1,7 @@
+# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
+# v1-base prompt, outcome-graded criteria at preserved weights, and
+# arm-agnostic artifact discovery.
+# See workspaces/docs/flow-sdk/2026-08-21-maestro-flow-alignment-expansion-plan.md.
 task_id: skill-flow-slack-weather-pipeline
 description: >
   Multi-step pipeline: read Slack channel description, extract city with a script,
@@ -11,11 +15,13 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
+  Build the flow inside a solution of the same name.
+
   Create a flow called "SlackWeatherPipeline". Read the #office-bellevue Slack channel description — it holds the office's full US mailing address (street, suite/unit, city, state, ZIP) — identify the city (the locality, not the street or suite line). Then fetch the current weather for that city from open-meteo. If it's above 60F the flow must output the text in variable `weatherVerdict` 'warm office today', otherwise 'cold office today'.
 
   All connections for this task live in Orchestrator folder `Shared/uipath-maestro-flow`.
 
-  Validate the flow, then run `uip maestro flow debug` and iterate until it completes without incidents.
+  Validate the flow, then run it and iterate until it completes without incidents.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
