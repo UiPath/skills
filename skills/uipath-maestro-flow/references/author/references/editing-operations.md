@@ -43,8 +43,8 @@ Use this table to determine which strategy to follow for each operation. **Edit 
 | Add an edge | **Edit / Write** | — | Remember `targetPort` (Rule #6). |
 | Delete an edge | **Edit / Write** | — | |
 | Update node inputs | **Edit** | — | In-place edit; preserves node ID and `$vars`. **Exception:** managed HTTP `inputs.branches` / `timeout` / `retryCount` must be set at `node add --input` time — to change them, `uip maestro flow node remove` and re-add with new `--input`. |
-| Add/edit workflow variable | **Edit** | — | Edit-only; CLI does not support. |
-| Add variable update | **Edit** | — | Edit-only; CLI does not support. |
+| Add/edit workflow variable | **Edit** | — | `Edit` when authoring. `uip maestro flow variable add\|list\|remove` exists for declaring eval inputs — see [variables-and-expressions.md § Variable Management via CLI](../../shared/variables-and-expressions.md#variable-management-via-cli). |
+| Add variable update | **Edit** | — | Edit-only. No CLI command exists. |
 | Map outputs on End node | **Edit** | — | Edit-only. |
 | Create a subflow | **Edit / Write** | — | Edit-only (or `Write` for fresh template). |
 | Replace trigger (non-connector) | **Edit** | — | |

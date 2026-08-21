@@ -328,7 +328,7 @@ Only `inout` variables can be updated. `in` variables are read-only.
 
 > **`expression` is an object here, not a `=js:` string** — unlike `inputs` and End-node `outputs[].source`, which still accept the string form. Set `fieldType` to the target variable's declared `type` (`integer` → `number`); `flow validate` does not cross-check it against the variable, so a mismatch passes silently. The string form does not: it fails with `[MIGRATION] Workflow migration failed at 1.9→1.10 … Offending field(s): variables.variableUpdates.<NODE_ID>.0.expression`.
 
-> **Do not use `uip maestro flow variable-update add`** — it still writes the legacy string form and produces a file `flow validate` rejects. Use `Edit`.
+> **There is no CLI command for variable updates.** `Edit` is the only way to write them.
 
 ---
 
