@@ -1,0 +1,260 @@
+"""Permanent same-ground contract for uipath-maestro-flow eval tasks.
+
+The temporary allowlists name pre-campaign debt. Each family batch removes its
+own entries as the task contract becomes neutral; exact equality prevents stale
+allowlist entries from hiding completed work.
+"""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+FLOW_TASKS = Path(__file__).resolve().parent.parent
+
+V1_AUTHORING_ALLOWLIST = {
+    "bindings/idempotent_reconfigure.yaml",
+    "bindings/multi_connector_independence.yaml",
+    "bindings/no_duplicate_connection_bindings.yaml",
+    "bindings/reconfigure_different_connection.yaml",
+    "connector_features/testmanager_attachments/testmanager_attachments.yaml",
+    "connector_features/testmanager_crud_grounded/testmanager_crud_grounded.yaml",
+    "connector_features/testmanager_execution_results/testmanager_execution_results.yaml",
+    "connector_features/testmanager_generic_records/testmanager_generic_records.yaml",
+    "connector_features/testmanager_requirement_lifecycle/testmanager_requirement_lifecycle.yaml",
+    "connector_features/testmanager_testcase_lifecycle/testmanager_testcase_lifecycle.yaml",
+    "connector_features/testmanager_testset_lifecycle/testmanager_testset_lifecycle.yaml",
+    "connector_trigger/webhook_waitfor_parallel.yaml",
+    "e2e/devcon_expense_approval.yaml",
+    "evaluate/evaluator_type_choice.yaml",
+    "evaluate/inline_agent_eval/inline_agent_eval.yaml",
+    "evaluate/local_crud.yaml",
+    "evaluate/no_auto_upload.yaml",
+    "evaluate/simulation/simulation_crud.yaml",
+    "interactive/solution_select.yaml",
+    "ixp/e2e_02_project_selection.yaml",
+    "ixp/integration_handle_routing.yaml",
+    "ixp/routing.yaml",
+    "ixp/routing_listing.yaml",
+    "ixp/scaffold_minimal.yaml",
+    "ixp/scaffold_multinode.yaml",
+    "smoke/init_validate.yaml",
+    "smoke/inline_agent_robust.yaml",
+    "smoke/registry_discovery.yaml",
+}
+
+SKILL_TELEMETRY_ALLOWLIST = {
+    "interactive/customer_escalation_triage/customer_escalation_triage.yaml",
+    "ixp/e2e_02_project_selection.yaml",
+    "ixp/integration_handle_routing.yaml",
+    "ixp/scaffold_minimal.yaml",
+    "ixp/scaffold_multinode.yaml",
+}
+
+FORBIDDEN_PROMPT_ALLOWLIST = {
+    "connector_features/slack-http-fallback/slack_http_fallback.yaml",
+    "context-grounding/batch_transform/batch_transform.yaml",
+    "context-grounding/summarize/summarize.yaml",
+    "evaluate/inline_agent_eval/inline_agent_eval.yaml",
+    "evaluate/local_crud.yaml",
+    "evaluate/simulation/simulation_crud.yaml",
+    "ixp/e2e_02_project_selection.yaml",
+    "ixp/integration_handle_routing.yaml",
+    "ixp/routing.yaml",
+    "ixp/routing_negative.yaml",
+    "ixp/scaffold_minimal.yaml",
+    "ixp/scaffold_multinode.yaml",
+    "single_node/delay/delay.yaml",
+    "single_node/outlook_waitfor_email/outlook_waitfor_email.yaml",
+    "single_node/transform_filter/transform_filter.yaml",
+    "single_node/transform_group_by/transform_group_by.yaml",
+    "single_node/transform_map/transform_map.yaml",
+    "smoke/merge_parallel_sync.yaml",
+    "smoke/scheduled_trigger.yaml",
+}
+
+# These born-neutral escalation tasks are outside the recipe-edit sweep. Their
+# prompts already require the same-name solution and tell the agent to leave
+# the live execution to the grader; preserving them is part of the campaign's
+# explicit no-edit fence.
+FORBIDDEN_PROMPT_EXCEPTIONS = {
+    "e2e/escalation_jira_ticket/escalation_jira_ticket.yaml",
+    "e2e/escalation_orchestrator_paths/escalation_orchestrator_paths.yaml",
+    "e2e/escalation_slack_alert/escalation_slack_alert.yaml",
+}
+
+DEBUG_SOLUTION_ALLOWLIST = {
+    "connector_features/generic_dynamic_node/generic_dynamic_node.yaml",
+    "connector_features/slack-http-fallback/slack_http_fallback.yaml",
+    "e2e/escalation_jira_ticket/escalation_jira_ticket.yaml",
+    "e2e/jira_create_issue/jira_create_issue.yaml",
+    "e2e/jira_get_issue/jira_get_issue.yaml",
+    "e2e/jira_lifecycle/jira_lifecycle.yaml",
+    "e2e/jira_search_triage/jira_search_triage.yaml",
+    "edit/add_node/add_node.yaml",
+    "edit/add_output/add_output.yaml",
+    "edit/group_to_subflow/group_to_subflow.yaml",
+    "edit/move_node/move_node.yaml",
+    "edit/remove_node/remove_node.yaml",
+    "edit/update_node/update_node.yaml",
+    "interactive/bellevue_weather_simulated/bellevue_weather_simulated.yaml",
+    "interactive/cli_dice_roller_simulated/cli_dice_roller_simulated.yaml",
+    "interactive/customer_escalation_triage/customer_escalation_triage.yaml",
+    "interactive/slack_channel_description_simulated/slack_channel_description_simulated.yaml",
+    "multi_node/bellevue_weather/bellevue_weather.yaml",
+    "multi_node/calculator/calculator.yaml",
+    "multi_node/customer_escalation/customer_escalation.yaml",
+    "multi_node/dice_roller/dice_roller.yaml",
+    "multi_node/feet_inches/feet_inches.yaml",
+    "multi_node/loop_multiply/loop_multiply.yaml",
+    "multi_node/multi_city_weather/multi_city_weather.yaml",
+    "multi_node/reading_list/reading_list.yaml",
+    "multi_node/slack_channel_description/slack_channel_description.yaml",
+    "multi_node/slack_weather_pipeline/slack_weather_pipeline.yaml",
+    "multi_node/wiki_pageviews/wiki_pageviews.yaml",
+    "single_node/api_workflow/api_workflow.yaml",
+    "single_node/decision/decision.yaml",
+    "single_node/file_attachment/file_attachment.yaml",
+    "single_node/lowcode_agent/lowcode_agent.yaml",
+    "single_node/openmeteo_weather/openmeteo_weather.yaml",
+    "single_node/rpa/rpa.yaml",
+    "single_node/subflow/subflow.yaml",
+    "single_node/switch/switch.yaml",
+    "single_node/terminate/terminate.yaml",
+    "connector_features/jdbc_databricks_query/jdbc_databricks_query.yaml",
+}
+
+# F1 freezes the #2557 task even though its prompt predates the exact phrase.
+DEBUG_PROJECT_LAYOUT_EXCEPTIONS = {"single_node/coded_agent/coded_agent.yaml"}
+
+UUID_PATTERN = re.compile(
+    r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b",
+    re.IGNORECASE,
+)
+
+
+def _block(text: str, key: str) -> str:
+    match = re.search(rf"(?ms)^{re.escape(key)}:[^\n]*\n(.*?)(?=^[A-Za-z_][\w-]*:|\Z)", text)
+    return match.group(0) if match else ""
+
+
+def _criterion_blocks(text: str) -> list[tuple[str, str]]:
+    section = _block(text, "success_criteria")
+    return [
+        (match.group(1), match.group(0))
+        for match in re.finditer(
+            r"(?ms)^  - type:\s*([^\s#]+).*?(?=^  - type:|^[A-Za-z_][\w-]*:|\Z)",
+            section,
+        )
+    ]
+
+
+def _tagged_tasks() -> list[tuple[str, Path, str]]:
+    tasks = []
+    for path in sorted(FLOW_TASKS.rglob("*.yaml")):
+        text = path.read_text()
+        if "uipath-maestro-flow" in _block(text, "tags"):
+            tasks.append((path.relative_to(FLOW_TASKS).as_posix(), path, text))
+    return tasks
+
+
+def _referenced_python_files(task_path: Path, criterion: str) -> list[Path]:
+    paths = []
+    for token in re.findall(
+        r"(?:\$TASK_DIR/|\$SKILLS_REPO_PATH/)?[A-Za-z0-9_./-]+\.py", criterion
+    ):
+        if token.startswith("$TASK_DIR/"):
+            path = task_path.parent / token.removeprefix("$TASK_DIR/")
+        elif token.startswith("$SKILLS_REPO_PATH/"):
+            path = FLOW_TASKS.parents[2] / token.removeprefix("$SKILLS_REPO_PATH/")
+        else:
+            path = Path(token)
+        if path.is_file():
+            paths.append(path)
+    return paths
+
+
+def _is_debug_graded(task_path: Path, text: str) -> bool:
+    for criterion_type, criterion in _criterion_blocks(text):
+        if criterion_type == "command_not_executed":
+            continue
+        normalized = criterion.lower().replace("\\\\", "\\")
+        if "flow\\s+debug" in normalized or "flow debug" in normalized:
+            return True
+        if criterion_type != "run_command":
+            continue
+        for script in _referenced_python_files(task_path, criterion):
+            source = script.read_text(errors="replace")
+            if "run_debug(" in source or re.search(
+                r'["\']flow["\']\s*,\s*["\']debug["\']', source
+            ):
+                return True
+    return False
+
+
+def _has_v1_authoring_grammar(criterion: str) -> bool:
+    normalized = criterion.lower().replace("\\\\", "\\")
+    markers = (
+        "solution\\s+",
+        "flow\\s+init",
+        "flow\\s+node\\s+add",
+        "flow\\s+node\\s+configure",
+        "flow\\s+node\\s+remove",
+        "flow\\s+node\\s+update",
+        "flow\\s+registry",
+    )
+    return any(marker in normalized for marker in markers) or (
+        "agent\\s+init" in normalized and "inline-in-flow" in normalized
+    )
+
+
+def test_every_tagged_task_has_an_explicit_task_id() -> None:
+    missing = {
+        relative
+        for relative, _, text in _tagged_tasks()
+        if not re.search(r"(?m)^task_id:\s*\S+", text)
+    }
+    assert missing == set()
+
+
+def test_v1_only_authoring_commands_match_the_temporary_allowlist() -> None:
+    offenders = set()
+    for relative, _, text in _tagged_tasks():
+        for criterion_type, criterion in _criterion_blocks(text):
+            if criterion_type == "command_executed" and _has_v1_authoring_grammar(
+                criterion
+            ):
+                offenders.add(relative)
+    assert offenders == V1_AUTHORING_ALLOWLIST
+
+
+def test_gating_skill_telemetry_matches_the_temporary_allowlist() -> None:
+    offenders = set()
+    for relative, _, text in _tagged_tasks():
+        for criterion_type, criterion in _criterion_blocks(text):
+            if criterion_type != "skill_triggered":
+                continue
+            threshold = re.search(r"(?m)^\s+pass_threshold:\s*([0-9.]+)", criterion)
+            if threshold is None or float(threshold.group(1)) > 0:
+                offenders.add(relative)
+    assert offenders == SKILL_TELEMETRY_ALLOWLIST
+
+
+def test_forbidden_prompt_phrases_match_the_temporary_allowlist() -> None:
+    offenders = set()
+    for relative, _, text in _tagged_tasks():
+        prompt = " ".join(_block(text, "initial_prompt").lower().split())
+        if re.search(r"do not [^.]*\bdebug\b", prompt) or UUID_PATTERN.search(prompt):
+            offenders.add(relative)
+    assert offenders == FORBIDDEN_PROMPT_ALLOWLIST | FORBIDDEN_PROMPT_EXCEPTIONS
+
+
+def test_debug_graded_prompts_name_a_same_name_solution() -> None:
+    offenders = set()
+    for relative, path, text in _tagged_tasks():
+        if not _is_debug_graded(path, text):
+            continue
+        prompt = " ".join(_block(text, "initial_prompt").lower().split())
+        if not re.search(r"\b(?:in|inside) a solution of the same name\b", prompt):
+            offenders.add(relative)
+    assert offenders == DEBUG_SOLUTION_ALLOWLIST | DEBUG_PROJECT_LAYOUT_EXCEPTIONS
