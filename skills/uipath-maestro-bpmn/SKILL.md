@@ -22,11 +22,12 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 Work with UiPath Maestro (Process Orchestration) `.bpmn` projects across their
 lifecycle: author, validate, package, operate, and diagnose. **Authoring is
-registry-driven**: every `uipath:*` extension payload comes from a template the
-registry serves; the structural BPMN that holds those nodes together (process
-scaffold, sequence flows, gateways, events, boundary events, containers,
-multi-instance markers, and the diagram) is authored from the documented spec +
-canvas contract. Packaging, operating (upload, publish, run, manage), and
+registry-driven for registered nodes**: their execution payloads come from
+templates the registry serves. The structural BPMN and serializer-owned scaffold
+metadata that hold those nodes together (process scaffold, variables, bindings,
+entry points, sequence flows, gateways, events, boundary events, containers,
+multi-instance markers, and the diagram) are authored from the documented spec
+and canvas contract. Packaging, operating (upload, publish, run, manage), and
 diagnosing are driven through the UiPath CLI, covered in the capability
 references below.
 
@@ -62,17 +63,20 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 
 Two halves make a valid Maestro `.bpmn`:
 
-1. **`uipath:*` payloads — registry-owned.** Each node's extension XML
-   (`uipath:activity` / `uipath:event` / `uipath:mapping`, its `context`,
-   `input`, `output`, and `bindingInfo`) comes from
+1. **Registry-listed node payloads — registry-owned.** Each listed node's
+   execution XML (`uipath:activity` / `uipath:event` / `uipath:mapping`, its
+   `context`, `input`, `output`, and `bindingInfo`) comes from
    `uip maestro bpmn registry get <type>`'s `xmlTemplate`. **Never hand-author a
-   `uipath:*` element from prose.**
-2. **Structural BPMN — spec/canvas-owned.** The registry emits no
+   registry-owned node payload from prose.**
+2. **Structural BPMN and scaffold metadata — spec/canvas-owned.** The registry emits no
    `<bpmn:definitions>`/`<bpmn:process>`, no sequence flows, no gateway
    conditions/defaults, no event-definition payloads, no boundary-event
-   attributes, no subprocess/loop structure, and no diagram. Author all of these
-   from [references/structural-bpmn.md](references/structural-bpmn.md), which is
-   grounded in the registry spec and the Studio Web canvas serializer.
+   attributes, no subprocess/loop structure, and no diagram. Serializer-owned
+   scaffold extensions such as `uipath:variables`, `uipath:bindings`,
+   `uipath:entryPointId`, and `uipath:migrationVersion` also come from this
+   contract rather than a node template. Author these from
+   [references/structural-bpmn.md](references/structural-bpmn.md), which is
+   grounded in the registry spec, the CLI scaffold, and the canvas serializer.
 
 ## Workflow
 
@@ -130,18 +134,21 @@ For registry-evidence-only tasks, be command-first and time-boxed:
    `<bpmn:receiveTask>`) while preserving the `uipath:*` payload exactly.
 3. **Assemble.** Author directly from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
-   plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
-   shows variables, the entry point, a branch, and the diagram. **Do not
+   plus each node's `xmlTemplate` (fill placeholders only). That skeleton shows
+   a stable manual entry point, one structural task, and complete DI. **Do not
    reverse-engineer authoring patterns from task fixtures or generated package
    files** — fixture spelunking is the top reason authoring runs out of time.
    Add only the structural pieces your process needs (extra
    gateways, events, boundary events, containers, multi-instance markers,
    expression/error mappings, retry attributes), then run
-   `uip maestro bpmn format <file.bpmn>` to generate the diagram. If `format` reports `unknown command`, update the CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if upgrading is unavailable, use the fallback DI structure in [references/structural-bpmn.md](references/structural-bpmn.md). For local authoring prompts, use the
-   plain project layout `<ProjectName>/<ProjectName>.bpmn` with
-   `<ProjectName>/project.uiproj`; do not create `*Solution/`, package files, or
-   `.uipx` artifacts unless the user explicitly asks to package or operate the
-   project.
+   `uip maestro bpmn format <file.bpmn>` to generate the diagram. If `format` reports `unknown command`, update the CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if upgrading is unavailable, use the fallback DI structure in [references/structural-bpmn.md](references/structural-bpmn.md). For a new local project, reuse the
+   current solution when one is already in scope; otherwise let the initializer
+   create and register one. Initialize the supported scaffold with
+   `uip maestro bpmn init <ProjectName> --output json` and edit the project at
+   the returned `Data.Path`. Preserve its generated metadata. `project.uiproj`
+   owns the exact-cased `"Name"` and
+   `"ProjectType": "ProcessOrchestration"` fields; the runnable BPMN/start-event
+   path belongs in lowercase `operate.json.main`, not `project.uiproj.main`.
    When adding draft or preserve-only case-management variants, include a real
    lowercase `<uipath:caseManagement version="v1">...</uipath:caseManagement>`
    payload with synthetic content as a separate preserve-only extension. Do not
@@ -232,8 +239,10 @@ and honestly surfaced to the user as gaps when asked.
 
 ## Rules
 
-1. **Registry owns every `uipath:*` payload.** Author from
-   `registry get` templates; never hand-write `uipath:` XML from prose.
+1. **Registry owns registry-listed node payloads.** Author their execution
+   extensions from `registry get` templates; author serializer-owned scaffold
+   metadata only from the structural/canvas contract. Never invent either from
+   prose.
 2. **Never fabricate an identifier.** Connection IDs, process/queue/connector
    keys, app IDs, folder ids/paths come from discovery or the user.
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
