@@ -6,21 +6,36 @@ Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.
 
 ## When to Run
 
-**Batched, not per-task.** `bindings_v2.json` is only consumed by `uip solution resources refresh` (which runs once before upload/debug). No intermediate step reads it. Regenerating after every task wastes Read→convert→Write cycles on a growing file.
+**Sync-as-you-write — one group at a time, never deferred.** Immediately after writing a group's bindings to top-level `bindings[]` in `caseplan.json`, append that group's ONE converted entry to `bindings_v2.json` (§ Append one resource entry, below). A group = the entries sharing one `resourceKey` — non-connector: `name` + `folderPath`; connector: `ConnectionId`, plus `FolderKey` only when present. The writing plugin's Post-Write Verification checks the entry.
 
-Run at these three points only:
+Never defer to an end-of-phase batch: the sidecar has no execution-time feedback (`validate` never reads it; `resources refresh` often runs harness-side), and deferred batches get skipped — observed: an untouched scaffold `resources: []` and a partial raw-format copy, both beside a complete `bindings[]`.
 
-1. **End of Phase 2 Step 9** (after all non-connector tasks written) — covers all process/agent/rpa/action/api-workflow/case-management bindings
-2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache for tasks
-3. **End of Phase 3 Step 10.5** (after Phase 2 connector-rule stubs are upgraded across the 4 scopes — stage-entry, stage-exit, case-exit, task-entry) — adds Connection bindings + populates IS cache for resolved rules. Phase 2 stubs add no bindings; without this sync, rule-introduced Connection/Folder bindings + IS-cache entries would be absent when `resource refresh` runs.
+**Full regeneration (§ Regenerate, below) is the repair path.** Run it whenever a parity check finds drift (Step 9.4, Step 9.7 Phase C, Step 10.5, Step 12 Check 7 — [implementation.md](implementation.md)), on task / rule removal ([§ Cleanup](#cleanup-on-task-or-rule-removal)), or in edit-mode flows ([case-editing-operations.md](case-editing-operations.md)).
 
-Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (top-level `bindings[]`). The batch regeneration reads the full bindings array once and converts everything in one pass.
+---
+
+## § Append one resource entry (primary)
+
+1. Take the group just written (one or two entries sharing a `resourceKey`).
+2. Convert to ONE sidecar entry per the shapes in § Regenerate below (inline-built-sibling exception applies). Connector group without a FolderKey binding (`spec.connection.folderKey` null): omit `value.folderKey`.
+3. Edit `bindings_v2.json`: replace the empty scaffold `"resources": []` with `[ <entry> ]`, or insert the entry before the closing `]`. Same `key` already present → update in place, never duplicate.
+
+```jsonc
+// caseplan.json pair — one entry per property (id/name/type fields elided)
+{ "resourceKey": "Shared/FinOps.RPA Workflow", "default": "RPA Workflow",  "propertyAttribute": "name" },
+{ "resourceKey": "Shared/FinOps.RPA Workflow", "default": "Shared/FinOps", "propertyAttribute": "folderPath" }
+// → ONE bindings_v2 entry — properties nested under value
+{ "resource": "process", "key": "Shared/FinOps.RPA Workflow",
+  "value": { "name": { "defaultValue": "RPA Workflow" }, "folderPath": { "defaultValue": "Shared/FinOps" } } }
+```
+
+> **Format sentinel (hard rule).** A `resources[]` entry has exactly `resource` / `key` / `value` (+ `metadata`). `id` / `propertyAttribute` / per-property `default` in an entry = caseplan copied raw (wrong format); `resources: []` beside non-empty `bindings[]` = sync never ran. Check 7 halts on both.
 
 ---
 
 ## § Regenerate bindings_v2.json
 
-After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`. This file uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
+**Repair / edit-mode path** — primary sync is § Append one resource entry (above); run this full pass only per the triggers in § When to Run. The sidecar uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
 
 ### Procedure
 
@@ -58,6 +73,8 @@ After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`.
   "metadata": { "connector": "<connectorKey>" }
 }
 ```
+
+Omit `value.folderKey` when the group has no FolderKey binding (`spec.connection.folderKey` was null).
 
 > **Known CLI bug:** `syncConnectionResources` reads `value.connectionId` (lowercase c) but `flow-schema` writes `value.ConnectionId` (uppercase C). Use **lowercase `connectionId`** until fixed.
 

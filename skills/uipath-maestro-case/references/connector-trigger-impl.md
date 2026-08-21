@@ -164,7 +164,7 @@ The same stub therefore has two lifetimes: temporary for a resolved connector aw
 
 5b. If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) — rewrite each already-minted output entry per its `->` / `=` operator. Skip when the rule has no `uipath.outputs[]` (stub placeholder — the stub always emits `uipath`, but with empty `outputs[]`).
 
-6. Append root bindings (ConnectionId + FolderKey) and run the deferred Step 10.5 `bindings_v2` sync — identical to the task ([§ Root-level bindings](#root-level-bindings)).
+6. Append root bindings (ConnectionId + FolderKey) and immediately append the connection's converted entry to `bindings_v2.json` — identical to the task ([§ Root-level bindings](#root-level-bindings); [bindings-v2-sync.md § Append one resource entry](bindings-v2-sync.md)).
 
 **Rule `id` requirements.** Rule `id`s are opaque to the FE (no format validation on import) — `Rule_xxxxxx` and `rxxxxxxxx` both work. Two hard requirements: (a) `elementId = <ownerNodeId>-<ruleId>` built from the exact id written; (b) **`rule.id` must be unique within the case** — the BPMN node id `ConnectorEvent_${rule.id}_${elementId}` derives from it, so a collision corrupts the case graph.
 
@@ -213,7 +213,7 @@ Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of
 
 After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](bindings-v2-sync.md). Skip if `case spec` failed.
 
-> **`bindings_v2.json` regeneration is deferred and batched.** Runs at three points, not per-target: end of Phase 2 Step 9 (non-connector tasks), end of Phase 3 Step 9.7 (connector tasks + triggers), and end of Phase 3 **Step 10.5** (upgraded connector condition rules across all 4 scopes). See [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run).
+> **`bindings_v2.json` sync is immediate, per group — never deferred.** Append the connection's converted entry right after writing its root bindings ([bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run)); omit `value.folderKey` when the FolderKey binding is absent. Step 9.4 / Step 9.7 Phase C / Step 10.5 only verify parity; § Regenerate is the drift repair.
 
 ---
 

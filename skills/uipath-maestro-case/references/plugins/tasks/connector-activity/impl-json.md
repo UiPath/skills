@@ -247,7 +247,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md). Source-of-t
 
 After writing root bindings, populate IS connection cache per [bindings-v2-sync.md § Populate IS connection cache](../../../bindings-v2-sync.md). Skip if `case spec` failed.
 
-> **`bindings_v2.json` regeneration is deferred** — runs once at end of Step 9.7 in [implementation.md](../../../implementation.md) (after all connector tasks), not per-task. See [bindings-v2-sync.md § When to Run](../../../bindings-v2-sync.md).
+> **`bindings_v2.json` sync is immediate** — right after this task's root bindings are written (Step 9), append the connection's converted entry per [bindings-v2-sync.md § Append one resource entry](../../../bindings-v2-sync.md). Step 9.7 Phase C only verifies parity. Never defer to an end-of-phase batch.
 
 ## Graceful degradation
 
@@ -273,7 +273,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 8. `data.bindings[]` is empty `[]`
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` minted (uniqueness rule applied for outputs)
 10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 3–8 across every connector node
-11. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
+11. `bindings_v2.json.resources[]` has this task's Connection entry (`key` == connectionId; `key`+`value` shape, no `propertyAttribute`/`id`; `value.folderKey` omitted when the FolderKey binding is absent)
 12. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
 13. **Lossless inputs (HARD GATE).** Every `tasks.md input-values` field must appear unchanged in the matching `data.inputs[].body`; a top-level `filter:` also requires `spec.filter` and successful compilation. Otherwise halt and repair—never warn and continue.
 14. **No PascalCase keys remain (HARD GATE).** Scan the written task's `data.context` / `data.inputs` / `data.outputs` for any capital-first `"Xxx…":` key — every one must have been re-cased in Step 8.a. `validate` does NOT catch content-level leftovers (a Pascal or missing `multipartParameters` passes validate and fails at runtime).
