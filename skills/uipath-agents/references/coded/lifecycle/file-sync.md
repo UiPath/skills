@@ -35,6 +35,8 @@ UIPATH_PROJECT_ID=12345
 
 `UIPATH_URL`, `UIPATH_ACCESS_TOKEN`, and org/tenant identifiers come from the `uip login` session automatically — do not add them to `.env`.
 
+`.env` may also hold the agent's own runtime environment variables, but it is **not** pushed (see [Files Involved](#files-involved)) — editing it does not change what a cloud run sees. For the store the cloud runtime reads, and for referencing an Orchestrator asset with `%ASSETS/<ASSET_NAME>%`, see [environment-variables.md](environment-variables.md).
+
 ## Pull
 
 Downloads all files from the remote Studio Web project to your local workspace, preserving directory structure.
@@ -94,7 +96,7 @@ uip codedagent push --overwrite
 | `pyproject.toml`, `main.py`, `.py`, `.json`, `.yaml` | yes | Project source and metadata |
 | `uipath.json`, `entry-points.json`, `bindings.json` | yes | UiPath project configuration |
 | `uv.lock` | yes (skip with `--nolock`) | Dependency lockfile |
-| `__pycache__/`, `.git/`, `.uipath/`, `.env` | no | Build artifacts, VCS, secrets |
+| `__pycache__/`, `.git/`, `.uipath/`, `.env` | no | Build artifacts, VCS, secrets — for `.env` see [environment-variables.md](environment-variables.md) |
 
 Use `packOptions` in `uipath.json` to refine what gets included.
 
