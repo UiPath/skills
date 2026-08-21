@@ -1,0 +1,71 @@
+task_id: skill-admin-fedcred-maintain-e2e
+description: >
+  End-to-end test (outcome-graded) of the federated-credential MAINTAIN verbs on
+  an external app that already has credentials: external-apps
+  federated-credentials update and delete. federated_credentials_e2e.yaml covers
+  only the create path; this task never creates a credential — it retargets one
+  and deletes another.
+
+  The load-bearing behaviour is that `federated-credentials update` is a FULL
+  REPLACE: every field is required, so an agent that sends only the new subject
+  drops the issuer or audience. The verify reads the credential list back and
+  asserts the new subject landed WHILE issuer and audience survived byte-for-byte.
+
+  The audience is randomized per run ("api://ce-fedcred-maintain-<random>") and
+  recorded to the seed state file, replacing the canonical
+  https://cloud.uipath.com that an agent could reproduce from context. SCOPE OF
+  THE CLAIM: this asserts the END STATE, not that the credential was read. The
+  agent runs with Bash/Read/Grep in a container where the repo and the state file
+  are both reachable, so no value here is hidden from it. The assertion is still
+  load-bearing for the behaviour under test — a partial-payload update wipes
+  omitted fields regardless of what the agent knows — but "it passed, therefore
+  it read the credential" does not follow, and an earlier revision wrongly
+  claimed it did.
+
+  Graded solely by reading tenant state back, following the pattern of
+  identity_user_lifecycle_e2e and identity_delete_user_smoke. Deliberately NO
+  command_executed criteria — see the note in identity_maintain_lifecycle_e2e.yaml.
+
+  Uses its own PERSISTENT host app ("ce-identity-fedcred-maintain-host", created
+  once and never deleted). Identity-service has a create->read cross-partition
+  inconsistency (PLT-107839 investigation): a freshly-created app is not yet
+  materialized in the org partition the federated-credentials endpoint queries, so
+  fed-cred calls 400 with "Client not found in partition" on brand-new apps. A
+  dedicated durable host — not the smoke's "ce-identity-fedcred-host" — keeps the
+  two tests from fighting over one credential list under -jN. pre_run clears and
+  reseeds the two credentials; post_run deletes credentials only, keeping the host.
+tags: [uipath-admin, e2e, mode:build, lifecycle:setup, identity, external-app]
+
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''setup_fedcred_maintain.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_fedcred_maintain.py''))"'
+    timeout: 60
+
+run_limits:
+  expected_turns: 25
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Our GitHub Actions deployment pipeline moved off the main branch. On the
+  existing "ce-identity-fedcred-maintain-host" external app:
+
+  - The "ce-fedcred-main" federated credential must now trust the release branch
+    of myorg/myrepo instead of the main branch. Everything else about that
+    credential — which identity provider it trusts and what audience it expects —
+    must come out unchanged.
+  - "ce-fedcred-legacy" points at a repository we retired. Remove it.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant read-back: ce-fedcred-main (seeded id) now targets refs/heads/release with issuer and audience byte-identical to seed, legacy credential id absent, exactly one credential remaining"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_fedcred_maintained.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
