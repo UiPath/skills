@@ -1,0 +1,66 @@
+task_id: skill-admin-extapp-inspect-update-e2e
+description: >
+  End-to-end test (outcome-graded) of the external-app MAINTAIN verbs on
+  registrations that already exist: external-apps update, delete-secret and
+  delete. Existing coverage exercises create and secret-rotate only.
+
+  pre_run seeds two marker apps — one to be renamed and narrowed, one to be
+  retired — plus a second, retirable secret on the first. Grading an update and a
+  delete on two separate apps avoids the delete-erases-the-update-evidence
+  problem (see identity_user_lifecycle_e2e.yaml).
+
+  Graded solely by reading tenant state back, following the pattern of
+  identity_user_lifecycle_e2e and identity_delete_user_smoke. The verify asserts:
+  the renamed app exists and the seeded name does not; its ClientId is UNCHANGED
+  from the seeded value (so delete-and-recreate cannot masquerade as an in-place
+  `external-apps update`); its scope set is EXACTLY OR.Folders + OR.Jobs (set
+  equality, not "required present" — a superset would let an agent widen the app
+  to OR.Robots/OR.Users while nominally satisfying the request); the stale secret
+  is gone and exactly one fewer secret remains than at seed time; and the retired app is deleted.
+
+  Deliberately NO command_executed criteria — see the note in
+  identity_maintain_lifecycle_e2e.yaml. Patterns using `[\s\S]*` matched across
+  commands chained in a single Bash call, so a `--app-scope` on an unrelated
+  `create` satisfied the "replaced scopes via update" criterion.
+
+  Note this task settled an open question: `external-apps get` DOES expose the
+  numeric SECRET_ID that `delete-secret <SECRET_ID>` requires, which the skill
+  docs never state (see issue #2703).
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, identity, external-app]
+
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''setup_extapp_maintain.py''))"'
+    timeout: 120
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_extapp_maintain.py''))"'
+    timeout: 90
+
+run_limits:
+  expected_turns: 17
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Two OAuth app registrations need attention in my UiPath organization.
+
+  - "ce-identity-extapp-active" is being consolidated. Rename it to
+    "ce-identity-extapp-consolidated", and it should now be able to reach
+    Orchestrator folders and jobs only — nothing else.
+  - That same app has an old client secret described "ce-extapp-stale-secret"
+    that must be revoked. Leave its other secret working.
+  - "ce-identity-extapp-retired" is decommissioned — remove the whole
+    registration.
+
+  Leave every other app registration alone.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant read-back: app renamed in place (same ClientId) with application scopes exactly Folders+Jobs, stale secret revoked leaving exactly one fewer than at seed, retired app id absent"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_extapp_maintained.py''))"'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -267,16 +267,23 @@ function mergeMapping({ skillsRoot, upstreamRoot, oldPin, newCommit, mapping }) 
   const base = gitShow(upstreamRoot, oldPin, mapping.source);
   const theirs = gitShow(upstreamRoot, newCommit, mapping.source);
   const ours = fs.existsSync(targetPath) ? fs.readFileSync(targetPath) : null;
+  const adapt = snapshotAdaptationFor(mapping.target);
+  const snapshotBase = base === null || !adapt
+    ? base
+    : Buffer.from(adapt(base.toString('utf8')));
+  const snapshotTheirs = theirs === null || !adapt
+    ? theirs
+    : Buffer.from(adapt(theirs.toString('utf8')));
 
   if (base === null && theirs === null) return false;
   if (base === null) {
-    if (ours === null) return writeIfChanged(targetPath, theirs);
-    if (ours.equals(theirs)) return false;
+    if (ours === null) return writeIfChanged(targetPath, snapshotTheirs);
+    if (ours.equals(snapshotTheirs)) return false;
     fail(`Add/add conflict for ${mapping.target} from ${mapping.source}`);
   }
   if (theirs === null) {
     if (ours === null) return false;
-    if (!ours.equals(base)) {
+    if (!ours.equals(snapshotBase)) {
       fail(`Modify/delete conflict for ${mapping.target} from ${mapping.source}`);
     }
     fs.unlinkSync(targetPath);
@@ -286,7 +293,7 @@ function mergeMapping({ skillsRoot, upstreamRoot, oldPin, newCommit, mapping }) 
     fail(`Snapshot deleted ${mapping.target} while upstream still contains ${mapping.source}`);
   }
 
-  const merged = mergeBuffers(ours, base, theirs, {
+  const merged = mergeBuffers(ours, snapshotBase, snapshotTheirs, {
     ours: `${mapping.target} (snapshot)`,
     base: `${mapping.source}@${oldPin}`,
     theirs: `${mapping.source}@${newCommit.slice(0, 7)}`,
@@ -345,6 +352,18 @@ export function adaptCaseExample(text) {
   return text.replaceAll('example/case-bindings.json', 'examples/bindings.json');
 }
 
+const snapshotAdaptations = new Map([
+  ['preview/uipath-maestro-flow/SKILL.md', adaptFlowSkill],
+  ['preview/uipath-maestro-case/SKILL.md', adaptCaseSkill],
+  ['preview/uipath-maestro-bpmn/SKILL.md', adaptBpmnSkill],
+  ['preview/uipath-maestro-flow/references/api.md', adaptFlowApi],
+  ['preview/uipath-maestro-case/examples/NotifyOnApproval.case.ts', adaptCaseExample],
+]);
+
+function snapshotAdaptationFor(target) {
+  return snapshotAdaptations.get(target);
+}
+
 function updateProvenance(text, source, newPin, target) {
   const escapedSource = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pattern = new RegExp(`(\`${escapedSource}\` @ )[0-9a-f]{7,40}(\\. Canonical source)`, 'g');
@@ -365,14 +384,7 @@ function applyAdaptations(skillsRoot, newPin) {
     ) || changed;
   }
 
-  const adaptations = [
-    ['preview/uipath-maestro-flow/SKILL.md', adaptFlowSkill],
-    ['preview/uipath-maestro-case/SKILL.md', adaptCaseSkill],
-    ['preview/uipath-maestro-bpmn/SKILL.md', adaptBpmnSkill],
-    ['preview/uipath-maestro-flow/references/api.md', adaptFlowApi],
-    ['preview/uipath-maestro-case/examples/NotifyOnApproval.case.ts', adaptCaseExample],
-  ];
-  for (const [target, adapt] of adaptations) {
+  for (const [target, adapt] of snapshotAdaptations) {
     const targetPath = path.join(skillsRoot, target);
     if (!fs.existsSync(targetPath)) continue;
     changed = writeIfChanged(targetPath, adapt(readText(targetPath))) || changed;

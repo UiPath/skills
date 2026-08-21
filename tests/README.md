@@ -145,7 +145,7 @@ tests/
 ├── experiments/
 │   ├── default.yaml              # Dev / ad-hoc — tempdir, full lifecycle (no docker image required)
 │   ├── nightly.yaml              # Nightly cron — docker, full lifecycle, staging tenant
-│   ├── preview-nightly.yaml      # Maestro preview plugin arm (scheduled separately)
+│   ├── preview-nightly.yaml      # Maestro preview plugin arm (scheduled by coder_eval_uipath)
 │   ├── preview-nightly-tasks.txt # Frozen neutralized Maestro task set
 │   ├── smoke.yaml                # PR-gate smoke (Linux, docker, faster budget)
 │   ├── smoke-windows.yaml        # Windows RPA smoke (tempdir)
@@ -192,17 +192,16 @@ runner. The image build passes the package credential as
 exists only for the external nightly caller during migration. Regular nightly
 and smoke jobs continue to use `skills-image:latest`.
 
-`preview-nightly.yaml` is the scheduled Maestro SDK comparison arm. It stages
+`preview-nightly.yaml` is the Maestro SDK comparison arm. It stages
 the plugin catalog with the three `skills/uipath-maestro-*` directories
 replaced by their `preview/` counterparts while keeping `SKILLS_REPO_PATH` on
-the real checkout for frozen task checkers. The workflow selects the nine
-neutralized tasks only through `preview-nightly-tasks.txt`, never by tag. Its
-comparison artifact joins those preview rows to the newest regular-nightly
-`run.json` with the same harness and model. It records the intentional channel
-delta (preview `dev`, where the SDK authoring loop is published; live v1
-`alpha`) rather than treating it as a model mismatch. Durable records live
-under `runs/preview-nightly/<github-run-id>/` in the existing eval blob
-container.
+the real checkout for frozen task checkers. The `coder_eval_uipath` ADO
+nightly selects the nine neutralized tasks only through
+`preview-nightly-tasks.txt`, never by tag, and runs this arm sequentially after
+the same build's regular Codex Linux arm. Its readout therefore joins exact
+paired rows rather than searching older blob history. The generic
+`run-coder-eval.yml` workflow retains `preview-nightly` as an ad-hoc option for
+smoke and diagnostic runs.
 
 `activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`) with `stop_early: true`: the armed `skill_triggered` criteria (`stop_when: auto`) end a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.1. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 

@@ -10,22 +10,36 @@ import time
 logger = logging.getLogger(__name__)
 
 
-def run_cli(args: list[str], timeout: int = 30) -> dict | None:
-    """Run a uip CLI command and return parsed JSON, or None on failure."""
+def run_cli(args: list[str], timeout: int = 30, quiet: bool = False) -> dict | None:
+    """Run a uip CLI command and return parsed JSON, or None on failure.
+
+    Set quiet=True for commands whose output contains secret material — notably
+    `external-apps generate-secret`, which returns the client secret exactly
+    once. The error paths below echo stderr/stdout into pre_run logs, and those
+    are forwarded verbatim into downloadable CI artifacts, so a non-JSON banner
+    or an output-then-nonzero-exit would put the secret in an artifact.
+    """
     try:
         result = subprocess.run(
             ["uip", *args, "--output", "json"],
             capture_output=True, text=True, timeout=timeout,
         )
         if result.returncode != 0:
-            logger.warning(
-                "CLI returned exit code %d: %s",
-                result.returncode, result.stderr.strip() or result.stdout.strip(),
-            )
+            if quiet:
+                logger.warning("CLI returned exit code %d (output suppressed: may contain a secret)",
+                               result.returncode)
+            else:
+                logger.warning(
+                    "CLI returned exit code %d: %s",
+                    result.returncode, result.stderr.strip() or result.stdout.strip(),
+                )
             return None
         return json.loads(result.stdout)
     except json.JSONDecodeError:
-        logger.warning("CLI returned non-JSON: %s", result.stdout[:200])
+        if quiet:
+            logger.warning("CLI returned non-JSON (output suppressed: may contain a secret)")
+        else:
+            logger.warning("CLI returned non-JSON: %s", result.stdout[:200])
         return None
     except subprocess.TimeoutExpired:
         logger.warning("CLI timed out after %ds", timeout)

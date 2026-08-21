@@ -12,48 +12,6 @@ name: Run Coder Eval
 # from the `partition` job — never the raw glob.
 
 on:
-  workflow_call:
-    inputs:
-      task_globs:
-        description: 'Space-separated globs under tests/.'
-        type: string
-        required: true
-      parallelism:
-        description: 'Parallel Linux tasks.'
-        type: string
-        default: '4'
-      experiment:
-        description: 'Linux experiment configuration.'
-        type: string
-        default: nightly
-      confirm_large_run:
-        description: 'Allow more than 50 tasks.'
-        type: boolean
-        default: false
-      coder_eval_version:
-        description: 'coder-eval version; blank uses the repository pin.'
-        type: string
-        default: ''
-      coder_eval_uipath_ref:
-        description: 'coder_eval_uipath git ref for delegate-sdk.'
-        type: string
-        default: ''
-      coder_eval_image_tag:
-        description: 'Agent image tag; blank uses the coder-eval version.'
-        type: string
-        default: ''
-      cli_version:
-        description: '@uipath/cli version.'
-        type: string
-        default: dev
-      agent:
-        description: 'Agent harness.'
-        type: string
-        default: claude
-      agent_model:
-        description: 'Model override; blank uses the harness repository variable.'
-        type: string
-        default: ''
   workflow_dispatch:
     inputs:
       task_globs:

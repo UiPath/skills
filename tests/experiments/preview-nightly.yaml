@@ -31,12 +31,6 @@ defaults:
         # The staged plugin is auto-mounted from agent.plugins below. This separate
         # mount keeps $SKILLS_REPO_PATH on the real repo after plugin decoupling.
         - ${SKILLS_REPO_HOST_PATH}:/skills-repo:ro
-        # coder-eval mounts only each task directory at its original source path.
-        # Mounting the repo there too lets frozen $TASK_DIR checkers walk upward
-        # to sibling _shared modules. This is the canonical UiPath/skills path on
-        # the GitHub-hosted runner used by this experiment.
-        - ${SKILLS_REPO_HOST_PATH}:/home/runner/work/skills/skills:ro
-        - ~/.uipath:/.uipath:rw
 
   agent:
     # No agent.type / agent.model here: the runner passes both as CLI flags, exactly like nightly.yaml.
