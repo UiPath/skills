@@ -84,3 +84,21 @@ test('refuses staged inputs that do not match the recorded commit', () => {
   assert.match(result.stderr, /Plugin inputs must match HEAD/);
   assert.equal(fs.existsSync(output), false);
 });
+
+test('preview experiment keeps frozen checkers and tenant auth reachable', () => {
+  const experiment = fs.readFileSync(
+    path.join(repository, 'tests', 'experiments', 'maestro-flow-sdk.yaml'),
+    'utf8',
+  );
+  const workflow = fs.readFileSync(
+    path.join(repository, '.github', 'workflows', 'run-coder-eval.yml'),
+    'utf8',
+  );
+  assert.match(
+    experiment,
+    /\$\{SKILLS_REPO_HOST_PATH\}:\$\{SKILLS_REPO_HOST_PATH\}:ro/,
+  );
+  assert.match(experiment, /~\/\.uipath:\/\.uipath:rw/);
+  assert.doesNotMatch(experiment, /\$\{SKILLS_REPO_HOST_PATH\}:\/skills-repo/);
+  assert.match(workflow, /SKILLS_REPO_PATH:\s+\$\{\{ github\.workspace \}\}/);
+});

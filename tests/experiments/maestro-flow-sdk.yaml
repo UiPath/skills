@@ -27,9 +27,13 @@ defaults:
         - CODEX_API_KEY
         - CODEX_BASE_URL
       extra_mounts:
-        # The staged plugin is auto-mounted from agent.plugins below. This separate
-        # mount keeps $SKILLS_REPO_PATH on the real repo after plugin decoupling.
-        - ${SKILLS_REPO_HOST_PATH}:/skills-repo:ro
+        # The staged plugin is auto-mounted from agent.plugins below. Keep the
+        # real repository at its host path so frozen $TASK_DIR checkers can walk
+        # upward to sibling _shared modules without coupling skills to the plugin.
+        - ${SKILLS_REPO_HOST_PATH}:${SKILLS_REPO_HOST_PATH}:ro
+        # Mirrors nightly.yaml. GitHub ad-hoc runs consume the ROPC file directly;
+        # the ADO paired arm additionally exports the same credentials as env auth.
+        - ~/.uipath:/.uipath:rw
 
   agent:
     # No agent.type / agent.model here: the runner passes both as CLI flags, exactly like nightly.yaml.
