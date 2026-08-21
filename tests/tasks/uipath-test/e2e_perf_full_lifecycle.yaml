@@ -4,10 +4,12 @@ description: >
   performance-testing lifecycle from a vague natural-language prompt:
   Explore -> discover (project + test case + folder) -> create scenario
   -> `load-groups add` (omit --package-version) -> dry run with --wait ->
-  confirm load profile with user (skill rule) -> `load-groups update` ->
+  surface the load profile (skill rule) -> `load-groups update` ->
   full performanceTesting run -> fetch results -> per-API breakdown ->
-  write Performance Engineer report. The prompt is intentionally vague
-  so the skill — not the prompt — drives every step.
+  write Performance Engineer report. The prompt is vague on HOW (the skill
+  — not the prompt — drives every step) but the agent runs autonomously:
+  it must not stall on a clarifying question, since the eval is
+  non-interactive.
 tags: [uipath-test, e2e, mode:operate, lifecycle:end-to-end, feature:perf-scenario]
 
 agent:
@@ -27,8 +29,19 @@ initial_prompt: |
 
   Run a full performance test on my login test case and write me a
   Performance Engineer report to ./perf-report.md including the per-API
-  breakdown. Use sensible defaults but confirm the load profile with me
-  before kicking off the full run.
+  breakdown.
+
+  Work autonomously end-to-end — I am unavailable to answer questions, so
+  I am pre-authorizing every decision up front so nothing is ambiguous:
+
+  - Test case: pick the first login-related test case you discover; any of
+    them is fine, the choice is yours.
+  - Scenario: create a NEW scenario for it (do not reuse an existing one).
+  - Load profile: after the dry run, use sensible defaults — they are
+    pre-approved, so apply them and proceed without waiting for me.
+
+  Do not stop to ask or confirm anything; drive the whole pipeline to the
+  finish and write the report.
 
 success_criteria:
   - type: command_executed

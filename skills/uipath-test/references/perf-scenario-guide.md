@@ -31,7 +31,7 @@ point based on what the user actually said:
 | *"Create a perf scenario for SP1:602 and run it"* | Step 2 (create) → Step 3 (`load-groups add`) → Step 4 (execute) |
 | *"Run a perf test on SP1:1276"* (gave a `<SCENARIO_KEY>`) | Step 4 only — first `perf-scenario get --scenario-key SP1:1276` to confirm it exists and has at least one load group; skip create + `load-groups add` |
 | *"Run the same scenario again with a full execution"* | Step 4 only — reuse the scenario from earlier in the conversation; **do not create a new one** |
-| *"Run a perf test on our login test case"* (no scenario-key) | Ask the user: "Do you want me to reuse an existing scenario for this test case, or create a new one?" Then act on the answer. |
+| *"Run a perf test on our login test case"* (no scenario-key) | First look for candidates: `uip tm perf-scenario list --project-key <PROJECT_KEY> --search <text> --output json`. Then ask the user: "Do you want me to reuse an existing scenario for this test case, or create a new one?" and act on the answer. |
 
 > **Never create + `load-groups add` on a scenario that already has load
 > groups.** Call `perf-scenario get --scenario-key <KEY>` first — if
@@ -168,8 +168,9 @@ Detaches the load group from the scenario; the test case and every past
 execution's data stay intact. `--project-key` is REQUIRED here (a bare UUID
 carries no project prefix). **Confirm the load group with the user first** —
 re-adding it means re-supplying folder, package, and the whole load profile.
-A bad id fails on the read before anything is deleted, so a `Success`
-envelope means the load group really was removed.
+The CLI deletes directly — an unknown id surfaces the service's own error
+(e.g. 404) and nothing is removed, so a `Success` envelope means the load
+group really was removed.
 
 ## Step 4 — Run + wait
 
@@ -398,14 +399,14 @@ uip tm perf-scenario execute \
 
 You can then either:
 
-- **Poll yourself** at intervals: `uip tm perf-scenario executions list --project-key <KEY> --scenario-id <SCENARIO_UUID> --output json` and read the execution's `Status` field (values are lower-camel: `pendingAllocation`, `pending`, `running`, `cancelling`, and the terminal `finished` / `cancelled`). Do NOT poll `results get --completed false` for completion — the live payload is cleared when the run finishes, so a grep on live logs never sees the end. Once terminal, fetch the final bundle with `results get --completed true`.
+- **Poll yourself** at intervals: `uip tm perf-scenario executions list --project-key <KEY> --scenario-id <SCENARIO_UUID> --output json` and read the execution's `Status` field (statuses: `pendingAllocation`, `pending`, `running`, `cancelling`, and the terminal `finished` / `cancelled` — the live service serializes them PascalCase, e.g. `Finished`, so match case-insensitively). Do NOT poll `results get --completed false` for completion — the live payload is cleared when the run finishes, so a grep on live logs never sees the end. Once terminal, fetch the final bundle with `results get --completed true`.
 - **Or rejoin the wait later**: re-invoke `execute --wait` is **not** the right rejoin — it'd start a *new* execution. Use `results get` polling for rejoining.
 
 **When to use which mode:**
 
 | Mode | When |
 |---|---|
-| `--wait` (default flow) | Short interactive runs (dry runs, ≤5 min peak). The CLI handles the poll loop + dedup + post-terminal-log scan for you. |
+| `--wait` (default flow) | Short interactive runs (dry runs, ≤5 min peak). The CLI handles the poll loop + status dedup + final results fetch for you. |
 | No `--wait` (fire-and-forget) | **Long full-load runs (any `performanceTesting` with `peak-minutes > 5` or expected total > 10 min).** Also CI pipelines where the perf run is monitored elsewhere, and multi-scenario parallel kickoffs. |
 
 > ⚠️ **The synchronous-tool-call trap — important for agent-driven flows.**
@@ -447,30 +448,37 @@ You can then either:
 > explicitly says "block until done" or the configured peak is very
 > short. Use `--wait` for `dryRun` (short by definition).
 
-`--wait` polls the perf service every `--poll-interval-sec` (default `12`)
-and exits when an application log reports the run ended (terminal status
-`Finished` / `Cancelled`) or `--timeout-sec` (default `1800`, i.e. 30 min;
-`0` = wait forever) elapses. On timeout the command exits `2` and names the
+`--wait` polls the execution's typed status every `--poll-interval-sec`
+(default `12`) and exits when the status turns terminal (`finished` /
+`cancelled`, matched case-insensitively — the live service serializes
+`Finished`) or `--timeout-sec` (default `1800`, i.e. 30 min; `0` = wait
+forever) elapses. On timeout the command exits `4` and names the
 `results get` follow-up — the run itself keeps going server-side.
+
+**Exit codes on terminal runs:** `--wait` exits `1` — even though the emitted
+envelope still says `Success` — when the run ended `cancelled`, an
+application log reports the configuration execution ended with status
+`'Failed'`, or any load group carries `SloViolationReasons`. A dry run
+against tight default thresholds (`--max-response-time-ms 100`) can
+therefore finish cleanly AND exit non-zero; read the emitted `Data` before
+declaring the run failed.
 
 **Prefer `--wait` over a hand-rolled poll loop.** The CLI:
 
-- Dedupes status-change application logs (only prints each new message once).
-- Tolerates transient 5xx during long polls.
-- Uses the same formatted response shape (`LoadGroups[]` rows) when the
-  run finishes — so the consumer of the JSON doesn't need to special-case it.
+- Logs each status change once (`Execution '<id>' status: running`).
+- Fetches the results bundle when the run turns terminal and emits the same
+  formatted response shape (`LoadGroups[]` rows) — so the consumer of the
+  JSON doesn't need to special-case it.
 
 You'll see a stream like:
 
 ```
 Resolving scenario 'SP1:1133'
-Starting dry-run for scenario 'SP1:1133' (2a1d71d4-…)
+Starting dryRun execution for scenario 'SP1:1133' (2a1d71d4-…)
 Polling execution '141ae747-…' every 12s (timeout 1800s)
-[2 logs]  Virtual user provisioning has started. Please wait, this may take some time.
-[5 logs]  A virtual user with the index 0 returned with the status 'Running'.
-[6 logs]  The 'Response Time' metric has surpassed its defined threshold of 300ms.
-[14 logs] A virtual user with the index 0 returned with the status 'Completed'.
-[19 logs] The scenario execution has ended with the status 'Finished'.
+Execution '141ae747-…' status: pending
+Execution '141ae747-…' status: running
+Execution '141ae747-…' status: Finished
 ```
 
 The terminal status is in the application log whose message starts with
