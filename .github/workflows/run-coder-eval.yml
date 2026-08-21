@@ -33,7 +33,7 @@ on:
         type: choice
         options:
           - nightly
-          - preview-nightly
+          - maestro-flow-sdk
         default: nightly
       confirm_large_run:
         description: 'Allow >50 tasks (cost guardrail).'
@@ -189,8 +189,8 @@ jobs:
             echo "::error::Glob matches $TOTAL tasks (> 50). Tick confirm_large_run to authorize."
             exit 1
           fi
-          if [ "$EXPERIMENT" = "preview-nightly" ] && [ "$WCOUNT" -ne 0 ]; then
-            echo "::error::preview-nightly supports Linux tasks only"
+          if [ "$EXPERIMENT" = "maestro-flow-sdk" ] && [ "$WCOUNT" -ne 0 ]; then
+            echo "::error::maestro-flow-sdk supports Linux tasks only"
             exit 1
           fi
           # Space-separated; downstream jobs word-split on consumption.
@@ -334,7 +334,7 @@ jobs:
             coder_eval_uipath
 
       - name: Stage Maestro SDK preview plugin
-        if: inputs.experiment == 'preview-nightly'
+        if: inputs.experiment == 'maestro-flow-sdk'
         id: preview_stage
         env:
           PREVIEW_SKILLS_PLUGIN_PATH: ${{ runner.temp }}/preview-skills-plugin
@@ -350,30 +350,42 @@ jobs:
           esac
           echo "flow_builder_sdk_ref=$full_sha" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
-        if: inputs.experiment == 'preview-nightly'
-        with:
-          repository: UiPath/flow-builder-sdk
-          ref: ${{ steps.preview_stage.outputs.flow_builder_sdk_ref }}
-          token: ${{ secrets.GH_PAT }}
-          path: preview-flow-builder-sdk
-          persist-credentials: false
-
       - name: Overlay preview Flow SDK
-        if: inputs.experiment == 'preview-nightly'
+        if: inputs.experiment == 'maestro-flow-sdk'
+        id: preview_image
         env:
           DOCKER_BUILDKIT: "1"
           NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          FLOW_BUILDER_SDK_REF: ${{ steps.preview_stage.outputs.flow_builder_sdk_ref }}
         run: |
-          flow_builder_sdk_sha="$(git -C preview-flow-builder-sdk rev-parse HEAD)"
+          set -euo pipefail
+          flow_source="$RUNNER_TEMP/preview-flow-builder-sdk"
+          mkdir -p "$flow_source"
+          gh api "repos/UiPath/flow-builder-sdk/tarball/$FLOW_BUILDER_SDK_REF" \
+            > "$RUNNER_TEMP/preview-flow-builder-sdk.tar.gz"
+          tar -xzf "$RUNNER_TEMP/preview-flow-builder-sdk.tar.gz" \
+            --strip-components=1 -C "$flow_source"
+
+          npmrc="$RUNNER_TEMP/preview-flow-sdk.npmrc"
+          printf '%s\n' \
+            '@uipath:registry=https://npm.pkg.github.com/' \
+            "//npm.pkg.github.com/:_authToken=$NPM_AUTH_TOKEN" \
+            > "$npmrc"
+          flow_sdk_version="$(NPM_CONFIG_USERCONFIG="$npmrc" npm view '@uipath/flow-sdk@latest' version)"
+          rm -f "$npmrc"
+          [[ "$flow_sdk_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]
+
           docker build \
             --build-arg BASE_IMAGE=skills-image:latest \
-            --build-arg FLOW_BUILDER_SDK_SHA="$flow_builder_sdk_sha" \
-            --build-context flow_builder_sdk=preview-flow-builder-sdk \
+            --build-arg FLOW_SDK_VERSION="$flow_sdk_version" \
+            --build-arg FLOW_BUILDER_SDK_SHA="$FLOW_BUILDER_SDK_REF" \
+            --build-context flow_builder_sdk="$flow_source" \
             --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
-            -t skills-image:preview-nightly \
-            -f tests/docker/preview-nightly.Dockerfile \
+            -t skills-image:maestro-flow-sdk \
+            -f tests/docker/maestro-flow-sdk.Dockerfile \
             .
+          echo "flow_sdk_version=$flow_sdk_version" >> "$GITHUB_OUTPUT"
 
       # ROPC bot-user auth via this repo's vendored script (mirrors the VM
       # cron's ROPC flow). Required because `uip flow debug` needs a real user
@@ -398,7 +410,7 @@ jobs:
       - name: Run coder-eval
         env:
           SKILLS_REPO_HOST_PATH:    ${{ github.workspace }}
-          SKILLS_REPO_PATH:         ${{ inputs.experiment == 'preview-nightly' && '/skills-repo' || github.workspace }}
+          SKILLS_REPO_PATH:         ${{ inputs.experiment == 'maestro-flow-sdk' && '/skills-repo' || github.workspace }}
           API_BACKEND:              bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ secrets.AWS_REGION }}
@@ -572,12 +584,23 @@ jobs:
           done
 
       - name: Record preview plugin provenance
-        if: always() && inputs.experiment == 'preview-nightly'
+        if: always() && inputs.experiment == 'maestro-flow-sdk'
+        env:
+          FLOW_BUILDER_SDK_REF: ${{ steps.preview_stage.outputs.flow_builder_sdk_ref }}
+          FLOW_SDK_VERSION: ${{ steps.preview_image.outputs.flow_sdk_version }}
         run: |
           source_record="${RUNNER_TEMP}/preview-skills-plugin/.preview-source.json"
           [ -f "$source_record" ] || { echo '::error::Missing staged preview provenance'; exit 1; }
+          [ -n "$FLOW_BUILDER_SDK_REF" ] && [ -n "$FLOW_SDK_VERSION" ] || {
+            echo '::error::Missing preview SDK build provenance'
+            exit 1
+          }
           mkdir -p /tmp/runs
-          cp "$source_record" /tmp/runs/preview-plugin-source.json
+          jq \
+            --arg flow_builder_sdk_commit "$FLOW_BUILDER_SDK_REF" \
+            --arg flow_sdk_version "$FLOW_SDK_VERSION" \
+            '. + {flow_builder_sdk_commit: $flow_builder_sdk_commit, flow_sdk_version: $flow_sdk_version}' \
+            "$source_record" > /tmp/runs/preview-plugin-source.json
 
       # Strip heavy task scratch dirs before upload to keep artifact size
       # manageable. Matches smoke-skills.yml.

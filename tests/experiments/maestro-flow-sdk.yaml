@@ -1,5 +1,5 @@
-experiment_id: preview-nightly
-description: "Nightly Maestro SDK preview arm — regular-nightly limits and tenant, staged preview plugin"
+experiment_id: maestro-flow-sdk
+description: "Maestro Flow SDK preview arm — regular-eval limits and tenant, staged preview plugin"
 
 defaults:
   run_limits:
@@ -11,10 +11,9 @@ defaults:
   sandbox:
     driver: docker
     docker:
-      image: skills-image:preview-nightly
+      image: skills-image:maestro-flow-sdk
       env_passthrough_extra:
         - SKILLS_REPO_PATH
-        - PREVIEW_SKILLS_PLUGIN_PATH
         - BEDROCK_MODEL
         - TASK_PARALLELISM
         - UIPATH_CLI_ENABLE_ENV_AUTH

@@ -18,6 +18,8 @@ function write(filePath, content) {
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'preview-plugin-test-'));
   write(path.join(root, '.claude-plugin', 'plugin.json'), '{"name":"fixture","skills":"./skills/"}\n');
+  write(path.join(root, 'commands', 'fixture.md'), 'command\n');
+  write(path.join(root, 'hooks', 'hooks.json'), '{"hooks":{}}\n');
   write(path.join(root, 'skills', 'uipath-other', 'SKILL.md'), 'other\n');
   for (const name of maestroSkills) {
     write(path.join(root, 'skills', name, 'SKILL.md'), `live-${name}\n`);
@@ -41,6 +43,8 @@ test('stages the catalog with all three Maestro skills replaced by preview', () 
   execFileSync(process.execPath, [script, '--source', source, '--output', output]);
 
   assert.equal(fs.readFileSync(path.join(output, 'skills', 'uipath-other', 'SKILL.md'), 'utf8'), 'other\n');
+  assert.equal(fs.readFileSync(path.join(output, 'commands', 'fixture.md'), 'utf8'), 'command\n');
+  assert.equal(fs.readFileSync(path.join(output, 'hooks', 'hooks.json'), 'utf8'), '{"hooks":{}}\n');
   for (const name of maestroSkills) {
     const skill = fs.readFileSync(path.join(output, 'skills', name, 'SKILL.md'), 'utf8');
     assert.match(skill, new RegExp(`^snapshot-${name}`));
@@ -69,12 +73,14 @@ test('refuses a non-empty destination instead of overwriting it', () => {
 
 test('refuses staged inputs that do not match the recorded commit', () => {
   const source = fixture();
+  const output = path.join(source, 'staged');
   write(path.join(source, 'preview', maestroSkills[0], 'SKILL.md'), 'dirty\n');
   const result = spawnSync(
     process.execPath,
-    [script, '--source', source, '--output', path.join(source, 'staged')],
+    [script, '--source', source, '--output', output],
     { encoding: 'utf8' },
   );
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Plugin inputs must match HEAD/);
+  assert.equal(fs.existsSync(output), false);
 });

@@ -2,7 +2,7 @@
 ARG BASE_IMAGE=skills-image:latest
 FROM ${BASE_IMAGE}
 
-ARG FLOW_SDK_VERSION=latest
+ARG FLOW_SDK_VERSION
 ARG FLOW_BUILDER_SDK_SHA
 ENV PREVIEW_FLOW_SDK_ROOT=/opt/preview-flow-sdk
 ENV PREVIEW_FLOW_SDK_ASSETS_ROOT=/opt/preview-flow-sdk-assets
@@ -23,9 +23,10 @@ RUN --mount=type=secret,id=npm_auth_token \
     cd "$PREVIEW_FLOW_SDK_ROOT" && \
     printf '%s\n' '{"private":true,"type":"module"}' > package.json && \
     npm install --save-exact --no-audit --no-fund --userconfig "$npmrc" \
-      "@uipath/flow-sdk@$FLOW_SDK_VERSION" && \
+      "@uipath/flow-sdk@${FLOW_SDK_VERSION:?FLOW_SDK_VERSION is required}" && \
     rm -f "$npmrc" && \
     node -e "const p=require('./node_modules/@uipath/flow-sdk/package.json'); console.log('Installed', p.name+'@'+p.version)" && \
+    printf '%s\n' "$FLOW_SDK_VERSION" > flow-sdk.version && \
     test -x node_modules/.bin/flow-sdk
 
 # Reuse the connector-authoring layer from the SDK campaign image. The named

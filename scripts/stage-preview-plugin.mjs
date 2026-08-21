@@ -11,6 +11,7 @@ const replacements = [
   'uipath-maestro-case',
   'uipath-maestro-bpmn',
 ];
+const pluginSupportDirectories = ['commands', 'hooks'];
 
 function fail(message) {
   throw new Error(message);
@@ -44,6 +45,8 @@ function assertCleanPluginInputs(source) {
     '--untracked-files=all',
     '--',
     '.claude-plugin',
+    'commands',
+    'hooks',
     'skills',
     'preview',
   ]);
@@ -73,14 +76,18 @@ function main() {
   if (fs.existsSync(output) && fs.readdirSync(output).length > 0) {
     fail(`Output directory must be empty: ${output}`);
   }
-  fs.mkdirSync(output, { recursive: true });
   assertCleanPluginInputs(source);
+  fs.mkdirSync(output, { recursive: true });
 
   const sourceCommit = git(source, ['rev-parse', 'HEAD']);
   const pins = replacements.map((name) => provenancePin(path.join(source, 'preview', name, 'SKILL.md')));
   if (new Set(pins).size !== 1) fail(`Preview provenance pins disagree: ${pins.join(', ')}`);
 
   copyDirectory(path.join(source, '.claude-plugin'), path.join(output, '.claude-plugin'));
+  for (const name of pluginSupportDirectories) {
+    const sourceDirectory = path.join(source, name);
+    if (fs.existsSync(sourceDirectory)) copyDirectory(sourceDirectory, path.join(output, name));
+  }
   fs.mkdirSync(path.join(output, 'skills'), { recursive: true });
 
   for (const entry of fs.readdirSync(path.join(source, 'skills'), { withFileTypes: true })) {
