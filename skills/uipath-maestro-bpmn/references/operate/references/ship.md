@@ -16,11 +16,11 @@ Before upload, publish, deploy, or debug:
    and package consistency.
 3. Confirm Integration Service enrichment is complete for executable connector elements.
    If enrichment tooling is unavailable, keep the project as a draft and do not operate it as executable.
-4. Regenerate or refresh package metadata:
+4. Regenerate package metadata from the validated BPMN source:
 
    ```bash
-   uip maestro bpmn update-metadata <file.bpmn> --dry-run   # check drift
-   uip maestro bpmn update-metadata <file.bpmn>             # regenerate
+   uip maestro bpmn \
+     refresh <project-path> --output json
    ```
 
    Treat `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` as derived unless a
@@ -52,8 +52,9 @@ uip maestro bpmn pack <project-path> <OutputDir> --output json
 
 Use `--name` and `--version` only when the user provides a public-safe package identity.
 Report the package path and package identity returned by the CLI.
-If packing changes generated files, explain whether the change came from BPMN source, CLI enrichment,
-or package generation.
+Pack should consume the refreshed files rather than own their generation. If
+the generated files changed, attribute that change to the preceding BPMN
+refresh or enrichment step, not to hand-authored package JSON.
 
 ## Studio Web upload
 
@@ -101,7 +102,8 @@ When Studio Web import or packaging fails, inspect the generated package files a
 - `package-descriptor.json` for content manifest entries under `content/`.
 
 If the mismatch comes from process modeling, fix `.bpmn` in Author.
-If it comes from connector metadata or generated resources, rerun CLI enrichment/generation.
+If it comes from connector metadata or generated resources, fix or re-enrich
+the BPMN source and rerun BPMN refresh.
 Do not hand-patch generated files as the primary fix.
 
 ## Failure handling
@@ -112,7 +114,8 @@ If package or upload fails:
 - Check generated package files against [shared/project-layout.md](../../shared/project-layout.md).
 - Correlate import errors to BPMN diagrams, start events, entry point IDs, bindings, and package descriptor entries.
 - Return to Author for BPMN/source fixes.
-- Rerun CLI enrichment/generation for CLI-owned Integration Service or generated-file issues.
+- Fix or re-enrich the BPMN source and rerun BPMN refresh for CLI-owned
+  Integration Service or generated-file issues.
 - Use Diagnose only after a process has actually run or faulted in the runtime.
 
 ## Anti-patterns
