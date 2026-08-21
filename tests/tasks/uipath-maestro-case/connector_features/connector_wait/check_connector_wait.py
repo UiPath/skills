@@ -16,6 +16,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
+    assert_studio_web_activity_ready,
     assert_task_type_present,
     first_rule_of_condition,
     iter_tasks,
@@ -86,6 +87,9 @@ def main():
             "FAIL: entry rule connectorKey must be "
             f"'uipath-microsoft-outlook365'; got {rule_ck!r}"
         )
+    rule_activity_name = assert_studio_web_activity_ready(
+        uipath, "wait-for-connector entry rule"
+    )
     expected_element_id = f"{_owning_stage_id(plan, event_task)}-{rule.get('id')}"
     for slot in ("inputs", "outputs"):
         for entry in uipath.get(slot) or []:
@@ -122,12 +126,16 @@ def main():
             f"FAIL: expected connectorKey 'uipath-microsoft-outlook365'; got {ck!r} — "
             "agent may have resolved against the mock connector"
         )
+    task_activity_name = assert_studio_web_activity_ready(
+        data, "wait-for-connector task"
+    )
     print(
         f"OK: first task is event-triggered with wait-for-connector-only entry "
         f"semantics and its entry rule is upgraded past the Phase 2 stub "
-        f"(connectorKey={rule_ck!r}, no placeholders); wait-for-connector task resolved "
-        f"(displayName={task.get('displayName')!r}, "
-        f"serviceType={svc}, connectorKey={ck!r}, typeId + connectionId set)"
+        f"(connectorKey={rule_ck!r}, no placeholders, "
+        f'"Select activity"={rule_activity_name!r}); wait-for-connector task resolved '
+        f"and editable in Studio Web (displayName={task.get('displayName')!r}, "
+        f'serviceType={svc}, connectorKey={ck!r}, "Select activity"={task_activity_name!r})'
     )
 
 

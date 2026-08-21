@@ -7,7 +7,8 @@ description: >
   Exercises the connector-trigger plugin: `case spec --type trigger
   --input-details`, direct caseplan.json write of a resolved
   `type: "wait-for-connector"` node (`data.serviceType:
-  "Intsvc.WaitForEvent"`, real `data.typeId` + `data.connectionId`), and the
+  "Intsvc.WaitForEvent"`, spliced `caseShape` context carrying the activity
+  metadata Studio Web renders), and the
   frontend event-triggered task mode where a first task keeps only
   `wait-for-connector` and does not also get `current-stage-entered`. Stops at
   validate + resolution assertions — NOT debug: a wait-for-connector suspends
@@ -183,7 +184,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan has a first event-triggered task with wait-for-connector-only entry semantics; its entry rule is upgraded past the Phase 2 stub; and the wait-for-connector task is resolved"
+    description: "Caseplan has a first event-triggered task with wait-for-connector-only entry semantics; its entry rule is upgraded past the Phase 2 stub; and the wait-for-connector task is resolved and editable in Studio Web"
     command: "python3 $TASK_DIR/check_connector_wait.py"
     timeout: 60
     expected_exit_code: 0

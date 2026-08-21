@@ -1,0 +1,270 @@
+{
+  "Result": "Success",
+  "Code": "ConnectorTaskSpec",
+  "Data": {
+    "SpecVersion": 1,
+    "Identity": {
+      "Target": "activity",
+      "UiPathActivityTypeId": "37a305b2-89b1-315d-b73f-1778839a6c47",
+      "ConnectorKey": "uipath-salesforce-slack",
+      "ConnectorName": "Slack",
+      "ConnectorVersion": "2.14.7",
+      "ObjectName": "send_message_to_channel_v2",
+      "ObjectDisplayName": "Send message to channel",
+      "TypecacheEntry": {
+        "IsAppActivity": false,
+        "PackageId": 196638,
+        "SvgIconUrl": "icons/8af239e6c82c1abd57622314380112d55f7e151ac4845ba018a96d70b4d92297.svg",
+        "DisplayName": "Send Message to Channel",
+        "AssemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.31.0.0, Culture=neutral, PublicKeyToken=null",
+        "Description": "Send messages to public or private Slack channels.",
+        "Category": "",
+        "ActivityColor": "#4A154B",
+        "Configuration": "{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+        "UiPathActivityTypeId": "37a305b2-89b1-315d-b73f-1778839a6c47",
+        "IsExperimental": false,
+        "HelpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-salesforce-slack-Send-Message-To-Channel",
+        "IsEnabled": true,
+        "TargetPlatform": "CrossPlatform",
+        "IsAdvanced": false,
+        "IsRestricted": false,
+        "HasWpfOnlyDesigner": false,
+        "Tags": [
+          ""
+        ]
+      }
+    },
+    "Operation": {
+      "Name": "POST",
+      "Verb": "create",
+      "Description": "Create a(n) send_message_to_channel",
+      "HttpMethod": "POST",
+      "Path": "/send_message_to_channel_v2"
+    },
+    "Connection": {
+      "Id": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+      "Name": "is-sandboxes",
+      "FolderKey": "def71452-bad1-40fa-be08-da175e89bd1a",
+      "ElementInstanceId": 359061,
+      "ByoaConnection": true,
+      "PollingIntervalMinutes": 5,
+      "SupportedAuths": []
+    },
+    "Inputs": {
+      "PathParameters": [],
+      "QueryParameters": [
+        {
+          "Name": "send_as",
+          "DisplayName": "Send as",
+          "Description": "Whether to send the message as the App bot i.e. using Bot token or yourself i.e. using User token?",
+          "DataType": "string",
+          "Required": true,
+          "DefaultValue": "bot",
+          "Reference": {
+            "ObjectName": "available_tokens",
+            "LookupValue": "value",
+            "LookupNames": [
+              "name",
+              "value"
+            ],
+            "DiscoverCommand": "uip is resources run list uipath-salesforce-slack available_tokens --connection-id e03f734e-0f80-4e8a-a7c1-0ece309b0ca4"
+          }
+        }
+      ],
+      "BodyFields": [
+        {
+          "Name": "channel",
+          "DisplayName": "Channel name/ID",
+          "Description": "Channel name/ID",
+          "DataType": "string",
+          "Type": "string",
+          "Required": true,
+          "Reference": {
+            "ObjectName": "curated_channels?types=public_channel,private_channel",
+            "LookupValue": "id",
+            "LookupNames": [
+              "name",
+              "id"
+            ],
+            "DiscoverCommand": "uip is resources run list uipath-salesforce-slack curated_channels?types=public_channel,private_channel --connection-id e03f734e-0f80-4e8a-a7c1-0ece309b0ca4"
+          }
+        },
+        {
+          "Name": "messageToSend",
+          "DisplayName": "Message",
+          "Description": "This is the main text that people will see in the message. It's also used for notifications and in places where rich formatting isn't supported.",
+          "DataType": "string",
+          "Type": "string",
+          "Required": true
+        }
+      ],
+      "Multipart": null,
+      "EventParameters": []
+    },
+    "Outputs": {},
+    "EssentialConfiguration": {
+      "EssentialConfiguration": {
+        "InstanceParameters": {
+          "ConnectorKey": "uipath-salesforce-slack",
+          "ObjectName": "send_message_to_channel_v2",
+          "HttpMethod": "POST",
+          "ActivityType": "Curated",
+          "Version": "1.0.0",
+          "SupportsStreaming": false,
+          "SubType": "standard"
+        },
+        "ObjectName": "send_message_to_channel_v2",
+        "Operation": "create",
+        "HttpMethod": "POST",
+        "Path": "/send_message_to_channel_v2",
+        "PackageVersion": "1.0.0",
+        "ConnectorVersion": null,
+        "ExecutionType": null,
+        "CustomFieldsRequestDetails": null,
+        "UnifiedTypesCompatible": true,
+        "SavedJitInputFieldId": "in_send_message_to_channel_v2"
+      }
+    },
+    "References": [
+      {
+        "ObjectName": "available_tokens",
+        "LookupValue": "value",
+        "LookupNames": [
+          "name",
+          "value"
+        ],
+        "DiscoverCommand": "uip is resources run list uipath-salesforce-slack available_tokens --connection-id e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+        "ConsumedBy": "queryParameters.send_as"
+      },
+      {
+        "ObjectName": "curated_channels?types=public_channel,private_channel",
+        "LookupValue": "id",
+        "LookupNames": [
+          "name",
+          "id"
+        ],
+        "DiscoverCommand": "uip is resources run list uipath-salesforce-slack curated_channels?types=public_channel,private_channel --connection-id e03f734e-0f80-4e8a-a7c1-0ece309b0ca4",
+        "ConsumedBy": "bodyFields.channel"
+      }
+    ],
+    "CaseShape": {
+      "Inputs": [
+        {
+          "Name": "pathParameters",
+          "Type": "json",
+          "Target": "pathParameters",
+          "Body": {}
+        },
+        {
+          "Name": "queryParameters",
+          "Type": "json",
+          "Target": "queryParameters",
+          "Body": {
+            "SendAs": "bot"
+          }
+        },
+        {
+          "Name": "body",
+          "Type": "json",
+          "Target": "body",
+          "Body": {
+            "Channel": "#general",
+            "MessageToSend": "MST-13544 repro build"
+          }
+        }
+      ],
+      "Outputs": [
+        {
+          "Name": "ts",
+          "DisplayName": "Message timestamp",
+          "Type": "string",
+          "Source": "=response.ts",
+          "Body": null
+        }
+      ],
+      "Context": [
+        {
+          "Name": "connectorKey",
+          "Type": "string",
+          "Value": "uipath-salesforce-slack"
+        },
+        {
+          "Name": "connection",
+          "Type": "string",
+          "Value": "=bindings.{{CONN_BINDING_ID}}"
+        },
+        {
+          "Name": "resourceKey",
+          "Type": "string",
+          "Value": "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4"
+        },
+        {
+          "Name": "folderKey",
+          "Type": "string",
+          "Value": "=bindings.{{FOLDER_BINDING_ID}}"
+        },
+        {
+          "Name": "objectName",
+          "Type": "string",
+          "Value": "send_message_to_channel_v2"
+        },
+        {
+          "Name": "method",
+          "Type": "string",
+          "Value": "POST"
+        },
+        {
+          "Name": "path",
+          "Type": "string",
+          "Value": "/send_message_to_channel_v2"
+        },
+        {
+          "Name": "metadata",
+          "Type": "json",
+          "Body": {
+            "ActivityPropertyConfiguration": {
+              "Configuration": "=jsonString:{\"essentialConfiguration\":{\"instanceParameters\":{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"},\"objectName\":\"send_message_to_channel_v2\",\"operation\":\"create\",\"httpMethod\":\"POST\",\"path\":\"/send_message_to_channel_v2\",\"packageVersion\":\"1.0.0\",\"connectorVersion\":null,\"executionType\":null,\"customFieldsRequestDetails\":null,\"unifiedTypesCompatible\":true,\"savedJitInputFieldId\":\"in_send_message_to_channel_v2\"}}",
+              "UiPathActivityTypeId": "37a305b2-89b1-315d-b73f-1778839a6c47",
+              "ErrorState": {
+                "Issues": []
+              }
+            },
+            "ActivityMetadata": {
+              "Activity": {
+                "IsAppActivity": false,
+                "PackageId": 196638,
+                "SvgIconUrl": "icons/8af239e6c82c1abd57622314380112d55f7e151ac4845ba018a96d70b4d92297.svg",
+                "DisplayName": "Send Message to Channel",
+                "AssemblyQualifiedName": "UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity, UiPath.IntegrationService.Activities.Runtime, Version=1.31.0.0, Culture=neutral, PublicKeyToken=null",
+                "Description": "Send messages to public or private Slack channels.",
+                "Category": "Slack",
+                "ActivityColor": "#4A154B",
+                "Configuration": "{\"connectorKey\":\"uipath-salesforce-slack\",\"objectName\":\"send_message_to_channel_v2\",\"httpMethod\":\"POST\",\"activityType\":\"Curated\",\"version\":\"1.0.0\",\"supportsStreaming\":false,\"subType\":\"standard\"}",
+                "UiPathActivityTypeId": "37a305b2-89b1-315d-b73f-1778839a6c47",
+                "IsExperimental": false,
+                "HelpUrlTemplate": "https://docs.uipath.com/{0}/activities/other/latest/integration-service/uipath-salesforce-slack-Send-Message-To-Channel",
+                "IsEnabled": true,
+                "TargetPlatform": "CrossPlatform",
+                "IsAdvanced": false,
+                "IsRestricted": false,
+                "HasWpfOnlyDesigner": false,
+                "Tags": [
+                  ""
+                ]
+              }
+            },
+            "InputMetadata": {},
+            "TelemetryData": {
+              "ConnectorKey": "uipath-salesforce-slack",
+              "ConnectorName": "Slack",
+              "OperationType": "create",
+              "ObjectName": "send_message_to_channel_v2",
+              "ObjectDisplayName": "Send message to channel",
+              "PrimaryKeyName": ""
+            }
+          }
+        }
+      ]
+    }
+  }
+}

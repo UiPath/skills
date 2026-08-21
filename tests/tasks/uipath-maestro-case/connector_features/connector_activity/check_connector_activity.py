@@ -3,8 +3,10 @@
 
 Asserts the connector-activity plugin resolved a real Integration Service
 activity and connection into the caseplan (Rule 8 — no fabricated IDs), rather
-than leaving a `data: {}` skeleton. Does NOT run debug: executing a connector
-activity has real side effects, so this task verifies the build only.
+than leaving a `data: {}` skeleton, AND that the resolved node is editable in
+Studio Web (spliced activity metadata, not a hand-assembled `context`). Does NOT
+run debug: executing a connector activity has real side effects, so this task
+verifies the build only.
 """
 
 import os
@@ -12,6 +14,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
+    assert_studio_web_activity_ready,
     assert_task_type_present,
     task_is_skeleton,
 )
@@ -34,10 +37,13 @@ def main():
             f"FAIL: expected connectorKey 'uipath-salesforce-slack'; got {ck!r} — "
             "agent may have resolved against the wrong connector"
         )
+    activity_name = assert_studio_web_activity_ready(
+        data, "execute-connector-activity task"
+    )
     print(
-        f"OK: execute-connector-activity resolved "
-        f"(displayName={task.get('displayName')!r}, "
-        f"typeId={str(data.get('typeId'))[:12]}…, connectionId set, connectorKey={ck!r})"
+        f"OK: execute-connector-activity resolved and editable in Studio Web "
+        f"(displayName={task.get('displayName')!r}, connectorKey={ck!r}, "
+        f'"Select activity"={activity_name!r})'
     )
 
 
