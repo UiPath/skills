@@ -81,6 +81,24 @@ export TASK_PARALLELISM=4
 make all
 ```
 
+#### Tenant-exclusive tasks
+
+Tasks under `tasks/uipath-governance/compliance-pack/` share ONE ISO 42001 pack
+state on the test tenant, and they mutate it: `disable_smoke` turns the pack off
+while `restore_smoke` / `drift_restore_smoke` need it on for their whole turn.
+Run them in parallel and one task's mutation lands mid-turn in another's, failing
+a correct agent (it rightly refuses to restore an inactive pack).
+
+`smoke-skills.yml` therefore runs this directory in a **separate serial pass**
+(`-j 1`) after the parallel pass; both write into the same run root, so every
+reader globs all run dirs. `setup_enable_compliance_pack.py` writes an ownership
+marker into the task sandbox and `cleanup_compliance_pack.py` disables the pack
+only when that marker is present, so a task never undoes another task's enable.
+
+Adding a task here? It inherits the serial pass — no tagging needed. Adding a
+similar shared-state suite elsewhere? Extend the `EXCLUSIVE_PREFIX` case branch in
+`smoke-skills.yml` to match it too, and locally run it with `TASK_PARALLELISM=1`.
+
 ## Evaluation Framework
 
 Tests are organized into three types, distinguished by **tags** (not directories). All tests for a skill live together in `tests/tasks/<skill-name>/`.

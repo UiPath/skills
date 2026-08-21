@@ -13,6 +13,10 @@ This script guarantees the premise: it ENABLES `iso-42001-2023` on the login
 tenant so `state disable` is always the required, meaningful next step. It is the
 mirror of cleanup_compliance_pack.py's `disable_pack()`.
 
+On a successful enable it drops an ownership marker in the task sandbox;
+cleanup_compliance_pack.py disables the pack only when that marker is present,
+so a task never disables a pack a concurrent task is relying on.
+
 Always exits 0 — setup failures never gate a task's pass/fail. Without live auth
 every CLI call fails and the script logs + exits cleanly, so local runs (where
 the CLI is not connected) are unaffected: the pack simply is not enabled and the
@@ -24,11 +28,18 @@ import logging
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="setup_enable_compliance_pack: %(message)s")
 logger = logging.getLogger(__name__)
 
 PACK_ID = "iso-42001-2023"
+
+# Ownership marker: written ONLY when THIS run enabled the pack, so the paired
+# cleanup disables only its own change. Lives in the task sandbox (cwd), not
+# /tmp — pre_run/post_run execute in the shared orchestrator container, so a
+# fixed /tmp path would be read and deleted by every concurrent task.
+MARKER = Path(os.getcwd()) / ".iso42001-enabled-by-setup"
 
 
 def run_cli(args, timeout=30):
@@ -93,7 +104,8 @@ def enable_pack():
     logger.info("Pack %s not active on tenant %s — enabling to establish precondition", PACK_ID, tenant_id)
     result = run_cli(["gov", "compliance-packs", "state", "enable", "tenant", tenant_id, PACK_ID])
     if result and result.get("Result") == "Success":
-        logger.info("Pack enabled")
+        MARKER.touch()
+        logger.info("Pack enabled (ownership marker %s)", MARKER)
     else:
         logger.warning("Pack enable returned unexpected result: %s", result)
 
