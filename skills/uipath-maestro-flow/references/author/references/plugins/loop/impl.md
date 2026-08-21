@@ -212,7 +212,7 @@ To accumulate state across loop iterations (counters, running totals), use an `i
 
 The variableUpdate fires after each iteration, so the `inout` variable carries the accumulated value into the next iteration.
 
-> **`expression` is an object, not a `=js:` string.** `{ "type": "jsExpression", "expression": "<bare JS, no =js: prefix>", "fieldType": "<target variable's type>" }`. The legacy string form fails `flow validate` with `[MIGRATION] Workflow migration failed at 1.9→1.10 … Offending field(s): variables.variableUpdates.<nodeId>.0.expression` and `"Retry": "RetryWillNotFix"`. `uip maestro flow variable-update add` still emits the legacy string form — write the object form with `Edit` instead. See [shared/variables-and-expressions.md § Variable Updates](../../../../shared/variables-and-expressions.md#variable-updates-variableupdates).
+> **`expression` is an object, not a `=js:` string.** `{ "type": "jsExpression", "expression": "<bare JS, no =js: prefix>", "fieldType": "<target variable's type>" }`. The legacy string form fails `flow validate` with `[MIGRATION] Workflow migration failed at 1.9→1.10 … Offending field(s): variables.variableUpdates.<nodeId>.0.expression` and `"Retry": "RetryWillNotFix"`. Write it with `Edit` — there is no CLI command for variable updates. See [shared/variables-and-expressions.md § Variable Updates](../../../../shared/variables-and-expressions.md#variable-updates-variableupdates).
 
 > **Critical:** The variableUpdate expression **cannot** access loop iteration variables like `$vars.<loopId>.currentItem`. These are only available inside the body node's script. The variableUpdate must reference the body node's output (e.g., `$vars.bodyNode.output`). If you need to compute using `currentItem`, do the computation in the script and reference the script's output in the variableUpdate.
 
@@ -266,7 +266,7 @@ A flow that iterates over a collection, accumulates a result in an `inout` varia
   ],
   "variables": {
     "globals": [
-      { "id": "inputItems", "direction": "in", "type": "array", "defaultValue": [] },
+      { "id": "inputItems", "direction": "in", "type": "array", "defaultValue": [], "triggerNodeId": "start" },
       { "id": "accumulator", "direction": "inout", "type": "number", "defaultValue": 0 },
       { "id": "result", "direction": "out", "type": "number" }
     ],
@@ -392,7 +392,7 @@ Loop over items, fetch data per-iteration via HTTP, process with a script. Both 
 | Collection is empty or null | Expression evaluates to null/undefined | Check `collection` expression and upstream output |
 | `$vars.loop1.currentItem` is undefined | Missing node variable binding or missing `parentId` | Add `loop1.currentItem` to `variables.nodes` and set `parentId` on body nodes |
 | `$vars.loop1.currentIndex` is undefined | The output is named `currentIteration` (1-based); there is no `currentIndex`, and a binding to it still validates | Use `$vars.<loopId>.currentIteration` and subtract 1 if you need a 0-based index |
-| `flow validate` fails: `[MIGRATION] … 1.9→1.10 … Offending field(s): variables.variableUpdates.<nodeId>.0.expression` | `variableUpdates[].expression` written as a legacy `=js:` string (including by `uip maestro flow variable-update add`) | Rewrite with `Edit` as `{ "type": "jsExpression", "expression": "<bare JS>", "fieldType": "<target variable type>" }` |
+| `flow validate` fails: `[MIGRATION] … 1.9→1.10 … Offending field(s): variables.variableUpdates.<nodeId>.0.expression` | `variableUpdates[].expression` written as a legacy `=js:` string | Rewrite with `Edit` as `{ "type": "jsExpression", "expression": "<bare JS>", "fieldType": "<target variable type>" }` |
 | `flow validate` fails: `[variables.variableUpdates.<nodeId>[0].expression] Invalid input` | The expression object is malformed — missing one of the three keys, carrying an extra key, or an unknown `type` | Use exactly `type` + `expression` + `fieldType`; the object is strict |
 | `flow validate` fails: `Edge references undeclared source handle "output"` / `target handle "loopBack"` | Loop body wired to ports that do not exist | Use the inner handles: `start` out of the loop, `continue` back into it |
 | State variable not updating across iterations | Body node missing `parentId` | Add `"parentId": "<loopId>"` to every node inside the loop body |

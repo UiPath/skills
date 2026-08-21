@@ -77,9 +77,16 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
   schema?: object         // JSON Schema (draft-07) for complex types
   defaultValue?: unknown  // Initial value (must match type)
   description?: string    // Human-readable description
-  triggerNodeId?: string  // Trigger node this input is associated with (works in both root flows and subflows)
+  triggerNodeId?: string  // REQUIRED on `in` globals — see below (works in both root flows and subflows)
 }
 ```
+
+> **Set `triggerNodeId` on every `in` global** — omit it and the input is silently dropped from the packed entry point.
+>
+> - **What to set** — the `id` of the trigger that supplies the value; `"start"` in a single-trigger flow.
+> - **Why** — packaging reads the input contract from the trigger manifest's output schema when it declares one, and otherwise keeps only globals where `direction === "in"` and `triggerNodeId` matches the start node's `id`. Core triggers declare no output schema, so that second branch is the live one.
+> - **Failure mode** — `flow pack` emits an empty `input.properties` while `flow validate` and `flow format` both stay green, so nothing warns you.
+> - **Via CLI** — `uip maestro flow variable add --direction in` sets it for you.
 
 ### Examples
 
@@ -90,7 +97,8 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
   "direction": "in",
   "type": "string",
   "defaultValue": "Unknown",
-  "description": "Name of the customer to process"
+  "description": "Name of the customer to process",
+  "triggerNodeId": "start"
 }
 ```
 
@@ -132,7 +140,8 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
       }
     },
     "additionalProperties": false
-  }
+  },
+  "triggerNodeId": "start"
 }
 ```
 
@@ -143,7 +152,8 @@ Workflow variables are declared in `variables.globals`. Each has a **direction**
   "direction": "in",
   "type": "array",
   "subType": "string",
-  "defaultValue": ["admin@example.com"]
+  "defaultValue": ["admin@example.com"],
+  "triggerNodeId": "start"
 }
 ```
 
@@ -293,7 +303,7 @@ Variable updates assign new values to `inout` (state) variables at specific node
 > `[MIGRATION] Workflow migration failed at 1.9→1.10 … Offending field(s): variables.variableUpdates.<nodeId>.0.expression`
 > and `"Retry": "RetryWillNotFix"`. The string form was dropped in file-format version 1.3; `uip maestro flow init` scaffolds 1.9.
 
-> **`uip maestro flow variable-update add` still writes the legacy string form** and produces a file that `flow validate` rejects. Use `Edit` against the `.flow` file to write the object form directly.
+> **There is no CLI command for variable updates.** Write them with `Edit` against the `.flow` file.
 
 ### Example
 
@@ -598,7 +608,19 @@ Subflows have their own variable scope. Parent variables are **not** automatical
 
 ## Variable Management via CLI
 
-There are **no CLI commands** for adding or removing variables. Manage variables with `Edit` against the `.flow` file.
+**Authoring a flow: use `Edit`.** Add, remove, and update `variables.globals` and `variables.variableUpdates` directly in the `.flow` file. `variableUpdates` has no CLI command at all.
+
+**Declaring an eval input: use the CLI.** Globals have a narrow CLI surface that the evaluate capability depends on, because `eval add` validates its `--inputs` keys against the flow's declared inputs:
+
+| Command | Use |
+| --- | --- |
+| `uip maestro flow variable add <flow> <id> --direction in --type <type>` | Declare an input the eval set will supply |
+| `uip maestro flow variable list <flow> --output json` | Check what the flow already declares |
+| `uip maestro flow variable remove <flow> <id>` | Drop a declared global |
+
+See [evaluate/references/eval-sets-guide.md](../evaluate/references/eval-sets-guide.md).
+
+> **`variable add --direction in` binds the variable to a trigger** by writing `triggerNodeId`. That binding is what puts the input in the packed entry point's contract — without it `flow pack` emits an empty `input.properties` while `validate` and `format` stay green. The CLI infers the flow's single trigger; if a flow has more than one, it fails and asks for `--trigger-node-id <nodeId>` to say which entry point the input belongs to. Hand-authored globals need the same field — see [Workflow Variables](#workflow-variables).
 
 ### Adding a workflow input variable
 
@@ -653,7 +675,8 @@ A flow with input, state, and output variables:
         "type": "array",
         "subType": "object",
         "defaultValue": [],
-        "description": "Items to process"
+        "description": "Items to process",
+        "triggerNodeId": "start"
       },
       {
         "id": "processedCount",
