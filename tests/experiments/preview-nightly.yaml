@@ -45,8 +45,8 @@ defaults:
     system_prompt: |
       You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
     plugins:
-      # Preview content pinned at skills@d2630037b / flow-builder-sdk@ddf9da1.
-      # stage-preview-plugin.mjs records the exact runtime checkout SHA too.
+      # stage-preview-plugin.mjs records the exact skills checkout and synced
+      # flow-builder-sdk provenance used by each run.
       - type: "local"
         path: "$PREVIEW_SKILLS_PLUGIN_PATH"
     ignore_patterns: []
