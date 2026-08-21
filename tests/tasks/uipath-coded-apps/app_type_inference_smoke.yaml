@@ -13,7 +13,6 @@ description: >
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 8
-  turn_timeout: 600
 
 initial_prompt: |
   Our claims processors get work items in their UiPath task inbox. When

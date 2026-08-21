@@ -29,20 +29,26 @@ For complex flows, produce a plan before building. Reference [planning-arch.md](
 **Judgment call:** "Build me a flow that processes invoices."
 → Ambiguous requirements. Ask clarifying questions; plan if answers reveal complexity.
 
+<!--skill-flavor:greenfield-execution-map-intro:start-->
 ## Three-turn execution map
 
 Steps 0–6 are **logical phases**, not separate turns. A typical greenfield build collapses to **three assistant turns** (universal SKILL.md rule #10). Each step heading below carries a `[T1]` / `[T2]` / `[T3]` tag — emit every tool call inside the same Turn as one assistant message.
 
 | Turn | Steps | What you emit in ONE assistant message |
 |---|---|---|
-| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s) **+** optional `uip login status`. **If existing `.uipx` solutions are present, the Step 2 gate fires first in its own turn** — resolve it before this chain. |
+<!--skill-flavor:greenfield-execution-map-intro:end-->
+<!--skill-flavor:greenfield-t1-execution:start-->
+| **T1 — Setup + discovery** | 0, 1, 2, 3 | One chained `Bash` (scaffold + register + pull + `node add` for each CLI-owned node) **+** parallel `Bash` (one `registry get` per OOTB type you'll inline) **+** parallel `Read` (plugin `impl.md`s). **If existing `.uipx` solutions are present, the Step 2 gate fires first in its own turn** — resolve it before this chain. |
 | **T2 — Read + author** | 4 | One `Read` of the `.flow` **+** a batch of `Edit` calls (or one `Write` if ≥70% of nodes change). Claude Code serializes Edits on the same file, so they don't race |
 | **T3 — Finalize** | 5, 6 | One chained `Bash` (`node configure && validate && format`). On validate failure: one Edit turn, then re-chain `validate && format` |
+<!--skill-flavor:greenfield-t1-execution:end-->
 
 ### Batching anti-patterns
 
-- **One CLI per turn.** Never issue `solution init`, then `cd`, then `flow init` as three separate Bash calls — chain with `&&`. Same for `node configure && validate && format`.
+<!--skill-flavor:greenfield-init-batching:start-->
+- **One CLI per turn.** Never issue `solution init`, then `cd`, then `flow init` as three separate Bash calls — chain with `&&`, the `cd` included as its own segment. Same for `node configure && validate && format`.
 - **Sequential `registry get`s.** Emit every `registry get` as a parallel `Bash` in one message alongside the T1 scaffold chain.
+<!--skill-flavor:greenfield-init-batching:end-->
 - **Validating after every Edit.** Validate once at the end of T3 (or after a recovery Edit). Intermediate states are expected to be invalid.
 - **Re-reading the `.flow` every turn.** `Read` once at the start of T2; subsequent `Edit`s in the same conversation don't need re-reading unless an external command (e.g., `node configure`, `format`) rewrites the file between Edits.
 - **`Edit` in the same turn as a `Bash` that mutates the same file.** Parallel tool calls race — separate them across turns.
@@ -52,8 +58,11 @@ Steps 0–6 are **logical phases**, not separate turns. A typical greenfield bui
 
 See [shared/cli-conventions.md](../../shared/cli-conventions.md) for binary resolution, version detection, and the `uip maestro flow` vs `uip flow` command prefix rule. All commands below are written in the `uip maestro flow` form. <!-- uip-check-skip -->
 
+<!--skill-flavor:greenfield-step-zero-concurrency:start-->
 This probe is read-only — emit as a parallel `Bash` alongside the Step 2 scaffold chain. It does not need its own turn.
+<!--skill-flavor:greenfield-step-zero-concurrency:end-->
 
+<!--skill-flavor:greenfield-author-login-boundary:start-->
 ## Step 1 — Check login status **[T1 — only if needed]**
 
 Greenfield steps 2–6 work without login (`flow init`, `validate`, `format`, registry OOTB nodes, `Edit` / `Write` edits). Login is required only when the registry needs tenant-specific connector/resource nodes, or before handing off to Operate.
@@ -70,7 +79,9 @@ uip login --authority https://alpha.uipath.com     # non-production environments
 ```
 
 When you do need it, emit `uip login status --output json` as a parallel `Bash` inside T1.
+<!--skill-flavor:greenfield-author-login-boundary:end-->
 
+<!--skill-flavor:project-creation:start-->
 ## Step 2 — Create a solution, THEN a Flow project inside it **[T1]**
 
 > **A Flow project cannot exist outside a solution** (universal rule in [SKILL.md](../../../SKILL.md)). Run `uip maestro flow init` (Step 2b) outside a solution and it now **auto-scaffolds** one — `<Project>Solution/<Project>Solution.uipx` with the project nested at `<Project>Solution/<Project>/` (response carries `Data.AutoCreatedSolution`). Still scaffold or select the solution first (Step 2a) so you set the solution name yourself rather than the auto `<Project>Solution`, and so discovery is unambiguous. The solution and project names are independent — they need not match. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c). Passing `--skip-solution-registration` opts out of both auto-scaffold and registration, leaving a bare single-nested layout that fails Studio Web upload and packaging.
@@ -92,6 +103,8 @@ uip solution init "<SolutionName>" --output json \
   && uip maestro flow registry pull \
   && uip maestro flow node add "<ProjectName>.flow" core.action.http.v2 --label "<NodeLabel>" --output json
 ```
+
+> **One creation path — never drop the `cd`.** `uip solution init "<SolutionName>"` → `cd "<SolutionName>"` → `uip maestro flow init "<ProjectName>"`, one chain. Without the `cd`, `flow init` runs in the old directory and auto-scaffolds a duplicate `<ProjectName>Solution/` (1-node husk). Never let auto-scaffold create the solution. Finish with exactly one `project.uiproj` — delete strays.
 
 Tail-append one `node add` per CLI-owned node (`uipath.connector.*`, `uipath.connector.trigger.*`, `core.action.http.v2`). Each `node add` returns the new node `id` in `Data` — capture it from the chained output for T2/T3. Drop the trailing `node add` segment when the flow is OOTB-only.
 
@@ -186,16 +199,21 @@ Equivalent: use the absolute project dir reported by `flow init` in `Data.Path` 
 If the file does not exist at the absolute double-nested path, Step 2 is wrong. Delete the partial scaffold and restart from Step 2a — do not try to patch the layout by hand.
 
 See [shared/file-format.md](../../shared/file-format.md) for the full project structure.
+<!--skill-flavor:project-creation:end-->
 
+<!--skill-flavor:greenfield-registry-transition:start-->
 ## Step 3 — Refresh the registry **[T1 — chained tail of Step 2]**
 
 This is already the last segment of the [canonical T1 chain](#canonical-t1-chain--issue-this-as-one-bash-call) above. Standalone:
+<!--skill-flavor:greenfield-registry-transition:end-->
 
 ```bash
 uip maestro flow registry pull                          # refresh local cache (expires after 30 min)
 ```
 
+<!--skill-flavor:greenfield-end-node-discovery:start-->
 **Parallel `registry get`** — in the same T1 assistant message, emit one separate `Bash` per OOTB node type whose definition you'll inline in T2. **Always fetch `core.control.end`** — `flow init` does not scaffold one (see Step 4):
+<!--skill-flavor:greenfield-end-node-discovery:end-->
 
 ```bash
 uip maestro flow registry get core.control.end --output json
@@ -220,6 +238,15 @@ Then pick the first match down this ladder:
 
 Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../../SKILL.md#critical-rules-universal).
 
+### Document-extraction step — route it to IxP (runs even when full planning is skipped)
+
+Pulling **named fields out of documents** (PDFs, scans, receipts, invoices, contracts, forms) is a document-extraction step — its node is an **IxP node** (`uipath.ixp.*`). It's easy to miss because the fetch/post steps around it are ordinary nodes, but the extraction in between is its own node. **Always land a node for it — never leave it out:**
+
+- **Model published** → land the real `uipath.ixp.*` node (skeleton is fine; defer config to Open Questions).
+- **No model published** (`registry search "uipath.ixp"` → `Data: []`) → land a `core.logic.mock`.
+
+See [plugins/ixp/impl.md — Landing the node when you cannot fully configure it](plugins/ixp/impl.md#landing-the-node-when-you-cannot-fully-configure-it).
+
 **In-solution discovery (no login required):**
 
 ```bash
@@ -232,18 +259,22 @@ Run from inside the flow project directory. Returns the same manifest format as 
 
 ## Step 4 — Build the flow **[T2]**
 
+<!--skill-flavor:greenfield-build-scaffold-assumptions:start-->
 > **`flow init` scaffolds ONLY the manual trigger (`start` / `core.trigger.manual`) with zero edges.** Every other user-owned node — **including the End node** — is yours to add via `Edit` / `Write`. Any HTTP / connector / connector-trigger node you `node add`-ed in T1 is already in `nodes[]` and `definitions[]` but has empty `inputs.detail` (filled in T3) and is not wired yet.
+<!--skill-flavor:greenfield-build-scaffold-assumptions:end-->
 
 ### T2 batch — issue these in ONE assistant message
 
+<!--skill-flavor:greenfield-t2-read-source:start-->
 1. **One `Read`** of `<ProjectName>.flow` — required before any Edit/Write; T1's chained Bash mutated the file and Claude Code's file-state tracker does not auto-refresh on external mutations.
+<!--skill-flavor:greenfield-t2-read-source:end-->
 2. **A batch of parallel `Edit` calls** — one per top-level array you're modifying. Same-file Edits serialize in execution order, so each `old_string` must anchor to text NO OTHER parallel Edit modifies. Use the **per-array anchor pattern** below.
    - Edit `nodes[]` — add the End node (and any other user-owned nodes).
    - Edit `definitions[]` — paste the End definition verbatim from T1's `registry get core.control.end` output.
    - Edit `edges[]` — wire `trigger → <httpNode> → end`. End-node `outputs` mapping goes here too if you declared an `out` variable in `variables.globals`.
    - Edit `layout.nodes` — placeholder `{ position: { x: 0, y: 0 }, size: { width: 96, height: 96 }, collapsed: false }` per new node; `format` rewrites both position and size (by node shape) in T3.
 
-   `Write` of the whole file is allowed but token-costly on flows >~10 nodes — only fall back to `Write` when ≥70% of nodes change AND the file is small (see [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder)).
+   `Write` of the whole file is allowed but token-costly on flows >~10 nodes — only fall back to `Write` when ≥70% of nodes change AND the file is small (see [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder)). **Never `Write` a flow that already has connector / connector-trigger / managed-HTTP nodes** — the rewrite clobbers their CLI-owned `bindings[]` / `inputs.detail` (invisible to `flow validate`); `Edit` in place, or re-run `node configure` as the last write. See [CAPABILITY.md — Node ownership](../CAPABILITY.md#node-ownership--who-authors-the-node).
 
 #### Anchoring parallel `.flow` Edits — anchor on what you Read, not on key order
 
@@ -254,9 +285,9 @@ Anchor each Edit using its target array's own opening key, located in the text y
 | Edit target | Anchor on (from the text you Read) | How to insert |
 |---|---|---|
 | Append to `nodes[]` | The **2-space-indented** `\n  "nodes": [` (the top-level array — deeper-indented `"nodes": ["` inside definitions do not match the two-leading-space prefix) plus the `start` node's opening `{ "id": "start"`. | Insert the new node object as the first element, immediately after the `[`: `\n    { new node JSON },`. Head-insertion keeps `old_string` clear of the array's closing `]`. |
-| Append to `edges[]` | The **2-space-indented** `\n  "edges": [`. Empty after `flow init` (`\n  "edges": []`); the 2-space prefix distinguishes it from nested `edges` arrays. | When empty, replace `\n  "edges": []` with `\n  "edges": [\n    { new edge JSON }\n  ]`. When non-empty, anchor through the first edge and insert the new edge as the first element. |
+| Append to `edges[]` | The **2-space-indented** `\n  "edges": [`. A newly generated scaffold commonly has `\n  "edges": []`; the 2-space prefix distinguishes it from nested `edges` arrays. | When empty, replace `\n  "edges": []` with `\n  "edges": [\n    { new edge JSON }\n  ]`. When non-empty, anchor through the first edge and insert the new edge as the first element. |
 | Append to `definitions[]` | `"definitions": [` plus the first definition's opening bytes. Top-level `definitions[]` is the only one in the file, so this is reliably unique. | Insert the new definition right after the opening `[`, as the first element. Never anchor on whatever key follows `definitions` — that key varies (`runtime`, `bindings`, `variables`, `layout`, depending on CLI version and what the flow contains). |
-| Add an entry to `layout.nodes` | `"layout": {\n    "nodes": {\n      "start":` — `start` is the always-present trigger and the first key under `layout.nodes` in `init`-scaffolded flows. The top-level `"layout": {` is the only one. | `"layout":` + `"start":` jointly disambiguate. Insert `"<newId>": { ... },\n      ` before `"start":`. CLI-owned nodes added via `node add` already have a `layout.nodes` entry — only add entries for nodes you author by hand (e.g. End). |
+| Add an entry to `layout.nodes` | `"layout": {\n    "nodes": {\n      "start":` — `start` is the always-present trigger and the first key under `layout.nodes` in newly generated flows. The top-level `"layout": {` is the only one. | `"layout":` + `"start":` jointly disambiguate. Insert `"<newId>": { ... },\n      ` before `"start":`. CLI-owned nodes added via `node add` already have a `layout.nodes` entry — only add entries for nodes you author by hand (e.g. End). |
 
 **Why head-insertion.** Inserting the new element right after the array's opening `[` means the `old_string` never includes the array's closing `]` — so it cannot collide with a closing `]` from a nested object (`form.sections[].fields[]`), and it never references a sibling top-level key whose position is not guaranteed. JSON array element order is not semantically significant for `nodes` / `edges` / `definitions`, so head vs. tail insertion is equivalent; `flow format` normalizes layout regardless.
 
@@ -276,7 +307,7 @@ See [shared/file-format.md — Top-level structure](../../shared/file-format.md#
 
 Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` file is also in the project root for resource bindings.
 
-> **Tool selection by ownership.** Use `Edit` for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change. For CLI-owned nodes (above), use `uip maestro flow node add` + `node configure` — see the relevant plugin's `impl.md` for the full configuration workflow. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON (the agent node itself is user-owned).
+> **Tool selection by ownership.** Use `Edit` for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change **and the flow has no CLI-owned nodes** (a full-file `Write` over connector / managed-HTTP nodes clobbers their `bindings[]` — see the Step 4 `Write` note above). For CLI-owned nodes (above), use `uip maestro flow node add` + `node configure` — see the relevant plugin's `impl.md` for the full configuration workflow. Inline-agent project scaffolding uses `uip agent init --inline-in-flow`, but inline-agent flow node/wiring edits are direct `.flow` JSON (the agent node itself is user-owned).
 
 Read [editing-operations.md](editing-operations.md) for strategy selection and per-operation recipes.
 

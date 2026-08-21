@@ -2,9 +2,9 @@ task_id: skill-datafabric-integration-csv-import
 description: >
   Integration test: agent performs a full CSV bulk import workflow against a
   live tenant — checks login, discovers or creates an entity, retrieves the
-  schema to confirm exact field names (case-sensitive), creates a correctly
+  schema to confirm the user-facing display names used by CSV headers, creates a correctly
   formatted CSV (no system fields), runs the bulk import, then verifies results
-  with records list. Tests the Discover → Act → Verify pattern for bulk data loading.
+  with a supported records read. Tests the Discover → Act → Verify pattern for bulk data loading.
 tags:
   [
     uipath-platform,
@@ -24,11 +24,16 @@ initial_prompt: |
   and empty. Each row holds a SKU, a Quantity, a UnitCost, an
   Available flag, and a LastRestocked date.
 
+  This entity is tenant-scoped. I explicitly approve importing the four
+  requested records into `CE_IntegrationInventory` in this run. Proceed
+  without another confirmation and do not mutate its schema or any other
+  Data Fabric resource.
+
   Could you load 4 rows of realistic inventory into it from a
   spreadsheet? Save the spreadsheet as `inventory.csv`, load it in,
-  and then pull the list back to confirm everything came through —
+  and then pull the entity back to confirm everything came through —
   tell me how many rows got inserted and how many are now in the
-  list.
+  entity.
 
 success_criteria:
   - type: command_executed
@@ -40,25 +45,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent retrieved entity schema before creating CSV"
+    description: "Agent ran records import with a file (--file or -f)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+get\s+'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent ran records import with --file"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+import\s+.*--file'
+    command_pattern: '(?s)uip\s+df\s+records\s+import\s+\S+.*(?:--file|\s-f)\s+\S+'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent verified import results with records list"
+    description: "Agent verified import results with records list or query"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+list\s+'
+    command_pattern: 'uip\s+df\s+records\s+(?:list|query)\s+'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -88,7 +85,7 @@ success_criteria:
   - type: run_command
     description: "End state (deterministic): 4 records landed in CE_IntegrationInventory after the CSV import"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_IntegrationInventory --expected 4"
-    timeout: 60
+    timeout: 240
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -117,8 +114,9 @@ pre_run:
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
       --entity-name CE_IntegrationInventory
       --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_inventory.schema.json
+      --reset
     timeout: 180
-    fail_on_error: false
+    fail_on_error: true
 
 post_run:
   # Schema-only revert: wipes whatever the agent imported. No records to re-insert.

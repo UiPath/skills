@@ -7,7 +7,7 @@ Structural reference for the case definition JSON. Shared across all node types.
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "23.0.0",
+  "version": "27.0.0",
   "name": "<case name>",
   "description": "<optional>",
   "metadata": {
@@ -60,6 +60,7 @@ Node-level layout fields move to a top-level `layout` block. The frontend transf
 | Stage/case/task condition | `Condition_` | 6 | `Condition_xC1XyX` |
 | Rule inside those conditions | `Rule_` | 6 | `Rule_jdBFrJ` |
 | Sticky note | `StickyNote_` | 6 | `StickyNote_aBcDeF` |
+| SLA rule entry | `sla` | 8 | `sla7bK2mNp9` |
 | SLA escalation | `esc_` | 6 | `esc_gH2jKl` |
 | Binding | `b` | 8 | `b3KmNp7Q9` |
 
@@ -72,7 +73,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "23.0.0",
+  "version": "27.0.0",
   "name": "Loan Approval",
   "description": "case description",
   "metadata": {
@@ -84,7 +85,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
     "caseDirectlyPassTaskOutputs": true,
     "intsvcActivityConfig": "v2",
     "slaRules": [
-      { "expression": "=js:true", "count": 5, "unit": "d" }
+      { "id": "slaQ4wZ1xC8", "displayName": "Default", "expression": "=js:true", "count": 5, "unit": "d" }
     ],
     "caseExitRules": []
   }
@@ -94,7 +95,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
-| `version` | string | Schema version — `"23.0.0"`. Emitted by the `case` plugin at T01. |
+| `version` | string | Schema version — `"27.0.0"`. Emitted by the `case` plugin at T01. |
 | `name` | string | Human-readable name |
 | `description` | string? | Case description |
 | `metadata.caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
@@ -133,26 +134,36 @@ Rule structure uses DNF — see §4.
 
 ## 2. nodes (three types, discriminated on `type`)
 
-### a) Trigger Node — `"case-management:Trigger"`
+### a) Trigger Node — `"uipath.case.trigger"`
 
 Entry point. Written by the triggers plugin at T02. Exactly one per case (single-trigger cases); additional triggers use the `trigger_` ID prefix.
 
 ```json
 {
   "id": "trigger_xY2mNp",
-  "type": "case-management:Trigger",
+  "type": "uipath.case.trigger",
   "data": {
-    "label": "Start",
-    "uipath": { "serviceType": "None" }
+    "typeVersion": "1.0.0",
+    "display": { "label": "Start" },
+    "inputs": { "serviceType": "None" }
   }
 }
 ```
 
 No `position`, `style`, `measured`, `width`, `zIndex`, or `parentElement` on Trigger nodes (Rule 18 layout-strip).
 
-`serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"Intsvc.TimerTrigger"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-json.md`.
+**`data` shape (v24 manifest layout).** The label lives under `data.display.label`; all runtime config (`serviceType`, `timerType`, `timeCycle`, `context[]`, `inputs[]`, `outputs[]`, `bindings[]`) lives under `data.inputs`. `data.typeVersion` is the literal `"1.0.0"`.
 
-> **Placeholder form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.uipath` carries `serviceType` only — no `context[]`, `metadata`, `inputs[]`, `outputs[]`, or `bindings[]`. See [`triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md).
+| Field | Type | Description |
+|-------|------|-------------|
+| `typeVersion` | string | Manifest type version — literal `"1.0.0"`. |
+| `display` | `{ label?, icon? }` ? | Presentation. `display.label` is the trigger's display name (was `data.label` pre-v24). |
+| `inputs` | object? | Runtime config bag (passthrough). Holds `serviceType` plus per-kind fields. Absent on a manual trigger. |
+| `description` | string? | Free-text description — stays at `data.description` (only `label` moved to `display`). |
+
+`data.inputs.serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"timer"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-json.md`.
+
+> **Placeholder form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.inputs` carries `serviceType` only — no `context[]`, `metadata`, `inputs[]`, `outputs[]`, or `bindings[]`. See [`triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md).
 
 ### b) Stage Node — `"case-management:Stage"`
 
@@ -171,7 +182,7 @@ Workflow stage. Contains tasks. Covers BOTH primary and secondary stages — dis
     "isPendingParent": false,
     "tasks": [ [ { "...": "task" } ] ],
     "slaRules": [
-      { "expression": "=js:true", "count": 2, "unit": "d" }
+      { "id": "sla3kL9mNpQ", "displayName": "Default", "expression": "=js:true", "count": 2, "unit": "d" }
     ]
   }
 }
@@ -184,13 +195,13 @@ No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node l
 | Field | Type | Description |
 |-------|------|-------------|
 | `stageType` | `"primary" \| "secondary"` ? | Stage kind discriminator. Omitted on a primary stage (do NOT emit `"primary"`); set to `"secondary"` for a secondary stage, where it is the FIRST field in `data` (before `label`). See §2c. |
-| `label` | string? | Display label; required, unique across stages, and must not contain `:` |
+| `label` | string? | Display label; required, unique across **all** node labels in the case, and must not contain `:` |
 | `description` | string? | Stage description |
 | `isRequired` | boolean? | Whether the stage must complete before case exit (used by case-exit rule `required-stages-completed`) |
 | `parentElement` | `{id,type}` | Always `{ id: "root", type: "case-management:root" }`. The literal `"root"` is canvas-side — there is no `"root"` node on disk. |
 | `isInvalidDropTarget` | boolean | Always `false` (UI drag-drop flag) |
 | `isPendingParent` | boolean | Always `false` (UI drag-drop flag) |
-| `tasks` | Task[][] | 2D structural array. Preserve the task order used by the frontend. A strict sequential chain is consecutive single-task inner arrays (`[[A], [B], [C]]`) plus `runs-sequentially` on each task. Only intentionally parallel siblings share an inner array (`[[A, B], [C]]`). Empty array `[]` when no tasks yet. |
+| `tasks` | Task[][] | 2D structural array. Preserve the task order used by the frontend. A strict sequential chain is consecutive single-task inner arrays (`[[A], [B], [C]]`) plus `runs-sequentially` on each task. Intentionally parallel siblings share an inner array, either at stage start (`[[A, B], [C]]`) or after an immediate predecessor (`[[A], [B, C], [D]]` with `runs-sequentially` on B and C). Empty array `[]` when no tasks yet. |
 | `slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for this stage. Every rule has a non-empty target-unique `displayName` without `:`; default SLA is the trailing `"=js:true"` entry. Escalations nest inside each rule. See §6. |
 | `entryConditions` | EntryCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
 | `exitConditions` | ExitCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
@@ -322,7 +333,7 @@ Rules = Rule[][]
 | `required-stages-completed` | `id?`, `conditionExpression?` | All required stages have completed |
 | `current-stage-entered` | `id?`, `conditionExpression?` | The current stage was just entered |
 | `user-selected-stage` | `id?`, `conditionExpression?` | Fires when a user manually selects/routes to this stage |
-| `sla-status-change` | `id?`, `slaId?`, `escalationId?`, `conditionExpression?` | Fires when the referenced case/stage SLA reaches the referenced at-risk or breached escalation; stage-entry scope |
+| `sla-status-change` | `id?`, `slaId?`, `escalationId?`, `conditionExpression?` | Fires when the referenced case/stage SLA breaches (`slaId` alone — an absent `escalationId` is the persisted Breached shape), or reaches the referenced at-risk escalation (`slaId` + that SLA's at-risk `escalationId`); stage-entry scope (`enter-stage`) and task-entry scope (`start-task`) |
 | `adhoc` | `id?`, `conditionExpression?` | Ad-hoc expression-based condition |
 | `runs-sequentially` | `id?`, `conditionExpression?` | Sequential tasks run in the order they appear in the stage from top to bottom | 
 
@@ -342,7 +353,7 @@ An interrupting secondary-stage `sla-status-change` entry is global to the refer
 
 ### Connector-bound `wait-for-connector` rule
 
-A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** — the same block the in-stage `wait-for-connector` task carries under `data`. A bare rule (no `uipath`) is rejected by Studio Web (the FE validator requires the connector activity to resolve). It is authored from a `case spec --type trigger` scaffold; the CLI does not bind it (`buildRule` emits the bare form). `conditionExpression` is an optional `=js:` gate on **case state** (`vars.X` / `metadata`) — NOT the event payload (no `event` namespace). Inputs/outputs `elementId` = `<stageId>-<ruleId>` (stage-entry / stage-exit / task-entry — all stage-scoped) or `root-<ruleId>` (case-exit). Full recipe: [connector-trigger-common.md § Target: connector-bound condition rule](connector-trigger-common.md#target-connector-bound-condition-rule).
+A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** — the same block the in-stage `wait-for-connector` task carries under `data`. A bare rule (no `uipath`) is rejected by Studio Web (the FE validator requires the connector activity to resolve). It is authored from a `case spec --type trigger` scaffold; the CLI does not bind it (`buildRule` emits the bare form). `conditionExpression` is an optional `=js:` gate on **case state** (`vars.X` / `metadata`) — NOT the event payload (no `event` namespace). Inputs/outputs `elementId` = `<stageId>-<ruleId>` (stage-entry / stage-exit / task-entry — all stage-scoped) or `root-<ruleId>` (case-exit). Full recipe: [connector-trigger-impl.md § Target: connector-bound condition rule](connector-trigger-impl.md#target-connector-bound-condition-rule).
 
 ```json
 {
@@ -415,6 +426,7 @@ All SLA data on a target (root or stage) lives in a single `slaRules[]` array. T
 Time units: `"min"` (minutes), `"h"` (hours), `"d"` (days), `"w"` (weeks), `"m"` (months).
 Escalation `triggerInfo.type`: `"at-risk"` or `"sla-breached"`. `atRiskPercentage` is required when `type === "at-risk"` and omitted otherwise.
 Escalation `action.recipients[].scope`: `"User"` or `"UserGroup"`. `target` is the user / group UUID; `value` is the display string (email or group name).
+Escalation `id` and `displayName` are both **required** (as of schema v27). Default `displayName` format: `Escalation rule <N> - <sla displayName>`.
 
 ### SlaRuleEntry
 
@@ -441,7 +453,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 |-------|------|-------------|
 | `id` | string | Unique task ID, `t` + 8 random chars (e.g. `t8GQTYo8O`) |
 | `elementId` | string | Composite `${stageId}-${taskId}` (e.g. `Stage_aB3kL9-t8GQTYo8O`) |
-| `displayName` | string? | Human-readable label shown in the UI |
+| `displayName` | string? | Human-readable label shown in the UI; unique across the **whole case** (not per stage) and must not contain `:`. Omitted resolves to the bound resource name, which shares the pool. |
 | `type` | string | Task type — see task plugins under `plugins/tasks/` |
 | `data` | object | Type-specific configuration — see corresponding plugin's `impl-json.md`. For connector tasks, `data.bindings` references the root-level bindings array. |
 | `skipCondition` | string? | `=js:` expression — skip the task when truthy. Use strict equality ([`bindings-and-expressions.md`](bindings-and-expressions.md#equality-operators)). |
@@ -461,7 +473,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 > { "displayName": "Hold", "skipCondition": "=js:vars.skip === true", "data": { "timerType": "timeDuration", "timeDuration": "PT1H" } }
 > ```
 
-**Positioning:** tasks have no `x`/`y`. They live in the stage's `data.tasks` 2D structural array. Do not infer execution order from lane-sharing. For a strict sequential chain, preserve declaration order as consecutive single-task sets and put `runs-sequentially` as the only entry rule on each task in the chain.
+**Positioning:** tasks have no `x`/`y`. They live in the stage's `data.tasks` 2D structural array. Do not infer execution order from lane-sharing alone. For a strict sequential chain, preserve declaration order as consecutive single-task sets and put `runs-sequentially` as the only entry rule on each task in the chain. For independent siblings after one predecessor, place those siblings in the same next task set and put `runs-sequentially` on each sibling.
 
 **Task type catalog** (full shape in each plugin's `impl-json.md`):
 
@@ -486,7 +498,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "23.0.0",
+  "version": "27.0.0",
   "name": "Simple Case",
   "metadata": {
     "caseIdentifier": "Simple Case",
@@ -502,8 +514,8 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
   "nodes": [
     {
       "id": "trigger_xY2mNp",
-      "type": "case-management:Trigger",
-      "data": { "label": "Start" }
+      "type": "uipath.case.trigger",
+      "data": { "typeVersion": "1.0.0", "display": { "label": "Start" } }
     },
     {
       "id": "Stage_aB3kL9",
@@ -564,3 +576,5 @@ Connects Stage → Stage. Transition conditions live on the source stage's `exit
 **Type discriminator when reading:** Trigger source → `TriggerEdge`; Stage source → `Edge`. **`zIndex`** (number, optional) may appear.
 
 `edges` is empty: the skill authors no edges. The case starts because `Stage_aB3kL9` carries a `case-entered` entry condition (added by the stage-entry-conditions plugin), not because a `TriggerEdge` connects the trigger to it.
+
+<!-- END: case-schema.md -->

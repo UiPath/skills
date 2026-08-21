@@ -143,6 +143,11 @@ Use these to expand test coverage without writing every input by hand.
 }
 ```
 
+Schema notes:
+
+- Test-case array is `evaluations[]` — **not** `testCases[]`. Read the key from the file or `uip agent eval list --set "<eval_set_name>" --path <agent_dir> --output json`; don't guess.
+- Studio Web names eval set files `evaluation-set-<unix-ms>.json` (e.g. `evaluation-set-1778230599547.json`); CLI-created sets may use readable names (`evaluation-set-default.json`). `fileName` mirrors the actual filename — match sets by `name` or `id`, not filename pattern.
+
 The `source` field indicates how the test case was created. CLI-added test cases are always `"manual"` (verified). Other observed values from Studio Web include `"debugRun"`, `"runtimeRun"`, `"simulatedRun"`, and `"autopilotUserInitiated"` — treat the `source` field as an enum but do not set it manually; the CLI and Studio Web own this value.
 
 ## Anti-patterns

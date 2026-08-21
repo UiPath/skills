@@ -28,7 +28,20 @@ NRE is opaque — the goal is to find **which reference was null** and why.
 
 ## Resolution
 
-- **If the operation can return no rows:** guard the output before use — check for null / empty before the `For Each` or dereference.
+**When the stack frame shows a `For Each` over a connector `*_List` / query output, the missing
+null/empty guard IS the fix — lead with it.** That stack signature already establishes what was null
+and where it was dereferenced; the remaining bullets are alternatives to check only if it does not
+apply. Give the concrete guard, not the idea of one:
+
+```vb
+If result IsNot Nothing AndAlso result.Count > 0
+```
+
+so a query returning no records skips the loop instead of faulting. Listing output-mapping, stale
+bindings and null inputs as co-equal possibilities alongside it, without committing to the guard, is
+an incomplete answer — the user is left without a change to make.
+
+- **If the operation can return no rows:** guard the output before use — check for null / empty before the `For Each` or dereference, using the pattern above.
 - **If the output is unmapped:** assign the connector activity's result to the variable the downstream activity reads.
 - **If a required input was null:** populate it (or guard upstream) so the operation returns a result.
 - **If a stale binding after republish:** re-bind the connector activity's output to the current entity type and republish.

@@ -86,7 +86,7 @@ uip traces feedback list detailed \
   --output json
 ```
 
-Additional flags over `list`: `--since <duration>`, `--after <ISO>`, `--before <ISO>`, `--category-id <guid>`, `--sortBy`, `--sortDir`. Max 200 items.
+Additional flags over `list`: `--since <duration>`, `--after <ISO>`, `--before <ISO>`, `--category-id <guid>` (repeatable), `--sort-by <createdAt|updatedAt>`, `--sort-order <asc|desc>`. Max 200 items.
 
 ## update
 
@@ -102,9 +102,12 @@ uip traces feedback update <feedback-id> \
 
 ## delete
 
+`-y` is required — the CLI never prompts, so a delete without it is rejected.
+
 ```bash
 uip traces feedback delete <feedback-id> \
   --folder-key <folder-key> \
+  -y \
   --output json
 ```
 

@@ -1,6 +1,6 @@
 # Brownfield — Edit an Existing Case
 
-Targeted changes to an existing `caseplan.json`. Skips the Phase 0–6 build pipeline. Terminates at `validate`, then hands off to Phase 5 (debug) / Phase 6 (publish).
+Targeted changes to an existing `caseplan.json`. Skips the design handoff and the Phase 1–7 build pipeline. Terminates at `validate`, then hands off to Phase 5 (publish) / Phase 6 (debug) / Phase 7 (publish to Orchestrator).
 
 > **Greenfield (new case from `sdd.md`) uses a different journey.** If `caseplan.json` does not yet exist, or the user wants to (re)build from a spec, see [planning.md](planning.md) → [implementation.md](implementation.md) → [phased-execution.md](phased-execution.md) instead.
 
@@ -17,10 +17,11 @@ Before the first edit, present the flow once so the dev knows the steps and wher
 > - I make the edit, then **validate** and fix errors.
 > - **Debug** (optional) — **you choose** whether to run the case for real (live emails / API calls).
 > - **Publish** (optional) — **you choose** whether to upload to Studio Web.
+> - **Publish to Orchestrator** (optional) — **you choose** whether to publish the case to Orchestrator.
 
 ## Pull latest first (before editing)
 
-Most "edit an existing case" requests mean a case **deployed in Studio Web**, not just a local file. Editing the local `caseplan.json` and re-publishing (Phase 6 `uip solution upload`) **overwrites server state** — if the case changed in Studio Web after the local copy was made, the upload silently clobbers those changes, with no diff and no conflict check. Reconcile **before** the first edit.
+Most "edit an existing case" requests mean a case **deployed in Studio Web**, not just a local file. Editing the local `caseplan.json` and re-publishing (Phase 5 `uip solution upload`) **overwrites server state** — if the case changed in Studio Web after the local copy was made, the upload silently clobbers those changes, with no diff and no conflict check. Reconcile **before** the first edit.
 
 1. **Determine where the case lives.** If not already known, AskUserQuestion: `Edit my Studio Web case (pull latest first)` (default) / `Edit a local-only project (no pull)`.
 2. **Lives in Studio Web (has a SolutionId)** → pull current server state into the working dir before editing:
@@ -76,6 +77,16 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 | Add a global variable / argument | [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
 | Rename / delete a global variable or argument | [case-editing-operations.md § Rename or delete a global variable or argument](case-editing-operations.md#rename-or-delete-a-global-variable-or-argument) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
 | Change a variable's type or default | [case-editing-operations.md § Change a variable's type or default](case-editing-operations.md#change-a-variables-type-or-default) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
+| Add or repair a response to an SLA at-risk / breach event | [§ SLA responses in a brownfield edit](#sla-responses-in-a-brownfield-edit) below, then [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md) |
+
+## SLA responses in a brownfield edit
+
+An SLA clock and its **response** are separate edits. Pick the response, the status shape, and the interrupting value per [sla-response-shapes.md](sla-response-shapes.md) — that file is the contract; this section only says what it means for an edit.
+
+- **Do not widen the edit.** A requirement that only asks to notify someone is `notify-only`: add an escalation to the target's `slaRules[].escalationRule` ([plugins/sla/impl-json.md](plugins/sla/impl-json.md)) and stop. No stage, no task, no condition.
+- **`start-task` adds a task, not a lane** ([sla-response-shapes.md § 1](sla-response-shapes.md#1-pick-the-response)): the follow-up task goes in the breached stage with the `sla-status-change` rule as its **own task-entry** condition — never as a stage-entry row on the breached stage, which re-runs that stage's other tasks.
+- **Four defects `validate` accepts** — re-read [§ 5](sla-response-shapes.md#5-four-defects-validate-cannot-see) before you finish: a task with no entry condition, a non-interrupting lane demoted to a regular stage, an `escalationId: "any"` "repaired" by repointing instead of deleting, and a `start-task` authored as stage re-entry.
+- **`validate` passing is not evidence the response is right.** Every defect above validates clean.
 
 ## After edits
 
@@ -84,13 +95,14 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 
 ## Completion Output
 
-Report: file path edited, what changed (nodes/tasks/conditions added/removed/modified), validation status, any placeholder tasks still unresolved, any connector connections the user must create, and a **freshness note** — whether the local copy was pulled from Studio Web first (so re-publish reflects current server state) or is a local-only project not synced from SW (re-publish overwrites whatever is on the server). Then include `Suggested next steps` in one short line before AskUserQuestion "What's next": run debug if the edit changes runtime behavior, publish when ready to update Studio Web, or stop and inspect the local diff.
+Report: file path edited, what changed (nodes/tasks/conditions added/removed/modified), validation status, any placeholder tasks still unresolved, any connector connections the user must create, and a **freshness note** — whether the local copy was pulled from Studio Web first (so re-publish reflects current server state) or is a local-only project not synced from SW (re-publish overwrites whatever is on the server). Then include `Suggested next steps` in one short line before AskUserQuestion "What's next": publish when ready to update Studio Web, run debug if the edit changes runtime behavior, or stop and inspect the local diff.
 
 | Option | What it does |
 |---|---|
-| **Run debug session** | Phase 5 — executes the case for real (consent-gated, Rule 12). |
-| **Publish to Studio Web** | Phase 6 — `uip solution resources refresh` then `uip solution upload`, print DesignerUrl. |
+| **Publish to Studio Web** | Phase 5 — `uip solution resources refresh` then `uip solution upload <SolutionDir> --output json --output-filter "{Status: Status, SolutionId: SolutionId, DesignerUrl: DesignerUrl}"` (filter mandatory — see [case-commands.md § uip solution upload](case-commands.md#uip-solution-upload)), print DesignerUrl. |
+| **Run debug session** | Phase 6 — executes the case for real (consent-gated, Rule 12). |
+| **Publish to Orchestrator** | Phase 7 — `uip maestro case pack` (mandatory BPMN recompile), then `uip solution pack`, then `uip solution publish` to the tenant solution feed (consent-gated, Rule 12). |
 | **Done** (default) | Stop here. |
 | **Something else** | Free-form. |
 
-Do not run debug or publish without explicit selection. On selection, follow the existing [phased-execution.md](phased-execution.md) Phase 5 / Phase 6 contracts.
+Do not run debug, publish, or publish to Orchestrator without explicit selection. On selection, follow the existing [phased-execution.md](phased-execution.md) Phase 5 / Phase 6 / Phase 7 contracts.

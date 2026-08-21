@@ -29,6 +29,7 @@ What can cause it:
 - Recent rule tightening or action change from Log/Escalate to Block — behavior change is immediate and silent
 - Overly broad pattern matches legitimate content (common business terms, structured JSON fields)
 - OOB validators (PII detection, harmful content, prompt injection, user prompt attacks) at agent or LLM scope — these run automatically when enabled and require no custom rules
+- A bring-your-own (BYOG) guardrail whose tenant configuration is disabled, or whose underlying Integration Service connection is broken — behavior depends on `FallbackOnUiPath`: `true` falls back to the built-in validator, `false` fails the guardrail check outright
 
 > **Filter and Log do not fault the job.** Filter removes `excludedFields` from the payload; `updatedInput`/`updatedOutput` appear on the evaluation span; execution continues. Agent may behave unexpectedly if required fields are stripped. Log records the match; `severityLevel` appears on the evaluation span; execution continues. Neither produces `TERMINATION_GUARDRAIL_VIOLATION`.
 
@@ -68,6 +69,15 @@ What can cause it:
 
    Replace `<GUARDRAIL_NAME>` with guardrailName value from step 3.
 
+   If the matched entry has `"IsByo": true`, cross-check the underlying BYOG configuration's health before assuming the rule/catalog itself is the cause:
+
+   ```bash
+   uip guardrails byo-configurations list --output json \
+     --output-filter "[?ValidatorName == '<ByoValidatorName>' || Id == '<ByoConfigurationId>'].{Enabled: Enabled, ValidConnection: ValidConnection, FallbackOnUiPath: FallbackOnUiPath}"
+   ```
+
+   `Enabled: false` or `ValidConnection: false` means the violation traces back to the BYOG configuration itself (disabled or dead connection), not the rule's logic — see Resolution below.
+
    Then fetch catalog entry:
 
    ```bash
@@ -102,6 +112,8 @@ What can cause it:
 **Filter causing unexpected behavior (not a fault):** Inspect `updatedInput`/`updatedOutput` on the evaluation span from step 3 to see which fields were removed. Verify the agent handles absent fields gracefully. Add fallback logic if required fields can be stripped.
 
 **Recent rule regression:** Check last-modified date in AgentBuilder or Flow → Guardrails. Restore the prior rule definition or disable the rule temporarily. Document the rollback and review rule scope with the guardrail policy team.
+
+**BYO guardrail connection dead or configuration disabled:** If step 4's BYOG check showed `ValidConnection: false`, the underlying Integration Service connection is broken — repair it directly (`uip is connections get <connection-id>`; see [uipath-platform § BYO Guardrail Configurations § Diagnostics](/uipath:uipath-platform)). If `Enabled: false`, the tenant admin switched the configuration off — confirm with them whether that was intentional before re-enabling it with `uip guardrails byo-configurations update <configuration-id> --enabled` (or Admin → AI Trust Layer → Guardrails Configurations). Re-test with the previously blocked input after either fix.
 
 Refresh and validate after any rule or agent change:
 

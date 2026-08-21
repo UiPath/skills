@@ -28,10 +28,27 @@ sys.path.insert(
         os.environ["SKILLS_REPO_PATH"], "tests", "tasks", "uipath-review", "_shared"
     ),
 )
-from lowcode_scaffold import write_baseline_lowcode_agent  # noqa: E402
+from lowcode_scaffold import (  # noqa: E402
+    connection_binding,
+    set_message,
+    write_baseline_lowcode_agent,
+    write_bindings,
+)
 
 SOLUTION = Path("ReviewSol")
 TOOL_NAME = "SendCustomerEmail"
+CONNECTION_ID = "99999999-9999-4999-8999-999999999999"
+FOLDER_KEY = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+CONNECTOR_KEY = "uipath-microsoft-outlook365"
+ICON_URL = (
+    "https://alpha.uipath.com/elements_/scaleunit_/"
+    "3854d037-4ab5-4881-909b-968c433f6d88/v3/element/elements/"
+    f"{CONNECTOR_KEY}/image"
+)
+TOOL_DESCRIPTION = (
+    "Sends an email to a customer. Requires the recipient's email address "
+    "and the message body. Use after drafting the reply to deliver it."
+)
 
 TOOL_RESOURCE = {
     "$resourceType": "tool",
@@ -39,35 +56,105 @@ TOOL_RESOURCE = {
     "type": "integration",
     "location": "external",
     "name": TOOL_NAME,
-    "description": (
-        "Sends an email to a customer. Requires the recipient's email address "
-        "and the message body. Use after drafting the reply to deliver it."
-    ),
+    "description": TOOL_DESCRIPTION,
     "isEnabled": True,
     "inputSchema": {
         "type": "object",
         "properties": {
             "recipient_email": {
                 "type": "string",
+                "title": "Recipient email",
                 "description": "The customer's email address to send the message to",
             },
-            "body": {"type": "string", "description": "The email body"},
+            "body": {
+                "type": "string",
+                "title": "Body",
+                "description": "The email body",
+            },
         },
+        "additionalProperties": False,
         "required": ["recipient_email", "body"],
     },
     "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
-        "properties": {"sent": {"type": "boolean", "description": "Whether the email was sent"}},
+        "properties": {
+            "sent": {
+                "type": "boolean",
+                "title": "Sent",
+                "description": "Whether the email was sent",
+            }
+        },
     },
+    "iconUrl": ICON_URL,
     "settings": {},
-    # Tool resources must carry a guardrail.policies array (Studio Web rejects
-    # without it); empty is valid — the guardrail itself lives in agent.json.
     "guardrail": {"policies": []},
+    "isPreview": False,
+    "properties": {
+        "toolPath": "/hubs/productivity/send-mail-v2",
+        "objectName": "send-mail-v2",
+        "toolDisplayName": TOOL_NAME,
+        "toolDescription": TOOL_DESCRIPTION,
+        "method": "POST",
+        "bodyStructure": {"contentType": "json"},
+        "connection": {
+            "id": CONNECTION_ID,
+            "name": "review-fixture-outlook",
+            "elementInstanceId": 0,
+            "apiBaseUri": "",
+            "state": "enabled",
+            "isDefault": False,
+            "connector": {
+                "key": CONNECTOR_KEY,
+                "name": "Microsoft Outlook 365",
+                "image": ICON_URL,
+                "enabled": True,
+                "isPreview": False,
+            },
+            "folder": {"key": FOLDER_KEY, "path": FOLDER_KEY},
+            "solutionProperties": {"resourceKey": CONNECTION_ID},
+        },
+        "parameters": [
+            {
+                "name": "recipient_email",
+                "displayName": "Recipient email",
+                "type": "string",
+                "fieldLocation": "body",
+                "value": "{{prompt}}",
+                "description": "The customer's email address to send the message to",
+                "position": "primary",
+                "sortOrder": 1,
+                "required": True,
+                "fieldVariant": "dynamic",
+                "isCascading": False,
+                "dynamic": True,
+                "enumValues": None,
+                "loadReferenceOptionsByDefault": None,
+                "dynamicBehavior": [],
+                "reference": None,
+            },
+            {
+                "name": "body",
+                "displayName": "Body",
+                "type": "string",
+                "fieldLocation": "body",
+                "value": "{{prompt}}",
+                "description": "The email body",
+                "position": "primary",
+                "sortOrder": 2,
+                "required": True,
+                "fieldVariant": "dynamic",
+                "isCascading": False,
+                "dynamic": True,
+                "enumValues": None,
+                "loadReferenceOptionsByDefault": None,
+                "dynamicBehavior": [],
+                "reference": None,
+            },
+        ],
+    },
 }
 
-# Tool-scoped pii_detection with a BLOCK action on the email tool. Format-valid;
-# semantically wrong (catalog when_not_to_use: do not block PII on a tool that
-# needs the PII to function).
 GUARDRAIL = {
     "$guardrailType": "builtInValidator",
     "id": "88888888-8888-4888-8888-888888888888",
@@ -101,9 +188,7 @@ def _write_tool_resource(project: Path) -> None:
 def _patch_agent(agent_json: Path) -> None:
     data = json.loads(agent_json.read_text(encoding="utf-8"))
     data["guardrails"] = [json.loads(json.dumps(GUARDRAIL))]
-    for msg in data.get("messages", []):
-        if msg.get("role") == "user":
-            msg["content"] = USER_MSG
+    set_message(data, "user", USER_MSG)
     agent_json.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
@@ -112,6 +197,7 @@ def main() -> None:
     _write_tool_resource(project)
     _patch_agent(project / "agent.json")
     _patch_agent(project / ".agent-builder" / "agent.json")
+    write_bindings(project, [connection_binding(CONNECTION_ID, CONNECTOR_KEY)])
     print("Injected SendCustomerEmail tool + Tool-scope pii_detection block guardrail")
 
 

@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-getasset-folder-scope-mismatch
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must troubleshoot a Get Credential failure where
   the workflow's FolderPath property points to a folder that does not

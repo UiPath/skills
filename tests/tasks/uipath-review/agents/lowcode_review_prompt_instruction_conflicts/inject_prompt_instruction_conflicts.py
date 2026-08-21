@@ -34,6 +34,9 @@ def _patch(agent_json: Path) -> None:
     for msg in data.get("messages", []):
         if msg.get("role") == "system":
             msg["content"] = CONFLICT
+            msg["contentTokens"] = [
+                {"type": "simpleText", "rawString": CONFLICT},
+            ]
     agent_json.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 

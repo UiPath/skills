@@ -41,9 +41,13 @@ The `<resourceKey>` is the local UUID minted by `uip solution projects add` — 
 
 ## Scaffolding the Sibling-Folder Coded Agent
 
+<!--skill-flavor:flow-integration-ownership:start-->
 The full end-to-end workflow (solution init → flow scaffold → agent scaffold → register → wire → validate) is owned by [`quickstart.md` § Scenario 2](quickstart.md#quick-start-scenario-2--in-solution-coded-agent-in-a-flow). This file covers the agent-side detail of step 3 (scaffold) and step 5 (registration) in finer detail; the canonical sequence stays in the quickstart so it remains executable in one pass.
+<!--skill-flavor:flow-integration-ownership:end-->
 
+<!--skill-flavor:flow-project-creation:start-->
 If the solution and flow project don't yet exist, run `uip solution init "<SolutionName>"` and then `uip maestro flow init "<FlowName>"` from inside the solution **before** the steps below — those calls are the start of Scenario 2.
+<!--skill-flavor:flow-project-creation:end-->
 
 1. From the solution directory, create the agent folder and scaffold inside it:
 
@@ -70,6 +74,7 @@ If the solution and flow project don't yet exist, run `uip solution init "<Solut
    uip codedagent init
    ```
 
+<!--skill-flavor:flow-solution-registration-paths:start-->
 4. Register the agent in the solution — **this is the step that mints the `resource.key`** the flow will reference:
 
    ```bash
@@ -78,6 +83,7 @@ If the solution and flow project don't yet exist, run `uip solution init "<Solut
    ```
 
    After this command, `resources/solution_folder/process/agent/<CodedAgentProject>.json` holds the `resource.key` UUID.
+<!--skill-flavor:flow-solution-registration-paths:end-->
 
 
 ### Flow Discovery

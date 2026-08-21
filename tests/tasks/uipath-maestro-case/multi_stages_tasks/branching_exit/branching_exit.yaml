@@ -48,7 +48,6 @@ initial_prompt: |
   | Case Name | BranchingExit |
   | Case Description | Triage stage routes to one of three downstream branches via stage-exit conditions covering wait-for-user, exit-only with marks-complete:false, and exit-only with marks-complete:true. |
   | Case Identifier | Prefix: BE, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
   | SLA Type | Not specified |
 
@@ -267,7 +266,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120

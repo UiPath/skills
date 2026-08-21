@@ -58,7 +58,9 @@ See [shared/cli-commands.md — uip maestro flow debug](../../shared/cli-command
 
 ## Process run — trigger a deployed process
 
+<!--skill-flavor:ship-orchestrator-path-pointer:start-->
 For flows already deployed to Orchestrator (via [ship.md](ship.md) → Orchestrator path):
+<!--skill-flavor:ship-orchestrator-path-pointer:end-->
 
 ```bash
 uip maestro flow process list --output json                           # discover deployed processes

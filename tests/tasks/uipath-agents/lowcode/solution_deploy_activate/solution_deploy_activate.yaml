@@ -1,0 +1,147 @@
+task_id: skill-agents-lowcode-solution-deploy-activate
+description: >
+  Low-code solution promotion on a PRE-BUILT agent: pack → publish → deploy run
+  --skip-activate → deploy activate → deploy uninstall. The fixture ships a
+  validated EchoSol solution (EchoAgent: message→reply), so scaffolding and
+  authoring are out of scope — every graded step is a `uip solution` promotion
+  step. Five `uip solution` components and workflow step 20 had zero coverage —
+  the suite runs `solution init` in 54 tasks but never packs, publishes or
+  deploys, and `uipath-solution` carries no agent-flavoured deploy coverage
+  either, so this path had no test owner anywhere in the repo. Also pins the
+  post-2026-08-06 package naming (`<NAME>_<VERSION>.zip`, underscore not dot).
+  The two-stage branch (deploy inactive, activate separately) is reached through
+  the owner's change process, not through test-shaped instructions: the prompt
+  states the release rule, the skill has to know that `--skip-activate` is what
+  implements it. `seed_deploy.py` gives every run a unique solution name so
+  package, deployment and provisioned folder are per-run — replicates can run in
+  parallel without colliding on publish or tearing down each other's deployment.
+tags: [uipath-agents, e2e, mode:operate, lifecycle:setup, low-code]
+
+run_limits:
+  # Tracks two 2026-08-12 sonnet-5 runs of the fixture-seeded task: 37 and 61
+  # assistant turns, both scoring 1.000 in ~200s. The spread is the CLI-probing
+  # detour (`--help` on deploy/activate/uninstall before committing), so budget
+  # for the slower shape rather than the lucky one.
+  expected_turns: 60
+  # ~65% headroom over the observed 61. Deliberately below the 200 that low-code
+  # tasks without an explicit cap inherit from default.yaml: nothing has come
+  # near exhausting this, and the cap earns its keep as a cost stop.
+  max_turns: 100
+  task_timeout: 2700
+  # `deploy run` polls for up to 360s per phase and `deploy uninstall` for
+  # another 360s, so a single Bash call legitimately blocks for many minutes.
+  turn_timeout: 1200
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/solution_deploy_activate/seed_deploy.py"
+    timeout: 60
+
+# Written in the voice of the solution's owner: a release rehearsal, with the
+# company's change rule stated as a rule rather than as a test stage. No mention
+# of flags, of confirming deployment state, or of independently verifiable
+# stages — if the prompt supplies the two-stage mechanics, the task grades the
+# prompt instead of the skill.
+initial_prompt: |
+  The solution folder here holds EchoAgent. It is signed off and ships next week,
+  and before I run the release for real I want to rehearse it end to end on this
+  tenant.
+
+  Take it through exactly what I will do on the day: cut it as version 1.0.0 and
+  get it onto Orchestrator under Shared/uipath-agents. One thing to respect —
+  change control here does not let anything go live at deploy time. Deployments
+  land switched off, and whoever is on release duty switches them on once the
+  window opens. Do it in that order here too.
+
+  Once it is live, take the whole thing back down again. This was a rehearsal and
+  I do not want it left standing on the tenant.
+
+  Leave the agent itself alone — I am rehearsing the release, not changing what
+  ships.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Complete the entire task end-to-end in a single
+  pass.
+
+success_criteria:
+  # Brownfield: the solution ships in the fixture.
+  - type: command_not_executed
+    description: "Agent did NOT re-initialize the pre-existing solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    exclude_pattern: '--help'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Brownfield: EchoAgent ships in the fixture.
+  - type: command_not_executed
+    description: "Agent did NOT re-scaffold the existing EchoAgent project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    exclude_pattern: '--help'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent packed the solution into a versioned archive"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+pack\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent published the package to Orchestrator"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+publish\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The two-stage branch: deploy must explicitly opt out of auto-activation,
+  # otherwise `deploy activate` is never exercised as its own capability. The
+  # prompt states the change rule ("deployments land switched off"); knowing that
+  # `--skip-activate` is what implements it is the skill's job.
+  - type: command_executed
+    description: "Agent deployed with --skip-activate (deferred activation branch)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+run\b[^|;&]*--skip-activate'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent activated the deployment as a separate step"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+activate\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uninstalled the deployment, leaving the tenant clean"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+uninstall\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Promotion outcome: archive uses the canonical <NAME>_<VERSION>.zip naming, the shipped agent was promoted unchanged, and the deployment reached the tenant and was torn down again"
+    command: "python3 $TASK_DIR/check_deploy_activate.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+# Backstop only — the agent is asked to uninstall its own deployment and the
+# check script grades that it did. This runs after evaluation and guarantees the
+# tenant is left clean even when the run fails, times out, or exhausts max_turns.
+# Set AGENT_E2E_CLEANUP=never to keep the deployment for inspection.
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/solution_deploy_activate/cleanup_deploy.py"
+    # 300 is coder-eval's ceiling for a post_run step; the script keeps its own
+    # 200s budget for uninstall polling so the package delete still runs.
+    timeout: 300
+  # Covers the cloud solution if the agent uploaded to Studio Web en route.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/cleanup_solutions.py"
+    timeout: 120

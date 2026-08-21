@@ -2,7 +2,7 @@
 
 Trust the SDD. Emit inputs/outputs exactly as declared. Every SDD Outputs row carries `->` or `=`; preserve that operator and both operands through `tasks.md`. Bare `tasks.md` outputs come only from resolved-schema discovery, never from an SDD row. There is no `caseplan.json` yet — all validation happens during [implementation](impl-json.md).
 
-## SDD table to `tasks.md` projection (mandatory)
+## SDD Outputs table to `tasks.md` projection (mandatory)
 
 The SDD Outputs table has separate `Field`, `Type`, and `Binding / Value` columns, while `tasks.md` uses one canonical list item per row. Project each SDD row exactly once:
 
@@ -27,10 +27,38 @@ Treat `—` and blank `Field` cells on `=` rows as presentation-only placeholder
 
 Before the Phase 1 approval gate, reject any SDD Outputs row without `->` or `=`, and reject any `tasks.md` output item whose first token is `—`, `->`, or `=`. Every SDD-projected item must match `<field-path> -> <case-variable>` or `<case-variable> = <expression>`; `<top-level-field>` is reserved for schema-discovered items.
 
+## SDD Inputs table to `tasks.md` projection (mandatory)
+
+The SDD Inputs table has separate `Field`, `Type`, and `Binding` columns, exactly like the Outputs table above — but the `tasks.md` input item drops the `Type` column entirely. Project each SDD Inputs row to `<Field> <- <Binding>` or `<Field> = <Binding>` (operator comes from the Binding cell itself, per [Input/Output Notation](#inputoutput-notation) below); never carry the `Type` column into `tasks.md`:
+
+| SDD `Field` | SDD `Type` | SDD `Binding` | Canonical `tasks.md` item |
+|---|---|---|---|
+| `APIInput1` | `string` | `"literal-seed"` | `APIInput1 = "literal-seed"` |
+| `APIInput1` | `string` | `=vars.caseInput` | `APIInput1 = =vars.caseInput` |
+| `APIInput1` | `string` | `<- "Binding Matrix"."Echo literal".APIOutput1` | `APIInput1 <- "Binding Matrix"."Echo literal".APIOutput1` |
+
+**SDD `Binding` cells are Markdown code spans — unwrap them.** The SDD template wraps every Inputs `Binding` cell in backticks (`` `=vars.caseInput` ``, `` `<- "Stage"."Task".out` ``). Those backticks are presentation, not value. Strip them and copy the cell contents verbatim. Never re-wrap the projected value in backticks, single quotes, or double quotes, and never separate the input name from its value with `:` — the separator IS the operator (`<-` or `=`). A cell that already carries its own quotes (`` `"literal-seed"` ``) keeps exactly those and gains no others.
+
+```markdown
+<!-- INVALID: leaked the SDD Type column as a literal pipe segment -->
+- APIInput1 | string | <- "Binding Matrix"."Echo literal".APIOutput1
+
+<!-- INVALID: re-quoted the code-span cell and replaced the operator with `:` -->
+- APIInput1: '<- "Binding Matrix"."Echo literal".APIOutput1'
+
+<!-- INVALID: kept the SDD cell's backticks -->
+- APIInput1 <- `"Binding Matrix"."Echo literal".APIOutput1`
+
+<!-- VALID -->
+- APIInput1 <- "Binding Matrix"."Echo literal".APIOutput1
+```
+
+Before the Phase 1 approval gate, reject any `tasks.md` input item that wraps its value in backticks or in a quote pair the SDD `Binding` cell did not itself contain, and any item whose name and value are separated by `:` rather than `<-` or `=`.
+
 ## Discovering Input/Output Names
 
 1. **SDD per-task tables** — primary source. Each task lists input/output field names, types, and variable bindings.
-2. **`uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json`** — validates SDD names and discovers additional fields (e.g., standard `Error` output). The SDD per-task Outputs table uses TWO operators (per v1 contract — see [`assets/templates/sdd-template.md`](../../../../assets/templates/sdd-template.md) Section 2):
+2. **`uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json`** — validates SDD names and discovers additional fields (e.g., standard `Error` output). The SDD per-task Outputs table uses TWO operators (per v1 contract — see the case SDD template (`uipath-planner`) Section 2):
 
    **`->` operator — extract a field into a case variable.** Left side is the **full runtime path** the value lives at relative to the task's root scope; right side is the target case variable name:
    ```markdown
@@ -99,12 +127,14 @@ Do not reduce this to a comma-separated list of names: that representation loses
 
 > **Planner emits SDD-natural form; impl applies the per-sink canonical wrap.** Values in `tasks.md` use the natural prefix notation shown above — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<-`. The implementation step rewrites each value to its canonical sink form when constructing `caseplan.json` (e.g., `=js:(vars.X)` for connector body fields, `=js:metadata.X` for `=metadata` references in any sink that runs the JS evaluator). Full rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
-## Outputs table validation rules
+## I/O table validation rules
 
-Apply at planning time (Phase 1):
+Apply at planning time (Phase 1). The first two rules cover Inputs; the rest cover Outputs:
 
 | Rule | Severity | Detail |
 |---|---|---|
+| `tasks.md` input item wraps its value in backticks or quotes the SDD `Binding` cell did not contain | ERROR | The SDD cell is a Markdown code span. Unwrap it and copy the contents verbatim. |
+| `tasks.md` input item separates name from value with `:` | ERROR | The separator is the operator itself — `<-` for a cross-task reference, `=` otherwise. |
 | `->` row's target case variable not in Case Variables table | ERROR | Outputs declare bindings, not new variables. Target must pre-exist. |
 | `=` row's target case variable not in Case Variables table | ERROR | Same — `=` writes to existing variable's slot. |
 | `->` row missing left-side Field | ERROR | `->` requires a schema field name on the left. |
@@ -121,3 +151,5 @@ Apply at planning time (Phase 1):
 | Regular stage task | Earlier stages + same stage earlier tasks + root variables |
 | Secondary stage task | ALL tasks across ALL stages |
 | Adhoc task | ALL tasks |
+
+<!-- END: planning.md -->

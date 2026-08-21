@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-getasset-robot-not-authenticated
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath diagnostic agent must diagnose a Get Credential failure where
   the target asset and folder are correctly configured and the robot

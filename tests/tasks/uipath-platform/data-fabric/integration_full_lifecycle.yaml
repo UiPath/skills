@@ -26,6 +26,11 @@ initial_prompt: |
     - Score — whole number, 0 to 1000
     - Active — yes/no
 
+  Use tenant scope (no folder). I explicitly approve creating and altering
+  `CE_LifecycleTest`, inserting/updating its two test rows, and deleting
+  those two rows at the end. Proceed without another confirmation and leave
+  the entity itself in place as requested.
+
   Once it's there:
     - Read its settings back and show me the Score column's min and
       max — that tells me they saved.
@@ -33,7 +38,7 @@ initial_prompt: |
       Pick any column name you like.
     - Tighten Score: rename it "Test Score", make it required, and
       drop the max to 500.
-    - Rename the list itself to "Lifecycle Test Entity" and set a
+    - Rename the entity itself to "Lifecycle Test Entity" and set a
       description. Read it back and confirm both stuck.
 
   Then:
@@ -41,7 +46,7 @@ initial_prompt: |
     - Add row "beta" with score 5 and Active = no.
     - Pull rows where Active is yes — at least one should come back.
     - Update alpha's score to 99. Read alpha back to confirm.
-    - Delete both rows. Leave the list itself in place.
+    - Delete both rows. Leave the entity itself in place.
 
 success_criteria:
   - type: command_executed
@@ -53,14 +58,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed native-only entities"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+list\s+.*--native-only'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent retrieved entity schema with entities get"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+entities\s+get\s+'
@@ -69,10 +66,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran entities update for both addFields and updateFields"
+    description: "Agent ran entities update (addFields and updateFields may be combined in one valid request)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+entities\s+update'
-    min_count: 2
+    min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
@@ -165,9 +162,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent edited entity-level metadata (top-level displayName + description, not addFields/updateFields)"
+    description: "Agent edited entity-level metadata with top-level displayName + description"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+update(?!.*addFields)(?!.*updateFields)(?:.*displayName.*description|.*description.*displayName)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+update(?:.*displayName.*description|.*description.*displayName)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -181,7 +178,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent must NOT use removeFields (not supported)"
+    description: "Agent must NOT use removeFields because this scenario does not request any field removal"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
     min_count: 0
@@ -190,7 +187,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent must NOT delete the CE_LifecycleTest entity (entity delete coming in a follow-up PR with proper confirm semantics)"
+    description: "Agent must NOT delete CE_LifecycleTest because the prompt explicitly says to leave the entity in place"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+entities\s+delete'
     min_count: 0

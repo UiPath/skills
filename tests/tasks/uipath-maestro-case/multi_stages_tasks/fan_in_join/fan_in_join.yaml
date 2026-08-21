@@ -48,7 +48,6 @@ initial_prompt: |
   | Case Name | FanInJoin |
   | Case Description | Diamond topology Triage → {Validate, Enrich} → Join; four skeleton tasks cover four distinct plugin types; Validate is an empty pass-through branch. |
   | Case Identifier | Prefix: FIJ, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
   | SLA Type | Not specified |
 

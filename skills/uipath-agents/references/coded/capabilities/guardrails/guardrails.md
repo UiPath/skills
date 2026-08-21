@@ -57,6 +57,87 @@ If the requested validator has `Status != "Available"` → tell the user and sto
 
 ---
 
+## BYO (bring-your-own) validators
+
+A validator can be fulfilled by a tenant-registered **external** provider (a "BYOG" configuration — e.g. Azure AI Content Safety, Databricks AI Guardrails) instead of UiPath's own built-in implementation. Registration is admin-side — Admin → AI Trust Layer → Guardrails Configurations, or `uip guardrails byo-configurations create` (see [uipath-platform § BYO Guardrail Configurations](/uipath:uipath-platform)); this section covers wiring an already-registered BYOG configuration into agent code.
+
+**Same rule as [Step 0](#step-0--fetch-official-documentation): confirm the constructor signature against the fetched SDK docs before writing code, and never invent arguments.** The two constructs below exist today; if a future fetch shows one missing or renamed, follow the fetched page and say so rather than writing what's here from memory.
+
+### Which construct exists where
+
+| Construct | Style | Ships in | Notes |
+|---|---|---|---|
+| `UiPathByoGuardrailMiddleware` | middleware | `uipath_langchain.guardrails` **only** | LangChain/LangGraph agents only — there is no framework-agnostic middleware. |
+| `ByoValidator` | decorator | `uipath.platform.guardrails` (**core**), re-exported by `uipath_langchain.guardrails` | Framework-agnostic class, so BYO is **not** LangChain-only. |
+
+> **BYO is not LangChain-only** — a common wrong inference, because the core SDK docs page historically omitted `ByoValidator`. The class is in core. What *is* LangChain-only is the middleware.
+>
+> The usual [Imports Pattern](#imports-pattern) rule still governs which module you import from: a LangChain agent imports from `uipath_langchain.guardrails` (adapter registration — see Critical Rule 8), everything else from `uipath.platform.guardrails`. And on a framework with no published adapter, the decorator carries the same silent-no-op risk it does for every other validator — that caveat belongs to the decorator *mechanism*, not to BYO.
+
+**Wire format** — both coded styles emit `validatorType: "byo"` plus `byoValidatorName: "<name>"`. The only field shared with low-code is `byoValidatorName`: a low-code `agent.json` pins the same BYOG configuration by adding `byoValidatorName` while keeping `validatorType` = the real validator id (e.g. `pii_detection`). `validatorType: "byo"` is the coded SDK wire format — never write it in a low-code `agent.json`.
+
+Discovery steps (in addition to the fetched docs):
+
+1. Confirm a BYOG configuration exists for the desired validator and get its identifying value:
+   ```bash
+   uip agent guardrails list --byo --output json
+   ```
+   Read `ByoValidatorName` from the matching entry — the validator name is the **only** value the code passes; it is unique across the tenant, and the platform resolves the underlying connection server-side from the stored configuration. Do not pass a connection id, and never guess or fabricate the name.
+2. Before wiring it in, cross-check the configuration's health on the admin side:
+   ```bash
+   uip guardrails byo-configurations list --output json
+   ```
+   Confirm `Enabled: true` and `ValidConnection: true` for the matching `ValidatorName`. A disabled configuration or a broken connection means the guardrail will fail at runtime (or silently fall back, depending on `FallbackOnUiPath`) — tell the user rather than wiring it in anyway. The admin-side fix (re-enable via `update <id> --enabled`, repoint the connection via `update <id> --connection-id`) is covered by [uipath-platform § BYO Guardrail Configurations](/uipath:uipath-platform).
+
+### BYO middleware (LangChain only)
+
+`validator_name`, `scopes`, and `action` are all required. `validator_parameters` is optional passthrough — BYO parameter schemas are connector-defined, so read the ids and allowed values from that entry's `Parameters` array in the discovery output rather than guessing. Spread with `*` like every other middleware.
+
+```python
+from uipath_langchain.guardrails import (
+    BlockAction,
+    UiPathByoGuardrailMiddleware,
+)
+from uipath.core.guardrails import GuardrailScope
+
+*UiPathByoGuardrailMiddleware(
+    validator_name="my-pii-guardrail",   # ByoValidatorName from `guardrails list --byo`
+    scopes=[GuardrailScope.AGENT],
+    action=BlockAction(),
+),
+```
+
+For Tool scope, pass the tool objects as usual:
+
+```python
+*UiPathByoGuardrailMiddleware(
+    validator_name="my-pii-guardrail",
+    scopes=[GuardrailScope.TOOL],
+    action=BlockAction(),
+    tools=[lookup_account_info],   # required whenever TOOL is in scopes
+),
+```
+
+### BYO decorator (any framework)
+
+The validator name is the **first positional argument**; `parameters` is keyword-only. Scope comes from the decorated target (`@tool` → Tool, LLM factory → Llm, agent factory → Agent), exactly as for the built-in validators.
+
+```python
+from uipath_langchain.guardrails import BlockAction, ByoValidator, guardrail
+
+byog_pii = ByoValidator("my-pii-guardrail")
+
+@guardrail(validator=byog_pii, action=BlockAction())
+def create_support_agent():
+    return create_agent(model=llm, tools=[lookup_account_info])
+```
+
+On a non-LangChain framework the same code works with `from uipath.platform.guardrails import BlockAction, ByoValidator, guardrail` — subject to the adapter caveat above.
+
+**Stages:** BYO validator capabilities are connector-defined and can't be known statically, so no stage restriction is applied — all stages are supported, and the middleware defaults to `PRE_AND_POST`.
+
+---
+
 ## Step 1 — Style Choice
 
 If the user has not specified **middleware** or **decorator**, ask before generating any code. Do not implement both unless explicitly asked.
@@ -178,7 +259,11 @@ Pass `scopes=[GuardrailScope.LLM]` or `[GuardrailScope.AGENT]`. No `tools=`.
 
 ### Stage is fixed by the validator — no `stage=` on middleware
 
-Middleware classes take **no `stage` argument**. Each validator's stage is fixed: input validators (`user_prompt_attacks`, `prompt_injection`, input PII) run PRE; `intellectual_property` runs POST (output-only). Adding `stage=GuardrailExecutionStage....` to a middleware call raises `TypeError`. Only the **decorator** (`@guardrail`) accepts `stage=`.
+Middleware classes for the **fixed-stage** validators take no `stage` argument: `UiPathUserPromptAttacksMiddleware`, `UiPathPromptInjectionMiddleware` (both PRE-only) and `UiPathIntellectualPropertyMiddleware` (POST-only). Passing `stage=` to those raises `TypeError` — their stage is a property of the validator, not a choice.
+
+> Validators whose stage genuinely varies **do** accept `stage=` on the middleware (defaulting to `PRE_AND_POST`) — PII, harmful content, LLM-as-judge, deterministic, and BYO. Confirm against the fetched `langchain/guardrails/` page for the validator you're wiring rather than assuming either way.
+
+For BYO middleware specifically, see [BYO (bring-your-own) validators](#byo-bring-your-own-validators).
 
 ### Intellectual property (output-only) middleware
 
@@ -210,6 +295,8 @@ Runs at POST (checks the LLM's output) — fixed by the validator, not a paramet
 ## Decorator Style — Code Patterns
 
 Full documentation and examples: [Core Guardrails](https://uipath.github.io/uipath-python/core/guardrails/)
+
+For a bring-your-own (BYOG) validator, see [BYO (bring-your-own) validators](#byo-bring-your-own-validators) — `ByoValidator` slots into the same `@guardrail(validator=..., action=...)` shape as the built-ins.
 
 ### Tool scope — decorate the `@tool` function
 
@@ -398,3 +485,4 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 15. **`EscalateAction` requires a deployed Action App** referenced by `app_name` + `app_folder_path` and declared as an `app` resource in **`bindings.json`** — discover it with `uip solution resources list --kind App`, resolve duplicate names by folder, pass the literal name/folder in code (not env vars), and sync bindings with [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md). Route the task with `TaskRecipient` when the user names a reviewer. See [Escalation action (HITL)](#escalation-action-human-in-the-loop).
 16. **Verify the escalation app schema when tenant access is available** — the app must expose the guardrail review inputs/outputs/outcomes listed in the prerequisite section. If the schema cannot be verified in a local smoke task, say that runtime readiness is unverified.
 17. **A HITL guardrail suspends, it doesn't block.** On violation `EscalateAction` suspends via `interrupt(CreateEscalation(...))`; it terminates **only on Reject** (Approve resumes). Verify by confirming the run suspends + a task is created — never expect a "block" for an escalation guardrail (Rule for the [verification step](#verify-guardrails-are-actually-wired-mandatory-after-writing-for-langchain-ml-guardrails)).
+18. **BYO: pass the validator name and nothing else, and get that name from discovery — never from memory.** `ByoValidatorName` comes from `uip agent guardrails list --byo`; there is **no connection-id argument** in either construct (the platform resolves the connection server-side from the configuration). Pick the construct by style, not by framework: `UiPathByoGuardrailMiddleware` is LangChain-only, while `ByoValidator` is a **core** class (`uipath.platform.guardrails`) re-exported by `uipath_langchain.guardrails` — so **BYO is not LangChain-only**, and a subagent or stale doc claiming otherwise is wrong. Import per Rule 8 regardless. Cross-check `Enabled`/`ValidConnection` via `uip guardrails byo-configurations list` before wiring one in. See [BYO (bring-your-own) validators](#byo-bring-your-own-validators).

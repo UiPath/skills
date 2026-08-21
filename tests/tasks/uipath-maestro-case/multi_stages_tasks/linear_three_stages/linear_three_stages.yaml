@@ -48,7 +48,6 @@ initial_prompt: |
   | Case Name | LinearThreeStages |
   | Case Description | Three regular stages chained linearly behind a manual trigger; exercises stage-entry conditions, parallel wait-for-timer tasks, and the full Variable / In / Out argument trio. |
   | Case Identifier | Prefix: LTS, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
   | SLA Type | Not specified |
 
@@ -251,6 +250,17 @@ success_criteria:
     timeout: 720
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: >
+      Every variable `default` is a JSON string. An object or array default is silently deleted by
+      the caseplan -> BPMN serializer, leaving the variable null at runtime while `uip maestro case
+      validate` still reports Valid.
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/check_variable_defaults.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
 post_run:

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Authoring",
+      "description": "Build automations: RPA workflows, Maestro flows and BPMN, agents, coded apps, API workflows, connectors, functions, and document understanding.",
+      "skills": [
+        "uipath-rpa",
+        "uipath-maestro-flow",
+        "uipath-agents",
+        "uipath-maestro-bpmn",
+        "uipath-maestro-case",
+        "uipath-coded-apps",
+        "uipath-api-workflow",
+        "uipath-human-in-the-loop",
+        "uipath-ixp",
+        "uipath-connector-builder",
+        "uipath-functions"
+      ]
+    },
+    {
+      "title": "Solution & Planning",
+      "description": "Turn a process design into an implementation-ready solution, then package, review, and discover automation opportunities.",
+      "skills": [
+        "uipath-planner",
+        "uipath-solution",
+        "uipath-review",
+        "uipath-automation-discovery"
+      ]
+    },
+    {
+      "title": "Platform & Operations",
+      "description": "Operate the platform via the uip CLI: Orchestrator, Integration Service, Data Fabric, Admin, governance, testing, tasks, analytics, and MCP servers.",
+      "skills": [
+        "uipath-platform",
+        "uipath-admin",
+        "uipath-test",
+        "uipath-governance",
+        "uipath-insights",
+        "uipath-process-mining",
+        "uipath-tasks",
+        "uipath-mcp-servers",
+        "uipath-automationhub"
+      ]
+    },
+    {
+      "title": "Diagnostics & Feedback",
+      "description": "Investigate failures across any UiPath product and send bug reports or improvement suggestions to the team.",
+      "skills": ["uipath-troubleshoot", "uipath-feedback"]
+    }
+  ]
+}

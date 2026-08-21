@@ -1,32 +1,44 @@
 task_id: skill-agent-guardrail-escalation-app-validation
 description: >
-  Guardrail escalation app action schema validation. Asks the agent to add
-  an escalate guardrail using an incompatible Action Center app
-  ("EscalationWorksApp") that does NOT have the required guardrail schema
-  (missing 8 required inputs, 3 required outputs, wrong outcome names).
-  The agent must validate the action schema and reject the app with the
-  error message instead of writing the guardrail.
+  Guardrail escalation app action schema validation. The fixture ships a
+  "ValidationSol" solution containing a solution-internal Action Center app
+  ("EscalationWorksApp") whose action schema is deliberately incompatible
+  with the guardrail escalation contract (generic input/output instead of
+  the 8 required inputs and 3 required outputs; Submit/Reject instead of
+  Approve/Reject outcomes). The agent is asked to add an escalate guardrail
+  backed by that app; it must fetch the action schema via
+  `uip solution resources get`, detect the mismatch, and reject the app with
+  the error message instead of writing the guardrail. The checker also asserts
+  the app's action schema was left intact — an `actionSchema` is derived from
+  the published app design, so rewriting the solution resource file to force a
+  fit is a wrong answer, not an alternative solution.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/guardrails/escalation_app_validation/_fixtures/ValidationSol ."
+    timeout: 10
+
 initial_prompt: |
   Create a UiPath low-code agent "ReviewAgent" that handles compliance review
-  requests. Add a guardrail that watches for personal data (email addresses)
+  requests, inside the existing "ValidationSol" solution in the current
+  directory. Add a guardrail that watches for personal data (email addresses)
   and, instead of blocking, escalates flagged cases to a human reviewer using
-  our "EscalationWorksApp" Action Center app. The solution should be named
-  "ValidationSol".
+  our "EscalationWorksApp" Action Center app, which is already part of this
+  solution. That app is published and owned by another team — treat it as
+  read-only.
 
-  Do NOT publish, upload, or deploy. Do NOT ask for approval,
-  confirmation, or feedback. Do NOT pause between planning and
-  implementation. Do NOT write a plan file. Complete the entire task
-  end-to-end in a single pass.
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Do NOT write
+  a plan file. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created the solution"
+  - type: command_not_executed
+    description: "Agent did NOT re-initialize the pre-existing ValidationSol solution"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+init'
-    min_count: 1
+    exclude_pattern: '--help'
     weight: 1.0
-    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+    pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent scaffolded the agent project"
@@ -62,5 +74,6 @@ success_criteria:
 
 run_limits:
   expected_turns: 20
-  max_turns: 40
-  turn_timeout: 1200
+  max_turns: 60
+  turn_timeout: 1800
+  task_timeout: 2400

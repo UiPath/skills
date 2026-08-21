@@ -1,0 +1,90 @@
+task_id: skill-flow-e2e-escalation-slack-alert
+description: >
+  End-to-end, outcome-based slice of the customer-escalation orchestration.
+  The agent builds a manual-trigger escalation-triage Flow that classifies
+  severity and posts a Slack alert. A manual trigger is used deliberately —
+  the Outlook email-received trigger cannot be reliably debug-tested (seeding
+  a self-addressed email is flaky against the shared mailbox; see the
+  outlook_trigger_inbox and customer_escalation task notes). The grader seeds a
+  Sev1 case, runs `uip maestro flow debug --inputs`, and verifies the OUTCOME:
+  the flow completes, classifies Sev1 with engineering needed, preserves the
+  correlationId, and — the point of the test — the Slack Send Message activity
+  actually posted (it returned a non-empty message id surfaced as a flow
+  output). Grades the delivered Slack side effect, not "did it run".
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:escalation]
+
+run_limits:
+  expected_turns: 55
+  max_turns: 120
+  task_timeout: 2400
+  turn_timeout: 1200
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/escalation_slack_alert/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120
+
+initial_prompt: |
+  Build a UiPath Maestro Flow named "EscalationSlackAlert" (inside a solution of
+  the same name) with a MANUAL trigger.
+
+  The flow triages a customer escalation and posts a Slack alert with next steps.
+  Declare these flow inputs (in variables associated with the manual trigger):
+  senderEmail, subject, body, customerTier, productionDown (boolean),
+  workaroundAvailable (boolean), correlationId.
+
+  Steps:
+  1. A Script node classifies severity from the inputs:
+     - Sev1  = customerTier is "Enterprise" AND productionDown is true AND
+               workaroundAvailable is false.
+     - Sev2  = productionDown is true AND workaroundAvailable is true.
+     - Sev3  = everything else (informational / no production impact).
+     Also decide engineeringNeeded (true for Sev1 and Sev2, false for Sev3) and a
+     short nextSteps string.
+  2. Post a Slack alert to the channel "coding-agent-testing" using the Slack
+     "Send Message to channel" activity. Use the Slack connection named
+     "is-sandboxes" and send as `user`. The message must include the severity,
+     the correlationId, and the next steps.
+  3. End the flow, mapping these `out` variables:
+     - severity          (Sev1 / Sev2 / Sev3)
+     - engineeringNeeded (boolean)
+     - caseKey           = the incoming correlationId
+     - slackMessageId    = the identifier of the Slack message that was posted
+                           (from the Slack Send Message node's output)
+
+  Validate the flow. Do NOT run or debug the flow — the grader executes it with
+  seeded inputs. Do NOT ask for approval, confirmation, or feedback, and do NOT
+  pause between planning and implementation. Build the complete flow end-to-end
+  in a single pass. Before starting, load the uipath-maestro-flow skill and
+  follow its workflow.
+
+success_criteria:
+  # ── The agent validated the flow (convention adherence) ─────────────────
+  - type: command_executed
+    description: "Agent validated the generated Flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # ── The delivered flow validates ────────────────────────────────────────
+  - type: run_command
+    description: "Generated EscalationSlackAlert Flow validates without errors"
+    command: "uip maestro flow validate EscalationSlackAlert/EscalationSlackAlert/EscalationSlackAlert.flow --output json"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── OUTCOME: seeded Sev1 run posts to Slack and returns the right outputs ─
+  - type: run_command
+    description: "Seeded Sev1 debug run completes, classifies Sev1 + engineering, preserves correlationId, and the Slack alert was actually posted (non-empty message id)"
+    command: "python3 $TASK_DIR/check_escalation_slack_alert.py"
+    timeout: 1000
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

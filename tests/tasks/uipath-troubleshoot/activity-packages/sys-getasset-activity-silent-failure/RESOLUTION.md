@@ -5,8 +5,15 @@
 **Root Cause:** The project targets `UiPath.System.Activities: [22.10.5]`,
 a package version with a documented bug where `Get Credential`,
 `Get Asset`, and `Get Orchestrator Asset` activities silently fail to
-populate output variables when those variables were created via
-`Ctrl+K` in the activity's property grid. The `Get Credential` activity
+populate output variables. The documented trigger is an output variable
+created via `Ctrl+K` in the activity's property grid, an authoring
+gesture that is **not recorded in the workflow source**: Studio
+serializes a `Ctrl+K` variable and a Variables-panel variable
+identically. The pre-declared `<Sequence.Variables>` entries in
+`Main.xaml` therefore neither confirm nor exclude the trigger, and must
+NOT be read as ruling the bug out; with the asset, folder, role, and
+license layers all verified healthy, the package version is the
+deciding signal. The `Get Credential` activity
 in `Main.xaml` runs to completion without throwing an exception, but
 its `Username` and `Password` outputs remain `null`. The downstream
 `LogMessage` activity then throws `NullReferenceException` trying to

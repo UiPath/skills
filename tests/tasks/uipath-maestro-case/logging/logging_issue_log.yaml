@@ -29,7 +29,6 @@ initial_prompt: |
   | Case Name | TimerLogCase |
   | Case Description | Two-stage timer flow. |
   | Case Identifier | Prefix: TLC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 
@@ -130,10 +129,10 @@ initial_prompt: |
     to `exit-only` or any other valid value.
 
   Run `uip maestro case validate TimerLogCase/TimerLogCase/caseplan.json
-  --output json`. Validation is expected to fail due to the invalid exitType.
-  After validate completes (regardless of exit code), write the issue log to
-  `tasks/build-issues.md`. The task is NOT complete until validate has run and
-  `tasks/build-issues.md` exists.
+  --output json`. Validation is expected to fail due to the invalid exitType;
+  that is not a reason to stop. The task is NOT complete until validate has run
+  and the build's issue log is on disk. Follow the skill's own logging contract
+  for when and how that log is written.
 
 success_criteria:
   - type: run_command
@@ -159,9 +158,17 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120
+  - type: run_command
+    description: >
+      The log is an incremental journal, not a single end-of-build dump — it carries the
+      append-only Journal section flushed at each section boundary, and a summary filled
+      from it at Step 12.1. An end-of-build dump held in reasoning is lost to context
+      pressure before it is ever written.
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/check_issue_journal.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
 
 run_limits:
   task_timeout: 900

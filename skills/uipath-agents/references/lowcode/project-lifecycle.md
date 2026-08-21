@@ -372,7 +372,7 @@ uip solution upload . --output json
 **Orchestrator** (for production deployment — only when explicitly requested):
 ```bash
 uip solution pack . ./dist -v "1.0.0" --output json
-uip solution publish ./dist/<SOLUTION_NAME>.1.0.0.zip --output json
+uip solution publish ./dist/<SOLUTION_NAME>_1.0.0.zip --output json   # pack names the zip <name>_<version>.zip
 uip solution deploy run --name "<NAME>" --package-name "<SOLUTION_NAME>" --package-version "1.0.0" --output json
 ```
 
@@ -385,7 +385,7 @@ Solutions use semantic versioning: `MAJOR.MINOR.PATCH`
 uip solution pack ./MySolution ./output -v "1.2.0" --output json
 
 # Publish the versioned package to Orchestrator
-uip solution publish ./output/MySolution.1.2.0.zip --output json
+uip solution publish ./output/MySolution_1.2.0.zip --output json
 
 # Check published packages
 uip solution packages list --output json
@@ -405,7 +405,7 @@ To promote from dev to production:
 uip solution pack ./MySolution ./output -v "2.0.0" --output json
 
 # 2. Publish to Orchestrator
-uip solution publish ./output/MySolution.2.0.0.zip --output json
+uip solution publish ./output/MySolution_2.0.0.zip --output json
 
 # 3. Deploy to production folder
 uip solution deploy run \

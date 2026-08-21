@@ -12,7 +12,7 @@ The catalog at `assets/uip-catalog-snapshot.json` is the source of truth for whi
 | `solution project`     | `solution projects`  | uip 1.199.0|
 | `is resources execute` | `is resources run`   | uip 1.1.0  |
 | `resource`             | `or`                 | uip 1.196.0|
-| `functions`            | `function`           | uip 1.199.0|
+| `functions`            | `function`           | uip 1.200.0|
 
 
 ## When to add an entry

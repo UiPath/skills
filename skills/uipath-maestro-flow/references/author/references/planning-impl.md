@@ -132,7 +132,7 @@ Update the node table from the `.uipath.flow.arch.plan.md`:
 - Replace `connector: <service>` annotations with actual node types
 - Replace `resource: <name>` annotations with actual node types
 - Update inputs with resolved reference field values
-- Update outputs based on `outputDefinition` from registry
+- Update outputs based on `outputDefinition` from registry — mirror its keys AND their `source`. An invented `source` passes `flow validate` and resolves to null at runtime
 
 ### Step 6 — Write the Implementation Plan
 
@@ -252,7 +252,7 @@ $vars.rollDice.output.roll              // Script return value
 $vars.fetchData.output.body             // HTTP response body
 $vars.fetchData.output.statusCode       // HTTP status code
 $vars.someNode.error.message            // Error information
-iterator.currentItem                     // Loop item (inside loop body)
+$vars.<loopId>.currentItem                // Loop item (inside loop body)
 ````
 
 **Expression prefixes:**

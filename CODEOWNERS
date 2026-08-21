@@ -14,6 +14,14 @@
 # CLI versions config (per-environment CLI versions)
 /assets/cli-versions.json @vlad-uipath
 
+# Studio Web flavor overrides
+/skill-flavors/studioweb/ @astridstaicu
+
+# preview skills
+/preview/uipath-maestro-flow/  @dmetzgar @tmatup
+/preview/uipath-maestro-case/ @dmetzgar @tmatup
+/preview/uipath-maestro-bpmn/ @dmetzgar @tmatup
+
 # Activity references (bundled inside uipath-rpa skill)
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
 
@@ -71,8 +79,16 @@
 /tests/tasks/activation/uipath-functions.jsonl @AlexBizon @UiPath/team-coded-agents
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
-/skills/uipath-planner/ @RaduAna-Maria @abhiram-vad
-/tests/tasks/uipath-planner/ @RaduAna-Maria @abhiram-vad
+/skills/uipath-planner/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
+/tests/tasks/uipath-planner/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
+# Case-design evals migrated from uipath-maestro-case (planner-sole-SDD-author) — case owners stay reviewers
+/tests/tasks/uipath-planner/_shared/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/tests/tasks/uipath-planner/case_design_interview/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/tests/tasks/uipath-planner/case_design_loan/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/tests/tasks/uipath-planner/case_finalize_draft/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/tests/tasks/uipath-planner/case_finalize_draft_loan/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/tests/tasks/uipath-planner/case_finalize_draft_picker/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/tests/tasks/uipath-planner/case_finalize_draft_reject/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
@@ -111,6 +127,7 @@
 # Connector Builder skill
 /skills/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
 /tests/tasks/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
+/tests/tasks/activation/uipath-connector-builder.jsonl @mukeshkumar-uipath @chandusailella @apoosarla-uipath
 
 # Flow skill — plugin guides (away team owned)
 # Add your team here when contributing a new plugin category
@@ -169,3 +186,12 @@
 
 # Automation Discovery skill
 /skills/uipath-automation-discovery/ @uisherif
+
+# Process Mining skill (process apps, data ingestion, dbt transformations)
+/skills/uipath-process-mining/ @UiPath/team-backendhoven
+/tests/tasks/uipath-process-mining/ @UiPath/team-backendhoven
+/tests/tasks/activation/uipath-process-mining.jsonl @UiPath/team-backendhoven
+
+# Automation Hub skills (Open API publish/read of processes via the user's cloud token)
+/skills/uipath-automationhub/ @parth-patil-uipath @abhiram-vad
+/tests/tasks/uipath-automationhub/ @parth-patil-uipath @abhiram-vad

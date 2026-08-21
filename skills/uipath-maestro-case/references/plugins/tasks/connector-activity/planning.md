@@ -68,7 +68,7 @@ The response carries everything the planning phase needs:
 | `inputs.multipart` | `null` for non-multipart; otherwise `{ bodyFieldName, parameters[] }` — multipart upload contract |
 | `outputs.responseFields[]` | Response shape; `[?responseCurated]` are FE-broken-out outputs, `[?primaryKey]` are id fields |
 | `outputs.pagination` | `null` for non-list, `{ maxPageSize: N }` for list operations |
-| `filter` | `undefined` when the activity does NOT support server-side filtering. Present when it does, with `builder: "ceql"` and `fields[]` listing every searchable field |
+| `filter` | Structured CEQL FilterBuilder contract; `undefined` means no structured authoring, not no filtering. Plain filter fields remain normal query/body inputs in their declared sink |
 | `references[]` | Cross-references (lookups). Each entry includes a pre-built `discoverCommand` runnable string |
 | `diagnostics.fetched` / `fallbacks` | What endpoints succeeded / fell back; surface `fallbacks` to the user when meaningful |
 
@@ -125,7 +125,7 @@ Values can be:
 
 ### 7. Optional — author a server-side filter
 
-If `spec.filter` is present (i.e. the operation declares a `FilterBuilder` parameter and supports CEQL), the user can author a filter tree. If `spec.filter` is `undefined`, server-side filtering is not supported on this operation — filter downstream (post-execution) instead.
+If `spec.filter` exists, author a FilterTree. Otherwise map an SDD filter only to a declared plain field, copying its exact native value into the matching `input-values.queryParameters` or `input-values.bodyParameters` sink (e.g. Outlook `ListEmails` → `queryParameters.filter`). If no field matches, halt and ask; non-interactive runs report a blocker. Never translate or drop the filter, or invent downstream filtering.
 
 Filter tree shape, operator table, anti-patterns, worked examples: [/uipath:uipath-platform — Filter Trees (CEQL)](../../../../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers (compiler differs — JMESPath instead of CEQL).
 
@@ -194,6 +194,8 @@ Populate `outputs:` using the shared [I/O-binding output-list contract](../../va
   - <SDD output row, copied verbatim>
 - isRequired: true
 - runOnlyOnce: false
+- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
+- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
 - order: after T<m>
 - lane: <n>
 - verify: tasks.md `input-values` covers every `inputs.*[?required]` from the lean spec across `bodyFields`, `queryParameters`, `pathParameters` — see Step 5 above.
@@ -211,3 +213,5 @@ If the connector or connection cannot be resolved:
 - Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`
 - Omit `input-values:` entirely — no schema to wire against
 - Execution creates a placeholder task (display-name + type only) per [placeholder-tasks.md](../../../placeholder-tasks.md)
+
+<!-- END: planning.md -->

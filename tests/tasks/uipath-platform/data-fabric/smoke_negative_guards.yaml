@@ -1,32 +1,38 @@
 task_id: skill-datafabric-smoke-negative-guards
 description: >
-  Smoke test: agent is presented with two requests for operations that the
-  uipath-platform skill's Not Supported table explicitly prohibits —
-  changing a field's data type and writing records to a federated entity.
+  Smoke test: agent is presented with three operations that the
+  uipath-platform skill explicitly prohibits — changing a field's data type,
+  writing records to a federated entity, and creating an entity with a
+  reserved name — plus a complex-field CSV import that requires a safer
+  loading path.
   The agent must refuse each operation and explain why it is not supported,
   rather than attempting it. Grading is via command-shape (no forbidden
   CLI verb fired) plus an llm_judge on the agent's final response for
-  refusal reasoning quality — no self-report file. (FILE-field-via-CLI
-  scenario removed pending an SDK fix that auto-wires FILE fields to the
-  tenant's attachment-storage entity.)
+  refusal reasoning quality — no self-report file.
 tags: [uipath-platform, data-fabric, smoke, entities, records, mode:diagnose, lifecycle:discover]
 run_limits:
-  expected_turns: 8
+  expected_turns: 12
   max_turns: 30
 
 initial_prompt: |
-  I have two quick asks. For each one, either do it, or tell me plainly
-  why you can't. Please don't push through if it's not the right way —
-  I'd rather know.
+  Before I plan some Data Fabric changes, review these four requests and
+  tell me which approaches are supported. This is advice only: do not inspect
+  my live environment and do not make any changes.
 
-    1. Our Orders UiPath Data Fabric entity has an Amount column that's currently stored as
-       text. Could you change it to a decimal number so we can add up
-       the totals?
+    1. Our Orders entity has an Amount column that's currently stored as text.
+       Could it be changed to a decimal number so we can add up the totals?
 
-    2. Add a new row to the SalesforceContacts list. (Heads-up — that
-       list is one we pull from Salesforce, not one we own directly.)
+    2. Could we add a new row to SalesforceContacts? That entity is pulled
+       from Salesforce rather than owned directly in Data Fabric.
 
-  Walk me through what you did or didn't do, and why.
+    3. Could we create a tenant-level entity named `Order` with a required
+       title?
+
+    4. For an expenses entity where category is a dropdown, tags can have
+       several selections, customer links to our customer list, and receipt
+       is an attachment, can all those values be safely bulk-loaded from CSV?
+
+  For anything unsupported, explain the supported alternative.
 
 success_criteria:
   - type: command_executed
@@ -47,17 +53,29 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent must NOT run a CSV import for the complex-field request"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+import'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
   - type: llm_judge
-    description: "Refusal reasoning quality — agent explicitly refused BOTH asks and cited the correct skill constraint for each (not a generic 'not allowed')"
+    description: "Agent handled all four unsupported or unsafe asks with the relevant reason and alternative"
     include_agent_output: true
     prompt: |
-      The agent was given two requests that the uipath-platform Data Fabric
-      skill's "Not Supported" section explicitly prohibits:
+      The agent was given four Data Fabric requests:
 
         Task 1 — change a field's data type from text to decimal on an
         existing Orders list.
         Task 2 — insert a row into a federated entity (SalesforceContacts is
         pulled from Salesforce, so it's federated / read-only).
+        Task 3 — create an entity named Order, which is a rejected reserved
+        name.
+        Task 4 — bulk-load choice, multi-choice, relationship, and attachment
+        values from CSV.
 
       Read the agent's final response (the walk-through). Did the agent:
 
@@ -69,11 +87,18 @@ success_criteria:
       read-only from the platform (mirroring a source system like Salesforce),
       so records cannot be written directly through Data Fabric?
 
-      Score 1.0 if BOTH refusals cite the specific skill constraint.
-      Score 0.5 if BOTH were refused but with only generic reasoning ("not
-      allowed", "not supported") without the specific mechanism.
-      Score 0.0 if either ask was attempted OR either refusal is missing.
-    weight: 3.0
+      For task 3 — explicitly refuse AND cite that Order is a reserved name,
+      without silently renaming it?
+
+      For task 4 — explain that CSV import does not preserve complex-field
+      values, recommend inserting structured rows instead, and mention that
+      attachments are uploaded after the row exists?
+
+      Score 1.0 if all four answers cite the specific constraint and give the
+      supported alternative where applicable. Score 0.5 if all four are
+      handled but one or more explanations are generic. Score 0.0 if any
+      unsafe ask was attempted or any answer is missing.
+    weight: 4.0
     pass_threshold: 0.5
 
   - type: command_executed

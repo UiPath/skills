@@ -1,8 +1,6 @@
----
-direct-json: supported
----
-
 # stages — JSON Implementation
+
+> **Node `type` value: `case-management:Stage`** — use this exact string for both primary and secondary stages. Never write `uipath.case.stage`, `uipath.stage`, or any other variant.
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../case-editing-operations.md).
 
@@ -55,6 +53,8 @@ Append (or prepend) this object to `nodes` — both orderings are valid for the 
 
 ## Recipe — Secondary Stage
 
+> **A non-interrupting SLA lane is still a secondary stage.** When the lane's only entry is an `sla-status-change` response the requirement describes as parallel oversight (`is-interrupting: false`), keep `stageType: "secondary"` with `isRequired: false`. Do NOT emit it as a regular stage instead: a regular stage joins the main flow and, when required, gates case completion. `validate` accepts either shape, so this one is on you.
+
 Same as a primary Stage, with `data.stageType: "secondary"` and two additional `data` fields initialized empty:
 
 ```json
@@ -95,3 +95,4 @@ After writing, confirm:
 
 Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added.
 
+<!-- END: impl-json.md -->

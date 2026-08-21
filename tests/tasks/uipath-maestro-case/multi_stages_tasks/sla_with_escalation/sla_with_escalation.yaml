@@ -55,7 +55,6 @@ initial_prompt: |
   | Case Name | SlaWithEscalation |
   | Case Description | Root-level SLA with two conditional overrides (Urgent 30min, Standard 5d) and a default of 3w; Resolve stage carries an Urgent 2w conditional override plus its own 1m default. |
   | Case Identifier | Prefix: SWE, Type: constant |
-  | Priority | Choiceset: Urgent, Standard - Default: Standard |
   | Case-Level SLA | 3w (default) |
   | SLA Type | Conditional (two condition-driven overrides + default) |
 
@@ -143,7 +142,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120

@@ -1,0 +1,52 @@
+task_id: skill-case-sla-notify-only-default
+description: >
+  T1 of the SLA-response battery. An SLA requirement whose only stated response is
+  "email someone" must stay a notification: an sla-breached escalation on the breached
+  stage's own SLA, and nothing else. Guards the reflex the skill used to have — every
+  SLA status change routed into an interrupting secondary stage. Asserts the stage count
+  is unchanged, no sla-status-change rule exists anywhere in the file, and no follow-up
+  task was minted. Edits a staged solution, so no scaffolding, registry, or tenant is
+  needed; grading is caseplan.json + local validate only.
+tags: [uipath-maestro-case, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates
+
+initial_prompt: |
+  The SlaResponse case solution already exists on disk under SlaResponse/. Its case
+  definition is SlaResponse/SlaResponse/caseplan.json: three stages (Intake → Review →
+  Decision), a 10-day case SLA, and a two-day SLA on Review.
+
+  Ops asked for one change: when a case blows past the Review SLA, the review owners
+  should get an email. That is the entire ask — nothing else about how the case runs
+  changes.
+
+  Do NOT run `uip maestro case debug`, publish, or upload anything. Do NOT ask for
+  approval, confirmation, or feedback — make the change end-to-end in a single pass and
+  finish with `uip maestro case validate` passing on the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the edited caseplan.json"
+    command: "uip maestro case validate SlaResponse/SlaResponse/caseplan.json --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The breach is a notification only: an sla-breached escalation with a recipient on Review's own SLA, zero sla-status-change rules anywhere, still 3 stages, and no follow-up task added to Review"
+    command: "python3 $TASK_DIR/check_notify_only.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

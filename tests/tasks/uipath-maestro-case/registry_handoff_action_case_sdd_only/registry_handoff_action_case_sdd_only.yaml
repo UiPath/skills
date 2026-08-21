@@ -53,7 +53,7 @@ success_criteria:
   - type: command_executed
     description: "Phase 1 refreshed the tenant registry before resolving the transferred SDD"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+case\s+registry\s+pull\b'
+    command_pattern: '(uip|\$UIP)"?\s+maestro\s+case\s+registry\s+pull\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

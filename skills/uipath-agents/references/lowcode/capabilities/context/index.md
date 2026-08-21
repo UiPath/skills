@@ -260,6 +260,13 @@ The upload response includes a `Data.DesignerUrl` — open it to verify the cont
 
 `contextType` and `retrievalMode` values MUST be lowercase — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
 
+**Cap retrievals in the system prompt.** Wiring the index is not enough: "ground your answer in the retrieved guidance" with no call limit makes the agent re-query with new phrasings until the runtime terminates it — `AGENT_RUNTIME.TERMINATION_MAX_ITERATIONS` (in a flow: node Failed, incident `170002`). Raising `settings.maxIterations` only moves the failure — 5 dies at 5, 25 dies at 25. State a cap and a fallback:
+
+```text
+Call <toolName> at most <N> times (N ≤ 3 for a single decision). After the last call, stop retrieving and decide with the evidence you already have.
+If the retrieved content does not cover a detail, say so in <rationaleField>, lower <confidenceField>, and still return every outputSchema field. Never end a run without a determination.
+```
+
 ## References
 
 - [context.md](context.md) — capability overview and variant decision

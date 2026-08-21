@@ -73,11 +73,11 @@ Timers are a built-in type — they are never placeholders because they have no 
 
 ### Case-level event triggers
 
-Case-level event triggers (`type: "case-management:Trigger"` with `serviceType: "Intsvc.EventTrigger"`) follow the same pattern but use a different shape — trigger nodes need `data.label` / `description` / `parentElement` to render at all, so the placeholder keeps those plus `data.uipath: { serviceType: "Intsvc.EventTrigger" }`. Full spec in [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md). Manual and timer triggers are never placeholders (no registry dependency).
+Case-level event triggers (`type: "uipath.case.trigger"` with `data.inputs.serviceType: "Intsvc.EventTrigger"`) follow the same pattern but use a different shape — trigger nodes need `data.display.label` / `description` / `parentElement` / `typeVersion` to render at all, so the placeholder keeps those plus `data.inputs: { serviceType: "Intsvc.EventTrigger" }`. Full spec in [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md). Manual and timer triggers are never placeholders (no registry dependency).
 
 ### Connector condition rules
 
-When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit the rule with a **stub `uipath`** (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`) — a deliberate mock that validates clean but fails at Studio Web / debug / run until replaced. Full recipe + skip behavior + upgrade path: [connector-trigger-common.md § Placeholder fallback](connector-trigger-common.md#placeholder-fallback).
+When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit the rule with a **stub `uipath`** (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`) — a deliberate mock that validates clean but fails at Studio Web / debug / run until replaced. Full recipe + skip behavior + upgrade path: [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
 
 ## `tasks.md` Planning-Entry Shape
 
@@ -85,7 +85,7 @@ A placeholder-bound entry keeps every structural field and moves the lost wiring
 
 ````markdown
 ## T20: Add process task "Validate Submission Completeness" to "Submission Review"
-- taskTypeId: <UNRESOLVED: process-index.json empty in tenant>
+- taskTypeId: <UNRESOLVED: processOrchestration-index.json empty in tenant>
 - folder-path: <UNRESOLVED>
 - runOnlyOnce: false
 - isRequired: true
@@ -129,7 +129,7 @@ uip maestro case registry pull --force
 
 ### 2. Resolve the task-type-id
 
-Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `process-index.json` for processes, `action-apps-index.json` for action apps. For a **manually-built in-solution sibling** (agent or api-workflow), find it offline by name with `uip maestro case registry search "<name>" --type <agent|api> --local --output json` (`agent` for an agent sibling, `api` for an api-workflow sibling; select the exact-name `Data.Resources[].Resource` entry; use `search` — `get --local` matches only the opaque `entityKey`, not the name). Its `Resource.EntityKey` is an opaque derived key (not the `.uipx` `Projects[].Id`), audit-only; the node binds by name+folder. Read the sibling's I/O field names from its raw `entry-points.json` (the `--output json` keys are PascalCased). For an **api-workflow sibling**, read its I/O per the fallback chain in [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) — flat `entryPoints[0].input.properties` → `input.schema.document.properties` wrapper → `Workflow.json` root schemas when the entry-point I/O is `null`; note any fallback in the report.
+Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `processOrchestration-index.json` for processes, `action-apps-index.json` for action apps. For a **manually-built in-solution sibling** (agent or api-workflow), find it offline by name with `uip maestro case registry search "<name>" --type <agent|api> --local --output json` (`agent` for an agent sibling, `api` for an api-workflow sibling; select the exact-name `Data.Resources[].Resource` entry; use `search` — `get --local` matches only the opaque `entityKey`, not the name). Its `Resource.EntityKey` is an opaque derived key (not the `.uipx` `Projects[].Id`), audit-only; the node binds by name+folder. Read the sibling's I/O field names from its raw `entry-points.json` (the `--output json` keys are PascalCased). For an **api-workflow sibling**, read its I/O per the fallback chain in [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) — flat `entryPoints[0].input.properties` → `input.schema.document.properties` wrapper → `Workflow.json` root schemas when the entry-point I/O is `null`; note any fallback in the report.
 
 ### 3. Fetch the schema
 
@@ -175,7 +175,7 @@ When the build finishes with placeholders, the skill's completion report must li
 
 | Stage | Task | Type | TaskId | Attach |
 |-------|------|------|--------|--------|
-| Submission Review | Validate Submission Completeness | process | t8GQTYo8O | process-index.json — "Validate Submission Completeness" |
+| Submission Review | Validate Submission Completeness | process | t8GQTYo8O | processOrchestration-index.json — "Validate Submission Completeness" |
 | Submission Review | Review Submission | action | ty5UcykfU | action-apps-index.json — "Review Submission" |
 | … | … | … | … | … |
 
@@ -215,3 +215,5 @@ The user uses the placeholder/external lists to drive external resource creation
 - **Do NOT create a placeholder for an agent or API workflow the user chose to build inline.** It is built + bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a resolved task, not a placeholder.
 - **Do NOT build an agent or API workflow from SDD content alone.** Inline create runs only for resources the user explicitly selected at the Rule 17 gate. The built resource is an in-solution **sibling** that co-deploys with the case — never a separate tenant publish.
 - **Invoking `uipath-agents` / `uipath-api-workflow` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (regular RPA process, action, case-management, connectors, agentic process) and to `uipath-planner`.
+
+<!-- END: placeholder-tasks.md -->

@@ -125,7 +125,9 @@ Always check `Result` first. On failure, `Message` and `Instructions` carry the 
 
 | Capability | Login required? |
 |---|---|
+<!--skill-flavor:flow-init-login-scope:start-->
 | **Author** | No — `flow init`, `validate`, `format`, registry (OOTB nodes), `Edit` / `Write` edits, planning all work offline |
+<!--skill-flavor:flow-init-login-scope:end-->
 | **Operate** | **Yes** — `solution upload`, `solution resources refresh`, `flow debug`, `flow pack`, `process run`, `job status`, `job traces` all require `uip login` |
 | **Diagnose** | **Yes** — `instance incidents`, `instance variables`, `instance asset`, `incident get`, `incident summary` all require `uip login` |
 

@@ -10,7 +10,7 @@ For any activity property typed `InArgument<T>` or `OutArgument<T>`:
 - **Literal value with a direct type converter** (string literal on `<String>`, enum, number, boolean, `TimeSpan`, `{x:Null}`) → attribute form is safe.
 - **Anything non-literal** (variable reference, concatenation, method call, property access) → use the child-element form with `<CSharpValue>` (read) or `<CSharpReference>` (write).
 
-The XAML attribute parser defaults to VB for expression-bearing attribute values, **regardless of the project's expression language**. At runtime, the VB JIT is disabled on non-Legacy projects — so attribute-form expressions fail with `JIT compilation is disabled for non-Legacy projects`. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md).
+The XAML attribute parser defaults to VB for expression-bearing attribute values, **regardless of the project's expression language**. At runtime, the VB JIT is disabled on non-Legacy projects — so attribute-form expressions fail with `JIT compilation is disabled for non-Legacy projects`. Full failure modes: [§ C# Expression Pitfalls](#c-expression-pitfalls) below.
 
 ## Property-surface sourcing
 
@@ -71,7 +71,7 @@ Which properties exist on a given activity, the `<Activity>.md` lookup order, an
 
 **Author new Get Text activities with `TextString`** (the typed, current-designer property shown above). **When editing an existing workflow,** note that older ones may bind the output to the legacy non-generic `Text` `OutArgument` (`<uix:NGetText.Text>`) instead — both `Text` and `TextString` are real, functional members (the activity writes the scraped text to both at runtime), so a working `Text` binding is valid and should be left as-is, not rewritten to `TextString`. Only `Value` is a genuine unknown member.
 
-**Scoping requirement:** when `NGetText` sits inside `<uix:NApplicationCard.Body><ActivityAction><Sequence>`, the `statusText` variable must be declared on that inner `Sequence.Variables`, not on an outer one crossing the `ActivityAction` boundary — otherwise runtime throws `ThrowIfNotInTree`. See [csharp-expression-pitfalls.md](csharp-expression-pitfalls.md#throwifnotintree-at-runtime--two-causes).
+**Scoping requirement:** when `NGetText` sits inside `<uix:NApplicationCard.Body><ActivityAction><Sequence>`, the `statusText` variable must be declared on that inner `Sequence.Variables`, not on an outer one crossing the `ActivityAction` boundary — otherwise runtime throws `ThrowIfNotInTree`. See [§ ThrowIfNotInTree at runtime](#throwifnotintree-at-runtime--two-causes).
 
 ### Assign with a C# expression
 
@@ -120,3 +120,43 @@ Which properties exist on a given activity, the `<Activity>.md` lookup order, an
 ```
 
 > **XAML escaping:** `<`, `>`, `&`, `"` must be escaped inside `<CSharpValue>` element content (`&lt;`, `&gt;`, `&amp;`, `&quot;`).
+
+## C# Expression Pitfalls
+
+Failure modes in scope: all pass static `validate` validation — they only surface at `CacheMetadata` time under `uip rpa build` or `uip rpa run`.
+
+## Attribute-form expressions fail at runtime
+
+Any non-literal attribute value on an `InArgument<T>` / `OutArgument<T>` property (e.g. `Message="logMessage"`, `TextString="statusText"`) is deserialized as `VisualBasicValue<T>` by the XAML attribute parser — regardless of the project's `expressionLanguage`. On non-Legacy projects the VB JIT is disabled, so these fail at runtime:
+
+```
+System.InvalidOperationException: JIT compilation is disabled for non-Legacy projects.
+ExpressionToCompile { Code = "logMessage" ... } should have been compiled by the Studio Compiler.
+```
+
+**Fix:** use `<CSharpValue>` (read) or `<CSharpReference>` (write) child-element form for anything non-literal.
+
+**Attribute form is safe for:** literal strings on `InArgument<String>`, enums, numbers, booleans, `TimeSpan` literals, `{x:Null}` — values with a direct type converter that bypasses the expression parser.
+
+## `OutArgument<T>` attribute form fails at parse time
+
+`<uix:NGetText TextString="statusText"/>` raises `Failed to create a 'TextString' from the text 'statusText'` — `TextString` is `OutArgument<String>`, not a plain property, so the XAML parser has no converter for it. Always use the `<OutArgument>` + `<CSharpReference>` child form for output bindings.
+
+## `ThrowIfNotInTree` at runtime — two causes
+
+Same runtime stack, two distinct root causes:
+
+```
+System.InvalidOperationException: The argument of type 'System.String' cannot be used.
+Make sure that it is declared on an activity.
+  at System.Activities.Argument.ThrowIfNotInTree()
+```
+
+**Cause 1 — variable declared outside the `ActivityAction` scope.** `OutArgument<T>` + `<CSharpReference>` bound to a variable declared on a `Sequence` **outside** the `ActivityAction` body passes validation but throws at runtime.
+
+- **Typical case:** a UI activity inside `<uix:NApplicationCard.Body><ActivityAction><Sequence>` writes an output to a variable declared on the *outer* `Sequence` rather than the inner one.
+- **Fix:** declare the variable on the `Sequence.Variables` immediately inside the `ActivityAction`, not on a parent `Sequence` outside it.
+
+**Cause 2 — UIA activity authored without its `Version` attribute.** A UIA activity missing the `Version` its `activities get-default-xaml` starter emits (e.g. `NGetText` without `Version="V5"`) throws `ThrowIfNotInTree` at runtime on its argument bindings even when variable scoping is correct. This passes BOTH `validate` AND `build` clean — it surfaces only at run.
+
+- **Diagnosis rule:** when scoping is verified correct, diff the authored activity against its `uip rpa activities get-default-xaml` starter and restore any missing attributes — the starter's `Version` in particular. Never strip an attribute the starter emits.

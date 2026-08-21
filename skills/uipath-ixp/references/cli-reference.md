@@ -66,7 +66,7 @@ Validation differs by command:
 - `documents upload` rejects an unsupported file with `Unsupported file type "<ext>"` before any network call.
 - `projects create` scans only the top level of `<folder-path>` (sub-folders are ignored), silently skips unsupported files, and fails only when **no** supported files exist (`No supported documents found in <folder>`).
 
-Each upload triggers a retrain — wait ~2 min before reading metrics or predictions for new docs.
+Each upload triggers a retrain — wait it out before reading metrics or predictions for new docs, under the bounded wait in [Improve Prompts Guide § Waiting for retrain](improve-prompts-guide.md#waiting-for-retrain).
 
 ### Uploading documents to an existing project
 
@@ -112,7 +112,20 @@ Every IXP project ships with the built-in data types below (the project's `entit
 | `Monetary Quantity` | `money` | — | Any currency / monetary amount — total, subtotal, tax, unit price, freight |
 | `Boolean` | `boolean` | — | True / false values |
 
-`Date`, `Number`, and `Monetary Quantity` carry pre-trained models with a fixed output format (e.g. `Monetary Quantity` normalises `"1M USD"`, `"USD 1000000"`, and `"1,000,000 usd"` all to `1,000,000.00 USD`) — instructions cannot change their formatting, so a hand-rolled equivalent is strictly worse. `Choice` is the only `--kind` with no default: choice types are always project-specific (`data-types add --kind choice --choices …`).
+`Date`, `Number`, `Monetary Quantity`, and `Boolean` carry pre-trained models with a fixed output format (below) — instructions cannot change their formatting, so a hand-rolled equivalent is strictly worse. `Choice` is the only `--kind` with no default: choice types are always project-specific (`data-types add --kind choice --choices …`).
+
+### Normalized output formats
+
+`get-predictions` reports these types in the type's normalized form, never the page's literal text. A plain `confirm` stores that same normalized string as the label.
+
+| Type | `FormattedValue` | Page → prediction |
+|------|------------------|-------------------|
+| `Date` | `YYYY-MM-DDTHH:MM:SSZ` — a date-only page value comes back at `T00:00:00Z` | `21-JUN-22` → `2022-06-21T00:00:00Z` |
+| `Monetary Quantity` | `<amount> <ISO-4217 code>` — no thousands separator, decimals as written on the page (not fixed to 2), currency appended even when the page shows none | `114.91` → `114.91 AUD`; `8.0700` → `8.0700 USD` |
+| `Number` | bare numeric string, no unit or separator | `29311577` → `29311577` |
+| `Boolean` | `True` / `False` | — |
+
+`--corrections` neither normalizes nor validates — the string you send is stored verbatim (`21-JUN-22`, even `not-a-date`, all return Success). Sending the page's format replaces a correct label with one the model will never predict and drops the field's F1. Reformatting is never a reason to use `--corrections` (Critical Rule 8).
 
 ## Groups
 
@@ -155,7 +168,7 @@ Add before deleting: if the add fails, the field is still in its original group.
 
 | Command | Description |
 |---------|-------------|
-| `uip ixp labellings get-predictions <project-name> [document-id] --output json` | Get IXP model predictions for all documents (or a single document). Returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is one document `{ DocumentId, Labels[] }`; each label is `{ Name, Occurrence, Fields[] }`; each field is `{ FieldId, FieldName, FormattedValue }`. This is the model's **prediction** layer, not the confirmed/annotation layer. Each label carries an explicit `Occurrence` (the value for `--occurrence`/`--updates`); it is 0-based and usually runs 0..N-1 in document order, but do NOT assume it is contiguous or starts at 0 — a single-occurrence group can come back as `Occurrence` 1 with no 0. Always target the actual `Occurrence` value reported here, never a positional guess. **The order is not stable across writes**: the server lists annotation↔prediction matched pairs first, so confirmed rows of a repeatable group sort to the front and the rest renumber — see [Occurrence numbering and read order](#occurrence-numbering-and-read-order). |
+| `uip ixp labellings get-predictions <project-name> <document-id> --output json` | Get IXP model predictions for one document. Returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is one document `{ DocumentId, Labels[] }`; each label is `{ Name, Occurrence, Fields[] }`; each field is `{ FieldId, FieldName, FormattedValue }`. This is the model's **prediction** layer, not the confirmed/annotation layer. Each label carries an explicit `Occurrence` (the value for `--occurrence`/`--updates`); it is 0-based and usually runs 0..N-1 in document order, but do NOT assume it is contiguous or starts at 0 — a single-occurrence group can come back as `Occurrence` 1 with no 0. Always target the actual `Occurrence` value reported here, never a positional guess. **The order is not stable across writes**: the server lists annotation↔prediction matched pairs first, so confirmed rows of a repeatable group sort to the front and the rest renumber — see [Occurrence numbering and read order](#occurrence-numbering-and-read-order). |
 | `uip ixp labellings confirm <project-name> <document-id> [--fields <ids>] [--corrections <json>] --output json` | Confirm predictions for a document. (`--fields` has short alias `-f`; `--corrections` has short alias `-c`.) Without `--fields`, confirms every predicted field that has content. `--fields "a7c3e9105f2b4d86,b2f8a01c7d3e6940"` confirms only those fields, and applies a **single uniform rule**: listed fields with content get confirmed; listed fields whose IXP prediction is empty get a missing marker (the explicit listing IS the confirmation that the empty state is intentional — see Critical Rule 12). `--corrections '[{"field_id":"...","value":"..."}]'` is **only for OCR-mangled values** — same field, same location, garbled bytes. Do NOT use `--corrections` to flip wrong booleans, fix wrong inferred values, or override any non-OCR mistake; those fields must be left unannotated. See Critical Rule 8. Existing missing markers and other annotations carry forward across calls. |
 | `uip ixp labellings confirm <project-name> <document-id> --group <name> --occurrence <N> [--fields <ids>] [--corrections <json>] --output json` | **Single-occurrence form** — confirm ONE occurrence. The ergonomic choice for a single line. `--occurrence` is the 0-based index of the target extraction within `--group`, as reported by the **latest** `get-predictions`. Without `--fields`, confirms every predicted field in that one occurrence; with `--fields`, confirms only those fields there. Other occurrences are untouched. Requires `--group`. Mutually exclusive with `--updates`. The call renumbers the group for subsequent reads ([Occurrence numbering and read order](#occurrence-numbering-and-read-order)), so use `--updates` for more than one row instead of chaining these off one read. |
 | `uip ixp labellings confirm <project-name> <document-id> --group <name> --updates <json> --output json` | **Batched form** — confirm SEVERAL occurrences in ONE atomic call (one request; avoids N round-trips, e.g. a 10-line invoice). `--updates` is a JSON array `[{"occurrence":<0-based-index>,"fields"?:["<field_id>",…],"corrections"?:{"<field_id>":"<value>"}}]`. Per entry: **omit `"fields"`** to confirm every predicted field in that occurrence (same default as `--occurrence` without `--fields`), or list specific IDs; un-selected fields in a selected occurrence carry forward any existing annotation. **`--updates` is the superset** — `--occurrence <N>` ≡ `--updates` with one entry; both share the same per-occurrence logic. Use `--occurrence` for a single line, `--updates` for several together. Mutually exclusive with `--fields`/`--corrections`/`--occurrence`. |

@@ -69,8 +69,11 @@ turn**. Do not delay delivery for solution packing, eval inspection, repeated ca
 architecture analysis, or unrelated project introspection. Continue beyond it only when the user's initial request
 explicitly asks for an exhaustive review or names additional non-guardrail checks.
 
-`LC_GUARDRAIL_PII_MISSING`, `LC_GUARDRAIL_MISSING`, and other descriptive variants are not valid rule IDs. When
-catalog evidence is unavailable, use rule-ID-less prose rather than inventing an identifier.
+`LC_GUARDRAIL_PII_MISSING`, `LC_GUARDRAIL_MISSING`, and other descriptive variants are not valid rule IDs — never
+invent a new one. This is about invented IDs only: if the catalog fetch itself fails, do **not** fall back to
+rule-ID-less prose for a missing-guardrail finding — `LC_GUARDRAIL_RECOMMENDED` stays the correct, valid rule ID
+per [Step 0 — If the catalog is unavailable](#if-the-catalog-is-unavailable): use generic scope/action wording and
+note "catalog-limited" in the message, but still cite `LC_GUARDRAIL_RECOMMENDED`.
 
 ---
 
@@ -96,6 +99,9 @@ else:
 - **CACHE_MISS**: fetch and save: `uip agent guardrails catalog --output json > .guardrails-catalog-cache.json`
   (the CLI writes both success and error JSON to stdout — do not add `2>&1`).
 
+**Never invoke `uip agent guardrails catalog` a second time in the same review.** Every later read — a quick
+look, a `python3`/`jq` parse, a re-check — goes through `.guardrails-catalog-cache.json`, not a fresh CLI call.
+
 ### Guardrails List (NEVER cached — tenant-specific)
 
 ```bash
@@ -103,6 +109,8 @@ uip agent guardrails list --output json
 ```
 
 Build a `{ validatorId: status }` lookup from the `Data` array (use only `Status == "Available"`).
+
+> **`Validator` is not unique — key on `(Validator, IsByo)`, not `Validator` alone.** A tenant with a bring-your-own (BYOG) configuration for a validator has two entries sharing the same `Validator` name — one built-in, one BYO (`IsByo: true`). Collapsing them can point Audit Mode's Correctness/Actionability comparison at the wrong entry's `Parameters`/`AllowedScopes`. When the reviewed guardrail JSON carries `byoValidatorName`, match it against that entry's `ByoValidatorName`, not `Validator` alone. See [uipath-agents guardrails.md § BYO (bring-your-own) guardrails](/uipath:uipath-agents).
 
 ### If the catalog is unavailable
 
@@ -122,6 +130,8 @@ guess**:
 
 For each guardrail in `agent.json`'s `guardrails[]` that the review CLI did **not** flag format-invalid, read
 its `validator`, `selector.scopes`, and action `$actionType`, then run two checks.
+
+> **A BYO-backed guardrail's tenant entry showing `Status: "Disabled"` is a configuration switch, not a format problem.** It means the tenant admin turned that specific BYOG configuration off (Admin → AI Trust Layer → Guardrails Configurations) — don't re-diagnose it as a schema/discriminator issue. If the agent's guardrail targets that disabled configuration (via `byoValidatorName`), it functions the same as targeting an `Unauthorised` validator — treat it as unable to protect and note it in the report.
 
 ### Actionability Check → `LC_GUARDRAIL_ACTION_INEFFECTIVE`
 
@@ -217,10 +227,10 @@ layout"). `pii_detection` and `prompt_injection` are SDK-confirmed and may be na
 
 ## Report
 
-Merge findings into the Step 5 "Rule Findings" subsection (SKILL.md Step 2.5b), canonical line format:
+Merge findings into the Step 5 Critical / Warning / Info findings tables (SKILL.md Step 2.5b), one row per finding:
 
 ```
-[<prefix><n>] `<rule_id>` — <file> — <message>. Fix: <suggested_fix>.
+| <id> | `<rule_id>` | `<file>`: <message>. <suggested_fix>. |
 ```
 
 - Recommendations (`LC_GUARDRAIL_RECOMMENDED`) → **`I-D-` (Info)** — the lowest grade; they are improvements, not

@@ -1,0 +1,95 @@
+task_id: skill-case-edit-add-task-run-once-default
+description: >
+  Regression: a newly authored task defaults to `shouldRunOnlyOnce: false`,
+  matching frontend new-task behavior. Adds one wait-for-timer task to the
+  Review stage of an existing LinearThreeStages case. The prompt never mentions
+  re-entry or run-once, so the emitted value is the skill's default alone — the
+  plugin impl-json contracts previously carried `true` in every example. The
+  fixture's existing mixed flags ("Hold For 1 Hour" true, "Notify Reviewer"
+  false) are re-asserted so a blanket flip is caught as well as a stale default.
+  Edit-only, structural grading, no debug run.
+tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate, shape:multi-node]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 900
+  max_turns: 45
+  turn_timeout: 900
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates
+
+initial_prompt: |
+  The LinearThreeStages case solution already exists on disk under
+  LinearThreeStages/. Its case definition
+  (LinearThreeStages/LinearThreeStages/caseplan.json) chains three stages
+  linearly: Intake → Review → Decision. The Review stage runs two parallel
+  wait-for-timer tasks in distinct data.tasks lanes: "Hold For 1 Hour" and
+  "Notify Reviewer".
+
+  Add ONE more built-in wait-for-timer task to the Review stage, named
+  "Second Reminder", with a short time duration (e.g. 10 minutes) and a
+  current-stage-entered task-entry condition. It is an optional nudge — Review
+  must not wait on it to complete.
+
+  Leave everything else exactly as it is: the three stages, the
+  Intake → Review → Decision chain, every stage-entry and stage-exit condition,
+  and both existing Review tasks.
+
+  Do NOT run `uip maestro case debug` — the test harness handles execution.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Make the edit end-to-end in a single pass and
+  finish with `uip maestro case validate` passing on the resulting
+  caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the edited caseplan.json"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The new task is graded `!= true` — whether the skill writes the falsy default or omits it is
+  # serialization (checked advisory below); not being run-once is the behavior. The two existing
+  # tasks are graded on their exact stored values, since an edit must not rewrite them at all.
+  - type: json_check
+    description: "The new task is not run-once, both existing Review tasks keep their original flags, and no other task was flipped to run-once"
+    path: "LinearThreeStages/LinearThreeStages/caseplan.json"
+    assertions:
+      - expression: "length(nodes[?data.label=='Review'].data.tasks[][] | [?displayName=='Second Reminder' && shouldRunOnlyOnce!=`true`])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[?data.label=='Review'].data.tasks[][] | [?displayName=='Second Reminder' && isRequired==`false`])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[?data.label=='Review'].data.tasks[][])"
+        operator: equals
+        expected: 3
+      - expression: "length(nodes[?data.label=='Review'].data.tasks[][] | [?displayName=='Hold For 1 Hour' && shouldRunOnlyOnce==`true`])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[?data.label=='Review'].data.tasks[][] | [?displayName=='Notify Reviewer' && shouldRunOnlyOnce==`false`])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[].data.tasks[][] | [?shouldRunOnlyOnce==`true`])"
+        operator: equals
+        expected: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Advisory — see the note above; implementation.md says to write the default, not omit it.
+  - type: json_check
+    description: "Advisory: the newly added task emits shouldRunOnlyOnce explicitly instead of omitting it"
+    path: "LinearThreeStages/LinearThreeStages/caseplan.json"
+    assertions:
+      - expression: "nodes[?data.label=='Review'].data.tasks[][] | [?displayName=='Second Reminder'] | [0].shouldRunOnlyOnce"
+        operator: equals
+        expected: false
+    weight: 1.0
+    pass_threshold: 0

@@ -59,6 +59,11 @@ initial_prompt: |
   key into testcase-key.txt so we can find it, and delete the case when you're
   done so we don't leave junk behind. Just run it through — no need to check in.
 
+  This isn't done until all three review tweaks are applied (expected result
+  fixed, step reordered, "Submit the payment" removed), testcase-key.txt
+  exists, and the test case itself is deleted. Work through every one of those
+  before you stop — don't wrap up after the edits.
+
 success_criteria:
   - type: command_executed
     description: "Agent checked login status with --output json (Critical Rule #1)"
@@ -135,7 +140,12 @@ success_criteria:
   - type: command_executed
     description: "Agent deleted the seeded test case for cleanup (`testcases delete --test-case-key ... --yes --output json`)"
     tool_name: "Bash"
+    # Key-only, and the command must succeed. `testcases delete` declares
+    # `--test-case-key` as a requiredOption and has no `--test-case-id`, so
+    # accepting the UUID form would award cleanup credit for a command the CLI
+    # rejects, leaving the seeded case behind.
     command_pattern: '(?=[\s\S]*--project-key\s+\S)(?=[\s\S]*--test-case-key\s+\S)(?=[\s\S]*(--yes|-y)\b)(?=[\s\S]*--output\s+json)uip\s+tm\s+testcases?\s+delete\b'
+    require_success: true
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

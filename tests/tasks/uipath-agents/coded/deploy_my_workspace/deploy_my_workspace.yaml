@@ -37,6 +37,18 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
+  # Critical Rule CQ10 — `uip codedagent deploy` is the packaging/publishing
+  # path; `pack` / `publish` are filtered and must not be driven directly. The
+  # positive criterion above accepts `deploy|publish` for historical reasons, so
+  # deploy-only was never actually enforced; this asserts the rule additively
+  # without changing what already passes.
+  - type: command_not_executed
+    description: "Agent used codedagent deploy, not a raw pack/publish pair (Critical Rule CQ10)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+pack\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "Deploy artifacts present and pyproject.toml is well-formed for packaging"
     command: "python3 $TASK_DIR/check_deploy_my_workspace.py"

@@ -1,0 +1,70 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "message": {
+        "type": "string",
+        "description": "A short message to echo back to the caller"
+      }
+    },
+    "required": [
+      "message"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "reply": {
+        "type": "string",
+        "description": "The message, echoed back verbatim"
+      }
+    }
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
+  },
+  "type": "lowCode",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are EchoAgent. Repeat the supplied message back verbatim in the reply output field. Add nothing else.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are EchoAgent. Repeat the supplied message back verbatim in the reply output field. Add nothing else."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Message: {{input.message}}",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Message: "
+        },
+        {
+          "type": "variable",
+          "rawString": "input.message"
+        }
+      ]
+    }
+  ],
+  "projectId": "29cc0b56-1ba7-4d11-9cb9-136a929a17c3",
+  "id": "29cc0b56-1ba7-4d11-9cb9-136a929a17c3",
+  "name": "EchoAgent",
+  "resources": [],
+  "features": []
+}

@@ -1,20 +1,24 @@
+# Same-ground campaign contract (Tao, 2026-08-10): loop-neutral v1-base
+# prompt; v1-weighted intersection criteria plus report-only offline advisories;
+# paired limit envelope. Cross-arm parity is enforced by the sync gate.
 task_id: skill-flow-devcon-billing-invoice-lookup
-description: >
-  E2E greenfield (DevCon BillingDisputeResolution scenario): build a ~4-node
-  Flow that normalizes a messy invoice number and queries the BillingDisputeERP
-  Data Service entity; graded by validate plus three flow debug runs over
-  malformed inputs.
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, connector, path-to-ga]
-
+description: |
+  E2E greenfield (DevCon BillingDisputeResolution scenario): build a ~4-node Flow that normalizes a messy invoice number and queries the BillingDisputeERP Data Service entity; graded by validate plus three flow debug runs over malformed inputs.
+tags:
+  - uipath-maestro-flow
+  - e2e
+  - mode:build
+  - lifecycle:execute
+  - shape:multi-node
+  - connector
+  - path-to-ga
 run_limits:
   max_turns: 120
   turn_timeout: 2400
   task_timeout: 3600
-
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py
     timeout: 90
-
 initial_prompt: |
   Build a Maestro Flow "BillingInvoiceLookup" (in a solution of the same name)
   that looks up a disputed invoice's line items, tolerating messy input.
@@ -29,25 +33,43 @@ initial_prompt: |
 
   Validate the final flow file — the task is not complete until `uip maestro
   flow validate` passes. Grading then runs the flow under debug against live
-  tenant data, so build it to actually run, not merely validate. Do not run
-  debug yourself.
+  tenant data, so build it to actually run, not merely validate.
 
   Build the complete flow
   without stopping to ask me.
-
 success_criteria:
   - type: run_command
-    description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    description: uip maestro flow validate passes on the flow file
+    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
-
   - type: run_command
-    description: "Check script debugs all three malformed inputs; each resolves to MCS-2026-04872 with 8 line items"
-    command: "python3 $TASK_DIR/check_billing_invoice_lookup.py"
+    description: Check script debugs three malformed inputs (fail-fast); every exercised input must resolve to MCS-2026-04872 with 8 line items
+    command: python3 $TASK_DIR/check_billing_invoice_lookup.py
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+  - type: run_command
+    description: 'Advisory: Data Service query filters server-side (whole-entity fetch + client-side filter breaks silently past the page limit)'
+    command: python3 $TASK_DIR/check_server_side_filter.py
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0
+  - type: run_command
+    description: 'Advisory: generated bindings exist and carry no stub UUIDs'
+    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_bindings_no_stubs.py
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0
+  - type: run_command
+    description: 'Advisory: STRUCTURAL (covering): one DS query node, entityName in the PATH slot, the filter COMPUTED from the input, no canonical/test-input literals, both outputs read from the query, and a connection/folder pair of distinct uuids'
+    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/advisory_billing_invoice_lookup.py
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0.0

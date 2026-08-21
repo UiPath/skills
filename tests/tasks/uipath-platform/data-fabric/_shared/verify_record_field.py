@@ -30,8 +30,11 @@ import json
 import re
 import subprocess
 import sys
+import time
 
-UIP_TIMEOUT_SECONDS = 60
+UIP_TIMEOUT_SECONDS = 30
+ENTITY_LOOKUP_ATTEMPTS = 2
+TENANT_SCOPE = "00000000-0000-0000-0000-000000000000"
 
 
 def run_uip(*args: str) -> tuple[int, str, str]:
@@ -47,23 +50,48 @@ def run_uip(*args: str) -> tuple[int, str, str]:
     return r.returncode, r.stdout, r.stderr
 
 
+def entity_folder_key(entity: dict) -> str:
+    value = (
+        entity.get("FolderKey")
+        or entity.get("folderKey")
+        or entity.get("FolderId")
+        or entity.get("folderId")
+        or ""
+    )
+    return "" if str(value).lower() == TENANT_SCOPE else str(value)
+
+
 def find_entity_id(name: str) -> tuple[str | None, str | None]:
     """Return (id, folder_key) — folder_key is empty for tenant-scoped."""
-    for extra in (["--include-folders"], []):
-        code, out, _ = run_uip("df", "entities", "list", "--native-only", *extra)
-        if code != 0 or not out.strip():
-            continue
-        try:
-            data = json.loads(out)
-        except json.JSONDecodeError:
-            continue
-        items = data.get("Data") if isinstance(data.get("Data"), list) else []
-        for e in items:
-            if isinstance(e, dict) and (e.get("Name") or e.get("name")) == name:
-                return (
-                    e.get("ID") or e.get("Id") or e.get("id"),
-                    e.get("FolderKey") or e.get("folderKey") or "",
-                )
+    for attempt in range(ENTITY_LOOKUP_ATTEMPTS):
+        for extra in (["--include-folders"], []):
+            code, out, _ = run_uip(
+                "df", "entities", "list", "--native-only", *extra
+            )
+            if code != 0 or not out.strip():
+                continue
+            try:
+                data = json.loads(out)
+            except json.JSONDecodeError:
+                continue
+            inner = data.get("Data") if isinstance(data, dict) else None
+            items = (
+                inner
+                if isinstance(inner, list)
+                else (inner or {}).get("Records")
+                or (inner or {}).get("records")
+                or []
+            )
+            for e in items:
+                if isinstance(e, dict) and (
+                    e.get("Name") or e.get("name")
+                ) == name:
+                    return (
+                        e.get("ID") or e.get("Id") or e.get("id"),
+                        entity_folder_key(e),
+                    )
+        if attempt + 1 < ENTITY_LOOKUP_ATTEMPTS:
+            time.sleep(2)
     return None, None
 
 

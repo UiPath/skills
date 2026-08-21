@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from _shared.flow_check import (  # noqa: E402
     assert_flow_has_any_node_type,
     assert_flow_has_node_type,
+    assert_loop_body_nodes_parented,
     assert_outputs_contain,
     run_debug,
 )
@@ -20,6 +21,7 @@ def main():
     # connector (the skill's node-selection ladder may pick either) — proves
     # the loop actually fetches weather rather than hardcoding values.
     assert_flow_has_any_node_type(["core.action.http", "custom-codereval-openmeteoapis"])
+    assert_loop_body_nodes_parented()
 
     payload = run_debug(timeout=240)
 

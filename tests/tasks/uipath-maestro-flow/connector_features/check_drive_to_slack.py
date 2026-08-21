@@ -17,12 +17,8 @@ from __future__ import annotations
 
 import glob
 import json
-import os
 import re
 import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.flow_check import run_debug  # noqa: E402
 
 FLOW_GLOB = "**/DriveToSlackTest*.flow"
 DRIVE_KEY = "uipath-google-drive"

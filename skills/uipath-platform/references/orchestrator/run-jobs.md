@@ -92,7 +92,7 @@ Key options:
 | `--specific-priority <1-100>` | Numeric priority override (mutually exclusive with `--job-priority`). Use when you need fine-grained ordering inside the same priority bucket. |
 | `--robot-size <Small\|Standard\|Medium\|Large>` | Cloud robot sizing for serverless runtimes |
 | `--input-arguments <json>` | Default input arguments (merged with per-job inputs) |
-| `--environment-variables <json>` | Default environment variables (merged with per-job env) |
+| `--environment-variables <pairs>` | Default environment variables — newline-separated `KEY=VALUE` pairs, **not** JSON (merged with per-job env) |
 | `--tags <list>` | Comma-separated tags for filtering |
 | `--hidden-for-attended` / `--visible-for-attended` | Toggle visibility to attended robot users |
 | `--auto-create-triggers` / `--no-auto-create-triggers` | Auto-create connected triggers on deploy |
@@ -114,6 +114,13 @@ uip or processes resources <process-key-guid> --output json
 # Edit fields after creation. Same flag set as `processes create` minus name/package-key/package-version,
 # plus --healing-agent / --no-healing-agent (Autopilot for Robots toggle).
 uip or processes update <process-key-guid> --description "Updated description" --output json
+
+# Environment variables are newline-separated KEY=VALUE pairs, not JSON.
+uip or processes update <process-key-guid> --environment-variables $'API_HOST=api.example.com\nRETRIES=3' --output json
+
+# Pass '' to clear them (Orchestrator reads an empty body as "leave them alone",
+# so the CLI sends a bare newline to make the clear actually happen).
+uip or processes update <process-key-guid> --environment-variables '' --output json
 
 # Walk the package version history (every package version this release ever pointed at)
 uip or processes version-history <process-key-guid> --output json
@@ -154,7 +161,7 @@ Key options:
 - `--user-keys <guids>` / `--machine-keys <guids>` — comma-separated GUIDs to pin the job to specific identities. With `--strategy ModernJobsCount` they restrict the candidate pool; with `Specific` they're required.
 - `--healing-agent` — enable Autopilot for Robots (Healing Agent) just for this job, regardless of the process-level `--healing-agent` setting on `processes update`. Useful for one-off self-healing without flipping the process default.
 - `--reference <text>` — user-set reference (free-form string) attached to the job. Useful for correlation with external systems.
-- `--environment-variables <json>` — JSON object of per-job environment variables. Merged on top of folder-/process-level env.
+- `--environment-variables <pairs>` — per-job environment variables as newline-separated `KEY=VALUE` pairs (same shape as the process-level flag, **not** JSON). Merged on top of folder-/process-level env. Malformed lines are rejected before the job is submitted.
 - `--run-as-me` — run under the caller's identity instead of resolving an unattended robot account in the folder.
 - `--wait-for-completion` + `--timeout <seconds>` (default 300) + `--poll-interval <seconds>` (default 5) — poll until the job reaches a terminal state.
 - `--output-dir <path>` + `--no-download` — when `--wait-for-completion` is set, the CLI downloads the job's `OutputFile` to this directory automatically. Pass `--no-download` to opt out.

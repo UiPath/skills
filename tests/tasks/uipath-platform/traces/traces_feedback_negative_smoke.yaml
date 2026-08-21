@@ -1,0 +1,53 @@
+task_id: skill-platform-traces-feedback-negative
+description: >
+  Smoke test: agent files thumbs-down feedback with a comment and agent
+  attribution on a trace produced by a directly-invoked agent. Two surfaces
+  neither existing feedback test reaches — the `--negative` sentiment with
+  `--comment` and `--agent-id`/`--agent-version`, and the span-selection
+  judgment from feedback.md § Choosing a span: when the agent is the top-level
+  span (no orchestrating robot job, case, or parent agent) the root span IS the
+  agent execution, so `--span-id` must be left off rather than guessed at.
+  Auth/404 responses are acceptable outcomes — the graded behavior is command
+  shape and the deliberate omission of `--span-id`.
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, feedback]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  An agent I invoked directly from Studio Web returned a bad answer on trace
+  `7d3a91e0f5c24b8ea0c6d219bb47f0a3`. Nothing was orchestrating it — no robot
+  job, no case, no parent agent; that agent run is the whole trace.
+
+  File a thumbs-down review on it reading "Summary dropped the invoice total".
+  It lives in folder key `2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2`, and the agent
+  is `c41d7b62-05ae-4f39-9a18-73e2b6d4c08f` at version `2.4.0`.
+
+  These identifiers come from a review export and may not resolve against this
+  tenant — that is expected. File the review anyway and report what comes back.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent filed negative feedback on the trace with the review text as a comment"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--negative)(?=[\s\S]*--trace-id)(?=[\s\S]*--comment[\s=])'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attributed the feedback to the agent and its version"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--agent-id)(?=[\s\S]*--agent-version)(?=[\s\S]*--folder-key)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Feedback was filed WITHOUT --span-id: for a directly-invoked agent the root span is the agent run"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create'
+    exclude_pattern: '--span-id'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0

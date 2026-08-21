@@ -1,0 +1,66 @@
+task_id: skill-pm-query-group-by-sugar
+description: >
+  Critical Rule 6: query field ids come from `query info`, not column names, and
+  the `--group-by/--metric` sugar resolves human names so the agent never has to
+  hand-write the aggregate AST. Tests that the agent reaches for the sugar (or at
+  least discovers ids via `query info`) rather than inventing a raw `--body-json`
+  body with bare column names, which 400s `UserError_FieldNotFound`.
+
+  Command-construction only — no live tenant. Commands fail with auth errors;
+  what matters is the shape of the query the agent constructs.
+tags: [uipath-process-mining, smoke, mode:diagnose, lifecycle:discover, query, aggregate]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 25
+  turn_timeout: 600
+
+initial_prompt: |
+  My Process Mining app (app id 9c46289e) is loaded and transformed. Give me the
+  average number of events per case, broken down by the Service_Component field,
+  as a readable table. Use the uipath-process-mining skill and follow its
+  workflow.
+
+  Important:
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail with auth errors — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+
+  - type: skill_triggered
+    description: "Agent activated the uipath-process-mining skill"
+    skill_name: "uipath-process-mining"
+    expected_skill: "uipath-process-mining"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran an aggregate query with the --group-by/--metric sugar"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+query\s+run\b.*--group-by\b.*--metric\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used a valid AggregationFunction in the metric spec"
+    tool_name: "Bash"
+    command_pattern: '--metric\s+\S*:(average|count|sum|min|max)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT hand-write a raw aggregate body with bare column names"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+query\s+run\b.*--body-json\b.*"groupBy"\s*:\s*\[\s*"(?!F__)'
+    weight: 2.5
+
+  - type: command_not_executed
+    description: "Agent must NOT invent an aggregation function outside the enum"
+    tool_name: "Bash"
+    command_pattern: '--metric\s+\S*:(avg|mean|maximum|minimum|total)\b'
+    weight: 1.5

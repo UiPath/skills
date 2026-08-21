@@ -54,7 +54,6 @@ initial_prompt: |
   | Case Name | ContractReviewCase |
   | Case Description | Legal reviewer approves a contract before close. |
   | Case Identifier | Prefix: CRC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 
@@ -215,11 +214,13 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: json_check
     description: "Caseplan contains an action-typed task"
     path: "ContractReviewCase/ContractReviewCase/caseplan.json"
-    includes:
-      - '"type": "action"'
+    assertions:
+      - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
+        operator: gt
+        expected: 0
     weight: 2.0
     pass_threshold: 1.0
 
@@ -281,10 +282,6 @@ success_criteria:
         expected: true
     weight: 1.5
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120
 
 run_limits:
   expected_turns: 73

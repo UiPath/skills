@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-getasset-network-connectivity
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must troubleshoot a Get Credential failure where
   the asset, folder, robot license, and robot roles are all correctly

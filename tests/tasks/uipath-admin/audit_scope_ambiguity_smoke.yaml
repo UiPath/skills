@@ -15,10 +15,19 @@ description: >
   "ask AND then run nothing" is not enforceable non-interactively — the agent
   receives no answer, so after asking it may proceed. The four
   command_not_executed checks stay advisory (pass_threshold 0): retained to
-  REPORT what the agent ran, not to gate.
+  REPORT what the agent ran, not to gate — they are agent-agnostic negative
+  guards, not the brittle positive command matching this suite moved off.
 
-  Platform note: runs without an authenticated tenant — commands will fail
-  with auth errors. That is acceptable; what matters is that the agent asks
+  This task never had a positive `command_executed` criterion to convert: the
+  behavior under test is conversational (recognize the ambiguity) and has no
+  tenant-side outcome to read back, so the llm_judge remains the right gate. The
+  `skill_triggered` check was dropped: post audit-surface separation either
+  uipath-admin or uipath-platform can correctly drive the stop-and-ask, so router
+  choice is not pass/fail, and it scored differently across agents for reasons
+  unrelated to the behavior under test.
+
+  Platform note: the agent may or may not reach a live tenant here, and either
+  way commands can fail; that is acceptable — what matters is that the agent asks
   to clarify scope rather than silently defaulting to one.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, scope-ambiguity]
 
@@ -52,22 +61,19 @@ success_criteria:
           in its reply, or an AskUserQuestion tool call), OR
         - it PROCEEDS BY QUERYING BOTH scopes (org AND tenant) and reports/combines them.
 
+      Score EXACTLY 1.0 or EXACTLY 0.0 — there is no partial credit and no
+      intermediate value. If the case feels borderline, decide which of the two
+      descriptions below fits better and return that score.
+
       Inspect the agent's final reply and its tool calls, then score:
         1.0  Asked the user to clarify org vs tenant, OR queried both org and tenant scopes.
-        0.0  Silently queried or committed to a single scope without asking, or ignored
-             the scope question entirely.
+             An agent that names a scope it intends to use AND also asks the clarifying
+             question HAS asked — score 1.0. Stating an intention is not the failure; the
+             failure is proceeding without ever asking.
+        0.0  Committed to a single scope and never asked, or ignored the scope question
+             entirely.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
-
-  # Advisory (pass_threshold 0): report which skill engaged. Post audit-surface
-  # separation either uipath-admin or uipath-platform can correctly drive the
-  # stop-and-ask, so router choice is not pass/fail.
-  - type: skill_triggered
-    description: "Agent engaged the uipath-admin skill (advisory; uipath-platform also acceptable post-separation)"
-    skill_name: "uipath-admin"
-    expected_skill: "uipath-admin"
-    weight: 1.0
-    pass_threshold: 0
 
   # Advisory (pass_threshold 0): report whether the agent ran a scoped audit
   # query (excluding `--help` discovery). Non-interactively the agent may query

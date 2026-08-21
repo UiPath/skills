@@ -346,6 +346,8 @@ All errors include the offending field path and a remediation hint, formatted as
 | `--input-details` + `--skip-case-shape` together | `--input-details has no effect when --skip-case-shape is set; remove one of the two flags.` |
 | Malformed JSON in `--input-details` | `Invalid --input-details JSON: <parse error>` |
 
+> This rejection covers only the structured tree. A declared plain filter remains a native-syntax query/body input; preserve its exact SDD value and sink or halt. See [connector-activity Step 4](plugins/tasks/connector-activity/impl-json.md#step-4--filterbuilder-detection-when-planning-authored-a-filter).
+
 ---
 
 ## Worked examples
@@ -493,3 +495,5 @@ For reference. See `packages/flow-tool/src/services/connector-service.ts:286-433
 | Filter compile | `buildCeqlFilter` / `buildFilter` | `buildCeqlFilter` / `buildFilter` ✓ same |
 
 The case version is a strict subset — the static identity fields are removed because they're derived from the spec call's other inputs (`--type`, `--activity-type-id`, `--connection-id`).
+
+<!-- END: case-spec-input-details.md -->

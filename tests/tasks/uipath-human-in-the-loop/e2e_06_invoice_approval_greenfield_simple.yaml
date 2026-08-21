@@ -41,19 +41,19 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "HITL node is present in the flow file"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    includes:
-      - '"uipath.human-in-the-loop.quick-form"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval '\"uipath.human-in-the-loop.quick-form\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Completed handle is wired in the flow file"
-    path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
-    includes:
-      - 'completed'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name InvoiceApproval 'completed'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -67,7 +67,7 @@ success_criteria:
 
   - type: run_command
     description: "uip flow validate passes against the authored .flow file"
-    command: "uip maestro flow validate InvoiceApproval/InvoiceApproval/InvoiceApproval.flow --output json"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

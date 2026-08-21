@@ -5,7 +5,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 ## Table of contents
 
 - [Top-level structure](#top-level-structure)
-- [Project structure (from `uip maestro flow init`)](#project-structure-from-uip-maestro-flow-init)
+- [Project structure (generated scaffold)](#project-structure-generated-scaffold)
 - [Node instance](#node-instance)
 - [Layout](#layout)
 - [Edge — both ports required](#edge--both-ports-required)
@@ -23,7 +23,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 ```json
 {
   "id": "<uuid>",
-  "version": "<version from `uip maestro flow init`>",
+  "version": "<scaffolded file-format version>",
   "name": "MyFlow",
   "nodes": [],
   "edges": [],
@@ -40,15 +40,17 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 
 Optional top-level `runtime`: a CLI-managed object that appears on some flows (e.g. after `uip maestro flow node add` for an HTTP/connector node) and is absent on others. It is not user-authored — do not add, remove, or anchor on it. Its presence and position are not guaranteed.
 
+<!--skill-flavor:flow-format-version-source:start-->
 **Top-level `version`** = workflow file-format version. **Use the exact value `uip maestro flow init` scaffolds** — do not hand-pick, hardcode, or downgrade it. It is not a semver string; the schema gates on an exact literal for the current file-format version, so an older value (e.g. `"1.0"`, `"1.0.0"`) that worked for a legacy parser will fail for a new flow. `init` always writes the accepted value; preserve it. To see the current value, scaffold a throwaway flow with `init` and read its top-level `version`, or read it from an existing `init`-generated `.flow`.
+<!--skill-flavor:flow-format-version-source:end-->
 
 > **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) are validated by `versionSchema`, a regex that accepts both `x.y` and `x.y.z` (`/^\d+\.\d+(\.\d+)?$/`, error `'Version must be in format "x.y" or "x.y.z"'`). Both layers are canonically `x.y`, but the node-level regex still accepts legacy 3-part strings so registry definitions (`"1.0"`) and older scaffolded nodes (`"1.0.0"`) both parse. The two layers report distinct errors, but Zod may collapse a node-level mismatch to path `(root)`. If you see a version-related error at `(root)`, audit the top-level `version` first; if it's correct, check each node's `typeVersion` against the matching `definitions[].version`.
 
-`solutionId` and `projectId` may also appear at the top level — these are auto-populated by `uip maestro flow init` and packaging. Do not add them manually.
+`solutionId` and `projectId` may also appear at the top level — these are auto-populated by the project scaffold and packaging. Preserve the generated values.
 
 > **`bindings[]`** holds Orchestrator resource references for `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl) and for connector-node connections. See [Bindings — Orchestrator resource bindings](#bindings--orchestrator-resource-bindings-top-level-bindings) below and the [connector plugin](../author/references/plugins/connector/impl.md) for the connector-binding shape.
 
-## Project structure (from `uip maestro flow init`)
+## Project structure (generated scaffold)
 
 ```
 <ProjectName>/
@@ -81,7 +83,7 @@ Optional top-level `runtime`: a CLI-managed object that appears on some flows (e
     "error": {
       "type": "object",
       "description": "Error information if the script fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
@@ -127,7 +129,7 @@ Example — manual start trigger:
     "entryPointId": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5"
   },
   "outputs": {
-    "output": { "type": "object", "description": "The return value of the trigger.", "source": "=result.response", "var": "output" }
+    "output": { "type": "object", "description": "Data passed when manually triggering the process.", "source": "null", "var": "output" }
   }
 }
 ```
@@ -148,10 +150,12 @@ When you DO author the instance `outputs` block (for documentation / parity with
 
 - `type` — data type (usually `"object"`)
 - `description` — human-readable description
-- `source` — runtime binding expression (e.g., `"=result.response"` for the primary output, `"=result.Error"` for errors)
+- `source` — runtime binding expression, copied from the manifest `outputDefinition`. `"=Error"` for errors, always.
 - `var` — the variable name (matches the output ID, e.g., `"output"`, `"error"`)
 
-The standard `outputs` block for most action nodes (script, HTTP, transform, connector, agent):
+**Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, function): declare `error` only — `output` is derived.** They are the one family whose instance block the converter reads: it copies an authored `source` verbatim, and injects `{output, jsonSchema, "=this"}` when a non-empty `outputs` omits `output`. So `"=result.response"` there — the connector/script source — leaves `$vars.<nodeId>.output` null at runtime while `flow validate` passes. Studio Web serializes `error`-only instances too (verified on api-workflow, published-flow, and inline-agent nodes). Subflow and published-flow (`uipath.core.flow.*`) instance blocks are never read — still declare `error` only.
+
+The standard `outputs` block for most action nodes (script, HTTP, transform, connector):
 
 ```json
 "outputs": {
@@ -164,20 +168,20 @@ The standard `outputs` block for most action nodes (script, HTTP, transform, con
   "error": {
     "type": "object",
     "description": "Error information if the <node type> fails",
-    "source": "=result.Error",
+    "source": "=Error",
     "var": "error"
   }
 }
 ```
 
-Trigger nodes (manual, scheduled, connector triggers) have a single output — no error port:
+Trigger nodes (manual, scheduled, connector triggers) have a single output — no error port. A manual trigger carries the literal string `"null"` as its `source`, matching what Studio Web writes:
 
 ```json
 "outputs": {
   "output": {
     "type": "object",
-    "description": "The return value of the trigger.",
-    "source": "=result.response",
+    "description": "Data passed when manually triggering the process.",
+    "source": "null",
     "var": "output"
   }
 }
@@ -236,6 +240,8 @@ Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for ev
 > **Gotcha**: `targetPort` is required. Omitting it produces `[error] [edges[N].targetPort] Invalid input: expected string, received undefined` at validate time.
 >
 > **Gotcha**: the source field is `sourcePort`, not `sourceHandle`. If you write `sourceHandle`, validation fails with `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` — the path identifies the offending edge entry exactly.
+>
+> **Gotcha — edge `id` MUST start with a letter (XML NCName).** Never use a bare UUID or any id with a leading digit (`"12bd09dd-…"`, `"1edge-start"`). Edge ids become BPMN `<bpmn:incoming>/<bpmn:outgoing>` IDREFs; a leading digit makes the converter silently drop those references while still emitting the `sequenceFlow`, so `flow validate` passes and upload succeeds — but the engine cannot traverse: the run reports **Completed having executed only the start node**, every output null. Use descriptive ids (`e-<source>-<target>`, e.g. `e-start-agent`); prefixing a letter (`e12bd09dd-…`) also works. Same rule applies to node ids.
 
 ## Definition entry
 
@@ -303,6 +309,33 @@ Any node with `supportsErrorHandling: true` in the registry exposes an implicit 
 
 The port is **not** listed in the registry's `handleConfiguration`. Studio Web only exposes it when the source node has `inputs.errorHandlingEnabled: true`; when the flow contains an outgoing edge with `sourcePort: "error"` from that node, the serializer emits a BPMN boundary error event attached to the node. Because of this gate, `uip maestro flow validate` reports an error when a node has an outgoing `sourcePort: "error"` edge but `inputs.errorHandlingEnabled` is not `true` — so the inconsistency is caught before publish rather than surfacing as a hidden edge in Studio Web.
 
+### Default: off — enable only for a failure the flow actually handles
+
+`inputs.errorHandlingEnabled` is **opt-in, and stays off unless the requirements name a failure fallback.** Turning it on suppresses the node's fault: the node returns instead of faulting and execution continues. Enable it only when both hold:
+
+1. The requirements state what should happen when this node fails ("if the call fails, …", "return X for invalid input", "handle timeouts") — **and**
+2. You wire the node's `error` port to a handler that produces an outcome distinguishable from success.
+
+Never set the flag on a node that has no outgoing `error` edge — it suppresses the fault with nothing to catch it, converting a real failure into a run that reports success. Let the CLI own the flag: `uip maestro flow edge add --source-port error` and `uip maestro flow format` set it from the error edges actually present. If you find the flag on a node with no error edge, remove it.
+
+### Do not swallow the failure
+
+An `error` edge must not rejoin the happy path. When it does, every failure walks the success route and the run reports `Completed` while the work never happened — the flow "always looks successful."
+
+| | Error-path target | Result |
+| --- | --- | --- |
+| ✗ | The next node on the happy path | Failure is invisible; downstream nodes run on missing data |
+| ✗ | The same End node the success path reaches | Success path's output mappings run against the failed node's empty output |
+| ✓ | A **distinct** End node mapping an error/status `out` variable | Caller can tell failure from success |
+| ✓ | `core.logic.terminate` | Aborts the flow when recovery is impossible — see [terminate/impl.md](../author/references/plugins/terminate/impl.md) |
+| ✓ | A recovery branch that rejoins **only after obtaining valid data** — a retry that succeeded, or a fallback source that returned data | Downstream runs on real data, not on the failed node's empty output |
+
+```text
+Trigger -> HTTP Request
+  |-- default -> Process -> End (success — status: "ok")
+  |-- error   -> Log Error -> End (failure — status: "failed", message from $vars.httpCall.error)
+```
+
 ### When the error port fires
 
 - Network failures, DNS errors, TLS errors
@@ -312,7 +345,7 @@ The port is **not** listed in the registry's `handleConfiguration`. Studio Web o
 - Transform operation failures (invalid collection, missing field)
 - Any unhandled runtime exception inside the node
 
-Without a wired error edge, any of these fails the whole flow with `finalStatus: "Faulted"`.
+Without a wired error edge, any of these fails the whole flow with `finalStatus: "Faulted"`. **That is the correct default, not a defect to design around** — a faulted run is visible to the operator; a swallowed failure is not. Only trade the fault for an error path when the requirements say what that path should do.
 
 ### Wiring the error port
 
@@ -325,7 +358,7 @@ uip maestro flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
   --source-port error --target-port input --output json
 ```
 
-`uip maestro flow edge add --source-port error` and `uip maestro flow format` set `inputs.errorHandlingEnabled: true` on the source node automatically. When editing `.flow` JSON directly, set the flag yourself:
+`uip maestro flow edge add --source-port error` and `uip maestro flow format` set `inputs.errorHandlingEnabled: true` on the source node automatically — only for nodes that have an error edge. When editing `.flow` JSON directly, set the flag yourself **on those nodes only**:
 
 ```json
 {
@@ -353,12 +386,14 @@ Building a flow is a two-step process: write the nodes/edges structure, then pop
 
 ### Step 1 — Write nodes and edges
 
-Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js, or any UUID v4 generator). The same UUID must appear in `entry-points.json` as `uniqueId`. Set top-level `version` to the value `uip maestro flow init` scaffolds — never hand-pick it (see [Top-level structure](#top-level-structure)).
+<!--skill-flavor:minimal-example-version-source:start-->
+Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js, or any UUID v4 generator) — this applies ONLY to the top-level flow `id` and `entryPointId` (the same UUID must appear in `entry-points.json` as `uniqueId`). **Node and edge ids are NOT UUIDs** — they must start with a letter (see the Edge gotcha above). Set top-level `version` to the value `uip maestro flow init` scaffolds — never hand-pick it (see [Top-level structure](#top-level-structure)).
+<!--skill-flavor:minimal-example-version-source:end-->
 
 ```json
 {
   "id": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5",
-  "version": "<version from `uip maestro flow init`>",
+  "version": "<scaffolded file-format version>",
   "name": "DiceRoller",
   "nodes": [
     {
@@ -372,8 +407,8 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
       "outputs": {
         "output": {
           "type": "object",
-          "description": "The return value of the trigger.",
-          "source": "=result.response",
+          "description": "Data passed when manually triggering the process.",
+          "source": "null",
           "var": "output"
         }
       }
@@ -396,7 +431,7 @@ Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js,
         "error": {
           "type": "object",
           "description": "Error information if the script fails",
-          "source": "=result.Error",
+          "source": "=Error",
           "var": "error"
         }
       }
@@ -466,7 +501,7 @@ The `definitions` array must contain exactly one entry per unique `type:typeVers
 
 ## entry-points.json — auto-generated, do not edit
 
-`entry-points.json` declares the flow's external interface (input/output schemas and trigger entry points). **Do not edit this file directly** — it is auto-generated by `uip maestro flow init` and regenerated by `uip maestro flow debug` before upload. Manual edits will be overwritten.
+`entry-points.json` declares the flow's external interface (input/output schemas and trigger entry points). Preserve its lifecycle-generated contents; project scaffolding creates it, and the Flow lifecycle regenerates it before execution or publication.
 
 Flow input and output parameters are declared through **variables** in the `.flow` file:
 - **Flow inputs**: Add entries to `variables.nodes[]` whose `binding.nodeId` is the start node and whose `binding.outputId` names each input value — the start node "outputs" input values to downstream nodes

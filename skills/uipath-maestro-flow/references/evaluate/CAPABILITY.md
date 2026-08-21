@@ -20,7 +20,9 @@ For agent (`agent.json`) evaluations read the `uipath-agents` skill. For BPMN ev
 ## Critical rules
 
 1. **Check Flow eval CLI availability once.** Run `uip maestro flow eval --help --output json` before using eval commands. If it returns `unknown command 'eval'`, the installed CLI does not expose Flow eval yet. Stop, report that the user needs a CLI/tool version with Flow eval support, and do not spend turns searching npm packages or source bundles.
+<!--skill-flavor:upload-safety-critical-rule:start-->
 2. **Never run `uip solution upload` automatically as part of an eval workflow.** The eval run requires the Flow solution to already exist in Studio Web, but uploading from the local working tree clobbers whatever is on Studio Web. If the project was pulled from Studio Web (`uip solution download`), edited locally in VS Code, or scaffolded on disk and never uploaded, an unprompted upload will overwrite or push unintended state. Ask the user explicitly before any `uip solution upload` — see [upload-safety.md](references/upload-safety.md).
+<!--skill-flavor:upload-safety-critical-rule:end-->
 3. **`--path` accepts a Flow project directory OR a solution directory containing exactly one Flow project.** If the solution holds multiple Flow projects, point `--path` at the specific project directory.
 4. **Local CRUD does not require login.** `add`, `remove`, `list` (data points / eval sets / evaluators) edit JSON on disk. Only `uip maestro flow eval run *` requires `uip login` and an existing Studio Web solution.
 5. **Pin a model on every LLM-judge evaluator.** Empty/missing `model` produces a cryptic 500 from the LLM gateway after retries. Pass `--model <name>` on `evaluator add` or set `model` in the JSON.
@@ -53,8 +55,10 @@ uip maestro flow eval add hello-test \
   --expected '{"reply":"Hello! How can I help you?"}' \
   --path ./MySolution/MyFlow --output json
 
+<!--skill-flavor:upload-safety-workflow-comment:start-->
 # 4. Confirm the solution is in Studio Web
 #    DO NOT auto-run `uip solution upload`. Ask the user. See upload-safety.md.
+<!--skill-flavor:upload-safety-workflow-comment:end-->
 
 # 5. Start the run and wait
 uip maestro flow eval run start \
@@ -77,7 +81,9 @@ uip maestro flow eval run results <eval_set_run_id> \
 | Choose among the 7 evaluator types, write custom prompts, hand-write evaluator JSON | [evaluators-guide.md](references/evaluators-guide.md) |
 | Create eval sets, add data points, map `--inputs`/`--expected`/`--criteria` to evaluator types, attach files | [eval-sets-guide.md](references/eval-sets-guide.md) |
 | Start a Studio Web run, poll status, read results, export CSV/JSON, compare two runs | [running-guide.md](references/running-guide.md) |
+<!--skill-flavor:upload-safety-workflow-row:start-->
 | Decide whether to call `uip solution upload` (almost always: don't auto-run; ask first) | [upload-safety.md](references/upload-safety.md) |
+<!--skill-flavor:upload-safety-workflow-row:end-->
 
 ## Common tasks
 
@@ -93,13 +99,17 @@ uip maestro flow eval run results <eval_set_run_id> \
 | **Poll run status without `--wait`** | [running-guide.md — Check Status](references/running-guide.md#check-status) |
 | **Inspect only failed data points** | [running-guide.md — Detailed Results](references/running-guide.md#detailed-results) (`--only-failed --verbose`) |
 | **Compare two runs side-by-side** | [running-guide.md — Compare Two Runs](references/running-guide.md#compare-two-runs) |
+<!--skill-flavor:upload-safety-task-row:start-->
 | **Decide whether to call `uip solution upload`** | [upload-safety.md](references/upload-safety.md) |
+<!--skill-flavor:upload-safety-task-row:end-->
 | **Look up the `eval` subcommand tree, flags, defaults, output codes** | [commands-reference.md](references/commands-reference.md) |
 | **My eval run failed** | [running-guide.md — Failure Detection](references/running-guide.md#failure-detection); for flow-level faults [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md) |
 
 ## Anti-patterns
 
+<!--skill-flavor:upload-safety-antipattern:start-->
 - **Don't auto-run `uip solution upload`.** Even when an eval run errors with "solution not found in Studio Web", stop and ask the user — see [upload-safety.md](references/upload-safety.md). The local project may be ahead of, or diverged from, Studio Web.
+<!--skill-flavor:upload-safety-antipattern:end-->
 - **Don't hand-write `evaluatorRefs` unless you are repairing an eval set.** Prefer the default all-evaluators behavior so the CLI writes generated file refs, or pass generated evaluator ids/file refs explicitly. Do not pass evaluator display names to `--evaluators`.
 - **Don't pass `--type` in PascalCase.** Only kebab-case is accepted: `exact-match`, `json-similarity`, `contains`, `llm-judge-output`, `llm-judge-strict-json`, `llm-judge-trajectory`, `llm-judge-trajectory-simulation`.
 - **Don't depend on a specific `--wait` polling cadence.** Treat `--wait` as a black-box block; if you need precise progress, omit it and call `eval run status` yourself.
@@ -114,7 +124,9 @@ After a run completes, report:
 1. **Eval set run ID** and aggregate score (from `run status`)
 2. **Failed data points** (from `run results --only-failed --verbose`)
 3. **Comparison delta** vs the previous run (`run compare`) if one exists
+<!--skill-flavor:upload-safety-next-step:start-->
 4. **Suggested next step** — fix the agent/flow, re-run, or accept the result. Do NOT suggest `uip solution upload` unless the user has explicitly asked to publish edits.
+<!--skill-flavor:upload-safety-next-step:end-->
 
 ## References
 
@@ -124,7 +136,9 @@ After a run completes, report:
 - [evaluators-guide.md](references/evaluators-guide.md) — 7 evaluator types mapped to internal `uipath-*` IDs, JSON shapes, template variables
 - [eval-sets-guide.md](references/eval-sets-guide.md) — eval set + data point CRUD, `--inputs`/`--expected`/`--criteria`/`--input-file`/`--search-text`, simulations
 - [running-guide.md](references/running-guide.md) — run start/status/results/list/compare, JMESPath `--output-filter`, failure detection
+<!--skill-flavor:upload-safety-reference-entry:start-->
 - [upload-safety.md](references/upload-safety.md) — the `solution upload` rule
+<!--skill-flavor:upload-safety-reference-entry:end-->
 
 ### Cross-capability (shared)
 

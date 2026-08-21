@@ -63,11 +63,22 @@ What to look for:
    not found, and timeout.
 5. Confirm the robot account is authenticated and has the queue permission required by that operation
    in the folder.
-6. When runtime evidence proves the queue name was unavailable but does not explain why that name was
+6. **Enumerate queues in the other folders the identity can see**, not just the job's folder. This is
+   what closes the wrong-execution-folder branch: if the queue exists elsewhere, the process is running
+   in the wrong folder and that is the fix; if no folder holds it, the branch is excluded and only
+   wrong-name and missing-queue remain. Report the result either way — "the job's folder has no queues"
+   leaves the branch open, "no visible folder holds this queue" closes it.
+7. When runtime evidence proves the queue name was unavailable but does not explain why that name was
    used, check the working-directory source boundary from `SKILL.md` §5: inspect the named workflow and
    `project.json` if present. If source is unavailable, leave wrong name, deleted/missing queue, and
    wrong execution folder as explicit conditional branches; do not pick one from the activity display
    name or a suggestive suffix.
+
+**State the evidence boundary as two separate claims.** Keep what the runtime response proves apart from
+what it cannot: the correlated 404 / error 1002 establishes that the name was unavailable **at run
+time** — that part is settled, not a hypothesis. Whether the name is wrong, the queue was deleted, or
+the process ran in the wrong folder is what remains open, and only source or folder inventory closes it.
+Blurring the two into one hedge understates a conclusion you have actually established.
 
 ## Resolution
 
@@ -79,9 +90,14 @@ What to look for:
   intended schema and settings.
 - **If the intended queue exists in another folder:** run/deploy the process in that folder, or define
   the intended queue in the current job folder.
-- **If evidence cannot choose among those three branches:** lead with the source/configuration check
-  that discriminates them, then present all three as conditional fixes. Do not create a queue merely
-  because a not-found response occurred.
+- **If evidence cannot choose among the wrong-name, missing/deleted, and wrong-folder branches:** lead
+  with the source/configuration check that discriminates them, then present each as a labelled
+  conditional fix — **either** create/recreate the queue under the exact name the activity references,
+  **or** correct the activity's `QueueName` to an existing queue and republish, **or** run the process
+  in the folder that holds the intended queue. Naming only one of them is an incomplete answer: without
+  the project source you cannot tell whether the name is wrong or the queue is gone, so the user needs
+  every branch that the evidence still allows. Do not create a queue merely because a not-found response
+  occurred.
 - **If keys contain reserved characters:** rename the Add item's information keys to remove `.`, `#`,
   `@`, `:`.
 - **If a key is duplicated across the two collections:** remove the duplicate so each Add item key

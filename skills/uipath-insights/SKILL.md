@@ -47,7 +47,7 @@ uip login tenant set MyTenant
 
 ## Critical Rules
 
-1. **A time range is always required.** Every `uip insights jobs` command needs either `--time-range <minutes>` (relative) or both `--started-after <epoch-ms>` and `--started-before <epoch-ms>` (absolute). Without one, the command fails. Common values:
+1. **A time range is always required.** Every `uip insights jobs` command needs either `--time-range <minutes>` (relative) or both `--started-after <epoch-ms>` and `--started-before <epoch-ms>` (absolute). Without one, the command fails. For absolute ranges, pass literal epoch-millisecond numbers, resolved beforehand (see Workflow: Absolute Time Range). Common values:
    - `--time-range 60` — last 1 hour
    - `--time-range 1440` — last 24 hours
    - `--time-range 10080` — last 7 days
@@ -220,29 +220,26 @@ To discover available folder keys, use `uip or folders list --output json` (from
 
 ## Workflow: Absolute Time Range
 
-When the user specifies an exact date range instead of "last N hours":
+When the user specifies an exact date range instead of "last N hours", use `--started-after`/`--started-before` (not `--time-range`).
+
+**Two steps, two separate command invocations.** Resolve the dates to epoch milliseconds first, read the numbers from the output, then write the literal numbers into the `uip` command. Never embed `$(date ...)` substitutions or shell variables in `uip insights` flag values — if `date` fails silently (macOS and Linux flags differ), the flag becomes garbage and the query runs against the wrong window, and the logged command no longer shows what range was actually queried.
 
 ```bash
-# Convert dates to epoch milliseconds
-# Example: 2026-07-01 00:00:00 UTC to 2026-07-06 00:00:00 UTC
-uip insights jobs summary \
-  --started-after 1782691200000 \
-  --started-before 1783123200000 \
-  --output json
+# Step 1 — resolve each boundary to epoch ms at UTC midnight (run this alone, read the output):
+date -u -d "2026-07-01 00:00:00" +%s000   # Linux  → 1782864000000
+date -u -d "2026-07-06 00:00:00" +%s000   # Linux  → 1783296000000
+date -u -j -f "%Y-%m-%d %H:%M:%S" "2026-07-01 00:00:00" +%s000   # macOS → 1782864000000
 ```
 
-Compute epoch milliseconds in bash:
 ```bash
-# macOS
-START=$(date -j -f "%Y-%m-%d" "2026-07-01" +%s)000
-END=$(date -j -f "%Y-%m-%d" "2026-07-06" +%s)000
-
-# Linux
-START=$(date -d "2026-07-01" +%s)000
-END=$(date -d "2026-07-06" +%s)000
-
-uip insights jobs summary --started-after "$START" --started-before "$END" --output json
+# Step 2 — run each subcommand with the literal resolved values:
+uip insights jobs summary --started-after 1782864000000 --started-before 1783296000000 --output json
 ```
+```bash
+uip insights jobs completed-timeline --started-after 1782864000000 --started-before 1783296000000 --output json
+```
+
+The end boundary is exclusive: "July 1st to July 5th" inclusive means `--started-after` = July 1 00:00:00 UTC and `--started-before` = July 6 00:00:00 UTC.
 
 ---
 
@@ -262,6 +259,8 @@ uip insights jobs summary --started-after "$START" --started-before "$END" --out
 ## What NOT to Do
 
 - **Don't call `uip insights jobs` without a time range.** The server returns a 500 with a misleading success-shaped response. Always pass `--time-range` or `--started-after`/`--started-before`.
+- **Don't embed `$(date ...)` or shell variables in `uip insights` flag values.** Resolve times in a separate command first, then pass literal epoch-millisecond numbers. Literal values make the executed command auditable and immune to platform `date` differences.
+- **Don't chain, loop, or parameterize `uip insights` subcommands in one invocation.** Run each subcommand as its own command with the subcommand name written literally — no `&&`/`;` chains, no `for` loops, no shell variables holding the subcommand name. One command per invocation keeps each subcommand's exit status and output attributable.
 - **Don't start, stop, or manage individual jobs.** This skill is for monitoring and analytics only. Use `uip or jobs start/stop` via uipath-platform to manage jobs.
 - **Don't construct raw API calls to the Insights endpoint.** The CLI handles auth headers (`X-UiPath-Internal-AccountName`, `X-UiPath-Internal-TenantName`), URL construction, and error handling. Hand-rolling `curl` or `fetch` calls will miss these.
 - **Don't retry on auth errors.** If `uip insights jobs` returns 401 or "Not logged in", the fix is `uip login`, not retrying the same command.

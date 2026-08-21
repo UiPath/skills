@@ -41,12 +41,34 @@ initial_prompt: |
 success_criteria:
   # Pack → publish → deploy sequence (commands fail with auth in CI — we check
   # the agent ran the full sequence, not that the live deploy succeeded).
+  # Check each verb ONCE, not "3 matching commands": agents batch the whole
+  # pipeline into one shell script (pack; publish; deploy in a single set +e
+  # block), which the old count check scored 1/3 and false-failed a correct run;
+  # it also false-passed the reverse (pack ×3, no publish/deploy = 3 matches).
+  # Per-verb presence matches whether the agent runs three commands or one
+  # batched script, and a genuinely skipped step still fails (its check hits 0).
   - type: command_executed
-    description: "Agent ran full pack-publish-deploy sequence"
+    description: "Agent ran uip codedapp pack"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedapp\s+(pack|publish|deploy)'
-    min_count: 3
-    weight: 2.5
+    command_pattern: 'uip\s+codedapp\s+pack\b'
+    min_count: 1
+    weight: 0.83
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedapp publish"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+publish\b'
+    min_count: 1
+    weight: 0.83
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedapp deploy"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy\b'
+    min_count: 1
+    weight: 0.84
     pass_threshold: 1.0
 
   # Fresh deploy (folderKey null): the agent resolves a folder and deploys with

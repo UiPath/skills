@@ -10,7 +10,7 @@ plus a confusion matrix.
 |------|---------|
 | `<skill>.jsonl` | Positives for that skill — every prompt should fire that skill. `expected_skill` is injected per file by `activation.yaml`. |
 | `negative.jsonl` | Shared negatives — prompts that should fire **no** skill (small talk, unrelated dev tasks, adjacent UiPath products, other workflow tools). |
-| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 23 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
+| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 24 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
 
 The `expected_skill` field on each row is the row's true label (the skill it should fire, or `""` for negatives). Each criterion compares its own `skill_name` to `expected_skill`: `expected="yes"` iff they match. So for skill X:
 - `<X>.jsonl` rows are positives.
@@ -36,7 +36,7 @@ uv run --project /path/to/coder_eval coder-eval run \
 
 Reports land in `tmp/<run-id>/`. The suite gate fails per criterion on `recall.yes < 0.70`. Class imbalance (~50 yes / ~1260 no per skill) makes accuracy and recall.no trivially high; recall.yes is the only meaningful gate.
 
-Early stop: the experiment arms `run_limits.stop_early` and every criterion sets `stop_when: auto` (coder_eval >= 0.8.10), so a row ends as soon as its outcome is live-decided. A positive row pass-stops the moment its expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does not end a positive row — fail-stop is deferred while the row's positive criterion is undecided, so a positive that only misfires runs to `max_turns: 3`, as do no-engagement rows. Claude Code agent only: for `--type codex` or `--type antigravity` add `-D run_limits.stop_early=false`. For authoritative precision numbers (a pass-stop can hide a distractor misfire on a later tool call), run with `-D run_limits.stop_early=false`.
+Early stop: every criterion carries a `stop_early: {on_pass: stop}` block (coder_eval >= 0.9.5 — arming is per-criterion; the removed `run_limits.stop_early: true` master arm is a hard error), so a row ends as soon as its outcome is live-decided. A positive row pass-stops the moment its expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does not end a positive row — fail-stop is deferred while the row's positive criterion is undecided, so a positive that only misfires runs to `max_turns: 3`, as do no-engagement rows. For authoritative precision numbers (a pass-stop can hide a distractor misfire on a later tool call), run with `-D run_limits.stop_early=false`.
 
 ## Adding a new skill
 
@@ -46,7 +46,7 @@ Early stop: the experiment arms `run_limits.stop_early` and every criterion sets
 
 ## Cost
 
-On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~1309 rows total (1252 positives + 57 negatives). The agent runs ONCE per row regardless of criteria count, and the 23 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark costs **~$65–130**. Those numbers assume the default armed run, where decided rows end at ~1 turn; an unarmed run (`-D run_limits.stop_early=false` — required for codex/antigravity and for authoritative precision) lets every row use up to `max_turns: 3`, so budget roughly 2–3× for it. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
+On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~1309 rows total (1252 positives + 57 negatives). The agent runs ONCE per row regardless of criteria count, and the 23 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark costs **~$65–130**. Those numbers assume the default armed run, where decided rows end at ~1 turn; an unarmed run (`-D run_limits.stop_early=false` — optional for routine checks, required for authoritative precision) lets every row use up to `max_turns: 3`, so budget roughly 2–3× for it. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
 
 ## Provenance
 

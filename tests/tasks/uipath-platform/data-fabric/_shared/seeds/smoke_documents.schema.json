@@ -1,0 +1,17 @@
+{
+  "displayName": "Smoke Documents",
+  "description": "Temporary document list for the file-attachment smoke test.",
+  "fields": [
+    {
+      "fieldName": "Title",
+      "displayName": "Title",
+      "type": "STRING",
+      "isRequired": true
+    },
+    {
+      "fieldName": "Attachment",
+      "displayName": "Attachment",
+      "type": "FILE"
+    }
+  ]
+}

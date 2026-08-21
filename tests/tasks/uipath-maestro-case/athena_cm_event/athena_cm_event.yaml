@@ -26,7 +26,8 @@ initial_prompt: |
   Use the staged `sdd.md` as the sole source of truth. Do not redo Phase 0,
   do not re-interview me, and do not redesign the process. The document's
   fixture is limited to the supported caseplan topology; generate only the
-  case plan.
+  case plan. Preserve every authored stage and task entry/exit rule exactly;
+  planning must not normalize an explicit SDD rule into a different mode.
 
   Important:
   - The `uip` CLI is already available and authenticated in the environment.
@@ -77,13 +78,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "tasks.md preserves the authored Athena task-entry rules before JSON generation"
+    command: "python3 $TASK_DIR/check_athena_cm_event_plan.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "generated caseplan preserves the Athena stage/task rules, external identity, and event trigger"
     command: "python3 $TASK_DIR/check_athena_cm_event_case.py"
     timeout: 120
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120

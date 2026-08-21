@@ -16,7 +16,7 @@ Pick this plugin when the sdd.md labels a task as `API_WORKFLOW` — typically a
 | `task-type-id` | Registry resolution (below) | `entityKey` in `api-index.json` |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | sdd.md task Outputs + resolved schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-tasksmd-output-list). |
-| `runOnlyOnce` | sdd.md (default `true`) | |
+| `runOnlyOnce` | sdd.md (default `false`) | Re-entry behavior comes from the SDD, not the task type. |
 | `isRequired` | sdd.md (default `true`) | |
 
 ## Registry Resolution
@@ -108,7 +108,7 @@ The brief is self-contained — it carries the Step-1b Purpose and the pinned I/
 
 Shared invariants — [create-inline-common.md § Step 3](../create-inline-common.md#step-3--binding-invariants): two bindings `resource:"process"`, **`resourceSubType:"Api"`**, shared `resourceKey="solution_folder.<WorkflowName>"`; `name` default `<WorkflowName>`, `folderPath` default `""` (the sentinel/`""` decoupling and deploy-provisioning rationale live there — except debug provisioning, which differs for Api: next blockquote).
 
-> **Runtime: full deploy YES — `case debug` NO (e2e-verified 2026-07).** `uip solution pack` → `publish` → `deploy run` provisions the sibling as a runnable process in the case's own Orchestrator folder (process key `<Package>.Api.<Name>`), and the case task invokes it successfully at runtime. **`uip maestro case debug` does NOT provision Api siblings** (unlike agent siblings, which resolve in debug) — the task reaches `Orchestrator.StartJob` and faults with incident `170007` "The job's associated process could not be found" even though the binding is valid. Verify an inline API workflow's runtime behavior via a full solution deploy, never via `case debug`. `validate` and binding correctness are unaffected by this limitation.
+> **Runtime: full deploy YES — `case debug` NO (e2e-verified 2026-07).** `uip maestro case pack` → `uip solution pack` → `publish` → `deploy run` provisions the sibling as a runnable process in the case's own Orchestrator folder (process key `<Package>.Api.<Name>`), and the case task invokes it successfully at runtime. **`uip maestro case debug` does NOT provision Api siblings** (unlike agent siblings, which resolve in debug) — the task reaches `Orchestrator.StartJob` and faults with incident `170007` "The job's associated process could not be found" even though the binding is valid. Verify an inline API workflow's runtime behavior via a full solution deploy, never via `case debug`. `validate` and binding correctness are unaffected by this limitation.
 
 ### Failure — surface and re-prompt, never stall
 
@@ -127,9 +127,13 @@ Shared contract — [create-inline-common.md § Failure](../create-inline-common
   - <input_name> = "<value>"
 - outputs:
   - <SDD output row, copied verbatim>
-- runOnlyOnce: true
+- runOnlyOnce: false
 - isRequired: true
+- activation-mode: <sequential|parallel|event-triggered|adhoc|fan-in|conditional-gate>   # required
+- entry-rule: <runs-sequentially|current-stage-entered|wait-for-connector|adhoc|selected-tasks-completed>   # required; must pair with activation-mode — see ../../conditions/task-entry-conditions/planning.md
 - order: after T<m>
 - lane: <n>  # structural/layout position only; sequencing is the task entry rule plus data.tasks order.
 - verify: Confirm Result: Success, capture TaskId
 ```
+
+<!-- END: planning.md -->

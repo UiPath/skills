@@ -35,36 +35,35 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "HITL node has input-direction fields (read-only context for reviewer)"
-    path: "VendorPOReview/VendorPOReview/VendorPOReview.flow"
-    includes:
-      - '"direction": "input"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"direction\": \"input\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "HITL node has output-direction fields (reviewer fills in)"
-    path: "VendorPOReview/VendorPOReview/VendorPOReview.flow"
-    includes:
-      - '"direction": "output"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"direction\": \"output\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow has Approve and Reject outcomes"
-    path: "VendorPOReview/VendorPOReview/VendorPOReview.flow"
-    includes:
-      - "Approve"
-      - "Reject"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview 'Approve' 'Reject'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Priority is set to High"
-    path: "VendorPOReview/VendorPOReview/VendorPOReview.flow"
-    includes:
-      - '"High"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name VendorPOReview '\"High\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

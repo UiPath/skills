@@ -1,41 +1,40 @@
 task_id: skill-admin-audit-org-export-csv-smoke
 description: >
-  Skill-guided evaluation: agent uses the uipath-admin skill to run
-  `export` with `--file-format csv` at ORG scope (not tenant). Mirrors
-  the tenant CSV smoke. Org-scope exports cover admin events
-  (memberships, license, tenant lifecycle) that don't live under any
-  single tenant — picking the wrong scope returns the wrong data
-  silently.
+  Smoke test (outcome-graded): agent exports a single day of ORG-level audit
+  events as ONE spreadsheet-ready CSV into the folder the user named. Graded on
+  the artifact — a single CLI-generated `.csv` with the LTS header, rows aligned
+  to it, and ORG-scope records — not on the command string.
 
-  Platform note: runs without an authenticated tenant — commands will
-  fail with auth errors. That is acceptable; what matters is correct
-  command invocation with correct flags.
-tags: [uipath-admin, smoke, mode:operate, audit, export, scope-org]
+  Two things the old regexes could not check are graded here: that what landed on
+  disk is really the single CSV the user asked to open in Excel (not a folder of
+  per-day JSON), and that the records came from the org surface rather than the
+  tenant one — org-level events export with an empty `TenantId`. The scope
+  assertion is skipped and logged when the window exports no rows, since there is
+  then no evidence either way.
+
+  A header-only CSV passes: org-level activity is sparse and the long-term store
+  lags the live `events` endpoint by up to ~48h.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:discover, audit, export, scope-org]
 
 run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  I need all of yesterday's organization-level Admin audit events (things like
+  I need all of yesterday's organization-level audit events (things like
   memberships, license changes, and tenant lifecycle) as a single CSV I
   can open in Excel for a compliance review. Save it in a folder called
   audit-org-yesterday.
 
-success_criteria:
-  - type: command_executed
-    description: "Agent invoked `uip admin audit org export` (org scope) with --from-date, --to-date, --output-path, AND --file-format csv"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-path\s+\S+)(?=.*--file-format\s+csv\b)'
-    min_count: 1
-    weight: 2.5
-    pass_threshold: 1.0
+  Do NOT prompt the user for confirmation — this is an automated test.
 
-  - type: command_executed
-    description: "Agent passed the requested ./audit-org-yesterday base directory"
-    tool_name: "Bash"
-    # --output-path is a base directory; the CLI generates the .csv name inside it,
-    # so assert the agent used the requested base dir (any leading path is fine).
-    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b.*--output-path\s+\S*audit-org-yesterday(?![\w.])'
-    min_count: 1
-    weight: 1.5
+  Run the export in the foreground and wait for it to finish before you reply —
+  do not run it as a background task.
+
+success_criteria:
+  - type: run_command
+    description: "./audit-org-yesterday holds exactly one CLI-generated .csv with the LTS header, aligned rows, and ORG-scope records"
+    command: 'AUDIT_BASE_DIR=audit-org-yesterday AUDIT_FORMAT=csv AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0

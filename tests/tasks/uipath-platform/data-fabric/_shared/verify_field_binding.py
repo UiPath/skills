@@ -31,6 +31,7 @@ import subprocess
 import sys
 
 UIP_TIMEOUT_SECONDS = 60
+TENANT_SCOPE = "00000000-0000-0000-0000-000000000000"
 
 
 def run_uip(*args: str) -> tuple[int, str, str]:
@@ -46,8 +47,19 @@ def run_uip(*args: str) -> tuple[int, str, str]:
     return result.returncode, result.stdout, result.stderr
 
 
+def entity_folder_key(entity: dict) -> str:
+    folder_key = (
+        entity.get("FolderKey")
+        or entity.get("folderKey")
+        or entity.get("FolderId")
+        or entity.get("folderId")
+        or ""
+    )
+    return "" if str(folder_key).lower() == TENANT_SCOPE else str(folder_key)
+
+
 def list_entities_including_folders() -> list[dict]:
-    """List every visible entity (tenant + folder-scoped where supported)."""
+    """List every visible native entity."""
     for extra in (["--include-folders"], []):
         code, out, _ = run_uip("df", "entities", "list", "--native-only", *extra)
         if code == 0 and out.strip():
@@ -55,7 +67,14 @@ def list_entities_including_folders() -> list[dict]:
                 data = json.loads(out)
             except json.JSONDecodeError:
                 continue
-            items = data.get("Data") if isinstance(data.get("Data"), list) else []
+            inner = data.get("Data") if isinstance(data, dict) else None
+            items = (
+                inner
+                if isinstance(inner, list)
+                else (inner or {}).get("Records")
+                or (inner or {}).get("records")
+                or []
+            )
             if items:
                 return items
     return []
@@ -66,7 +85,7 @@ def find_entity(entities: list[dict], name: str) -> tuple[str | None, str | None
     for ent in entities:
         if isinstance(ent, dict) and (ent.get("Name") or ent.get("name")) == name:
             eid = ent.get("ID") or ent.get("Id") or ent.get("id")
-            fk = ent.get("FolderKey") or ent.get("folderKey") or ""
+            fk = entity_folder_key(ent)
             return eid, fk
     return None, None
 

@@ -205,7 +205,7 @@ Applies to all integration triggers, and to local triggers placed at root.
 
 1. **Author** — place trigger as the first activity of root `Sequence`, bind output to variable, write handler. Per-file `validate` clean.
 2. **Build** — `uip rpa build "<PROJECT_DIR>" --output json` clean.
-3. **Publish** — `.nupkg` to Orchestrator (see [publishing-guide.md](publishing-guide.md)). On publish, Orchestrator detects the trigger from the workflow's activity registration and exposes it as a Process/Time/Queue Trigger candidate.
+3. **Publish** — `.nupkg` to Orchestrator (see [cli-reference.md § Pack & Publish to Orchestrator](cli-reference.md#pack--publish-to-orchestrator)). On publish, Orchestrator detects the trigger from the workflow's activity registration and exposes it as a Process/Time/Queue Trigger candidate.
 
 **`uip rpa run` is NOT a meaningful smoke test for entry-point triggers.** The CLI executes the workflow once in-process, which does not exercise Orchestrator subscription or the connector's webhook/polling lifecycle. A clean `run` only proves the handler XAML compiles and the trigger activity can be instantiated.
 

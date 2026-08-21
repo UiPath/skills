@@ -9,10 +9,13 @@ isUnique, etc.) actually echo back correctly under `entities get`.
 Usage:
     verify_field_constraints.py \\
         --entity-name CE_IntegrationOrder \\
-        --assertions "amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=1000000"
+        --assertions "amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=1000000" \\
+        [--ignore-field-case]
 
 Assertion syntax: comma-separated `<field>.<key>=<value>` triples.
-    - Field names are case-sensitive (matched against Fields[].Name/FieldName).
+    - Field names are case-sensitive by default (matched against
+      Fields[].Name/FieldName). With --ignore-field-case, letter case and
+      separators are ignored.
     - Constraint keys are case-insensitive (`decimalPrecision`, `DecimalPrecision`,
       `LengthLimit`, and `lengthLimit` all match the same schema attribute).
     - Values are parsed as int → float → string in that order. Booleans:
@@ -28,8 +31,11 @@ import json
 import re
 import subprocess
 import sys
+import time
 
 UIP_TIMEOUT_SECONDS = 60
+ENTITY_LOOKUP_ATTEMPTS = 2
+TENANT_SCOPE = "00000000-0000-0000-0000-000000000000"
 
 
 def run_uip(*args: str) -> tuple[int, str, str]:
@@ -45,23 +51,55 @@ def run_uip(*args: str) -> tuple[int, str, str]:
     return r.returncode, r.stdout, r.stderr
 
 
+def entity_folder_key(entity: dict) -> str:
+    folder_key = (
+        entity.get("FolderKey")
+        or entity.get("folderKey")
+        or entity.get("FolderId")
+        or entity.get("folderId")
+        or ""
+    )
+    return "" if str(folder_key).lower() == TENANT_SCOPE else str(folder_key)
+
+
 def find_entity_id(name: str) -> tuple[str | None, str | None]:
     """Return (id, folder_key) — folder_key is empty for tenant-scoped."""
-    for extra in (["--include-folders"], []):
-        code, out, _ = run_uip("df", "entities", "list", "--native-only", *extra)
-        if code != 0 or not out.strip():
-            continue
-        try:
-            data = json.loads(out)
-        except json.JSONDecodeError:
-            continue
-        items = data.get("Data") if isinstance(data.get("Data"), list) else []
-        for e in items:
-            if isinstance(e, dict) and (e.get("Name") or e.get("name")) == name:
-                return (
-                    e.get("ID") or e.get("Id") or e.get("id"),
-                    e.get("FolderKey") or e.get("folderKey") or "",
-                )
+    include_folders_supported = True
+    for attempt in range(ENTITY_LOOKUP_ATTEMPTS):
+        extras = (["--include-folders"], []) if include_folders_supported else ([],)
+        for extra in extras:
+            code, out, err = run_uip(
+                "df", "entities", "list", "--native-only", *extra
+            )
+            if code != 0 or not out.strip():
+                detail = f"{out}\n{err}".lower()
+                if extra and (
+                    "unknown option" in detail or "unknown argument" in detail
+                ):
+                    include_folders_supported = False
+                continue
+            try:
+                data = json.loads(out)
+            except json.JSONDecodeError:
+                continue
+            inner = data.get("Data") if isinstance(data, dict) else None
+            items = (
+                inner
+                if isinstance(inner, list)
+                else (inner or {}).get("Records")
+                or (inner or {}).get("records")
+                or []
+            )
+            for e in items:
+                if isinstance(e, dict) and (
+                    e.get("Name") or e.get("name")
+                ) == name:
+                    return (
+                        e.get("ID") or e.get("Id") or e.get("id"),
+                        entity_folder_key(e),
+                    )
+        if attempt + 1 < ENTITY_LOOKUP_ATTEMPTS:
+            time.sleep(2)
     return None, None
 
 
@@ -109,10 +147,17 @@ def parse_assertions(spec: str) -> list[tuple[str, str, object]]:
     return out
 
 
-def field_data_type(schema: dict, field_name: str) -> dict | None:
+def field_data_type(schema: dict, field_name: str, ignore_case: bool = False) -> dict | None:
+    def comparable(value: str) -> str:
+        if not ignore_case:
+            return value
+        return re.sub(r"[^a-z0-9]", "", value.casefold())
+
     for f in (schema.get("Fields") or []):
         if not isinstance(f, dict): continue
-        if (f.get("Name") or f.get("FieldName") or f.get("name") or f.get("fieldName")) == field_name:
+        actual_name = f.get("Name") or f.get("FieldName") or f.get("name") or f.get("fieldName")
+        names_match = isinstance(actual_name, str) and comparable(actual_name) == comparable(field_name)
+        if names_match:
             fdt = f.get("FieldDataType") or f.get("fieldDataType") or {}
             # Merge top-level constraint fields onto fdt (some CLI versions emit at either level).
             merged = {**f, **fdt}
@@ -134,6 +179,11 @@ def main() -> None:
     p.add_argument("--entity-name", required=True)
     p.add_argument("--assertions", required=True,
                    help='Comma-separated field.key=value assertions, e.g. "amount.decimalPrecision=2,Name.lengthLimit=200"')
+    p.add_argument(
+        "--ignore-field-case",
+        action="store_true",
+        help="Match custom field names ignoring case and separators (constraint keys are always case-insensitive)",
+    )
     args = p.parse_args()
 
     try:
@@ -152,7 +202,7 @@ def main() -> None:
 
     failures: list[str] = []
     for field_name, key, expected in assertions:
-        fdt = field_data_type(schema, field_name)
+        fdt = field_data_type(schema, field_name, args.ignore_field_case)
         if fdt is None:
             failures.append(f"{field_name}.{key}: field '{field_name}' not found on entity")
             print(f"  ✗ {field_name}.{key}: field not found")

@@ -23,10 +23,10 @@ uip codedapp push [project-id] [options]
 | `[project-id]` | WebApp Project ID | From `UIPATH_PROJECT_ID` env var |
 | `--build-dir <dir>` | Build output directory | `dist` |
 | `--ignore-resources` | Skip importing referenced resources | `false` |
-| `--base-url <url>` | UiPath base URL | From `.env` |
-| `--org-id <id>` | Organization ID | From `.env` |
-| `--tenant-id <id>` | Tenant ID | From `.env` |
-| `--access-token <token>` | Access token | From `.env` |
+| `--base-url <url>` | UiPath base URL | From `uip login` session |
+| `--org-id <id>` | Organization ID | From `uip login` session |
+| `--tenant-id <id>` | Tenant ID | From `uip login` session |
+| `--access-token <token>` | Access token | From `uip login` session |
 
 **Examples:**
 
@@ -71,10 +71,10 @@ uip codedapp pull [project-id] [options]
 | `[project-id]` | WebApp Project ID | From `UIPATH_PROJECT_ID` env var |
 | `--overwrite` | Allow overwriting existing local files without prompting | `false` |
 | `--target-dir <dir>` | Local directory to write pulled files | Current directory |
-| `--base-url <url>` | UiPath base URL | From `.env` |
-| `--org-id <id>` | Organization ID | From `.env` |
-| `--tenant-id <id>` | Tenant ID | From `.env` |
-| `--access-token <token>` | Access token | From `.env` |
+| `--base-url <url>` | UiPath base URL | From `uip login` session |
+| `--org-id <id>` | Organization ID | From `uip login` session |
+| `--tenant-id <id>` | Tenant ID | From `uip login` session |
+| `--access-token <token>` | Access token | From `uip login` session |
 
 **Examples:**
 
@@ -115,11 +115,10 @@ uip codedapp pack <dist> [options]
 | `--main-file <file>` | Main entry file | `index.html` |
 | `--content-type <type>` | Content type: `webapp`, `library`, `process` | `webapp` |
 | `--dry-run` | Preview packaging without creating the file | `false` |
-| `--reuse-client` | Reuse existing clientId from uipath.json | `false` |
-| `--base-url <url>` | UiPath base URL | From `.env` |
-| `--org-id <id>` | Organization ID | From `.env` |
-| `--tenant-id <id>` | Tenant ID | From `.env` |
-| `--access-token <token>` | Access token | From `.env` |
+| `--base-url <url>` | UiPath base URL | From `uip login` session |
+| `--org-id <id>` | Organization ID | From `uip login` session |
+| `--tenant-id <id>` | Tenant ID | From `uip login` session |
+| `--access-token <token>` | Access token | From `uip login` session |
 
 **Examples:**
 
@@ -168,14 +167,14 @@ uip codedapp publish [options]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-n, --name <name>` | Package name (non-interactive selection) | Auto-select or prompted |
-| `-v, --version <version>` | Package version (requires `--name`) | Latest |
+| `-v, --version <version>` | Package version (requires `--name`). Selects the **first** matching `.nupkg` in unsorted `readdir` order — NOT the highest version. Always pass when multiple versions of the same name sit in `.uipath/`. | First name match |
 | `-t, --type <type>` | App type: `Web` or `Action` | `Web` |
 | `--uipath-dir <dir>` | Directory containing `.nupkg` files | `./.uipath` |
-| `--base-url <url>` | UiPath base URL | From `.env` |
-| `--org-id <id>` | Organization ID | From `.env` |
-| `--tenant-id <id>` | Tenant ID | From `.env` |
-| `--tenant-name <name>` | Tenant name (required for registration) | From `.env` |
-| `--access-token <token>` | Access token | From `.env` |
+| `--base-url <url>` | UiPath base URL | From `uip login` session |
+| `--org-id <id>` | Organization ID | From `uip login` session |
+| `--tenant-id <id>` | Tenant ID | From `uip login` session |
+| `--tenant-name <name>` | Tenant name (required for registration) | From `uip login` session |
+| `--access-token <token>` | Access token | From `uip login` session |
 
 **Examples:**
 
@@ -232,12 +231,13 @@ uip codedapp deploy [options]
 |--------|-------------|---------|
 | `-n, --name <name>` | App name | From `.uipath/app.config.json` or prompted |
 | `-v, --version <version>` | Target a specific **published** version (different semantic from `pack`/`publish` `-v`, which is the package version) | Latest |
-| `--base-url <url>` | UiPath base URL | From `.env` |
-| `--org-id <id>` | Organization ID | From `.env` |
-| `--org-name <name>` | Organization name (used for app URL) | From `.env` |
-| `--tenant-id <id>` | Tenant ID | From `.env` |
+| `--path-name <slug>` | URL slug (routing name). First deploy sets it (defaults to sanitized app name); on upgrade, **omit to keep the URL** — re-passing a taken or previously-used slug fails with `routing name must be unique` | Sanitized app name |
+| `--base-url <url>` | UiPath base URL | From `uip login` session |
+| `--org-id <id>` | Organization ID | From `uip login` session |
+| `--org-name <name>` | Organization name (used for app URL) | From `uip login` session |
+| `--tenant-id <id>` | Tenant ID | From `uip login` session |
 | `--folder-key <key>` | UiPath folder key | From `UIPATH_FOLDER_KEY` env var |
-| `--access-token <token>` | Access token | From `.env` |
+| `--access-token <token>` | Access token | From `uip login` session |
 
 **Examples:**
 
@@ -274,11 +274,11 @@ uip codedapp deploy -n my-webapp --folder-key my-folder-key
 
 ## Common Options
 
-All cloud commands accept these override options (values default to `.env` file):
+Cloud commands resolve base URL, org, tenant, and access token from your `uip login` session automatically (any login type) — you don't pass them. Pass the corresponding flag only to override a session value.
 
 | Option | Description |
 |--------|-------------|
-| `--base-url <url>` | UiPath base URL |
-| `--org-id <id>` | Organization ID |
-| `--tenant-id <id>` | Tenant ID |
-| `--access-token <token>` | Access token |
+| `--base-url <url>` | UiPath base URL (from `uip login` session) |
+| `--org-id <id>` | Organization ID (from `uip login` session) |
+| `--tenant-id <id>` | Tenant ID (from `uip login` session) |
+| `--access-token <token>` | Access token (from `uip login` session) |

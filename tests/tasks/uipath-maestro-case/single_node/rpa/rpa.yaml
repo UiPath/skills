@@ -32,7 +32,6 @@ initial_prompt: |
   | Case Name | RpaSingleCase |
   | Case Description | Single-node case that runs the ProjectEuler RPA workflow on a fixed problem number. |
   | Case Identifier | Prefix: RSC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | 1 d |
   | SLA Type | Static |
 
@@ -87,7 +86,7 @@ initial_prompt: |
 
   | Field | Value |
   |---|---|
-  | Process Reference | Name "ProjectEuler RPA", Folder "Shared/uipath-maestro-flow" |
+  | Process Reference | Name "RPA Workflow", Folder "Shared/uipath-maestro-flow/ProjectEuler RPA" |
   | Component Type | RPA |
 
   **Inputs**

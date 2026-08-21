@@ -19,7 +19,8 @@ run_limits:
 initial_prompt: |
   Link the testcase "TestCase1" from the orchestrator package "Testcases.with.parameters" published to the Orchestrator folder "uipath-test-folder-feed" to the Test Manager testcase
   "Claim Approval - Manager Escalation" in the project CLAIM. Then trigger an automated execution of
-  that testcase.
+  that testcase — name the execution "Eval Link Run - Manager Escalation"
+  and set the execution type to automated.
 
 success_criteria:
   - type: command_executed
@@ -31,9 +32,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered folder key with `folders list -n <folder-name> --all`"
+    description: "Agent discovered folder key with `folders list -n|--name <folder-name> --all`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+list\s+-n\s+\S+'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*(-n|--name)\s+\S)uip\s+(or|orchestrator)\s+folders\s+list\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -55,9 +56,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran testcase with --test-case-id (UUID) and --execution-type automated (not --test-case-key)"
+    description: "Agent ran the testcase successfully with --test-case-id (UUID), --execution-type automated, and the requested execution name"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+run\s+.*--test-case-id.*--execution-type\s+automated|uip\s+tm\s+testcases?\s+run\s+.*--execution-type\s+automated.*--test-case-id|uip\s+tm\s+testcase\s+execute\s+.*--test-case-id.*--execution-type\s+automated'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--test-case-id\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--execution-type\s+automated)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--name\s+(["\x27])Eval Link Run - Manager Escalation\1)uip\s+tm\s+(testcases?\s+run|testcase\s+execute)\b'
+    require_success: true
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

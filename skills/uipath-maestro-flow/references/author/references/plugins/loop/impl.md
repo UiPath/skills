@@ -29,6 +29,8 @@ Confirm: input ports `input` and `loopBack`, output ports `success` and `output`
 }
 ```
 
+> **Collection source shape depends on the node type.** Connector `list` activities return the bare array — `"collection": "=js:$vars.searchIssuesByJql1.output"`, NOT `.output.issues` / `.output.items`. HTTP nodes differ — envelope preserved: `.output.body.<key>` as above. See [connector/impl.md — Connector output shape](../connector/impl.md).
+
 Set `"parallel": true` to execute all iterations concurrently.
 
 ### Loop body nodes — `parentId` required
@@ -53,6 +55,17 @@ Every node inside the loop body **must** have `"parentId"` set to the loop node'
 ## Adding / Editing
 
 For step-by-step add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). Use the JSON structure above for the node-specific `inputs` and `parentId`.
+
+### CLI carve-out nodes inside a loop
+
+When adding a CLI carve-out node (connector, connector trigger, or managed HTTP) inside a loop, pass `--parent` to set `parentId` automatically:
+
+```bash
+uip maestro flow node add <FLOW_PATH> core.action.http.v2 --label "Fetch data" --parent <LOOP_ID> --output json
+uip maestro flow node add <FLOW_PATH> <CONNECTOR_NODE_TYPE> --label "Get record" --parent <LOOP_ID> --output json
+```
+
+`--parent` validates the parent node exists and sets `parentId` on the new node. For non-carve-out node types (script, end, etc.), set `"parentId"` directly in the JSON — see the examples above.
 
 ## Wiring
 
@@ -229,6 +242,86 @@ Key points in this pattern:
 - `variableUpdate` on `bodyScript` writes the script's return value back to `accumulator`
 - `accumulator` is `inout` so it persists across iterations
 - End node maps the final accumulated value to the `out` variable
+
+## Complete Example — Multi-Node Loop Body (HTTP + Script)
+
+Loop over items, fetch data per-iteration via HTTP, process with a script. Both body nodes have `parentId`.
+
+```json
+{
+  "nodes": [
+    {
+      "id": "start",
+      "type": "core.trigger.manual",
+      "typeVersion": "1.0",
+      "display": { "label": "Manual trigger" },
+      "inputs": { "entryPointId": "..." }
+    },
+    {
+      "id": "loop1",
+      "type": "core.logic.loop",
+      "typeVersion": "<DEFINITION_VERSION>",
+      "display": { "label": "For each item" },
+      "inputs": {
+        "collection": "=js:[{ name: 'A', id: 1 }, { name: 'B', id: 2 }]",
+        "parallel": false
+      }
+    },
+    {
+      "id": "fetchData1",
+      "type": "core.action.http.v2",
+      "typeVersion": "<DEFINITION_VERSION>",
+      "display": { "label": "Fetch data" },
+      "inputs": { "branches": [], "timeout": "PT15M", "retryCount": 0, "detail": {} },
+      "parentId": "loop1"
+    },
+    {
+      "id": "processItem1",
+      "type": "core.action.script",
+      "typeVersion": "<DEFINITION_VERSION>",
+      "display": { "label": "Process item" },
+      "inputs": {
+        "script": "return { name: $vars.loop1.currentItem.name, value: $vars.fetchData1.output.body.result };"
+      },
+      "parentId": "loop1"
+    },
+    {
+      "id": "end1",
+      "type": "core.control.end",
+      "typeVersion": "1.0",
+      "display": { "label": "End" },
+      "inputs": {},
+      "outputs": { "results": { "source": "=js:$vars.loop1.output" } }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "sourceNodeId": "start", "sourcePort": "output", "targetNodeId": "loop1", "targetPort": "input" },
+    { "id": "e2", "sourceNodeId": "loop1", "sourcePort": "start", "targetNodeId": "fetchData1", "targetPort": "input" },
+    { "id": "e3", "sourceNodeId": "fetchData1", "sourcePort": "default", "targetNodeId": "processItem1", "targetPort": "input" },
+    { "id": "e4", "sourceNodeId": "processItem1", "sourcePort": "success", "targetNodeId": "loop1", "targetPort": "continue" },
+    { "id": "e5", "sourceNodeId": "loop1", "sourcePort": "success", "targetNodeId": "end1", "targetPort": "input" }
+  ],
+  "variables": {
+    "globals": [
+      { "id": "results", "direction": "out", "type": "array" }
+    ],
+    "nodes": [
+      { "id": "loop1.currentItem", "type": "any", "binding": { "nodeId": "loop1", "outputId": "currentItem" } },
+      { "id": "loop1.currentIteration", "type": "number", "binding": { "nodeId": "loop1", "outputId": "currentIteration" } },
+      { "id": "loop1.collection", "type": "array", "binding": { "nodeId": "loop1", "outputId": "collection" } },
+      { "id": "loop1.output", "type": "array", "binding": { "nodeId": "loop1", "outputId": "output" } },
+      { "id": "fetchData1.output", "type": "object", "binding": { "nodeId": "fetchData1", "outputId": "output" } },
+      { "id": "fetchData1.error", "type": "object", "binding": { "nodeId": "fetchData1", "outputId": "error" } },
+      { "id": "processItem1.output", "type": "any", "binding": { "nodeId": "processItem1", "outputId": "output" } },
+      { "id": "processItem1.error", "type": "object", "binding": { "nodeId": "processItem1", "outputId": "error" } }
+    ]
+  }
+}
+```
+
+- Both `fetchData1` and `processItem1` have `"parentId": "loop1"` — omitting it on either causes null outputs at runtime while validation passes
+- HTTP body uses `start`/`default` ports; script returns via `success`/`continue`
+- `detail` on HTTP node is abbreviated — populate via `uip maestro flow node configure`
 
 ## Debug
 

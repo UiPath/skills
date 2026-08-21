@@ -252,11 +252,10 @@ Scaffold per [../../project-lifecycle.md § End-to-End Example](../../project-li
 ### Step 2 — Find the connector
 
 ```bash
-uip is connectors list --output json
-# Or filter: uip is connectors list --filter "slack" --output json
+uip is typecache packages --output json
 ```
 
-Note the connector `Key` (e.g., `uipath-salesforce-slack`).
+`uip is typecache packages` returns the connectors available to low-code agents — the curated set the Agent Builder UI shows, from the Studio typecache. Note the connector `Key` (e.g., `uipath-salesforce-slack`). It defaults to `--project-type Agent`; pass a different `--project-type` for other project types.
 
 ### Step 3 — Find a connection
 
@@ -271,10 +270,10 @@ This command also populates the local cache at `~/.uipath/cache/integrationservi
 ### Step 4 — Discover activities
 
 ```bash
-uip is activities list "<connector-key>" --output json
+uip is typecache activities "<connector-key>" --output json
 ```
 
-Present activities to the user. Note the chosen activity's `DisplayName`, `Description`, `ObjectName`, `MethodName`.
+`uip is typecache activities` calls the same Agent Builder typecache endpoints the frontend uses. It returns exactly the activities the UI shows for low-code agents — the curated subset from the Studio NuGet package for the connector. It defaults to `--project-type Agent`. Activities with an empty `objectName` (deprecated stubs) are filtered out. File operation and HTTP activities appear in the UI with a "Preview" chip but are fully selectable — they are included in the output. Connectors not in the typecache are absent from the UI and return empty here. Present the activities to the user and note the chosen activity's `DisplayName`, `Description`, `ObjectName`, `MethodName`.
 
 ### Step 5 — Get connector details (for iconUrl)
 
@@ -332,7 +331,7 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 
 See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md):
 - Critical Rules 11, 12 (folderPath / location)
-- Anti-pattern 13 (do NOT pass `--for-low-code-agents` — flag removed)
+- Critical Rule 13 (use `uip is typecache` for low-code IS discovery)
 
 IS-specific gotchas (each from a real Studio-Web silent-drop bug):
 - `enumValues` MUST be `[{name, value}]` objects, not bare strings.

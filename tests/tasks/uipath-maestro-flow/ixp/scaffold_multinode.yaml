@@ -31,8 +31,8 @@ initial_prompt: |
   - Use `--output json` on all uip commands.
   - Work inside the stated working directory — do NOT `cd` to a parent.
   - Do NOT run `uip maestro flow debug` or `uip maestro flow deploy`.
-  - Run `uip maestro flow validate` at most ONCE. If it fails, stop.
-  - Do NOT iterate on validation errors.
+  - Run `uip maestro flow validate` at most 3 times. If it reports errors, fix
+    the `.flow` and re-run it. Do not exceed 3 validation runs.
 
 success_criteria:
   - type: skill_triggered
@@ -74,26 +74,18 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "All three script nodes are present by name"
-    path: "ReceiptIntake/ReceiptIntake/ReceiptIntake.flow"
-    includes:
-      - "postReceipt"
-      - "sendToValidation"
-      - "logError"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ReceiptIntake 'postReceipt' 'sendToValidation' 'logError'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Scripts reference the extraction output via $vars expression"
-    path: "ReceiptIntake/ReceiptIntake/ReceiptIntake.flow"
-    includes:
-      - "$vars."
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ReceiptIntake '$vars.'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
-
-run_limits:
-  expected_turns: 24
-  max_turns: 40
-  turn_timeout: 600
-  task_timeout: 600

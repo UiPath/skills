@@ -248,18 +248,20 @@ def assert_custom_output(
     return output
 
 
-def assert_selected_after(task: dict, predecessor: dict) -> None:
+def assert_runs_sequentially_after(task: dict, predecessor: dict, tasks: list[dict]) -> None:
+    # A plain immediate-predecessor chain (no fan-in/branch/event rationale) must
+    # normalize to `runs-sequentially`; order is then carried structurally by
+    # position in the stage's task lanes, not by `selectedTasksIds`.
     rules = [
         first_rule_of_condition(condition)
         for condition in task.get("entryConditions") or []
     ]
-    matching = [rule for rule in rules if rule and rule.get("rule") == "selected-tasks-completed"]
-    rule = one(matching, f"selected-tasks-completed entry rule on {task.get('displayName')!r}")
-    selected_ids = rule.get("selectedTasksIds") or []
-    if selected_ids != [predecessor.get("id")]:
+    matching = [rule for rule in rules if rule and rule.get("rule") == "runs-sequentially"]
+    one(matching, f"runs-sequentially entry rule on {task.get('displayName')!r}")
+    if tasks.index(task) != tasks.index(predecessor) + 1:
         fail(
-            f"task {task.get('displayName')!r} must run after "
-            f"{predecessor.get('displayName')!r}; got selectedTasksIds={selected_ids}"
+            f"task {task.get('displayName')!r} must be placed immediately after "
+            f"{predecessor.get('displayName')!r} in the stage's task order"
         )
 
 
@@ -545,7 +547,7 @@ def main() -> None:
         custom_consumer,
     )
     for predecessor, task in zip(chain, chain[1:]):
-        assert_selected_after(task, predecessor)
+        assert_runs_sequentially_after(task, predecessor, tasks)
 
     if "$xref(" in json.dumps(plan):
         fail("caseplan.json still contains an unresolved $xref marker")

@@ -6,7 +6,7 @@ description: >
   creates positive feedback on that trace, then fetches the feedback by ID and
   verifies the round-trip. FolderKey and TraceId are still derived at runtime —
   only the fixture process key is fixed.
-tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover, traces, feedback]
+tags: [uipath-platform, e2e, mode:build, lifecycle:discover, traces, feedback]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]

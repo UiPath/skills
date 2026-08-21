@@ -536,19 +536,9 @@ def _assert_conditions(
         )
 
     expected_task_entries = {
-        ("Stage 1", "Analyze Expense Request"): [_sig("current-stage-entered")],
-        ("Stage 1", "Process Expense Request"): [
-            _sig(
-                "selected-tasks-completed",
-                tasks=(("Stage 1", "Analyze Expense Request"),),
-            )
-        ],
-        ("Stage 1", "Record Expense via RPA"): [
-            _sig(
-                "selected-tasks-completed",
-                tasks=(("Stage 1", "Process Expense Request"),),
-            )
-        ],
+        ("Stage 1", "Analyze Expense Request"): [_sig("runs-sequentially")],
+        ("Stage 1", "Process Expense Request"): [_sig("runs-sequentially")],
+        ("Stage 1", "Record Expense via RPA"): [_sig("runs-sequentially")],
         ("Stage 2", "Manager Approval"): [_sig("current-stage-entered")],
         ("Stage 2", "Wait for timer - S2 run once"): [_sig("current-stage-entered")],
         ("Stage 2", "Call Expense API"): [

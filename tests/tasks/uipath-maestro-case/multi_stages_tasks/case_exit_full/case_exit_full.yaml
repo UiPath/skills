@@ -36,7 +36,6 @@ initial_prompt: |
   | Case Name | CaseExitFull |
   | Case Description | Three-stage linear flow with three case-exit conditions covering three rule-types and both marks-case-complete shapes. |
   | Case Identifier | Prefix: CEF, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
   | SLA Type | Not specified |
 

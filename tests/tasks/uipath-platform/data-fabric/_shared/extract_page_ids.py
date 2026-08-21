@@ -1,68 +1,56 @@
 #!/usr/bin/env python3
-"""Extract record IDs from a `uip df records list|query` JSON response on stdin.
-
-Writes one ID per line to ``--out`` and prints a compact JSON summary to
-stdout: ``{Result, IdCount, HasNextPage, NextCursor}``. The summary keeps
-the per-page Bash response under ~250 bytes so cursor walks across many
-pages do not bloat the agent's context.
-
-Usage:
-    uip df records list <id> --limit 60 --output json \\
-      | extract_page_ids.py --out walk_ids.txt --append
-
-    uip df records list <id> --limit 60 --offset 180 --output json \\
-      | extract_page_ids.py --out offset_page_ids.txt --no-pagination
-
-Arguments:
-    --out PATH         File to write IDs to (one per line). Required.
-    --append           Append to ``--out`` instead of overwriting.
-    --no-pagination    Omit ``HasNextPage`` / ``NextCursor`` from stdout
-                       (use for offset jumps where pagination is irrelevant).
-
-Exit code:
-    0 on success. 1 if stdin is not a valid Data Fabric response (missing
-    ``Data.Records``).
-"""
+"""Extract record IDs from a Data Fabric list/query response on stdin."""
 
 import argparse
 import json
 import sys
+from pathlib import Path
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--out", required=True, help="File to write IDs to (one per line)")
-    parser.add_argument("--append", action="store_true", help="Append instead of overwrite")
-    parser.add_argument(
-        "--no-pagination",
-        action="store_true",
-        help="Omit HasNextPage/NextCursor from stdout (for offset jumps)",
-    )
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument("--append", action="store_true")
+    parser.add_argument("--no-pagination", action="store_true")
     args = parser.parse_args()
 
     try:
-        data = json.load(sys.stdin)
-    except json.JSONDecodeError as e:
-        print(f"FAIL: stdin is not valid JSON: {e}", file=sys.stderr)
+        response = json.load(sys.stdin)
+    except json.JSONDecodeError as exc:
+        print(f"FAIL: stdin is not valid JSON: {exc}", file=sys.stderr)
         return 1
 
-    inner = data.get("Data")
-    if not isinstance(inner, dict) or "Records" not in inner:
-        print(f"FAIL: response missing Data.Records (Result={data.get('Result')!r})", file=sys.stderr)
+    data = response.get("Data") if isinstance(response, dict) else None
+    if not isinstance(data, dict):
+        print("FAIL: response is missing Data", file=sys.stderr)
         return 1
 
-    ids = [r["Id"] for r in inner["Records"] if "Id" in r]
+    records = data.get("Items") or data.get("Records") or data.get("records")
+    if not isinstance(records, list):
+        print("FAIL: response is missing Data.Items/Records", file=sys.stderr)
+        return 1
 
+    ids = [
+        str(record.get("Id") or record.get("ID") or record.get("id"))
+        for record in records
+        if isinstance(record, dict)
+        and (record.get("Id") or record.get("ID") or record.get("id"))
+    ]
     mode = "a" if args.append else "w"
-    with open(args.out, mode) as f:
+    with args.out.open(mode, encoding="utf-8") as handle:
         if ids:
-            f.write("\n".join(ids) + "\n")
+            handle.write("\n".join(ids) + "\n")
 
-    summary = {"Result": data.get("Result"), "IdCount": len(ids)}
+    summary: dict[str, object] = {
+        "Result": response.get("Result"),
+        "IdCount": len(ids),
+    }
     if not args.no_pagination:
-        summary["HasNextPage"] = inner.get("HasNextPage", False)
-        summary["NextCursor"] = inner.get("NextCursor")
-
+        cursor = data.get("NextCursor")
+        if isinstance(cursor, dict):
+            cursor = cursor.get("Value") or cursor.get("value")
+        summary["HasNextPage"] = data.get("HasNextPage", bool(cursor))
+        summary["NextCursor"] = cursor
     print(json.dumps(summary))
     return 0
 

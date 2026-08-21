@@ -6,13 +6,13 @@ Data Fabric supports file-type fields on entities. Files are stored per-record p
 
 ## Creating a FILE field correctly
 
-The FILE field must be created via the CLI before the UI can upload to it. Body is just `{"fieldName":"X","type":"FILE"}` — server auto-wires the `EntityAttachment` binding. Full shape + CLI-floor caveat in [`entity-schema.md` → FILE Fields](entity-schema.md#file-fields).
+When creating a FILE field through the CLI, use only `{"fieldName":"X","type":"FILE"}`. The server auto-wires the `EntityAttachment` binding. See [`entity-schema.md` → FILE Fields](entity-schema.md#file-fields).
 
 ## Prerequisites
 
 1. **The entity must have a FILE field.** Use `uip df entities get <entity-id> --output json` to identify file-type fields. A correctly-defined FILE field shows `FieldDataType.Name: "FILE"`, `FieldDisplayType: "File"`, `IsForeignKey: true`, and `ReferenceEntity.Name == "EntityAttachment"`.
 2. **The target record must already exist.** `files upload` writes against a `<record-id>` — create the row first with `records insert` (omit the FILE column — Rule 6) and capture `Data.Id` from the response.
-3. **All three `files` commands accept `--folder-key <GUID>`** for records on folder-scoped entities (CLI ≥ `1.197.0`). Required when the parent entity lives in a folder; omit for tenant-scoped entities.
+3. **All three `files` commands accept `--folder-key <GUID>`**. Pass it when the parent entity lives in a folder; omit it for tenant-scoped entities.
 
 ## Upload or Replace a File
 
@@ -94,29 +94,6 @@ Parse by inspecting the field's runtime type (string vs object) — or pin the s
 - Do not try to set, swap, or clear the field via `records insert` / `records update`. Expected behavior: silently dropped (see warning above).
 - To check whether a file is attached, look for the field's presence and non-null value. To clear, call `files delete`.
 
-To read the filename through the CLI: query with `expansionLevel: 1` and read `Data.Items[].<field-name>.Name`. `files upload` also returns it as `Data.FileName` on the upload response.
-
-## Full Workflow
-
-```bash
-# 1. Discover entity and find a record
-uip df entities list --output json
-uip df entities get <entity-id> --output json      # see field names
-
-uip df records list <entity-id> --output json      # record IDs; FILE field shown as UUID string
-
-# 2. Upload
-uip df files upload <entity-id> <record-id> attachment \
-  --file report.pdf --output json
-#    → Data.FileName echoes the uploaded filename
-
-# 3. Read filename and metadata (Name, Size, Type, ...) for that record
-uip df records query <entity-id> \
-  --body '{"expansionLevel":1,"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Id","operator":"=","value":"<record-id>"}]}}' \
-  --output json
-#    → Data.Items[0].attachment.Name / .Size / .Type / .UpdateTime
-
-# 4. Verify by downloading
-uip df files download <entity-id> <record-id> attachment \
-  --destination /tmp/report-verify.pdf --output json
-```
+To read the filename through the CLI, query with `expansionLevel: 1` and read
+`Data.Items[].<field-name>.Name`. `files upload` also returns it as
+`Data.FileName`; verify bytes with `files download` when content matters.

@@ -10,6 +10,10 @@ tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "sh
 run_limits:
   expected_turns: 16
   max_turns: 80
+  # Nightly default turn_timeout (900s) kills this build mid-work on claude:
+  # 2026-08-18 run died at 904s with 43 commands executed and 0 criteria graded
+  # (also 08-11). Same remedy as contract_variant_wrappers.
+  turn_timeout: 1800
 
 sandbox:
   template_sources:

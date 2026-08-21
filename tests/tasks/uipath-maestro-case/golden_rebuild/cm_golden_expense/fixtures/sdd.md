@@ -28,7 +28,6 @@
 | Case Name | Coding-Agent-CM-Golden-Expense-Reporting-Manual-Case |
 | Case Description | Manages an employee expense request end to end: automated analysis (agent → process → RPA), manager approval with a rework exception lane, an API-workflow call and a child case, an event-driven stage entered by an inbound HTTP webhook, a user-selected routing stage, and a final completion-delay stage. |
 | Case Identifier | Type: constant. Prefix: `EXP` |
-| Priority | — |
 | Case-Level SLA | 1 h |
 | SLA Type | time-based |
 | Case App | Enabled |
@@ -108,7 +107,7 @@
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| `current-stage-entered` | — | Entry rule 1 |
+| `runs-sequentially` | — | Entry rule 1 |
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|
@@ -139,7 +138,7 @@
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| `selected-tasks-completed("Analyze Expense Request")` | — | Entry rule 1 |
+| `runs-sequentially` | — | Entry rule 1 |
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|
@@ -170,7 +169,7 @@
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| `selected-tasks-completed("Process Expense Request")` | — | Entry rule 1 |
+| `runs-sequentially` | — | Entry rule 1 |
 
 | Required | Run Only Once | Skip Condition |
 |----------|---------------|----------------|

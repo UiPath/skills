@@ -39,37 +39,35 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow contains inline HITL node"
-    path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
-    includes:
-      - '"uipath.human-in-the-loop.quick-form"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"uipath.human-in-the-loop.quick-form\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Flow contains a Decision node"
-    path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
-    includes:
-      - '"core.logic.decision"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"core.logic.decision\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Decision node references HITL output variable"
-    path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
-    includes:
-      - "$vars."
-      - ".output"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '$vars.' '.output'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Both Decision branches are wired (true and false handles present)"
-    path: "LeaveRequest/LeaveRequest/LeaveRequest.flow"
-    includes:
-      - '"true"'
-      - '"false"'
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '\"true\"' '\"false\"'"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

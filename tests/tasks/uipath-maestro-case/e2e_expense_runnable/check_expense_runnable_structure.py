@@ -154,7 +154,7 @@ def main():
     triggers = find_triggers(plan)
     if len(triggers) != 1:
         _fail(f"expected exactly 1 trigger; got {len(triggers)}")
-    stype = ((triggers[0].get("data") or {}).get("uipath") or {}).get("serviceType")
+    stype = ((triggers[0].get("data") or {}).get("inputs") or {}).get("serviceType")
     if stype not in (None, "", "None"):
         _fail(f"runnable variant must start from a Manual trigger (serviceType None), not {stype}")
 

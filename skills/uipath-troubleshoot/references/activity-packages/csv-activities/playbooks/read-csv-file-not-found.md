@@ -20,11 +20,23 @@ What to look for:
 - The `FilePath` expression in the `.xaml`: is the variable quoted as a literal string? Is the path relative? Does the folder portion exist?
 - Whether the failure is intermittent (points at a timing race) or every run (points at a wrong/quoted path).
 
+**Discriminator — the file's presence afterward decides the branch.** If the file is sitting at the
+*exact path from the error message* when someone checks later, the path was correct all along: a
+quoted-literal or drifted relative path resolves somewhere the file never appears, so it could not
+produce the file at that path. That single observation **excludes** the quoted-path and
+working-directory branches and confirms timing. Combined with an intermittent failure pattern (fails
+most runs, occasionally works) it is conclusive — lead with the race, do not report a path problem as
+the primary cause and the race as a secondary possibility.
+
+The converse also holds: if the file is genuinely not at that path afterward, timing is excluded and
+the cause is the path expression itself.
+
 ## Investigation
 
 1. Read the error and the resolved path from job evidence; confirm it is `Could not find file` / `Could not find a part of the path` at `Read CSV`.
 2. Read the `Read CSV` `FilePath` expression from the `.xaml`: is it a bare variable, a quoted literal, a relative path? Does the directory portion exist on the host?
 3. Check what runs immediately before the read — a download/export/sync — and whether failures are intermittent (race) vs every run (bad path).
+4. Establish whether the file is present at the error's exact path after the fault, and apply the discriminator above. Ask the user if it is not already in evidence — it is the cheapest decisive fact available, and it settles the branch on its own.
 
 ## Resolution
 

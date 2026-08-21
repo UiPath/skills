@@ -1,5 +1,6 @@
 # Operating & Diagnosing a Published API Workflow
 
+<!--skill-flavor:published-operations:start-->
 After `uip solution publish` + deploy, the workflow lives in Orchestrator as an **API process**. The local authoring verbs (`uip api-workflow init/validate/run/pack`) no longer apply to the deployed copy — operate and diagnose it through the platform surfaces below.
 
 **These commands belong to sibling skills** — `uip or` / `uip is` to `uipath-platform`, root-cause to `uipath-troubleshoot`. They are the correct owners for depth (flags, folder scoping, auth). Listed here so the operate + diagnose loop is discoverable and actionable from this skill; if a sibling skill is unavailable, the commands below still run standalone. All require `uip login`.
@@ -72,3 +73,4 @@ Map the surfaced error back to a fix using the category catalog in [troubleshoot
 | **Build** | `init`, edit, `validate`, `registry resolve`/`stub`, `pack` | — |
 | **Operate** | `run` (local execution) | `uip or jobs start <process-key>`/`list`/`stop`, `uip or triggers` (need `--folder-path`/`--folder-key`), `uip is connections` |
 | **Diagnose** | `validate` → `run --no-auth` loop, `uip is connections ping` | `uip or jobs logs`/`get`, `uip traces spans get --job-key`, uipath-troubleshoot |
+<!--skill-flavor:published-operations:end-->

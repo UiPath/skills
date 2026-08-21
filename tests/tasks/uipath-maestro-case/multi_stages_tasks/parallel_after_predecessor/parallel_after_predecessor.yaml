@@ -1,0 +1,196 @@
+task_id: skill-case-multi-parallel-after-predecessor
+description: >
+  Build a Case Management definition where two independent tasks start after the
+  same immediate predecessor, and assert the emitted `data.tasks` grouping.
+  `uip maestro case validate` accepts every grouping of a task set — strict chain,
+  shared set, shared set at index 0, and mixed entry rules inside one set all return
+  Status: Valid (probed on uip 1.198.0-preview.102) — so grouping is unenforced by
+  the CLI and only a structural assertion on the emitted JSON can catch a regression.
+  Guards the duplicate-`selected-tasks-completed` regression: siblings after one
+  predecessor must share the next task set with `runs-sequentially`, not become
+  separate gated tasks each naming the predecessor.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "ParallelAfterPredecessor"
+  containing a project also named "ParallelAfterPredecessor" from the sdd.md
+  below. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — ParallelAfterPredecessor
+
+  **Case Definition Blueprint** · Generic — Sibling Tasks After One Predecessor
+
+  Two-stage flow. Issuing Permit collects fees, then runs two independent
+  follow-ups that both start as soon as fee collection completes, then issues the
+  permit once both finish. Done is terminal.
+
+  ## 1. Case Definition
+
+  | Field | Value |
+  |---|---|
+  | Case Name | ParallelAfterPredecessor |
+  | Trigger | Manual |
+
+  ## 2. Stages
+
+  ### Stage 1: Issuing Permit (primary)
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | case-entered | - |
+
+  **Exit Condition**
+
+  | WHEN | IF | Marks Stage Complete |
+  |---|---|---|
+  | required-tasks-completed | - | Yes |
+
+  #### Tasks
+
+  | # | Task Name | Type | Activation Mode | Starts When | Required |
+  |---|---|---|---|---|---|
+  | 1 | Collect Fees | wait-for-timer | sequential | stage enters | Yes |
+  | 2 | Wait For Payment Confirmation | wait-for-timer | parallel-after-predecessor | after Collect Fees | Yes |
+  | 3 | Track Payment Deadline | wait-for-timer | parallel-after-predecessor | after Collect Fees | Yes |
+  | 4 | Generate Permit | wait-for-timer | sequential | after both follow-ups | Yes |
+
+  Wait For Payment Confirmation and Track Payment Deadline are independent of each
+  other. Both become active the moment Collect Fees completes; neither waits for
+  the other. Generate Permit runs only after both have finished.
+
+  ##### Task 1.1: Collect Fees
+
+  **Type:** wait-for-timer
+  **Activation Mode:** sequential
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | runs-sequentially | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (built-in) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+
+  ##### Task 1.2: Wait For Payment Confirmation
+
+  **Type:** wait-for-timer
+  **Activation Mode:** parallel-after-predecessor
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | runs-sequentially | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (built-in) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+
+  ##### Task 1.3: Track Payment Deadline
+
+  **Type:** wait-for-timer
+  **Activation Mode:** parallel-after-predecessor
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | runs-sequentially | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (built-in) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+
+  ##### Task 1.4: Generate Permit
+
+  **Type:** wait-for-timer
+  **Activation Mode:** sequential
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | runs-sequentially | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (built-in) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+
+  ### Stage 2: Done (primary, terminal)
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | selected-stage-completed("Issuing Permit") | - |
+
+  **Exit Condition**
+
+  | WHEN | IF | Marks Stage Complete |
+  |---|---|---|
+  | required-tasks-completed | - | Yes |
+
+  #### Tasks
+
+  | # | Task Name | Type | Activation Mode | Starts When | Required |
+  |---|---|---|---|---|---|
+  | 1 | Close Out | wait-for-timer | sequential | stage enters | Yes |
+
+  ##### Task 2.1: Close Out
+
+  **Type:** wait-for-timer
+  **Activation Mode:** sequential
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | runs-sequentially | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (built-in) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT ask for approval,
+  confirmation, or feedback. Build end-to-end in a single pass and finish with
+  `uip maestro case validate` passing on the resulting caseplan.json.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate ParallelAfterPredecessor/ParallelAfterPredecessor/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Issuing Permit emits [[Collect Fees], [Wait For Payment Confirmation, Track Payment Deadline], [Generate Permit]]: the two independent siblings share one task set, that set comes after the Collect Fees set, Collect Fees is alone in its set, Generate Permit follows the sibling set, every task carries exactly one runs-sequentially entry rule, and neither sibling uses a selected-tasks-completed gate naming the predecessor"
+    command: "python3 $TASK_DIR/check_parallel_after_predecessor.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

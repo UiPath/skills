@@ -136,7 +136,7 @@ def main() -> None:
     event_triggers = [
         trigger
         for trigger in triggers
-        if ((trigger.get("data") or {}).get("uipath") or {}).get("serviceType")
+        if ((trigger.get("data") or {}).get("inputs") or {}).get("serviceType")
         == "Intsvc.EventTrigger"
     ]
     if len(event_triggers) != 1 or len(triggers) != 1:

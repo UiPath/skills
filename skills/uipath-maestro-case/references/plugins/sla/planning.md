@@ -41,7 +41,7 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 | `count` | sdd.md duration number | Positive integer |
 | `unit` | sdd.md duration unit | `min` \| `h` \| `d` \| `w` \| `m` |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
-| `display-name` | sdd.md or generated fallback | Required non-empty SLA title, unique within the target, and MUST NOT contain `:`. If the SDD has no title, ask for one or use the deterministic fallback `SLA Rule {N}` and record it. |
+| `display-name` | sdd.md `SLA Title` (§1 Case Metadata for root; `**SLA Title:**` under `#### Stage SLA`) or generated fallback | Required non-empty SLA title, unique within the target, and MUST NOT contain `:`. Carry the SDD title verbatim. If the SDD has no title, ask for one or use the deterministic fallback `SLA Rule {N}` and record it. |
 | `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context for the target, duration, threshold, and escalation behavior. |
 
 ### Conditional SLA rule
@@ -65,14 +65,14 @@ Rules are evaluated in insertion order — first truthy expression wins. The def
 | `recipient-scope` | sdd.md | `User` \| `UserGroup` |
 | `recipient-target` | sdd.md → resolver | Recipient UUID. When sdd gives an email or group name, run [§ Identity Resolution](#identity-resolution) — resolved UUID written inline. On resolver failure or user decline, mark `<UNRESOLVED: user-uuid for <email>>` / `<UNRESOLVED: group-uuid for <name>>`. |
 | `recipient-value` | sdd.md | Display value (typically the email for User, group name for UserGroup). |
-| `display-name` | sdd.md or generated fallback | Required non-empty escalation title, unique across the target, and MUST NOT contain `:`. If omitted, use `Escalation Rule {N}` and record the fallback. |
+| `display-name` | sdd.md escalation-table `Display Name` cell | Required non-empty escalation title, unique across the target, and MUST NOT contain `:`. Carry the SDD title verbatim. If omitted, use `Escalation Rule {N}` and record the fallback. |
 | `target` | sdd.md target (root vs stage) | `"root"` or `"<stage-name>"` |
 | `attach-to` | sdd.md | `default` (attach to the `=js:true` rule) or `T<m>` pointing to the conditional-rule T-entry the escalation fires under. |
 | `rationale` | sdd.md case/stage SLA Design Rationale | Required reviewer context. If this escalation enters a secondary stage, name that lane and why it is global/interrupting. |
 
 ## Identity Resolution
 
-When sdd gives an escalation recipient as an email (`User: manager@corp.com`) or group name (`UserGroup: "Order Management Team"`), resolve to a directory UUID via `uip admin` while authoring the T-entry. Resolved UUIDs land inline in `tasks.md`; [`impl-json.md`](impl-json.md) writes them straight into `escalationRule[].action.recipients[].target` — no sentinel needed. Resolution runs **Phase 1 only** — Phase 0 still records email / group name as a string in sdd.md.
+When sdd gives an escalation recipient as an email (`User: manager@corp.com`) or group name (`UserGroup: "Order Management Team"`), resolve to a directory UUID via `uip admin` while authoring the T-entry. Resolved UUIDs land inline in `tasks.md`; [`impl-json.md`](impl-json.md) writes them straight into `escalationRule[].action.recipients[].target` — no sentinel needed. Resolution runs **Phase 1 only** — the design lane records email / group name as a string in sdd.md.
 
 ### Skip — UUID pass-through
 
@@ -209,3 +209,5 @@ Before emitting SLA T-entries, reject or repair the same cases the Case App reje
 - **Do not skip the resolver to save a CLI call.** Email / group-name recipients MUST go through [§ Identity Resolution](#identity-resolution). Writing `<UNRESOLVED: ...>` directly without attempting `uip admin users/groups list` is a planning bug.
 - **Do not fabricate UUIDs.** When the resolver returns 0 / multi / partial matches, AskUserQuestion or keep `<UNRESOLVED>` — never guess a UUID, never auto-pick the first candidate without the exact-email / exact-name gate.
 - **Do not cache user declines.** Session cache holds positive resolutions only. Re-ask on each T-entry occurrence of the same unresolved recipient.
+
+<!-- END: planning.md -->

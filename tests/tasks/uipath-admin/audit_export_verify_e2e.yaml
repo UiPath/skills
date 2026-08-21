@@ -1,90 +1,52 @@
 task_id: skill-admin-audit-export-verify-e2e
 description: >
   End-to-end test (artifact verification tier): agent drives the default
-  `uip admin audit tenant export` (json) to produce a real folder of
-  day-wise JSON files, then verifies (a) the output folder exists, and
-  (b) each per-day file is a JSON array whose events use the LTS-schema
-  keys.
+  `uip admin audit tenant export` (json) to produce a real folder of day-wise
+  JSON files, then the harness verifies the artifact — a single CLI-generated
+  `audit_<from>_<to>_<generatedAt>` folder under the requested base directory,
+  every per-day file a JSON array, and every event carrying the LTS-schema keys.
 
-  Unlike the command-construction e2e (`audit_export_e2e.yaml`), this
-  task asserts real artifact correctness against the test tenant
-  authenticated via the workflow's env-var auth (UIPATH_CLI_AUTH_TOKEN
-  + UIPATH_CLI_ORG/TENANT_*).
+  Fully outcome-graded: the leading `command_executed` regex is gone, so the
+  grade rests entirely on what the export produced against the test tenant
+  (authenticated via the workflow's ROPC bot-user auth). Scope is graded from the
+  records themselves — tenant-scope events populate `TenantId` — which a command
+  regex could not check.
 
-  Whole-day granularity note: `uip admin audit ... export` issues one
-  HTTP call per UTC day inside [--from-date, --to-date] and writes one
-  <YYYY-MM-DD>.json JSON file per day into the output folder.
+  Whole-day granularity note: `uip admin audit ... export` issues one HTTP call
+  per UTC day inside [--from-date, --to-date] and writes one <YYYY-MM-DD>.json
+  file per day into the generated folder.
 
-  LTS lag note: the export reads from the long-term store, which lags
-  the live `events` endpoint by up to ~48h. The customer-style "past
-  week" prompt therefore includes trailing days that may come back
-  empty; the assertions below are structural (JSON-array shape +
-  LTS-schema keys) and tolerate empty or missing trailing day files.
+  The requested "past week" is graded from the CLI-generated output name, which
+  carries the window bounds — so a single-day export cannot satisfy it even when
+  the long-term store returns no rows for the window.
+
+  LTS lag note: the export reads from the long-term store, which lags the live
+  `events` endpoint by up to ~48h. The customer-style "past week" prompt
+  therefore includes trailing days that may come back empty; the assertions are
+  structural and tolerate an empty window — the CLI-generated output is itself
+  the evidence the export ran, so no minimum event or file count is asserted.
 
   Blocker: this task requires the base-directory + generated-name export
   behavior in the published `@uipath/cli` (UiPath/cli#2585 must ship +
   publish, on top of #2534 (json folder) + #1372 (adds `uip admin audit`)).
   Until then `--output-path` is treated as the exact output folder (no
-  generated subfolder) and the `audit_*` glob finds nothing.
+  generated subfolder) and the verifier reports no generated export found.
 tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
 
 initial_prompt: |
-  Can you export the past week's tenant Admin audit events as JSON files? Save
+  Can you export the past week's tenant audit events as JSON files? Save
   them in a folder called audit-window.
 
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+  Run the export in the foreground and wait for it to finish before you reply —
+  do not run it as a background task.
+
 success_criteria:
-  - type: command_executed
-    description: "Agent invoked tenant export with bounded window + --output-path folder"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-path\s+\S+)'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Export created exactly one uniquely-named folder (audit_<from>_<to>_<generatedAt>) under the ./audit-window base directory"
-    command: |
-      python3 -c "
-      import glob, os
-      subs = [p for p in glob.glob('./audit-window/audit_*') if os.path.isdir(p)]
-      assert len(subs) == 1, f'expected one generated export folder under ./audit-window, found {subs}'
-      print(f'OK: generated export folder {subs[0]} with {len(os.listdir(subs[0]))} file(s)')
-      "
-    timeout: 10
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Generated folder contains well-formed events: each per-day .json file is a JSON array; events use the LTS-schema keys (empty window acceptable for a quiet tenant)"
-    command: |
-      python3 -c "
-      import glob, json, os, sys
-      REQUIRED = ['Identifier','DateCreatedUtc','OrganizationId','ActorId','Action','Source','Category']
-      subs = [p for p in glob.glob('./audit-window/audit_*') if os.path.isdir(p)]
-      assert subs, 'no generated export folder under ./audit-window'
-      d = subs[0]
-      day_files = [f for f in os.listdir(d) if f.endswith('.json')]
-      if not day_files:
-          print('OK: export window is empty (no per-day files) — structural assertion trivially holds')
-          sys.exit(0)
-      sample = None
-      total = 0
-      for name in day_files:
-          with open(os.path.join(d, name), encoding='utf-8-sig') as fh:
-              data = json.load(fh)
-          assert isinstance(data, list), f'{name} is not a JSON array'
-          total += len(data)
-          if sample is None and data:
-              sample = data[0]
-      if sample is None:
-          print('OK: every per-day file is an empty JSON array — structural assertion trivially holds')
-          sys.exit(0)
-      missing = [k for k in REQUIRED if k not in sample]
-      assert not missing, f'sample event missing LTS keys: {missing}; sample={sample}'
-      print(f'OK: validated structure across {len(day_files)} per-day files, total events={total}')
-      "
-    timeout: 60
+    description: "./audit-window holds exactly one CLI-generated day-wise JSON export whose events carry the LTS schema and are tenant-scope"
+    command: 'AUDIT_BASE_DIR=audit-window AUDIT_FORMAT=json AUDIT_DEEP=1 AUDIT_MIN_DAYS=5 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
+    timeout: 90
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0

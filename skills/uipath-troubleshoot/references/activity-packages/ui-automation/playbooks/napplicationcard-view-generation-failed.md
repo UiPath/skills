@@ -59,6 +59,12 @@ What to look for:
 4. Confirm the `.xaml` itself is structurally intact (the `NApplicationCard` node is present and
    well-formed) — a rendering failure with valid source points at cache/version skew, not corrupt XAML.
 
+The three causes are **cumulative, not alternatives**. Finding one does not rule out the others, and a
+stale `obj/project.assets.json` is the easiest to spot — do not stop there. Run steps 2 and 3 in full
+every time and report every cause the evidence supports. In particular, always compare the package pin
+against `studioVersion` even after a stale project cache is already confirmed: a project-cache clear
+alone leaves a version skew in place and the view fails to regenerate on reopen.
+
 ## Resolution
 
 - **Version skew (most common):** align the automation activity package with the Studio version and
@@ -73,6 +79,10 @@ What to look for:
   and `obj` is also safe), then reopen the project to rebuild.
 - After clearing caches / aligning versions, reopen the workflow — the `NApplicationCard` view
   regenerates once Studio loads a consistent activity assembly.
+
+When the evidence shows both a version skew and a drifted cache, deliver both fixes together: align the
+package/Studio versions **and** clear `%LOCALAPPDATA%\UiPath\.cache` plus the project's
+`.local`/`bin`/`obj`. Either one on its own leaves the card unrenderable.
 
 Do not attempt to fix this by editing the `.xaml` by hand — the source is intact; the fault is in the
 Studio-side view factory / cache, and hand-edits risk corrupting a valid file.

@@ -33,7 +33,6 @@ initial_prompt: |
   | Case Name | InvoiceReviewCase |
   | Case Description | Reviews an invoice and records the decision. |
   | Case Identifier | Prefix: IRC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 
@@ -196,7 +195,11 @@ success_criteria:
   - type: command_not_executed
     description: "Rule 13: no shell redirection into a skill artifact and no helper-script build-assembler (`> caseplan.json`, `| tee tasks.md`, `node build-caseplan.js`, `python gen.py`)"
     tool_name: "Bash"
-    command_pattern: '([<>]{1,2}\s*\S*(caseplan\.json|tasks\.md|bindings_v2\.json|entry-points\.json)|tee\b[^\n]*(caseplan\.json|tasks\.md)|(node|nodejs|python[0-9]?|bash|sh)\s+[^\n]*\.(js|mjs|cjs|py|sh)\b)'
+    # The script path must be the token immediately after the interpreter: agents wrap every
+    # command in `/bin/bash -lc '...'`, so `bash\s+[^\n]*\.sh` would match any command that merely
+    # mentions a script path (e.g. `rg ... audit_plan.py`). The lookahead exempts the skill's own
+    # read-only auditor, which planning.md mandates as the final plan gate.
+    command_pattern: '([<>]{1,2}\s*\S*(caseplan\.json|tasks\.md|bindings_v2\.json|entry-points\.json)|tee\b[^\n]*(caseplan\.json|tasks\.md)|\b(node|nodejs|python[0-9]?|bash|sh)\s+(?!\S*uipath-maestro-case/scripts/)\S+\.(js|mjs|cjs|py|sh)\b)'
     weight: 2.0
     pass_threshold: 1.0
 

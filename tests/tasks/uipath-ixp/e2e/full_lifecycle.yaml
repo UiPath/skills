@@ -89,10 +89,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "Agent fetched predictions"
+    description: "Agent fetched predictions per document (document id passed, not the project-wide form)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+get-predictions\s+\S+\s+(?!-)\S+)[^\r\n]*$
     weight: 1.5
     pass_threshold: 1.0
 

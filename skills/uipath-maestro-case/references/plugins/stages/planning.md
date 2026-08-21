@@ -96,3 +96,5 @@ Secondary variant:
 ## Unresolved Fallback
 
 Stages have no registry lookup, so there is no "unresolved" path. If the sdd.md is missing stage names or descriptions, ask the user with **AskUserQuestion** rather than proceeding with placeholders.
+
+<!-- END: planning.md -->

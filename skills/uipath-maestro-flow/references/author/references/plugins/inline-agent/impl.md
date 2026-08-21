@@ -29,14 +29,21 @@ For agent.json configuration and resource file setup, see the `uipath-agents` sk
 `uip agent init --inline-in-flow` scaffolds `agent.json` with `settings.model: "gpt-4o-2024-11-20"` (stale) and empty `messages[].content` by design. **Both are placeholders — override them.** A scaffolded inline agent left on the default model with toy prompts is the single biggest quality gap a customer ships. Edit `<FlowProjectDir>/<projectId>/agent.json`:
 
 1. **Override the model** — never ship `gpt-4o-2024-11-20`. Discover the tenant's models with `uip agent model list` and pick the newest GA model for the task; set `settings.maxTokens` ≤ its cap. Discovery command, GA filter, and task→model mapping: the `uipath-agents` skill's [`model-selection-guide.md`](../../../../../../uipath-agents/references/lowcode/model-selection-guide.md).
-2. Set `settings.temperature` (0 for extraction/classification/judgment) and `settings.maxIterations` (default 25; lower for single-shot).
-3. **Write a real system prompt** in `messages[0].content` — bounded role, per-tool call/stop criteria, output contract, grounding. Skeleton + worked example: [`agent-prompting-guide.md`](../../../../../../uipath-agents/references/lowcode/prompting/agent-prompting-guide.md).
+2. Set `settings.temperature` (0 for extraction/classification/judgment) and `settings.maxIterations` (keep 25 with any tool or context handle; `≤5` only tool-less single-shot — a looping agent needs step 3's stop rule, not a higher cap).
+3. **Write a real system prompt** in `messages[0].content` — bounded role, per-tool call/stop criteria, output contract, grounding. Skeleton + worked example: [`autonomous-agent-prompting-guide.md`](../../../../../../uipath-agents/references/lowcode/prompting/autonomous-agent-prompting-guide.md#1-system-prompt-skeleton).
+
+   **Every tool and context handle needs a call cap plus a decide-anyway fallback**, or the agent re-queries until the runtime kills it (`AGENT_RUNTIME.TERMINATION_MAX_ITERATIONS`, incident `170002`). Two sentences per grounding tool:
+
+   ```text
+   Call <toolName> at most <N> times (N ≤ 3 for a single decision). After the last call, stop retrieving and decide with the evidence you already have.
+   If the retrieved content does not cover a detail, say so in <rationaleField>, lower <confidenceField>, and still return every outputSchema field. Never end a run without a determination.
+   ```
 4. Write the user prompt in `messages[1].content`.
 5. **Declare a typed `outputSchema`** — not a bare `content` string — so downstream nodes can consume the result.
 
-After editing `content`, rebuild the matching `messages[].contentTokens` (`type: "simpleText"` / `type: "variable"`). Token mechanics are flow-specific — see § Wiring Flow Variables into Agent Prompts below; for prompt-quality structure see `agent-prompting-guide.md`.
+After editing `content`, rebuild the matching `messages[].contentTokens` (`type: "simpleText"` / `type: "variable"`). Token mechanics are flow-specific — see § Wiring Flow Variables into Agent Prompts below; for prompt-quality structure see `autonomous-agent-prompting-guide.md`.
 
-> **Source of truth.** The prompt skeleton, the production-field checklist (`outputSchema` / `temperature` / `maxIterations` / `guardrails`), the model-discovery command, and the worked example all live in the `uipath-agents` guides linked above — this skill points at them rather than copying, to avoid cross-skill drift. The obligations in steps 1–5 are the build-time minimum; the *how* is one click away.
+> **Source of truth.** The prompt skeleton, the production-field checklist (`outputSchema` / `temperature` / `maxIterations` / `guardrails`), the model-discovery command, and the worked example all live in the `uipath-agents` guides linked above — this skill points at them rather than copying, to avoid cross-skill drift. The two stop-condition sentences in step 3 are the deliberate exception: they are inlined because a flow whose agent skips them faults at debug. The obligations in steps 1–5 are the build-time minimum; the *how* is one click away.
 
 ## Wiring Flow Variables into Agent Prompts
 
@@ -108,7 +115,7 @@ Matching `agent.json` — `inputSchema` keys mirror the bindings; the prompt use
 ]
 ```
 
-Keep the flow-node `systemPrompt` / `userPrompt` as short generic placeholders — the canonical prompt lives in `agent.json messages[]`, and that system prompt should be a real structured one (see `agent-prompting-guide.md`), not a bare blob.
+Keep the flow-node `systemPrompt` / `userPrompt` as short generic placeholders — the canonical prompt lives in `agent.json messages[]`, and that system prompt should be a real structured one (see `autonomous-agent-prompting-guide.md`), not a bare blob.
 
 ### When the source field name is unknown at authoring time
 
@@ -119,6 +126,8 @@ Connector-trigger output fields (e.g. email `subject`/`from`/`body`) aren't in t
 - **In `agent.json` prompts, use the `{{input.<trigger>__output__<var>}}` form** (the flattened key, `input.` prefix). Never use raw `{{ $vars.X }}` (the runtime can't resolve it — agent gets the literal token) or `{{plainName}}` (no prefix).
 - **The `variable` `rawString` is exactly what sits between the braces** — `input.<trigger>__output__<var>`, brace-free, no added spaces.
 - **Keep the flow-node `inputs.systemPrompt` / `inputs.userPrompt` as short generic placeholders** — the canonical prompt lives in `agent.json messages[]`, and delivery comes from `agentInputVariables[]`, not from tokens in the node prompts.
+- **Declared `type` must match the bound node's real output shape, in BOTH `agentInputVariables[].type` and `inputSchema`.** The runtime strict-validates `JobArguments` before the model runs: a list bound to an `object`-typed key faults `AGENT_STARTUP.INPUT_VALIDATION_ERROR` (incident `170002`, `"Input should be a valid dictionary … input_type=list"`), and both `flow validate` and `agent validate` still report `Valid`. **Data Service query-entity-records returns an array. A script-built value has the shape the script returns — `.map()` returns array, never object.** The registry won't settle it — connector nodes declare `output.type: "object"` with no schema — so bind the leaf (`=$vars.crmLookup1.output[0].accountTier`) or read the shape from one `flow debug` run.
+- **Mark a key `required` only when the binding can never be empty** — otherwise an empty upstream fails the same startup validation instead of letting the agent reason about a missing value.
 - **Each `agentInputVariables[]` entry uses `binding` (not `value`).** The converter builds `JobArguments` from `binding`; a `value: "=js:$vars…"` entry (Studio Web's internal canvas form) is **ignored** — the agent gets empty input and faults at debug (`AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR`, "Template placeholders detected instead of actual values"). Write `{ "id": "<key>", "binding": "=$vars.<trigger>.output.<var>" }`. `binding` is what both the CLI converter and Studio Web's loader read.
 
 ## Registry Validation
@@ -162,12 +171,6 @@ Use `Edit` to add a node instance to `nodes[]`. The instance carries only per-in
     ]
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "Agent response",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the node fails",
@@ -336,12 +339,6 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
     ]
   },
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "Agent response",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the node fails",
@@ -403,6 +400,8 @@ uip maestro flow validate <FlowName>.flow --output json
 ```
 
 > Current validator requirement: `uip maestro flow validate` rejects flows whose `uipath.agent.autonomous` node lacks non-empty `inputs.systemPrompt` / `inputs.userPrompt`. Include placeholder values on the flow node, but keep the canonical prompts in the inline agent's `agent.json`.
+
+> **Refresh also shell-ifies the parent `.flow` (self-contained flows).** When a flow was authored self-contained in Studio Web, its `.flow` embeds the inline agent's prompts/model/guardrails and each resource node's config **inline** (not just in the `<projectId>/` sidecar). Since you edit the **sidecar**, that stale embed would shadow your edits when the flow is re-opened in Studio Web (the embed wins over the sidecar on load). So `uip agent refresh --inline-in-flow` strips this agent's embedded config back out of the parent `.flow` — leaving only structural inputs (`source`, `agentInputVariables`, etc.) on the agent node and `{source, detail, itemsDescription}` on its resource nodes — so Studio Web re-hydrates the cluster from your freshly-written sidecar on import. It is **scoped to the agent being refreshed** (siblings untouched), a **no-op** for flows authored from scratch via the CLI (already shells), and **best-effort** (a failure never fails refresh). When it acts, the JSON output carries `FlowShellified: true` and `FlowResourceNodesStripped: <n>`. You author the sidecar (`agent.json` + `resources/`); refresh keeps the `.flow` a shell — do not hand-embed prompts/config back into the flow node.
 
 ## Debug
 

@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-word-not-installed
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a classic Word Application Scope
   failure caused by Microsoft Word not being installed on the robot host: the

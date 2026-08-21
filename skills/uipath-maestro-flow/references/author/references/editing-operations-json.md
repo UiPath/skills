@@ -27,10 +27,12 @@ When editing the `.flow` file with `Edit` / `Write`, **you** are responsible for
 
 Before editing the `.flow` file, ensure each of the following is handled. These are the concerns the CLI used to manage automatically; under the Edit / Write default, **you** are responsible for them.
 
+<!--skill-flavor:flow-project-location:start-->
 1. **Locate the canonical `.flow` file.** Before any `Edit` / `Write`, find the flow project directory — it is the directory that contains `project.uiproj`. The canonical `.flow` lives **next to** that `project.uiproj`, not at the solution root. Commands like `uip solution init <Name>` + `uip maestro flow init <Name>` create nested paths (`<Name>/<Name>/project.uiproj`); the `.flow` you must edit is `<Name>/<Name>/<Name>.flow`, not `<Name>/<Name>.flow`. Run `find . -name project.uiproj -type f` and pin every `Edit` / `Write` call to the sibling file. `uip maestro flow validate <PATH>.flow` will accept a misplaced file, so validation alone does **not** confirm the right target — only the colocation with `project.uiproj` does.
+<!--skill-flavor:flow-project-location:end-->
 2. **Definitions and versions.** For every new node type, run `uip maestro flow registry get <type> --output json`. Copy the returned node definition object **verbatim** into `definitions[]` — one entry per unique `type:typeVersion`. Depending on CLI/plugin version, the node definition may appear as `Data.Node` or as the top-level object containing fields such as `nodeType`, `version`, and `handleConfiguration`; copy that node object, not the surrounding `Result` / `Code` envelope. Then set each node instance's `typeVersion` to match the copied definition's `version` exactly — string match, no normalization. Never hand-write or paraphrase definitions (see "Every node type needs a `definitions` entry" in [the Author capability index](../CAPABILITY.md)). For node types with a documented `uip maestro flow node add` carve-out (managed HTTP, connector activities, connector triggers), use the CLI — see [http/impl.md — Step 1](plugins/http/impl.md#add-the-node).
 3. **Unique node ID.** Pick a camelCase ID that does not collide with existing node IDs. Prefer meaningful names (`fetchUsers`, `filterActive`) since they become part of every `$vars.<nodeId>.*` expression.
-4. **`sourcePort` and `targetPort` on every edge.** Omitting `targetPort` is the #1 validation error (see "`targetPort` is required on every edge" in [the Author capability index](../CAPABILITY.md)). Use `sourcePort`, never `sourceHandle`; `sourceHandle` is not part of the `.flow` edge schema and produces a precise schema error such as `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` (the path tells you exactly which edge entry is missing the `sourcePort` key). Look up ports in the relevant plugin's `planning.md` or in [file-format.md — Standard ports](../../shared/file-format.md). If an edge uses `sourcePort: "error"`, the source node must also have `inputs.errorHandlingEnabled: true`; `uip maestro flow format` self-heals this, but direct JSON edits must set it.
+4. **`sourcePort` and `targetPort` on every edge.** Omitting `targetPort` is the #1 validation error (see "`targetPort` is required on every edge" in [the Author capability index](../CAPABILITY.md)). Use `sourcePort`, never `sourceHandle`; `sourceHandle` is not part of the `.flow` edge schema and produces a precise schema error such as `[error] [edges[N].sourcePort] Invalid input: expected string, received undefined` (the path tells you exactly which edge entry is missing the `sourcePort` key). Look up ports in the relevant plugin's `planning.md` or in [file-format.md — Standard ports](../../shared/file-format.md). If an edge uses `sourcePort: "error"`, the source node must also have `inputs.errorHandlingEnabled: true`; `uip maestro flow format` self-heals this, but direct JSON edits must set it. Only those nodes — setting the flag on a node with no `error` edge swallows its failures (see [file-format.md — Default: off](../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles)).
 5. **Node outputs block (End / Terminate only).** End-style nodes consume their `outputs` block at runtime to map workflow-level `out` variables — see [end/impl.md](plugins/end/impl.md). For action / trigger nodes the instance `outputs` block is **not** consumed by BPMN serialization; the runtime reads the manifest's `outputDefinition` instead. Authoring an action-node `outputs` block matching the manifest is fine and is what the canonical examples show, but adding it does **not** make `$vars.<sourceNodeId>.output` resolve downstream — that contract is `variables.nodes[]` (next item).
 6. **`variables.nodes[]` (REQUIRED for every data-producing node — this is what powers `$vars.X.output`).** For each data-producing node, add an entry per output (`output` for action / trigger nodes, plus `error` for action nodes). The BPMN emitter walks `variables.nodes[]` to write the process-level `<uipath:inputOutput id="<nodeId>.<outputId>">` declarations the runtime needs; without them, downstream `$vars.<sourceNodeId>.output` resolves to `undefined` even though `flow validate` passes (MST-9972). The shape per entry: `{ "id": "<nodeId>.<outputId>", "type": "object", "binding": { "nodeId": "<nodeId>", "outputId": "<outputId>" } }`. After your edits, **`uip maestro flow format` regenerates this block from `nodes[]` + `definitions[]`** — running format makes any direct-authored omission self-healing.
 7. **On delete — cascade manually.** Remove the node from `nodes`. Then sweep `edges[]` for any with matching `sourceNodeId`/`targetNodeId`. Then prune `definitions[]` if this was the last user of the type. Then check `bindings_v2.json` — but only remove a connector binding if no remaining node uses the same connector (bindings are shared at the connector level).
@@ -85,7 +87,7 @@ Reach for `jq` / `python3` only when JMESPath cannot express the operation (mult
 ### Why scripting is approval-gated
 
 - `Edit` on nested JSON is fragile. Indented sibling fields, trailing commas, and quote styles all break the exact-match constraint. One byte of drift, no edit applied.
-- Whole-file `Write` is safe but lossy — every field has to round-trip through chat, and large `.flow` files (>500 lines once layout, definitions, and bindings settle) blow the read budget. Use `Write` only for new flows or full reshapes.
+- Whole-file `Write` is lossy — every field has to round-trip through chat, and large `.flow` files (>500 lines once layout, definitions, and bindings settle) blow the read budget. Use `Write` only for new flows or full reshapes; on a flow with connector / managed-HTTP nodes it silently clobbers CLI-owned `bindings[]` / `inputs.detail` (invisible to `flow validate`) — `Edit` in place instead.
 - `python3 -c` / heredoc is a fallback for structural rewrites that are too brittle for `Edit` and too large for safe whole-file `Write`. Use it only after surfacing the trade-offs and getting explicit user approval.
 
 ---
@@ -109,25 +111,23 @@ Reach for `jq` / `python3` only when JMESPath cannot express the operation (mult
   "display": { "label": "<LABEL>" },
   "inputs": {},
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the <node type>",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the <node type> fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
 }
 ```
 
+> **Loop body nodes — set `parentId`.** When adding a node inside a `core.logic.loop` body, add `"parentId": "<LOOP_NODE_ID>"` to the node object. Without it, the runtime executes the node outside the loop context — `$vars.<loopId>.currentItem` is inaccessible and per-iteration state does not update. This applies to **every** node type inside the loop (HTTP, script, connector, etc.). See [loop/impl.md](plugins/loop/impl.md).
+
+**Orchestrator-job nodes (api-workflow, rpa-workflow, agent, agentic-process, function): declare `error` only (`source: "=Error"`) — `output` is derived.** The converter copies an authored `source` verbatim there, and injects `{name: "output", type: "jsonSchema", source: "=this", var: "output"}` only when a non-empty `outputs` omits `output`. So authoring `output` with `"=result.response"` on one of those leaves `$vars.{nodeId}.output` null at runtime while `flow validate` passes. Every other node type ignores the instance `outputs` block (DAP nodes — connector, HTTP, triggers — `Intsvc.*` — and script/transform take outputs from the manifest; inline agents have theirs overwritten; queue nodes never read it), so `error`-only stays a safe default everywhere and a manifest-matching `output` entry is harmless documentation. Downstream reads `$vars.{nodeId}.output` in every case.
+
 > **`display` is required on every node** — including control-flow nodes (`core.control.end`, `core.logic.terminate`) where it may feel optional. Omitting it produces a vague `[(root)] Schema validation failed: Invalid input: expected object, received undefined` from `uip maestro flow validate`, which does NOT pinpoint the missing field. Always include `"display": { "label": "<label>" }` on every node, even bare end nodes. See [file-format.md — Node instance](../../shared/file-format.md#node-instance).
 
-> **What actually makes `$vars.<sourceNodeId>.output` resolve is `variables.nodes[]` (step 4 below), not the instance `outputs` block.** The BPMN emitter ignores the action-node instance `outputs` block at serialization — it reads the manifest's `outputDefinition` for the activity-side mapping and reads `variables.nodes[]` for the process-level `<uipath:inputOutput>` declarations downstream nodes depend on. Authoring an `outputs` block matching the manifest is fine (the canonical examples include it for documentation), but you can skip it on action and trigger nodes. End / terminate nodes are different — see [end/impl.md](plugins/end/impl.md). The standard patterns are in [file-format.md — Node outputs](../../shared/file-format.md#node-outputs). **Always run `uip maestro flow format` after structural edits — it regenerates `variables.nodes[]` from the current node graph (MST-9972).**
+> **What actually makes `$vars.<sourceNodeId>.output` resolve is `variables.nodes[]` (step 4 below), not the instance `outputs` block.** The BPMN emitter ignores the action-node instance `outputs` block at serialization — it reads the manifest's `outputDefinition` for the activity-side mapping and reads `variables.nodes[]` for the process-level `<uipath:inputOutput>` declarations downstream nodes depend on. Authoring an `outputs` block matching the manifest is fine (the canonical examples include it for documentation), but you can skip it on action and trigger nodes. **Exception — Orchestrator-job nodes** (api-workflow, rpa-workflow, agent, agentic-process, function): the converter DOES read their instance `outputs` and copies each `source` verbatim into `model.outputDefinition`, so a wrong `source` there (e.g. `=result.response`) breaks the downstream variable. Declare `error` only and let `output` be injected. End / terminate nodes are different — see [end/impl.md](plugins/end/impl.md). The standard patterns are in [file-format.md — Node outputs](../../shared/file-format.md#node-outputs). **Always run `uip maestro flow format` after structural edits — it regenerates `variables.nodes[]` from the current node graph (MST-9972).**
 
 > **No instance `model` block.** BPMN type, serviceType, event definition, and binding/context templates are provided by the definition in `definitions[]` (copied verbatim from the registry). Instance-specific identity fields live under `inputs`: `entryPointId`/`isDefaultEntryPoint` for triggers, `color`/`content` for sticky notes, and `source` for every inline-agent-related node — `uipath.agent.autonomous` plus every attached `uipath.agent.resource.*` node (tool, escalation, context) writes the inline agent's `projectId` (autonomous) or resource UUID (resource nodes) at `inputs.source`. Their definitions declare `model.source: true`; flow-core hoists source identity onto the instance — no `"model": { "source": ... }` block is written. See [file-format.md — Instance-specific identity fields](../../shared/file-format.md#instance-specific-identity-fields).
 
@@ -212,11 +212,13 @@ Use `Edit` to add an edge object to the `edges` array:
 }
 ```
 
+**Critical:** the edge `id` MUST match the pattern above — never a bare UUID or any id starting with a digit.
+
 **Critical:** `targetPort` is required on every edge. Omitting it produces a validation error.
 
 **Critical:** the outgoing port field is named `sourcePort`, not `sourceHandle`. `sourceHandle` is a UI/runtime term, not valid `.flow` JSON.
 
-**Critical:** for `sourcePort: "error"`, also set `inputs.errorHandlingEnabled: true` on the source node. Without the flag, Studio Web hides the source handle and `uip maestro flow validate` fails.
+**Critical:** for `sourcePort: "error"`, also set `inputs.errorHandlingEnabled: true` on the source node. Without the flag, Studio Web hides the source handle and `uip maestro flow validate` fails. The converse is equally strict: **never set the flag on a node that has no `error` edge** — it suppresses the node's fault and the run reports success while the work failed. See [file-format.md — Default: off](../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles).
 
 **Edge ID:** `edge_<SOURCE_NODE_ID>_<SOURCE_PORT>_<TARGET_NODE_ID>_<TARGET_PORT>`.
 
@@ -262,7 +264,7 @@ Use `Edit` to add an entry to `variables.globals`:
 {
   "id": "<VARIABLE_ID>",
   "direction": "in|out|inout",
-  "type": "string|number|boolean|object|array",
+  "type": "string|number|boolean|object|array|file",
   "defaultValue": "<OPTIONAL_DEFAULT>",
   "description": "<OPTIONAL_DESCRIPTION>"
 }
@@ -270,6 +272,7 @@ Use `Edit` to add an entry to `variables.globals`:
 
 For `out` variables: add output mapping to **every reachable End node** (see below).
 For `inout` variables: add `variableUpdates` entries on nodes that modify the state.
+Attachment-carrying inputs MUST use `"type": "file"` — `"object"` breaks attachment binding and faults IxP extraction with `[430002]` (see [plugins/ixp/impl.md#debug](plugins/ixp/impl.md#debug)).
 
 See [variables-and-expressions.md](../../shared/variables-and-expressions.md) for the full schema, type system, and scoping rules.
 
@@ -415,16 +418,10 @@ Use `Edit` to modify the start node in-place (no delete/re-add needed):
        "<IN_VAR>": "=js:<EXPRESSION>"
      },
      "outputs": {
-       "output": {
-         "type": "object",
-         "description": "The return value of the subflow",
-         "source": "=result.response",
-         "var": "output"
-       },
        "error": {
          "type": "object",
          "description": "Error information if the subflow fails",
-         "source": "=result.Error",
+         "source": "=Error",
          "var": "error"
        }
      }

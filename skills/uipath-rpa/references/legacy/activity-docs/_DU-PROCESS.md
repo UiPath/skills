@@ -335,6 +335,4 @@ Supported languages: 26 (EN, DE, FR, ES, RU, ZH, JA, etc.)
 
 ## Sources
 - [UiPath Docs - Document Understanding Process Template](https://docs.uipath.com/document-understanding/automation-suite/2024.10/classic-user-guide/du-process)
-- [UiPath Forum - DU Process Template Announcement](https://forum.uipath.com/t/document-understanding-process-new-studio-template/330234)
 - [UiPath Docs - About DU Process](https://docs.uipath.com/activities/other/latest/document-understanding/about-document-understanding-process-studio-template)
-- Desktop template: `C:\Users\alexandru.roman\Documents\UiPath\legacy_tests\DocumentUnderstandingProcess\`

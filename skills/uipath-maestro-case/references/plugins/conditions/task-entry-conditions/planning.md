@@ -21,19 +21,23 @@ Every task in sdd.md that declares an **Entry Condition** row gets its own task-
 | `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. |
 | `rule-type` | From catalog below | |
 | `selected-tasks-ids` | Required for `selected-tasks-completed` | Comma-separated task IDs |
-| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline) |
+| `sla-target` | `sla-status-change` arg 1 | `"root"` (case-level SLA) or the SLA-owning stage name — normally the stage containing this task. Scopes the lookups below to that one SLA table. Required for `sla-status-change` |
+| `sla-display-name` | `sla-status-change` arg 2 — the target's SDD `SLA Title` (or a Variable SLA Rules `Display Name`) | Target-unique SLA rule title; resolves to the SLA rule ID emitted from §4.8 during Phase 2. Required |
+| `escalation-display-name` | `sla-status-change` arg 3 — a `Display Name` from that target's SDD escalation table | Target-unique **at-risk** escalation title; resolves to its escalation ID. **At-risk only** — omit for a breach response, which references the SLA alone ([sla-response-shapes.md § Status](../../../sla-response-shapes.md)) |
+| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-planning.md § Planning Pipeline](../../../connector-trigger-planning.md#planning-pipeline) |
 | `condition-expression` | Optional | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning). |
+| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning). |
 
 ## Rule-Type Catalog (task-entry scope)
 
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
 | `current-stage-entered` | Fires when the containing stage is entered | — |
-| `selected-tasks-completed` | Fires when specific sibling tasks in the same stage complete | `selectedTasksIds` |
+| `selected-tasks-completed` | Fires when specific non-adhoc sibling tasks in the same stage complete | `selectedTasksIds` |
 | `wait-for-connector` | Waits for a connector event (binds an IS connector trigger under `uipath`) | connector fields; `conditionExpression` optional |
 | `adhoc` | Ad hoc tasks run only when a user triggers them from the case app. This controls task activation only; choose the task type separately from what the task does. | `conditionExpression` (optional) |
 | `runs-sequentially` | Sequential tasks run in the order they appear in the stage from top to bottom. The frontend toggle writes this rule as the task's entry condition. | `conditionExpression` (optional) |
+| `sla-status-change` | Fires when a referenced case/stage SLA changes status — the `start-task` SLA response ([sla-response-shapes.md](../../../sla-response-shapes.md)) | `sla-target`, `sla-display-name`, and (at-risk only) `escalation-display-name` |
 
 ### Frontend task-mode mapping
 
@@ -41,13 +45,15 @@ The Case App selector has three distinct modes:
 
 | UI mode | JSON/task-entry meaning | Required behavior |
 |---|---|---|
-| Sequential | `runs-sequentially` only | Preserve the frontend's ordered `data.tasks` structure. A strict chain is consecutive single-task sets (`[[A], [B], [C]]`); only explicit parallel siblings share an inner set (`[[A, B], [C]]`). The first sequential task starts when the stage is entered, and later sequential tasks use the upstream-task-set completion trigger represented by the preserved task-set/order structure. |
+| Sequential | `runs-sequentially` only | Preserve the frontend's ordered `data.tasks` structure. A strict chain is consecutive single-task sets (`[[A], [B], [C]]`); explicit parallel siblings after the same predecessor share one later set (`[[A], [B, C], [D]]`) and each member of that set also uses `runs-sequentially` so it starts when the previous task set completes. The first sequential task starts when the stage is entered, and later sequential tasks use the upstream-task-set completion trigger represented by the preserved task-set/order structure. |
 | Event-triggered | An authored event/condition, normally `wait-for-connector` for an external event | Do not add `runs-sequentially`. A stage-entered task is not automatically an event-triggered task; retain the explicit event rule and its connector configuration. |
 | Manually-triggered (adhoc) | `adhoc` only | Set `isRequired: false`; the user launches it from the Case App. Do not add another entry event or treat it as sequential. Do not change the task type merely because it is manual. |
 
+> **`event-triggered` classifies the entry rule, not the task type.** `wait-for-connector` is both a task type and a rule type. A task whose **entry rule** is the connector event is `event-triggered` and must not carry `runs-sequentially`. A task **typed** `wait-for-connector` (or `execute-connector-activity`) whose entry is positional keeps its connector event in its own `data`, and its entry rule follows its activation mode: `current-stage-entered` when it arms on stage entry, or `runs-sequentially` when it must arm only after a predecessor creates the obligation (`activation-mode: parallel-after-predecessor`). Arm listeners and clocks when the obligation is created, not after the response is expected.
+
 `adhoc` is task-entry-only. It is never a stage entry rule, never a case trigger, never a substitute for `wait-for-connector`, and never the way to model a user-selected interrupting lane. Use a secondary stage with `user-selected-stage` for that.
 
-For generated SDDs, any requirement that says `then`, `after`, `before`, `in order`, or otherwise declares an immediate dependency should already be authored as `runs-sequentially` on every task in that run. Do not convert it to parallel `current-stage-entered` tasks merely because no data binding links them. Use parallel mode only when the SDD rationale states that the tasks are independent. If a task row says `selected-tasks-completed("<previous task>")`, preserve it only when the SDD is intentionally expressing a condition/event-driven sibling gate, branch convergence, or non-immediate dependency.
+While authoring a new SDD, any requirement that says `then`, `after`, `before`, `in order`, or otherwise declares an immediate dependency should be authored as `runs-sequentially` on every task in that run. Do not convert it to parallel `current-stage-entered` tasks merely because no data binding links them. Use parallel mode only when the rationale says the tasks are independent. **Phase 1 does not re-author a supplied or approved SDD:** if its task row explicitly says `selected-tasks-completed("<previous task>")`, preserve that exact rule and selector even when the selected task is immediately previous.
 
 ## Phase 1 Plan Presentation Contract
 
@@ -57,6 +63,8 @@ The task T-entry in `tasks.md §4.6` must already expose the task mode before th
 - activation-mode: sequential
 - entry-rule: runs-sequentially
 ```
+
+This pair lives on the task's own §4.6 T-entry, not on this condition T-entry. This file's own entry format below uses `rule-type:`, not `entry-rule:` — the two fields are not interchangeable and belong to two different T-entries. Writing `rule-type:` here does NOT retroactively satisfy the §4.6 requirement; if the task's own T-entry is missing `entry-rule:`, go back and add it there.
 
 For every task-entry-condition T-entry, verify the task's `activation-mode` and this condition's `rule-type` agree:
 
@@ -69,7 +77,7 @@ For every task-entry-condition T-entry, verify the task's `activation-mode` and 
 | `fan-in` | `selected-tasks-completed` with multiple selected tasks or an explicit convergence rationale |
 | `conditional-gate` | `selected-tasks-completed` with a branch/non-immediate dependency rationale, or the explicitly authored gate rule |
 
-If the selected task is the immediately previous task in the same stage and there is no fan-in, branch, event, or non-immediate dependency rationale, `selected-tasks-completed` is a planning error. Rewrite the ordered run as `activation-mode: sequential` with `rule-type: runs-sequentially` on every task in the run. This is required even when all tasks are placeholders.
+During design-lane authoring (`uipath-planner`), a plain immediate ordered run with no fan-in, branch, event, or non-immediate dependency rationale should be modeled as `activation-mode: sequential` with `rule-type: runs-sequentially`. During Phase 1, never use that heuristic to rewrite an explicit supplied/approved SDD row: preserve `selected-tasks-completed` and its selector as `conditional-gate` or `fan-in`, including when all tasks are placeholders.
 
 ## Ordering
 
@@ -93,4 +101,6 @@ For sequential tasks, preserve the frontend's ordered `data.tasks` structure, in
 - verify: Confirm Result: Success, capture ConditionId
 ```
 
-> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning).
+> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-planning.md § tasks.md fields (planning)](../../../connector-trigger-planning.md#tasksmd-fields-planning).
+
+<!-- END: planning.md -->

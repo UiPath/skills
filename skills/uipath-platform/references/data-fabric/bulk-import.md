@@ -15,21 +15,25 @@ Response: `{ Code: "RecordsImported", Data: { InsertedRecords, TotalRecords, Err
 - `InsertedRecords` — number of rows successfully imported
 - `TotalRecords` — total rows in the CSV (including failures)
 - `ErrorFileLink` — download URL for a CSV of failed rows (only present if there were failures)
-- `--folder-key` — required when the parent entity is folder-scoped (CLI ≥ `1.197.0`)
+- `--folder-key` — required when the parent entity is folder-scoped
 
 **Pre-flight check (required by Rule 20):**
 
 ```bash
-# Inspect schema before importing — tell the user which columns will be dropped
+# Inspect schema before importing — tell the user which columns will be ignored
 uip df entities get <entity-id> --output json
 # Flag every field whose Fields[].fieldDataType.Name ∈ {CHOICE_SET_SINGLE, CHOICE_SET_MULTIPLE, RELATIONSHIP, FILE, AUTO_NUMBER}
 ```
 
 ## CSV Format Requirements
 
-- **Header row is required** and must exactly match entity field names (case-sensitive)
-- Use `uip df entities get <entity-id> --output json` to discover exact field names before importing
-- System fields (`Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`) must NOT appear in the CSV
+- **Header row is required** and must exactly match each field's `DisplayName`
+  (case-sensitive), not its internal `Name`. For example, a field returned as
+  `{ "Name": "SKU", "DisplayName": "Stock-Keeping Unit" }` requires the CSV
+  header `Stock-Keeping Unit`; `SKU` is rejected as an invalid header.
+- Use `uip df entities get <entity-id> --output json` to discover exact
+  `Fields[].DisplayName` values before importing
+- System fields (`Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`, `RecordOwner`) must NOT appear in the CSV
 
 ### Example CSV
 
@@ -50,32 +54,11 @@ For an entity with fields: `Name` (STRING), `Score` (DECIMAL, `decimalPrecision:
 
 For entities with any complex field, use `records insert --file <json>` instead — the insert endpoint handles every type except `FILE` (which is exclusively written through `files upload`, data-fabric.md Rule 6). See [`records-query.md`](records-query.md#writing-choice-set-and-relationship-values) for the value form.
 
-## Full Workflow
-
-```bash
-# 1. Discover entity and field names
-uip df entities list --output json
-uip df entities get <entity-id> --output json   # note exact field names
-
-# 2. Create CSV with matching headers
-cat > /tmp/data.csv <<EOF
-Name,Score,Active
-Alice,95,true
-Bob,82,true
-EOF
-
-# 3. Import
-uip df records import <entity-id> --file /tmp/data.csv --output json
-
-# 4. Verify
-uip df records list <entity-id> --output json
-```
-
 ## Error Handling
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `Import errors in CSV` | Header names don't match field names | Run `entities get` and check exact field names (case-sensitive) |
+| `Import errors in CSV` / `Invalid column header` | Header names don't match field display names | Run `entities get` and use exact `Fields[].DisplayName` values (case-sensitive), not internal `Name` values |
 | `Entity not found` | Wrong entity ID | Run `entities list` to get correct ID |
 | Row-level errors | Invalid data types (e.g. text in number field) | Check data values match field types |
 

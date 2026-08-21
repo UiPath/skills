@@ -42,7 +42,6 @@ initial_prompt: |
   | Case Name | ConnectorWaitCase |
   | Case Description | Case whose first task is event-triggered by an inbound Outlook 365 email before the case waits for the same event. |
   | Case Identifier | Type: constant. Prefix: CWC |
-  | Priority | Choiceset: Low, Medium, High — Default: Medium |
   | Case-Level SLA | — |
   | SLA Type | — |
 
@@ -167,6 +166,14 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent attempted the Phase 2 skeleton-v2 validation profile before any legacy fallback"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+validate\s+.*--skeleton-v2'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
+
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
     command: "uip maestro case validate ConnectorWaitCase/ConnectorWaitCase/caseplan.json --output json"
@@ -176,13 +183,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan has a first event-triggered task with wait-for-connector-only entry semantics and a RESOLVED wait-for-connector task (serviceType Intsvc.WaitForEvent, real typeId + connectionId, not a skeleton)"
+    description: "Caseplan has a first event-triggered task with wait-for-connector-only entry semantics; its entry rule is upgraded past the Phase 2 stub; and the wait-for-connector task is resolved"
     command: "python3 $TASK_DIR/check_connector_wait.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120

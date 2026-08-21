@@ -37,7 +37,6 @@ initial_prompt: |
   | Case Name | ConnectorActivityCase |
   | Case Description | Single-node case that posts a Slack message via a connector activity. |
   | Case Identifier | Type: constant. Prefix: CAC |
-  | Priority | Choiceset: Low, Medium, High — Default: Medium |
   | Case-Level SLA | — |
   | SLA Type | — |
 
@@ -157,7 +156,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120

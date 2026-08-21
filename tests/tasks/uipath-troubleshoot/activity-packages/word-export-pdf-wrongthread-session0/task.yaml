@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-export-pdf-wrongthread-session0
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a Save Document as PDF COM
   wrong-thread fault: the export faults casting the document to

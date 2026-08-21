@@ -91,6 +91,8 @@ success_criteria:
     prompt: >
       Pass if the agent created only local project files and did not run or
       request approval for BPMN debug, process run, upload, publish, deploy, or
-      any live HTTP call. Fail if tool calls or the final answer show any
-      cloud-side lifecycle mutation, live network fetch, or any request to
-      perform one.
+      any live HTTP call. Exactly these commands are always acceptable and
+      must NOT fail this check: `uip maestro bpmn validate` (offline
+      validation of local files) and `--help` invocations. Fail only if tool
+      calls or the final answer show a cloud-side lifecycle mutation, live
+      network fetch, or a request to perform one.

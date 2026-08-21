@@ -26,7 +26,17 @@ pre_run:
   - command: |
       EPOCH=$(date +%s)
       mkdir -p .dashboard dist
-      echo "<html></html>" > dist/index.html
+      # Seed a "built" dashboard the skill's deploy gates accept:
+      #  - the deploy flow runs `npm run build`; with no package.json it fails
+      #    ENOENT and a strict agent (set -euo pipefail) aborts before pack. A
+      #    no-op build succeeds and leaves the seeded dist/ intact.
+      #  - the deploy step greps dist/index.html for the uipath:org-name meta tag
+      #    (CONFIG_OK, deploy/impl.md) and refuses to deploy a bundle without it —
+      #    so bake it into the seeded html.
+      cat > package.json << 'PKGEOF'
+      { "name": "runtime-compliance-dashboard", "private": true, "scripts": { "build": "true" } }
+      PKGEOF
+      printf '%s\n' '<html><head><meta name="uipath:org-name" content="testorg"></head><body></body></html>' > dist/index.html
       cat > .dashboard/state.json <<EOF
       {
         "app": { "name": "Runtime Compliance Dashboard $EPOCH", "routingName": "runtime-compliance-$EPOCH", "semver": "1.0.0" },
@@ -107,12 +117,32 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # Per-verb, not a 3-command count: agents batch pack;publish;deploy into one
+  # shell script, so the count scored 1/3 and false-failed a correct run. Each
+  # verb checked once matches whether batched or separate; a skipped step still
+  # fails (its check hits 0). This is a live deploy, so all three are gating.
   - type: command_executed
-    description: "Agent ran the pack -> publish -> deploy sequence"
+    description: "Agent ran uip codedapp pack"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedapp\s+(pack|publish|deploy)'
-    min_count: 3
-    weight: 2.5
+    command_pattern: 'uip\s+codedapp\s+pack\b'
+    min_count: 1
+    weight: 0.83
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedapp publish"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+publish\b'
+    min_count: 1
+    weight: 0.83
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedapp deploy"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy\b'
+    min_count: 1
+    weight: 0.84
     pass_threshold: 1.0
 
   # Order/variable-tolerant: agents bind tags to a var (TAGS="governance,dashboard";

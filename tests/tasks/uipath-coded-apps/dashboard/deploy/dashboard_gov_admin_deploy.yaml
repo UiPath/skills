@@ -28,7 +28,20 @@ sandbox:
 pre_run:
   - command: |
       mkdir -p .dashboard dist
-      echo "<html></html>" > dist/index.html
+      # Carry the uipath:org-name meta tag: the deploy step's CONFIG_OK gate
+      # (deploy/impl.md) greps dist/index.html for it and refuses to publish a
+      # bundle without it — the bare <html></html> stub fails that gate and the
+      # agent halts before pack. A real build injects it; bake it into the stub.
+      printf '%s\n' '<html><head><meta name="uipath:org-name" content="testorg"></head><body></body></html>' > dist/index.html
+      # The skill's deploy flow runs `npm run build` before pack (deploy/impl.md).
+      # This is a deploy-only sandbox with a pre-seeded dist/ and no real project,
+      # so without a package.json that build step fails with ENOENT and a careful
+      # agent halts the whole pipeline before pack/publish/deploy. Seed a minimal
+      # project whose build is a no-op (leaves the pre-seeded dist/ intact) so the
+      # build step succeeds and the agent proceeds. A real dashboard has one anyway.
+      cat > package.json << 'EOF'
+      { "name": "runtime-compliance-dashboard", "private": true, "scripts": { "build": "true" } }
+      EOF
       cat > .dashboard/state.json << 'EOF'
       {
         "app": { "name": "Runtime Compliance Dashboard", "routingName": "runtime-compliance-k4p9", "semver": "1.0.0" },
@@ -82,14 +95,40 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # Full pipeline still runs after provisioning.
+  # Pipeline ATTEMPT, checked per-verb — not "3 matching commands".
+  # This is a credential-free integration test: it verifies the governance-branch
+  # decision + that the agent issues the right pipeline commands, NOT a live deploy
+  # (the sister dashboard_gov_live_deploy_e2e owns that, with a disposable folder +
+  # cleanup). Two reasons per-verb, not a count:
+  #  - agents batch pack;publish;deploy into one shell script → a count check scored
+  #    1/3 and false-failed a correct run.
+  #  - `deploy` reads .uipath/app.config.json, which only a SUCCESSFUL publish writes;
+  #    offline (or on the shared tenant, where the fixed name+1.0.0 publish collides)
+  #    publish fails, so a careful agent correctly SKIPS deploy. Gate pack + publish
+  #    (both issued regardless of outcome); record deploy as advisory.
   - type: command_executed
-    description: "Agent ran the pack → publish → deploy sequence"
+    description: "Agent ran uip codedapp pack"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedapp\s+(pack|publish|deploy)'
-    min_count: 3
-    weight: 2.5
+    command_pattern: 'uip\s+codedapp\s+pack\b'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedapp publish"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+publish\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent reached uip codedapp deploy (advisory — a failed/colliding publish legitimately blocks the app.config.json-dependent deploy offline; live deploy is covered by the sister e2e)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0
 
   # Dashboards are Web apps — never -t Action.
   - type: command_executed

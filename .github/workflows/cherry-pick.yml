@@ -17,7 +17,7 @@ jobs:
       github.event.issue.pull_request &&
       (startsWith(github.event.comment.body, '/cherrypick') ||
        startsWith(github.event.comment.body, '/cherry-pick'))
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     permissions:
       pull-requests: write
     outputs:
@@ -53,7 +53,7 @@ jobs:
       (startsWith(github.event.comment.body, '/cherrypick') ||
        startsWith(github.event.comment.body, '/cherry-pick'))
     needs: cherry-pick-init
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
@@ -108,7 +108,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Checkout target branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
           ref: ${{ needs.cherry-pick-init.outputs.branch }}
           fetch-depth: 0
@@ -251,7 +251,7 @@ jobs:
       (startsWith(github.event.comment.body, '/cherrypick') ||
        startsWith(github.event.comment.body, '/cherry-pick'))
     needs: [run-cherry-pick, cherry-pick-init]
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     permissions:
       pull-requests: write
     steps:

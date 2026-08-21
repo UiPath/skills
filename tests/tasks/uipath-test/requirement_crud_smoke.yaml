@@ -21,7 +21,8 @@ initial_prompt: |
   access is audited"? Once it's in, pull it back up by its key so I can
   check the details, then rename it to "Eval CRUD - PHI access audit (v2)".
   When that's done, delete it again — no point leaving test data lying
-  around.
+  around. You have my confirmation to delete it, so go ahead without
+  asking again.
 
 success_criteria:
   - type: command_executed

@@ -45,7 +45,6 @@ initial_prompt: |
   | Case Name | MultiTrigger |
   | Case Description | Three case-level triggers (manual + two timer triggers) each fire the case into a single Run stage. |
   | Case Identifier | Prefix: MT, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
   | SLA Type | Not specified |
 

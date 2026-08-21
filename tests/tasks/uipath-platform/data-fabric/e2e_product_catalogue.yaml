@@ -17,6 +17,11 @@ initial_prompt: |
   I need a product catalogue set up for our e-commerce team. Just
   build it.
 
+  Use tenant scope (no folder). I explicitly approve creating
+  `CE_ProductCatalogue`, importing and updating its test records, and
+  uploading the requested placeholder image in this run. Proceed without
+  another confirmation and do not mutate any other Data Fabric resource.
+
   A UiPath Data Fabric entity called `CE_ProductCatalogue` with these columns:
     - product name
     - category — one of Electronics, Clothing, or Home
@@ -80,17 +85,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used fieldName key in entity create body"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create.*fieldName'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent used filterGroup key in records query body"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:filterGroup|--file\s+\S+)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -116,9 +113,64 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "End state: product-name field is text"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      --entity-name CE_ProductCatalogue --ignore-field-case
+      --assertions "ProductName.Name=STRING"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: price field is decimal"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      --entity-name CE_ProductCatalogue --ignore-field-case
+      --assertions "Price.Name=DECIMAL"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: stock field is boolean"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      --entity-name CE_ProductCatalogue --ignore-field-case
+      --assertions "InStock.Name=BOOLEAN"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: SKU field is text"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      --entity-name CE_ProductCatalogue --ignore-field-case
+      --assertions "SKU.Name=STRING"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state: Poster field is a file attachment"
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py
+      --entity-name CE_ProductCatalogue --ignore-field-case
+      --assertions "Poster.Name=FILE"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "End state (deterministic): all 15 product records landed in CE_ProductCatalogue"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_ProductCatalogue --expected 15"
-    timeout: 60
+    timeout: 240
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -165,10 +217,10 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue --include-folders"
     timeout: 60
     fail_on_error: false
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue --include-folders"
     timeout: 60

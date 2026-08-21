@@ -43,7 +43,6 @@ initial_prompt: |
   | Case Name | ExpenseApprovalCase |
   | Case Description | Reviews and records an employee expense decision. |
   | Case Identifier | Prefix: EAC, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | - |
   | SLA Type | - |
 
@@ -185,12 +184,16 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: json_check
     description: "Caseplan contains both action and process tasks"
     path: "ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json"
-    includes:
-      - '"type": "action"'
-      - '"type": "process"'
+    assertions:
+      - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
+        operator: gt
+        expected: 0
+      - expression: "length(nodes[].data.tasks[][] | [?type=='process'])"
+        operator: gt
+        expected: 0
     weight: 2.0
     pass_threshold: 1.0
 
@@ -229,12 +232,8 @@ success_criteria:
     weight: 2.0
     pass_threshold: 0.75
 
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120
-
 run_limits:
   expected_turns: 94
-  task_timeout: 900
+  task_timeout: 1200
   max_turns: 120
-  turn_timeout: 900
+  turn_timeout: 1200

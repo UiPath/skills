@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-lookup-null-reference
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshooting agent must diagnose a classic Lookup Range failure
   caused by the activity being placed outside any Excel Application Scope: with

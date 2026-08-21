@@ -1,6 +1,6 @@
 # Package Selection Guide
 
-Load this guide whenever an SDD section needs to list dependencies — typically §14 Packages in the RPA template, the Packages subsection of the Case template, or the Tool Packages table in the Agent template. Use it to infer packages from the Application Inventory (§9 in the RPA template) and from the process steps.
+Load this guide whenever an SDD section needs to list dependencies — typically §14 Packages in the RPA template, package/tool tables in Agent templates, or package notes attached to a downstream specialist task. Case Management follows the Case Definition Blueprint shape shared with `uipath-maestro-case` and carries no planner-only Packages subsection — dependencies surface in §4 Integrations.
 
 Two things this guide disambiguates:
 
@@ -155,7 +155,7 @@ SDD templates across the 6 products use different dependency mechanisms. List de
 | Product | Dependency Manager | Where Declared in SDD | Notes |
 |---|---|---|---|
 | RPA (Process, Library, Test Automation) | NuGet | §14 Packages table | Covered by this guide. |
-| Case Management | NuGet | Packages subsection in the Case template | Case-specific packages: `UiPath.Persistence.Activities`, `UiPath.FormActivityLibrary` for HITL tasks. |
+| Case Management | Downstream Case project dependencies | Not declared as a planner-only Packages subsection; resource/package resolution belongs to `uipath-maestro-case` from the Case Blueprint | Keep package hints in the `uipath-maestro-case` task prompt only when the SDD's Section 2/4 resource choices require them. |
 | Maestro Flow | Connector references + RPA step packages | Integrated Components section | Flow itself has no packages. Each RPA step called from the flow uses the RPA template's §14. |
 | Agents | C# tool packages (subset of NuGet) | Tool Packages table in the Agent template | Declare only packages whose activities are wrapped as Agent tools. |
 | Coded Apps | **npm** (not NuGet) | Dependencies subsection in the Coded App template | Use `package.json` semantics. Do not list NuGet packages. |

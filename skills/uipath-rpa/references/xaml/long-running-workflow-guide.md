@@ -1,6 +1,6 @@
 # Long Running Workflow (ProcessDiagram) Guide
 
-Package, node vocabulary, gateway patterns, and suspend/resume for Long Running Workflows. Related references: XAML anatomy → [xaml-basics-and-rules.md § Long Running Workflow](xaml-basics-and-rules.md); layout + ViewState → [canvas-layout-guide.md § 5](canvas-layout-guide.md); node registration → [common-pitfalls.md § x:Reference](common-pitfalls.md#xreference--__referenceid-naming).
+Package, node vocabulary, gateway patterns, and suspend/resume for Long Running Workflows. Related references: XAML anatomy → [xaml-basics-and-rules.md § Long Running Workflow](xaml-basics-and-rules.md); layout + ViewState → [canvas-layout-guide.md § 5](canvas-layout-guide.md); node registration → [canvas-layout-guide.md § Node Registration](canvas-layout-guide.md#node-registration).
 
 ## When to Use LRW
 

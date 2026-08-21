@@ -45,7 +45,6 @@ initial_prompt: |
   | Case Name | InArgTriggerBind |
   | Case Description | Two triggers; two In-args bound to different triggers via sourceTriggers. |
   | Case Identifier | Prefix: IAT, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
   | SLA Type | Not specified |
 
@@ -128,7 +127,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120

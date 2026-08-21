@@ -35,7 +35,7 @@ What can cause it:
 - Verify target selector points at the wrong element, an over-specific element, or an element that only sometimes appears
 - Verify mode (`Appears` / `Disappears` / `TextChanges` / `AspectChanges`) is wrong for the outcome the action actually produces
 - Verify timeout is shorter than how long the asserted state takes to settle (slow page, animation, async navigation)
-- The action's effect is non-deterministic (e.g., "I'm Feeling Lucky" → variable destination), and the verify target presumes a deterministic outcome
+- The action's effect is non-deterministic (e.g., a "random result" / "surprise me" style action whose destination varies by run), and the verify target presumes a deterministic outcome
 - Autopilot recovery healed the action via an alternate path, and the asserted post-condition is no longer reachable from the recovered state
 - The action landed but had no UI effect (overlay swallowed the click, focus lost between activities, element re-rendered)
 
@@ -102,7 +102,7 @@ Walk this tree from the top. Stop at the first branch that matches.
   - If the recovery is correct and the verify target is wrong-for-the-recovered-path: update the verify target to match where the recovered action actually lands. The original verify target was specific to the unhealed path.
   - If the recovery is wrong (healed to a different button than the intended one): treat this as a selector-failure case. Apply the Healing Agent fix from `healing-fixes.json` via Studio Desktop Recovery Panel, or update the action's primary selector so recovery is not invoked. See `selector-failure-healing-fix.md`.
 
-- **(D) Non-deterministic action outcome — verify target is over-specific.** The action can land on different pages / DOMs across runs (search results, "I'm Feeling Lucky", dynamic feeds, A/B-tested layouts). An `Appears` assertion on a single specific element will fail whenever the action lands elsewhere. Fix one of:
+- **(D) Non-deterministic action outcome — verify target is over-specific.** The action can land on different pages / DOMs across runs (search results, a randomized-destination button, dynamic feeds, A/B-tested layouts). An `Appears` assertion on a single specific element will fail whenever the action lands elsewhere. Fix one of:
   - **Loosen the verify target** to an element that is present on every reachable post-action page (a navigation bar, footer, page chrome, a meta element). Sacrifices specificity for reliability.
   - **Switch `Mode` to `AspectChanges`** on a region that is guaranteed to change after the action — verifies *something happened* without asserting *what* happened.
   - Do NOT extend the timeout — the issue is not slowness, it is non-existence on this run.

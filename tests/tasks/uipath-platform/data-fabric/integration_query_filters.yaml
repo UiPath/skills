@@ -30,8 +30,6 @@ initial_prompt: |
     - Orders whose status is one of {Pending, Active} — how many?
     - Count of orders grouped by status — one count per status.
 
-  Paging should stay on the command line — never put page-size or
-  page-cursor stuff inside the search body itself.
 
 success_criteria:
   - type: command_executed
@@ -43,17 +41,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran filter queries with --body (AND, OR, nested, sort, projection)"
+    description: "Agent ran filter queries with --body (queries may be grouped in one shell action)"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+records\s+query\s+.*--body'
-    min_count: 4
+    min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent paginated with records query --limit (no body)"
+    description: "Agent paginated via --limit on records list or query"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+query\s+.*--limit'
+    command_pattern: '(?s)uip\s+df\s+records\s+(list|query)\s+.*--limit'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -61,16 +59,16 @@ success_criteria:
   - type: run_command
     description: "End state: CE_IntegrationOrders has exactly 4 records (agent did not mutate the seed)"
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_IntegrationOrders --expected 4"
-    timeout: 60
+    timeout: 240
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used filterGroup key in records query body"
+    description: "Agent used filterGroup in records query bodies (calls may be grouped)"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
-    min_count: 3
+    min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
@@ -83,8 +81,8 @@ success_criteria:
   - type: command_executed
     description: "Filter body uses the supported keys `queryFilters` and `fieldName`"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*"queryFilters")(?=.*"fieldName")'
-    min_count: 3
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*queryFilters.*fieldName'
+    min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
@@ -128,14 +126,14 @@ success_criteria:
     description: "Agent used logicalOperator in filterGroup body (AND=0 / OR=1)"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+records\s+query.*logicalOperator'
-    min_count: 2
+    min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent used sortOptions with isDescending in query body"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*sortOptions'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*sortOptions.*isDescending'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -149,25 +147,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used `in` operator with valueList (step 9)"
+    description: "Agent used the in operator with valueList"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"in".*valueList'
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"operator"\s*:\s*"in".*"valueList"\s*:'
     min_count: 1
-    weight: 2.5
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran an aggregate query with groupBy + aggregates (step 10)"
+    description: "Agent grouped records and requested a named COUNT aggregate"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*(?:aggregates.*groupBy|groupBy.*aggregates)'
-    min_count: 1
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent used COUNT aggregate function with an alias"
-    tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query.*"function"\s*:\s*"COUNT".*"alias"'
+    command_pattern: '(?is)uip\s+df\s+records\s+query(?=.*groupBy)(?=.*aggregates)(?=.*COUNT)(?=.*alias)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -220,8 +210,9 @@ pre_run:
       --entity-name CE_IntegrationOrders
       --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.schema.json
       --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.records.json
+      --reset
     timeout: 60
-    fail_on_error: false
+    fail_on_error: true
 
 post_run:
   - command: >-

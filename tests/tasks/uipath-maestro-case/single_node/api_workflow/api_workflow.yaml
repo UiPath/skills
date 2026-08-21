@@ -32,7 +32,6 @@ initial_prompt: |
   | Case Name | ApiWorkflowSingleCase |
   | Case Description | Single-node case that invokes the NameToAgeFixed2 API workflow with a fixed name. |
   | Case Identifier | Prefix: AWS, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | 1 d |
   | SLA Type | Static |
 
@@ -87,7 +86,7 @@ initial_prompt: |
 
   | Field | Value |
   |---|---|
-  | API Workflow Reference | Name "NameToAgeFixed2", Folder "Shared" |
+  | API Workflow Reference | Name "NameToAgeFixed", Folder "Shared/uipath-maestro-case/NameToAgeFixed2" |
   | Component Type | API_WORKFLOW |
 
   **Inputs**

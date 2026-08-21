@@ -1,61 +1,72 @@
 task_id: skill-admin-audit-export-e2e
 description: >
-  End-to-end skill-guided evaluation: agent uses the uipath-admin skill
-  to drive a complete investigation — discover sources, query events
-  in a window, then export the same window as day-wise JSON files.
-  Validates the full sources → events → export chain plus the export's
-  required --from-date / --to-date / --output-path flags.
+  End-to-end test (outcome-graded): agent drives a complete investigation —
+  discover sources, query events in a window, then export the same window as
+  day-wise JSON files. Each leg of the chain is graded on what it produced
+  against the live tenant, not on the command string:
 
-  Platform note: commands fail with auth errors in this environment.
-  E2e tests still validate the CLI invocation surface — the agent must
-  produce the right command sequence with the right flags.
+    sources -> the saved catalog's ids are corroborated against the catalog the
+               harness reads back itself
+    events  -> the saved events are this tenant's, are tenant-scope, and all fall
+               inside the requested window
+    export  -> a CLI-generated day-wise JSON export landed in the folder the user
+               named
+
+  Grading all three legs preserves what the four `command_executed` regexes were
+  there for (the chain really happened, in order, against the right scope) while
+  dropping their sensitivity to flag order, verb choice, and how the agent saves
+  output.
+
+  LTS lag note: the export reads the long-term store, which trails the live
+  `events` endpoint by up to ~48h, so the export leg can legitimately be empty
+  even when the events leg returns rows. The export assertion is structural.
 tags: [uipath-admin, e2e, mode:operate, audit, export]
 max_iterations: 2
 
 initial_prompt: |
   I'm doing a security review of this tenant and want the last 7 days of
-  Admin audit history. Show me what audit event sources are being captured, let
-  me see the most recent events for context, and export the whole week as
-  JSON files for offline review into a folder called audit-last-7d.
+  audit history. Show me what audit event sources are being captured, let
+  me see the most recent events for context — across all event sources, not
+  narrowed to any one of them — and export the whole week as JSON files for
+  offline review into a folder called audit-last-7d.
+
+  Save the complete JSON result of the sources call to ./sources-tenant.json and
+  of the events call to ./events.json so I can review them alongside the export.
+
+  Save the raw JSON exactly as the command returns it — do not filter, reshape, or
+  summarize it.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+  Run the export in the foreground and wait for it to finish before you reply —
+  do not run it as a background task.
 
 success_criteria:
-  # 1. sources discovery happened first
-  - type: command_executed
-    description: "Agent invoked `uip admin audit tenant sources` (discovery before query)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+sources'
-    min_count: 1
+  - type: run_command
+    description: "Leg 1 — sources-tenant.json is the real tenant catalog, corroborated against a live read-back"
+    command: 'AUDIT_SOURCES_TENANT_FILE=sources-tenant.json python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_sources.py''))"'
+    timeout: 260
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  # 2. events query with a bounded window
-  - type: command_executed
-    description: "Agent invoked `uip admin audit tenant events` with --from-date and --to-date ISO bounds"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--from-date\s+\S+.*--to-date\s+\S+'
-    min_count: 1
+  - type: run_command
+    description: "Leg 2 — events.json holds this tenant's tenant-scope events, all inside the 7d window"
+    command: 'AUDIT_FILE=events.json AUDIT_SCOPE=tenant AUDIT_WINDOW_DAYS=7 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_events.py''))"'
+    timeout: 320
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  # 3. export with both required bounds AND --output-path
-  - type: command_executed
-    description: "Agent invoked `uip admin audit tenant export` with --from-date, --to-date, AND --output-path"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--from-date\s+\S+.*--to-date\s+\S+.*--output-path\s+\S+'
-    min_count: 1
+  - type: run_command
+    description: "Leg 3 — ./audit-last-7d holds a CLI-generated day-wise JSON export of tenant-scope events"
+    command: 'AUDIT_BASE_DIR=audit-last-7d AUDIT_FORMAT=json AUDIT_MIN_DAYS=5 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_export.py''))"'
+    timeout: 90
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
-  # 4. export written to the requested folder (json default; no .zip/.csv extension)
-  - type: command_executed
-    description: "Agent's export targeted the ./audit-last-7d folder"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-path\s+\S*audit-last-7d(?![\w.])'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
 run_limits:
-  expected_turns: 6
+  expected_turns: 8
   max_turns: 40
   turn_timeout: 600

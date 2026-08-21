@@ -11,12 +11,12 @@ Reference documents for writing **legacy** UiPath RPA workflows (XAML). Each fil
 | File | Package | Key Activities |
 |------|---------|----------------|
 | [System.md](System.md) | UiPath.System.Activities | Collections, Text, Dates, Dialogs, Files, PowerShell, Triggers |
-| [UIAutomation.md](UIAutomation.md) | UiPath.UIAutomation.Activities | Click, Type, Find Element, Selectors, Browser/Window scope |
+| [UIAutomation → selector-guide.md](../selector-guide.md#uiautomation-activities-reference) | UiPath.UIAutomation.Activities | Click, Type, Find Element, Selectors, Browser/Window scope |
 | [Excel.md](Excel.md) | UiPath.Excel.Activities | Read/Write Range/Cell, Workbook/Application Scope, CSV, Macros |
 | [Mail.md](Mail.md) | UiPath.Mail.Activities | SMTP, IMAP, POP3, Exchange, Outlook |
 | [Web.md](Web.md) | UiPath.WebAPI.Activities | HTTP Request, SOAP, JSON, XML |
 | [MicrosoftOffice365.md](MicrosoftOffice365.md) | UiPath.MicrosoftOffice365.Activities | Graph API: Mail, Calendar, Excel Online, OneDrive, SharePoint |
-| [Testing.md](Testing.md) | UiPath.Testing.Activities | Assertions, PDF/Text comparison, test data queues |
+| [Testing → testing-guide.md](../testing-guide.md#testing-activities-reference) | UiPath.Testing.Activities | Assertions, PDF/Text comparison, test data queues |
 | [PDF.md](PDF.md) | UiPath.PDF.Activities | Read PDF Text, OCR, Extract Pages, Join, Password |
 | [Word.md](Word.md) | UiPath.Word.Activities | Word COM + Portable, text/image/table operations |
 | [Presentations.md](Presentations.md) | UiPath.Presentations.Activities | PowerPoint COM + OpenXml |

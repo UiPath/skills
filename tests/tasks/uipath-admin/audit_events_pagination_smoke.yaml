@@ -1,45 +1,38 @@
 task_id: skill-admin-audit-events-pagination-smoke
 description: >
-  Skill-guided evaluation: agent uses the uipath-admin skill to query
-  audit events with a bounded time window and a >200 limit, exercising
-  the skill's pagination rule. The CLI tool paginates internally for
-  --limit > 200 (server-side maxCount cap), so the agent should pass
-  --limit, NOT roll its own cursor loop with --before / --before-id.
+  Smoke test (outcome-graded): agent requests more events than a single server
+  page can return (>200), exercising the CLI's internal pagination. Graded on the
+  events read back from the live tenant, not the command string.
 
-  Platform note: commands fail with auth errors in this environment;
-  what matters is the agent's CLI invocation pattern.
-tags: [uipath-admin, smoke, mode:diagnose, audit, pagination]
+  The old criterion matched `--limit <n>` with n>200 in the command text. What
+  actually matters is that the retrieval crossed the server's 200-record page cap
+  — which is only possible if pagination happened, whether the CLI did it
+  internally (correct) or the agent looped cursors itself. The count assertion is
+  self-calibrating: the harness issues the same request and lowers the bar to the
+  volume the tenant actually holds, so the test grades the agent rather than the
+  org's activity level, and the pagination assertion only applies when the tenant
+  really can return more than one page.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, pagination]
 
 run_limits:
   expected_turns: 4
 
 initial_prompt: |
-  I'm doing a compliance review — I need the 500 most recent tenant
-  Admin audit events from the last 30 days.
+  I'm doing a compliance review — I need the 500 most recent audit events from
+  this tenant's audit trail over the last 30 days, across all event sources
+  (don't narrow to any one source). Save the complete JSON result to
+  ./events.json so I can review it.
+
+  Save the raw JSON exactly as the command returns it — do not filter, reshape, or
+  summarize it.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent invoked `uip admin audit tenant events` with both --from-date and --to-date ISO 8601 bounds"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--from-date\s+\S+.*--to-date\s+\S+'
-    min_count: 1
-    weight: 2.0
+  - type: run_command
+    description: "events.json holds real tenant events inside the 30d window, capped at 500, and reaching the volume the tenant actually returns (crossing the 200-record page cap when available)"
+    command: 'AUDIT_FILE=events.json AUDIT_SCOPE=tenant AUDIT_WINDOW_DAYS=30 AUDIT_MAX_COUNT=500 AUDIT_MIN_COUNT=500 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''verify_audit_events.py''))"'
+    timeout: 360
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent passed --limit 500 (or any value > 200) — single call, not a manual loop"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events\b.*--limit\s+(?:[2-9]\d{2,}|[1-9]\d{3,})'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent ran `uip admin audit tenant events` (advisory, non-gating)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+events'
-    min_count: 1
-    weight: 1.0
-    # Non-gating: `--output json` is the CLI default, so omitting it is harmless. Reports
-    # Rule-3 adherence (score 1/0) but pass_threshold 0 keeps a benign miss from failing the task.
-    pass_threshold: 0

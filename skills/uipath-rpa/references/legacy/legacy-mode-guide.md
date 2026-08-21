@@ -29,12 +29,12 @@ Legacy UiPath RPA projects: .NET Framework 4.6.1, VB.NET expressions, classic ac
 | Choose architecture | Sequence vs REFramework vs Dispatcher/Performer | [project-organization-guide.md](./project-organization-guide.md) |
 | Create workflow | Phase 0 → Discovery → Generate | [xaml-basics-and-rules.md](./xaml-basics-and-rules.md) |
 | Edit workflow | Phase 0 → Discovery → Edit | [xaml-basics-and-rules.md](./xaml-basics-and-rules.md) |
-| Validate file | `uip rpa-legacy validate "{projectRoot}/File.xaml" --output json` | [validation-and-fixing.md](./validation-and-fixing.md) |
-| Validate project | `uip rpa-legacy validate "{projectRoot}" --output json` | [validation-and-fixing.md](./validation-and-fixing.md) |
+| Validate file | `uip rpa-legacy validate "{projectRoot}/File.xaml" --output json` | [cli-reference.md § Validate & Fix](./cli-reference.md#phase-3-validate--fix-loop) |
+| Validate project | `uip rpa-legacy validate "{projectRoot}" --output json` | [cli-reference.md § Validate & Fix](./cli-reference.md#phase-3-validate--fix-loop) |
 | Package (optional) | `uip rpa-legacy pack "{projectRoot}" -o "{dir}"` | [cli-reference.md](./cli-reference.md) |
 | Debug | `uip rpa-legacy debug "{projectRoot}/File.xaml"` | [cli-reference.md](./cli-reference.md) |
-| Create new project | Create project.json with right packages | [project-structure.md](./project-structure.md) |
-| Create test data | Generate Excel/CSV/JSON/types for testing | [test-data-guide.md](./test-data-guide.md) |
+| Create new project | Create project.json with right packages | [cli-reference.md § Legacy Project Structure](./cli-reference.md#legacy-project-structure) |
+| Create test data | Generate Excel/CSV/JSON/types for testing | [testing-guide.md § Test Data Creation](./testing-guide.md#test-data-creation) |
 | Organize project | Folder structure, naming, libraries | [project-organization-guide.md](./project-organization-guide.md) |
 | Add error handling | TryCatch, Retry Scope, exception classification | [error-handling-guide.md](./error-handling-guide.md) |
 | Fix/build selectors | Selector anatomy, dynamic selectors, anchors | [selector-guide.md](./selector-guide.md) |
@@ -52,7 +52,7 @@ If unclear which file to edit, **ask the user**.
 4. Note project shape: count `.xaml` files, list `dependencies` keys and versions — use this to avoid re-discovering packages and activities already explored earlier in conversation
 5. Run `uip rpa-legacy validate "{projectRoot}" --output json` to trigger **package restore** (required before `find-activities` works)
 
-No Studio needed. See [environment-setup.md](./environment-setup.md) for details.
+No Studio needed. See [cli-reference.md § Phase 0](./cli-reference.md#phase-0-environment-readiness) for details.
 
 ---
 
@@ -71,7 +71,7 @@ No Studio needed. See [environment-setup.md](./environment-setup.md) for details
 
 4. **Only if Flowchart/StateMachine**: read [_XAML-GUIDE.md](./activity-docs/_XAML-GUIDE.md) for ViewState layout
 
-**Stop here.** Don't read more files unless you hit a problem during validation. Additional references if needed: [_PATTERNS.md](./activity-docs/_PATTERNS.md) (VB.NET expressions), [common-pitfalls.md](./common-pitfalls.md) (gotchas), [_INVOKE-CODE.md](./activity-docs/_INVOKE-CODE.md) (InvokeCode details), [_REFRAMEWORK.md](./activity-docs/_REFRAMEWORK.md) (REFramework), `uip docsai ask "..."` (official docs), `WebSearch` (community).
+**Stop here.** Don't read more files unless you hit a problem during validation. Additional references if needed: [_PATTERNS.md](./activity-docs/_PATTERNS.md) (VB.NET expressions), [xaml-basics-and-rules.md § Common Pitfalls](./xaml-basics-and-rules.md#common-pitfalls--quick-reference) (gotchas), [_INVOKE-CODE.md](./activity-docs/_INVOKE-CODE.md) (InvokeCode details), [_REFRAMEWORK.md](./activity-docs/_REFRAMEWORK.md) (REFramework), `uip docsai ask "..."` (official docs), `WebSearch` (community).
 
 5. **If the task involves design decisions**, read the relevant guide on demand:
    - Error handling strategy → [error-handling-guide.md](./error-handling-guide.md)
@@ -81,7 +81,7 @@ No Studio needed. See [environment-setup.md](./environment-setup.md) for details
    - Orchestrator integration (queues, assets, triggers) → [orchestrator-guide.md](./orchestrator-guide.md)
    - Test design / debugging → [testing-guide.md](./testing-guide.md)
 
-See [discovery-workflow.md](./discovery-workflow.md) for the full step-by-step procedure.
+See [cli-reference.md § Discovery Workflow](./cli-reference.md#discovery-workflow--detailed-steps) for the full step-by-step procedure.
 
 ---
 
@@ -93,7 +93,7 @@ See [discovery-workflow.md](./discovery-workflow.md) for the full step-by-step p
 - [ ] Run `find-activities` for every activity — use returned `XamlSnippet` + `XmlnsDeclaration` as starting point
 - [ ] Run `type-definition` for every enum/complex type (exact values)
 - [ ] Read [xaml-basics-and-rules.md](./xaml-basics-and-rules.md) for XAML structure
-- [ ] Read [common-pitfalls.md](./common-pitfalls.md) for gotchas
+- [ ] Read [xaml-basics-and-rules.md § Common Pitfalls](./xaml-basics-and-rules.md#common-pitfalls--quick-reference) for gotchas
 
 ### Choose Workflow Type
 
@@ -122,7 +122,7 @@ Before writing XAML for Flowchart or StateMachine:
 - [ ] All 21 baseline namespace imports present
 - [ ] Package-specific assembly refs + namespace imports added for every activity package used
 - [ ] Flowchart/StateMachine: `xmlns:av` declared, ViewState on every node
-- [ ] Scope activities: `ActivityAction<T>` body pattern (see [common-pitfalls.md](./common-pitfalls.md))
+- [ ] Scope activities: `ActivityAction<T>` body pattern (see [xaml-basics-and-rules.md § Common Pitfalls](./xaml-basics-and-rules.md#common-pitfalls--quick-reference))
 
 ### EDIT Checklist
 
@@ -156,7 +156,7 @@ FINAL (before completing):
 
 When stuck: `docsai ask` → `WebSearch` → ask user.
 
-See [validation-and-fixing.md](./validation-and-fixing.md) for detailed procedures and common error scenarios.
+See [cli-reference.md § Validate & Fix](./cli-reference.md#phase-3-validate--fix-loop) for detailed procedures and common error scenarios.
 
 ---
 
@@ -225,13 +225,13 @@ Full reference: [cli-reference.md](./cli-reference.md)
 | File | Content |
 |------|---------|
 | [cli-reference.md](./cli-reference.md) | All CLI commands, parameters, error recovery |
-| [discovery-workflow.md](./discovery-workflow.md) | Detailed discovery steps, troubleshooting |
-| [environment-setup.md](./environment-setup.md) | Project root detection, legacy verification |
-| [project-structure.md](./project-structure.md) | Legacy project layout, project.json schema |
+| [cli-reference.md § Discovery Workflow](./cli-reference.md#discovery-workflow--detailed-steps) | Detailed discovery steps, troubleshooting |
+| [cli-reference.md § Phase 0](./cli-reference.md#phase-0-environment-readiness) | Project root detection, legacy verification |
+| [cli-reference.md § Legacy Project Structure](./cli-reference.md#legacy-project-structure) | Legacy project layout, project.json schema |
 | [xaml-basics-and-rules.md](./xaml-basics-and-rules.md) | XAML anatomy, expressions, safety rules |
-| [common-pitfalls.md](./common-pitfalls.md) | Dangerous defaults, scope patterns, gotchas |
-| [validation-and-fixing.md](./validation-and-fixing.md) | Validate & fix loop, error scenarios |
-| [test-data-guide.md](./test-data-guide.md) | Excel, CSV, JSON, top 10 file types and UiPath types |
+| [xaml-basics-and-rules.md § Common Pitfalls](./xaml-basics-and-rules.md#common-pitfalls--quick-reference) | Dangerous defaults, scope patterns, gotchas |
+| [cli-reference.md § Validate & Fix](./cli-reference.md#phase-3-validate--fix-loop) | Validate & fix loop, error scenarios |
+| [testing-guide.md § Test Data Creation](./testing-guide.md#test-data-creation) | Excel, CSV, JSON, top 10 file types and UiPath types |
 | [error-handling-guide.md](./error-handling-guide.md) | Exception classification, TryCatch patterns, Retry Scope, ContinueOnError |
 | [selector-guide.md](./selector-guide.md) | Selector anatomy, dynamic selectors, anchors, validation checklist |
 | [project-organization-guide.md](./project-organization-guide.md) | Folder conventions, naming, Config.xlsx, libraries, single responsibility |

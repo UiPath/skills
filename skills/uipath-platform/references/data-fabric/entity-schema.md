@@ -83,8 +83,6 @@ Very large text. Contract differs from `MULTILINE_TEXT`:
 2. **List/query reads return a size marker, not content.** `records list` / `records query` return a string starting `HasValue=true Length=N` (live form: `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`); only `records get <entity-id> <record-id>` returns the full value. Read + write-back rules in [records-query.md → MULTILINE_MAX fields](records-query.md#multiline_max-fields--marker-vs-full-content).
 3. **On a 400 from `entities create` / `addFields` naming the type**, surface the error verbatim — do NOT retry or silently substitute `MULTILINE_TEXT` (Rule 18).
 
-Needs `@uipath/data-fabric-tool` `1.198.0+` (see data-fabric.md → Tool Version Requirements).
-
 ```bash
 uip df entities create "Documents" \
   --body '{"fields":[{"fieldName":"Title","type":"STRING","isRequired":true},{"fieldName":"Body","type":"MULTILINE_MAX"}]}' \
@@ -97,13 +95,17 @@ uip df entities create "Documents" \
 
 ### Name Validation
 
-Both entity names and field names must:
+Entity names must:
 - Start with a letter (`[a-zA-Z]`)
 - Contain only letters, digits, and underscores (`[a-zA-Z0-9_]`)
 - Be 3–100 characters long
-- **Not** be a C# or VB reserved keyword — full list, error string (`"cannot be a reserved word in C# or VB"` / `RESERVED_LANGUAGE_KEYWORDS`), and rename examples are in **data-fabric.md Rule 4**. SQL keywords (e.g. `Status`, `Order`, `Key`) are NOT rejected — idiomatic field names are fine.
+- **Not** be a C# or VB reserved keyword. The CLI also rejects some SQL-reserved words such as `Order`, while ordinary names such as `Status` and `Key` are accepted. Surface the actual validation error and ask for a domain-specific rename; do not maintain a speculative local keyword list. See **data-fabric.md Rule 4**.
 
-**Reserved field names** (will error if used): `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`
+Field names follow the same length and starting-letter rules but may contain **letters and digits only** (`[a-zA-Z0-9]`); underscores are rejected. A field name also cannot equal its entity name, ignoring case.
+
+**Reserved field names** (case-insensitive): `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`, `RecordOwner`
+
+Within one create/add batch, field names and effective display names must each be unique ignoring case. An entity supports at most 10 `MULTILINE_MAX` fields.
 
 ### All Field Options
 
@@ -124,10 +126,10 @@ Both entity names and field names must:
 
 | Option | Type | Default | Notes |
 |--------|------|---------|-------|
-| `fieldName` | string | required | 3–100 chars, starts with letter, `[a-zA-Z0-9_]` |
+| `fieldName` | string | required | 3–100 chars, starts with letter, letters and digits only |
 | `type` | `EntityFieldDataType` | `STRING` | See type table above |
-| `displayName` | string | fieldName | Human-readable label |
-| `description` | string | `""` | Optional description |
+| `displayName` | string | fieldName | Human-readable label, max 128 chars |
+| `description` | string | `""` | Optional description, max 512 chars |
 | `isRequired` | boolean | `false` | Field must have a value on insert |
 | `isUnique` | boolean | `false` | Value must be unique across all records |
 | `isRbacEnabled` | boolean | `false` | Role-based access control on this field |
@@ -137,7 +139,7 @@ Both entity names and field names must:
 
 ### Advanced Field Constraints
 
-Accepted on `entities create` and on `addFields` / `updateFields` in `entities update`. Each constraint applies only to specific types — passing one to an unsupported type errors with *"Field '<name>' of type <TYPE> does not accept <option>"*. `minValue` must be strictly less than `maxValue`.
+Accepted on `entities create` and on `addFields` / `updateFields` in `entities update`. Each constraint applies only to specific types — passing one to an unsupported type errors with *"Field '<name>' of type <TYPE> does not accept <option>"*. `minValue` must be less than or equal to `maxValue`.
 
 | Constraint | Allowed type | Range |
 |------------|--------------|-------|
@@ -184,71 +186,31 @@ uip df entities update <entity-id> \
 
 - `referenceEntityId` — UUID of the target entity. Get it from `entities list --native-only` (the `Id` column). Target must exist and be native (no federated targets).
 - `referenceFieldId` — UUID of the **display field** on the target entity. This is a user-visible product decision — it controls which target field renders in pickers, lists, and the Data Fabric UI when the relationship is shown. **Always confirm with the user** which field to display (`Name`, `Email`, `Title`, etc.) — do NOT silently default to the target's `Id` UUID just because it exists. List the target's candidate display fields from `entities get <target-entity-id>` (`Fields[].Name`/`DisplayName` for human-readable scalar fields) and raise an `AskUserQuestion` dropdown if more than one fits. The stored record value is **always the target record's UUID `Id`** regardless of which field is bound here — `referenceFieldId` is purely the join-and-render hint. Auto Mode does NOT waive this confirmation: rendering choices are user-domain, not technical defaults.
-- `referenceFolderKey` — applies to **`RELATIONSHIP` and `FILE` fields only**. Required whenever the target is folder-scoped, including when the target lives in the **same folder** as the parent. Without it, a folder-scoped parent referencing a folder-scoped target fails with *"Cannot create relationship field from folder-level entity ('<parent>') to tenant-level entity ('')"* — a misleading error caused by the missing per-field scope hint. Omit only when (a) both parent and target are tenant-level, or (b) the target is a tenant-level system entity (e.g. `EntityAttachment` for FILE, `User` for `CreatedBy`/`UpdatedBy`). **`CHOICE_SET_*` fields do NOT need `referenceFolderKey`** — the backend resolves the choice-set's folder server-side from `choiceSetId` alone. **Folder-scoped parent fields cannot reference tenant-level user-authored targets** — and vice versa. See [Cross-folder references](#cross-folder-references) for the full matrix.
+- `referenceFolderKey` — applies to **`RELATIONSHIP` only**. Pass it whenever the target is folder-scoped, including when it is in the same folder as the parent. Omit it for tenant-level targets. `CHOICE_SET_*` resolves scope from `choiceSetId`; `FILE` is auto-wired and takes no reference fields. See [Cross-folder references](#cross-folder-references).
 - The field lives on the *child* (many-side) and points at the *parent* (one-side) — no reverse field on the parent.
 - Record value is **always the target record's UUID `Id`**, regardless of which field's UUID was passed as `referenceFieldId` (it controls the join, not the stored value). If the user supplies an email / label, resolve it first via `records query` on the target entity.
 - `FILE` fields do NOT take reference fields — server auto-wires. See [FILE Fields](#file-fields).
 - Cue phrases that signal a `RELATIONSHIP` (never substitute `STRING`/`UUID` — **data-fabric.md Rule 12**): *"each order has a Customer"*, *"each report has a Supplier"*, *"each issue belongs to a Project"*.
 - If the user didn't name a target entity OR the named one doesn't exist, follow the **pick-or-create flow in data-fabric.md Rule 13** — list candidates via `entities list --native-only`, ask, create only with approval.
 
-```bash
-# 1. Discover target entity + field UUIDs
-uip df entities list --native-only --output json   # → find Customer entity's Id
-uip df entities get <customer-entity-id> --output json   # → find Id field's Id under Fields[]
-
-# 2. Resolve email → record Id, then insert
-uip df records query <customer-entity-id> \
-  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Email","operator":"=","value":"alice@example.com"}]},"selectedFields":["Id"]}' \
-  --output json
-uip df records insert <child-entity-id> --body '{"customerId":"<resolved-uuid>","amount":250}' --output json
-```
-
 ### Cross-folder references
 
-`RELATIONSHIP`, `FILE`, and `CHOICE_SET_*` field bindings require the parent and the target to share **scope class** (both tenant, or both folder — possibly different folders). **Crossing the tenant ↔ folder boundary is not allowed.** A folder-scoped entity cannot bind a tenant-level user-authored choice set / target entity; a tenant-level entity cannot bind a folder-scoped target. Folder ↔ folder works (same or different).
+`RELATIONSHIP` and `CHOICE_SET_*` bindings require the parent and target to share **scope class**: both tenant-level or both folder-scoped. Folder-to-folder works across different folders; crossing the tenant/folder boundary does not. `FILE` is excluded because the server always binds it to the platform-managed attachment entity.
 
 **Per-field `referenceFolderKey` differs by field type:**
 
-- **`RELATIONSHIP` / `FILE`** — pass `referenceFolderKey` whenever the target is folder-scoped, **including same-folder bindings**. The server uses it to resolve the target's scope; omitting it on a folder→folder binding produces the misleading *"Cannot create relationship field from folder-level entity ('<parent>') to tenant-level entity ('')"* error (the absence is interpreted as "target is tenant" → trips the cross-scope block).
+- **`RELATIONSHIP`** — pass `referenceFolderKey` whenever the target is folder-scoped, including same-folder bindings. Omitting it makes the server treat the target as tenant-level and reject the binding.
 - **`CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE`** — do **NOT** pass `referenceFolderKey` at the API level. The backend resolves the choice-set's folder server-side from `choiceSetId` alone. Passing it is unnecessary and may be rejected.
 
-| Parent scope | Target scope | Allowed? | `referenceFolderKey` for `RELATIONSHIP` / `FILE` | `referenceFolderKey` for `CHOICE_SET_*` |
+| Parent scope | Target scope | Allowed? | `referenceFolderKey` for `RELATIONSHIP` | `referenceFolderKey` for `CHOICE_SET_*` |
 |---|---|---|---|---|
 | Tenant | Tenant | ✅ | Omit | Omit |
 | Folder A | Folder A (same folder) | ✅ | `<folder-A-guid>` — required, even same-folder | Omit (server resolves from `choiceSetId`) |
 | Folder A | Folder B (different folder) | ✅ | `<folder-B-guid>` | Omit (server resolves from `choiceSetId`) |
 | Folder | Tenant user-authored entity / choice set | ❌ | n/a — not supported | n/a — not supported |
-| Folder | Tenant **system** entity (`EntityAttachment`, `User`) | ✅ | Omit — platform-managed | n/a — no system choice sets |
 | Tenant | Folder | ❌ | n/a — not supported | n/a — not supported |
 
-> **Same-folder gotcha for `RELATIONSHIP` / `FILE` only** — even though both entities live in the same folder, omitting `referenceFolderKey` makes the server unable to resolve the target's scope and the create errors out with *"Cannot create relationship field from folder-level entity ('<parent>') to tenant-level entity ('')"*. The error names "tenant-level" because the absence is interpreted as "target is at tenant", which then trips the folder ↔ tenant block. Always pass `referenceFolderKey` for any folder-to-folder `RELATIONSHIP` / `FILE` binding. `CHOICE_SET_*` is not affected — the server resolves from `choiceSetId`.
-
-System entities live at tenant level but are exempt from the folder ↔ tenant block — that's how FILE fields work on folder-scoped entities (they point at the tenant-level `EntityAttachment` system entity). The exemption is specific to system entities; ordinary tenant entities and choice sets stay blocked.
-
-Surface this constraint to the user **before** invoking `entities create` / `addFields` whenever the proposed parent and target sit on opposite sides of the tenant ↔ folder boundary AND the target is not a system entity. Do not silently fall back to a different field type — see Rule 18 (no silent substitution).
-
-**Lookup sequence:**
-
-```bash
-# 1. Find the target's folder and IDs
-uip df entities list --include-folders --output json          # → target entity's Id + FolderId
-uip df entities get <target-entity-id> --folder-key <target-folder-key> --output json   # → target field's Id
-
-# 2. Create the parent in its folder, with the cross-folder reference
-uip df entities create OrderLine \
-  --folder-key <parent-folder-key> \
-  --body '{
-    "fields":[
-      {"fieldName":"order","type":"RELATIONSHIP",
-       "referenceEntityId":"<target-entity-uuid>",
-       "referenceFieldId":"<target-field-uuid>",
-       "referenceFolderKey":"<target-folder-key>",
-       "isRequired": true}
-    ]
-  }' --output json
-```
-
-Same shape applies to `addFields` inside `entities update`. For `CHOICE_SET_*` fields, do **NOT** include `referenceFolderKey` — the server resolves the choice-set's folder from `choiceSetId` alone, even when the choice set lives in a different folder from the parent entity.
+Surface this constraint to the user **before** invoking `entities create` / `addFields` whenever the proposed parent and target sit on opposite sides of the tenant ↔ folder boundary. Do not silently fall back to a different field type — see Rule 18 (no silent substitution).
 
 ### FILE Fields
 
@@ -259,32 +221,7 @@ Same shape applies to `addFields` inside `entities update`. For `CHOICE_SET_*` f
 ```
 
 - **No reference fields required or accepted.** Server auto-wires to the tenant `EntityAttachment` system entity; any caller-supplied `referenceEntityId` / `referenceFieldId` is stripped by the SDK. Never treat these as user-domain choices — no `AskUserQuestion` about which field to bind. The Rule 14 display-field dropdown fires only for `RELATIONSHIP`.
-- **CLI floor:** SDK builds before `@uipath/uipath-typescript` commit `80f9be7a` (branch `fix/df-file-field-refs-optional`, not yet on `main`) throw `Failure / RetryWillNotFix — "Field '<name>' of type FILE requires both referenceEntityId and referenceFieldId"`. On such a build, upgrade the CLI; if that's impossible, pass both UUIDs discovered off any existing FILE field's `Fields[].ReferenceEntity.Id` + `Fields[].ReferenceField.Id`.
 - Write sequence: `entities create` (FILE field, no refs) → `records insert` (no FILE column, Rule 6) → `files upload <entity-id> <record-id> <field-name> --file <path>`. Full surface: [`file-attachments.md`](file-attachments.md).
-
-### Combined Example — mixing scalar, choice-set, and relationship fields
-
-Complex types accept the same standard field options as scalars — `isRequired`, `isUnique`, `displayName`, `description`, `defaultValue`, `isRbacEnabled`, `isEncrypted`, plus type-specific constraints (`lengthLimit`, `maxValue`/`minValue`, `decimalPrecision`). Extras unique to complex types: `choiceSetId` for `CHOICE_SET_*`, `referenceEntityId` + `referenceFieldId` for `RELATIONSHIP`. `FILE` needs no extras (see [FILE Fields](#file-fields)).
-
-```bash
-# Prereqs: target entity exists; choice set exists (look up ID)
-uip df entities create "Expense" --body '{
-  "displayName": "Expense",
-  "description": "Reimbursable expenses with category, tags, and submitter",
-  "fields": [
-    {"fieldName":"invoiceNumber", "type":"STRING",  "isRequired": true, "isUnique": true, "lengthLimit": 50,
-     "displayName":"Invoice Number"},
-    {"fieldName":"amount",        "type":"DECIMAL", "isRequired": true, "decimalPrecision": 2, "minValue": 0,
-     "displayName":"Amount (USD)"},
-    {"fieldName":"notes",         "type":"MULTILINE_TEXT", "lengthLimit": 2000},
-    {"fieldName":"category",      "type":"CHOICE_SET_SINGLE",   "choiceSetId":"<choice-set-id>",
-     "isRequired": true, "displayName":"Category"},
-    {"fieldName":"tags",          "type":"CHOICE_SET_MULTIPLE", "choiceSetId":"<choice-set-id>"},
-    {"fieldName":"customerId",    "type":"RELATIONSHIP", "referenceEntityId":"<customer-entity-uuid>", "referenceFieldId":"<customer-id-field-uuid>",
-     "isRequired": true, "displayName":"Customer"}
-  ]
-}' --output json
-```
 
 ## Deleting an Entity
 
@@ -313,8 +250,8 @@ Irreversible — drops the column and every record's value in it. Note the body 
 
 Before invoking, surface the impact to the user **and** run the cascade-ask (data-fabric.md Rule 11):
 
-- **CHOICE_SET_* fields** — choice set is shared. Resolve `Fields[].ChoiceSetId` from `entities get <id>`, list other entities binding that choice set (`entities list --output json` → entries whose `Fields[].ChoiceSetId == <id>`), then raise an `AskUserQuestion` dropdown: `Delete only the field` · `Also delete choice set <Name> (<id>)` · `Stop`. On `Also delete …`, run the choice-set-delete flow ([`choice-sets.md` → Delete a choice set](choice-sets.md#delete-a-choice-set)) with its own dependent-discovery.
-- **RELATIONSHIP fields** — confirm no flow / coded app reads the value. Resolve `Fields[].ReferenceEntity.Id`, list other inbound references (`entities list --output json` → entries whose `Fields[].ReferenceEntity.Id == <id>`), then raise an `AskUserQuestion` dropdown: `Delete only the field` · `Also delete target entity <Name> (<id>)` · `Stop`. On `Also delete …`, run the entity-delete flow (Rule 10) with its own dependent-discovery. The FK column on the parent disappears either way.
+- **CHOICE_SET_* fields** — choice set is shared. Resolve `Fields[].ChoiceSetId` from `entities get <id>`, list other entities binding that choice set (`entities list --output json` → entries whose `Fields[].ChoiceSetId == <id>`), then raise an `AskUserQuestion` dropdown: `Delete only the field` · `Also delete choice set <Name> (<id>)` · `Stop`. On `Also delete …`, run the choice-set-delete flow ([`choice-sets.md` → Deleting a choice set](choice-sets.md#deleting-a-choice-set)) with its own dependent-discovery.
+- **RELATIONSHIP fields** — warn that consumers may depend on the field. Resolve `Fields[].ReferenceEntity.Id`, list other inbound references (`entities list --output json` → entries whose `Fields[].ReferenceEntity.Id == <id>`), then raise an `AskUserQuestion` dropdown: `Delete only the field` · `Also delete target entity <Name> (<id>)` · `Stop`. On `Also delete …`, run the entity-delete flow (Rule 10) with its own dependent-discovery.
 - **FILE fields** — drop only the column. The `referenceEntityId` points at platform-managed FILE storage; do **not** offer to delete it.
 - **System fields** (`Id`, `CreatedBy`, …) can't be removed regardless.
 
@@ -326,9 +263,9 @@ Response: `{ Code: "EntityUpdated", Data: { Id, RemovedFields: ["<name>"], Reaso
 |-----------|--------|
 | Change a field's data type | Not supported — type is fixed at creation and cannot be changed via `updateFields` |
 | Toggle `isUnique` on an existing field (either direction) | Not supported — `isUnique` is fixed at creation. `updateFields` with `isUnique: true/false` returns `Result: Success` but the server silently ignores the change; the Data Fabric UI renders the toggle as **disabled** on existing fields. To enforce uniqueness on a field that doesn't have it: (1) confirm with the user that the field can be recreated, then (2) `removeFields` it (drops all existing values in that column — see Rule 11), then (3) `addFields` with `isUnique: true`. Do NOT report success on a no-op `updateFields` — verify via `entities get` (see Verify-after-update below). |
-| Field name matching a SQL / language keyword | API returns `RESERVED_LANGUAGE_KEYWORDS` — rename before retrying (see Name Validation above) |
+| Field name rejected as a reserved keyword | C#/VB keywords return `RESERVED_LANGUAGE_KEYWORDS`; the CLI also rejects some SQL words such as `Order`, while names such as `Status` and `Key` are accepted. Surface the actual error and ask for a domain-specific rename. |
 
-Record-level writes against FILE fields (insert / update / import) are anti-patterns documented in data-fabric.md Rule 6 and [`records-query.md` → FILE fields](records-query.md#file-fields--never-write-through-insertupdate). This file covers schema only.
+Record-level writes against FILE fields (insert / update / import) are anti-patterns documented in data-fabric.md Rule 6 and [`records-query.md` → FILE fields](records-query.md#file-fields). This file covers schema only.
 
 ---
 
@@ -391,7 +328,7 @@ uip df entities update <entity-id> \
 
 ## System Fields
 
-Every entity has auto-created system fields: `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`. These are read-only and must not be included in field definitions or CSV imports.
+Every entity has auto-created system fields: `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`, `RecordOwner`. These are read-only and must not be included in field definitions or CSV imports.
 
 ## Listing and Inspecting Entities
 
@@ -424,7 +361,8 @@ uip df entities get <entity-id> --output json
 
 | Field | Description |
 |------------------------|-------------|
-| `Fields[].Name` | Exact field name for use in record bodies and CSV headers |
+| `Fields[].Name` | Exact, case-sensitive field name for JSON record bodies |
+| `Fields[].DisplayName` | Exact header required by CSV import |
 | `Fields[].FieldDataType.Name` | Data type. Legacy fields may return UI-broken types (`INTEGER` / `FLOAT` / `UUID` / `DATETIME` / …) — see [Supported Field Types](#supported-field-types). |
 | `Fields[].FieldDataType.{LengthLimit,MaxValue,MinValue,DecimalPrecision}` | Type-specific constraint values |
 | `Fields[].Id` | Field UUID — required for `updateFields` in `entities update` |
@@ -435,20 +373,6 @@ uip df entities get <entity-id> --output json
 | `Fields[].IsForeignKey` | `true` on `RELATIONSHIP` / `FILE` fields |
 
 Before writing records, identify complex fields by `FieldDataType.Name` and resolve lookups: `CHOICE_SET_*` → `choice-sets list-values <choice-set-id>` for `NumberId`s; `RELATIONSHIP` → `records query` on `ReferenceEntity.Id` for target record UUIDs.
-
-**Example — discover an entity before writing records:**
-```bash
-# 1. Find the entity ID and confirm it is Native (EntityType == "Entity")
-uip df entities list --native-only --output json
-# e.g. response row: { "Name": "Customer", "Id": "abc-123", "EntityType": "Entity", "DisplayName": "Customer" }
-
-# 2. Get field names for use in record bodies
-uip df entities get abc-123 --output json
-# e.g. Fields: [{"Name": "FullName", "FieldDataType": {"Name": "STRING"}}, {"Name": "Score", "FieldDataType": {"Name": "DECIMAL"}}]
-
-# 3. Insert using exact field names
-uip df records insert abc-123 --body '{"FullName":"Alice","Score":95}' --output json
-```
 
 ## Native vs Federated Entities
 

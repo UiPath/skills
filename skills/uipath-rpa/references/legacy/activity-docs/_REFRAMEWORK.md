@@ -4,7 +4,7 @@
 The REFramework is UiPath's official **State Machine-based project template** for building production-grade automation. It provides built-in retry logic, exception handling, configuration management, and application lifecycle control. It's the standard for transactional, unattended automation.
 
 **Source**: [github.com/UiPath/ReFrameWork](https://github.com/UiPath/ReFrameWork)
-**Current Desktop Template**: Studio 25.10 (verified from `C:\Users\alexandru.roman\Documents\UiPath\legacy_tests\`)
+**Current Desktop Template**: Studio 25.10
 **Available in**: VB.NET (`RoboticEnterpriseFramework-VB`) and C# (`RoboticEnterpriseFramework-Csharp`)
 
 ---
@@ -590,9 +590,4 @@ When starting a new REFramework project:
 
 ## Sources
 - [UiPath REFramework GitHub Repository](https://github.com/UiPath/ReFrameWork)
-- [UiPath Studio Documentation - Robotic Enterprise Framework](https://docs.uipath.com/studio/standalone/2024.10/user-guide/robotic-enterprise-framework)
-- [UiPath Forum - MaxRetryNumber vs MaxConsecutiveSystemExceptions](https://forum.uipath.com/t/re-framwork-maxretrynumber-vs-maxconsecutivesystemexceptions/453279)
-- [UiPath Forum - How would you improve ReFramework?](https://forum.uipath.com/t/how-would-you-improve-reframework/770451)
-- [UiPath Forum - REFramework Best Practices](https://forum.uipath.com/t/reframework-best-practices/182867)
-- [UiPath Forum - REFramework in 2026: Still Best Practice?](https://forum.uipath.com/t/reframework-in-2026-still-best-practice-or-due-for-modernization/5730782)
-- [UiPath Academy - Introduction to REFramework](https://academy.uipath.com/courses/introduction-to-robotic-enterprise-framework)
+- [UiPath Studio Documentation — Robotic Enterprise Framework](https://docs.uipath.com/studio/standalone/2024.10/user-guide/robotic-enterprise-framework)

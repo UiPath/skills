@@ -34,7 +34,6 @@ initial_prompt: |
   | Case Name | ParentCaseSingle |
   | Case Description | Single-node case that spawns the published CaseTest child case as a nested case task. |
   | Case Identifier | Prefix: PCS, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | 1 d |
   | SLA Type | Static |
 
@@ -88,7 +87,7 @@ initial_prompt: |
 
   | Field | Value |
   |---|---|
-  | Case Reference | Name "CaseTest", Folder "Shared" |
+  | Case Reference | Name "Maestro Case", Folder "Shared/uipath-maestro-case/CaseTest" |
   | Component Type | CASE_MANAGEMENT |
   ```
 

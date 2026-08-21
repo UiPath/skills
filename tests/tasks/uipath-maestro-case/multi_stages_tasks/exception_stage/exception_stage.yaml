@@ -48,7 +48,6 @@ initial_prompt: |
   | Case Name | ExceptionStage |
   | Case Description | One regular Process stage plus two secondary stages (Issues returns to origin; Critical exits the case). |
   | Case Identifier | Prefix: ES, Type: constant |
-  | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
   | SLA Type | Not specified |
 
@@ -223,7 +222,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120

@@ -67,16 +67,10 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
   "display": { "label": "Classify Intent" },
   "inputs": {},
   "outputs": {
-    "output": {
-      "type": "object",
-      "description": "The return value of the agent",
-      "source": "=result.response",
-      "var": "output"
-    },
     "error": {
       "type": "object",
       "description": "Error information if the agent fails",
-      "source": "=result.Error",
+      "source": "=Error",
       "var": "error"
     }
   }
@@ -102,11 +96,12 @@ Confirm all three from `registry get` before wiring.
   "display": { "label": "<Label>", "icon": "<AGENT_ICON>" },
   "inputs": {},
   "outputs": {
-    "output": { "type": "object", "description": "The return value of the agent", "source": "=result.response", "var": "output" },
-    "error":  { "type": "object", "description": "Error information if the agent fails", "source": "=result.Error", "var": "error" }
+    "error": { "type": "object", "description": "Error information if the agent fails", "source": "=Error", "var": "error" }
   }
 }
 ```
+
+**Declare `error` only — `output` is derived.** Authoring it makes the converter copy your `source` verbatim; `"=result.response"` then resolves to null at runtime while `flow validate` passes. See [file-format.md § Node outputs](../../../../shared/file-format.md#node-outputs).
 
 `<AGENT_ICON>` depends on the agent's implementation type: `"coded-agent"` for Python-coded agents, `"autonomous-agent"` for low-code (`agent.json`) agents. Detect the type by inspecting the sibling agent project directory: if `agent.json` exists at its root, use `"autonomous-agent"`; otherwise use `"coded-agent"`. Do NOT copy `.display.icon` from `uip maestro flow registry get --local` — that manifest returns `"coded-agent"` for every in-solution agent regardless of implementation type, and the value must be corrected here.
 

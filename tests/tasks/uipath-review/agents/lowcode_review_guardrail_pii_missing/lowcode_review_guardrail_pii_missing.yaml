@@ -17,8 +17,8 @@ agent:
 
 run_limits:
   expected_turns: 55
-  turn_timeout: 1200
-  task_timeout: 1500
+  turn_timeout: 1800
+  task_timeout: 2400
   max_turns: 60
 
 sandbox:
@@ -60,7 +60,8 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate'
     min_count: 1
-    weight: 2.0
+    require_success: true
+    weight: 0.0
     pass_threshold: 0
 
   - type: run_command

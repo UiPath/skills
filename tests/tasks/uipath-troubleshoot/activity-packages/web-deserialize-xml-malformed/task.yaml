@@ -1,5 +1,4 @@
 task_id: skill-troubleshoot-web-deserialize-xml-malformed
-skip: true  # mature: 100% pass rate over recent evalboard runs (2026-07-08)
 description: >
   UiPath troubleshoot agent must diagnose a ParseDocument job fault
   (System.Xml.XmlException: Data at the root level is invalid. Line 1, position 1.) and match the

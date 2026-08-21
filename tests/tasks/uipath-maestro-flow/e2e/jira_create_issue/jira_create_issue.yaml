@@ -33,8 +33,9 @@ initial_prompt: |
   connector activity, and expose the new issue's key as a flow output.
 
   Read `seed.json` in the current directory for the issue details: use the
-  `project_key`, `issuetype_id`, and `summary` exactly as given (pass the
-  summary verbatim).
+  `project_key`, `issuetype_id`, `summary`, and `reporter_id` exactly as
+  given (pass the summary verbatim; use `reporter_id` for the issue's
+  reporter field). Do not stop to ask for missing values.
 
   Use the Atlassian Jira connection available in the `Shared/uipath-maestro-flow`
   folder. If the Atlassian Jira connector isn't available in your registry,

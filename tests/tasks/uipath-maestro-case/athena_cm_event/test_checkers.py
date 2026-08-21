@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent
 SDD_CHECK = ROOT / "check_athena_cm_event_sdd.py"
+PLAN_CHECK = ROOT / "check_athena_cm_event_plan.py"
 CASE_CHECK = ROOT / "check_athena_cm_event_case.py"
 
 
@@ -171,7 +172,7 @@ closes on required-stages-completed.
                 {"id": f"{task_id}_folder", "default": "Shared"},
             ])
         plan = {
-            "version": "23.0.0",
+            "version": "27.0.0",
             "name": "AthenaCMEventCase",
             "metadata": {
                 "caseIdentifier": "=vars.instanceExternalId",
@@ -192,8 +193,8 @@ closes on required-stages-completed.
             "nodes": [
                 {
                     "id": "trigger",
-                    "type": "case-management:Trigger",
-                    "data": {"uipath": {"serviceType": "Intsvc.EventTrigger"}},
+                    "type": "uipath.case.trigger",
+                    "data": {"inputs": {"serviceType": "Intsvc.EventTrigger"}},
                 },
                 stage_a,
                 stage_b,
@@ -206,6 +207,38 @@ closes on required-stages-completed.
         caseplan.parent.mkdir(parents=True)
         caseplan.write_text(json.dumps(plan), encoding="utf-8")
 
+    def write_tasks_md(
+        self,
+        *,
+        rewrite_a2_as_sequential: bool = False,
+        bullet_prefix: bool = True,
+    ) -> None:
+        contracts = {
+            "StageATask1": ("parallel", "current-stage-entered", None),
+            "StageATask2": (
+                "sequential" if rewrite_a2_as_sequential else "conditional-gate",
+                "runs-sequentially" if rewrite_a2_as_sequential else "selected-tasks-completed",
+                None if rewrite_a2_as_sequential else "StageATask1",
+            ),
+            "StageBTask1": ("parallel", "current-stage-entered", None),
+            "StageBTask2": ("parallel", "current-stage-entered", None),
+            "StageCTask1": ("parallel", "current-stage-entered", None),
+            "StageCTask2": ("parallel", "current-stage-entered", None),
+            "StageCTask3": ("conditional-gate", "selected-tasks-completed", "StageCTask2"),
+        }
+        sections = []
+        prefix = "- " if bullet_prefix else ""
+        for index, (task_name, (mode, rule, selected)) in enumerate(contracts.items(), 1):
+            rendered_rule = f'{rule}("{selected}")' if selected else rule
+            sections.append(
+                f'## T{index}: Add process task "{task_name}" to "Stage"\n\n'
+                f"{prefix}activation-mode: {mode}\n"
+                f"{prefix}entry-rule: {rendered_rule}\n"
+            )
+        tasks = self.workdir / "tasks" / "tasks.md"
+        tasks.parent.mkdir()
+        tasks.write_text("\n".join(sections), encoding="utf-8")
+
     def test_sdd_checker_accepts_complete_fixture(self) -> None:
         self.write_sdd(self.workdir / "sdd.md")
         result = run(SDD_CHECK, self.workdir)
@@ -215,6 +248,22 @@ closes on required-stages-completed.
         self.write_sdd(self.workdir / "sdd.md")
         result = run(SDD_CHECK, self.workdir)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_plan_checker_accepts_authored_task_entry_rules(self) -> None:
+        self.write_tasks_md()
+        result = run(PLAN_CHECK, self.workdir)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_plan_checker_accepts_plain_task_entry_fields(self) -> None:
+        self.write_tasks_md(bullet_prefix=False)
+        result = run(PLAN_CHECK, self.workdir)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_plan_checker_rejects_rewriting_selected_dependency_as_sequential(self) -> None:
+        self.write_tasks_md(rewrite_a2_as_sequential=True)
+        result = run(PLAN_CHECK, self.workdir)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("StageATask2", result.stdout + result.stderr)
 
     def test_case_checker_accepts_expected_structure(self) -> None:
         self.write_caseplan()

@@ -94,7 +94,7 @@ uip admin audit tenant events --from-date 2026-04-22T00:00:00Z --to-date 2026-04
 | `--user-id <guid...>` | no | Filter by acting user IDs. Repeatable. |
 | `--search <term>` | no | Server-side substring search across event content. |
 | `--status <Success\|Failure\|0\|1>` | no | Case-insensitive labels or the raw `AuditEventStatus` enum values. |
-| `--limit <n>` | no | Total events to return. Server clamps each individual API call to **200**; values >200 trigger client-side pagination automatically (cursor handled internally). Omitted = single call with the server's default page size (typically up to 200 events). |
+| `--limit <n>` | no | Total events to return. **Must be between 1 and 10000** — a larger value is rejected up front with `Result: "ValidationError"` / `invalid_argument` before any HTTP call, so do NOT pass a huge number to mean "everything". To retrieve everything in a window, omit `--limit` or pass a value within the range. Server clamps each individual API call to **200**; values >200 trigger client-side pagination automatically (cursor handled internally). Omitted = single call with the server's default page size (typically up to 200 events). |
 | `--login-validity <minutes>` | no | Token-refresh hint. |
 | `--tenant-id <guid>` | no | **Tenant scope only.** Override the active tenant. |
 

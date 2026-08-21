@@ -6,7 +6,7 @@ Top-level binding creation. Referenced by **all** task plugins — non-connector
 
 ## Destination
 
-Bindings live at top-level `bindings[]` in `caseplan.json` (no `root` wrapper, no `data.uipath`).
+Bindings live at top-level `bindings[]` in `caseplan.json` (no `root` wrapper, no `data.inputs`).
 
 ## What Bindings Are
 
@@ -137,3 +137,5 @@ IDs use `b` prefix + 8 alphanumeric chars (e.g., `bG0SraLpg`).
 ## bindings_v2.json Sync
 
 `bindings_v2.json` must mirror top-level `bindings[]` in SDK format. Regenerated in batch (not per-task) at end of Step 9 and Step 9.7. See [bindings-v2-sync.md](../../../bindings-v2-sync.md).
+
+<!-- END: impl-json.md -->

@@ -11,7 +11,6 @@ description: >
 tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 10
-  turn_timeout: 600
 
 initial_prompt: |
   Inside a UiPath Coded Web App, author the OAuth bootstrap files needed for

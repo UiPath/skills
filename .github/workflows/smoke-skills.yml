@@ -14,16 +14,29 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Workflow-level, not per-job: every job that installs the pinned coder-eval
+# wheel needs this, and a job added later inherits it automatically instead of
+# silently regressing to "no version found".
+#
+# safe-chain's minimum-package-age check suppresses freshly published versions
+# during metadata resolution, so a same-day `coder-eval` pin in
+# tests/.coder-eval-version resolves to "no version found" and the install step
+# fails. coder_eval is a first-party internal package from the Azure Artifacts
+# feed, not public-registry supply-chain surface, so exclude it from the age
+# check only. Every other safe-chain check still applies.
+env:
+  SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS: coder-eval
+
 jobs:
   detect:
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     name: Detect changed skills
     outputs:
       task_globs: ${{ steps.detect.outputs.task_globs }}
       skip: ${{ steps.detect.outputs.skip }}
       untested_skills: ${{ steps.detect.outputs.untested_skills }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
         with:
           fetch-depth: 0
 
@@ -259,12 +272,12 @@ jobs:
   warn-untested:
     needs: detect
     if: needs.detect.outputs.untested_skills != ''
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     name: Warn about untested skills
     permissions:
       pull-requests: write
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b  # v7.1.0
         with:
           script: |
             const skills = '${{ needs.detect.outputs.untested_skills }}';
@@ -296,7 +309,7 @@ jobs:
   e2e:
     needs: detect
     if: needs.detect.outputs.skip != 'true'
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     # 18+ smoke tasks at ~1–2 min each + env setup. 60 min was getting
     # cancelled when the matrix grew + LLM reviewer was retrying on quota
     # exhaustion. 120 min covers worst-case reviewer-retry storms without
@@ -309,7 +322,7 @@ jobs:
     env:
       UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
       # Single source of truth for the coder_eval version: the pin in
       # tests/.coder-eval-version. Consumed as the wheel version (host CLI) and
@@ -318,13 +331,13 @@ jobs:
         id: ceref
         run: echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
           python-version: '3.13'
 
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: '20'
 
@@ -338,10 +351,13 @@ jobs:
         run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
       # Pull the pinned agent image from GHCR (never built from source); the
-      # skills smoke image extends it below. GH_PAT needs read:packages.
+      # skills smoke image extends it below. Needs read:packages only —
+      # GH_PACKAGES_TOKEN, never the repo-write PAT: this workflow is
+      # `pull_request`-triggered, so anyone who can push a branch to this
+      # public repo can read the secret it is handed.
       - name: Pull pinned coder-eval-agent image
         run: |
-          echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }}
 
       # Build custom smoke image extending coder-eval-agent with @uipath/cli and
@@ -351,10 +367,13 @@ jobs:
       # old `alpha` tag → `dev` on 2026-06-26), so smoke tracks main — not stale
       # `latest` from public npm (which lags by ~2 weeks).
       - name: Build skills smoke Docker image
+        env:
+          DOCKER_BUILDKIT: "1"
+          NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
         run: |
           docker build \
             --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }} \
-            --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
+            --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .
@@ -393,6 +412,15 @@ jobs:
               uip agent guardrails list --output json
             '
 
+      # Model guard, deliberately its OWN step: "Run smoke tests" below carries
+      # continue-on-error, and the threshold steps treat zero tasks as a pass, so a
+      # guard inside the smoke step is swallowed and the gate goes green having
+      # evaluated nothing. Fail here instead, before any task runs.
+      - name: Require an agent model
+        env:
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
+        run: ': "${AGENT_MODEL:?unset — set the CLAUDE_CODE_MODEL repo variable}"'
+
       - name: Run smoke tests
         env:
           SKILLS_REPO_PATH: ${{ github.workspace }}
@@ -412,13 +440,23 @@ jobs:
           BEDROCK_MODEL: ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_PARALLELISM: ${{ vars.TASK_PARALLELISM || '1' }}
+          # The gate's agent model, passed explicitly on the command line rather than
+          # pinned in experiments/smoke.yaml — one repo variable moves every gate here,
+          # and the experiment file stays harness-agnostic (the nightly runs the same
+          # file under codex/antigravity with their own models). No literal fallback:
+          # gating on a model nobody configured reports a verdict about the wrong thing,
+          # so an unset variable fails the guard step above. NOT $BEDROCK_MODEL: that
+          # is the evaluation-side model (llm_judge + the simulated user), and reusing
+          # it here would move the grader with the agent.
+          AGENT_MODEL: ${{ vars.CLAUDE_CODE_MODEL }}
         working-directory: tests
         id: smoke
         run: |
           shopt -s globstar nullglob
-          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --tags smoke -j $TASK_PARALLELISM"
+          echo "Running: coder-eval run ${{ needs.detect.outputs.task_globs }} --model $AGENT_MODEL --tags smoke -j $TASK_PARALLELISM"
           coder-eval run ${{ needs.detect.outputs.task_globs }} \
             -e experiments/smoke.yaml \
+            --model "$AGENT_MODEL" \
             -j "$TASK_PARALLELISM" -v \
             --run-dir /tmp/runs \
             --tags smoke
@@ -505,7 +543,7 @@ jobs:
 
       - name: Upload HTML / JSON eval report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: eval-report-${{ github.run_id }}
           # Use ** so the pattern still matches the replicate-index segment
@@ -580,6 +618,11 @@ jobs:
         if: always()
         env:
           PASS_RATE_THRESHOLD: "0.95"
+          # The smoke step carries continue-on-error, so its failure only reaches the
+          # job through this gate. Zero tasks AFTER a failed smoke step means the run
+          # died before producing anything (bad install, unusable config) — fail closed
+          # rather than reading an empty set as a clean sweep.
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
         run: |
           if [ "${{ steps.smoke.outcome }}" = "cancelled" ]; then
             echo "::error::Smoke step cancelled (timeout) — failing without rate check"
@@ -593,6 +636,10 @@ jobs:
           passed = sum(1 for d in results if d.get('final_status') == 'SUCCESS')
           n = len(results)
           if n == 0:
+              if os.environ.get('SMOKE_OUTCOME') == 'failure':
+                  print('::error::Smoke step failed without producing a single task.json '
+                        '— failing closed instead of passing on an empty run')
+                  sys.exit(1)
               print('No smoke-tagged tasks matched — skipping rate check')
               sys.exit(0)
           rate = passed / n
@@ -621,14 +668,14 @@ jobs:
   # clean and the convention has bedded in.
   validate-task-schema:
     name: Validate task schema (advisory)
-    runs-on: ubuntu-latest
+    runs-on: uipath-ubuntu-latest
     timeout-minutes: 8
     continue-on-error: true
     # Skip forks: the private-feed creds for the pinned coder-eval wheel aren't
     # available to forked PRs (matches the e2e job's secret requirements).
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
 
       # Pin coder_eval to tests/.coder-eval-version so schema validation runs
       # against the same engine that actually executes the tasks.
@@ -636,11 +683,11 @@ jobs:
         id: ceref
         run: echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
           python-version: '3.13'
 
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
 
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). `coder-eval plan` validates schemas on the runner -- no image.

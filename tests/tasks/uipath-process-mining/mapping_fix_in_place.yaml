@@ -1,0 +1,129 @@
+task_id: skill-pm-mapping-fix-in-place
+description: >
+  A data mapping was created with the wrong date format. Tests that the agent
+  fixes the mapping IN PLACE on the existing app (apps data-mapping get →
+  edit → apps data-mapping update) and then re-ingests, instead of deleting
+  and recreating the app — the mistake that cost a real user a full app
+  rebuild before `apps data-mapping` existed.
+
+  Also pins the apply-vs-reingest direction: a mapping change is a parse-setting
+  change, so `ingestions create` is required and `transformations apply` alone is
+  wrong (the mirror of the transform-only fix loop).
+
+  Command-construction only — no live tenant. Commands fail with auth errors;
+  what matters is which commands the agent chooses and in what order. The
+  original mapping is staged as ./mapping.json so the agent has a real document
+  to edit when the unauthenticated `data-mapping get` cannot return one — without
+  it the agent correctly refuses to push a garbage file and the run stalls after
+  the `get`.
+tags: [uipath-process-mining, integration, mode:diagnose, lifecycle:setup, custom, data-mapping]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 30
+  turn_timeout: 600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/mapping_fix_in_place
+
+initial_prompt: |
+  I created a Process Mining app (app id 9c46289e) from ./mapping.json, loaded
+  the data, and the ingestion succeeded — but every timestamp is wrong: I set
+  DateTimeFormatString to "mm-dd-yyyy hh:mm:ss" and the CSV is actually
+  day-first ("dd-mm-yyyy hh:mm:ss"). The source CSV itself is unchanged and
+  already uploaded.
+
+  Fix this with the least destructive path and make the corrected mapping take
+  effect. Use the uipath-process-mining skill and follow its workflow.
+
+  Important:
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail with auth errors — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - Because the CLI is unauthenticated, no command returns real data — a read
+    may even write junk over its --destination. When a read gives you nothing
+    usable, do NOT stop and do NOT hand the remaining commands back to me as a
+    plan. Fall back to the mapping I actually used, staged in this workspace as
+    ./mapping.original.json, restore ./mapping.json from it, apply the fix
+    there, and carry on — using the literal placeholder W/"1" wherever a command
+    needs an ETag it could not read. Running the full corrective sequence on
+    ./mapping.json is the point of this exercise.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+
+  - type: skill_triggered
+    description: "Agent activated the uipath-process-mining skill"
+    skill_name: "uipath-process-mining"
+    expected_skill: "uipath-process-mining"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the existing app's mapping instead of guessing it"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+data-mapping\s+get\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent replaced the mapping in place on the existing app"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+data-mapping\s+update\b.*--file\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed the --etag the get returned, now required on data-mapping update"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+data-mapping\s+update\b.*--etag\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent corrected the date format to day-first in the mapping it pushed"
+    path: "mapping.json"
+    includes:
+      - 'dd-mm-yyyy hh:mm:ss'
+    excludes:
+      - 'mm-dd-yyyy hh:mm:ss'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent re-ingested, since a mapping change only applies to the next ingestion"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+ingestions\s+create\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT delete the app to fix a mapping mistake"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+delete\b'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Agent must NOT recreate the app to fix a mapping mistake"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+create\b'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Agent must NOT re-upload the CSV — the source data did not change"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+files\s+upload\b'
+    weight: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT target the read-only published stage with the mapping update"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+data-mapping\s+update\b.*--stage\s+published'
+    weight: 1.5

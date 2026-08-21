@@ -1,8 +1,8 @@
 # case-exit-conditions — Implementation (Direct JSON Write)
 
-> **Phase split.** Phase 3 only. Phase 2 does not write conditions. See [`../../../phased-execution.md`](../../../phased-execution.md).
+> **Phase split.** Phase 2 writes the condition. A `wait-for-connector` rule gets the canonical stub; Phase 3 Step 10.5 upgrades only its `uipath` when resolved. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Write the case-exit condition directly into `metadata.caseExitRules[]` in `caseplan.json`. No CLI command needed.
+Write the Phase 2 case-exit condition directly into `metadata.caseExitRules[]` in `caseplan.json`; this initial write needs no CLI call. Step 10.5 handles the separate connector-rule upgrade.
 
 > **Destination + field name.** Array key is `caseExitRules`, lives under `metadata.caseExitRules` (top-level `metadata`). Plugin folder name `case-exit-conditions` follows the *concept*; the on-disk field is `caseExitRules`. Do NOT place at the JSON top level.
 
@@ -60,9 +60,9 @@ Requires `marksCaseComplete: false`. Swap `rule` to `selected-stage-exited` for 
 
 ### wait-for-connector — bind a connector event
 
-Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) (canonical rule JSON + procedure there) — a bare rule (no `uipath`) is rejected by Studio Web. **Root-scoped: `elementId = root-<ruleId>` on BOTH `uipath.inputs[]` and `uipath.outputs[]`** (not a stage id; the input `body` gets it too, not only the outputs). Valid for both `marksCaseComplete: true` and `false`. `conditionExpression` optional. If `type-id` / `connection-id` / `connector-key` is `<UNRESOLVED>`, emit the **stub `uipath` placeholder** (2 `"placeholder"` context fields: `connectorKey` + `operation` — see [connector-trigger-common.md § Placeholder fallback](../../../connector-trigger-common.md#placeholder-fallback)).
+In Phase 2, always write the canonical stub from [connector-trigger-impl.md § Condition-rule phase contract](../../../connector-trigger-impl.md#condition-rule-phase-contract), regardless of connector resolution. In Phase 3 Step 10.5, a resolved connector replaces only `rule.uipath`; keep this root-scoped rule's `elementId = root-<ruleId>` on BOTH final `uipath.inputs[]` and `uipath.outputs[]`. Valid for both `marksCaseComplete: true` and `false`; `conditionExpression` is preserved.
 
-**Rule output binding.** If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) **as the last step — after rule write, before root bindings**. `elementId` stays `root-<ruleId>` on every output entry. Skip when the rule has no `uipath.outputs[]` (stub placeholder).
+**Rule output binding.** Defer it with the stub. After the Phase 3 upgrade produces real outputs, dispatch them per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules), before root bindings. `elementId` stays `root-<ruleId>`.
 
 ## Rule-Type × marksCaseComplete Matrix
 
@@ -80,4 +80,6 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 
 Confirm `metadata.caseExitRules[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Complete Rule {N}` / `Exit Rule {N}` default keyed to `marksCaseComplete`), `marksCaseComplete` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. Verify no `root` key exists at the top level.
 
-For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated (placeholders substituted), inputs/outputs `elementId` is `root-<ruleId>`, and ConnectionId + FolderKey root bindings exist. Full `validate` flags a missing `rule.uipath`/`context` (`connector activity missing`) but not its internals (a wrong `serviceType` passes) — confirm the connector resolves in Studio Web.
+For `wait-for-connector`, Phase 2 verification expects the exact two-entry placeholder context plus empty inputs/outputs/bindings. After Phase 3, a resolved rule must have no `"placeholder"` values, inputs/outputs must use `root-<ruleId>`, and ConnectionId + FolderKey root bindings must exist; a remaining stub must map to a reported unresolved connector.
+
+<!-- END: impl-json.md -->

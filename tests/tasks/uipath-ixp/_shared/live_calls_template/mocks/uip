@@ -1,25 +1,86 @@
-#!/bin/sh
-# Record the expanded invocation, then delegate unchanged to the real live CLI.
-wrapper_path=$(readlink -f "$0")
-wrapper_dir=$(dirname "$wrapper_path")
-{
-    printf 'uip %s' "$*" | tr '\r\n' '  '
-    printf '\n'
-} >> "$wrapper_dir/calls.log" 2>/dev/null || true
+#!/usr/bin/env python3
+"""Record the invocation, then delegate unchanged to the real live CLI.
 
-old_ifs=$IFS
-IFS=:
-for path_dir in $PATH; do
-    [ -n "$path_dir" ] || path_dir=.
-    candidate="$path_dir/uip"
-    [ -x "$candidate" ] || continue
-    candidate_path=$(readlink -f "$candidate" 2>/dev/null) || continue
-    [ "$candidate_path" = "$wrapper_path" ] && continue
+Used by the uipath-ixp integration/e2e tasks, which DO hit a live tenant. Same
+two sinks and the same record schema as the offline smoke mock (see
+../../mock_template/README.md § Call log), so a criterion reads identically
+whichever template a task overlays.
 
-    IFS=$old_ifs
-    exec "$candidate_path" "$@"
-done
-IFS=$old_ifs
+One field differs from the offline mock, forced by delegating:
 
-echo "uip logger: real uip executable not found later in PATH" >&2
-exit 127
+  "exit": null    `os.execv` replaces this process, so the real CLI's exit
+                  status is never observable from here. Recording before the
+                  handoff is what the sh wrapper did too.
+
+Standard input is never read here, and must not be: consuming it would starve
+the real CLI of a piped payload.
+"""
+
+import json
+import os
+import sys
+import time
+
+WRAPPER_PATH = os.path.realpath(os.path.abspath(__file__))
+MOCK_DIR = os.path.dirname(WRAPPER_PATH)
+FLAT_LOG = os.path.join(MOCK_DIR, "calls.log")
+JSON_LOG = os.path.join(MOCK_DIR, "calls.jsonl")
+
+
+def record(tool, args, exit_code):
+    """Append this invocation to both sinks. Best-effort — a failed write never
+    breaks the delegated command, matching the sh wrapper's `|| true`."""
+    flat = "{} {}".format(tool, " ".join(args)).replace("\r", " ").replace("\n", " ")
+    try:
+        with open(FLAT_LOG, "a", encoding="utf-8", errors="replace", newline="\n") as f:
+            f.write(flat + "\n")
+    except OSError:
+        pass
+
+    call = {
+        "ts": round(time.time(), 3),
+        "tool": tool,
+        "argv": list(args),
+        "exit": exit_code,
+    }
+    try:
+        with open(JSON_LOG, "a", encoding="utf-8", newline="\n") as f:
+            f.write(json.dumps(call) + "\n")
+    except OSError:
+        pass
+
+
+def find_real_uip():
+    """First executable `uip` on PATH that is not this wrapper.
+
+    Compares resolved FILE paths, not directories: the wrapper's own directory
+    is PATH-prepended by `mock_path_dirs`, and skipping it wholesale would also
+    skip a real CLI that happened to live there.
+    """
+    for path_dir in os.environ.get("PATH", "").split(os.pathsep):
+        candidate = os.path.join(path_dir or ".", "uip")
+        if not os.access(candidate, os.X_OK) or os.path.isdir(candidate):
+            continue
+        resolved = os.path.realpath(candidate)
+        if resolved == WRAPPER_PATH:
+            continue
+        return resolved
+    return None
+
+
+def main(argv):
+    record("uip", argv[1:], None)
+
+    real_uip = find_real_uip()
+    if real_uip is None:
+        sys.stderr.write("uip logger: real uip executable not found later in PATH\n")
+        return 127
+
+    # Hands over the process image: the real CLI inherits stdin/stdout/stderr
+    # untouched and its exit status becomes ours, with no wrapper left to
+    # perturb signals or buffering.
+    os.execv(real_uip, [real_uip] + list(argv[1:]))
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

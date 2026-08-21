@@ -12,8 +12,11 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 | [MST-9972](#mst-9972--variablesnodes-missing-vars-resolves-to-undefined) | `Cannot read property 'output' of undefined` on a downstream node | Direct-authored `.flow` skipped `variables.nodes[]`; `flow validate` accepts it but the BPMN has no process-level variable declaration for the upstream node. |
 | [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render at the wrong size for their shape | `flow format` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
+| [Run reports `Completed`, work not done](#run-reports-completed-but-the-work-never-happened) | Run finishes `Completed`, but the API call / node it depended on failed | `inputs.errorHandlingEnabled: true` on a node with no handler, or an `error` edge routed back into the happy path |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
+<!--skill-flavor:project-creation-recovery-index:start-->
 | [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run with `--skip-solution-registration` (opts out of auto-scaffold + registration) |
+<!--skill-flavor:project-creation-recovery-index:end-->
 | [Missing `bindings[]` on resource node](#missing-bindings-on-resource-node) | `Folder does not exist or the user does not have access to the folder` | Top-level `bindings[]` entries not added for a `uipath.core.*` resource node |
 | [`flow validate` passes, `flow debug` faults](#flow-validate-passes-flow-debug-faults) | Local validation green, cloud run red | Multiple causes — narrower than before (MST-9107 + expression-ref linting now catch a large slice statically). See entry for the residual triage path. |
 
@@ -146,6 +149,73 @@ Add an edge from the HITL node's `completed` port to the next node in the flow. 
 
 ---
 
+## Run reports `Completed` but the work never happened
+
+### Symptom
+
+`finalStatus` is `Completed` and no incident is raised, yet the flow's real effect is missing — the record was never created, the message never sent, the downstream node ran on empty or stale data. The flow "always looks successful," including on runs where a dependency was demonstrably down. Nothing shows up in `instance incidents` because, as far as the engine is concerned, nothing failed.
+
+### Cause
+
+The failing node has `inputs.errorHandlingEnabled: true`, which suppresses its fault instead of faulting the run. Two shapes:
+
+1. **Flag with no handler** — the flag is set on a node with no outgoing `sourcePort: "error"` edge. The node swallows the exception and execution continues down `default` with missing output.
+2. **Error path rejoins the happy path** — an `error` edge targets the next happy-path node, or reaches the same End node the success path reaches. The failure then runs the success path's output mappings against the failed node's empty output.
+
+Both pass `uip maestro flow validate` — it checks structure, never whether an error path is meaningful.
+
+### Fix
+
+Report every node carrying the flag, and where its error path ends:
+
+```bash
+python3 - "<ProjectName>.flow" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+E = d.get("edges", []); N = {n["id"]: n for n in d.get("nodes", [])}
+
+def targets(nid, port=None, exclude=None):
+    return [e["targetNodeId"] for e in E if e["sourceNodeId"] == nid
+            and (port is None or e.get("sourcePort") == port)
+            and (exclude is None or e.get("sourcePort") != exclude)]
+
+def terminals(start, seen=None):
+    seen = seen or set()
+    if start in seen: return set()
+    seen.add(start)
+    if (N.get(start) or {}).get("type") in ("core.control.end", "core.logic.terminate"):
+        return {start}
+    return set().union(*[terminals(t, seen) for t in targets(start)] or [set()])
+
+for nid, n in N.items():
+    if (n.get("inputs") or {}).get("errorHandlingEnabled") is not True: continue
+    err, ok = targets(nid, "error"), targets(nid, exclude="error")
+    if not err:
+        print(f"{nid}: flag set, NO error edge"); continue
+    ok_term = set().union(*[terminals(t) for t in ok]) if ok else set()
+    for t in err:
+        if t in ok: print(f"{nid}: error -> {t} REJOINS the happy path")
+        elif terminals(t) and terminals(t) <= ok_term:
+            print(f"{nid}: error -> {t} shares success terminal(s) {sorted(terminals(t))}")
+        else: print(f"{nid}: error -> {t} distinct terminal(s) {sorted(terminals(t))} - ok")
+PY
+```
+
+No output means no node has the flag set — the flow is clean. Otherwise act per line:
+
+- **`flag set, NO error edge`** (shape 1) — remove `inputs.errorHandlingEnabled` from that node. The failure then faults the run, which is the visible, correct outcome.
+- **`REJOINS the happy path`** / **`shares success terminal(s)`** (shape 2) — repoint the `error` edge at a terminal the caller can distinguish from success: a distinct End node mapping an error/status `out` variable, or `core.logic.terminate` when recovery is impossible.
+- **`distinct terminal(s) … - ok`** — this node's error handling is wired correctly; look elsewhere.
+
+Re-run `uip maestro flow validate` and `uip maestro flow format` after either fix.
+
+### Reference
+
+- [shared/file-format.md — Default: off](../../shared/file-format.md#default-off--enable-only-for-a-failure-the-flow-actually-handles) and [Do not swallow the failure](../../shared/file-format.md#do-not-swallow-the-failure)
+- [Author capability — rule #16](../../author/CAPABILITY.md#critical-rules)
+
+---
+
 ## Reused reference ID — cross-connection ID leakage
 
 ### Symptom
@@ -177,6 +247,7 @@ uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_
 
 ---
 
+<!--skill-flavor:project-creation-recovery:start-->
 ## Single-nested layout
 
 ### Symptom
@@ -213,6 +284,7 @@ If the absolute path doesn't exist, the `init` step was wrong — do not try to 
 ### Reference
 
 [Author greenfield journey — Step 2](../../author/references/greenfield.md) — the canonical scaffold sequence.
+<!--skill-flavor:project-creation-recovery:end-->
 
 ---
 

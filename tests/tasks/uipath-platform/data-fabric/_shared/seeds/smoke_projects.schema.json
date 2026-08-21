@@ -1,0 +1,13 @@
+{
+  "displayName": "Smoke Projects",
+  "description": "Temporary project list for the complex-field smoke test.",
+  "fields": [
+    {
+      "fieldName": "Name",
+      "displayName": "Name",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": true
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+task_id: skill-case-sla-at-risk-enter-stage
+description: >
+  T3 of the SLA-response battery. An at-risk response that takes over the case is the
+  `enter-stage` shape on a separate interrupting lane. Covers the at-risk half of the
+  persisted-status axis: the rule carries slaId PLUS a concrete at-risk escalationId, and
+  that escalation must be declared on the referenced SLA — borrowing another SLA's
+  escalation fails validate ("The escalation referenced by rule ... no longer exists",
+  probed on uip 1.198.0-preview.102). Also asserts the lane is secondary, isRequired false,
+  interrupting, and returns via return-to-origin.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 50
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates
+
+initial_prompt: |
+  The SlaResponse case solution already exists on disk under SlaResponse/. Its case
+  definition is SlaResponse/SlaResponse/caseplan.json: three stages (Intake → Review →
+  Decision) and a 10-day case SLA that already warns the case owners once 80% of that
+  time is gone.
+
+  Ops wants more to happen at that same 80% mark: a "Director Review" lane must take over
+  the case so a director can decide how to get it back on track. The case team stops what
+  it is doing until the director has decided, and once the director is done the case picks
+  up exactly where it was interrupted.
+
+  Model the director's work as one placeholder task in that lane — no action app or agent
+  is resolvable on this tenant, so leave its identity unresolved per the skill's rules and
+  do NOT query the tenant registry, connections, or users.
+
+  Do NOT run `uip maestro case debug`, publish, or upload anything. Do NOT ask for
+  approval, confirmation, or feedback — make the change end-to-end in a single pass and
+  finish with `uip maestro case validate` passing on the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the edited caseplan.json"
+    command: "uip maestro case validate SlaResponse/SlaResponse/caseplan.json --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "One interrupting secondary lane entered by sla-status-change on the root SLA with the concrete at-risk escalationId declared on that same SLA; lane is isRequired false and exits return-to-origin; 4 stages total"
+    command: "python3 $TASK_DIR/check_at_risk_enter_stage.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
