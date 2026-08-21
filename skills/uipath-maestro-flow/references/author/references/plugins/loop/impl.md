@@ -86,7 +86,7 @@ Loop nodes have a specific wiring pattern — four edges:
 
 | Edge | Source | Source port | Target | Target port |
 | --- | --- | --- | --- | --- |
-| Enter the loop | upstream node | `success` | `<loopId>` | `input` |
+| Enter the loop | upstream node | that node's own output port (`output` on a manual trigger, `success` on an action node) | `<loopId>` | `input` |
 | Into the body | `<loopId>` | `start` | first body node | `input` |
 | Back from the body | last body node | `success` | `<loopId>` | `continue` |
 | Exit the loop | `<loopId>` | `success` | downstream node | `input` |
@@ -275,7 +275,7 @@ A flow that iterates over a collection, accumulates a result in an `inout` varia
       { "id": "loop1.currentIteration", "type": "number", "binding": { "nodeId": "loop1", "outputId": "currentIteration" } },
       { "id": "loop1.collection", "type": "array", "binding": { "nodeId": "loop1", "outputId": "collection" } },
       { "id": "loop1.output", "type": "array", "binding": { "nodeId": "loop1", "outputId": "output" } },
-      { "id": "bodyScript.output", "type": "object", "binding": { "nodeId": "bodyScript", "outputId": "output" } },
+      { "id": "bodyScript.output", "type": "any", "binding": { "nodeId": "bodyScript", "outputId": "output" } },
       { "id": "bodyScript.error", "type": "object", "binding": { "nodeId": "bodyScript", "outputId": "error" } }
     ],
     "variableUpdates": {
