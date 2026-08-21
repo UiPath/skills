@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import NoReturn
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.advisory_flow_utils import unwrap  # noqa: E402
 from _shared.flow_check import find_flow_file  # noqa: E402
 
 NODE_TYPE = "core.action.transform.filter"
@@ -169,12 +170,12 @@ def _check_operations(inputs: dict) -> None:
 
 def _check_output_sources(node: dict) -> None:
     outputs = node.get("outputs") or {}
-    out_src = ((outputs.get("output")) or {}).get("source")
+    out_src = unwrap(((outputs.get("output")) or {}).get("source"))
     if out_src != EXPECTED_OUTPUT_SOURCE:
         _fail(
             f"outputs.output.source={out_src!r}; must be {EXPECTED_OUTPUT_SOURCE!r}"
         )
-    err_src = ((outputs.get("error")) or {}).get("source")
+    err_src = unwrap(((outputs.get("error")) or {}).get("source"))
     if err_src != EXPECTED_ERROR_SOURCE:
         _fail(
             f"outputs.error.source={err_src!r}; must be {EXPECTED_ERROR_SOURCE!r}"
