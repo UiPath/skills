@@ -335,16 +335,30 @@ def section_slice(text: str, heading: str) -> str:
 
 
 def table_rows(chunk: str) -> list[tuple[int, list[str]]]:
-    """(offset line index, cells) for pipe-table body rows in a chunk (header + ruler skipped)."""
-    rows = []
-    for i, line in enumerate(chunk.splitlines()):
+    """(offset line index, cells) for pipe-table body rows in a chunk.
+
+    Header detection is structural: a ruler row (`|---|...`) is skipped, and so is
+    the row immediately preceding it — never a name list, which silently passes
+    headers it does not know (e.g. `| T# | Trigger Type | ... |`)."""
+    lines = chunk.splitlines()
+
+    def is_ruler(line: str) -> bool:
         stripped = line.strip()
         if not stripped.startswith("|"):
-            continue
+            return False
         cells = [c.strip() for c in stripped.strip("|").split("|")]
-        if not cells or set(cells[0]) <= {"-", ":", " "} or cells[0] in ("WHEN", "Name", "Button", "Threshold", "SLA"):
+        return bool(cells) and all(set(c) <= {"-", ":", " "} and c for c in cells)
+
+    rows = []
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped.startswith("|") or is_ruler(line):
             continue
-        rows.append((i, cells))
+        if i + 1 < len(lines) and is_ruler(lines[i + 1]):
+            continue  # header row
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if cells:
+            rows.append((i, cells))
     return rows
 
 
