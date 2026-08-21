@@ -31,7 +31,6 @@ V1_AUTHORING_ALLOWLIST = {
     "evaluate/local_crud.yaml",
     "evaluate/no_auto_upload.yaml",
     "evaluate/simulation/simulation_crud.yaml",
-    "interactive/solution_select.yaml",
     "ixp/e2e_02_project_selection.yaml",
     "ixp/integration_handle_routing.yaml",
     "ixp/routing.yaml",
@@ -41,7 +40,6 @@ V1_AUTHORING_ALLOWLIST = {
 }
 
 SKILL_TELEMETRY_ALLOWLIST = {
-    "interactive/customer_escalation_triage/customer_escalation_triage.yaml",
     "ixp/e2e_02_project_selection.yaml",
     "ixp/integration_handle_routing.yaml",
     "ixp/scaffold_minimal.yaml",
@@ -87,10 +85,6 @@ DEBUG_SOLUTION_ALLOWLIST = {
     "edit/move_node/move_node.yaml",
     "edit/remove_node/remove_node.yaml",
     "edit/update_node/update_node.yaml",
-    "interactive/bellevue_weather_simulated/bellevue_weather_simulated.yaml",
-    "interactive/cli_dice_roller_simulated/cli_dice_roller_simulated.yaml",
-    "interactive/customer_escalation_triage/customer_escalation_triage.yaml",
-    "interactive/slack_channel_description_simulated/slack_channel_description_simulated.yaml",
     "connector_features/jdbc_databricks_query/jdbc_databricks_query.yaml",
 }
 
@@ -117,6 +111,10 @@ def _criterion_blocks(text: str) -> list[tuple[str, str]]:
             section,
         )
     ]
+
+
+def _prompt_text(text: str) -> str:
+    return "\n".join((_block(text, "initial_prompt"), _block(text, "simulation")))
 
 
 def _tagged_tasks() -> list[tuple[str, Path, str]]:
@@ -219,7 +217,7 @@ def test_gating_skill_telemetry_matches_the_temporary_allowlist() -> None:
 def test_forbidden_prompt_phrases_match_the_temporary_allowlist() -> None:
     offenders = set()
     for relative, _, text in _tagged_tasks():
-        prompt = " ".join(_block(text, "initial_prompt").lower().split())
+        prompt = " ".join(_prompt_text(text).lower().split())
         if re.search(r"do not [^.]*\bdebug\b", prompt) or UUID_PATTERN.search(prompt):
             offenders.add(relative)
     assert offenders == FORBIDDEN_PROMPT_ALLOWLIST | FORBIDDEN_PROMPT_EXCEPTIONS
@@ -230,7 +228,7 @@ def test_debug_graded_prompts_name_a_same_name_solution() -> None:
     for relative, path, text in _tagged_tasks():
         if not _is_debug_graded(path, text):
             continue
-        prompt = " ".join(_block(text, "initial_prompt").lower().split())
+        prompt = " ".join(_prompt_text(text).lower().split())
         if not re.search(r"\b(?:in|inside) a solution of the same name\b", prompt):
             offenders.add(relative)
     assert offenders == DEBUG_SOLUTION_ALLOWLIST | DEBUG_PROJECT_LAYOUT_EXCEPTIONS
