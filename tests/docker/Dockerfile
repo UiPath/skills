@@ -137,3 +137,28 @@ ENV DOTNET_ROOT=/usr/share/dotnet \
 # loops in the turn timeline). uipath-langchain is declared in the
 # SimpleCodedAgent fixture's pyproject.toml but has no pre-built venv.
 RUN pip install --no-cache-dir "uipath-langchain>=0.9.26"
+
+# Runtime npm auth for the @uipath scope, needed by any task whose skill tells
+# the agent to `npm install @uipath/...` -- the Maestro builder SDK
+# (`@uipath/flow-sdk`) is the live case, and it is published ONLY to GitHub
+# Packages.
+#
+# The build-time npmrc above is written to `npm config get globalconfig` and
+# deleted in the same RUN, on purpose: it carries the literal token. This layer
+# writes a token-LESS npmrc instead, referencing ${NODE_AUTH_TOKEN}, which npm
+# expands at read time. Nothing secret enters the image; the eval harness
+# forwards the variable (env_passthrough_extra: NODE_AUTH_TOKEN).
+#
+# NPM_CONFIG_USERCONFIG is the half that actually decides whether this works,
+# and the reason is not obvious. npm resolves `userconfig` to $HOME/.npmrc, and the docker runner
+# forwards --env HOME with the HOST value by design (coder_eval
+# models/sandbox.py: "HOME is intentional in default"), which overrides this
+# image's /root. So npm looks for /home/<hostuser>/.npmrc, finds nothing, never
+# maps the @uipath scope to GitHub Packages, and falls through to the public
+# registry -- where the package 404s. Pinning userconfig makes npm's view of
+# the npmrc independent of whatever HOME the harness forwards.
+RUN printf '%s\n' \
+      '@uipath:registry=https://npm.pkg.github.com/' \
+      '//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}' \
+      > /root/.npmrc
+ENV NPM_CONFIG_USERCONFIG=/root/.npmrc

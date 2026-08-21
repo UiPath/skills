@@ -1,0 +1,79 @@
+experiment_id: preview-maestro-sdk
+description: >-
+  The three preview Maestro builder-SDK skills (uipath-maestro-{flow,case,bpmn})
+  as the ONLY skill catalog, under the docker driver. Shadows the shipped v1
+  skills of the same name by pointing the catalog at preview/ alone, so a run
+  measures the SDK authoring path rather than a mix of both generations.
+  Pair with `tests/docker/preflight.sh`, which asserts the preconditions this
+  file depends on before a full run is launched.
+
+defaults:
+  run_limits:
+    max_turns: 200
+    task_timeout: 1200
+    turn_timeout: 900
+
+  sandbox:
+    driver: docker
+    docker:
+      # Build with tests/docker/Dockerfile. The npmrc + NPM_CONFIG_USERCONFIG
+      # layer there is a hard requirement: without it, in-sandbox
+      # `npm install @uipath/flow-sdk` 404s and every compile fails.
+      image: skills-codex:latest
+      network: bridge
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        # GitHub Packages auth for `npm install @uipath/flow-sdk`. The image's
+        # npmrc references ${NODE_AUTH_TOKEN} and expands it at read time, so the
+        # token lives only in the environment.
+        - NODE_AUTH_TOKEN
+        - UIPATH_CLI_DISABLE_VERSION_SYNC
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - E2E_PROCESS_KEY
+        - E2E_LONG_PROCESS_KEY
+      extra_mounts:
+        # The skills REPO ROOT, read-only at its host path. Nightly gets this for
+        # free because its plugins.path IS the repo root. Narrowing the catalog to
+        # preview/ drops it, and criteria across the flow and case suites shell out
+        # to $SKILLS_REPO_PATH/tests/tasks/**/_shared/*.py, which then exit 2 with
+        # "No such file or directory" and score as ordinary misses. Mounting is not
+        # loading: skills still come only from agent.plugins[].path below.
+        - $SKILLS_REPO_PATH:$SKILLS_REPO_PATH:ro
+        #
+        # FILE-BASED AUTH, uncomment on a host that has no UIPATH_CLI_ENABLE_ENV_AUTH
+        # (a dev box or the eval VM, as opposed to CI which passes a token in the
+        # environment). The destination must equal the HOST $HOME, because the runner
+        # forwards --env HOME with the host value, which overrides the image's /root,
+        # and `uip` then looks for $HOME/.uipath. Mounting to /root/.uipath instead
+        # silently yields "Not logged in" on every tenant call.
+        #
+        #   - ~/.uipath:$HOME/.uipath:rw
+        #
+        # Destination expansion needs coder_eval with `$VAR`/`~` support on the
+        # mount destination. On an older version, write your host home literally:
+        #
+        #   - ~/.uipath:/home/youruser/.uipath:rw
+
+  agent:
+    permission_mode: acceptEdits
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    plugins:
+      # PREVIEW ONLY. This path is BOTH the skill catalog and an automatic :ro
+      # bind mount at the same absolute path in-container, with $VAR expanded.
+      - type: "local"
+        path: "$SKILLS_REPO_PATH/preview"
+    ignore_patterns: []
+
+  post_run:
+    # A per-task `npm install` of the SDK leaves node_modules behind in every
+    # artifact dir; unpruned, a full Maestro run costs gigabytes of run output.
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+      timeout: 30
+
+variants:
+  - variant_id: default
