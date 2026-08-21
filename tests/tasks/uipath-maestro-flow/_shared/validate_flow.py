@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Locate the Flow project's ``.flow`` file dynamically and run
-``uip maestro flow validate`` on it.
+"""Locate emitted ``.flow`` files and run ``uip maestro flow validate``.
 
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py
@@ -13,10 +12,10 @@ The hardcoded command then fails with "File not found" even though the flow
 itself is valid (observed on skill-flow-loop-multiply: criterion scored 0.0
 purely on the path, while the flow validated fine when addressed correctly).
 
-Discovery mirrors the ``check_*.py`` execution checks: find the lone
-``project.uiproj`` whose manifest declares ``ProjectType="Flow"`` (via
-:func:`flow_check.find_project_dir`), then validate every ``.flow`` file under
-it. Exit 0 iff every file validates; otherwise propagate the failing exit code.
+Discovery prefers the lone ``project.uiproj`` whose manifest declares
+``ProjectType="Flow"`` and validates every flow under it. If no project exists,
+it accepts one unambiguous root-level SDK emit instead. Exit 0 iff every selected
+file validates; otherwise propagate the failing exit code.
 
 Timeouts are budgeted here rather than left to the harness. ``flow validate``
 refreshes the node manifest from the tenant on every invocation, so its wall
@@ -29,14 +28,15 @@ criterion budget instead, with a diagnosable message.
 
 from __future__ import annotations
 
-import glob
 import os
 import subprocess
 import sys
 import time
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from flow_check import find_project_dir  # noqa: E402
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from flow_check import find_flow_files  # noqa: E402
 
 # The criterion budget to self-terminate inside. coder_eval exports only
 # TASK_DIR to a criterion's command, not the criterion's own timeout, so there
@@ -164,11 +164,7 @@ def _validate(flow: str, deadline: float, budget: int) -> int:
 
 
 def main() -> int:
-    project_dir = find_project_dir()
-    flows = sorted(glob.glob(os.path.join(project_dir, "**/*.flow"), recursive=True))
-    if not flows:
-        print(f"FAIL: No .flow file found under {project_dir}", file=sys.stderr)
-        return 1
+    flows = find_flow_files()
 
     budget = _budget_seconds()
     deadline = time.monotonic() + max(
