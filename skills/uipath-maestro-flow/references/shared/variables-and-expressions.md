@@ -273,7 +273,7 @@ Variable updates assign new values to `inout` (state) variables at specific node
         "expression": {
           "type": "jsExpression",      // or "literal" for a static value
           "expression": string,        // BARE JS body — NO "=js:" prefix
-          "fieldType": "number"        // must match the target variable's declared type
+          "fieldType": "number"        // the target variable's declared type
         }
       }
     ]
@@ -284,8 +284,10 @@ Variable updates assign new values to `inout` (state) variables at specific node
 | Field | Value |
 | --- | --- |
 | `type` | `"jsExpression"` for an evaluated expression, `"literal"` for a static value |
-| `expression` | The JS body **without** the `=js:` prefix. `"=js:$vars.x"` inside this field is a bug — the runtime would evaluate the literal characters `=js:`. |
-| `fieldType` | The target variable's `type` from `variables.globals`, mapped `integer` → `number`. One of `array`, `boolean`, `null`, `number`, `object`, `string`. |
+| `expression` | The JS body **without** the `=js:` prefix. For object-form expressions the prefix is *not* stripped, so `"=js:$vars.x"` here leaves `=js:` in the evaluated body. |
+| `fieldType` | Set it to the target variable's `type` from `variables.globals`, mapped `integer` → `number`. One of `array`, `boolean`, `null`, `number`, `object`, `string`. |
+
+> **The three keys are structurally required, but their *values* are not cross-checked.** `flow validate` rejects a missing or extra key (the object is strict), and rejects the legacy string form outright — but it accepts a `fieldType` that disagrees with the target variable, and accepts a stray `=js:` inside `expression`. Get these right by construction; validation will not tell you.
 
 > **Symptom of the legacy string form:** `uip maestro flow validate` fails with
 > `[MIGRATION] Workflow migration failed at 1.9→1.10 … Offending field(s): variables.variableUpdates.<nodeId>.0.expression`

@@ -23,7 +23,7 @@ The loop is a **container** node, so its handles split across two boundaries:
 | inner | `continue` | target | Return from last body node |
 | inner | `break` | target | Early exit (when `breakEnabled`) |
 
-> There is no `output` port and no `loopBack` port. `output` is an output **variable** (`$vars.<loopId>.output`), not a handle.
+> There is no `output` port and no `loopBack` port. `output` is an output **variable** (`$vars.<loopId>.output`), not a handle. Wiring either name is a hard `flow validate` error — `Edge references undeclared source handle "output" on node "<loopId>" … rewire to one of: success, error, start`.
 
 ## JSON Structure
 
@@ -112,7 +112,7 @@ return { processed: item.name.toUpperCase(), position: iteration };
 
 > **Do not use `iterator.currentItem`.** The correct access pattern is `$vars.<loopId>.currentItem` where `<loopId>` is the loop node's `id` (e.g., `$vars.loop1.currentItem`).
 
-> **There is no `currentIndex`.** The registry exposes `currentIteration`, and it starts at 1 — not 0. `$vars.<loopId>.currentIndex` resolves to `undefined`.
+> **There is no `currentIndex`.** The registry's `outputDefinition` for `core.logic.loop` exposes `currentIteration`, and it starts at 1 — not 0. Nothing rejects the wrong name: a `variables.nodes` entry bound to `outputId: "currentIndex"` passes `flow validate`, because bindings are not checked against the node's declared outputs. Confirm the output names with `uip maestro flow registry get core.logic.loop --output json`.
 
 ### Required node variables for loop outputs
 
@@ -391,8 +391,10 @@ Loop over items, fetch data per-iteration via HTTP, process with a script. Both 
 | --- | --- | --- |
 | Collection is empty or null | Expression evaluates to null/undefined | Check `collection` expression and upstream output |
 | `$vars.loop1.currentItem` is undefined | Missing node variable binding or missing `parentId` | Add `loop1.currentItem` to `variables.nodes` and set `parentId` on body nodes |
-| `$vars.loop1.currentIndex` is undefined | The output is named `currentIteration` (1-based); there is no `currentIndex` | Use `$vars.<loopId>.currentIteration` and subtract 1 if you need a 0-based index |
+| `$vars.loop1.currentIndex` is undefined | The output is named `currentIteration` (1-based); there is no `currentIndex`, and a binding to it still validates | Use `$vars.<loopId>.currentIteration` and subtract 1 if you need a 0-based index |
 | `flow validate` fails: `[MIGRATION] … 1.9→1.10 … Offending field(s): variables.variableUpdates.<nodeId>.0.expression` | `variableUpdates[].expression` written as a legacy `=js:` string (including by `uip maestro flow variable-update add`) | Rewrite with `Edit` as `{ "type": "jsExpression", "expression": "<bare JS>", "fieldType": "<target variable type>" }` |
+| `flow validate` fails: `[variables.variableUpdates.<nodeId>[0].expression] Invalid input` | The expression object is malformed — missing one of the three keys, carrying an extra key, or an unknown `type` | Use exactly `type` + `expression` + `fieldType`; the object is strict |
+| `flow validate` fails: `Edge references undeclared source handle "output"` / `target handle "loopBack"` | Loop body wired to ports that do not exist | Use the inner handles: `start` out of the loop, `continue` back into it |
 | State variable not updating across iterations | Body node missing `parentId` | Add `"parentId": "<loopId>"` to every node inside the loop body |
 | State variable becomes `NaN` | variableUpdate expression uses `$vars.<loopId>.currentItem` | Loop variables are not available in variableUpdate expressions. Do the computation in the script and reference `$vars.<bodyNodeId>.output` in the variableUpdate |
 | Downstream value is `NaN`/`undefined` after reducing `$vars.<loopId>.output` | Entries are keyed by body node id, not the body's bare return value | Read `item.<bodyNodeId>.output.<field>`, not `item.<field>` — see [Aggregated loop output](#aggregated-loop-output-varsloopidoutput) |
