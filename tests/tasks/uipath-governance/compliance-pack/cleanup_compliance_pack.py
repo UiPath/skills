@@ -1,29 +1,25 @@
 #!/usr/bin/env python3
-"""Focused cleanup for compliance-pack tests on the shared test tenant.
+"""Focused cleanup for ISO 42001 compliance-pack tests on the shared test tenant.
 
 Compliance-pack smoke/e2e tasks run with live CLI auth in CI (smoke.yaml /
 nightly.yaml pass UIPATH_CLI_* env auth into every sandbox), so flows the task
 prompts assume will dead-end on auth errors actually mutate the real tenant.
 This script undoes ONLY what the compliance-pack tests create:
 
-  0. Reads the available packIds from `catalog list`. Several standards ship
-     (ISO 42001, ISO 27001, …), and a task can enable any of them, so the pack
-     set is discovered rather than hardcoded — a newly added standard is cleaned
-     up without editing this file.
-  1. Disables each of those compliance pack states on the login tenant (what the
-     full-apply / `state enable` tasks turn on). Packs that are not active are
-     skipped silently.
-  2. Deletes AOps policies whose name starts with one of those packIds (the
-     deterministic `<packId>-<clause>-<product>` namespace the partial-apply
-     flow creates — see partial-apply/impl.md). Scoped by the FULL packId, never
-     a loose `iso-` prefix, so it never touches human-named production policies.
+  1. Disables the `iso-42001-2023` compliance pack state on the login tenant
+     (what the full-apply / `state enable` tasks turn on). Skipped silently if
+     the pack is not active.
+  2. Deletes AOps policies whose name starts with `iso-42001` (the deterministic
+     `iso-42001-2023-<clause>-<product>` namespace the partial-apply flow
+     creates — see partial-apply/impl.md). Scoped by that prefix so it never
+     touches human-named production policies on the tenant.
 
-It does NOT touch policies outside a compliance-pack namespace — e.g. the AOps
+It does NOT touch policies outside the ISO 42001 namespace — e.g. the AOps
 "Block ChatGPT" routing tests create their own named policy and are cleaned up
 by cleanup_policy.py keyed to that exact name.
 
-After deleting, it re-lists and logs the surviving pack-namespaced policies plus
-the tenant-wide policy count, so a CI run's log alone confirms cleanup worked.
+After deleting, it re-lists and logs the surviving `iso-42001` policies plus the
+tenant-wide policy count, so a CI run's log alone confirms the cleanup worked.
 
 Known limitation: `aops-policy delete` is blocked while a policy is still
 referenced by a deployment assignment. Observed debris is all UNDEPLOYED, so a
@@ -44,24 +40,8 @@ import sys
 logging.basicConfig(level=logging.INFO, format="cleanup_compliance_pack: %(message)s")
 logger = logging.getLogger(__name__)
 
-# Pack IDs come from `catalog list` at runtime — more than one standard ships now, and
-# hardcoding ids means a newly added standard's leftovers survive cleanup on the shared
-# tenant. Partial apply names its policies `<packId>-<scope>-<product>`, so each packId
-# is also its policy-name namespace. This constant is only the fallback for when the
-# catalog cannot be read (no auth / no connectivity).
-FALLBACK_PACK_IDS = ["iso-42001-2023", "iso-27001-2022"]
-
-
-def pack_ids():
-    catalog = run_cli(["gov", "compliance-packs", "catalog", "list"])
-    payload = (catalog or {}).get("Data") or {}
-    packs = payload.get("Packs") or payload.get("packs") or []
-    ids = [p.get("PackId") or p.get("packId") for p in packs]
-    ids = [i for i in ids if i]
-    if not ids:
-        logger.warning("Could not read pack catalog — falling back to %s", FALLBACK_PACK_IDS)
-        return FALLBACK_PACK_IDS
-    return ids
+PACK_ID = "iso-42001-2023"
+POLICY_NAME_PREFIX = "iso-42001"  # compliance-pack partial-apply namespace
 
 
 def run_cli(args, timeout=30):
@@ -111,30 +91,28 @@ def get_tenant_id():
     return None
 
 
-def disable_packs(packs):
+def disable_pack():
     tenant_id = get_tenant_id()
     if not tenant_id:
         logger.warning("No tenant ID found — skipping pack disable")
         return
 
-    for pack_id in packs:
-        state = run_cli(["gov", "compliance-packs", "state", "get", "tenant", tenant_id, pack_id])
-        if state is None:
-            logger.info("state get returned no result for %s (pack likely not enabled) — skipping disable",
-                        pack_id)
-            continue
+    state = run_cli(["gov", "compliance-packs", "state", "get", "tenant", tenant_id, PACK_ID])
+    if state is None:
+        logger.info("state get returned no result (pack likely not enabled) — skipping disable")
+        return
 
-        data = state.get("Data") or {}
-        if not (data.get("Active") or data.get("active")):
-            logger.info("Pack %s not active on tenant %s — nothing to disable", pack_id, tenant_id)
-            continue
+    data = state.get("Data") or {}
+    if not (data.get("Active") or data.get("active")):
+        logger.info("Pack %s not active on tenant %s — nothing to disable", PACK_ID, tenant_id)
+        return
 
-        logger.info("Pack %s IS active on tenant %s — disabling", pack_id, tenant_id)
-        result = run_cli(["gov", "compliance-packs", "state", "disable", "tenant", tenant_id, pack_id])
-        if result and result.get("Result") == "Success":
-            logger.info("Pack %s disabled", pack_id)
-        else:
-            logger.warning("Pack %s disable returned unexpected result: %s", pack_id, result)
+    logger.info("Pack %s IS active on tenant %s — disabling", PACK_ID, tenant_id)
+    result = run_cli(["gov", "compliance-packs", "state", "disable", "tenant", tenant_id, PACK_ID])
+    if result and result.get("Result") == "Success":
+        logger.info("Pack disabled")
+    else:
+        logger.warning("Pack disable returned unexpected result: %s", result)
 
 
 def list_policies():
@@ -169,26 +147,23 @@ def list_policies():
     return all_rows
 
 
-def pack_policies(rows, packs):
-    # Partial apply names policies `<packId>-<scope>-<product>`, so the packId is the prefix.
-    # Match on the full packId, never a loose `iso-` — that would sweep up a tenant's own policies.
-    prefixes = tuple(p.lower() for p in packs)
-    return [r for r in rows if (r.get("Name") or "").lower().startswith(prefixes)]
+def iso_policies(rows):
+    return [r for r in rows if (r.get("Name") or "").lower().startswith(POLICY_NAME_PREFIX)]
 
 
 def main():
-    packs = pack_ids()
-    logger.info("=== Compliance-pack cleanup start (packs=%s) ===", ", ".join(packs))
+    logger.info("=== Compliance-pack cleanup start (pack=%s, policy prefix=%s) ===",
+                PACK_ID, POLICY_NAME_PREFIX)
 
-    disable_packs(packs)
+    disable_pack()
 
     rows = list_policies()
     if rows is None:
         logger.warning("Could not list aops-policy (no auth / no connectivity) — nothing deleted")
         return
 
-    matches = pack_policies(rows, packs)
-    logger.info("Tenant has %d AOps policies; %d in a compliance-pack namespace", len(rows), len(matches))
+    matches = iso_policies(rows)
+    logger.info("Tenant has %d AOps policies; %d in the ISO 42001 namespace", len(rows), len(matches))
     for r in matches:
         logger.info("  matched: %-60s Identifier=%s Priority=%s",
                     r.get("Name", "?"), r.get("Identifier", "?"), r.get("Priority", "?"))
@@ -217,10 +192,10 @@ def main():
         logger.warning("Final validation list failed — cannot confirm surviving count")
         remaining = "?"
     else:
-        surviving = pack_policies(final_rows, packs)
+        surviving = iso_policies(final_rows)
         remaining = len(surviving)
         logger.info("=== Post-cleanup tenant state ===")
-        logger.info("Tenant now has %d AOps policies total; %d still in a compliance-pack namespace",
+        logger.info("Tenant now has %d AOps policies total; %d still in the ISO 42001 namespace",
                     len(final_rows), remaining)
         for r in surviving:
             logger.warning("  STILL PRESENT: %-60s Identifier=%s",
